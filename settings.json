@@ -1,0 +1,364 @@
+// ==========================================================
+// VS Code settings.json — Windows PhpStorm muscle memory on macOS
+// Stack: PHP (DEVSENSE) + Laravel + Statamic + Vue 3 (JS-only) + Pint + Blade Formatter
+// Goal: format ALL supported files on Save, with NO extra files created and NO formatter fights
+// ==========================================================
+
+{
+  "laravelExtraIntellisense.phpCommand": "/Users/rabbies-admin/Library/Application Support/Herd/bin/php",
+  "terminal.integrated.inheritEnv": true,
+  "terminal.integrated.shell.osx": "/bin/zsh",
+
+  // ==========================================================
+  // 0) Keyboard / Input (Karabiner-safe)
+  // ==========================================================
+  "keyboard.dispatch": "keyCode",
+  "keyboard.layout": "us",
+  "editor.multiCursorModifier": "alt",
+
+  // ==========================================================
+  // 1) Workbench / UX (PhpStorm-like feel)
+  // ==========================================================
+  "workbench.startupEditor": "none",
+  "workbench.editor.enablePreview": false,
+  "workbench.editor.enablePreviewFromQuickOpen": false,
+  "workbench.editor.revealIfOpen": true,
+  "workbench.editor.showTabs": "multiple",
+  "workbench.editor.tabSizing": "fit",
+  "workbench.editor.limit.enabled": true,
+  "workbench.editor.limit.value": 20,
+  "workbench.editor.limit.perEditorGroup": true,
+
+  "workbench.sideBar.location": "left",
+  "workbench.panel.defaultLocation": "bottom",
+  "workbench.statusBar.visible": true,
+
+  "explorer.confirmDelete": false,
+  "explorer.confirmDragAndDrop": false,
+  "explorer.compactFolders": true,
+  "explorer.autoReveal": true,
+  "workbench.list.smoothScrolling": true,
+
+  // ==========================================================
+  // 2) Editor (readability + inspections)
+  // ==========================================================
+  "editor.fontFamily": "JetBrains Mono, Menlo, Monaco, 'Courier New', monospace",
+  "editor.fontLigatures": true,
+  "editor.fontSize": 13,
+  "editor.lineHeight": 20,
+
+  "editor.minimap.enabled": false,
+  "editor.renderWhitespace": "selection",
+  "editor.renderControlCharacters": false,
+  "editor.renderLineHighlight": "all",
+
+  "editor.guides.indentation": true,
+  "editor.guides.bracketPairs": true,
+  "editor.bracketPairColorization.enabled": true,
+
+  "editor.stickyScroll.enabled": true,
+  "editor.stickyScroll.scrollWithEditor": true,
+
+  "editor.linkedEditing": true,
+  "editor.inlineSuggest.enabled": true,
+
+  "editor.matchBrackets": "always",
+  "editor.occurrencesHighlight": "singleFile",
+  "editor.selectionHighlight": true,
+
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": true,
+  },
+  "editor.suggestSelection": "first",
+  "editor.snippetSuggestions": "top",
+  "editor.parameterHints.enabled": true,
+  "editor.hover.delay": 250,
+  "editor.suggest.showWords": true,
+  "editor.suggest.showStatusBar": true,
+
+  "editor.cursorSmoothCaretAnimation": "on",
+  "editor.smoothScrolling": true,
+  "editor.mouseWheelZoom": false,
+
+  // ==========================================================
+  // 3) Files / Search / Performance
+  // ==========================================================
+  "files.autoSave": "off",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.eol": "\n",
+
+  "files.watcherExclude": {
+    "**/.git/**": true,
+    "**/node_modules/**": true,
+    "**/vendor/**": true,
+    "**/storage/**": true,
+    "**/bootstrap/cache/**": true,
+    "**/public/build/**": true,
+    "**/public/hot/**": true,
+    "**/dist/**": true,
+    "**/.nuxt/**": true,
+    "**/.output/**": true,
+    "**/.cache/**": true,
+  },
+
+  "search.smartCase": true,
+  "search.useIgnoreFiles": true,
+  "search.useGlobalIgnoreFiles": true,
+
+  "search.exclude": {
+    "**/.git": true,
+    "**/node_modules": true,
+    "**/vendor": true,
+    "**/storage": true,
+    "**/bootstrap/cache": true,
+    "**/public/build": true,
+    "**/.nuxt": true,
+    "**/.output": true,
+  },
+
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/.idea": true,
+  },
+
+  // ==========================================================
+  // 4) Language associations (Laravel / Statamic)
+  // ==========================================================
+  "files.associations": {
+    "*.embeddedhtml": "html",
+    "*.blade.php": "blade",
+    "*.antlers.html": "html",
+    "*.antlers.php": "php",
+    "*.antlers.xml": "xml",
+    "*.env": "dotenv",
+    "*.stub": "php",
+    ".env*": "dotenv",
+  },
+
+  "emmet.includeLanguages": {
+    "blade": "html",
+    "vue": "html",
+  },
+
+  // ==========================================================
+  // 5) Formatting strategy (NO formatter fights)
+  // ==========================================================
+  // Enable format on save globally; per-language defaultFormatters route to the correct tool.
+  "editor.formatOnSave": true,
+
+  // Explicitly ensures only the active file is formatted on save (avoids any extension misbehavior).
+  "editor.formatOnSaveMode": "file",
+
+  "editor.formatOnPaste": false,
+  "editor.formatOnType": false,
+
+  // Disable built-in formatters that conflict with Prettier/ESLint.
+  "javascript.format.enable": false,
+  "typescript.format.enable": false,
+  "json.format.enable": false,
+
+  // IMPORTANT: keep codeActionsOnSave empty globally; scope ESLint actions to JS/Vue only below.
+  "editor.codeActionsOnSave": {},
+
+  // ==========================================================
+  // 6) Prettier (JS/Vue/JSON/YAML/MD/HTML/CSS)
+  // ==========================================================
+  // To ensure formatting happens even when a repo has no Prettier config:
+  "prettier.requireConfig": false,
+  "prettier.useEditorConfig": true,
+  "prettier.enable": true,
+  "prettier.endOfLine": "lf",
+
+  // ==========================================================
+  // 7) ESLint (JS-only workflow)
+  // ==========================================================
+  "eslint.enable": true,
+  "eslint.format.enable": false,
+  "eslint.alwaysShowStatus": true,
+  "eslint.validate": ["javascript", "javascriptreact", "vue"],
+  "eslint.run": "onType",
+
+  // ==========================================================
+  // 8) Vue 3 (Volar) — JS-only friendly
+  // ==========================================================
+  "vue.inlayHints.optionsWrapper": true,
+  "vue.inlayHints.missingProps": true,
+  "vue.inlayHints.inlineHandlerLeading": true,
+
+  // ==========================================================
+  // 9) Tailwind CSS (Blade/Vue/HTML)
+  // ==========================================================
+  "tailwindCSS.emmetCompletions": true,
+  "tailwindCSS.includeLanguages": {
+    "blade": "html",
+    "vue": "html",
+  },
+  "tailwindCSS.validate": true,
+
+  // ==========================================================
+  // 10) PHP (DEVSENSE) + Laravel
+  // ==========================================================
+  "php.validate.enable": false,
+  "php.version": "8.2",
+  "php.executables": {
+    "php": "/opt/homebrew/bin/php",
+  },
+  "php.debug.port": 9003,
+
+  // ==========================================================
+  // 11) Laravel Pint (open-southeners.laravel-pint)
+  // ==========================================================
+  // Use Pint via VS Code formatter API; this formats on save when set as the PHP defaultFormatter.
+  "laravel-pint.enable": true,
+
+  // Prefer repo-local Pint. Pint is typically available at vendor/bin/pint in Laravel apps.
+  "laravel-pint.executablePath": "vendor/bin/pint",
+
+  // Optional: enable only if using a non-root pint.json location (otherwise omit).
+  // "laravel-pint.configPath": "pint.json",
+
+  // ==========================================================
+  // 12) Blade Formatter (shufo.vscode-blade-formatter)
+  // ==========================================================
+  "bladeFormatter.format.enabled": true,
+  "bladeFormatter.format.indentSize": 4,
+  "bladeFormatter.format.wrapLineLength": 120,
+  "bladeFormatter.format.wrapAttributes": "auto",
+  "bladeFormatter.format.endWithNewline": true,
+  "bladeFormatter.format.phpVersion": "8.2",
+  "bladeFormatter.format.sortTailwindcssClasses": true,
+
+  // ==========================================================
+  // 13) Per-language formatter routing (critical)
+  // ==========================================================
+
+  // JS: Prettier + ESLint fixes on save
+  "[javascript]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "always",
+      "source.organizeImports": "always",
+    },
+  },
+  "[javascriptreact]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "always",
+      "source.organizeImports": "always",
+    },
+  },
+
+  // Vue: Prettier + ESLint fixes on save
+  "[vue]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "always",
+    },
+  },
+
+  // JSON/JSONC: Prettier (not VS Code JSON formatter)
+  "[json]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+  "[jsonc]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+
+  // YAML/Markdown: Prettier
+  "[yaml]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+  "[markdown]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+
+  // Blade: Blade Formatter (only)
+  "[blade]": {
+    "editor.tabSize": 4,
+    "editor.defaultFormatter": "shufo.vscode-blade-formatter",
+  },
+
+  // PHP: Pint (formats on save because global formatOnSave=true + defaultFormatter=Pint)
+  "[php]": {
+    "editor.tabSize": 4,
+    "editor.defaultFormatter": "open-southeners.laravel-pint",
+  },
+
+  // HTML/CSS/SCSS: Prettier
+  "[html]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+  "[css]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+  "[scss]": {
+    "editor.tabSize": 2,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+
+  // ==========================================================
+  // 14) Imports / IntelliSense tuning (PhpStorm-like)
+  // ==========================================================
+  "javascript.suggest.autoImports": true,
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "javascript.preferences.quoteStyle": "single",
+
+  "editor.suggest.preview": true,
+  "editor.acceptSuggestionOnCommitCharacter": true,
+
+  // ==========================================================
+  // 15) Git (JetBrains-like ergonomics)
+  // ==========================================================
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "git.enableSmartCommit": true,
+  "git.postCommitCommand": "push",
+
+  // ==========================================================
+  // 16) Terminal (do not break shortcuts)
+  // ==========================================================
+  "terminal.integrated.fontFamily": "JetBrains Mono, Menlo, Monaco, monospace",
+  "terminal.integrated.fontSize": 12,
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.macOptionIsMeta": true,
+  "terminal.integrated.sendKeybindingsToShell": true,
+  "terminal.integrated.commandsToSkipShell": [
+    "workbench.action.quickOpen",
+    "workbench.action.showCommands",
+    "editor.action.triggerSuggest",
+    "editor.action.triggerParameterHints",
+  ],
+
+  // ==========================================================
+  // 17) Diagnostics noise control
+  // ==========================================================
+  "problems.decorations.enabled": true,
+  "editor.showUnused": true,
+  "editor.unicodeHighlight.ambiguousCharacters": false,
+
+  // ==========================================================
+  // 18) Misc: safer defaults
+  // ==========================================================
+  "security.workspace.trust.enabled": true,
+  "update.mode": "default",
+
+  "editor.largeFileOptimizations": true,
+  "editor.tokenColorCustomizations": {
+    "textMateRules": [],
+  },
+  "dotenv.enableAutocloaking": false,
+  "cSpell.userWords": ["rabbies"],
+}

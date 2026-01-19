@@ -23,6 +23,64 @@
         },
         "rules": [
           {
+            "description": "Word navigation & selection (Windows Ctrl behavior)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$",
+                      "^com\\.microsoft\\.VSCode"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": { "mandatory": ["control"] }
+                },
+                "to": [{ "key_code": "left_arrow", "modifiers": ["option"] }]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": { "mandatory": ["control"] }
+                },
+                "to": [{ "key_code": "right_arrow", "modifiers": ["option"] }]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": { "mandatory": ["control", "shift"] }
+                },
+                "to": [
+                  { "key_code": "left_arrow", "modifiers": ["option", "shift"] }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": { "mandatory": ["control", "shift"] }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["option", "shift"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
             "description": "Browsers (Chromium): Windows parity — Downloads/History/Clear data/Zoom (robust zoom-out)",
             "manipulators": [
               {
@@ -42,6 +100,34 @@
                   "modifiers": { "mandatory": ["control"], "optional": ["any"] }
                 },
                 "to": [{ "key_code": "j", "modifiers": ["command", "shift"] }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "b",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "b",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
               },
 
               {
@@ -854,6 +940,39 @@
             ]
           },
           {
+            "description": "Browsers: Ctrl+Shift+C -> Inspect Element (Cmd+Option+C)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "c",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "c",
+                    "modifiers": ["command", "option"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
             "description": "Browsers: Alt+D -> Address bar (Cmd+L) + Ctrl+L -> Cmd+L",
             "manipulators": [
               {
@@ -914,66 +1033,7 @@
               }
             ]
           },
-          {
-            "description": "Word selection: Ctrl+Shift+Left/Right -> Option+Shift+Left/Right (exclude terminals)",
-            "manipulators": [
-              {
-                "type": "basic",
-                "conditions": [
-                  {
-                    "type": "frontmost_application_unless",
-                    "bundle_identifiers": [
-                      "^com\\.apple\\.Terminal$",
-                      "^com\\.googlecode\\.iterm2$",
-                      "^dev\\.warp\\.Warp-Stable$",
-                      "^com\\.github\\.wez\\.wezterm$",
-                      "^org\\.alacritty$",
-                      "^net\\.kovidgoyal\\.kitty$"
-                    ]
-                  }
-                ],
-                "from": {
-                  "key_code": "left_arrow",
-                  "modifiers": {
-                    "mandatory": ["control", "shift"],
-                    "optional": []
-                  }
-                },
-                "to": [
-                  { "key_code": "left_arrow", "modifiers": ["option", "shift"] }
-                ]
-              },
-              {
-                "type": "basic",
-                "conditions": [
-                  {
-                    "type": "frontmost_application_unless",
-                    "bundle_identifiers": [
-                      "^com\\.apple\\.Terminal$",
-                      "^com\\.googlecode\\.iterm2$",
-                      "^dev\\.warp\\.Warp-Stable$",
-                      "^com\\.github\\.wez\\.wezterm$",
-                      "^org\\.alacritty$",
-                      "^net\\.kovidgoyal\\.kitty$"
-                    ]
-                  }
-                ],
-                "from": {
-                  "key_code": "right_arrow",
-                  "modifiers": {
-                    "mandatory": ["control", "shift"],
-                    "optional": []
-                  }
-                },
-                "to": [
-                  {
-                    "key_code": "right_arrow",
-                    "modifiers": ["option", "shift"]
-                  }
-                ]
-              }
-            ]
-          },
+
           {
             "description": "Windows word delete: Ctrl+Backspace / Ctrl+Delete -> Option+Backspace/Delete (EXCEPT VS Code + terminals)",
             "manipulators": [

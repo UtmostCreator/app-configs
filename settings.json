@@ -5,9 +5,12 @@
 // ==========================================================
 
 {
-  "laravelExtraIntellisense.phpCommand": "/Users/rabbies-admin/Library/Application Support/Herd/bin/php",
+  "laravelExtraIntellisense.phpCommand": "/Users/rabbies-admin/.config/herd/bin/php",
   "terminal.integrated.inheritEnv": true,
   "terminal.integrated.shell.osx": "/bin/zsh",
+  "terminal.integrated.env.osx": {
+    "PATH": "/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+  },
 
   // ==========================================================
   // 0) Keyboard / Input (Karabiner-safe)
@@ -15,6 +18,7 @@
   "keyboard.dispatch": "keyCode",
   "keyboard.layout": "us",
   "editor.multiCursorModifier": "alt",
+  "editor.wordSeparators": "`~!@#$%^&*()-=+{}\\|;:'\",.<>/?",
 
   // ==========================================================
   // 1) Workbench / UX (PhpStorm-like feel)
@@ -81,6 +85,7 @@
   "editor.cursorSmoothCaretAnimation": "on",
   "editor.smoothScrolling": true,
   "editor.mouseWheelZoom": false,
+  "php.inspections.namingConvention.functions": "any",
 
   // ==========================================================
   // 3) Files / Search / Performance
@@ -129,7 +134,6 @@
   // ==========================================================
   "files.associations": {
     "*.embeddedhtml": "html",
-    "*.blade.php": "blade",
     "*.antlers.html": "html",
     "*.antlers.php": "php",
     "*.antlers.xml": "xml",
@@ -202,9 +206,9 @@
   // 10) PHP (DEVSENSE) + Laravel
   // ==========================================================
   "php.validate.enable": false,
-  "php.version": "8.2",
+  "php.version": "8.3",
   "php.executables": {
-    "php": "/opt/homebrew/bin/php",
+    "php": "/Users/rabbies-admin/.config/herd/bin/php",
   },
   "php.debug.port": 9003,
 
@@ -285,13 +289,21 @@
   // Blade: Blade Formatter (only)
   "[blade]": {
     "editor.tabSize": 4,
+    "editor.formatOnSave": true,
     "editor.defaultFormatter": "shufo.vscode-blade-formatter",
+    "editor.codeActionsOnSave": {},
   },
 
   // PHP: Pint (formats on save because global formatOnSave=true + defaultFormatter=Pint)
+
+  "editor.codeActionsOnSaveTimeout": 8000, // give Pint time
+
   "[php]": {
-    "editor.tabSize": 4,
-    "editor.defaultFormatter": "open-southeners.laravel-pint",
+    "editor.formatOnSave": false, // no formatter path
+    "editor.codeActionsOnSave": {
+      "source.fixAll.laravel-pint": "always", // Pint only
+    },
+    "editor.defaultFormatter": "DEVSENSE.phptools-vscode",
   },
 
   // HTML/CSS/SCSS: Prettier
@@ -360,5 +372,12 @@
     "textMateRules": [],
   },
   "dotenv.enableAutocloaking": false,
-  "cSpell.userWords": ["rabbies"],
+  "cSpell.userWords": [
+    "artefacts",
+    "Laravel",
+    "phar",
+    "phpunit",
+    "rabbies",
+    "Statamic",
+  ],
 }

@@ -1,5 +1,3 @@
-// /Users/USERNAME/Library/Application Support/Code/User/keybindings.json
-// Place your key bindings in this file to override the defaults
 [
   /* =========================================================
      IMPORTANT (Coordination with your corrected Karabiner)
@@ -336,6 +334,12 @@
   },
 
   /* JetBrains: Ctrl+W / Ctrl+Shift+W expand/shrink selection */
+
+  {
+    "key": "ctrl+alt+w",
+    "command": "editor.action.selectWord",
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly"
+  },
   {
     "key": "ctrl+w",
     "command": "editor.action.smartSelect.expand",
@@ -766,5 +770,27 @@
     "key": "shift+f6",
     "command": "renameFile",
     "when": "filesExplorerFocus && !inputFocus"
+  },
+
+  // Clipboard + Select All for input boxes (Explorer rename, Find/Replace inputs, etc.)
+  {
+    "key": "ctrl+a",
+    "command": "editor.action.selectAll",
+    "when": "inputFocus && !terminalFocus"
+  },
+  {
+    "key": "ctrl+c",
+    "command": "editor.action.clipboardCopyAction",
+    "when": "inputFocus && !terminalFocus"
+  },
+  {
+    "key": "ctrl+x",
+    "command": "editor.action.clipboardCutAction",
+    "when": "inputFocus && !terminalFocus"
+  },
+  {
+    "key": "ctrl+v",
+    "command": "editor.action.clipboardPasteAction",
+    "when": "inputFocus && !terminalFocus"
   }
 ]

@@ -1,575 +1,2071 @@
 // /Users/USERNAME/.config/karabiner/karabiner.json
 {
-    "profiles": [
-        {
-            "complex_modifications": {
-                "rules": [
-                    {
-                        "description": "Laptop Home/End: Fn+Left=Home, Fn+Right=End",
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "key_code": "left_arrow",
-                                    "modifiers": {
-                                        "mandatory": ["fn"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [{ "key_code": "home" }],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "right_arrow",
-                                    "modifiers": {
-                                        "mandatory": ["fn"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [{ "key_code": "end" }],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Windows: Ctrl+Tab cycles tabs (Cmd+Tab -> Ctrl+Tab after swap)",
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "key_code": "tab",
-                                    "modifiers": {
-                                        "mandatory": ["command"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "tab",
-                                        "modifiers": ["control"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "tab",
-                                    "modifiers": {
-                                        "mandatory": ["command", "shift"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "tab",
-                                        "modifiers": ["control", "shift"]
-                                    }
-                                ],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Windows snapping: Win+Arrow -> macOS tiling (Ctrl+Arrow -> Fn+Ctrl+Arrow)",
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "key_code": "left_arrow",
-                                    "modifiers": {
-                                        "mandatory": ["control"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "left_arrow",
-                                        "modifiers": ["fn", "control"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "right_arrow",
-                                    "modifiers": {
-                                        "mandatory": ["control"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "right_arrow",
-                                        "modifiers": ["fn", "control"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "up_arrow",
-                                    "modifiers": {
-                                        "mandatory": ["control"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "up_arrow",
-                                        "modifiers": ["fn", "control"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "down_arrow",
-                                    "modifiers": {
-                                        "mandatory": ["control"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "down_arrow",
-                                        "modifiers": ["fn", "control"]
-                                    }
-                                ],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Windows: Alt+F4 close window; Alt+Shift+F4 quit app",
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "key_code": "f4",
-                                    "modifiers": {
-                                        "mandatory": ["option"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "w",
-                                        "modifiers": ["command"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "f4",
-                                    "modifiers": {
-                                        "mandatory": ["option", "shift"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "q",
-                                        "modifiers": ["command"]
-                                    }
-                                ],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Windows: Ctrl+Arrow/Ctrl+Backspace word navigation (exclude terminals + Finder)",
-                        "manipulators": [
-                            {
-                                "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com\\.apple\\.finder$",
-                                            "^com\\.googlecode\\.iterm2$",
-                                            "^com\\.apple\\.Terminal$",
-                                            "^com\\.warp\\.Warp-Stable$",
-                                            "^com\\.github\\.wez\\.wezterm$",
-                                            "^org\\.alacritty$",
-                                            "^net\\.kovidgoyal\\.kitty$"
-                                        ],
-                                        "type": "frontmost_application_unless"
-                                    }
-                                ],
-                                "from": {
-                                    "key_code": "left_arrow",
-                                    "modifiers": {
-                                        "mandatory": ["command"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "left_arrow",
-                                        "modifiers": ["option"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com\\.apple\\.finder$",
-                                            "^com\\.googlecode\\.iterm2$",
-                                            "^com\\.apple\\.Terminal$",
-                                            "^com\\.warp\\.Warp-Stable$",
-                                            "^com\\.github\\.wez\\.wezterm$",
-                                            "^org\\.alacritty$",
-                                            "^net\\.kovidgoyal\\.kitty$"
-                                        ],
-                                        "type": "frontmost_application_unless"
-                                    }
-                                ],
-                                "from": {
-                                    "key_code": "right_arrow",
-                                    "modifiers": {
-                                        "mandatory": ["command"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "right_arrow",
-                                        "modifiers": ["option"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com\\.apple\\.finder$",
-                                            "^com\\.googlecode\\.iterm2$",
-                                            "^com\\.apple\\.Terminal$",
-                                            "^com\\.warp\\.Warp-Stable$",
-                                            "^com\\.github\\.wez\\.wezterm$",
-                                            "^org\\.alacritty$",
-                                            "^net\\.kovidgoyal\\.kitty$"
-                                        ],
-                                        "type": "frontmost_application_unless"
-                                    }
-                                ],
-                                "from": {
-                                    "key_code": "delete_or_backspace",
-                                    "modifiers": {
-                                        "mandatory": ["command"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "delete_or_backspace",
-                                        "modifiers": ["option"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com\\.apple\\.finder$",
-                                            "^com\\.googlecode\\.iterm2$",
-                                            "^com\\.apple\\.Terminal$",
-                                            "^com\\.warp\\.Warp-Stable$",
-                                            "^com\\.github\\.wez\\.wezterm$",
-                                            "^org\\.alacritty$",
-                                            "^net\\.kovidgoyal\\.kitty$"
-                                        ],
-                                        "type": "frontmost_application_unless"
-                                    }
-                                ],
-                                "from": {
-                                    "key_code": "delete_forward",
-                                    "modifiers": {
-                                        "mandatory": ["command"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "delete_forward",
-                                        "modifiers": ["option"]
-                                    }
-                                ],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Windows: Ctrl+Tab cycles tabs (Cmd+Tab -> Ctrl+Tab after swap)",
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "key_code": "tab",
-                                    "modifiers": {
-                                        "mandatory": ["command"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "tab",
-                                        "modifiers": ["control"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "tab",
-                                    "modifiers": {
-                                        "mandatory": ["command", "shift"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "tab",
-                                        "modifiers": ["control", "shift"]
-                                    }
-                                ],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Terminal apps: revert Ctrl<->Cmd swap (Linux/tmux compatibility)",
-                        "manipulators": [
-                            {
-                                "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com\\.googlecode\\.iterm2$",
-                                            "^com\\.apple\\.Terminal$",
-                                            "^com\\.warp\\.Warp-Stable$",
-                                            "^com\\.github\\.wez\\.wezterm$",
-                                            "^org\\.alacritty$",
-                                            "^net\\.kovidgoyal\\.kitty$"
-                                        ],
-                                        "type": "frontmost_application_if"
-                                    }
-                                ],
-                                "from": {
-                                    "key_code": "left_command",
-                                    "modifiers": { "optional": ["any"] }
-                                },
-                                "to": [{ "key_code": "left_control" }],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com\\.googlecode\\.iterm2$",
-                                            "^com\\.apple\\.Terminal$",
-                                            "^com\\.warp\\.Warp-Stable$",
-                                            "^com\\.github\\.wez\\.wezterm$",
-                                            "^org\\.alacritty$",
-                                            "^net\\.kovidgoyal\\.kitty$"
-                                        ],
-                                        "type": "frontmost_application_if"
-                                    }
-                                ],
-                                "from": {
-                                    "key_code": "right_command",
-                                    "modifiers": { "optional": ["any"] }
-                                },
-                                "to": [{ "key_code": "right_control" }],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com\\.googlecode\\.iterm2$",
-                                            "^com\\.apple\\.Terminal$",
-                                            "^com\\.warp\\.Warp-Stable$",
-                                            "^com\\.github\\.wez\\.wezterm$",
-                                            "^org\\.alacritty$",
-                                            "^net\\.kovidgoyal\\.kitty$"
-                                        ],
-                                        "type": "frontmost_application_if"
-                                    }
-                                ],
-                                "from": {
-                                    "key_code": "left_control",
-                                    "modifiers": { "optional": ["any"] }
-                                },
-                                "to": [{ "key_code": "left_command" }],
-                                "type": "basic"
-                            },
-                            {
-                                "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com\\.googlecode\\.iterm2$",
-                                            "^com\\.apple\\.Terminal$",
-                                            "^com\\.warp\\.Warp-Stable$",
-                                            "^com\\.github\\.wez\\.wezterm$",
-                                            "^org\\.alacritty$",
-                                            "^net\\.kovidgoyal\\.kitty$"
-                                        ],
-                                        "type": "frontmost_application_if"
-                                    }
-                                ],
-                                "from": {
-                                    "key_code": "right_control",
-                                    "modifiers": { "optional": ["any"] }
-                                },
-                                "to": [{ "key_code": "right_command" }],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Browsers only: Option+E -> Command+L (focus address bar)",
-                        "manipulators": [
-                            {
-                                "conditions": [
-                                    {
-                                        "bundle_identifiers": [
-                                            "^com\\.brave\\.Browser$",
-                                            "^com\\.google\\.Chrome$",
-                                            "^com\\.apple\\.Safari$",
-                                            "^org\\.mozilla\\.firefox$"
-                                        ],
-                                        "type": "frontmost_application_if"
-                                    }
-                                ],
-                                "from": {
-                                    "key_code": "e",
-                                    "modifiers": {
-                                        "mandatory": ["option"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "l",
-                                        "modifiers": ["command"]
-                                    }
-                                ],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Windows clipboard: Ctrl+Insert=Copy, Shift+Insert=Paste, Shift+Delete=Cut",
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "key_code": "insert",
-                                    "modifiers": {
-                                        "mandatory": ["control"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "c",
-                                        "modifiers": ["command"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "insert",
-                                    "modifiers": {
-                                        "mandatory": ["shift"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "v",
-                                        "modifiers": ["command"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "delete_forward",
-                                    "modifiers": {
-                                        "mandatory": ["shift"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "x",
-                                        "modifiers": ["command"]
-                                    }
-                                ],
-                                "type": "basic"
-                            }
-                        ]
-                    },
-                    {
-                        "description": "Alt+Tab (Option+Tab) -> Command+Tab (macOS app switch)",
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "key_code": "tab",
-                                    "modifiers": {
-                                        "mandatory": ["option"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "tab",
-                                        "modifiers": ["command"]
-                                    }
-                                ],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "key_code": "tab",
-                                    "modifiers": {
-                                        "mandatory": ["option", "shift"],
-                                        "optional": ["any"]
-                                    }
-                                },
-                                "to": [
-                                    {
-                                        "key_code": "tab",
-                                        "modifiers": ["command", "shift"]
-                                    }
-                                ],
-                                "type": "basic"
-                            }
-                        ]
-                    }
+  "global": {
+    "check_for_updates_on_startup": true,
+    "show_in_menu_bar": true,
+    "show_profile_name_in_menu_bar": false
+  },
+  "profiles": [
+    {
+      "name": "Windows muscle memory (no Ctrl/Cmd swap)",
+      "selected": true,
+      "simple_modifications": [],
+      "virtual_hid_keyboard": {
+        "keyboard_type_v2": "ansi"
+      },
+      "complex_modifications": {
+        "parameters": {
+          "basic.simultaneous_threshold_milliseconds": 50,
+          "basic.to_delayed_action_delay_milliseconds": 150,
+          "basic.to_if_alone_timeout_milliseconds": 900,
+          "basic.to_if_held_down_threshold_milliseconds": 500,
+          "mouse_motion_to_scroll.speed": 100
+        },
+        "rules": [
+          {
+            "description": "Browsers (Chromium): Windows parity — Downloads/History/Clear data/Zoom (robust zoom-out)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "j",
+                  "modifiers": { "mandatory": ["control"], "optional": ["any"] }
+                },
+                "to": [{ "key_code": "j", "modifiers": ["command", "shift"] }]
+              },
+
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "h",
+                  "modifiers": { "mandatory": ["control"], "optional": ["any"] }
+                },
+                "to": [{ "key_code": "y", "modifiers": ["command"] }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "delete_forward",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_forward",
+                    "modifiers": ["command", "shift"]
+                  }
                 ]
-            },
-            "name": "Default profile",
-            "selected": true,
-            "simple_modifications": [
-                {
-                    "from": { "key_code": "left_command" },
-                    "to": [{ "key_code": "left_control" }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": ["any"]
+                  }
                 },
-                {
-                    "from": { "key_code": "left_control" },
-                    "to": [{ "key_code": "left_command" }]
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "equal_sign",
+                  "modifiers": { "mandatory": ["control"], "optional": ["any"] }
                 },
-                {
-                    "from": { "key_code": "right_command" },
-                    "to": [{ "key_code": "right_control" }]
+                "to": [
+                  {
+                    "key_code": "equal_sign",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "equal_sign",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": ["any"]
+                  }
                 },
-                {
-                    "from": { "key_code": "right_control" },
-                    "to": [{ "key_code": "right_command" }]
-                }
-            ],
-            "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" }
-        }
-    ]
+                "to": [
+                  {
+                    "key_code": "equal_sign",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "hyphen",
+                  "modifiers": { "mandatory": ["control"], "optional": ["any"] }
+                },
+                "to": [{ "key_code": "hyphen", "modifiers": ["command"] }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "hyphen",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [{ "key_code": "hyphen", "modifiers": ["command"] }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "keypad_minus",
+                  "modifiers": { "mandatory": ["control"], "optional": ["any"] }
+                },
+                "to": [{ "key_code": "keypad_minus", "modifiers": ["command"] }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "0",
+                  "modifiers": { "mandatory": ["control"], "optional": ["any"] }
+                },
+                "to": [{ "key_code": "0", "modifiers": ["command"] }]
+              }
+            ]
+          },
+          {
+            "description": "Browsers: Full Windows browser shortcut parity (Ctrl/Alt muscle memory)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "t",
+                  "modifiers": { "mandatory": ["control"], "optional": [] }
+                },
+                "to": [{ "key_code": "t", "modifiers": ["command"] }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "t",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [{ "key_code": "t", "modifiers": ["command", "shift"] }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "w",
+                  "modifiers": { "mandatory": ["control"], "optional": [] }
+                },
+                "to": [{ "key_code": "w", "modifiers": ["command"] }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": { "mandatory": ["control"], "optional": [] }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["command", "option"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["command", "option"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "r",
+                  "modifiers": { "mandatory": ["control"], "optional": [] }
+                },
+                "to": [{ "key_code": "r", "modifiers": ["command"] }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "r",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [{ "key_code": "r", "modifiers": ["command", "shift"] }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": { "mandatory": ["option"], "optional": [] }
+                },
+                "to": [{ "key_code": "open_bracket", "modifiers": ["command"] }]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": { "mandatory": ["option"], "optional": [] }
+                },
+                "to": [
+                  { "key_code": "close_bracket", "modifiers": ["command"] }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Microsoft Teams: Option+A -> Cmd+Shift+M (Mute / Unmute)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.teams$",
+                      "^com\\.microsoft\\.teams2$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "a",
+                  "modifiers": {
+                    "mandatory": ["option"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "m",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Browsers: Ctrl+Shift+T -> Cmd+Shift+T (Reopen closed tab)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "t",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "t",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Browsers: Ctrl+R -> Cmd+R (Refresh)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "r",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "r",
+                    "modifiers": ["command"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Laptop Home/End: Fn+Left=Home, Fn+Right=End",
+            "manipulators": [
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["fn"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "home"
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["fn"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "end"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Alt+Tab -> Cmd+Tab (macOS app switcher)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["option"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "tab",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["option", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "tab",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Windows snapping: Win+Arrow (RIGHT_CMD+Arrow) -> macOS tiling (Fn+Ctrl+Arrow)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["fn", "control"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["fn", "control"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "up_arrow",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "up_arrow",
+                    "modifiers": ["fn", "control"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "down_arrow",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "down_arrow",
+                    "modifiers": ["fn", "control"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["right_command", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["fn", "control", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["right_command", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["fn", "control", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "up_arrow",
+                  "modifiers": {
+                    "mandatory": ["right_command", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "up_arrow",
+                    "modifiers": ["fn", "control", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "down_arrow",
+                  "modifiers": {
+                    "mandatory": ["right_command", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "down_arrow",
+                    "modifiers": ["fn", "control", "shift"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Alt+F4 close window; Alt+Shift+F4 quit app",
+            "manipulators": [
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "f4",
+                  "modifiers": {
+                    "mandatory": ["option"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "w",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "f4",
+                  "modifiers": {
+                    "mandatory": ["option", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "q",
+                    "modifiers": ["command"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Windows clipboard: Ctrl+Insert=Copy, Shift+Insert=Paste, Shift+Delete=Cut (both Delete types)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "insert",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "c",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "insert",
+                  "modifiers": {
+                    "mandatory": ["shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "v",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "delete_forward",
+                  "modifiers": {
+                    "mandatory": ["shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "x",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "mandatory": ["shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "x",
+                    "modifiers": ["command"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Browsers: Alt+D -> Address bar (Cmd+L) + Ctrl+L -> Cmd+L",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "d",
+                  "modifiers": {
+                    "mandatory": ["option"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "l",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "l",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "l",
+                    "modifiers": ["command"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Word selection: Ctrl+Shift+Left/Right -> Option+Shift+Left/Right (exclude terminals)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  { "key_code": "left_arrow", "modifiers": ["option", "shift"] }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["option", "shift"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Windows word delete: Ctrl+Backspace / Ctrl+Delete -> Option+Backspace/Delete (EXCEPT VS Code + terminals)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["option"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "delete_forward",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_forward",
+                    "modifiers": ["option"]
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "description": "Home/End: Shift selects line; Ctrl+Shift selects document (incl. fn+arrows)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "home",
+                  "modifiers": { "mandatory": ["shift"] }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "end",
+                  "modifiers": { "mandatory": ["shift"] }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "home",
+                  "modifiers": { "mandatory": ["control", "shift"] }
+                },
+                "to": [
+                  { "key_code": "up_arrow", "modifiers": ["command", "shift"] }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "end",
+                  "modifiers": { "mandatory": ["control", "shift"] }
+                },
+                "to": [
+                  {
+                    "key_code": "down_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": { "key_code": "home" },
+                "to": [{ "key_code": "left_arrow", "modifiers": ["command"] }]
+              },
+              {
+                "type": "basic",
+                "from": { "key_code": "end" },
+                "to": [{ "key_code": "right_arrow", "modifiers": ["command"] }]
+              },
+
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": { "mandatory": ["fn", "shift"] }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": { "mandatory": ["fn", "shift"] }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": { "mandatory": ["fn", "control", "shift"] }
+                },
+                "to": [
+                  { "key_code": "up_arrow", "modifiers": ["command", "shift"] }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": { "mandatory": ["fn", "control", "shift"] }
+                },
+                "to": [
+                  {
+                    "key_code": "down_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": { "mandatory": ["fn"] }
+                },
+                "to": [{ "key_code": "left_arrow", "modifiers": ["command"] }]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": { "mandatory": ["fn"] }
+                },
+                "to": [{ "key_code": "right_arrow", "modifiers": ["command"] }]
+              }
+            ]
+          },
+          {
+            "description": "Windows Ctrl shortcuts -> macOS Cmd shortcuts (EXCEPT VS Code + terminals)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "a",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "a",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "c",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "c",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "x",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "x",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "v",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "v",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "z",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "z",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "z",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "z",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "y",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "z",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "s",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "s",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "s",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "s",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "f",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "f",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "p",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "p",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "o",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "o",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "w",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "w",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "n",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "n",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_unless",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "t",
+                  "modifiers": {
+                    "mandatory": ["control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "t",
+                    "modifiers": ["command"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Finder (File Explorer muscle memory): F2 rename, Del, Shift+Del, Alt+Enter, Alt+Left/Right, Alt+Up (supports both Delete types)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"]
+                  }
+                ],
+                "from": {
+                  "key_code": "f2",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "return_or_enter"
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"]
+                  }
+                ],
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"]
+                  }
+                ],
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "mandatory": ["shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["command", "option"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"]
+                  }
+                ],
+                "from": {
+                  "key_code": "delete_forward",
+                  "modifiers": {
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"]
+                  }
+                ],
+                "from": {
+                  "key_code": "delete_forward",
+                  "modifiers": {
+                    "mandatory": ["shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["command", "option"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"]
+                  }
+                ],
+                "from": {
+                  "key_code": "return_or_enter",
+                  "modifiers": {
+                    "mandatory": ["option"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "i",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"]
+                  }
+                ],
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["option"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "open_bracket",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"]
+                  }
+                ],
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["option"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "close_bracket",
+                    "modifiers": ["command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"]
+                  }
+                ],
+                "from": {
+                  "key_code": "up_arrow",
+                  "modifiers": {
+                    "mandatory": ["option"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "up_arrow",
+                    "modifiers": ["command"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "VS Code only: Win+Space -> Cmd+P (Quick Open)",
+            "manipulators": [
+              {
+                "type": "basic",
+                "conditions": [
+                  {
+                    "type": "frontmost_application_if",
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$"
+                    ]
+                  }
+                ],
+                "from": {
+                  "key_code": "spacebar",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "p",
+                    "modifiers": ["command"]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "description": "Windows key shortcuts (Win = RIGHT_CMD): Explorer/Settings/Lock/Desktop/Screenshot/Task View/Desktops/Emoji/Activity Monitor + Run",
+            "manipulators": [
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "e",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -a Finder"
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "i",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -a \"System Settings\""
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "l",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "q",
+                    "modifiers": ["control", "command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "d",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "f11"
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "s",
+                  "modifiers": {
+                    "mandatory": ["right_command", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "4",
+                    "modifiers": ["command", "shift"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "up_arrow",
+                    "modifiers": ["control"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["right_command", "shift"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "down_arrow",
+                    "modifiers": ["control"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["right_command", "control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["control"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["right_command", "control"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["control"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "period",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "spacebar",
+                    "modifiers": ["control", "command"]
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "escape",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -a \"Activity Monitor\""
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "r",
+                  "modifiers": {
+                    "mandatory": ["right_command"],
+                    "optional": []
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "spacebar",
+                    "modifiers": ["command"]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

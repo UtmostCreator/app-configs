@@ -2,6 +2,7 @@
 
 ## list
 
+```bash
 amiralizadeh9480.laravel-extra-intellisense
 anan.jetbrains-darcula-theme
 bradlc.vscode-tailwindcss
@@ -47,11 +48,11 @@ stylelint.vscode-stylelint
 usernamehw.errorlens
 vue.volar
 xdebug.php-debug
-
+```
 
 ## to install them use this:
 
-
+```bash
 code --install-extension themamiralizadeh9480.laravel-extra-intellisense
 code --install-extension anan.jetbrains-darcula-theme
 code --install-extension bradlc.vscode-tailwindcss
@@ -97,4 +98,4 @@ code --install-extension stylelint.vscode-stylelint
 code --install-extension usernamehw.errorlens
 code --install-extension vue.volar
 code --install-extension xdebug.php-debug
-
+```

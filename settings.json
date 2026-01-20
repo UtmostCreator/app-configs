@@ -19,6 +19,7 @@
   "keyboard.layout": "us",
   "editor.multiCursorModifier": "alt",
   "editor.wordSeparators": "`~!@#$%^&*()-=+{}\\|;:'\",.<>/?",
+  "editor.wordWrap": "on",
 
   // ==========================================================
   // 1) Workbench / UX (PhpStorm-like feel)
@@ -140,6 +141,9 @@
     "*.env": "dotenv",
     "*.stub": "php",
     ".env*": "dotenv",
+
+    // Force Blade language mode so Blade Formatter always wins for Blade templates
+    "*.blade.php": "blade",
   },
 
   "emmet.includeLanguages": {
@@ -150,31 +154,28 @@
   // ==========================================================
   // 5) Formatting strategy (NO formatter fights)
   // ==========================================================
-  // Enable format on save globally; per-language defaultFormatters route to the correct tool.
   "editor.formatOnSave": true,
-
-  // Explicitly ensures only the active file is formatted on save (avoids any extension misbehavior).
   "editor.formatOnSaveMode": "file",
-
   "editor.formatOnPaste": false,
   "editor.formatOnType": false,
 
-  // Disable built-in formatters that conflict with Prettier/ESLint.
   "javascript.format.enable": false,
   "typescript.format.enable": false,
   "json.format.enable": false,
 
-  // IMPORTANT: keep codeActionsOnSave empty globally; scope ESLint actions to JS/Vue only below.
   "editor.codeActionsOnSave": {},
 
   // ==========================================================
   // 6) Prettier (JS/Vue/JSON/YAML/MD/HTML/CSS)
   // ==========================================================
-  // To ensure formatting happens even when a repo has no Prettier config:
   "prettier.requireConfig": false,
   "prettier.useEditorConfig": true,
   "prettier.enable": true,
   "prettier.endOfLine": "lf",
+
+  // Reduce HTML reflow churn when Prettier formats HTML/Vue templates
+  "prettier.htmlWhitespaceSensitivity": "ignore",
+  "prettier.bracketSameLine": false,
 
   // ==========================================================
   // 7) ESLint (JS-only workflow)
@@ -215,25 +216,26 @@
   // ==========================================================
   // 11) Laravel Pint (open-southeners.laravel-pint)
   // ==========================================================
-  // Use Pint via VS Code formatter API; this formats on save when set as the PHP defaultFormatter.
   "laravel-pint.enable": true,
-
-  // Prefer repo-local Pint. Pint is typically available at vendor/bin/pint in Laravel apps.
   "laravel-pint.executablePath": "vendor/bin/pint",
-
-  // Optional: enable only if using a non-root pint.json location (otherwise omit).
-  // "laravel-pint.configPath": "pint.json",
 
   // ==========================================================
   // 12) Blade Formatter (shufo.vscode-blade-formatter)
   // ==========================================================
   "bladeFormatter.format.enabled": true,
   "bladeFormatter.format.indentSize": 4,
-  "bladeFormatter.format.wrapLineLength": 120,
-  "bladeFormatter.format.wrapAttributes": "auto",
+
+  // Prevent Blade formatter from re-wrapping short/inline markup (keeps your inline <li> style)
+  "bladeFormatter.format.wrapLineLength": 9999,
+
+  // Preserve attribute wrapping/layout as-authored (prevents churn)
+  "bladeFormatter.format.wrapAttributes": "preserve",
+
   "bladeFormatter.format.endWithNewline": true,
   "bladeFormatter.format.phpVersion": "8.2",
-  "bladeFormatter.format.sortTailwindcssClasses": true,
+
+  // Preserve Tailwind class order you typed
+  "bladeFormatter.format.sortTailwindcssClasses": false,
 
   // ==========================================================
   // 13) Per-language formatter routing (critical)
@@ -266,7 +268,7 @@
     },
   },
 
-  // JSON/JSONC: Prettier (not VS Code JSON formatter)
+  // JSON/JSONC: Prettier
   "[json]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -286,7 +288,7 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
   },
 
-  // Blade: Blade Formatter (only)
+  // Blade: Blade Formatter only
   "[blade]": {
     "editor.tabSize": 4,
     "editor.formatOnSave": true,
@@ -294,16 +296,12 @@
     "editor.codeActionsOnSave": {},
   },
 
-  // PHP: Pint (formats on save because global formatOnSave=true + defaultFormatter=Pint)
-
-  "editor.codeActionsOnSaveTimeout": 8000, // give Pint time
-
+  // PHP: Pint formats on save (as the PHP default formatter)
   "[php]": {
-    "editor.formatOnSave": false, // no formatter path
-    "editor.codeActionsOnSave": {
-      "source.fixAll.laravel-pint": "always", // Pint only
-    },
-    "editor.defaultFormatter": "DEVSENSE.phptools-vscode",
+    "editor.tabSize": 4,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "open-southeners.laravel-pint",
+    "editor.codeActionsOnSave": {},
   },
 
   // HTML/CSS/SCSS: Prettier
@@ -374,10 +372,17 @@
   "dotenv.enableAutocloaking": false,
   "cSpell.userWords": [
     "artefacts",
+    "endforeach",
+    "endsection",
     "Laravel",
+    "localised",
     "phar",
     "phpunit",
     "rabbies",
     "Statamic",
   ],
+
+  // 19 intelephense
+  //"intelephense.files.exclude": ["**/app/helpers.php"],
+  "LaravelExtraIntellisense.disableErrorAlert": true,
 }

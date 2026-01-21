@@ -1,0 +1,14 @@
+// config for xdebug within .vscode/launch.json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Listen for Xdebug (Herd PHP 8.3)",
+            "type": "php",
+            "request": "launch",
+            "port": 9003,
+            "log": false,
+            "skipFiles": ["<internal>", "*/vendor/*"]
+        }
+    ]
+}

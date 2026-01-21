@@ -36,8 +36,7 @@
                       "^dev\\.warp\\.Warp-Stable$",
                       "^com\\.github\\.wez\\.wezterm$",
                       "^org\\.alacritty$",
-                      "^net\\.kovidgoyal\\.kitty$",
-                      "^com\\.microsoft\\.VSCode"
+                      "^net\\.kovidgoyal\\.kitty$"
                     ]
                   }
                 ],

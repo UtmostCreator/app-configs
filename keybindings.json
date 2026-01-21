@@ -452,7 +452,6 @@
     "command": "cursorWordRightSelect",
     "when": "editorTextFocus && !terminalFocus"
   },
-
   /* Word delete (Windows style) */
   {
     "key": "ctrl+backspace",

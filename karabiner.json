@@ -1,4 +1,3 @@
-// /Users/USERNAME/.config/karabiner/karabiner.json
 {
   "global": {
     "check_for_updates_on_startup": true,
@@ -79,6 +78,63 @@
               }
             ]
           },
+
+{
+  "description": "Browsers: Ctrl+Shift+N -> New Incognito / Private Window",
+  "manipulators": [
+    {
+      "type": "basic",
+      "conditions": [
+        {
+          "type": "frontmost_application_if",
+          "bundle_identifiers": [
+            "^com\\.google\\.Chrome$",
+            "^com\\.brave\\.Browser$",
+            "^com\\.microsoft\\.Edge$"
+          ]
+        }
+      ],
+      "from": {
+        "key_code": "n",
+        "modifiers": {
+          "mandatory": ["control", "shift"],
+          "optional": ["any"]
+        }
+      },
+      "to": [
+        {
+          "key_code": "n",
+          "modifiers": ["command", "shift"]
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "conditions": [
+        {
+          "type": "frontmost_application_if",
+          "bundle_identifiers": [
+            "^org\\.mozilla\\.firefox$",
+            "^com\\.apple\\.Safari$"
+          ]
+        }
+      ],
+      "from": {
+        "key_code": "n",
+        "modifiers": {
+          "mandatory": ["control", "shift"],
+          "optional": ["any"]
+        }
+      },
+      "to": [
+        {
+          "key_code": "n",
+          "modifiers": ["command", "shift"]
+        }
+      ]
+    }
+  ]
+},
           {
             "description": "Browsers (Chromium): Windows parity — Downloads/History/Clear data/Zoom (robust zoom-out)",
             "manipulators": [
@@ -663,6 +719,41 @@
             ]
           },
           {
+            "description": "Laptop Fn helpers: Fn+Backspace=deleteForward, Fn+I=Insert",
+            "manipulators": [
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "mandatory": ["fn"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_forward"
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "i",
+                  "modifiers": {
+                    "mandatory": ["fn"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "insert"
+                  }
+                ]
+              }
+            ]
+          },
+          {
             "description": "Alt+Tab -> Cmd+Tab (macOS app switcher)",
             "manipulators": [
               {
@@ -1043,6 +1134,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1074,6 +1166,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1241,6 +1334,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1272,6 +1366,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1303,6 +1398,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1334,6 +1430,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1365,6 +1462,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1396,6 +1494,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1427,6 +1526,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1458,6 +1558,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1489,6 +1590,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1520,6 +1622,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1551,6 +1654,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1582,6 +1686,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1613,6 +1718,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1644,6 +1750,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1675,6 +1782,7 @@
                     "type": "frontmost_application_unless",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$",
                       "^com\\.apple\\.Terminal$",
                       "^com\\.googlecode\\.iterm2$",
@@ -1910,6 +2018,7 @@
                     "type": "frontmost_application_if",
                     "bundle_identifiers": [
                       "^com\\.microsoft\\.VSCode$",
+                      "^com\\.jetbrains\\..*$",
                       "^com\\.microsoft\\.VSCodeInsiders$"
                     ]
                   }

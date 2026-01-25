@@ -1,4 +1,18 @@
 {
+
+  "search.exclude": {
+    "**/.history": true,
+    "**/.git": true,
+    "**/node_modules": true,
+    "**/vendor": true,
+    "**/storage": true,
+    "**/bootstrap/cache": true,
+    "**/public/build": true
+  },
+
+  "editor.wordWrap": "on",
+  "editor.wordWrapColumn": 120,
+
   // =========================================================
   // GLOBAL: stable formatting strategy
   // =========================================================
@@ -169,8 +183,10 @@
   },
   "[yaml]": {
     "editor.tabSize": 2,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.formatOnSave": false
   },
+  "yaml.format.singleQuote": true,
   "[markdown]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
@@ -185,17 +201,11 @@
   // =========================================================
   "tailwindCSS.includeLanguages": {
     "blade": "html",
-    "vue": "html"
+    "vue": "html",
+    "php": "html"
   },
   "editor.tokenColorCustomizations": {
-    "textMateRules": [
-      {
-        "scope": "keyword.other.dotenv",
-        "settings": {
-          "foreground": "#FF000000"
-        }
-      }
-    ]
+    "textMateRules": []
   },
   "cSpell.userWords": [
     "alpinejs",
@@ -400,4 +410,70 @@
   "editor.fontSize": 16,
   "terminal.integrated.fontSize": 16,
   "debug.console.fontSize": 16,
+  "dotenv.enableAutocloaking": false,
+  "search.searchView.keywordSuggestions": true,
+  "github.copilot.chat.scopeSelection": true,
+  "chat.checkpoints.showFileChanges": true,
+  "github.copilot.chat.codesearch.enabled": true,
+  "chat.editor.wordWrap": "on",
+  "chat.useNestedAgentsMdFiles": true,
+  "chat.commandCenter.enabled": true,
+  "github.copilot.chat.useProjectTemplates": true,
+  "chat.detectParticipant.enabled": true,
+  "chat.checkpoints.enabled": true,
+  "editor.inlineSuggest.edits.renderSideBySide": "auto",
+  "editor.inlineSuggest.edits.allowCodeShifting": "always",
+  "workbench.settings.showAISearchToggle": true,
+  "github.copilot.enable": {
+    "*": true,
+    "markdown": false,
+    "plaintext": false,
+    "scminput": false
+  },
+  // =========================================================
+  // Performance / stability
+  // =========================================================
+  "telemetry.telemetryLevel": "off",
+
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/vendor/**": true,
+    "**/storage/**": true,
+    "**/bootstrap/cache/**": true
+  },
+
+  // =========================================================
+  // Linting on save (explicit = avoids random slowdowns)
+  // =========================================================
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // =========================================================
+  // PHP IntelliSense: Intelephense ONLY
+  // =========================================================
+  "php.suggest.basic": false,
+
+  "intelephense.telemetry.enabled": false,
+  "intelephense.format.enable": false,
+  "intelephense.files.maxSize": 5000000,
+
+  // =========================================================
+  // Laravel Extra IntelliSense
+  // =========================================================
+  "LaravelExtraIntellisense.basePath": "./",
+  "LaravelExtraIntellisense.skipRunningComposerInstallOnProjectOpen": true,
+
+  // =========================================================
+  // Editor UX: navigation + readability
+  // =========================================================
+  "editor.linkedEditing": true,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+
+  // This keeps Ctrl/Cmd+Click reserved for Go To Definition
+  // (and uses Alt/Option+Click for multi-cursor)
+  "editor.multiCursorModifier": "alt"
 }

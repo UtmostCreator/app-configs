@@ -1,6 +1,21 @@
 # app-configs
 all app configs for macos
 
+## CI quality gates
+
+
+### Command descriptions
+
+- **composer pint**  
+  Runs Laravel Pint, the PHP code-style fixer. It scans your PHP files and applies the configured coding standards automatically.
+- **composer phpstan**  
+  Runs PHPStan (with Larastan if installed). It performs static analysis on your PHP codebase to detect type issues, undefined variables, incorrect method calls, and other structural problems.
+- **composer test**  
+  Executes your project’s test suite, typically using PHPUnit or Pest, depending on the project configuration.
+- **npm run lint**  
+  Runs the JavaScript/TypeScript linter (commonly ESLint) to detect code-quality and style issues.
+- **npm run build**  
+  Builds the frontend assets for production, usually invoking tools like Vite, Webpack, or Rollup to compile, bundle, and optimize the output.
 
 ## Repository configuration files
 

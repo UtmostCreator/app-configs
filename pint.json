@@ -1,5 +1,6 @@
 {
     "preset": "psr12",
+
     "rules": {
         "no_unused_imports": true,
 
@@ -24,6 +25,64 @@
         "trailing_comma_in_multiline": {
             "after_heredoc": true,
             "elements": ["arguments", "arrays", "match", "parameters"]
+        },
+
+        "combine_consecutive_issets": true,
+        "combine_consecutive_unsets": true,
+
+        "declare_parentheses": true,
+        "single_trait_insert_per_statement": true,
+
+        "ordered_class_elements": {
+            "order": [
+                "use_trait",
+                "case",
+
+                "constant_public",
+                "constant_protected",
+                "constant_private",
+                "constant",
+
+                "property_public",
+                "property_public_static",
+                "property_public_readonly",
+
+                "property_protected",
+                "property_protected_static",
+                "property_protected_readonly",
+
+                "property_private",
+                "property_private_static",
+                "property_private_readonly",
+
+                "property",
+                "property_static",
+
+                "construct",
+                "destruct",
+                "magic",
+                "phpunit",
+
+                "method_public_abstract_static",
+                "method_public_static",
+                "method_public_abstract",
+                "method_public",
+
+                "method_protected_abstract_static",
+                "method_protected_static",
+                "method_protected_abstract",
+                "method_protected",
+
+                "method_private_abstract_static",
+                "method_private_static",
+                "method_private_abstract",
+                "method_private",
+
+                "method_abstract",
+                "method_static",
+                "method"
+            ],
+            "sort_algorithm": "alpha"
         }
     },
 
@@ -35,6 +94,7 @@
         "public/build"
     ],
 
-    "notPath": ["public/hot"],
-    "notName": ["*.blade.php"]
+    "notPath": [
+        "public/hot"
+    ]
 }

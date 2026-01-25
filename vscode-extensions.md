@@ -5,7 +5,6 @@
 ```bash
 amiralizadeh9480.laravel-extra-intellisense
 anan.jetbrains-darcula-theme
-bmewburn.vscode-intelephense-client
 bradlc.vscode-tailwindcss
 christian-kohler.npm-intellisense
 christian-kohler.path-intellisense
@@ -25,7 +24,6 @@ gruntfuggly.todo-tree
 hbenl.vscode-test-explorer
 humao.rest-client
 ms-azuretools.vscode-containers
-ms-azuretools.vscode-docker
 ms-vscode-remote.remote-containers
 ms-vscode.test-adapter-converter
 mtxr.sqltools
@@ -50,7 +48,6 @@ xyz.local-history
 ```bash
 code --install-extension amiralizadeh9480.laravel-extra-intellisense
 code --install-extension anan.jetbrains-darcula-theme
-code --install-extension bmewburn.vscode-intelephense-client
 code --install-extension bradlc.vscode-tailwindcss
 code --install-extension christian-kohler.npm-intellisense
 code --install-extension christian-kohler.path-intellisense
@@ -70,7 +67,6 @@ code --install-extension gruntfuggly.todo-tree
 code --install-extension hbenl.vscode-test-explorer
 code --install-extension humao.rest-client
 code --install-extension ms-azuretools.vscode-containers
-code --install-extension ms-azuretools.vscode-docker
 code --install-extension ms-vscode-remote.remote-containers
 code --install-extension ms-vscode.test-adapter-converter
 code --install-extension mtxr.sqltools

@@ -3,55 +3,59 @@
 ## list
 
 ```bash
-- anan.jetbrains-darcula-theme
-- bradlc.vscode-tailwindcss
-- christian-kohler.npm-intellisense
-- christian-kohler.path-intellisense
-- cjhowe7.laravel-blade
-- dbaeumer.vscode-eslint
-- devsense.phptools-vscode
-- dotenv.dotenv-vscode
-- eamodio.gitlens
-- editorconfig.editorconfig
-- esbenp.prettier-vscode
-- github.copilot
-- github.copilot-chat
-- github.vscode-github-actions
-- github.vscode-pull-request-github
-- gruntfuggly.todo-tree
-- hbenl.vscode-test-explorer
-- humao.rest-client
-- mehedidracula.php-namespace-resolver
-- ms-azuretools.vscode-containers
-- ms-azuretools.vscode-docker
-- ms-vscode-remote.remote-containers
-- ms-vscode.test-adapter-converter
-- mtxr.sqltools
-- mtxr.sqltools-driver-mysql
-- neilbrayfield.php-docblocker
-- open-southeners.laravel-pint
-- pkief.material-icon-theme
-- recca0120.vscode-phpunit
-- redhat.vscode-yaml
-- ryannaddy.laravel-artisan
-- shufo.vscode-blade-formatter
-- streetsidesoftware.code-spell-checker
-- stylelint.vscode-stylelint
-- usernamehw.errorlens
-- vue.volar
-- xdebug.php-debug
-- xyz.local-history
-
+amiralizadeh9480.laravel-extra-intellisense
+anan.jetbrains-darcula-theme
+bmewburn.vscode-intelephense-client
+bradlc.vscode-tailwindcss
+christian-kohler.npm-intellisense
+christian-kohler.path-intellisense
+cjhowe7.laravel-blade
+codingyu.laravel-goto-view
+dbaeumer.vscode-eslint
+devsense.phptools-vscode
+dotenv.dotenv-vscode
+eamodio.gitlens
+editorconfig.editorconfig
+esbenp.prettier-vscode
+github.copilot
+github.copilot-chat
+github.vscode-github-actions
+github.vscode-pull-request-github
+gruntfuggly.todo-tree
+hbenl.vscode-test-explorer
+humao.rest-client
+ms-azuretools.vscode-containers
+ms-azuretools.vscode-docker
+ms-vscode-remote.remote-containers
+ms-vscode.test-adapter-converter
+mtxr.sqltools
+mtxr.sqltools-driver-mysql
+neilbrayfield.php-docblocker
+open-southeners.laravel-pint
+pkief.material-icon-theme
+recca0120.vscode-phpunit
+redhat.vscode-yaml
+ryannaddy.laravel-artisan
+shufo.vscode-blade-formatter
+streetsidesoftware.code-spell-checker
+stylelint.vscode-stylelint
+usernamehw.errorlens
+vue.volar
+xdebug.php-debug
+xyz.local-history
 ```
 
 ## to install them use this:
 
 ```bash
+code --install-extension amiralizadeh9480.laravel-extra-intellisense
 code --install-extension anan.jetbrains-darcula-theme
+code --install-extension bmewburn.vscode-intelephense-client
 code --install-extension bradlc.vscode-tailwindcss
 code --install-extension christian-kohler.npm-intellisense
 code --install-extension christian-kohler.path-intellisense
 code --install-extension cjhowe7.laravel-blade
+code --install-extension codingyu.laravel-goto-view
 code --install-extension dbaeumer.vscode-eslint
 code --install-extension devsense.phptools-vscode
 code --install-extension dotenv.dotenv-vscode
@@ -65,7 +69,6 @@ code --install-extension github.vscode-pull-request-github
 code --install-extension gruntfuggly.todo-tree
 code --install-extension hbenl.vscode-test-explorer
 code --install-extension humao.rest-client
-code --install-extension mehedidracula.php-namespace-resolver
 code --install-extension ms-azuretools.vscode-containers
 code --install-extension ms-azuretools.vscode-docker
 code --install-extension ms-vscode-remote.remote-containers

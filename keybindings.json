@@ -150,16 +150,7 @@
   },
 
   /* Tabs (JetBrains: Ctrl+Tab / Ctrl+Shift+Tab) */
-  {
-    "key": "ctrl+tab",
-    "command": "workbench.action.openNextRecentlyUsedEditorInGroup",
-    "when": "!terminalFocus"
-  },
-  {
-    "key": "ctrl+shift+tab",
-    "command": "workbench.action.openPreviousRecentlyUsedEditorInGroup",
-    "when": "!terminalFocus"
-  },
+
 
   /* JetBrains: Ctrl+F4 close editor, Ctrl+Shift+F4 close all */
   {
@@ -440,16 +431,6 @@
   {
     "key": "ctrl+right",
     "command": "cursorWordRight",
-    "when": "editorTextFocus && !terminalFocus"
-  },
-  {
-    "key": "ctrl+shift+left",
-    "command": "cursorWordLeftSelect",
-    "when": "editorTextFocus && !terminalFocus"
-  },
-  {
-    "key": "ctrl+shift+right",
-    "command": "cursorWordRightSelect",
     "when": "editorTextFocus && !terminalFocus"
   },
   /* Word delete (Windows style) */

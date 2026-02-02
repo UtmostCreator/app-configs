@@ -387,16 +387,16 @@
   },
 
   /* Insert line after/before */
-  {
-    "key": "ctrl+enter",
-    "command": "editor.action.insertLineAfter",
-    "when": "editorTextFocus && !terminalFocus && !editorReadonly"
-  },
-  {
-    "key": "ctrl+alt+enter",
-    "command": "editor.action.insertLineBefore",
-    "when": "editorTextFocus && !terminalFocus && !editorReadonly"
-  },
+  // {
+  //   "key": "ctrl+enter",
+  //   "command": "editor.action.insertLineAfter",
+  //   "when": "editorTextFocus && !terminalFocus && !editorReadonly"
+  // },
+  // {
+  //   "key": "ctrl+alt+enter",
+  //   "command": "editor.action.insertLineBefore",
+  //   "when": "editorTextFocus && !terminalFocus && !editorReadonly"
+  // },
 
   /* Move line up/down */
   {
@@ -831,5 +831,60 @@
   {
     "key": "alt+right",
     "command": "workbench.action.navigateForward"
-  }
+  },
+  {
+    "key": "ctrl+shift+c",
+    "command": "workbench.action.files.copyPathOfActiveFile",
+    "when": "!terminalFocus && editorFocus"
+  },
+  {
+    "key": "ctrl+p",
+    "command": "editor.action.triggerParameterHints",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "f2",
+    "command": "editor.action.marker.nextInFiles",
+    "when": "!terminalFocus"
+  },
+  {
+    "key": "shift+f2",
+    "command": "editor.action.marker.prevInFiles",
+    "when": "!terminalFocus"
+  },
+  {
+  "key": "alt+up",
+  "command": "-editor.action.moveLinesUpAction",
+  "when": "editorTextFocus && !terminalFocus"
+},
+{
+  "key": "alt+up",
+  "command": "breadcrumbs.focusAndSelect",
+  "when": "editorTextFocus && !terminalFocus"
+},
+{
+  "key": "alt+down",
+  "command": "breadcrumbs.focusAndSelect",
+  "when": "editorTextFocus && !terminalFocus"
+},
+{
+    "key": "alt+shift+down",
+    "command": "workbench.action.editor.nextChange",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "alt+shift+up",
+    "command": "workbench.action.editor.previousChange",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+enter",
+    "command": "git.stageSelectedRanges",
+    "when": "scmChangeSelected && scmResourceState == 'modified'"
+  },
+  {
+    "key": "ctrl+alt+enter",
+    "command": "git.unstageSelectedRanges",
+    "when": "scmChangeSelected"
+  },
 ]

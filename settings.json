@@ -1,5 +1,4 @@
 {
-
   "search.exclude": {
     "**/.history": true,
     "**/.git": true,
@@ -9,10 +8,8 @@
     "**/bootstrap/cache": true,
     "**/public/build": true
   },
-
   "editor.wordWrap": "on",
   "editor.wordWrapColumn": 120,
-
   // =========================================================
   // GLOBAL: stable formatting strategy
   // =========================================================
@@ -20,27 +17,22 @@
   "editor.formatOnSaveMode": "file",
   "editor.formatOnPaste": false,
   "editor.formatOnType": false,
-  "editor.formatOnSaveTimeout": 7500,
-
   // Prettier is the global formatter for "web" languages.
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-
   // Avoid accidental double-format by built-in formatters.
-  "javascript.format.enable": false,
+"javascript.format.enable": false,
   "typescript.format.enable": false,
-  "json.format.enable": false,
-
   // Team-safe: only format when repo config exists.
-  "prettier.requireConfig": true,
-  "prettier.useEditorConfig": true,
+  "prettier.requireConfig": false,
 
+  "prettier.useEditorConfig": false,
+  "prettier.configPath": "",
   // =========================================================
   // FILES: reduce diff noise (safe defaults)
   // =========================================================
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
   "files.eol": "\n",
-
   // =========================================================
   // Language associations (Laravel / Statamic)
   // =========================================================
@@ -53,12 +45,10 @@
     ".env*": "dotenv",
     "*.stub": "php"
   },
-
   "emmet.includeLanguages": {
     "blade": "html",
-    "vue": "html",
+    "vue": "html"
   },
-
   // =========================================================
   // PHP: Pint ONLY (DevSense = analysis only)
   // =========================================================
@@ -66,29 +56,24 @@
     "editor.tabSize": 4,
     "editor.defaultFormatter": "open-southeners.laravel-pint",
     "editor.formatOnSave": false,
-    "editor.codeActionsOnSave": {},
+    "editor.codeActionsOnSave": {}
   },
-
   // Prevent duplicate diagnostics (VS Code PHP validator vs DevSense).
   "php.validate.enable": false,
-
   // Ensure Pint uses the project-local binary (not global).
   "laravel-pint.enable": true,
   "laravel-pint.executablePath": "./vendor/bin/pint",
-
   // (Optional) If you use Laravel Extra IntelliSense and want the right PHP runtime:
   // "laravelExtraIntellisense.phpCommand": "${env:HOME}/.config/herd/bin/php",
-
   // =========================================================
   // Blade: Blade Formatter ONLY
   // =========================================================
   "[blade]": {
     "editor.tabSize": 4,
     "editor.defaultFormatter": "shufo.vscode-blade-formatter",
-    "editor.formatOnSave": true,
-    "editor.codeActionsOnSave": {},
+    "editor.formatOnSave": false,
+    "editor.codeActionsOnSave": {}
   },
-
   "bladeFormatter.format.enabled": true,
   "bladeFormatter.format.indentSize": 4,
   "bladeFormatter.format.wrapLineLength": 9999,
@@ -96,7 +81,6 @@
   "bladeFormatter.format.endWithNewline": true,
   "bladeFormatter.format.phpVersion": "8.3",
   "bladeFormatter.format.sortTailwindcssClasses": false,
-
   // =========================================================
   // JS / TS / Vue: Prettier formats, ESLint fixes
   // =========================================================
@@ -107,79 +91,80 @@
     "typescript",
     "javascriptreact",
     "typescriptreact",
-    "vue",
+    "vue"
   ],
-
   "[javascript]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": "explicit",
-      "source.organizeImports": "explicit",
-    },
+      "source.organizeImports": "explicit"
+    }
   },
   "[typescript]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": "explicit",
-      "source.organizeImports": "explicit",
-    },
+      "source.organizeImports": "explicit"
+    }
   },
   "[javascriptreact]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": "explicit",
-      "source.organizeImports": "explicit",
-    },
+      "source.organizeImports": "explicit"
+    }
   },
   "[typescriptreact]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
       "source.fixAll.eslint": "explicit",
-      "source.organizeImports": "explicit",
-    },
+      "source.organizeImports": "explicit"
+    }
   },
   "[vue]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
-      "source.fixAll.eslint": "explicit",
-    },
+      "source.fixAll.eslint": "explicit"
+    }
   },
-
   // =========================================================
   // CSS / SCSS: Prettier formats, Stylelint fixes
   // =========================================================
-  "stylelint.validate": ["css", "scss", "vue"],
-
+  "stylelint.validate": [
+    "css",
+    "scss",
+    "vue"
+  ],
   "[css]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
-      "source.fixAll.stylelint": "explicit",
-    },
+      "source.fixAll.stylelint": "explicit"
+    }
   },
   "[scss]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.codeActionsOnSave": {
-      "source.fixAll.stylelint": "explicit",
-    },
+      "source.fixAll.stylelint": "explicit"
+    }
   },
-
   // =========================================================
   // JSON / YAML / Markdown / HTML: Prettier only
   // =========================================================
+  "json.format.enable": true,
   "[json]": {
-    "editor.tabSize": 2,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
   },
   "[jsonc]": {
-    "editor.tabSize": 2,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
   },
   "[yaml]": {
     "editor.tabSize": 2,
@@ -187,15 +172,20 @@
     "editor.formatOnSave": false
   },
   "yaml.format.singleQuote": true,
-  "[markdown]": {
-    "editor.tabSize": 2,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/Konafets/statamic-blueprint-validation/main/statamic.blueprint.schema.json": [
+      "resources/blueprints/**/*.yaml",
+      "content/blueprints/**/*.yaml"
+    ]
   },
   "[html]": {
-    "editor.tabSize": 2,
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 4,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-
+  "[markdown]": {
+    "editor.tabSize": 4,
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   // =========================================================
   // Tailwind (Blade/Vue)
   // =========================================================
@@ -207,11 +197,22 @@
   "editor.tokenColorCustomizations": {
     "textMateRules": []
   },
+  "cSpell.enabled": false,
+  "cSpell.ignorePaths": [
+    "**/vendor/**",
+    "**/node_modules/**",
+    "**/storage/**",
+    "**/public/**",
+    "**/.git/**"
+  ],
   "cSpell.userWords": [
     "alpinejs",
     "api",
+    "Appents",
     "artisan",
     "auth",
+    "Autocloaking",
+    "autofetch",
     "autoload",
     "axios",
     "backend",
@@ -225,6 +226,7 @@
     "channel",
     "channels",
     "cli",
+    "codesearch",
     "commandbus",
     "composable",
     "composables",
@@ -232,6 +234,7 @@
     "config",
     "controller",
     "controllers",
+    "crawlable",
     "csrf",
     "cursorpagination",
     "datatable",
@@ -244,13 +247,16 @@
     "dotenv",
     "dto",
     "eloquent",
+    "embeddedhtml",
     "emits",
     "endforeach",
+    "endphp",
     "endpoint",
     "endpoints",
     "endsection",
     "enum",
     "enums",
+    "esbenp",
     "event",
     "events",
     "facade",
@@ -262,8 +268,10 @@
     "forge",
     "fortify",
     "frontend",
+    "frontmost",
     "gate",
     "gates",
+    "googlecode",
     "guard",
     "guards",
     "hasmany",
@@ -276,18 +284,24 @@
     "hydration",
     "inertia",
     "inject",
+    "intelephense",
+    "Intelephense",
     "invokable",
+    "iterm",
     "jetstream",
     "job",
     "jobs",
     "jsx",
     "keepalive",
     "keyed",
+    "kovidgoyal",
     "lang",
     "laravel",
     "listener",
     "listeners",
     "livewire",
+    "localisation",
+    "localised",
     "localstorage",
     "mailables",
     "middleware",
@@ -301,6 +315,8 @@
     "morphs",
     "morphto",
     "morphtoMany",
+    "multicurrency",
+    "Multicurrency",
     "multitenancy",
     "namespace",
     "namespaces",
@@ -310,11 +326,13 @@
     "nova",
     "nuxt",
     "octane",
+    "osascript",
     "pagination",
     "passport",
     "pest",
     "phpunit",
     "pinia",
+    "pjpg",
     "plugin",
     "plugins",
     "policies",
@@ -357,17 +375,22 @@
     "serviceprovider",
     "setup",
     "shallowref",
+    "shufo",
     "singleton",
     "slotprops",
     "slots",
     "softdeletes",
+    "southeners",
     "spa",
+    "spacebar",
     "spatie",
+    "sqltools",
     "sse",
     "Statamic",
     "storefront",
     "suspense",
     "swoole",
+    "systemevents",
     "teleport",
     "telescope",
     "template",
@@ -382,6 +405,7 @@
     "typescript",
     "unittest",
     "unittests",
+    "Unmute",
     "unref",
     "valet",
     "validator",
@@ -405,6 +429,7 @@
     "watch",
     "watcheffect",
     "websockets",
+    "wezterm",
     "xss"
   ],
   "editor.fontSize": 16,
@@ -434,7 +459,6 @@
   // Performance / stability
   // =========================================================
   "telemetry.telemetryLevel": "off",
-
   "files.watcherExclude": {
     "**/.git/objects/**": true,
     "**/.git/subtree-cache/**": true,
@@ -443,37 +467,46 @@
     "**/storage/**": true,
     "**/bootstrap/cache/**": true
   },
-
   // =========================================================
   // Linting on save (explicit = avoids random slowdowns)
   // =========================================================
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
-
   // =========================================================
   // PHP IntelliSense: Intelephense ONLY
   // =========================================================
   "php.suggest.basic": false,
-
   "intelephense.telemetry.enabled": false,
   "intelephense.format.enable": false,
   "intelephense.files.maxSize": 5000000,
-
   // =========================================================
   // Laravel Extra IntelliSense
   // =========================================================
   "LaravelExtraIntellisense.basePath": "./",
   "LaravelExtraIntellisense.skipRunningComposerInstallOnProjectOpen": true,
-
   // =========================================================
   // Editor UX: navigation + readability
   // =========================================================
   "editor.linkedEditing": true,
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": true,
-
   // This keeps Ctrl/Cmd+Click reserved for Go To Definition
   // (and uses Alt/Option+Click for multi-cursor)
-  "editor.multiCursorModifier": "alt"
+  "editor.multiCursorModifier": "alt",
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "editor.smoothScrolling": true,
+  "sqltools.autoConnectTo": "",
+  "editor.inlayHints.enabled": "off",
+  "workbench.iconTheme": "material-icon-theme",
+  "gitlens.ai.model": "vscode",
+  "gitlens.ai.vscode.model": "copilot:gpt-5.1",
+  "git.autofetch": true,
+  "intelephense.files.exclude": [
+    "**/.git/**",
+    "**/.svn/**",
+    "**/.hg/**",
+    "**/node_modules/**"
+  ],
+  "window.title": "${dirty}${activeEditorMedium}${separator}${rootName}"
 }

@@ -1,97 +1,110 @@
-// workspace settings - located in your .vscode/ folder
 {
-    "php.version": "8.3",
-    "sqltools.connections": [
-        {
-            "mysqlOptions": {
-                "authProtocol": "default",
-                "enableSsl": "Disabled"
-            },
-            "ssh": "Disabled",
-            "previewLimit": 50,
-            "server": "localhost",
-            "port": 3306,
-            "driver": "MariaDB",
-            "name": "headless_cms",
-            "database": "statamic_newest",
-            "username": "root",
-            "password": ""
-        }
-    ],
-
-    "prettier.requireConfig": true,
-    "editor.formatOnSave": true,
-
-    "laravel-pint.enable": true,
-    "laravel-pint.executablePath": "./vendor/bin/pint",
-
-    "LaravelExtraIntellisense.basePath": "./",
-    "LaravelExtraIntellisense.skipRunningComposerInstallOnProjectOpen": true,
-
-    "[json]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-    "[jsonc]": {
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
-    },
-
-    "files.associations": {
-        "*.blade.php": "blade",
-        "*.antlers.html": "html",
-        "*.antlers.php": "php",
-        "*.env": "dotenv",
-        ".env*": "dotenv",
-        "*.stub": "php"
-    },
-    "emmet.includeLanguages": {
-        "blade": "html",
-        "vue": "html"
-    },
-
-    "yaml.schemas": {
-        "https://raw.githubusercontent.com/Konafets/statamic-blueprint-validation/main/statamic.blueprint.schema.json": [
-            "resources/blueprints/**/*.yaml",
-            "content/blueprints/**/*.yaml"
-        ]
-    },
-
-    "tailwindCSS.includeLanguages": {
-        "blade": "html",
-        "vue": "html",
-        "php": "html"
-    },
-
-    "workbench.editor.highlightModifiedTabs": true,
-
-    "workbench.editor.decorations.badges": true,
-    "workbench.editor.decorations.colors": true,
-    "explorer.decorations.badges": true,
-    "explorer.decorations.colors": true,
-
-    "git.decorations.enabled": true,
-    "scm.diffDecorations": "all",
-
-    "files.autoSave": "off",
-
-    "problems.decorations.enabled": false,
-
-    "workbench.colorCustomizations": {
-        "tab.activeBorderTop": "#2F6FFF",
-        "tab.unfocusedActiveBorderTop": "#2F6FFF",
-
-        "tab.activeModifiedBorder": "#0032A0",
-        "tab.inactiveModifiedBorder": "#0032A0",
-        "tab.unfocusedActiveModifiedBorder": "#0032A0",
-        "tab.unfocusedInactiveModifiedBorder": "#0032A0",
-
-        "gitDecoration.untrackedResourceForeground": "#2ECC71",
-        "gitDecoration.addedResourceForeground": "#2ECC71",
-        "gitDecoration.modifiedResourceForeground": "#F5A623",
-        "gitDecoration.deletedResourceForeground": "#E74C3C",
-        "gitDecoration.conflictingResourceForeground": "#FF3B30",
-        "gitDecoration.ignoredResourceForeground": "#7F8C8D",
-
-        "gitDecoration.stageModifiedResourceForeground": "#F5A623AA",
-        "gitDecoration.stageDeletedResourceForeground": "#E74C3CAA"
+  "php.version": "8.3",
+  "sqltools.connections": [
+    {
+      "mysqlOptions": {
+        "authProtocol": "default",
+        "enableSsl": "Disabled"
+      },
+      "ssh": "Disabled",
+      "previewLimit": 50,
+      "server": "localhost",
+      "port": 3306,
+      "driver": "MariaDB",
+      "name": "headless_cms",
+      "database": "statamic_newest",
+      "username": "root",
+      "password": ""
     }
+  ],
+
+  "prettier.requireConfig": true,
+  "editor.formatOnSave": false,
+
+  "laravel-pint.enable": true,
+  "laravel-pint.executablePath": "./vendor/bin/pint",
+
+  "LaravelExtraIntellisense.basePath": "./",
+  "LaravelExtraIntellisense.skipRunningComposerInstallOnProjectOpen": true,
+
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  "files.associations": {
+    "*.blade.php": "blade",
+    "*.antlers.html": "html",
+    "*.antlers.php": "php",
+    "*.env": "dotenv",
+    ".env*": "dotenv",
+    "*.stub": "php"
+  },
+  "emmet.includeLanguages": {
+    "blade": "html",
+    "vue": "html"
+  },
+
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/Konafets/statamic-blueprint-validation/main/statamic.blueprint.schema.json": [
+      "resources/blueprints/**/*.yaml",
+      "content/blueprints/**/*.yaml"
+    ]
+  },
+
+  "tailwindCSS.includeLanguages": {
+    "blade": "html",
+    "vue": "html",
+    "php": "html"
+  },
+
+  "workbench.editor.highlightModifiedTabs": true,
+
+  "workbench.editor.decorations.badges": true,
+  "workbench.editor.decorations.colors": true,
+  "explorer.decorations.badges": true,
+  "explorer.decorations.colors": true,
+
+  "git.decorations.enabled": true,
+  "scm.diffDecorations": "all",
+
+  "files.autoSave": "off",
+
+  "problems.decorations.enabled": false,
+
+  "workbench.colorCustomizations": {
+    "tab.activeBorderTop": "#2F6FFF",
+    "tab.unfocusedActiveBorderTop": "#2F6FFF",
+
+    "tab.activeModifiedBorder": "#0032A0",
+    "tab.inactiveModifiedBorder": "#0032A0",
+    "tab.unfocusedActiveModifiedBorder": "#0032A0",
+    "tab.unfocusedInactiveModifiedBorder": "#0032A0",
+
+    "gitDecoration.untrackedResourceForeground": "#2ECC71",
+    "gitDecoration.addedResourceForeground": "#2ECC71",
+    "gitDecoration.modifiedResourceForeground": "#F5A623",
+    "gitDecoration.deletedResourceForeground": "#E74C3C",
+    "gitDecoration.conflictingResourceForeground": "#FF3B30",
+    "gitDecoration.ignoredResourceForeground": "#7F8C8D",
+
+    "gitDecoration.stageModifiedResourceForeground": "#F5A623AA",
+    "gitDecoration.stageDeletedResourceForeground": "#E74C3CAA",
+
+    // Quick Open / Quick Input (Ctrl+P)
+    "quickInputList.focusBackground": "#2F6FFF22",
+    "quickInputList.focusForeground": "#FFFFFF",
+    "quickInputList.focusIconForeground": "#2F6FFF",
+
+    // List behavior (also influences Quick Open lists)
+    "list.activeSelectionBackground": "#2F6FFF22",
+    "list.activeSelectionForeground": "#FFFFFF",
+    "list.inactiveSelectionBackground": "#2F6FFF22",
+    "list.inactiveSelectionForeground": "#FFFFFF",
+    "list.focusBackground": "#2F6FFF33",
+    "list.focusForeground": "#FFFFFF",
+    "list.highlightForeground": "#2F6FFF"
+  }
 }

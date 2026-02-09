@@ -1,70 +1,177 @@
-# app-configs
-all app configs for macos
-
-## CI quality gates
 
 
-### Command descriptions
+# app-configs (macOS)
 
-- **composer pint**  
-  Runs Laravel Pint, the PHP code-style fixer. It scans your PHP files and applies the configured coding standards automatically.
-- **composer phpstan**  
-  Runs PHPStan (with Larastan if installed). It performs static analysis on your PHP codebase to detect type issues, undefined variables, incorrect method calls, and other structural problems.
-- **composer test**  
-  Executes your project’s test suite, typically using PHPUnit or Pest, depending on the project configuration.
-- **npm run lint**  
-  Runs the JavaScript/TypeScript linter (commonly ESLint) to detect code-quality and style issues.
-- **npm run build**  
-  Builds the frontend assets for production, usually invoking tools like Vite, Webpack, or Rollup to compile, bundle, and optimize the output.
+Repository of **opinionated development configuration** for macOS, focused on a consistent experience across editors, formatters, PHP tooling, and keyboard muscle-memory (Windows → macOS).
 
-## Repository configuration files
+Opinionated, reusable configuration for a consistent development experience on macOS: editor defaults, formatting/linting, PHP tooling (Herd + Xdebug), VS Code workflow, and Windows-like keyboard ergonomics (Karabiner).
 
-This repository includes a set of editor, formatter, linter, and tooling configuration files to keep development consistent across machines and contributors.
+---
 
-### Core editor & formatting
+## Required folder structure
 
-- [`.editorconfig`](./.editorconfig)  
-  Defines cross-editor defaults (indentation, newline style, charset, trimming, final newline) so different IDEs/editors produce consistent files.
+Place the files in this repository using the following layout (paths are relative to repo root):
 
-- [`.prettierrc.json`](./.prettierrc.json)  
-  Prettier configuration (opinionated code formatting) to ensure consistent formatting for supported file types.
 
-- [`.eslintrc.json`](./.eslintrc.json)  
-  ESLint configuration for JavaScript/TypeScript (rules, environments, parser options, plugins). Used to catch bugs and enforce style beyond formatting.
+how. you would use in your projects this files:
+
+```
+.
+├── pint.json
+├── .gitattributes
+├── .editorconfig
+├── .stylelint.config.js
+├── .stylelintignore
+├── .prettierrc.json
+├── .eslintrc.json
+├── .stylelintrc.json
+└── .vscode
+    ├── settings.json
+    └── launch.json
+```
+
+
+Current repo structure
+```text
+.
+├── .editorconfig
+├── .eslintrc.json
+├── .prettierrc.json
+├── .prettierrc.json
+├── README.md
+├── all_in_one.sh
+├── config
+│   ├── php
+│   │   └── php.ini
+│   └── pint
+│       └── pint.json
+├── docs
+│   ├── karabiner.md
+│   └── vscode-extensions.md
+├── tools
+│   └── karabiner
+│       └── karabiner.json
+└── .vscode
+    ├── keybindings.json
+    ├── launch.json
+    ├── settings.json
+    └── userSettings
+        └── settings.json
+```
+
+## Scope
+
+- **Editor defaults** via `.editorconfig`
+- **JS/TS/Vue formatting** via Prettier + ESLint
+- **PHP code style** via Laravel Pint (custom ruleset)
+- **PHP runtime/dev debugging** via Herd PHP 8.3 + Xdebug
+- **VS Code setup** (workspace + user settings) + extension list
+- **Karabiner-Elements** profile documentation (Windows-like shortcuts)
+
+---
+
+## Repository layout
+
+### Editor / formatting
+
+- [`.editorconfig`](./.editorconfig)
+  Cross-editor defaults (LF, whitespace trimming, final newline, per-language indentation).
+
+- [`.prettierrc.json`](./.prettierrc.json)
+  Prettier configuration (semi, single quotes, 100 print width, LF).
+
+- [`.eslintrc.json`](./.eslintrc.json)
+  ESLint configuration (Vue 3 + TypeScript + Prettier integration).
+
+### PHP
+
+- [`config/pint/pint.json`](./config/pint/pint.json)
+  Laravel Pint ruleset:
+  - PSR-12 baseline
+  - Import ordering (class/function/const), single import per statement
+  - Spacing rules, trailing commas for multiline
+  - Strict class member ordering (sorted + grouped)
+
+- [`config/php/php.ini`](./config/php/php.ini)
+  Herd PHP 8.3 oriented `php.ini` example including:
+  - CA bundle paths for curl/openssl
+  - memory limits and upload sizes
+  - Xdebug settings (port 9003)
+
+  **Note:** This file includes **absolute paths** with `USERNAME`. You must replace `USERNAME` with your macOS username and ensure paths match your Herd installation.
+
+### VS Code
+
+- [`.vscode/settings.json`](./.vscode/settings.json)
+  Repo/workspace settings (project-level). Contains SQLTools example connection and editor/UI preferences.
+
+- [`.vscode/launch.json`](./.vscode/launch.json)
+  Xdebug launch configurations (Herd PHP 8.3, port 9003).
+
+- [`.vscode/keybindings.json`](./.vscode/keybindings.json)
+  Currently empty placeholder (add repo-specific bindings if required).
+
+- [`.vscode/userSettings/settings.json`](./.vscode/userSettings/settings.json)
+  **User-level** VS Code settings template intended to be copied to:
+  `~/Library/Application Support/Code/User/settings.json`
+
+  This file defines:
+  - Stable formatting strategy (Prettier global, Pint for PHP, Blade Formatter for Blade)
+  - Explicit lint fixes on save (to avoid random slowdowns)
+  - Tailwind/Blade/Vue language associations
+  - Performance exclusions (vendor/node_modules/storage/etc.)
+
+### Karabiner
+
+- [`docs/karabiner.md`](./docs/karabiner.md)
+  Human-readable explanation of the Windows → macOS “muscle memory” profile (what each mapping does, plus exclusions for terminals/IDEs).
+
+- [`tools/karabiner/karabiner.json`](./tools/karabiner/karabiner.json)
+  Placeholder location for the actual Karabiner profile JSON (currently empty in this snapshot).
 
 ### Documentation
 
-- [`README.md`](./README.md)  
-  Entry-point documentation for the project: purpose, setup, usage, scripts, conventions, and contribution notes.
+- [`docs/vscode-extensions.md`](./docs/vscode-extensions.md)
+  VS Code extensions list with `code --install-extension ...` commands.
 
-- [`vscode-extensions.md`](./vscode-extensions.md)  
-  Recommended VS Code extensions for this repo (typically to align linting, formatting, testing, and language support across the team).
+### Utilities
 
-### VS Code workspace configuration
+- [`all_in_one.sh`](./all_in_one.sh)
+  Utility script to produce a single `combined_output.txt` containing all repo files (pruning common ignored directories). Useful for audits/reviews.
 
-> These files typically live under `.vscode/` in many repos, but are linked here as they exist in this repository’s root.
+---
 
-- [`settings.json`](./settings.json)  
-  VS Code workspace settings (format-on-save, default formatter, language-specific overrides, path mappings, etc.) to standardize the editor experience.
+## Quick start
 
-- [`keybindings.json`](./keybindings.json)  
-  VS Code keyboard shortcut customizations for productivity and consistent workflows.
+### 1) EditorConfig (recommended)
+Most editors pick this up automatically. If not, enable EditorConfig support in your IDE and keep `.editorconfig` at repo root.
 
-- [`launch.json`](./launch.json)  
-  VS Code debug configurations (how to run/debug the app, attach to processes, environment variables, and debug adapters).
+### 2) VS Code
 
-### System / OS-level tooling
+#### Workspace settings
+Open the repository in VS Code. The workspace settings in `.vscode/settings.json` will apply automatically.
 
-- [`karabiner.json`](./karabiner.json)  
-  Karabiner-Elements configuration (macOS keyboard remapping and complex modifications). Useful for consistent key behavior across environments.
+#### User settings (optional but recommended)
+Copy the template into your user settings file:
 
-### Language/runtime configuration
+1. Open VS Code → Command Palette → **Preferences: Open User Settings (JSON)**
+2. Replace or merge content from:
+   - `./.vscode/userSettings/settings.json`
 
-- [`php.ini`](./php.ini)  
-  PHP runtime configuration (error reporting, memory limits, extensions, timezone, and other INI directives) for local/dev parity.
+**Important:** This template disables some built-in formatters and routes formatting to:
+- Prettier for web languages
+- Pint for PHP
+- Blade Formatter for Blade
 
-### PHP code style tooling
+#### Install extensions
+Use the list in:
+- `./docs/vscode-extensions.md`
 
-- [`pint.json`](./pint.json)  
-  Laravel Pint configuration (PHP code style fixer) to enforce consistent PHP formatting rules.
+Example:
 
+```bash
+code --install-extension esbenp.prettier-vscode
+code --install-extension dbaeumer.vscode-eslint
+code --install-extension open-southeners.laravel-pint
+code --install-extension xdebug.php-debug
+```

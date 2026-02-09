@@ -1,0 +1,2698 @@
+{
+  "profiles": [
+    {
+      "complex_modifications": {
+        "parameters": {
+          "basic.to_delayed_action_delay_milliseconds": 150,
+          "basic.to_if_alone_timeout_milliseconds": 900
+        },
+        "rules": [
+          {
+            "description": "Win+D = Minimize all windows",
+            "manipulators": [
+              {
+                "from": {
+                  "key_code": "d",
+                  "modifiers": {
+                    "mandatory": ["left_gui"]
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "/usr/bin/osascript <<'EOF'\ntell application \"System Events\"\n  repeat with proc in (processes where background only is false)\n    tell proc\n      try\n        set value of attribute \"AXMinimized\" of windows to true\n      end try\n    end tell\n  end repeat\nend tell\nEOF"
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "Ctrl+Shift+V → Cmd+Shift+V: Paste with formatting",
+            "manipulators": [
+              {
+                "from": {
+                  "key_code": "v",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "v",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "???[PATCH][JETBRAINS] Win+Space (Right Cmd+Space) -> Cmd+P (Quick Open)",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": ["^com\\.jetbrains\\..*$"],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "from": {
+                  "key_code": "spacebar",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "p",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[PATCH] Global Ctrl+W / Ctrl+T -> Cmd+W / Cmd+T (exclude VS Code/JetBrains + terminals)",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+W -> Cmd+W",
+                "from": {
+                  "key_code": "w",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "w",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Ctrl+T 2 Cmd+T (typically “New Tab”)",
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty$",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "from": {
+                  "key_code": "t",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "t",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[CORE] Home/End selection parity (Shift/Ctrl+Shift behaviors)",
+            "manipulators": [
+              {
+                "from": {
+                  "key_code": "home",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "up_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "from": {
+                  "key_code": "end",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "down_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Shift + Home = Select to beginning of line",
+                "from": {
+                  "key_code": "home",
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Shift + End = Select to end of line",
+                "from": {
+                  "key_code": "end",
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Home = Move to beginning of line",
+                "from": {
+                  "key_code": "home",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "End = Move to end of line",
+                "from": {
+                  "key_code": "end",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[VS CODE] Enable Ctrl+C & Ctrl+Backspace (Copilot webviews)",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode(\\.helper.*)?$",
+                      "^com\\.microsoft\\.VSCodeInsiders(\\.helper.*)?$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "from": {
+                  "key_code": "c",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "c",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode(\\.helper.*)?$",
+                      "^com\\.microsoft\\.VSCodeInsiders(\\.helper.*)?$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["option"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[CORE] Text navigation — Ctrl+Arrows = macOS Option+Arrows (exclude terminals)",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+Shift+Left Arrow = Select the previous word by moving the caret one word to the left while extending the selection",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["option", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$",
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+Shift+Right Arrow = Select the next word by moving the caret one word to the right while extending the selection",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["option", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$",
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+Left Arrow = Move the caret to the beginning of the previous word",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["option"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+Right Arrow = Move the caret to the beginning of the next word",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["option"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[CORE] Home/End + Fn helpers (Windows laptop parity)",
+            "manipulators": [
+              {
+                "description": "Fn + Left Arrow = Move caret to the beginning of the current line",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["fn"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Fn + Right Arrow = Move caret to the end of the current line",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["fn"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Fn + Shift + Left Arrow = Select text from the cursor to the beginning of the line",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["fn", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Fn + Shift + Right Arrow = Select text from the cursor to the end of the line",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["fn", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Fn + Ctrl + Shift + Left Arrow = Extend selection upward to the beginning of the document (or to the top)",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["fn", "control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "up_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Fn + Ctrl + Shift + Right Arrow = Extend selection downward to the end of the document (or to the bottom)",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["fn", "control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "down_arrow",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Fn + Delete = Forward Delete",
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "mandatory": ["fn"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_forward"
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Fn + I = Insert",
+                "from": {
+                  "key_code": "i",
+                  "modifiers": {
+                    "mandatory": ["fn"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "insert"
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[CORE] Ctrl shortcuts → Cmd shortcuts (exclude VS Code/JetBrains + terminals)",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+A = Select All",
+                "from": {
+                  "key_code": "a",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "a",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+C = Copy",
+                "from": {
+                  "key_code": "c",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "c",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+X = Cut",
+                "from": {
+                  "key_code": "x",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "x",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+V = Paste",
+                "from": {
+                  "key_code": "v",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "v",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl + z = Undo",
+                "from": {
+                  "key_code": "z",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "z",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "from": {
+                  "key_code": "z",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "z",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+Y = Redo",
+                "from": {
+                  "key_code": "y",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "z",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+S = Save",
+                "from": {
+                  "key_code": "s",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "s",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+Shift+S = Save As",
+                "from": {
+                  "key_code": "s",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "s",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+F = Find",
+                "from": {
+                  "key_code": "f",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "f",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+P = Print",
+                "from": {
+                  "key_code": "p",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "p",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+O = Open",
+                "from": {
+                  "key_code": "o",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "o",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+N = New window",
+                "from": {
+                  "key_code": "n",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "n",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+Shift+V = Paste without formatting",
+                "from": {
+                  "key_code": "v",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "v",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[CORE] Ctrl+Backspace/Delete — Delete word (exclude VS Code/JetBrains + terminals)",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+Backspace = Delete word backward",
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["option"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$",
+                      "^com\\.jetbrains\\..*$",
+                      "^com\\.apple\\.Terminal$",
+                      "^com\\.googlecode\\.iterm2$",
+                      "^dev\\.warp\\.Warp-Stable$",
+                      "^com\\.github\\.wez\\.wezterm$",
+                      "^org\\.alacritty",
+                      "^net\\.kovidgoyal\\.kitty$"
+                    ],
+                    "type": "frontmost_application_unless"
+                  }
+                ],
+                "description": "Ctrl+Delete Forward = Delete word forward",
+                "from": {
+                  "key_code": "delete_forward",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_forward",
+                    "modifiers": ["option"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[BROWSERS] Parity pack — tabs, refresh (F5), address bar, incognito, devtools, tab jump",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl + T = Create new tab",
+                "from": {
+                  "key_code": "t",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "t",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+W = Close tab",
+                "from": {
+                  "key_code": "w",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "w",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+R = Refresh",
+                "from": {
+                  "key_code": "r",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "r",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "F5 = Refresh",
+                "from": {
+                  "key_code": "f5",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "r",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+Tab = PREVIOUS tab",
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["command", "option"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+Shift+Tab = NEXT tab",
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["command", "option"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Alt+Left = Back (Windows browser parity)",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["option"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "open_bracket",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Alt+Right = Forward (Windows browser parity)",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["option"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "close_bracket",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+Shift+R = Hard refresh",
+                "from": {
+                  "key_code": "r",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "r",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+Shift+B = Toggle bookmarks bar",
+                "from": {
+                  "key_code": "b",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "b",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Alt+D = Focus address bar",
+                "from": {
+                  "key_code": "d",
+                  "modifiers": {
+                    "mandatory": ["option"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "l",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+Shift+N = New Incognito Window",
+                "from": {
+                  "key_code": "n",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "n",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+Shift+I or F12 = DevTools",
+                "from": {
+                  "key_code": "i",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "i",
+                    "modifiers": ["command", "option"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "F12 = DevTools",
+                "from": {
+                  "key_code": "f12",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "i",
+                    "modifiers": ["command", "option"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+Shift+T = Reopen closed tab",
+                "from": {
+                  "key_code": "t",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "t",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+1 = Switch to tab 1",
+                "from": {
+                  "key_code": "1",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "1",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+2 = Switch to tab 2",
+                "from": {
+                  "key_code": "2",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "2",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+3 = Switch to tab 3",
+                "from": {
+                  "key_code": "3",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "3",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+4 = Switch to tab 4",
+                "from": {
+                  "key_code": "4",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "4",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+5 = Switch to tab 5",
+                "from": {
+                  "key_code": "5",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "5",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+6 = Switch to tab 6",
+                "from": {
+                  "key_code": "6",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "6",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+7 = Switch to tab 7",
+                "from": {
+                  "key_code": "7",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "7",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+8 = Switch to tab 8",
+                "from": {
+                  "key_code": "8",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "8",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+9 = Last tab",
+                "from": {
+                  "key_code": "9",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "9",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[BROWSERS] Chromium extras — Downloads/History/Clear data/Zoom + Inspect Element",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+J = Downloads",
+                "from": {
+                  "key_code": "j",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "j",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+H = History",
+                "from": {
+                  "key_code": "h",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "y",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+Shift+Delete = Clear browsing data",
+                "from": {
+                  "key_code": "delete_forward",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_forward",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl++ = Zoom in",
+                "from": {
+                  "key_code": "equal_sign",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "equal_sign",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+- = Zoom out",
+                "from": {
+                  "key_code": "hyphen",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "hyphen",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+0 = Reset zoom",
+                "from": {
+                  "key_code": "0",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "0",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.google\\.Chrome$",
+                      "^com\\.brave\\.Browser$",
+                      "^com\\.microsoft\\.Edge$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$",
+                      "^org\\.mozilla\\.firefox$",
+                      "^com\\.apple\\.Safari$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+Shift+C = Inspect Element",
+                "from": {
+                  "key_code": "c",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "c",
+                    "modifiers": ["command", "option"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[VS CODE] Ctrl+Tab = Back to most recent tab + Win+Space = Quick Open",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "tab",
+                    "modifiers": ["control"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Ctrl+Tab = back to least recent tab + Win+Space = Quick Open",
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "tab",
+                    "modifiers": ["control", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.VSCode$",
+                      "^com\\.microsoft\\.VSCodeInsiders$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Cmd+Space = Open Command Palette",
+                "from": {
+                  "key_code": "spacebar",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "p",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[SYSTEM] App switching + close/quit (Alt+Tab, Alt+F4)",
+            "manipulators": [
+              {
+                "description": "ATL TAB = switch to most recent app (CMD TAB)",
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["option"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "tab",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "ATL SHIFT TAB = switch to least recent app (CMD TAB)",
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["option", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "tab",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "ATL F4 = close window (CMD W)",
+                "from": {
+                  "key_code": "f4",
+                  "modifiers": {
+                    "mandatory": ["option"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "w",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "ATL SHIFT F4 = close app (CMD Q)",
+                "from": {
+                  "key_code": "f4",
+                  "modifiers": {
+                    "mandatory": ["option", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "q",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[SYSTEM] Ctrl+Shift+Esc -> Activity Monitor",
+            "manipulators": [
+              {
+                "from": {
+                  "key_code": "escape",
+                  "modifiers": {
+                    "mandatory": ["control", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -a \"Activity Monitor\""
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[FINDER] File Explorer muscle memory (extended)",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "F2 = Rename (Enter)",
+                "from": {
+                  "key_code": "f2",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "return_or_enter"
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Delete = Move to Trash (CMD Delete)",
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Shift Delete = Empty Trash (CMD OPTION Delete)",
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["command", "option"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Forward Delete = Delete (CMD Delete)",
+                "from": {
+                  "key_code": "delete_forward",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "Shift Forward Delete = Empty Trash (CMD OPTION Delete)",
+                "from": {
+                  "key_code": "delete_forward",
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "delete_or_backspace",
+                    "modifiers": ["command", "option"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "ALT ENTER = Get Info (CMD I)",
+                "from": {
+                  "key_code": "return_or_enter",
+                  "modifiers": {
+                    "mandatory": ["option"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "i",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "ALT LEFT = Back (Cmd+[)",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["option"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "open_bracket",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": ["^com\\.apple\\.finder$"],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "description": "ALT RIGHT = Forward (Cmd+])",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["option"],
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "close_bracket",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[TEAMS] Option+A -> Cmd+Shift+M (Mute / Unmute)",
+            "manipulators": [
+              {
+                "conditions": [
+                  {
+                    "bundle_identifiers": [
+                      "^com\\.microsoft\\.teams$",
+                      "^com\\.microsoft\\.teams2$"
+                    ],
+                    "type": "frontmost_application_if"
+                  }
+                ],
+                "from": {
+                  "key_code": "a",
+                  "modifiers": {
+                    "mandatory": ["option"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "m",
+                    "modifiers": ["command", "shift"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[WIN CLIPBOARD] Ctrl+Insert=Copy, Shift+Insert=Paste, Shift+Delete=Cut (both Delete types)",
+            "manipulators": [
+              {
+                "description": "Ctrl+Insert = Copy",
+                "from": {
+                  "key_code": "insert",
+                  "modifiers": {
+                    "mandatory": ["control"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "c",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Shift+Insert = Paste",
+                "from": {
+                  "key_code": "insert",
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "v",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Shift+Delete = Cut",
+                "from": {
+                  "key_code": "delete_forward",
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "x",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Delete = Cut",
+                "from": {
+                  "key_code": "delete_or_backspace",
+                  "modifiers": {
+                    "mandatory": ["shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "x",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
+            "description": "[WIN LAYER] Win key shortcuts (Win = RIGHT_CMD) — system + window management (Rectangle + AppleScript)",
+            "manipulators": [
+              {
+                "description": "Win+E = Open Finder",
+                "from": {
+                  "key_code": "e",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -a Finder"
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+I = Open System Settings",
+                "from": {
+                  "key_code": "i",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -a \"System Settings\""
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+L = Lock screen",
+                "from": {
+                  "key_code": "l",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "q",
+                    "modifiers": ["control", "command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+, = Peek desktop (F11)",
+                "from": {
+                  "key_code": "comma",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "f11"
+                  }
+                ],
+                "to_after_key_up": [
+                  {
+                    "key_code": "f11"
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Up = Maximize active window (Rectangle)",
+                "from": {
+                  "key_code": "vk_none",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -g \"rectangle://execute-action?name=maximize\""
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Down = Hide active window",
+                "from": {
+                  "key_code": "down_arrow",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "h",
+                    "modifiers": ["command"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Home = Hide all except active",
+                "from": {
+                  "key_code": "home",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "h",
+                    "modifiers": ["command", "option"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Shift+Left/Right = Move window to previous/next monitor (Rectangle)",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["left_command", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -g \"rectangle://execute-action?name=previous-display\""
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["left_command", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -g \"rectangle://execute-action?name=next-display\""
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Shift+Up = Stretch vertically (Rectangle)",
+                "from": {
+                  "key_code": "up_arrow",
+                  "modifiers": {
+                    "mandatory": ["left_command", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -g \"rectangle://execute-action?name=maximize-height\""
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Shift+Down = Restore (Rectangle)",
+                "from": {
+                  "key_code": "down_arrow",
+                  "modifiers": {
+                    "mandatory": ["left_command", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "shell_command": "open -g \"rectangle://execute-action?name=restore\""
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Left/Right = macOS tiling (Fn+Ctrl+Arrow)",
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_arrow",
+                    "modifiers": ["fn", "control"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Right = macOS tiling (Fn+Ctrl+Arrow)",
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "right_arrow",
+                    "modifiers": ["fn", "control"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Tab = Switch to next window",
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["left_command"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "up_arrow",
+                    "modifiers": ["control"]
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "description": "Win+Shift+Tab = Switch to previous window",
+                "from": {
+                  "key_code": "tab",
+                  "modifiers": {
+                    "mandatory": ["left_command", "shift"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "down_arrow",
+                    "modifiers": ["control"]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          }
+        ]
+      },
+      "name": "Windows muscle memory (no Ctrl/Cmd swap)",
+      "selected": true,
+      "virtual_hid_keyboard": {
+        "keyboard_type_v2": "ansi"
+      }
+    }
+  ]
+}

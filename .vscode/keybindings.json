@@ -1,5 +1,5 @@
 [
-/* =========================================================
+  /* =========================================================
      IMPORTANT (Coordination with your corrected Karabiner)
      - Karabiner EXCLUDES VS Code from Ctrl->Cmd conversion (correct).
      - Therefore VS Code MUST bind real Ctrl shortcuts directly here.
@@ -150,7 +150,6 @@
   },
 
   /* Tabs (JetBrains: Ctrl+Tab / Ctrl+Shift+Tab) */
-
 
   /* JetBrains: Ctrl+F4 close editor, Ctrl+Shift+F4 close all */
   {
@@ -853,21 +852,21 @@
     "when": "!terminalFocus"
   },
   {
-  "key": "alt+up",
-  "command": "-editor.action.moveLinesUpAction",
-  "when": "editorTextFocus && !terminalFocus"
-},
-{
-  "key": "alt+up",
-  "command": "breadcrumbs.focusAndSelect",
-  "when": "editorTextFocus && !terminalFocus"
-},
-{
-  "key": "alt+down",
-  "command": "breadcrumbs.focusAndSelect",
-  "when": "editorTextFocus && !terminalFocus"
-},
-{
+    "key": "alt+up",
+    "command": "-editor.action.moveLinesUpAction",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "alt+up",
+    "command": "breadcrumbs.focusAndSelect",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "alt+down",
+    "command": "breadcrumbs.focusAndSelect",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
     "key": "alt+shift+down",
     "command": "workbench.action.editor.nextChange",
     "when": "editorTextFocus"
@@ -886,5 +885,5 @@
     "key": "ctrl+alt+enter",
     "command": "git.unstageSelectedRanges",
     "when": "scmChangeSelected"
-  },
+  }
 ]

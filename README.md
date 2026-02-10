@@ -1,5 +1,3 @@
-
-
 # app-configs (macOS)
 
 Repository of **opinionated development configuration** for macOS, focused on a consistent experience across editors, formatters, PHP tooling, and keyboard muscle-memory (Windows → macOS).
@@ -13,7 +11,8 @@ Opinionated, reusable configuration for a consistent development experience on m
 Place the files in this repository using the following layout (paths are relative to repo root):
 
 
-how. you would use in your projects this files:
+Basic requirements:
+- ⚠️ with existing config workspace and user settings you would be reuiqred to have some files or you  must disable `requireConfig` flag
 
 ```
 .

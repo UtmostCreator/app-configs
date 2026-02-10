@@ -29,6 +29,18 @@ Basic requirements:
     └── launch.json
 ```
 
+If pint not install you will see:
+```
+["INFO" - 11:26:21] Extension Name: open-southeners.laravel-pint.
+["INFO" - 11:26:21] Extension Version: 1.3.0.
+["ERROR" - 11:26:22] Executable not readable or lacks permissions for Laravel Pint.
+```
+
+We need to install it to have executable to format our code:
+```
+composer require laravel/pint --dev
+```
+
 
 Current repo structure
 ```text

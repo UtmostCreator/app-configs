@@ -1,101 +1,337 @@
 // ~/Library/Application Support/Code/User/settings.json
 {
-  "search.exclude": {
-    "**/.history/**": true,
-    "**/.git": true,
-    "**/node_modules": true,
-    "**/vendor": true,
-    "**/storage": true,
-    "**/bootstrap/cache": true,
-    "**/public/build": true,
-    "**/database/snapshots": true,
-    "**/public/static-frontend-images": true
-  },
+  // =========================================================
+  // Files & Search: excludes, EOL, whitespace
+  // =========================================================
+  "files.eol": "\n",
   "files.exclude": {
     "**/.history/**": true
   },
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/bootstrap/cache/**": true,
+    "**/node_modules/**": true,
+    "**/storage/**": true,
+    "**/vendor/**": true
+  },
+  "search.exclude": {
+    "**/.git": true,
+    "**/.history/**": true,
+    "**/bootstrap/cache": true,
+    "**/database/snapshots": true,
+    "**/node_modules": true,
+    "**/public/build": true,
+    "**/public/static-frontend-images": true,
+    "**/storage": true,
+    "**/vendor": true
+  },
+  "search.searchView.keywordSuggestions": true,
+
+  // =========================================================
+  // Editor: base UX and readability
+  // =========================================================
+  "debug.console.fontSize": 16,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.fontSize": 16,
+  "editor.guides.bracketPairs": true,
+  "editor.inlayHints.enabled": "off",
+  "editor.inlineSuggest.edits.allowCodeShifting": "always",
+  "editor.inlineSuggest.edits.renderSideBySide": "auto",
+  "editor.linkedEditing": true,
+  "editor.multiCursorModifier": "alt",
+  "editor.smoothScrolling": true,
   "editor.wordWrap": "on",
   "editor.wordWrapColumn": 120,
+  "terminal.integrated.fontSize": 16,
+
   // =========================================================
   // GLOBAL: stable formatting strategy
   // =========================================================
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnPaste": false,
   "editor.formatOnSave": true,
   "editor.formatOnSaveMode": "file",
-  "editor.formatOnPaste": false,
   "editor.formatOnType": false,
-  // Prettier is the global formatter for "web" languages.
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  // Avoid accidental double-format by built-in formatters.
+
+  // Avoid accidental double-format by built-in formatters
   "javascript.format.enable": false,
   "typescript.format.enable": false,
-  // Team-safe: only format when repo config exists.
-  "prettier.requireConfig": false,
 
-  "prettier.useEditorConfig": false,
-  "prettier.configPath": "",
-  // =========================================================
-  // FILES: reduce diff noise (safe defaults)
-  // =========================================================
-  "files.trimTrailingWhitespace": true,
-  "files.insertFinalNewline": true,
-  "files.eol": "\n",
-  // =========================================================
-  // Language associations (Laravel / Statamic)
-  // =========================================================
-  "files.associations": {
-    "*.embeddedhtml": "html",
-    "*.page-template": "vue",
-    "*.layout-template": "vue",
-    "*.vue": "vue",
-    "*.blade.php": "blade",
-    "*.antlers.html": "html",
-    "*.antlers.php": "php",
-    "*.env": "dotenv",
-    ".env*": "dotenv",
-    "*.stub": "php"
+  // Linting on save (explicit = avoids random slowdowns)
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
   },
+
+  // =========================================================
+  // Prettier: global behaviour
+  // =========================================================
+  "prettier.configPath": "",
+  "prettier.requireConfig": false,
+  "prettier.useEditorConfig": false,
+
+  // =========================================================
+  // Language associations (Laravel / Statamic) + Emmet + Tailwind
+  // =========================================================
   "emmet.includeLanguages": {
     "blade": "html",
     "vue": "html"
   },
+  "files.associations": {
+    "*.antlers.html": "html",
+    "*.antlers.php": "php",
+    "*.blade.php": "blade",
+    "*.embeddedhtml": "html",
+    "*.env": "dotenv",
+    "*.layout-template": "vue",
+    "*.page-template": "vue",
+    "*.stub": "php",
+    "*.vue": "vue",
+    ".env*": "dotenv"
+  },
+  "tailwindCSS.includeLanguages": {
+    "blade": "html",
+    "php": "html",
+    "vue": "html"
+  },
+
   // =========================================================
   // PHP: Pint ONLY (DevSense = analysis only)
   // =========================================================
-  "[php]": {
-    "editor.tabSize": 4,
-    "editor.defaultFormatter": "open-southeners.laravel-pint",
-    "editor.formatOnSave": false,
-    "editor.codeActionsOnSave": {}
-  },
-  // Prevent duplicate diagnostics (VS Code PHP validator vs DevSense).
-  "php.validate.enable": false,
-  // Ensure Pint uses the project-local binary (not global).
   "laravel-pint.enable": true,
   "laravel-pint.executablePath": "./vendor/bin/pint",
-  // (Optional) If you use Laravel Extra IntelliSense and want the right PHP runtime:
-  // "laravelExtraIntellisense.phpCommand": "${env:HOME}/.config/herd/bin/php",
+  "php.validate.enable": false,
+
   // =========================================================
   // Blade: Blade Formatter ONLY
   // =========================================================
-  "[blade]": {
-    "editor.tabSize": 4,
-    "editor.defaultFormatter": "shufo.vscode-blade-formatter",
-    "editor.formatOnSave": false,
-    "editor.codeActionsOnSave": {}
-  },
   "bladeFormatter.format.enabled": true,
-  "bladeFormatter.format.indentSize": 4,
-  "bladeFormatter.format.wrapLineLength": 9999,
-  "bladeFormatter.format.wrapAttributes": "preserve",
   "bladeFormatter.format.endWithNewline": true,
+  "bladeFormatter.format.indentSize": 4,
   "bladeFormatter.format.phpVersion": "8.3",
   "bladeFormatter.format.sortTailwindcssClasses": false,
+  "bladeFormatter.format.wrapAttributes": "preserve",
+  "bladeFormatter.format.wrapLineLength": 9999,
+
   // =========================================================
-  // JS / TS / Vue: Prettier formats, ESLint fixes
+  // JS / TS / Vue: ESLint integration
   // =========================================================
   "eslint.enable": true,
   "eslint.format.enable": false,
   "eslint.validate": ["javascript", "typescript", "javascriptreact", "typescriptreact", "vue"],
+
+  // =========================================================
+  // CSS / SCSS: Stylelint integration
+  // =========================================================
+  "stylelint.validate": ["css", "scss", "vue"],
+
+  // =========================================================
+  // JSON / YAML support
+  // =========================================================
+  "json.format.enable": true,
+  "yaml.format.singleQuote": true,
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/Konafets/statamic-blueprint-validation/main/statamic.blueprint.schema.json": [
+      "resources/blueprints/**/*.yaml",
+      "content/blueprints/**/*.yaml"
+    ]
+  },
+
+  // =========================================================
+  // Spellcheck
+  // =========================================================
+  "cSpell.enabled": false,
+  "cSpell.ignorePaths": [
+    "**/.git/**",
+    "**/node_modules/**",
+    "**/public/**",
+    "**/storage/**",
+    "**/vendor/**"
+  ],
+  "cSpell.userWords": [],
+
+  // =========================================================
+  // PHP IntelliSense: Intelephense ONLY
+  // =========================================================
+  "intelephense.files.exclude": ["**/.git/**", "**/.svn/**", "**/.hg/**", "**/node_modules/**"],
+  "intelephense.files.maxSize": 5000000,
+  "intelephense.format.enable": false,
+  "intelephense.telemetry.enabled": false,
+  "php.suggest.basic": false,
+
+  // =========================================================
+  // Laravel Extra IntelliSense
+  // =========================================================
+  "LaravelExtraIntellisense.basePath": "./",
+  "LaravelExtraIntellisense.skipRunningComposerInstallOnProjectOpen": true,
+
+  // =========================================================
+  // Extensions: Copilot / Chat
+  // =========================================================
+  "chat.agent.maxRequests": 75,
+  "chat.checkpoints.enabled": true,
+  "chat.checkpoints.showFileChanges": true,
+  "chat.commandCenter.enabled": true,
+  "chat.detectParticipant.enabled": true,
+  "chat.editor.wordWrap": "on",
+  "chat.useNestedAgentsMdFiles": true,
+  "dotenv.enableAutocloaking": false,
+  "github.copilot.chat.codesearch.enabled": true,
+  "github.copilot.chat.scopeSelection": true,
+  "github.copilot.chat.useProjectTemplates": true,
+  "github.copilot.enable": {
+    "*": true,
+    "markdown": false,
+    "plaintext": false,
+    "scminput": false
+  },
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "workbench.settings.showAISearchToggle": true,
+
+  // =========================================================
+  // Git / GitLens / SonarLint / Docker / SQLTools
+  // =========================================================
+  "docker.extension.enableComposeLanguageServer": false,
+  "git.autofetch": true,
+  "gitlens.ai.model": "vscode",
+  "gitlens.ai.vscode.model": "copilot:gpt-5.1",
+  "sonarlint.automaticAnalysis": false,
+  "sonarlint.connectedMode.connections.sonarcloud": [
+    {
+      "connectionId": "YourOrganizationKey",
+      "organizationKey": "YourOrganizationKey",
+      "region": "EU"
+    }
+  ],
+  "sqltools.autoConnectTo": "",
+
+  // =========================================================
+  // Performance / privacy
+  // =========================================================
+  "telemetry.telemetryLevel": "off",
+
+  // =========================================================
+  // Window / Workbench / Theme
+  // =========================================================
+  "editor.tokenColorCustomizations": {
+    "textMateRules": []
+  },
+  "window.title": "${dirty}${activeEditorMedium}${separator}${rootName}",
+  "workbench.colorCustomizations": {
+    // Peek view container
+    "editor.peekView.border": "#3A3D41",
+    "editor.peekViewTitle.background": "#1E1E1E",
+    "editor.peekViewTitleDescription.foreground": "#9DA3A6",
+    "editor.peekViewTitleLabel.foreground": "#D4D4D4",
+
+    // Peek results list (left side)
+    "editor.peekViewResult.background": "#121212",
+    "editor.peekViewResult.fileForeground": "#E6E6E6",
+    "editor.peekViewResult.lineForeground": "#B3B3B3",
+    "editor.peekViewResult.matchHighlightBackground": "#5A3D00",
+    "editor.peekViewResult.selectionBackground": "#2B2B2B",
+    "editor.peekViewResult.selectionForeground": "#FFFFFF",
+
+    // Peek editor (right side)
+    "editor.peekViewEditor.background": "#0F0F0F",
+    "editor.peekViewEditorGutter.background": "#0F0F0F",
+    "editor.peekViewEditor.matchHighlightBackground": "#5A3D00"
+  },
+  "workbench.iconTheme": "material-icon-theme",
+  "workbench.tree.indent": 16,
+
+  // =========================================================
+  // Language-specific editor overrides
+  // =========================================================
+  "[php]": {
+    "editor.codeActionsOnSave": {},
+    "editor.defaultFormatter": "open-southeners.laravel-pint",
+    "editor.formatOnSave": false,
+    "editor.tabSize": 4
+  },
+  "[blade]": {
+    "editor.codeActionsOnSave": {},
+    "editor.defaultFormatter": "shufo.vscode-blade-formatter",
+    "editor.formatOnSave": false,
+    "editor.tabSize": 4
+  },
+  "[javascript]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[typescript]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[javascriptreact]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[typescriptreact]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[vue]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[css]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.stylelint": "explicit"
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[scss]": {
+    "editor.codeActionsOnSave": {
+      "source.fixAll.stylelint": "explicit"
+    },
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.formatOnSave": false,
+    "editor.tabSize": 2
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 4
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 4
+  }
+}  "eslint.validate": ["javascript", "typescript", "javascriptreact", "typescriptreact", "vue"],
   "[javascript]": {
     "editor.tabSize": 2,
     "editor.defaultFormatter": "esbenp.prettier-vscode",

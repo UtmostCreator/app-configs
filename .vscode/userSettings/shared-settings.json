@@ -1,0 +1,212 @@
+// ⚠️ end file name must be settings.json and it is user settings, NOT workspace
+// macos location: `~/Library/Application Support/Code/User/settings.json`
+// full config w/ styles: https://github.com/UtmostCreator/app-configs/blob/main/.vscode/userSettings/settings.json
+{
+  // =========================
+  // Consistent whitespace / EOL
+  // =========================
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+
+  // =========================
+  // Formatting strategy (single source of truth)
+  // =========================
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.formatOnSaveMode": "file",
+  "editor.formatOnPaste": false,
+  "editor.formatOnType": false,
+
+  // Avoid double-format from built-in JS/TS formatters
+  "javascript.format.enable": false,
+  "typescript.format.enable": false,
+
+  // Lint fixes only when explicitly triggered (stable + predictable)
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+
+  // =========================
+  // Prettier (repo-independent behavior, matches your setup)
+  // =========================
+  "prettier.requireConfig": false,
+  "prettier.useEditorConfig": false,
+
+  // =========================
+  // ESLint / Stylelint integration (validation scope)
+  // =========================
+  "eslint.enable": true,
+  "eslint.format.enable": false,
+  "eslint.validate": ["javascript", "typescript", "javascriptreact", "typescriptreact", "vue"],
+  "stylelint.validate": ["css", "scss", "vue"],
+
+  // =========================
+  // Blade / PHP formatting (project tools)
+  // =========================
+  "laravel-pint.enable": true,
+  "laravel-pint.executablePath": "./vendor/bin/pint",
+  "php.validate.enable": false,
+
+  "bladeFormatter.format.enabled": true,
+  "bladeFormatter.format.endWithNewline": true,
+  "bladeFormatter.format.indentSize": 4,
+  "bladeFormatter.format.phpVersion": "8.3",
+  "bladeFormatter.format.sortTailwindcssClasses": false,
+  "bladeFormatter.format.wrapAttributes": "preserve",
+  "bladeFormatter.format.wrapLineLength": 9999,
+
+  // =========================
+  // Language-specific style rules (tabs + formatters + fixers)
+  // =========================
+  "[php]": {
+    "editor.defaultFormatter": "open-southeners.laravel-pint",
+    "editor.formatOnSave": false,
+    "editor.codeActionsOnSave": {},
+    "editor.tabSize": 4
+  },
+  "[blade]": {
+    "editor.defaultFormatter": "shufo.vscode-blade-formatter",
+    "editor.formatOnSave": false,
+    "editor.codeActionsOnSave": {},
+    "editor.tabSize": 4
+  },
+
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "explicit"
+    }
+  },
+  "[vue]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.eslint": "explicit"
+    }
+  },
+
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.stylelint": "explicit"
+    }
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.stylelint": "explicit"
+    }
+  },
+
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.formatOnSave": false,
+    "editor.tabSize": 2
+  },
+  "[html]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 4
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 4
+  },
+
+  // =========================
+  // YAML specifics (as in your config)
+  // =========================
+  "yaml.format.singleQuote": true,
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/Konafets/statamic-blueprint-validation/main/statamic.blueprint.schema.json": [
+      "resources/blueprints/**/*.yaml",
+      "content/blueprints/**/*.yaml"
+    ]
+  },
+
+  // =========================
+  // File type mapping used by formatter/linter toolchain
+  // =========================
+  "files.associations": {
+    "*.blade.php": "blade",
+    "*.antlers.html": "html",
+    "*.antlers.php": "php",
+    "*.stub": "php",
+    ".env*": "dotenv"
+  },
+
+  // =========================
+  // Emmet/Tailwind language inclusion (affects class suggestions; not cosmetic)
+  // =========================
+  "emmet.includeLanguages": {
+    "blade": "html",
+    "vue": "html"
+  },
+  "tailwindCSS.includeLanguages": {
+    "blade": "html",
+    "php": "html",
+    "vue": "html"
+  },
+
+  // =========================
+  // Optional (non-style)
+  // =========================
+  "files.exclude": {
+    "**/.history/**": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/bootstrap/cache/**": true,
+    "**/node_modules/**": true,
+    "**/storage/**": true,
+    "**/vendor/**": true
+  },
+  "search.exclude": {
+    "**/.git": true,
+    "**/.history/**": true,
+    "**/bootstrap/cache": true,
+    "**/database/snapshots": true,
+    "**/node_modules": true,
+    "**/public/build": true,
+    "**/public/static-frontend-images": true,
+    "**/storage": true,
+    "**/vendor": true
+  }
+}

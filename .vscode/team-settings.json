@@ -1,0 +1,59 @@
+// per-workspace settings e.g. .vscode/settings.json
+{
+  // =========================
+  // Formatting / code style only
+  // =========================
+  "prettier.requireConfig": true,
+  "editor.formatOnSave": false,
+
+  // =========================
+  // Project formatters (PHP / Blade)
+  // =========================
+  "laravel-pint.enable": true,
+  "laravel-pint.executablePath": "./vendor/bin/pint",
+
+  // =========================
+  // Language associations (drives formatter/linter selection)
+  // =========================
+  "files.associations": {
+    "*.blade.php": "blade",
+    "*.antlers.html": "html",
+    "*.antlers.php": "php",
+    "*.env": "dotenv",
+    ".env*": "dotenv",
+    "*.stub": "php"
+  },
+
+  // =========================
+  // Emmet / Tailwind language inclusion (markup authoring consistency)
+  // =========================
+  "emmet.includeLanguages": {
+    "blade": "html",
+    "vue": "html"
+  },
+  "tailwindCSS.includeLanguages": {
+    "blade": "html",
+    "vue": "html",
+    "php": "html"
+  },
+
+  // =========================
+  // YAML schema (content structure validation consistency)
+  // =========================
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/Konafets/statamic-blueprint-validation/main/statamic.blueprint.schema.json": [
+      "resources/blueprints/**/*.yaml",
+      "content/blueprints/**/*.yaml"
+    ]
+  },
+
+  // =========================
+  // JSON/JSONC formatter choice
+  // =========================
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
+}

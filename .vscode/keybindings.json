@@ -1,5 +1,6 @@
+// ~/Library/Application Support/Code/User/keybindings.json
 [
-  /* =========================================================
+/* =========================================================
      IMPORTANT (Coordination with your corrected Karabiner)
      - Karabiner EXCLUDES VS Code from Ctrl->Cmd conversion (correct).
      - Therefore VS Code MUST bind real Ctrl shortcuts directly here.
@@ -130,6 +131,13 @@
     "when": "!terminalFocus"
   },
 
+  /* JetBrains: Alt+Shift+C = View recent changes (Git timeline) */
+  {
+    "key": "alt+shift+c",
+    "command": "timeline.focus",
+    "when": "!terminalFocus"
+  },
+
   /* Navigation history */
   {
     "key": "ctrl+alt+left",
@@ -148,8 +156,6 @@
     "command": "workbench.action.navigateToLastEditLocation",
     "when": "!terminalFocus"
   },
-
-  /* Tabs (JetBrains: Ctrl+Tab / Ctrl+Shift+Tab) */
 
   /* JetBrains: Ctrl+F4 close editor, Ctrl+Shift+F4 close all */
   {
@@ -360,10 +366,44 @@
     "when": "editorTextFocus && !terminalFocus"
   },
 
+  /* Select to bracket (JetBrains: Ctrl+Shift+] / [) */
+  {
+    "key": "ctrl+shift+]",
+    "command": "editor.action.selectToBracket",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "ctrl+shift+[",
+    "command": "editor.action.selectToBracket",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+
   /* Undo cursor movement (JetBrains: Ctrl+U = soft undo caret) */
   {
     "key": "ctrl+u",
     "command": "cursorUndo",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+
+  /* Code folding (JetBrains: Ctrl+NumPad +/-) */
+  {
+    "key": "ctrl+numpad_add",
+    "command": "editor.unfold",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "ctrl+numpad_subtract",
+    "command": "editor.fold",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "ctrl+shift+numpad_add",
+    "command": "editor.unfoldAll",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "ctrl+shift+numpad_subtract",
+    "command": "editor.foldAll",
     "when": "editorTextFocus && !terminalFocus"
   },
 
@@ -385,17 +425,22 @@
     "when": "editorTextFocus && !terminalFocus && !editorReadonly"
   },
 
-  /* Insert line after/before */
-  // {
-  //   "key": "ctrl+enter",
-  //   "command": "editor.action.insertLineAfter",
-  //   "when": "editorTextFocus && !terminalFocus && !editorReadonly"
-  // },
-  // {
-  //   "key": "ctrl+alt+enter",
-  //   "command": "editor.action.insertLineBefore",
-  //   "when": "editorTextFocus && !terminalFocus && !editorReadonly"
-  // },
+  /* Insert line after/before (JetBrains style) */
+  {
+    "key": "shift+enter",
+    "command": "editor.action.insertLineAfter",
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly"
+  },
+  {
+    "key": "ctrl+enter",
+    "command": "editor.action.insertLineAfter",
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly && !scmChangeSelected"
+  },
+  {
+    "key": "ctrl+alt+enter",
+    "command": "editor.action.insertLineBefore",
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly"
+  },
 
   /* Move line up/down */
   {
@@ -405,6 +450,16 @@
   },
   {
     "key": "shift+alt+up",
+    "command": "editor.action.moveLinesUpAction",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "ctrl+shift+down",
+    "command": "editor.action.moveLinesDownAction",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "ctrl+shift+up",
     "command": "editor.action.moveLinesUpAction",
     "when": "editorTextFocus && !terminalFocus"
   },
@@ -441,6 +496,25 @@
   {
     "key": "ctrl+delete",
     "command": "deleteWordRight",
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly"
+  },
+
+  /* Toggle case (JetBrains: Ctrl+Shift+U) */
+  {
+    "key": "ctrl+shift+u",
+    "command": "editor.action.transformToUppercase",
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly && editorHasSelection"
+  },
+  {
+    "key": "ctrl+shift+u",
+    "command": "editor.action.transformToLowercase",
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly && !editorHasSelection"
+  },
+
+  /* Explicit lowercase (Ctrl+Shift+L) */
+  {
+    "key": "ctrl+shift+l",
+    "command": "editor.action.transformToLowercase",
     "when": "editorTextFocus && !terminalFocus && !editorReadonly"
   },
 
@@ -518,6 +592,13 @@
     "key": "ctrl+alt+c",
     "command": "editor.action.codeAction",
     "args": { "kind": "refactor.extract.constant" },
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly"
+  },
+
+  /* Surround with (JetBrains: Ctrl+Alt+T) */
+  {
+    "key": "ctrl+alt+t",
+    "command": "editor.action.surroundWith",
     "when": "editorTextFocus && !terminalFocus && !editorReadonly"
   },
 
@@ -833,7 +914,7 @@
   },
   {
     "key": "ctrl+shift+c",
-    "command": "workbench.action.files.copyPathOfActiveFile",
+    "command": "workbench.action.files.copyRelativePathOfActiveFile",
     "when": "!terminalFocus && editorFocus"
   },
   {
@@ -852,21 +933,21 @@
     "when": "!terminalFocus"
   },
   {
-    "key": "alt+up",
-    "command": "-editor.action.moveLinesUpAction",
-    "when": "editorTextFocus && !terminalFocus"
-  },
-  {
-    "key": "alt+up",
-    "command": "breadcrumbs.focusAndSelect",
-    "when": "editorTextFocus && !terminalFocus"
-  },
-  {
-    "key": "alt+down",
-    "command": "breadcrumbs.focusAndSelect",
-    "when": "editorTextFocus && !terminalFocus"
-  },
-  {
+  "key": "alt+up",
+  "command": "-editor.action.moveLinesUpAction",
+  "when": "editorTextFocus && !terminalFocus"
+},
+{
+  "key": "alt+up",
+  "command": "breadcrumbs.focusAndSelect",
+  "when": "editorTextFocus && !terminalFocus"
+},
+{
+  "key": "alt+down",
+  "command": "breadcrumbs.focusAndSelect",
+  "when": "editorTextFocus && !terminalFocus"
+},
+{
     "key": "alt+shift+down",
     "command": "workbench.action.editor.nextChange",
     "when": "editorTextFocus"
@@ -885,5 +966,5 @@
     "key": "ctrl+alt+enter",
     "command": "git.unstageSelectedRanges",
     "when": "scmChangeSelected"
-  }
+  },
 ]

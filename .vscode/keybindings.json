@@ -144,6 +144,17 @@
     "command": "workbench.action.navigateToLastEditLocation",
     "when": "!terminalFocus"
   },
+  // Jump to older position in change list (like Vim g;)
+  {
+    "key": "alt+g shift+;",
+    "command": "workbench.action.navigateToLastEditLocation",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "alt+g shift+,",
+    "command": "workbench.action.navigateForwardInEditLocations",
+    "when": "editorTextFocus && !terminalFocus"
+  },
   /* JetBrains: Ctrl+F4 close editor, Ctrl+Shift+F4 close all */
   {
     "key": "ctrl+f4",
@@ -1104,5 +1115,5 @@
     "key": "ctrl+k ctrl+o",
     "command": "workbench.action.closeOtherGroups",
     "when": "!terminalFocus"
-  }
+  },
 ]

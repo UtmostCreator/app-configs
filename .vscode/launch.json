@@ -62,11 +62,6 @@
                 "action": "openExternally"
             },
             "envFile": "../.env"
-        },
-        {
-            "name": "Listen for Xdebug",
-            "type": "php",
-            "request": "launch"
         }
     ]
 }

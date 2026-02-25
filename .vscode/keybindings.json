@@ -9,6 +9,12 @@
   /* =========================================================
      CORE CLIPBOARD & EDITING (Windows muscle memory)
      ========================================================= */
+  // Disable VS Code's default Ctrl+C handling in terminal - let shell handle it natively
+  {
+    "key": "ctrl+c",
+    "command": "-workbench.action.terminal.copySelection",
+    "when": "terminalFocus"
+  },
   {
     "key": "ctrl+c",
     "command": "editor.action.clipboardCopyAction",
@@ -203,6 +209,11 @@
   {
     "key": "ctrl+shift+r",
     "command": "workbench.action.replaceInFiles",
+    "when": "!terminalFocus"
+  },
+  {
+    "key": "ctrl+shift+h",
+    "command": "search.action.openNewEditor",
     "when": "!terminalFocus"
   },
   /* =========================================================
@@ -983,22 +994,22 @@
   {
     "key": "ctrl+alt+h",
     "command": "workbench.action.focusLeftGroup",
-    "when": "!terminalFocus"
+    "when": "!terminalFocus && !editorTextFocus"
   },
   {
     "key": "ctrl+alt+l",
     "command": "workbench.action.focusRightGroup",
-    "when": "!terminalFocus"
+    "when": "!terminalFocus && !editorTextFocus"
   },
   {
     "key": "ctrl+alt+k",
     "command": "workbench.action.focusAboveGroup",
-    "when": "!terminalFocus"
+    "when": "!terminalFocus && !editorTextFocus"
   },
   {
     "key": "ctrl+alt+j",
     "command": "workbench.action.focusBelowGroup",
-    "when": "!terminalFocus"
+    "when": "!terminalFocus && !editorTextFocus"
   },
   {
     "key": "ctrl+shift+m",

@@ -531,12 +531,17 @@
   {
     "key": "ctrl+alt+l",
     "command": "editor.action.formatDocument",
-    "when": "editorTextFocus && !terminalFocus && !editorReadonly"
+    "when": "editorHasDocumentFormattingProvider && editorTextFocus && !terminalFocus && !editorReadonly && !editorHasSelection"
+  },
+  {
+    "key": "ctrl+alt+l",
+    "command": "editor.action.formatSelection",
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly && editorHasSelection"
   },
   {
     "key": "ctrl+alt+shift+l",
     "command": "editor.action.formatSelection",
-    "when": "editorTextFocus && !terminalFocus && !editorReadonly"
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly && editorHasSelection"
   },
   /* JetBrains: Ctrl+Alt+O = Optimize imports */
   {

@@ -1,0 +1,53 @@
+# macOS:
+# ~/Library/Application Support/com.mitchellh.ghostty/config.ghostty
+#
+# XDG:
+# ~/.config/ghostty/config.ghostty
+# ---------- Theme / readability ----------
+theme = dark:Tokyo Night,light:Catppuccin Latte
+window-theme = system
+minimum-contrast = 1.1
+# ---------- Font / spacing ----------
+font-family = JetBrainsMono Nerd Font
+font-size = 14
+window-padding-x = 8
+window-padding-y = 6
+window-padding-balance = true
+mouse-hide-while-typing = true
+cursor-style-blink = false
+# ---------- Shell / workflow ----------
+shell-integration = detect
+shell-integration-features = cursor,title,sudo,ssh-env,ssh-terminfo
+cursor-click-to-move = true
+window-inherit-working-directory = true
+tab-inherit-working-directory = true
+split-inherit-working-directory = true
+window-inherit-font-size = true
+# ---------- Clipboard / safety ----------
+clipboard-paste-protection = true
+clipboard-trim-trailing-spaces = true
+copy-on-select = clipboard
+confirm-close-surface = true
+# ---------- Search / notifications ----------
+scrollbar = system
+notify-on-command-finish = unfocused
+notify-on-command-finish-action = no-bell,notify
+notify-on-command-finish-after = 10s
+# ---------- macOS quality-of-life ----------
+window-save-state = always
+auto-update = check
+auto-update-channel = stable
+macos-titlebar-style = native
+# ---------- Quick terminal ----------
+keybind = global:cmd+backquote=toggle_quick_terminal
+quick-terminal-position = top
+quick-terminal-size = 35%
+# ---------- Config management ----------
+keybind = cmd+shift+e=open_config
+keybind = cmd+shift+r=reload_config
+config-file = "local.ghostty"
+# ---------- Optional modern color pipeline ----------
+# Enable only if your TUIs are modern and you want a theme-coherent 16..255 palette.
+# Some legacy apps assume xterm's historical 256-color ordering.
+# palette-generate = true
+# palette-harmonious = true

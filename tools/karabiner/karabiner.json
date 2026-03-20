@@ -1,4 +1,4 @@
-// if you use AltTab remove "ATL SHIFT TAB = switch to least recent app (CMD TAB)", and "ATL TAB = switch to most recent app (CMD TAB)",
+// if you use AltTab (https://github.com/lwouis/alt-tab-macos) remove "ATL SHIFT TAB = switch to least recent app (CMD TAB)", and "ATL TAB = switch to most recent app (CMD TAB)",
 {
     "profiles": [
         {

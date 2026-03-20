@@ -1,0 +1,199 @@
+{
+  // =========================================================
+  // PROJECT: headless-cms (Laravel + Statamic + Vue)
+  // =========================================================
+  // =========================================================
+  // PHP & LARAVEL CONFIGURATION
+  // =========================================================
+  "php.version": "8.3",
+  "intelephense.environment.phpVersion": "8.3.0",
+  "laravel-pint.enable": true,
+  "laravel-pint.executablePath": "./vendor/bin/pint",
+  // Laravel Extra IntelliSense
+  "LaravelExtraIntellisense.basePath": "./",
+  "LaravelExtraIntellisense.skipRunningComposerInstallOnProjectOpen": true,
+  // =========================================================
+  // FORMATTING & CODE QUALITY (Project-specific overrides)
+  // =========================================================
+  // Prettier: only format when .prettierrc exists (deterministic)
+  "prettier.requireConfig": true,
+  "prettier.prettierPath": "${workspaceFolder}/node_modules/prettier/index.cjs",
+  // Disable format-on-save ONLY for PHP (Pint is manual)
+  // JS/TS/Vue/CSS formatting inherits from User settings
+  "[php]": {
+    "editor.formatOnSave": false
+  },
+  "[blade]": {
+    "editor.defaultFormatter": "shufo.vscode-blade-formatter",
+    "editor.formatOnSave": false
+  },
+  // Blade Formatter configuration
+  "bladeFormatter.format.enabled": true,
+  "bladeFormatter.format.indentSize": 4,
+  "bladeFormatter.format.useTabs": false,
+  "bladeFormatter.format.sortTailwindcssClasses": true,
+  // Autosave: onFocusChange balances safety with reduced churn
+  "files.autoSave": "onFocusChange",
+  // =========================================================
+  // REPOSITORY-SPECIFIC EXCLUDES (Laravel build artifacts)
+  // =========================================================
+  "files.exclude": {
+    "**/.phpunit.result.cache": true,
+    "**/public/hot": true,
+    "**/public/build/**": true
+  },
+  "search.exclude": {
+    "**/.phpunit.result.cache": true,
+    "**/public/hot": true,
+    "**/public/build/**": true,
+    "**/vendor/**": true,
+    "**/node_modules/**": true,
+    "**/storage/framework/**": true,
+    "**/storage/logs/**": true
+  },
+  // =========================================================
+  // FILE ASSOCIATIONS (Laravel + Statamic)
+  // =========================================================
+  "files.associations": {
+    "*.blade.php": "blade",
+    "*.antlers.html": "html",
+    "*.antlers.php": "php",
+    "*.env": "dotenv",
+    ".env*": "dotenv",
+    "*.stub": "php"
+  },
+  "emmet.includeLanguages": {
+    "blade": "html",
+    "vue": "html"
+  },
+  // =========================================================
+  // FRAMEWORK-SPECIFIC (Statamic + Tailwind)
+  // =========================================================
+  // Statamic Blueprint validation
+  "yaml.schemas": {
+    "https://raw.githubusercontent.com/Konafets/statamic-blueprint-validation/main/statamic.blueprint.schema.json": [
+      "resources/blueprints/**/*.yaml",
+      "content/blueprints/**/*.yaml"
+    ]
+  },
+  // Tailwind CSS IntelliSense
+  "tailwindCSS.includeLanguages": {
+    "blade": "html",
+    "vue": "html",
+    "php": "html"
+  },
+  // =========================================================
+  // FORMATTERS (Language-specific)
+  // =========================================================
+  // JSON: use built-in formatter (deterministic, no .prettierrc dependency)
+  "[json]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features",
+    "editor.formatOnSave": true
+  },
+  // =========================================================
+  // WORKBENCH (IDE Behavior for this project)
+  // =========================================================
+  // Tab management: prevent tab explosion during maintenance
+  "workbench.editor.limit.enabled": true,
+  "workbench.editor.limit.value": 12,
+  "workbench.editor.limit.perEditorGroup": true,
+  "workbench.editor.limit.excludeDirty": true,
+  // Tab sizing & visibility: allow tabs to expand and show full filenames
+  "workbench.editor.tabSizing": "shrink", // Tabs shrink to fit but maintain readable width
+  "workbench.editor.tabCloseButton": "right", // Close button on right (more space for filename)
+  "workbench.editor.showTabs": "multiple", // Always show multiple tabs
+  "workbench.editor.wrapTabs": false, // Single row of tabs (no wrapping)
+  // Tab decorations: show git status badges (M, U, A, D, C)
+  "workbench.editor.highlightModifiedTabs": true,
+  "workbench.editor.decorations.badges": true,
+  "workbench.editor.decorations.colors": true,
+  // Explorer decorations
+  "explorer.decorations.badges": true,
+  "explorer.decorations.colors": true,
+  // Git decorations: enable status badges on tabs and explorer
+  "git.decorations.enabled": true,
+  "scm.diffDecorations": "all",
+  "scm.diffDecorationsGutterVisibility": "always",
+  "scm.defaultViewMode": "tree",
+  // Problems: enabled for team visibility of issues
+  "problems.decorations.enabled": true,
+  // =========================================================
+  // COLOR CUSTOMIZATIONS (Project Theme)
+  // =========================================================
+  //   "workbench.colorCustomizations": {
+  //     // =====================================================
+  //     // TABS (Blue accent + Git status colors)
+  //     // =====================================================
+  //     // Active tab indicator
+  //     "tab.activeBorderTop": "#2F6FFF",
+  //     "tab.unfocusedActiveBorderTop": "#2F6FFF",
+  //     // Modified border for unsaved changes (blue)
+  //     "tab.activeModifiedBorder": "#0032A0",
+  //     "tab.inactiveModifiedBorder": "#0032A0",
+  //     "tab.unfocusedActiveModifiedBorder": "#0032A0",
+  //     "tab.unfocusedInactiveModifiedBorder": "#0032A0",
+  //     // Git status badge foreground colors (M, U, A, D, C letters)
+  //     "tab.activeForeground": "#FFFFFF",
+  //     "tab.inactiveForeground": "#B3B3B3",
+  //     // Git status colors on tabs (matches sidebar)
+  //     "tab.modifiedBorder": "#F5A623", // Modified files (M) - Orange
+  //     "tab.unfocusedModifiedBorder": "#F5A623", // Modified (unfocused)
+  //     // Note: VS Code shows badges (M, U, A, D, C) automatically when git.decorations.enabled is true
+  //     // Badge colors are inherited from gitDecoration.* settings below
+  //     // =====================================================
+  //     // GIT DECORATIONS (File Explorer colors)
+  //     // =====================================================
+  //     // Status colors for git-modified files
+  //     "gitDecoration.untrackedResourceForeground": "#2ECC71", // Green (new files)
+  //     "gitDecoration.addedResourceForeground": "#2ECC71", // Green (staged new)
+  //     "gitDecoration.modifiedResourceForeground": "#F5A623", // Orange (changed)
+  //     "gitDecoration.deletedResourceForeground": "#E74C3C", // Red (removed)
+  //     "gitDecoration.conflictingResourceForeground": "#FF3B30", // Bright red (conflicts)
+  //     "gitDecoration.ignoredResourceForeground": "#7F8C8D", // Gray (ignored)
+  //     // Staged changes (slightly transparent)
+  //     "gitDecoration.stageModifiedResourceForeground": "#F5A623AA",
+  //     "gitDecoration.stageDeletedResourceForeground": "#E74C3CAA",
+  //     // =====================================================
+  //     // QUICK OPEN / QUICK INPUT (Ctrl+P / Cmd+P)
+  //     // =====================================================
+  //     "quickInputList.focusBackground": "#2F6FFF22", // Light blue background
+  //     "quickInputList.focusForeground": "#FFFFFF", // White text
+  //     "quickInputList.focusIconForeground": "#2F6FFF", // Blue icon
+  //     // =====================================================
+  //     // LISTS (File explorer, search results, etc.)
+  //     // =====================================================
+  //     "list.activeSelectionBackground": "#2F6FFF22", // Selected item (focused)
+  //     "list.activeSelectionForeground": "#FFFFFF",
+  //     "list.inactiveSelectionBackground": "#2F6FFF22", // Selected item (unfocused)
+  //     "list.inactiveSelectionForeground": "#FFFFFF",
+  //     "list.focusBackground": "#2F6FFF33", // Keyboard-focused item
+  //     "list.focusForeground": "#FFFFFF",
+  //     "list.highlightForeground": "#2F6FFF", // Matching text highlight
+  //     // =====================================================
+  //     // GIT GUTTER & OVERVIEW RULER (Editor margins)
+  //     // =====================================================
+  //     // Line-level git status indicators
+  //     "editorGutter.addedBackground": "#2ECC71", // New lines (green)
+  //     "editorGutter.modifiedBackground": "#F5A623", // Changed lines (orange)
+  //     "editorGutter.deletedBackground": "#E74C3C", // Deleted lines (red)
+  //     // Minimap overview ruler
+  //     "editorOverviewRuler.addedForeground": "#2ECC71",
+  //     "editorOverviewRuler.modifiedForeground": "#F5A623",
+  //     "editorOverviewRuler.deletedForeground": "#E74C3C"
+  //   },
+  "editor.formatOnSave": false,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "phpunit.phpunit": "./vendor/bin/phpunit",
+  "intelephense.files.maxSize": 5000000,
+  "tailwindCSS.experimental.classRegex": [
+    [
+      "class:\\s*?[\"'`]([^\"'`]*).*?[\"'`]",
+      "[\"'`]([^\"'`]*).*?[\"'`]"
+    ]
+  ],
+  "workbench.editor.tabActionLocation": "right"
+}

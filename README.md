@@ -10,9 +10,9 @@ Opinionated, reusable configuration for a consistent development experience on m
 
 Place the files in this repository using the following layout (paths are relative to repo root):
 
-
 Basic requirements:
-- ⚠️ with existing config workspace and user settings you would be reuiqred to have some files or you  must disable `requireConfig` flag
+
+- ⚠️ with existing config workspace and user settings you would be reuiqred to have some files or you must disable `requireConfig` flag
 
 ```
 .
@@ -30,6 +30,7 @@ Basic requirements:
 ```
 
 If pint not install you will see:
+
 ```
 ["INFO" - 11:26:21] Extension Name: open-southeners.laravel-pint.
 ["INFO" - 11:26:21] Extension Version: 1.3.0.
@@ -37,37 +38,50 @@ If pint not install you will see:
 ```
 
 We need to install it to have executable to format our code:
+
 ```
 composer require laravel/pint --dev
 ```
 
-
 Current repo structure
+
 ```text
 .
 ├── .editorconfig
 ├── .eslintrc.json
+├── .gitignore
 ├── .prettierrc.json
-├── .prettierrc.json
+├── .stylelintrc.json
 ├── README.md
-├── all_in_one.sh
-├── config
-│   ├── php
-│   │   └── php.ini
-│   └── pint
-│       └── pint.json
-├── docs
-│   ├── karabiner.md
-│   └── vscode-extensions.md
-├── tools
-│   └── karabiner
-│       └── karabiner.json
-└── .vscode
-    ├── keybindings.json
-    ├── launch.json
-    ├── settings.json
-    └── userSettings
-        └── settings.json
+├── php/                          # PHP runtime config + code style
+│   ├── php.ini
+│   └── pint.json
+├── shell/                        # zsh env + Starship prompt (coupled)
+│   ├── .zshrc
+│   └── starship.toml
+├── tools/                        # standalone app configs
+│   ├── ghostty/
+│   │   └── config
+│   ├── karabiner/
+│   │   └── karabiner.json
+│   └── nvim/
+│       ├── init.lua
+│       └── lua/
+│           └── plugins/
+│               └── vim-tmux-navigator.lua
+├── vscode/                       # VS Code settings & keybindings
+│   ├── keybindings.json
+│   ├── launch.json
+│   ├── workspace-example.json    # full project-specific example
+│   ├── workspace-template.json   # minimal shareable baseline
+│   └── user/
+│       ├── settings.json         # full user settings
+│       └── settings.minimal.json # minimal shareable subset
+└── docs/
+    ├── keyboard.md               # Karabiner Windows→macOS mapping
+    ├── nvim-setup.md
+    ├── shell-setup.md
+    └── vscode-extensions.md
 ```
 
 ## Scope
@@ -155,14 +169,17 @@ Current repo structure
 ## Quick start
 
 ### 1) EditorConfig (recommended)
+
 Most editors pick this up automatically. If not, enable EditorConfig support in your IDE and keep `.editorconfig` at repo root.
 
 ### 2) VS Code
 
 #### Workspace settings
+
 Open the repository in VS Code. The workspace settings in `.vscode/settings.json` will apply automatically.
 
 #### User settings (optional but recommended)
+
 Copy the template into your user settings file:
 
 1. Open VS Code → Command Palette → **Preferences: Open User Settings (JSON)**
@@ -170,12 +187,15 @@ Copy the template into your user settings file:
    - `./.vscode/userSettings/settings.json`
 
 **Important:** This template disables some built-in formatters and routes formatting to:
+
 - Prettier for web languages
 - Pint for PHP
 - Blade Formatter for Blade
 
 #### Install extensions
+
 Use the list in:
+
 - `./docs/vscode-extensions.md`
 
 Example:

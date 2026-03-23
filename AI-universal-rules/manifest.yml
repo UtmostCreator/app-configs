@@ -1,0 +1,34 @@
+name: ai-universal-rules
+version: 0.1.0
+description: Portable AI instruction templates for OpenCode and GitHub Copilot
+supported_tools:
+  - opencode
+  - github-copilot
+supported_surfaces:
+  opencode:
+    - tui
+    - cli
+  github-copilot:
+    - vscode
+    - cli
+    - github.com
+required_templates:
+  - templates/core/AGENTS.template.md
+  - templates/core/copilot-instructions.template.md
+  - templates/core/project-stack.template.md
+optional_packs:
+  - templates/optional/opencode
+preview_only_assets:
+  - templates/github-copilot/prompts
+enablement_notes:
+  - GitHub Copilot prompt files are preview-only and surface-dependent.
+  - Advanced Copilot agent behavior can vary between VS Code, CLI, and GitHub.com, so this kit keeps the Copilot agent set intentionally small.
+graceful_fallbacks:
+  prompts:
+    fallback: Use repository and path-specific instructions plus agents.
+  custom_agents:
+    fallback: Use repository and path-specific instructions only.
+examples:
+  - examples/generic-placeholder-repo
+  - examples/expanded-placeholder-repo
+placeholder_reference: PLACEHOLDERS.md

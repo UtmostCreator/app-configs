@@ -20,9 +20,11 @@ Use this default workflow unless the task is clearly trivial:
 Workflow rules:
 
 - Prefer the smallest safe change.
+- For non-trivial work, classify risk as `low`, `medium`, or `high` to choose review and verification depth.
 - Ground decisions in active code and configuration, not aspiration.
 - Do not invent systems, services, persistence layers, or infrastructure that are not present.
 - Escalate when ambiguity would change architecture, persistence shape, public interfaces, dependency surface, security posture, or rollout risk.
+- If a slice grows beyond roughly 6 files or 300-500 changed lines, pause and confirm it is still one bounded outcome.
 - Stop repeated review or fix loops after three iterations and surface unresolved tradeoffs clearly.
 
 ## Approval Required Before Proceeding
@@ -30,6 +32,7 @@ Workflow rules:
 Ask for approval before making:
 
 - `<APPROVAL_REQUIRED_CHANGES>`
+- A human approver must be able to explain each changed section well enough to own the merge.
 
 ## Core Engineering Rules
 
@@ -52,6 +55,21 @@ Inspect the current implementation before making architectural or behavioral cha
 ## Risk Areas
 
 - `<RISK_AREAS>`
+
+## Release and Migration Safety
+
+- For `medium` and `high` risk changes, define rollback or disable path before implementation.
+- For `medium` and `high` risk changes, define what observable signal confirms success after deployment.
+- Use a feature flag for `medium` or `high` risk behavior changes when practical.
+- For additive-only migrations, document rollback posture and proceed.
+- For migrations that drop, rename, or restructure existing data, use an expand-contract strategy.
+- Plan large backfills separately from schema mutation when data volume or runtime impact is significant.
+
+## Prototype Lane
+
+- Exploratory code may be created in prototype paths.
+- Prototype code must not be merged directly into production paths.
+- Any promoted prototype must be respecified as a normal bounded slice and pass the standard workflow.
 
 ## Testing Rules
 

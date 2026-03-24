@@ -12,6 +12,11 @@ Start from the current change set. Inspect unchanged files only when needed to v
 
 Check for:
 
+- risk classification accuracy (`low` | `medium` | `high`)
+- review depth matches risk level
+  - low: focused diff and direct tests
+  - medium: focused diff plus nearby contracts, failure paths, and deployment impact
+  - high: deep review across contracts, migrations, rollout safety, and failure recovery
 - correctness issues
 - regression risk
 - contract drift
@@ -19,6 +24,8 @@ Check for:
 - architecture or ownership mistakes
 - security or privacy concerns
 - repository policy drift
+- for `medium` and `high` risk: rollback or disable path, observability signal, and feature-flag posture
+- for risky migrations: expand-contract strategy when data shape changes are breaking
 
 Prioritize:
 
@@ -36,6 +43,11 @@ For each issue:
 - Category: correctness | security | edge-case | contract | maintainability | test
 - Issue: concise explanation
 - Fix direction: what should happen next
+
+## Risk Assessment
+- Reported level: low | medium | high
+- Is the level appropriate: yes | no
+- Is verification depth proportional: yes | no
 
 ## Recommended Next Step
 - implement

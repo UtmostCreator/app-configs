@@ -19,13 +19,22 @@ Copy these files into your target repository:
 2. Copy the `.opencode/` folders into the repository.
 3. Replace placeholders across all copied files.
 4. Remove sections that do not fit the repository.
-5. Run the validation scripts from this package.
+5. Search for unresolved `<PLACEHOLDER_NAME>` tokens and remove project-specific leaks.
 
 ## Suggested First Test
 
 - Ask the reviewer to inspect a small diff.
 - Ask the architect for a plan on a medium-sized task.
 - Run the verify command text manually and confirm the commands make sense for the repo.
+- Confirm the plan includes risk level (`low` | `medium` | `high`).
+- For `medium` and `high` risk, confirm rollback plan, observability signal, and feature-flag posture are present.
+
+## Optional Delivery Pack
+
+If your team wants explicit per-slice planning for non-trivial work, copy:
+
+- `templates/optional/delivery/README.md`
+- `templates/optional/delivery/slice-card.template.md`
 
 ## Add Optional Packs Later
 

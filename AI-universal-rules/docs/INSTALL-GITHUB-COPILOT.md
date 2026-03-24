@@ -32,6 +32,11 @@ Prompt files are preview-only workflow assets:
 - `templates/github-copilot/prompts/bug-regression.prompt.md`
 - `templates/github-copilot/prompts/review-code.prompt.md`
 
+Delivery planning assets are optional:
+
+- `templates/optional/delivery/README.md`
+- `templates/optional/delivery/slice-card.template.md`
+
 ## Surface Guidance
 
 ### VS Code / CLI
@@ -55,7 +60,7 @@ Prompt files are preview-only workflow assets:
 3. Replace placeholders across all copied files.
 4. Add `.github/agents/` only if the target surface supports the behaviors you want, and start with the architect, reviewer, and refactorer only.
 5. Add `.github/prompts/` only if your IDE or toolchain supports prompt files and your team accepts preview features.
-6. Run the validation scripts from this package.
+6. Search for unresolved `<PLACEHOLDER_NAME>` tokens and remove project-specific leaks.
 
 ## Suggested First Test
 
@@ -63,6 +68,8 @@ Prompt files are preview-only workflow assets:
 - If using agents, ask the architect for a medium-sized implementation plan.
 - If using agents, ask for a diff review using the reviewer agent.
 - If using prompt files, test one prompt and confirm the feature is enabled on your surface.
+- Confirm medium-sized plans include risk level (`low` | `medium` | `high`).
+- For `medium` and `high` risk, confirm rollback plan, observability signal, and feature-flag posture are present.
 
 ## Recommendation
 

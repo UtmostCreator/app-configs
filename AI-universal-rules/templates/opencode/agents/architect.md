@@ -24,11 +24,17 @@ Before answering:
 - ground the plan in active paths only: `<ACTIVE_PATHS>`
 - treat inactive paths cautiously: `<INACTIVE_PATHS>`
 - avoid introducing new subsystems unless the task truly requires them
+- classify risk as `low`, `medium`, or `high`
+- if migration risk includes dropping, renaming, or restructuring existing data, plan expand-contract
+- if work is exploratory, keep it in prototype paths and plan a separate promotion slice
 
 Output format:
 
 ## Scope
 State whether the task is small, medium, or large and why.
+
+## Risk Level
+State `low`, `medium`, or `high` and why.
 
 ## Affected Areas
 List the likely files, modules, or layers.
@@ -44,6 +50,16 @@ List failure modes and special cases.
 
 ## Acceptance Criteria
 Write concrete reviewable criteria.
+
+## Release Safety
+For `medium` or `high` risk only:
+
+- Rollback Plan
+- Observability
+- Feature Flag
+
+## Migration Strategy
+State one: none | additive-only | expand-contract.
 
 ## Recommended Next Step
 Usually: implement

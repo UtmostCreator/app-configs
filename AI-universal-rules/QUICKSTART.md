@@ -38,14 +38,11 @@ Recommended order:
 
 ## 4. Validate
 
-Run:
+Run a placeholder and leak check before rollout:
 
-```powershell
-python .\AI-universal-rules\tools\validate-placeholders.py .\AI-universal-rules
-python .\AI-universal-rules\tools\check-no-project-specific-leaks.py .\AI-universal-rules
-```
-
-Add `--deny-term` or `--denylist-file` when you want to scan for project-specific names from source material that should not appear in the shared kit.
+1. Search for unresolved `<PLACEHOLDER_NAME>` tokens.
+2. Search for project-specific names that should not exist in shared templates.
+3. If your team keeps local validation scripts, run them here.
 
 ## 5. Test In A Toy Repo
 
@@ -53,6 +50,8 @@ Add `--deny-term` or `--denylist-file` when you want to scan for project-specifi
 - Ask for a bug fix plan
 - Run the verification workflow text
 - Confirm the instructions do not imply unsupported tool features
+- For a non-trivial sample task, classify risk as `low`, `medium`, or `high`
+- For `medium` and `high` risk, confirm rollback plan, observability signal, and feature-flag posture are stated
 
 ## 6. Add Optional Packs Later
 
@@ -63,3 +62,4 @@ Only add optional agents and prompts when the project really needs them:
 - upgrade specialists
 - docs specialists
 - bugfix specialists
+- delivery slice-card template for non-trivial work

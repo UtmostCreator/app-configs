@@ -16,8 +16,9 @@ This package is for teams who want a reusable starting point for AI collaboratio
 - OpenCode templates for agents, commands, and skills
 - GitHub Copilot templates for repo instructions, path instructions, a compact core agent set, and prompts
 - Optional specialist packs for advanced workflows
+- Optional delivery pack with a lightweight slice card template
 - Two placeholder-only example trees
-- Validation scripts to catch unresolved placeholders and user-supplied project-specific leaks
+- Validation guidance to catch unresolved placeholders and user-supplied project-specific leaks
 
 ## What Is Not Included
 
@@ -33,8 +34,16 @@ Start with the smallest set that matches your target tool:
 1. Copy the core templates.
 2. Copy either the OpenCode or GitHub Copilot adapter set.
 3. Replace placeholders.
-4. Run the validation tools.
+4. Run validation checks for unresolved placeholders and project-specific leaks.
 5. Test the setup in a toy repository before rolling it into production work.
+
+For non-trivial changes, use a trimmed risk model:
+
+- `low`
+- `medium`
+- `high`
+
+For `medium` and `high` risk changes, define rollback plan, observability signal, and feature-flag posture before implementation.
 
 ## Supported Targets
 
@@ -51,7 +60,7 @@ See `docs/COMPATIBILITY.md` for the limits of each integration model.
 - `templates/github-copilot/`: base GitHub Copilot files
 - `templates/optional/`: specialist add-ons
 - `examples/`: placeholder-only example trees
-- `tools/`: validation scripts
+- `docs/`: compatibility, precedence, and install guidance
 
 ## Important Note About Copilot Prompts
 

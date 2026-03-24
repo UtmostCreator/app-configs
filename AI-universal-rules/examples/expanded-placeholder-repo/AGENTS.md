@@ -16,10 +16,26 @@ This example keeps the richer structure of a filled repository-instructions file
 ## Default Workflow
 
 - `plan -> architect for medium or large changes -> implement -> review -> verify when behavior changed`
+- For non-trivial work, classify risk as `low`, `medium`, or `high`.
+- If a slice grows beyond roughly 6 files or 300-500 changed lines, pause and confirm it is still one bounded outcome.
 
 ## Approval Required Before Proceeding
 
 - `<APPROVAL_REQUIRED_CHANGES>`
+- A human approver must be able to explain each changed section well enough to own the merge.
+
+## Release and Migration Safety
+
+- For `medium` and `high` risk changes, define rollback or disable path before implementation.
+- For `medium` and `high` risk changes, define what observable signal confirms success after deployment.
+- Use a feature flag for `medium` or `high` risk behavior changes when practical.
+- For additive-only migrations, document rollback posture and proceed.
+- For migrations that drop, rename, or restructure existing data, use expand-contract.
+
+## Prototype Lane
+
+- Prototype code must not be merged directly into production paths.
+- Any promoted prototype must be respecified as a normal bounded slice and pass the standard workflow.
 
 ## Verification Rules
 

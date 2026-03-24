@@ -3,6 +3,7 @@
 Ask for approval before:
 
 - `<APPROVAL_REQUIRED_CHANGES>`
+- Approval means a human approver can explain each changed section well enough to own the merge.
 
 Examples:
 

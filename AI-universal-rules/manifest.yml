@@ -18,6 +18,7 @@ required_templates:
   - templates/core/project-stack.template.md
 optional_packs:
   - templates/optional/opencode
+  - templates/optional/delivery
 preview_only_assets:
   - templates/github-copilot/prompts
 enablement_notes:

@@ -27,13 +27,20 @@ Before reviewing:
 Review checklist:
 
 1. Task fit and acceptance criteria
-2. Correctness and regression risk
-3. Security or privacy impact
-4. Edge cases and failure paths
-5. Architecture or ownership violations
-6. Unnecessary complexity or misleading naming
-7. Missing tests when behavior changed
-8. Drift from repository policy
+2. Risk classification accuracy (`low` | `medium` | `high`)
+3. Review depth matches risk level
+   - low: focused diff and direct tests
+   - medium: focused diff plus nearby contracts, failure paths, and deployment impact
+   - high: deep review across contracts, migrations, rollout safety, and failure recovery
+4. Correctness and regression risk
+5. Security or privacy impact
+6. Edge cases and failure paths
+7. Architecture or ownership violations
+8. Unnecessary complexity or misleading naming
+9. Missing tests when behavior changed
+10. Drift from repository policy
+11. For `medium` and `high` risk: rollback or disable path, observability signal, and feature-flag posture
+12. For risky migrations: expand-contract strategy when data shape changes are breaking
 
 Review priorities:
 
@@ -51,6 +58,11 @@ For each issue:
 - Category: correctness | security | edge-case | contract | maintainability | test
 - Issue: concise explanation
 - Fix direction: what should happen next
+
+## Risk Assessment
+- Reported level: low | medium | high
+- Is the level appropriate: yes | no
+- Is verification depth proportional: yes | no
 
 ## Recommended Next Step
 - implement

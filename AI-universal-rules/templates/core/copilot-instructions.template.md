@@ -16,10 +16,13 @@ They should remain valid even if advanced agent features or prompt files are una
 ## Working Style
 
 - Prefer the smallest safe change.
+- For non-trivial work, classify risk as `low`, `medium`, or `high` to set review and verification depth.
 - Read existing code before proposing structural changes.
 - Follow established repository patterns before inventing new abstractions.
 - Ask for approval before making: `<APPROVAL_REQUIRED_CHANGES>`
+- A human approver must be able to explain each changed section well enough to own the merge.
 - Distinguish current implementation from planned or hypothetical systems.
+- If a slice grows beyond roughly 6 files or 300-500 changed lines, pause and confirm it is still one bounded outcome.
 
 ## Quality Bar
 
@@ -27,6 +30,9 @@ They should remain valid even if advanced agent features or prompt files are una
 - Add focused tests when behavior changes.
 - Prioritize review around: `<REVIEW_PRIORITIES>`
 - Use `<PRIMARY_VERIFY_COMMAND>` as the main verification command unless the task needs a narrower command first.
+- For `medium` and `high` risk changes, define rollback or disable path and post-deploy confirmation signal.
+- For migrations that drop, rename, or restructure existing data, use expand-contract.
+- Treat prototype paths as exploratory only; promoted prototype code must pass the normal workflow before merge.
 
 ## Limits
 

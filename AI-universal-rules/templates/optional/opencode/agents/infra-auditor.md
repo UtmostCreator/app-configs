@@ -1,5 +1,5 @@
 ---
-description: Audit dependency, build, release, and compatibility risk in <PROJECT_NAME>
+description: Use when auditing dependency, build, release, or compatibility risk in <PROJECT_NAME>
 mode: subagent
 hidden: true
 temperature: 0.0
@@ -17,3 +17,12 @@ Use this role for:
 - verification workflow changes
 
 This role is advisory and read-only.
+
+Do not use this role as a substitute for implementation, bug fixing, or canonical release workflow definitions.
+
+Defer to project context for repository facts and to `release-safety` or `dependency-upgrade` for reusable workflow guidance.
+
+Gotchas:
+
+- do not present advisory risk as if it were a confirmed production incident
+- do not recommend wider rollout without matching verification evidence

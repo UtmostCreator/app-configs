@@ -29,6 +29,24 @@ Stack: PHP ^8.4, Laravel 12, Vue 3, Vite, Tailwind 3, PHPUnit 11
 3. Apply the smallest possible fix.
 4. Re-run relevant tests and confirm the reproduction test passes.
 
+## Verification rules
+
+- Use the verification ladder: focused proof first, affected layer tests second, broader repository verification third, build as a smoke check when relevant, and release-safety review only when risk warrants it.
+- Treat build success as a smoke check, not proof of runtime correctness.
+- State exactly which test or command produced the claimed result.
+
+## Scope of this file
+
+- This file is for repo-wide baseline guidance.
+- Keep reusable workflow detail in narrower workflow assets when the repository provides them.
+- Use narrower instructions or workflow-specific assets for subsystem-specific behavior.
+
+## Common gotchas
+
+- Do not answer from generic Laravel defaults when repo patterns are more specific.
+- Do not expand a bug-fix slice into unrelated cleanup.
+- Do not report recommendations as if they were executed evidence.
+
 ## Do not
 
 - refactor unrelated code during a bug fix

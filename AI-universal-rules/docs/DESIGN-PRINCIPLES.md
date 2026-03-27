@@ -42,6 +42,10 @@ Treat OpenCode, Copilot VS Code or CLI, and Copilot GitHub.com as different cont
 
 The base kit should still work if prompts, handoffs, advanced agent properties, or optional adapters are removed.
 
+## 9a. Capability-First Workflow Knowledge
+
+Keep reusable workflow knowledge in capability folders with support files, then adapt that knowledge into tool-specific agents, prompts, commands, or skills.
+
 ## 10. Orthogonal Instruction Scopes
 
 Keep repo-wide, path-specific, nearest-owner, and workflow-specific instructions complementary rather than overlapping or contradictory.
@@ -57,6 +61,10 @@ Do not describe reusable prompts or workflow assets as if they were equivalent t
 ## 13. Prefer Stable Primitives Before Preview Features
 
 Use stable repo-wide and path-specific instructions first. Add preview or surface-limited features only when their limitations are clearly documented.
+
+## 13a. Progressive Disclosure Over Giant Prompts
+
+Keep entry files short. Put gotchas, examples, checklists, and scripts in support files that can be loaded when needed.
 
 ## 14. Transparent Control Boundaries
 

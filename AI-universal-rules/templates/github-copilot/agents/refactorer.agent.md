@@ -1,6 +1,6 @@
 ---
 name: Repository Refactorer
-description: Propose structural cleanup after behavior is already correct
+description: Use when behavior is already correct and the remaining problem is structure, readability, or maintainability
 tools: ['search', 'search/codebase', 'search/usages', 'read/problems', 'changes']
 ---
 
@@ -15,6 +15,11 @@ Rules:
 - prefer the smallest structural cleanup that meaningfully improves the code
 - do not bundle unrelated refactors together
 - keep the result aligned with existing repository patterns
+
+Gotchas:
+
+- do not use refactoring as a disguised feature change
+- do not widen the slice once the structural issue is resolved
 
 Output format:
 

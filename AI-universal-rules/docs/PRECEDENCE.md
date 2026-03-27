@@ -19,7 +19,8 @@ Practical guidance:
 
 - keep global defaults broad
 - keep project config repo-specific
-- keep `.opencode/` assets focused on reusable workflows and roles
+- keep capability folders focused on reusable workflows, gotchas, and examples
+- keep `.opencode/` assets focused on roles and runtime adapters
 - avoid splitting one rule across multiple files unless the layering is intentional
 
 ## GitHub Copilot
@@ -44,7 +45,7 @@ Important behavior:
 
 - keep repo-wide instructions short and general
 - keep path-specific instructions narrow and file-focused
-- place workflow-specific behavior in agents or prompt files, not in global policy
+- place canonical workflow behavior in capability folders, not in global policy
 - avoid repeating the same rule in multiple scopes
 - if two instructions could conflict, move one to a narrower owner or remove it
 
@@ -53,9 +54,19 @@ Important behavior:
 Use this order when building a repository:
 
 1. core policy
-2. repo-wide instructions
-3. path-specific instructions
-4. nearest-owner instructions only where needed
-5. optional workflow assets
+2. project context and capability folders
+3. repo-wide instructions
+4. path-specific instructions
+5. nearest-owner instructions only where needed
+6. optional workflow assets
 
 This keeps the base system stable even if optional features are unavailable.
+
+## What To Put Where
+
+- core policy: broad safety, review, and working rules
+- project context: durable repository facts, commands, boundaries, and active paths
+- capability folders: reusable workflows with gotchas and examples
+- repo-wide instructions: stable repository-wide behavior that should apply often
+- path-specific instructions: narrow file or subsystem guidance
+- optional workflow assets: runtime-specific adapters

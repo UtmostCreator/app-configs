@@ -1,5 +1,5 @@
 ---
-description: Reviews changed code for correctness, regressions, and policy fit in <PROJECT_NAME>
+description: Use when reviewing a change set for correctness, regressions, policy fit, and missing verification in <PROJECT_NAME>
 mode: subagent
 hidden: true
 temperature: 0.0
@@ -20,9 +20,15 @@ Do not edit code.
 Before reviewing:
 
 - start from the current diff
-- load the project-stack skill if available
+- load the project-context and review-diff skills if available
 - inspect changed files first and unchanged files only when needed
 - trust active repository truth over planning notes
+
+Gotchas:
+
+- do not spend the review mostly summarizing what changed
+- do not inflate style preferences into correctness failures
+- do not present unexecuted verification as if it already happened
 
 Review checklist:
 

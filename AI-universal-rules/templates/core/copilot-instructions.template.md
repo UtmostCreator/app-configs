@@ -12,6 +12,8 @@ They should remain valid even if advanced agent features or prompt files are una
 - Active paths: `<ACTIVE_PATHS>`
 - Avoid by default: `<INACTIVE_PATHS>`
 - Primary entrypoints: `<PRIMARY_ENTRYPOINTS>`
+- Project context file: `<PROJECT_CONTEXT_PATH>`
+- Capability folders available: `<AVAILABLE_CAPABILITIES>`
 
 ## Working Style
 
@@ -23,6 +25,7 @@ They should remain valid even if advanced agent features or prompt files are una
 - A human approver must be able to explain each changed section well enough to own the merge.
 - Distinguish current implementation from planned or hypothetical systems.
 - If a slice grows beyond roughly 6 files or 300-500 changed lines, pause and confirm it is still one bounded outcome.
+- Prefer reusable capability folders for workflow-specific guidance when the repository provides them.
 
 ## Quality Bar
 
@@ -30,9 +33,16 @@ They should remain valid even if advanced agent features or prompt files are una
 - Add focused tests when behavior changes.
 - Prioritize review around: `<REVIEW_PRIORITIES>`
 - Use `<PRIMARY_VERIFY_COMMAND>` as the main verification command unless the task needs a narrower command first.
+- Start with the smallest relevant verification and escalate only when needed.
+- Use the verification ladder: focused proof first -> affected layer tests second -> broader repository verification third -> build as a smoke check when relevant -> release-safety review only when risk warrants it.
 - For `medium` and `high` risk changes, define rollback or disable path and post-deploy confirmation signal.
 - For migrations that drop, rename, or restructure existing data, use expand-contract.
 - Treat prototype paths as exploratory only; promoted prototype code must pass the normal workflow before merge.
+
+## Common Gotchas
+
+- `<KNOWN_GOTCHA_THEMES>`
+- When a workflow asset has its own `gotchas` section, follow the narrower guidance there.
 
 ## Limits
 

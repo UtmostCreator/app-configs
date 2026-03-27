@@ -15,10 +15,17 @@ supported_surfaces:
 required_templates:
   - templates/core/AGENTS.template.md
   - templates/core/copilot-instructions.template.md
-  - templates/core/project-stack.template.md
+  - templates/core/project-context.template.md
+  - templates/capabilities/project-context/CAPABILITY.md
+  - templates/capabilities/verify-change/CAPABILITY.md
+  - templates/capabilities/review-diff/CAPABILITY.md
 optional_packs:
   - templates/optional/opencode
   - templates/optional/delivery
+starter_optional_capabilities:
+  - templates/capabilities/bug-regression
+  - templates/capabilities/release-safety
+  - templates/capabilities/dependency-upgrade
 preview_only_assets:
   - templates/github-copilot/prompts
 enablement_notes:

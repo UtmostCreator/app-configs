@@ -56,6 +56,13 @@ Inspect the current implementation before making architectural or behavioral cha
 
 - `<RISK_AREAS>`
 
+## Capability Map
+
+- Core project context file: `<PROJECT_CONTEXT_PATH>`
+- Available capabilities: `<AVAILABLE_CAPABILITIES>`
+- Capability composition notes: `<CAPABILITY_COMPOSITION_NOTES>`
+- Prefer capability folders for reusable workflow knowledge; keep this file focused on baseline policy.
+
 ## Release and Migration Safety
 
 - For `medium` and `high` risk changes, define rollback or disable path before implementation.
@@ -83,18 +90,33 @@ Inspect the current implementation before making architectural or behavioral cha
 - Primary verification command: `<PRIMARY_VERIFY_COMMAND>`
 - Primary build command: `<PRIMARY_BUILD_COMMAND>`
 - Primary test command: `<PRIMARY_TEST_COMMAND>`
+- Preferred narrow-first verification pattern: `<NARROW_VERIFY_GUIDANCE>`
+- Verification ladder: focused proof first -> affected layer tests second -> broader repository verification third -> build as a smoke check when relevant -> release-safety review only when risk warrants it.
 - Do not claim verification you did not run.
 - Treat build success as a smoke check unless the project defines otherwise.
+
+## Evidence Expectations
+
+- State which command or check produced the claim.
+- Separate direct evidence from inference.
+- For behavior changes, name the focused test, flow, or assertion that proves the result.
+- For `medium` and `high` risk work, state rollback path and success signal alongside verification.
 
 ## Review Priorities
 
 - `<REVIEW_PRIORITIES>`
+
+## Common Gotchas
+
+- `<KNOWN_GOTCHA_THEMES>`
+- Capture recurring failure modes in capability `gotchas.md` files instead of bloating global policy.
 
 ## Documentation Rules
 
 - Distinguish current implementation from future ideas.
 - Prefer code-verified statements over planning assumptions.
 - Use exact commands that work in the repository.
+- Keep reusable workflow guidance in capability support files with examples and checklists.
 
 ## Do Not
 

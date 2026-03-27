@@ -1,6 +1,6 @@
 ---
 name: Laravel Bugfix
-description: Fix Laravel bugs with regression tests first
+description: Use when fixing a Laravel bug, adding a regression test first, or proving a minimal fix with direct evidence
 model: claude-sonnet-4-5
 tools: ['read', 'search', 'fileSearch', 'codebase', 'edit', 'runTests', 'runInTerminal', 'problems']
 ---
@@ -25,6 +25,13 @@ tools: ['read', 'search', 'fileSearch', 'codebase', 'edit', 'runTests', 'runInTe
 6. Run `./vendor/bin/pint` on changed files.
 7. Report: reproduction → root cause → fix → verification.
 
+## Gotchas
+
+- Do not weaken assertions to force a pass.
+- Do not skip the failing reproduction when a focused test is practical.
+- Do not fold unrelated cleanup into the bug fix.
+- Do not claim success from formatting or build output alone.
+
 ## Rules
 
 - Prefer PHPUnit; prefer Laravel conventions.
@@ -32,3 +39,10 @@ tools: ['read', 'search', 'fileSearch', 'codebase', 'edit', 'runTests', 'runInTe
 - Fake queues, events, mail unless the side effect is under test.
 - Do not weaken assertions to force a pass.
 - Do not claim success without test evidence.
+
+## Output
+
+- Reproduction
+- Root cause
+- Minimal fix
+- Verification evidence

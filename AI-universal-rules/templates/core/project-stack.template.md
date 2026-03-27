@@ -1,33 +1,11 @@
 # <PROJECT_NAME> Project Stack
 
-Use this file as reusable project context for AI instructions.
+Compatibility note: `project-stack.template.md` remains for older installs.
 
-## Project Shape
+Prefer `project-context.template.md` for new repositories because it separates durable repo facts from workflow capabilities more clearly.
 
-- Project type: `<PROJECT_TYPE>`
-- Summary: `<PROJECT_SUMMARY>`
-- Primary language: `<PRIMARY_LANGUAGE>`
-- Primary runtime: `<PRIMARY_RUNTIME>`
-- Supported targets: `<TARGET_PLATFORMS>`
-- Active paths: `<ACTIVE_PATHS>`
-- Inactive paths: `<INACTIVE_PATHS>`
+If you keep this file name for compatibility, mirror the content from `project-context.template.md` during migration.
 
-## Architecture
+For new installs, do not copy this file.
 
-- Primary entrypoints: `<PRIMARY_ENTRYPOINTS>`
-- Architecture notes: `<ARCHITECTURE_NOTES>`
-- Risk areas: `<RISK_AREAS>`
-
-## Verification
-
-- Main verification command: `<PRIMARY_VERIFY_COMMAND>`
-- Main build command: `<PRIMARY_BUILD_COMMAND>`
-- Main test command: `<PRIMARY_TEST_COMMAND>`
-
-## Review Focus
-
-- `<REVIEW_PRIORITIES>`
-
-## Approval Boundaries
-
-- `<APPROVAL_REQUIRED_CHANGES>`
+For migrated installs, remove this file once all references point to `project-context.template.md` or the adopted repo's `docs/ai/project-context.md`.

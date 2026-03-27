@@ -1,7 +1,10 @@
 # Install For GitHub Copilot
 
+If you are new to the kit, read `docs/ONBOARDING.md` first.
+
 Start with the most stable Copilot primitives first:
 
+- neutral capability folders for reusable workflow knowledge
 - `.github/copilot-instructions.md`
 - `.github/instructions/*.instructions.md`
 
@@ -12,7 +15,8 @@ Add agents and prompt files only after confirming your target Copilot surface su
 Copy these files into your target repository:
 
 - `templates/core/copilot-instructions.template.md` -> `.github/copilot-instructions.md`
-- `templates/core/project-stack.template.md`
+- `templates/core/project-context.template.md` -> `docs/ai/project-context.md`
+- `templates/capabilities/` -> `docs/ai/capabilities/`
 - `templates/github-copilot/instructions/architecture.instructions.md`
 - `templates/github-copilot/instructions/frontend.instructions.md`
 - `templates/github-copilot/instructions/testing.instructions.md`
@@ -56,21 +60,27 @@ Delivery planning assets are optional:
 ## Setup Steps
 
 1. Rename `copilot-instructions.template.md` to `.github/copilot-instructions.md`.
-2. Copy only the instruction files first.
+2. Copy `project-context.template.md` to `docs/ai/project-context.md`, copy capability folders to `docs/ai/capabilities/`, and then copy the instruction files.
 3. Replace placeholders across all copied files.
 4. Add `.github/agents/` only if the target surface supports the behaviors you want, and start with the architect, reviewer, and refactorer only.
 5. Add `.github/prompts/` only if your IDE or toolchain supports prompt files and your team accepts preview features.
 6. Search for unresolved `<PLACEHOLDER_NAME>` tokens and remove project-specific leaks.
 
+## Verification
+
+Follow the verification ladder in `docs/CAPABILITY-MODEL.md`.
+
 ## Suggested First Test
 
 - Ask Copilot to summarize the repo using the repo-wide and path-specific instructions.
+- Ask Copilot to explain which capability folder fits a realistic request and why.
 - If using agents, ask the architect for a medium-sized implementation plan.
 - If using agents, ask for a diff review using the reviewer agent.
 - If using prompt files, test one prompt and confirm the feature is enabled on your surface.
+- Confirm verification stays narrow first and does not turn build success into proof of runtime correctness.
 - Confirm medium-sized plans include risk level (`low` | `medium` | `high`).
 - For `medium` and `high` risk, confirm rollback plan, observability signal, and feature-flag posture are present.
 
 ## Recommendation
 
-Start with repo instructions and path instructions first. If you add agents, keep the Copilot set aligned to the OpenCode core: architect, reviewer, and refactorer. Treat prompt files as an optional enhancement, not part of the required base install.
+Start with capability folders, repo instructions, and path instructions first. If you add agents, keep the Copilot set aligned to the OpenCode core: architect, reviewer, and refactorer. Treat prompt files as an optional enhancement, not part of the required base install.

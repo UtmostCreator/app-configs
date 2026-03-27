@@ -23,6 +23,8 @@ Use uppercase snake case for every token. Replace each token with repository-spe
 | `<PRIMARY_VERIFY_COMMAND>` | Main verification command | `pnpm test && pnpm build` | Core templates, verify command |
 | `<PRIMARY_BUILD_COMMAND>` | Smallest meaningful build command | `pnpm build` | Core templates, snippets |
 | `<PRIMARY_TEST_COMMAND>` | Main focused test command | `pnpm test` | Core templates, snippets |
+| `<PROJECT_CONTEXT_PATH>` | Location of the durable project context file | `docs/ai/project-context.md` | Core templates |
+| `<AVAILABLE_CAPABILITIES>` | Capability folders enabled in the repository | `project-context, verify-change, review-diff` | Core templates |
 | `<REVIEW_PRIORITIES>` | Top correctness and regression review areas | `state ownership, API contracts, data loss risk` | Core templates, reviewer roles |
 | `<APPROVAL_REQUIRED_CHANGES>` | Changes that require approval before proceeding | `schema changes, auth changes, dependency changes` | Core templates |
 
@@ -36,6 +38,10 @@ Use uppercase snake case for every token. Replace each token with repository-spe
 | `<TARGET_PLATFORMS>` | Supported execution targets | `web, api, worker` | Core templates, targets instruction |
 | `<ARCHITECTURE_NOTES>` | Short architecture summary | `Feature modules with shared domain packages.` | Core templates, skill |
 | `<RISK_AREAS>` | High-risk technical areas | `billing, migrations, background jobs` | Core templates, reviewers |
+| `<NARROW_VERIFY_GUIDANCE>` | Preferred narrow-first verification strategy | `run package-local tests before repo-wide build` | Core templates, skills |
+| `<CAPABILITY_COMPOSITION_NOTES>` | How capabilities should hand off to each other | `bug-regression uses project-context then verify-change` | Core templates |
+| `<RELEASE_SAFETY_NOTES>` | Release and rollout notes that apply across workflows | `feature flag fallback, smoke path, dashboards to watch after deploy` | Core templates |
+| `<KNOWN_GOTCHA_THEMES>` | Repeated failure modes to highlight globally | `over-broad diffs, build-only evidence, stale legacy paths` | Core templates |
 | `<COPILOT_SURFACE>` | Target Copilot runtime | `VS Code`, `CLI`, `GitHub.com` | Docs, Copilot guidance |
 | `<SUPPORTED_FEATURES>` | Stable features the target surface supports | `repo instructions, path instructions, custom agents` | Docs, examples |
 | `<OPTIONAL_FEATURES>` | Features that are available but non-essential or preview-only | `prompt files, handoffs` | Docs, examples |

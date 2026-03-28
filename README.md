@@ -29,6 +29,14 @@ The root repository follows a simple layered model:
 
 The goal is to keep canonical workflow knowledge in one place and keep runtime-specific files thin.
 
+Generated indexes and machine-readable outputs now sit alongside the handwritten docs:
+
+- `docs/ai/catalog.md` - generated catalog for the live repo and reusable package
+- `AI-universal-rules/docs/BROWSE.md` - generated package browse surface
+- `AI-universal-rules/catalog.json` - generated machine-readable package catalog
+- `AI-universal-rules/manifest.json` - schema-backed package manifest
+- `llms.txt` - machine-readable root repo entrypoints for AI tools
+
 ## Repository Layout
 
 ```text
@@ -77,9 +85,12 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 
 - start with `AGENTS.md`
 - read `docs/ai/project-context.md`
+- browse `docs/ai/catalog.md` when you need the fastest path to relevant assets
 - use the smallest relevant capability in `docs/ai/capabilities/`
 - only then use runtime-specific adapter files such as `.github/copilot-instructions.md`
 - run `php tools/ai/validate-ai-config.php` after changing root workflow files
+- run `php tools/ai/validate-ai-catalog.php` after changing package metadata or generated docs
+- run `php tools/ai/generate-ai-catalog.php` after changing cataloged assets or package metadata
 
 ## Important Notes
 
@@ -87,13 +98,22 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - Example repos under `AI-universal-rules/examples/` are references, not root-repo behavior.
 - This repo prefers a simple production-grade workflow model over a huge catalog of agents, skills, or plugins.
 
+## Contribution And Trust
+
+- `CONTRIBUTING.md` explains the change workflow and generated file rules.
+- `SECURITY.md` covers how to report sensitive issues.
+- `SUPPORT.md` lists the best entrypoints when adopting or debugging the kit.
+
 ## Key Files
 
 - `AGENTS.md`
 - `CLAUDE.md`
 - `docs/ai/project-context.md`
+- `docs/ai/catalog.md`
 - `docs/ai/workflow.md`
 - `docs/ai/validation.md`
 - `docs/ai/hooks.md`
 - `AI-universal-rules/README.md`
+- `AI-universal-rules/docs/BROWSE.md`
+- `AI-universal-rules/manifest.json`
 - `vscode/user/settings.json`

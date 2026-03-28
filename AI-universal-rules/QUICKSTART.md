@@ -2,21 +2,35 @@
 
 Use this flow when adapting the kit to a real repository.
 
-If you are new to the kit, read `docs/ONBOARDING.md` first.
-
-## 1. Choose Your Target
+## 1. Choose A Runtime Strategy
 
 - OpenCode only
 - GitHub Copilot only
-- Both tools in the same repository
+- dual-tool repository with one shared capability layer
 
-## 2. Copy The Minimum Starter Set
+If you are unsure, start with one runtime first and add the second only after the base flow is stable.
 
-For OpenCode:
+## 2. Copy The Base Layer
+
+For every repository:
 
 - `templates/core/AGENTS.template.md` -> `AGENTS.md`
 - `templates/core/project-context.template.md` -> `docs/ai/project-context.md`
-- `templates/capabilities/` -> `docs/ai/capabilities/`
+- `templates/capabilities/project-context/` -> `docs/ai/capabilities/project-context/`
+- `templates/capabilities/verify-change/` -> `docs/ai/capabilities/verify-change/`
+- `templates/capabilities/review-diff/` -> `docs/ai/capabilities/review-diff/`
+- `templates/shared/guardrails/AI-GUARDRAILS.md` -> `docs/ai/AI-GUARDRAILS.md`
+
+Add only when the repo really needs them:
+
+- `templates/capabilities/bug-regression/`
+- `templates/capabilities/release-safety/`
+- `templates/capabilities/dependency-upgrade/`
+
+## 3. Add One Runtime Adapter
+
+For OpenCode:
+
 - `templates/opencode/agents/`
 - `templates/opencode/commands/`
 - `templates/opencode/skills/`
@@ -24,65 +38,79 @@ For OpenCode:
 For GitHub Copilot:
 
 - `templates/core/copilot-instructions.template.md` -> `.github/copilot-instructions.md`
-- `templates/core/project-context.template.md` -> `docs/ai/project-context.md`
-- `templates/capabilities/` -> `docs/ai/capabilities/`
 - `templates/github-copilot/instructions/`
 - `templates/github-copilot/agents/`
-- `templates/github-copilot/prompts/` when your surface supports prompt files
+- `templates/github-copilot/prompts/` when the active surface supports prompt files
 
-## 2a. Minimum Base Install
-
-For most repositories, start with:
-
-- `docs/ai/capabilities/verify-change/`
-- `docs/ai/capabilities/review-diff/`
-- `docs/ai/project-context.md`
-- `docs/ai/capabilities/project-context/`
-
-Add when the repository actually needs them:
-
-- `docs/ai/capabilities/bug-regression/`
-- `docs/ai/capabilities/release-safety/`
-- `docs/ai/capabilities/dependency-upgrade/`
-
-See `docs/COMPOSITION-RECIPES.md` for common task-to-capability flows.
-
-## 3. Replace Placeholders
+## 4. Replace Placeholders
 
 Use `PLACEHOLDERS.md` as the source of truth.
 
 Recommended order:
 
-1. Replace required placeholders in core templates.
-2. Replace the same values in the capability folders.
-3. Replace the same values in the tool-specific templates.
-4. Remove optional sections that do not fit the repository.
+1. core policy and project-context files
+2. capability folders
+3. shared guardrail and approval templates
+4. runtime adapters
+5. optional packs
 
-## 4. Validate
+Delete sections that do not fit the repository instead of leaving vague generic prose.
 
-Run a placeholder and leak check before rollout:
+## 5. Configure Workflow Layers
 
-1. Search for unresolved `<PLACEHOLDER_NAME>` tokens.
-2. Search for project-specific names that should not exist in shared templates.
-3. If your team keeps local validation scripts, run them here.
+Before rollout, make sure the repo has a clear answer for each layer:
 
-## 5. Test In A Toy Repo
+1. always-on policy: what broad rules apply often?
+2. durable facts: what belongs in project context?
+3. task entry points: which repeated one-off tasks deserve prompts or commands?
+4. staged roles: do you need researcher, planner, implementer, reviewer, release auditor?
+5. optional capability packs: which deeper procedures should stay out of always-on files?
+6. enforcement: what should hooks, tool restrictions, or MCP boundaries guarantee?
 
-- Ask for a code review using the review role
-- Ask for a bug fix plan
-- Use a capability on a realistic task and confirm the trigger description matches the request
-- Confirm the verification ladder stays narrow first: focused proof -> affected layer tests -> broader repo verification -> build smoke check when relevant -> release-safety review only when risk warrants it
-- Confirm the instructions do not imply unsupported tool features
-- For a non-trivial sample task, classify risk as `low`, `medium`, or `high`
-- For `medium` and `high` risk, confirm rollback plan, observability signal, and feature-flag posture are stated
+## 6. Validate Before Use
 
-## 6. Add Optional Packs Later
+Run a placeholder and leak check:
 
-Only add optional agents and prompts when the project really needs them:
+1. search for unresolved `<PLACEHOLDER_NAME>` tokens
+2. search for project-specific names that should not exist in shared templates
+3. search for duplicated rules across repo-wide instructions and capability folders
+4. confirm every destructive or high-impact workflow has an approval gate
 
-- build or dependency specialists
-- UI specialists
-- upgrade specialists
-- docs specialists
-- bugfix specialists
-- delivery slice-card template for non-trivial work
+## 7. Test The Workflow, Not Just The Files
+
+Run at least these scenarios in a toy repo or branch:
+
+1. unfamiliar-area question -> should route through `project-context`
+2. bug fix -> should prefer reproduction, minimal fix, evidence
+3. existing diff review -> should start from the diff, not re-plan the feature
+4. medium-risk change -> should require rollback, observability, and approval notes
+5. prompt or command task -> should stay narrow and not leak global workflow detail everywhere
+6. multi-step task -> should use staged handoffs rather than one bloated context
+
+## 8. Add Optional Packs Later
+
+Only after the base flow works cleanly:
+
+- specialist agents
+- specialist prompts
+- release hooks
+- MCP integrations
+- delivery artifacts such as slice cards
+
+## 9. Use Generated Browse And Release Assets
+
+After changing templates, docs, or examples:
+
+1. run `php tools/ai/generate-ai-catalog.php`
+2. inspect `AI-universal-rules/docs/BROWSE.md`
+3. validate with `php tools/ai/validate-ai-catalog.php`
+4. preview a starter bundle with `php tools/ai/export-ai-universal-rules.php --profile=dual-runtime-starter`
+
+## What Good Looks Like
+
+- policy is short and stable
+- procedures live in capabilities, prompts, commands, or agent workflows
+- verification reports evidence instead of generic confidence
+- destructive actions are gated
+- runtime debug steps are documented for misbehavior
+- one worked example in the repo matches the actual setup

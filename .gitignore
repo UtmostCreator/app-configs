@@ -1,2 +1,34 @@
 /.history/
 **/.DS_Store
+
+# Editor and IDE noise
+.idea/
+.vscode-test/
+*.code-workspace
+
+# OS and temp files
+Thumbs.db
+*.tmp
+*.temp
+
+# Local AI/runtime settings
+.claude/settings.local.json
+.claude/projects/
+.claude/tmp/
+.gemini/
+.aider*
+
+# Dependency and build noise
+node_modules/
+vendor/
+dist/
+build/
+coverage/
+
+# Local env and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.token

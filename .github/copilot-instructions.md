@@ -1,54 +1,47 @@
-# Project Instructions
+# Repository Instructions For app-configs
 
-## Projects
+Use these instructions as the repository-wide baseline for GitHub Copilot.
 
-Stack: PHP ^8.4, Laravel 12, Vue 3, Vite, Tailwind 3, PHPUnit 11
+## Project Context
 
-## Laravel rules
+- Project: `app-configs`
+- Type: `configuration repo + AI workflow kit`
+- Summary: `Opinionated local development configuration plus a live benchmark for durable cross-tool AI workflow setup.`
+- Active paths: `AI-universal-rules/, docs/, vscode/, shell/, tools/, php/, .github/`
+- Avoid by default: `treat copied examples as references unless the task explicitly targets them`
+- Primary entrypoints: `README.md, AGENTS.md, docs/ai/project-context.md, AI-universal-rules/README.md, vscode/user/settings.json`
+- Project context file: `docs/ai/project-context.md`
+- Capability folders available: `docs/ai/capabilities/project-context, docs/ai/capabilities/verify-change, docs/ai/capabilities/review-diff, docs/ai/capabilities/bug-regression, docs/ai/capabilities/docs-sync, docs/ai/capabilities/config-change-safety`
 
-- Prefer Laravel conventions over custom abstractions.
-- Prefer PHPUnit for tests.
-- Prefer Form Requests for HTTP validation.
-- Prefer Eloquent scopes and query objects over duplicated query logic.
-- Keep controllers thin; move business logic to actions/services where appropriate.
-- Use policies/gates for authorization.
-- Use factories in tests; keep fixtures minimal.
+## Working Style
 
-## Frontend rules
+- Prefer the smallest safe change.
+- Read current repo files before proposing new structure.
+- Keep this file policy-focused and use `docs/ai/` for canonical workflow detail.
+- Ask for approval before changing secrets, credentials, or broad compatibility posture.
+- Fix adapter drift instead of teaching conflicting workflows.
+- Say `unknown` instead of guessing when the repo does not prove a fact.
 
-- Use Vue 3 Composition API with `<script setup>`.
-- Use TypeScript in Nuxt projects.
-- Use Pinia for state management.
-- Use Tailwind CSS utility classes; avoid inline styles.
-- Prefer `useFetch` / `useAsyncData` for data fetching in Nuxt.
+## Quality Bar
 
-## Bug-fix workflow
+- Keep logic close to its existing owner.
+- Sync docs when commands, paths, or setup behavior change.
+- Prioritize review around: `repo truth, path accuracy, runtime-adapter alignment, portability, and simple adoption`
+- Start verification with the narrowest non-destructive check available for the changed tool.
+- Treat broad builds as optional smoke checks, not automatic proof.
 
-1. Reproduce the bug with the smallest automated test.
-2. Confirm it fails on the current code.
-3. Apply the smallest possible fix.
-4. Re-run relevant tests and confirm the reproduction test passes.
+## Common Gotchas
 
-## Verification rules
+- This repo is not a Laravel or product application codebase.
+- `AI-universal-rules/examples/` contains references, not root-repo facts.
+- Shared docs must call out machine-specific paths explicitly.
+- Runtime surfaces differ; do not imply parity when support varies.
 
-- Use the verification ladder: focused proof first, affected layer tests second, broader repository verification third, build as a smoke check when relevant, and release-safety review only when risk warrants it.
-- Treat build success as a smoke check, not proof of runtime correctness.
-- State exactly which test or command produced the claimed result.
+## Limits
 
-## Scope of this file
-
-- This file is for repo-wide baseline guidance.
-- Keep reusable workflow detail in narrower workflow assets when the repository provides them.
-- Use narrower instructions or workflow-specific assets for subsystem-specific behavior.
-
-## Common gotchas
-
-- Do not answer from generic Laravel defaults when repo patterns are more specific.
-- Do not expand a bug-fix slice into unrelated cleanup.
-- Do not report recommendations as if they were executed evidence.
-
-## Do not
-
-- refactor unrelated code during a bug fix
-- weaken assertions to force a pass
-- claim success without test evidence
+- Copilot surface: `repository-scoped instructions plus optional narrower instructions and agents`
+- Stable supported features: `repo instructions, path-scoped instructions, custom agents`
+- Optional or preview features: `prompt files, advanced agent behavior, hooks, MCP depending on surface`
+- Instruction precedence notes: `narrower path-scoped instructions should refine this file, not contradict it`
+- Conflict avoidance notes: `keep canonical process in docs/ai and use Copilot files as adapters`
+- Global or shared rule sources: `AGENTS.md, CLAUDE.md, docs/ai/project-context.md, docs/ai/workflow.md, docs/ai/AI-GUARDRAILS.md`

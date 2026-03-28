@@ -1,0 +1,33 @@
+# CLAUDE.md
+
+This repository is a configuration repo and a live example of cross-tool AI workflow design.
+
+## Read First
+
+- `AGENTS.md`
+- `docs/ai/project-context.md`
+- `docs/ai/workflow.md`
+- `AI-universal-rules/README.md`
+
+## What Matters Here
+
+- Keep Claude-specific guidance thin and consistent with the canonical docs.
+- Prefer durable project facts from `docs/ai/` over session assumptions.
+- Treat `.github/` as the Copilot adapter layer, not the primary source of policy.
+- When changing docs or config, sync affected setup instructions in the same slice.
+
+## Working Style
+
+- Start narrow and keep changes bounded.
+- For non-trivial edits, use `project-context` first and then the smallest fitting capability.
+- For config changes, verify with the closest parser, linter, or tool-specific sanity check available.
+- If a runtime surface cannot support a workflow step directly, document the fallback instead of pretending parity.
+
+## Approval Boundaries
+
+- Ask before changing secrets, machine-specific credentials, or broad compatibility posture.
+- Ask before deleting large example areas or removing a supported adapter surface.
+
+## Memory Note
+
+If deeper process is needed, prefer `docs/ai/capabilities/` and `AI-universal-rules/` over expanding this file.

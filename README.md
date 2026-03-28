@@ -1,208 +1,99 @@
-# app-configs (macOS)
+# app-configs
 
-Repository of **opinionated development configuration** for macOS, focused on a consistent experience across editors, formatters, PHP tooling, and keyboard muscle-memory (Windows → macOS).
+Opinionated development configuration plus a reusable cross-tool AI workflow kit.
 
-Opinionated, reusable configuration for a consistent development experience on macOS: editor defaults, formatting/linting, PHP tooling (Herd + Xdebug), VS Code workflow, and Windows-like keyboard ergonomics (Karabiner).
+This repository has two jobs:
 
----
+- keep my editor, shell, terminal, PHP, and keyboard setup consistent
+- serve as a practical benchmark for repo-scoped AI workflows across portable `AGENTS.md`, GitHub Copilot, and Claude-style runtime adapters
 
-## Required folder structure
+## What Is Here
 
-Place the files in this repository using the following layout (paths are relative to repo root):
+- `AI-universal-rules/` - canonical cross-tool AI workflow package
+- `docs/ai/` - the live AI workflow instantiation for this repository
+- `vscode/` - workspace, user settings, keybindings, and launch config
+- `shell/` - shell and prompt config
+- `tools/` - Ghostty, Karabiner, and Neovim config
+- `php/` - PHP runtime and Pint config
+- `docs/` - setup notes for keyboard, shell, Neovim, VS Code, and local tooling
 
-Basic requirements:
+## AI Workflow Design
 
-- ⚠️ with existing config workspace and user settings you would be reuiqred to have some files or you must disable `requireConfig` flag
+The root repository follows a simple layered model:
 
-```
-.
-├── pint.json
-├── .gitattributes
-├── .editorconfig
-├── .stylelint.config.js
-├── .stylelintignore
-├── .prettierrc.json
-├── .eslintrc.json
-├── .stylelintrc.json
-└── .vscode
-    ├── settings.json
-    └── launch.json
-```
+1. `AGENTS.md` and `CLAUDE.md` provide durable baseline memory
+2. `docs/ai/project-context.md` captures repo facts
+3. `docs/ai/capabilities/` holds canonical reusable procedures
+4. `.github/` acts as the GitHub Copilot adapter
+5. `AI-universal-rules/` remains the reusable package and reference implementation
 
-If pint not install you will see:
+The goal is to keep canonical workflow knowledge in one place and keep runtime-specific files thin.
 
-```
-["INFO" - 11:26:21] Extension Name: open-southeners.laravel-pint.
-["INFO" - 11:26:21] Extension Version: 1.3.0.
-["ERROR" - 11:26:22] Executable not readable or lacks permissions for Laravel Pint.
-```
-
-We need to install it to have executable to format our code:
-
-```
-composer require laravel/pint --dev
-```
-
-Current repo structure
+## Repository Layout
 
 ```text
 .
-├── .editorconfig
-├── .eslintrc.json
-├── .gitignore
-├── .prettierrc.json
-├── .stylelintrc.json
-├── README.md
-├── php/                          # PHP runtime config + code style
+├── AGENTS.md
+├── CLAUDE.md
+├── AI-universal-rules/
+├── docs/
+│   ├── ai/
+│   ├── keyboard.md
+│   ├── nvim-setup.md
+│   ├── shell-setup.md
+│   ├── software-and-cli-tools.md
+│   └── vscode-extensions.md
+├── php/
 │   ├── php.ini
 │   └── pint.json
-├── shell/                        # zsh env + Starship prompt (coupled)
+├── shell/
 │   ├── .zshrc
 │   └── starship.toml
-├── tools/                        # standalone app configs
+├── tools/
 │   ├── ghostty/
-│   │   └── config
 │   ├── karabiner/
-│   │   └── karabiner.json
 │   └── nvim/
-│       ├── init.lua
-│       └── lua/
-│           └── plugins/
-│               └── vim-tmux-navigator.lua
-├── vscode/                       # VS Code settings & keybindings
+├── vscode/
 │   ├── keybindings.json
 │   ├── launch.json
-│   ├── workspace-example.json    # full project-specific example
-│   ├── workspace-template.json   # minimal shareable baseline
-│   └── user/
-│       ├── settings.json         # full user settings
-│       └── settings.minimal.json # minimal shareable subset
-└── docs/
-    ├── keyboard.md               # Karabiner Windows→macOS mapping
-    ├── nvim-setup.md
-    ├── shell-setup.md
-    └── vscode-extensions.md
+│   ├── user/
+│   ├── workspace-example.json
+│   └── workspace-template.json
+└── .github/
+    ├── copilot-instructions.md
+    ├── agents/
+    └── instructions/
 ```
 
-## Scope
+## Quick Start
 
-- **Editor defaults** via `.editorconfig`
-- **JS/TS/Vue formatting** via Prettier + ESLint
-- **PHP code style** via Laravel Pint (custom ruleset)
-- **PHP runtime/dev debugging** via Herd PHP 8.3 + Xdebug
-- **VS Code setup** (workspace + user settings) + extension list
-- **Karabiner-Elements** profile documentation (Windows-like shortcuts)
+### Local config use
 
----
+- read the relevant setup note in `docs/`
+- copy or merge the matching config file into your local environment
+- replace any machine-specific placeholders before using shared templates
 
-## Repository layout
+### AI workflow use
 
-### Editor / formatting
+- start with `AGENTS.md`
+- read `docs/ai/project-context.md`
+- use the smallest relevant capability in `docs/ai/capabilities/`
+- only then use runtime-specific adapter files such as `.github/copilot-instructions.md`
+- run `php tools/ai/validate-ai-config.php` after changing root workflow files
 
-- [`.editorconfig`](./.editorconfig)
-  Cross-editor defaults (LF, whitespace trimming, final newline, per-language indentation).
+## Important Notes
 
-- [`.prettierrc.json`](./.prettierrc.json)
-  Prettier configuration (semi, single quotes, 100 print width, LF).
+- Some settings are intentionally machine-specific; shared docs should call those out instead of hiding them.
+- Example repos under `AI-universal-rules/examples/` are references, not root-repo behavior.
+- This repo prefers a simple production-grade workflow model over a huge catalog of agents, skills, or plugins.
 
-- [`.eslintrc.json`](./.eslintrc.json)
-  ESLint configuration (Vue 3 + TypeScript + Prettier integration).
+## Key Files
 
-### PHP
-
-- [`config/pint/pint.json`](./config/pint/pint.json)
-  Laravel Pint ruleset:
-  - PSR-12 baseline
-  - Import ordering (class/function/const), single import per statement
-  - Spacing rules, trailing commas for multiline
-  - Strict class member ordering (sorted + grouped)
-
-- [`config/php/php.ini`](./config/php/php.ini)
-  Herd PHP 8.3 oriented `php.ini` example including:
-  - CA bundle paths for curl/openssl
-  - memory limits and upload sizes
-  - Xdebug settings (port 9003)
-
-  **Note:** This file includes **absolute paths** with `USERNAME`. You must replace `USERNAME` with your macOS username and ensure paths match your Herd installation.
-
-### VS Code
-
-- [`.vscode/settings.json`](./.vscode/settings.json)
-  Repo/workspace settings (project-level). Contains SQLTools example connection and editor/UI preferences.
-
-- [`.vscode/launch.json`](./.vscode/launch.json)
-  Xdebug launch configurations (Herd PHP 8.3, port 9003).
-
-- [`.vscode/keybindings.json`](./.vscode/keybindings.json)
-  Currently empty placeholder (add repo-specific bindings if required).
-
-- [`.vscode/userSettings/settings.json`](./.vscode/userSettings/settings.json)
-  **User-level** VS Code settings template intended to be copied to:
-  `~/Library/Application Support/Code/User/settings.json`
-
-  This file defines:
-  - Stable formatting strategy (Prettier global, Pint for PHP, Blade Formatter for Blade)
-  - Explicit lint fixes on save (to avoid random slowdowns)
-  - Tailwind/Blade/Vue language associations
-  - Performance exclusions (vendor/node_modules/storage/etc.)
-
-### Karabiner
-
-- [`docs/karabiner.md`](./docs/karabiner.md)
-  Human-readable explanation of the Windows → macOS “muscle memory” profile (what each mapping does, plus exclusions for terminals/IDEs).
-
-- [`tools/karabiner/karabiner.json`](./tools/karabiner/karabiner.json)
-  Placeholder location for the actual Karabiner profile JSON (currently empty in this snapshot).
-
-### Documentation
-
-- [`docs/vscode-extensions.md`](./docs/vscode-extensions.md)
-  VS Code extensions list with `code --install-extension ...` commands.
-
-### Utilities
-
-- [`all_in_one.sh`](./all_in_one.sh)
-  Utility script to produce a single `combined_output.txt` containing all repo files (pruning common ignored directories). Useful for audits/reviews.
-
----
-
-## Quick start
-
-### 1) EditorConfig (recommended)
-
-Most editors pick this up automatically. If not, enable EditorConfig support in your IDE and keep `.editorconfig` at repo root.
-
-### 2) VS Code
-
-#### Workspace settings
-
-Open the repository in VS Code. The workspace settings in `.vscode/settings.json` will apply automatically.
-
-#### User settings (optional but recommended)
-
-Copy the template into your user settings file:
-
-1. Open VS Code → Command Palette → **Preferences: Open User Settings (JSON)**
-2. Replace or merge content from:
-   - `./.vscode/userSettings/settings.json`
-
-**Important:** This template disables some built-in formatters and routes formatting to:
-
-- Prettier for web languages
-- Pint for PHP
-- Blade Formatter for Blade
-
-#### Install extensions
-
-Use the list in:
-
-- `./docs/vscode-extensions.md`
-
-Example:
-
-```bash
-code --install-extension esbenp.prettier-vscode
-code --install-extension dbaeumer.vscode-eslint
-code --install-extension open-southeners.laravel-pint
-code --install-extension xdebug.php-debug
-```
+- `AGENTS.md`
+- `CLAUDE.md`
+- `docs/ai/project-context.md`
+- `docs/ai/workflow.md`
+- `docs/ai/validation.md`
+- `docs/ai/hooks.md`
+- `AI-universal-rules/README.md`
+- `vscode/user/settings.json`

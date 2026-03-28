@@ -276,12 +276,13 @@ function aiCollectExampleResources(string $root): array
         $entrypoints = aiCollectExampleEntrypoints($files, $relativePath);
         $assetCounts = aiCountExampleAssets($files);
         $readmePath = aiFindExampleReadme($files);
-        $description = aiDescribeExample($root, $relativePath, $runtime, $readmePath, $assetCounts);
+        $title = aiExampleTitle($root, $relativePath, $readmePath, $files);
+        $description = aiDescribeExample($root, $relativePath, $runtime, $readmePath, $files, $assetCounts);
 
         $resources[] = aiResource(
             'package',
             'example-repo',
-            basename($directory),
+            $title,
             $relativePath,
             $description,
             $runtime,
@@ -587,8 +588,50 @@ function aiFindExampleReadme(array $files): ?string
     return null;
 }
 
-function aiDescribeExample(string $root, string $relativeDirectory, string $runtime, ?string $readmePath, array $assetCounts): string
+function aiExampleTitle(string $root, string $relativeDirectory, ?string $readmePath, array $files): string
 {
+    $slug = basename($relativeDirectory);
+    $preferredTitles = [
+        'generic-placeholder-repo' => 'Generic Placeholder Starter',
+        'expanded-placeholder-repo' => 'Expanded Placeholder Blueprint',
+        'worked-opencode-repo' => 'Acme Orders OpenCode Service',
+        'worked-copilot-repo' => 'Acme Web Copilot Workspace',
+        'worked-dual-tool-repo' => 'Acme Commerce Dual-Tool Monorepo',
+    ];
+
+    if (isset($preferredTitles[$slug])) {
+        return $preferredTitles[$slug];
+    }
+
+    if ($readmePath !== null) {
+        $content = file_get_contents($readmePath) ?: '';
+        $title = aiExtractTitle($content, '');
+
+        if ($title !== '' && preg_match('/<[^>]+>/', $title) !== 1) {
+            return aiNormalizeExampleTitle($title);
+        }
+    }
+
+    foreach ($files as $file) {
+        if (!str_ends_with($file, '/AGENTS.md')) {
+            continue;
+        }
+
+        $content = file_get_contents($file) ?: '';
+        $title = aiExtractTitle($content, '');
+
+        if ($title !== '' && preg_match('/<[^>]+>/', $title) !== 1) {
+            return aiNormalizeExampleTitle($title);
+        }
+    }
+
+    return aiPrettifyExampleSlug($slug);
+}
+
+function aiDescribeExample(string $root, string $relativeDirectory, string $runtime, ?string $readmePath, array $files, array $assetCounts): string
+{
+    $slug = basename($relativeDirectory);
+
     if ($readmePath !== null) {
         $content = file_get_contents($readmePath) ?: '';
         $summary = aiSummarizeMarkdown($content);
@@ -598,6 +641,31 @@ function aiDescribeExample(string $root, string $relativeDirectory, string $runt
         }
     }
 
+    foreach ($files as $file) {
+        if (!str_ends_with($file, '/AGENTS.md')) {
+            continue;
+        }
+
+        $content = file_get_contents($file) ?: '';
+        $summary = aiSummarizeMarkdown($content);
+
+        if ($summary !== null && preg_match('/<[^>]+>/', $summary) !== 1) {
+            return $summary;
+        }
+    }
+
+    $fallbacks = [
+        'generic-placeholder-repo' => 'Minimal placeholder example that shows folder placement for a shared dual-runtime starter.',
+        'expanded-placeholder-repo' => 'Expanded placeholder example that shows the richer filled-out structure without becoming project-specific.',
+        'worked-opencode-repo' => 'Worked OpenCode-first service example with staged agents, commands, and capability-driven verification.',
+        'worked-copilot-repo' => 'Worked GitHub Copilot example with repo instructions, path guidance, staged agents, and prompt entry points.',
+        'worked-dual-tool-repo' => 'Worked dual-runtime monorepo example with one shared capability layer adapted to OpenCode and GitHub Copilot.',
+    ];
+
+    if (isset($fallbacks[$slug])) {
+        return $fallbacks[$slug];
+    }
+
     $assetBits = [];
 
     foreach ($assetCounts as $key => $count) {
@@ -605,8 +673,6 @@ function aiDescribeExample(string $root, string $relativeDirectory, string $runt
             $assetBits[] = $count . ' ' . $key;
         }
     }
-
-    $shape = basename($relativeDirectory);
 
     if ($runtime === 'dual-runtime') {
         return 'Worked dual-runtime example with both Copilot and OpenCode adapters' . ($assetBits !== [] ? ' across ' . implode(', ', $assetBits) : '') . '.';
@@ -620,7 +686,26 @@ function aiDescribeExample(string $root, string $relativeDirectory, string $runt
         return 'Worked OpenCode example for the reusable workflow kit' . ($assetBits !== [] ? ' across ' . implode(', ', $assetBits) : '') . '.';
     }
 
-    return 'Reference example `' . $shape . '` for package structure and placeholder layout.';
+    return 'Reference example `' . $slug . '` for package structure and placeholder layout.';
+}
+
+function aiNormalizeExampleTitle(string $title): string
+{
+    $normalized = trim($title);
+    $normalized = preg_replace('/\s*-\s*Repository Instructions$/', '', $normalized) ?? $normalized;
+    $normalized = preg_replace('/\s*-\s*Shared Agent Guidance$/', '', $normalized) ?? $normalized;
+
+    return $normalized;
+}
+
+function aiPrettifyExampleSlug(string $slug): string
+{
+    $words = array_map(
+        static fn (string $part): string => ucfirst($part),
+        preg_split('/-+/', $slug) ?: []
+    );
+
+    return implode(' ', $words);
 }
 
 function aiEscapeTable(string $value): string

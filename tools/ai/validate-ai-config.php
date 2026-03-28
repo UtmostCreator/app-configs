@@ -16,8 +16,13 @@ $requiredFiles = [
     'docs/ai/project-context.md',
     'docs/ai/workflow.md',
     'docs/ai/AI-GUARDRAILS.md',
+    'docs/ai/catalog.md',
     'docs/ai/capabilities/README.md',
     '.github/copilot-instructions.md',
+    'AI-universal-rules/manifest.json',
+    'AI-universal-rules/catalog.json',
+    'AI-universal-rules/docs/BROWSE.md',
+    'llms.txt',
 ];
 
 $liveFiles = [
@@ -27,6 +32,7 @@ $liveFiles = [
     'docs/ai/project-context.md',
     'docs/ai/workflow.md',
     'docs/ai/AI-GUARDRAILS.md',
+    'docs/ai/catalog.md',
     'docs/ai/capabilities/README.md',
     '.github/copilot-instructions.md',
     '.github/instructions/ai-workflow.instructions.md',
@@ -40,6 +46,13 @@ $liveFiles = [
     'docs/ai/capabilities/bug-regression/CAPABILITY.md',
     'docs/ai/capabilities/docs-sync/CAPABILITY.md',
     'docs/ai/capabilities/config-change-safety/CAPABILITY.md',
+    'AI-universal-rules/manifest.json',
+    'AI-universal-rules/catalog.json',
+    'AI-universal-rules/docs/BROWSE.md',
+    'CONTRIBUTING.md',
+    'SECURITY.md',
+    'SUPPORT.md',
+    'llms.txt',
 ];
 
 $bannedTerms = [
@@ -47,6 +60,12 @@ $bannedTerms = [
     'Nuxt',
     'Vue 3',
     'PHPUnit 11',
+];
+
+$generatedCatalogFiles = [
+    'docs/ai/catalog.md',
+    'AI-universal-rules/catalog.json',
+    'AI-universal-rules/docs/BROWSE.md',
 ];
 
 $errors = [];
@@ -73,7 +92,7 @@ foreach ($liveFiles as $relativePath) {
         continue;
     }
 
-    if (preg_match('/<[^>]+>/', $content) === 1) {
+    if (!in_array($relativePath, $generatedCatalogFiles, true) && preg_match('/<[^>]+>/', $content) === 1) {
         $errors[] = "placeholder leak found in {$relativePath}";
     }
 
@@ -81,6 +100,10 @@ foreach ($liveFiles as $relativePath) {
         if (stripos($content, $term) !== false) {
             $warnings[] = "unexpected stack term '{$term}' in {$relativePath}";
         }
+    }
+
+    if (in_array($relativePath, $generatedCatalogFiles, true)) {
+        continue;
     }
 
     foreach (extractBacktickPaths($content) as $path) {

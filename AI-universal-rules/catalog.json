@@ -95,10 +95,10 @@
         {
             "scope": "package",
             "type": "example-repo",
-            "name": "expanded-placeholder-repo",
+            "name": "Expanded Placeholder Blueprint",
             "path": "AI-universal-rules/examples/expanded-placeholder-repo",
             "runtime": "reference",
-            "description": "Reference example `expanded-placeholder-repo` for package structure and placeholder layout.",
+            "description": "This example keeps the richer structure of a filled repository-instructions file while staying placeholder-only.",
             "entrypoints": [
                 "AGENTS.md"
             ],
@@ -114,10 +114,10 @@
         {
             "scope": "package",
             "type": "example-repo",
-            "name": "generic-placeholder-repo",
+            "name": "Generic Placeholder Starter",
             "path": "AI-universal-rules/examples/generic-placeholder-repo",
             "runtime": "dual-runtime",
-            "description": "Worked dual-runtime example with both Copilot and OpenCode adapters across 2 agents, 4 instructions, 3 prompts, 2 commands, 7 skills, 6 capabilities.",
+            "description": "This example shows folder placement only. Leave placeholders intact here so the example remains generic.",
             "entrypoints": [
                 ".github/copilot-instructions.md",
                 "AGENTS.md",
@@ -135,7 +135,7 @@
         {
             "scope": "package",
             "type": "example-repo",
-            "name": "worked-copilot-repo",
+            "name": "Acme Web Copilot Workspace",
             "path": "AI-universal-rules/examples/worked-copilot-repo",
             "runtime": "github-copilot",
             "description": "This example shows a Copilot-first repository setup with policy, path instructions, staged agents, and prompt-file entry points.",
@@ -157,7 +157,7 @@
         {
             "scope": "package",
             "type": "example-repo",
-            "name": "worked-dual-tool-repo",
+            "name": "Acme Commerce Dual-Tool Monorepo",
             "path": "AI-universal-rules/examples/worked-dual-tool-repo",
             "runtime": "dual-runtime",
             "description": "This example shows one shared capability layer adapted to both OpenCode and GitHub Copilot.",
@@ -181,7 +181,7 @@
         {
             "scope": "package",
             "type": "example-repo",
-            "name": "worked-opencode-repo",
+            "name": "Acme Orders OpenCode Service",
             "path": "AI-universal-rules/examples/worked-opencode-repo",
             "runtime": "opencode",
             "description": "This example shows a realistic OpenCode-first repository install for a fictional `Acme Orders` service.",

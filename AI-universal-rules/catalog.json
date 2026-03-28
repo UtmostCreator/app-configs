@@ -1,0 +1,1147 @@
+{
+    "$schema": "../.schemas/ai-catalog.schema.json",
+    "generated_by": "php tools/ai/generate-ai-catalog.php",
+    "repository": {
+        "name": "app-configs",
+        "summary": "Opinionated development configuration plus a reusable cross-tool AI workflow kit.",
+        "catalog_docs": [
+            "docs/ai/catalog.md",
+            "AI-universal-rules/docs/BROWSE.md",
+            "llms.txt"
+        ]
+    },
+    "package": {
+        "name": "ai-universal-rules",
+        "version": "0.3.0",
+        "description": "Portable AI workflow infrastructure for OpenCode and GitHub Copilot",
+        "supported_tools": [
+            "opencode",
+            "github-copilot"
+        ],
+        "supported_surfaces": {
+            "opencode": [
+                "tui",
+                "cli"
+            ],
+            "github-copilot": [
+                "vscode",
+                "cli",
+                "github.com"
+            ]
+        },
+        "generated_outputs": [
+            "AI-universal-rules/catalog.json",
+            "AI-universal-rules/docs/BROWSE.md",
+            "docs/ai/catalog.md",
+            "llms.txt"
+        ]
+    },
+    "counts": {
+        "package:core-template": 4,
+        "package:example-repo": 5,
+        "package:foundation-doc": 5,
+        "package:github-copilot-agent-template": 6,
+        "package:github-copilot-instruction-template": 4,
+        "package:github-copilot-prompt-template": 6,
+        "package:opencode-agent-template": 6,
+        "package:opencode-command-template": 4,
+        "package:opencode-skill-template": 7,
+        "package:operations-doc": 6,
+        "package:optional-template": 11,
+        "package:package-capability": 31,
+        "package:shared-template": 3,
+        "package:workflow-doc": 6,
+        "root:capability": 6,
+        "root:exporter": 1,
+        "root:generator": 1,
+        "root:github-copilot-agent": 2,
+        "root:github-copilot-instruction": 3,
+        "root:hook": 1,
+        "root:validator": 2
+    },
+    "resources": [
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "<PROJECT_NAME> - Repository Instructions",
+            "path": "AI-universal-rules/templates/core/AGENTS.template.md",
+            "runtime": "canonical",
+            "description": "- Project: `<PROJECT_NAME>`"
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "Repository Instructions For <PROJECT_NAME>",
+            "path": "AI-universal-rules/templates/core/copilot-instructions.template.md",
+            "runtime": "canonical",
+            "description": "Use these instructions as the repository-wide baseline for GitHub Copilot."
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "<PROJECT_NAME> Project Context",
+            "path": "AI-universal-rules/templates/core/project-context.template.md",
+            "runtime": "canonical",
+            "description": "Use this file as durable project context for instructions, agents, prompts, and capabilities."
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "<PROJECT_NAME> Project Stack",
+            "path": "AI-universal-rules/templates/core/project-stack.template.md",
+            "runtime": "canonical",
+            "description": "Compatibility note: `project-stack.template.md` remains for older installs."
+        },
+        {
+            "scope": "package",
+            "type": "example-repo",
+            "name": "expanded-placeholder-repo",
+            "path": "AI-universal-rules/examples/expanded-placeholder-repo",
+            "runtime": "reference",
+            "description": "Reference example `expanded-placeholder-repo` for package structure and placeholder layout.",
+            "entrypoints": [
+                "AGENTS.md"
+            ],
+            "asset_counts": {
+                "agents": 0,
+                "instructions": 0,
+                "prompts": 0,
+                "commands": 0,
+                "skills": 0,
+                "capabilities": 0
+            }
+        },
+        {
+            "scope": "package",
+            "type": "example-repo",
+            "name": "generic-placeholder-repo",
+            "path": "AI-universal-rules/examples/generic-placeholder-repo",
+            "runtime": "dual-runtime",
+            "description": "Worked dual-runtime example with both Copilot and OpenCode adapters across 2 agents, 4 instructions, 3 prompts, 2 commands, 7 skills, 6 capabilities.",
+            "entrypoints": [
+                ".github/copilot-instructions.md",
+                "AGENTS.md",
+                "docs/ai/project-context.md"
+            ],
+            "asset_counts": {
+                "agents": 2,
+                "instructions": 4,
+                "prompts": 3,
+                "commands": 2,
+                "skills": 7,
+                "capabilities": 6
+            }
+        },
+        {
+            "scope": "package",
+            "type": "example-repo",
+            "name": "worked-copilot-repo",
+            "path": "AI-universal-rules/examples/worked-copilot-repo",
+            "runtime": "github-copilot",
+            "description": "This example shows a Copilot-first repository setup with policy, path instructions, staged agents, and prompt-file entry points.",
+            "entrypoints": [
+                ".github/copilot-instructions.md",
+                "AGENTS.md",
+                "README.md",
+                "docs/ai/project-context.md"
+            ],
+            "asset_counts": {
+                "agents": 4,
+                "instructions": 2,
+                "prompts": 3,
+                "commands": 0,
+                "skills": 0,
+                "capabilities": 0
+            }
+        },
+        {
+            "scope": "package",
+            "type": "example-repo",
+            "name": "worked-dual-tool-repo",
+            "path": "AI-universal-rules/examples/worked-dual-tool-repo",
+            "runtime": "dual-runtime",
+            "description": "This example shows one shared capability layer adapted to both OpenCode and GitHub Copilot.",
+            "entrypoints": [
+                ".github/copilot-instructions.md",
+                "AGENTS.md",
+                "CLAUDE.md",
+                "README.md",
+                "docs/ai/project-context.md",
+                "docs/ai/workflow.md"
+            ],
+            "asset_counts": {
+                "agents": 4,
+                "instructions": 1,
+                "prompts": 3,
+                "commands": 2,
+                "skills": 0,
+                "capabilities": 4
+            }
+        },
+        {
+            "scope": "package",
+            "type": "example-repo",
+            "name": "worked-opencode-repo",
+            "path": "AI-universal-rules/examples/worked-opencode-repo",
+            "runtime": "opencode",
+            "description": "This example shows a realistic OpenCode-first repository install for a fictional `Acme Orders` service.",
+            "entrypoints": [
+                "AGENTS.md",
+                "README.md",
+                "docs/ai/project-context.md"
+            ],
+            "asset_counts": {
+                "agents": 0,
+                "instructions": 0,
+                "prompts": 0,
+                "commands": 2,
+                "skills": 3,
+                "capabilities": 0
+            }
+        },
+        {
+            "scope": "package",
+            "type": "foundation-doc",
+            "name": "Capability Model",
+            "path": "AI-universal-rules/docs/foundations/CAPABILITY-MODEL.md",
+            "runtime": "canonical",
+            "description": "Capabilities are the canonical reusable workflow layer in this kit."
+        },
+        {
+            "scope": "package",
+            "type": "foundation-doc",
+            "name": "Compatibility",
+            "path": "AI-universal-rules/docs/foundations/COMPATIBILITY.md",
+            "runtime": "canonical",
+            "description": "This package is intentionally asymmetric."
+        },
+        {
+            "scope": "package",
+            "type": "foundation-doc",
+            "name": "Control Model",
+            "path": "AI-universal-rules/docs/foundations/CONTROL-MODEL.md",
+            "runtime": "canonical",
+            "description": "This package separates advisory controls from deterministic controls."
+        },
+        {
+            "scope": "package",
+            "type": "foundation-doc",
+            "name": "Design Principles",
+            "path": "AI-universal-rules/docs/foundations/DESIGN-PRINCIPLES.md",
+            "runtime": "canonical",
+            "description": "Use these principles when extending the kit."
+        },
+        {
+            "scope": "package",
+            "type": "foundation-doc",
+            "name": "Precedence",
+            "path": "AI-universal-rules/docs/foundations/PRECEDENCE.md",
+            "runtime": "canonical",
+            "description": "This package uses layered workflow assets, so precedence and non-overlap must be explicit."
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-agent-template",
+            "name": "Repository Architect",
+            "path": "AI-universal-rules/templates/github-copilot/agents/architect.agent.md",
+            "runtime": "github-copilot",
+            "description": "Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-agent-template",
+            "name": "Repository Implementer",
+            "path": "AI-universal-rules/templates/github-copilot/agents/implementer.agent.md",
+            "runtime": "github-copilot",
+            "description": "Use when a bounded slice is already defined and the task needs implementation plus focused verification"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-agent-template",
+            "name": "Repository Refactorer",
+            "path": "AI-universal-rules/templates/github-copilot/agents/refactorer.agent.md",
+            "runtime": "github-copilot",
+            "description": "Use when behavior is already correct and the remaining problem is structure, readability, or maintainability"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-agent-template",
+            "name": "Release Auditor",
+            "path": "AI-universal-rules/templates/github-copilot/agents/release-auditor.agent.md",
+            "runtime": "github-copilot",
+            "description": "Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-agent-template",
+            "name": "Repository Researcher",
+            "path": "AI-universal-rules/templates/github-copilot/agents/researcher.agent.md",
+            "runtime": "github-copilot",
+            "description": "Use when ownership is unclear, the task touches an unfamiliar area, or later stages need read-only repo grounding first"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-agent-template",
+            "name": "Repository Reviewer",
+            "path": "AI-universal-rules/templates/github-copilot/agents/reviewer.agent.md",
+            "runtime": "github-copilot",
+            "description": "Use when reviewing a change set for correctness, regressions, policy fit, and missing verification starting from the diff"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Architecture Rules",
+            "path": "AI-universal-rules/templates/github-copilot/instructions/architecture.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Architecture, ownership, and layering guidance"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Frontend Rules",
+            "path": "AI-universal-rules/templates/github-copilot/instructions/frontend.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Frontend, UI, interaction, and presentation guidance"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Target Rules",
+            "path": "AI-universal-rules/templates/github-copilot/instructions/targets.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Target and platform adaptation guidance for multi-surface repositories"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Testing Rules",
+            "path": "AI-universal-rules/templates/github-copilot/instructions/testing.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Testing rules for focused, deterministic, behavior-proving tests"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-prompt-template",
+            "name": "bug-regression",
+            "path": "AI-universal-rules/templates/github-copilot/prompts/bug-regression.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-prompt-template",
+            "name": "docs-sync",
+            "path": "AI-universal-rules/templates/github-copilot/prompts/docs-sync.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-prompt-template",
+            "name": "new-feature",
+            "path": "AI-universal-rules/templates/github-copilot/prompts/new-feature.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when implementing a bounded feature with existing repository patterns and focused verification"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-prompt-template",
+            "name": "regression-test",
+            "path": "AI-universal-rules/templates/github-copilot/prompts/regression-test.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when the main task is to create a failing or proving regression test for a reported bug or edge case"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-prompt-template",
+            "name": "release-readiness",
+            "path": "AI-universal-rules/templates/github-copilot/prompts/release-readiness.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when a diff or planned change needs rollout, rollback, observability, and migration-safety review"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-prompt-template",
+            "name": "review-code",
+            "path": "AI-universal-rules/templates/github-copilot/prompts/review-code.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when reviewing a diff for correctness, risk, and missing tests before merge or handoff"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-agent-template",
+            "name": "architect",
+            "path": "AI-universal-rules/templates/opencode/agents/architect.md",
+            "runtime": "opencode",
+            "description": "Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in <PROJECT_NAME>"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-agent-template",
+            "name": "implementer",
+            "path": "AI-universal-rules/templates/opencode/agents/implementer.md",
+            "runtime": "opencode",
+            "description": "Use when a bounded slice is clear and implementation plus focused verification should happen in <PROJECT_NAME>"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-agent-template",
+            "name": "refactorer",
+            "path": "AI-universal-rules/templates/opencode/agents/refactorer.md",
+            "runtime": "opencode",
+            "description": "Use when behavior is already correct and the remaining problem is structure, readability, or maintainability in <PROJECT_NAME>"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-agent-template",
+            "name": "release-auditor",
+            "path": "AI-universal-rules/templates/opencode/agents/release-auditor.md",
+            "runtime": "opencode",
+            "description": "Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review in <PROJECT_NAME>"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-agent-template",
+            "name": "researcher",
+            "path": "AI-universal-rules/templates/opencode/agents/researcher.md",
+            "runtime": "opencode",
+            "description": "Use when the task touches an unfamiliar area, ownership is unclear, or a later stage needs read-only grounding before planning or implementation in <PROJECT_NAME>"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-agent-template",
+            "name": "reviewer",
+            "path": "AI-universal-rules/templates/opencode/agents/reviewer.md",
+            "runtime": "opencode",
+            "description": "Use when reviewing a change set for correctness, regressions, policy fit, and missing verification in <PROJECT_NAME>"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-command-template",
+            "name": "Bug Regression Command",
+            "path": "AI-universal-rules/templates/opencode/commands/bug-regression.md",
+            "runtime": "opencode",
+            "description": "Use this command as the runtime entry point for a bounded bug-fix task."
+        },
+        {
+            "scope": "package",
+            "type": "opencode-command-template",
+            "name": "Plan Slice Command",
+            "path": "AI-universal-rules/templates/opencode/commands/plan-slice.md",
+            "runtime": "opencode",
+            "description": "Use this command when a task is multi-step, ambiguous, or architecture-affecting."
+        },
+        {
+            "scope": "package",
+            "type": "opencode-command-template",
+            "name": "review-diff",
+            "path": "AI-universal-rules/templates/opencode/commands/review-diff.md",
+            "runtime": "opencode",
+            "description": "Compatibility command for diff-first review; prefer the review-diff skill for reusable guidance"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-command-template",
+            "name": "verify",
+            "path": "AI-universal-rules/templates/opencode/commands/verify.md",
+            "runtime": "opencode",
+            "description": "Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-skill-template",
+            "name": "bug-regression",
+            "path": "AI-universal-rules/templates/opencode/skills/bug-regression/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-skill-template",
+            "name": "dependency-upgrade",
+            "path": "AI-universal-rules/templates/opencode/skills/dependency-upgrade/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-skill-template",
+            "name": "project-context",
+            "path": "AI-universal-rules/templates/opencode/skills/project-context/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-skill-template",
+            "name": "project-stack",
+            "path": "AI-universal-rules/templates/opencode/skills/project-stack/SKILL.md",
+            "runtime": "opencode",
+            "description": "Compatibility alias for the newer project-context skill"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-skill-template",
+            "name": "release-safety",
+            "path": "AI-universal-rules/templates/opencode/skills/release-safety/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-skill-template",
+            "name": "review-diff",
+            "path": "AI-universal-rules/templates/opencode/skills/review-diff/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-skill-template",
+            "name": "verify-change",
+            "path": "AI-universal-rules/templates/opencode/skills/verify-change/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly"
+        },
+        {
+            "scope": "package",
+            "type": "operations-doc",
+            "name": "Evaluation Scenarios",
+            "path": "AI-universal-rules/docs/operations/EVAL-SCENARIOS.md",
+            "runtime": "canonical",
+            "description": "Use these scenarios to test workflow quality."
+        },
+        {
+            "scope": "package",
+            "type": "operations-doc",
+            "name": "Governance",
+            "path": "AI-universal-rules/docs/operations/GOVERNANCE.md",
+            "runtime": "canonical",
+            "description": "This package assumes AI instructions alone are not enough for production work."
+        },
+        {
+            "scope": "package",
+            "type": "operations-doc",
+            "name": "Hooks And Enforcement",
+            "path": "AI-universal-rules/docs/operations/HOOKS-AND-ENFORCEMENT.md",
+            "runtime": "canonical",
+            "description": "Instructions are advisory. Hooks are enforcement."
+        },
+        {
+            "scope": "package",
+            "type": "operations-doc",
+            "name": "Maintenance",
+            "path": "AI-universal-rules/docs/operations/MAINTENANCE.md",
+            "runtime": "canonical",
+            "description": "Treat this package like workflow infrastructure, not throwaway prompts."
+        },
+        {
+            "scope": "package",
+            "type": "operations-doc",
+            "name": "MCP Boundaries",
+            "path": "AI-universal-rules/docs/operations/MCP-BOUNDARIES.md",
+            "runtime": "canonical",
+            "description": "MCP extends capability, but also risk."
+        },
+        {
+            "scope": "package",
+            "type": "operations-doc",
+            "name": "Troubleshooting",
+            "path": "AI-universal-rules/docs/operations/TROUBLESHOOTING.md",
+            "runtime": "canonical",
+            "description": "- unresolved placeholders"
+        },
+        {
+            "scope": "package",
+            "type": "optional-template",
+            "name": "Optional Delivery Pack",
+            "path": "AI-universal-rules/templates/optional/delivery/README.md",
+            "runtime": "optional",
+            "description": "Use this pack when you want a lightweight slice card for non-trivial work."
+        },
+        {
+            "scope": "package",
+            "type": "optional-template",
+            "name": "Slice Card",
+            "path": "AI-universal-rules/templates/optional/delivery/slice-card.template.md",
+            "runtime": "optional",
+            "description": "- User outcome:"
+        },
+        {
+            "scope": "package",
+            "type": "optional-template",
+            "name": "architecture-plan",
+            "path": "AI-universal-rules/templates/optional/github-copilot/prompts/architecture-plan.prompt.md",
+            "runtime": "optional",
+            "description": "Produce a focused implementation plan for a medium or large change"
+        },
+        {
+            "scope": "package",
+            "type": "optional-template",
+            "name": "dependency-upgrade",
+            "path": "AI-universal-rules/templates/optional/github-copilot/prompts/dependency-upgrade.prompt.md",
+            "runtime": "optional",
+            "description": "Review or implement a dependency or platform upgrade carefully"
+        },
+        {
+            "scope": "package",
+            "type": "optional-template",
+            "name": "docs-sync",
+            "path": "AI-universal-rules/templates/optional/github-copilot/prompts/docs-sync.prompt.md",
+            "runtime": "optional",
+            "description": "Update docs to match the current implementation and verification commands"
+        },
+        {
+            "scope": "package",
+            "type": "optional-template",
+            "name": "bugfix",
+            "path": "AI-universal-rules/templates/optional/opencode/agents/bugfix.md",
+            "runtime": "optional",
+            "description": "Use when fixing a bug in <PROJECT_NAME>, reproducing it first when practical, and keeping the fix minimal"
+        },
+        {
+            "scope": "package",
+            "type": "optional-template",
+            "name": "build-config",
+            "path": "AI-universal-rules/templates/optional/opencode/agents/build-config.md",
+            "runtime": "optional",
+            "description": "Update build, packaging, or verification configuration in <PROJECT_NAME>"
+        },
+        {
+            "scope": "package",
+            "type": "optional-template",
+            "name": "docs",
+            "path": "AI-universal-rules/templates/optional/opencode/agents/docs.md",
+            "runtime": "optional",
+            "description": "Update or align documentation after implementation changes in <PROJECT_NAME>"
+        },
+        {
+            "scope": "package",
+            "type": "optional-template",
+            "name": "infra-auditor",
+            "path": "AI-universal-rules/templates/optional/opencode/agents/infra-auditor.md",
+            "runtime": "optional",
+            "description": "Use when auditing dependency, build, release, or compatibility risk in <PROJECT_NAME>"
+        },
+        {
+            "scope": "package",
+            "type": "optional-template",
+            "name": "ui-builder",
+            "path": "AI-universal-rules/templates/optional/opencode/agents/ui-builder.md",
+            "runtime": "optional",
+            "description": "Use when implementing UI work while preserving repository interaction patterns and accessibility rules"
+        },
+        {
+            "scope": "package",
+            "type": "optional-template",
+            "name": "upgrade",
+            "path": "AI-universal-rules/templates/optional/opencode/agents/upgrade.md",
+            "runtime": "optional",
+            "description": "Plan or apply dependency and platform upgrades carefully in <PROJECT_NAME>"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Capability Templates",
+            "path": "AI-universal-rules/templates/capabilities/README.md",
+            "runtime": "canonical",
+            "description": "These folders are the canonical reusable workflow units in this kit."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Bug Regression Capability",
+            "path": "AI-universal-rules/templates/capabilities/bug-regression/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Reproduce a bug with the smallest practical test or deterministic check, apply a minimal fix, and prove the regression is closed."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Bug Regression Checklist",
+            "path": "AI-universal-rules/templates/capabilities/bug-regression/checklist.md",
+            "runtime": "canonical",
+            "description": "1. What exact behavior is wrong?"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "config.example",
+            "path": "AI-universal-rules/templates/capabilities/bug-regression/config.example.json",
+            "runtime": "canonical",
+            "description": "{"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Bug Regression Examples",
+            "path": "AI-universal-rules/templates/capabilities/bug-regression/examples.md",
+            "runtime": "canonical",
+            "description": "- Reproduction: add a feature test for applying the same coupon twice through cart recalculation"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Bug Regression Gotchas",
+            "path": "AI-universal-rules/templates/capabilities/bug-regression/gotchas.md",
+            "runtime": "canonical",
+            "description": "- Do not weaken assertions to make the new test pass."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Bug Regression Reference",
+            "path": "AI-universal-rules/templates/capabilities/bug-regression/reference.md",
+            "runtime": "canonical",
+            "description": "Use this file for stable regression-testing facts:"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Dependency Upgrade Capability",
+            "path": "AI-universal-rules/templates/capabilities/dependency-upgrade/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Evaluate and implement a dependency upgrade with attention to compatibility, verification depth, and release risk."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Dependency Upgrade Checklist",
+            "path": "AI-universal-rules/templates/capabilities/dependency-upgrade/checklist.md",
+            "runtime": "canonical",
+            "description": "1. What dependency is changing and why?"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Dependency Upgrade Examples",
+            "path": "AI-universal-rules/templates/capabilities/dependency-upgrade/examples.md",
+            "runtime": "canonical",
+            "description": "- Scope: web app framework from one minor version to the next"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Dependency Upgrade Gotchas",
+            "path": "AI-universal-rules/templates/capabilities/dependency-upgrade/gotchas.md",
+            "runtime": "canonical",
+            "description": "- Do not treat a version bump as low risk without checking actual usage surface."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Dependency Upgrade Reference",
+            "path": "AI-universal-rules/templates/capabilities/dependency-upgrade/reference.md",
+            "runtime": "canonical",
+            "description": "Use this file for stable upgrade facts:"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Project Context Capability",
+            "path": "AI-universal-rules/templates/capabilities/project-context/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Provide durable repository context that other capabilities, agents, and prompts can rely on before planning, implementing, reviewing, or verifying changes."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Project Context Examples",
+            "path": "AI-universal-rules/templates/capabilities/project-context/examples.md",
+            "runtime": "canonical",
+            "description": "If a request touches checkout behavior:"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Project Context Gotchas",
+            "path": "AI-universal-rules/templates/capabilities/project-context/gotchas.md",
+            "runtime": "canonical",
+            "description": "- Do not treat legacy or inactive paths as the default implementation target."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Project Context Reference",
+            "path": "AI-universal-rules/templates/capabilities/project-context/reference.md",
+            "runtime": "canonical",
+            "description": "Use this file for durable facts that other workflows should trust more than conversational assumptions."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Release Safety Capability",
+            "path": "AI-universal-rules/templates/capabilities/release-safety/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Assess rollout, rollback, observability, and compatibility posture for changes whose risk extends beyond local correctness."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Release Safety Checklist",
+            "path": "AI-universal-rules/templates/capabilities/release-safety/checklist.md",
+            "runtime": "canonical",
+            "description": "1. Why is this change medium or high risk?"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Release Safety Examples",
+            "path": "AI-universal-rules/templates/capabilities/release-safety/examples.md",
+            "runtime": "canonical",
+            "description": "- Rollout: deploy producer before consumer if compatibility is additive"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Release Safety Gotchas",
+            "path": "AI-universal-rules/templates/capabilities/release-safety/gotchas.md",
+            "runtime": "canonical",
+            "description": "- Do not treat passing tests as a complete release strategy."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Release Safety Reference",
+            "path": "AI-universal-rules/templates/capabilities/release-safety/reference.md",
+            "runtime": "canonical",
+            "description": "Use this file for stable release controls such as:"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Review Diff Capability",
+            "path": "AI-universal-rules/templates/capabilities/review-diff/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Review a change set from the diff first, then expand only as needed to assess correctness, regression risk, policy fit, and missing verification."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Review Diff Checklist",
+            "path": "AI-universal-rules/templates/capabilities/review-diff/checklist.md",
+            "runtime": "canonical",
+            "description": "1. Does the diff satisfy the stated task?"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Review Diff Examples",
+            "path": "AI-universal-rules/templates/capabilities/review-diff/examples.md",
+            "runtime": "canonical",
+            "description": "PASS WITH NOTES"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Review Diff Gotchas",
+            "path": "AI-universal-rules/templates/capabilities/review-diff/gotchas.md",
+            "runtime": "canonical",
+            "description": "- Do not spend most of the review restating what changed."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Review Diff Reference",
+            "path": "AI-universal-rules/templates/capabilities/review-diff/reference.md",
+            "runtime": "canonical",
+            "description": "Use this file for stable review priorities that recur across diffs:"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Verify Change Capability",
+            "path": "AI-universal-rules/templates/capabilities/verify-change/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Choose and run the smallest relevant verification flow for a change, then report evidence clearly."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Verify Change Checklist",
+            "path": "AI-universal-rules/templates/capabilities/verify-change/checklist.md",
+            "runtime": "canonical",
+            "description": "1. What behavior or contract changed?"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Verify Change Examples",
+            "path": "AI-universal-rules/templates/capabilities/verify-change/examples.md",
+            "runtime": "canonical",
+            "description": "- Selected verification: focused feature test for checkout coupon flow"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Verify Change Gotchas",
+            "path": "AI-universal-rules/templates/capabilities/verify-change/gotchas.md",
+            "runtime": "canonical",
+            "description": "- Do not jump straight to the heaviest repo-wide command if a focused test or package-local command proves the change."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Verify Change Reference",
+            "path": "AI-universal-rules/templates/capabilities/verify-change/reference.md",
+            "runtime": "canonical",
+            "description": "Use this file to record repository-specific verification facts such as:"
+        },
+        {
+            "scope": "package",
+            "type": "shared-template",
+            "name": "Approval Packet",
+            "path": "AI-universal-rules/templates/shared/approvals/APPROVAL-PACKET.template.md",
+            "runtime": "canonical",
+            "description": "- request: `<CHANGE_REQUEST>`"
+        },
+        {
+            "scope": "package",
+            "type": "shared-template",
+            "name": "AI Guardrails",
+            "path": "AI-universal-rules/templates/shared/guardrails/AI-GUARDRAILS.md",
+            "runtime": "canonical",
+            "description": "Use this file as the cross-tool control layer for common failure modes."
+        },
+        {
+            "scope": "package",
+            "type": "shared-template",
+            "name": "Verification Evidence",
+            "path": "AI-universal-rules/templates/shared/verification/VERIFICATION-EVIDENCE.template.md",
+            "runtime": "canonical",
+            "description": "- `<CLAIM_BEING_PROVED>`"
+        },
+        {
+            "scope": "package",
+            "type": "workflow-doc",
+            "name": "Agent Handoffs",
+            "path": "AI-universal-rules/docs/workflows/AGENT-HANDOFFS.md",
+            "runtime": "canonical",
+            "description": "Use staged agents to reduce context pollution and scope drift."
+        },
+        {
+            "scope": "package",
+            "type": "workflow-doc",
+            "name": "Monorepo Strategy",
+            "path": "AI-universal-rules/docs/workflows/MONOREPO-STRATEGY.md",
+            "runtime": "canonical",
+            "description": "Large repos need a nested strategy or the workflow becomes noisy."
+        },
+        {
+            "scope": "package",
+            "type": "workflow-doc",
+            "name": "Risk And Approvals",
+            "path": "AI-universal-rules/docs/workflows/RISK-AND-APPROVALS.md",
+            "runtime": "canonical",
+            "description": "Use this model across runtimes."
+        },
+        {
+            "scope": "package",
+            "type": "workflow-doc",
+            "name": "Runtime Observability",
+            "path": "AI-universal-rules/docs/workflows/RUNTIME-OBSERVABILITY.md",
+            "runtime": "canonical",
+            "description": "Do not only ask whether files exist. Ask what actually loaded."
+        },
+        {
+            "scope": "package",
+            "type": "workflow-doc",
+            "name": "System Workflow",
+            "path": "AI-universal-rules/docs/workflows/SYSTEM-WORKFLOW.md",
+            "runtime": "canonical",
+            "description": "Use this document as the end-to-end operating model for the kit."
+        },
+        {
+            "scope": "package",
+            "type": "workflow-doc",
+            "name": "Task Entrypoints",
+            "path": "AI-universal-rules/docs/workflows/TASK-ENTRYPOINTS.md",
+            "runtime": "canonical",
+            "description": "This document explains when to use each mechanism."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
+            "name": "bug-regression",
+            "path": "docs/ai/capabilities/bug-regression/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Reproduce a config or workflow defect with the smallest reliable check, apply a bounded fix, and prove the issue is closed."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
+            "name": "config-change-safety",
+            "path": "docs/ai/capabilities/config-change-safety/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Apply editor, shell, runtime, or machine-facing config changes without widening risk silently."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
+            "name": "docs-sync",
+            "path": "docs/ai/capabilities/docs-sync/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Keep setup and workflow documentation aligned with the actual repository after behavior, file, or path changes."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
+            "name": "project-context",
+            "path": "docs/ai/capabilities/project-context/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Load durable repository facts before work starts so changes use the right paths, verification, and approval boundaries."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
+            "name": "review-diff",
+            "path": "docs/ai/capabilities/review-diff/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Review the proposed change set for accuracy, drift, portability, and missing verification."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
+            "name": "verify-change",
+            "path": "docs/ai/capabilities/verify-change/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Choose the smallest relevant proof for a config, docs, or workflow change and report evidence cleanly."
+        },
+        {
+            "scope": "root",
+            "type": "exporter",
+            "name": "export-ai-universal-rules",
+            "path": "tools/ai/export-ai-universal-rules.php",
+            "runtime": "php",
+            "description": "Builds starter-profile release bundles under dist/."
+        },
+        {
+            "scope": "root",
+            "type": "generator",
+            "name": "generate-ai-catalog",
+            "path": "tools/ai/generate-ai-catalog.php",
+            "runtime": "php",
+            "description": "Generates catalog docs, catalog JSON, and llms.txt."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
+            "name": "config-maintainer",
+            "path": ".github/agents/config-maintainer.agent.md",
+            "runtime": "github-copilot",
+            "description": "Use when updating editor, shell, runtime, or tool configuration while preserving existing behavior and validating the narrowest safe surface first"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
+            "name": "workflow-auditor",
+            "path": ".github/agents/workflow-auditor.agent.md",
+            "runtime": "github-copilot",
+            "description": "Use when reviewing AI workflow files, repo instructions, capability docs, or adapter drift across AGENTS, CLAUDE, docs/ai, and .github"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "ai-workflow",
+            "path": ".github/instructions/ai-workflow.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Rules for AI workflow docs and runtime adapters"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "config",
+            "path": ".github/instructions/config.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Rules for config changes in editor, shell, runtime, and tool files"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "docs",
+            "path": ".github/instructions/docs.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Rules for setup docs, workflow docs, and examples"
+        },
+        {
+            "scope": "root",
+            "type": "hook",
+            "name": "tool-guardian",
+            "path": ".github/hooks/tool-guardian.json",
+            "runtime": "github-copilot",
+            "description": "Protects the live repo with a narrow Copilot hook guard."
+        },
+        {
+            "scope": "root",
+            "type": "validator",
+            "name": "validate-ai-catalog",
+            "path": "tools/ai/validate-ai-catalog.php",
+            "runtime": "php",
+            "description": "Validates manifest, catalog, and starter profile metadata."
+        },
+        {
+            "scope": "root",
+            "type": "validator",
+            "name": "validate-ai-config",
+            "path": "tools/ai/validate-ai-config.php",
+            "runtime": "php",
+            "description": "Validates the root live AI workflow layer."
+        }
+    ],
+    "starter_profiles": [
+        {
+            "id": "minimal-starter",
+            "description": "Base install for one runtime with core policy, shared guardrails, and the three foundational capabilities.",
+            "includes": [
+                "README.md",
+                "QUICKSTART.md",
+                "PLACEHOLDERS.md",
+                "docs/foundations",
+                "docs/workflows/SYSTEM-WORKFLOW.md",
+                "docs/workflows/TASK-ENTRYPOINTS.md",
+                "templates/core",
+                "templates/shared",
+                "templates/capabilities/project-context",
+                "templates/capabilities/verify-change",
+                "templates/capabilities/review-diff"
+            ]
+        },
+        {
+            "id": "dual-runtime-starter",
+            "description": "Base install plus both runtime adapters, worked examples, and compatibility docs for cross-tool adoption.",
+            "includes": [
+                "README.md",
+                "QUICKSTART.md",
+                "PLACEHOLDERS.md",
+                "docs",
+                "templates/core",
+                "templates/shared",
+                "templates/capabilities",
+                "templates/opencode",
+                "templates/github-copilot",
+                "examples/worked-opencode-repo",
+                "examples/worked-copilot-repo",
+                "examples/worked-dual-tool-repo"
+            ]
+        },
+        {
+            "id": "strict-governance-starter",
+            "description": "Dual-runtime install with approval artifacts, operations docs, and higher-safety packs for teams formalizing controls.",
+            "includes": [
+                "README.md",
+                "QUICKSTART.md",
+                "PLACEHOLDERS.md",
+                "docs",
+                "templates/core",
+                "templates/shared",
+                "templates/capabilities",
+                "templates/opencode",
+                "templates/github-copilot",
+                "templates/optional/delivery",
+                "docs/operations",
+                "docs/workflows/RISK-AND-APPROVALS.md",
+                "examples/worked-dual-tool-repo"
+            ]
+        }
+    ]
+}

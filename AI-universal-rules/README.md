@@ -1,54 +1,64 @@
 # AI Universal Rules
 
-Portable instruction templates and capability folders for OpenCode and GitHub Copilot.
+Portable AI workflow infrastructure for OpenCode and GitHub Copilot.
 
-This package is for teams who want a reusable starting point for AI collaboration rules without baking in one stack, one language, or one project shape. It is intentionally placeholder-driven and tool-aware: one neutral policy core, one neutral capability model, then thin adapters for each platform.
+Machine-readable and generated package outputs:
+
+- `manifest.json` - schema-backed package manifest
+- `catalog.json` - generated resource index
+- `docs/BROWSE.md` - generated browse surface
+
+This package is no longer just a template bundle for instructions. It is a layered operating model for repo-scoped AI work:
+
+- always-on policy
+- durable project context
+- task entry points
+- staged agents and handoffs
+- capability and skill packs
+- deterministic enforcement and runtime inspection
+
+The kit is intentionally asymmetric. It preserves one canonical workflow model, then adapts it to each runtime without pretending every surface exposes the same controls.
 
 ## Who This Is For
 
-- Teams setting up AI instructions in a new repository
-- Individuals sharing a clean starter kit with friends or clients
-- Repositories that want one policy model but different delivery formats for different tools
+- teams setting up durable AI workflow infrastructure in a repository
+- individuals sharing a reusable cross-tool starter kit
+- repos that want one policy and capability model with different runtime adapters
 
 ## What Is Included
 
-- Core policy templates
-- Core capability templates and examples
-- OpenCode templates for agents, commands, and skills
-- GitHub Copilot templates for repo instructions, path instructions, a compact core agent set, and prompts
-- Optional specialist packs for advanced workflows
-- Optional delivery pack with a lightweight slice card template
-- Two placeholder-only example trees
-- Validation guidance to catch unresolved placeholders and user-supplied project-specific leaks
+- core policy templates
+- durable project-context templates
+- capability folders as the canonical workflow layer
+- OpenCode adapters for agents, commands, and skills
+- GitHub Copilot adapters for instructions, agents, and prompt files
+- shared templates for guardrails, verification evidence, and approval packets
+- workflow docs for routing, handoffs, approvals, observability, and monorepos
+- operations docs for governance, hooks, MCP boundaries, maintenance, and troubleshooting
+- worked example trees for OpenCode, Copilot, and dual-tool setups
 
-## What Is Not Included
+## Six-Layer Model
 
-- Project-specific rules
-- Language-specific conventions by default
-- Full parity between OpenCode and GitHub Copilot
-- Guaranteed support for every Copilot surface
+1. `instructions`: stable policy, defaults, architecture, security boundaries, verification expectations
+2. `project-context`: durable repository facts and active owners
+3. `prompt files / commands`: task entry points for recurring one-off jobs
+4. `agents / subagents`: staged execution roles with tool and scope boundaries
+5. `capabilities / skills`: deep optional workflow packs loaded when relevant
+6. `hooks / MCP / runtime debug`: enforcement, bounded external access, and observability
 
 ## Start Small
-
-Start with the smallest set that matches your target tool:
-
-1. Copy the core templates.
-2. Copy the capability folders you actually need.
-3. Copy either the OpenCode or GitHub Copilot adapter set.
-4. Replace placeholders.
-5. Run validation checks for unresolved placeholders and project-specific leaks.
-6. Test the setup in a toy repository before rolling it into production work.
 
 Minimum base install for most repositories:
 
 - `docs/ai/project-context.md`
+- `docs/ai/capabilities/project-context/`
 - `docs/ai/capabilities/verify-change/`
 - `docs/ai/capabilities/review-diff/`
-- `docs/ai/capabilities/project-context/`
+- one runtime adapter surface first: OpenCode or GitHub Copilot
 
 Add `bug-regression`, `release-safety`, and `dependency-upgrade` only when the repository actually needs them.
 
-For non-trivial changes, use a trimmed risk model:
+For non-trivial changes, use the trimmed risk model:
 
 - `low`
 - `medium`
@@ -56,32 +66,77 @@ For non-trivial changes, use a trimmed risk model:
 
 For `medium` and `high` risk changes, define rollback plan, observability signal, and feature-flag posture before implementation.
 
+## Recommended Flow
+
+1. classify the request and risk level
+2. load stable policy and project context
+3. choose the smallest fitting entry point
+4. load the relevant capability or skill pack
+5. delegate to staged agents only when isolation helps
+6. verify with evidence, not claims
+7. inspect runtime state when behavior seems off
+8. escalate destructive or high-impact changes for approval
+
 ## Supported Targets
 
 - OpenCode
-- GitHub Copilot
+- GitHub Copilot in VS Code or CLI
+- GitHub Copilot on GitHub.com with reduced workflow surface
 
-See `docs/COMPATIBILITY.md` for the limits of each integration model.
+See `docs/foundations/COMPATIBILITY.md` for limits and fallbacks.
 
 ## Folder Map
 
-- `templates/core/`: main neutral policy templates
-- `templates/capabilities/`: neutral capability folders with support files
-- `templates/snippets/`: reusable text fragments for assembling custom policies
-- `templates/opencode/`: base OpenCode files
-- `templates/github-copilot/`: base GitHub Copilot files
+- `templates/core/`: baseline policy and durable context templates
+- `templates/capabilities/`: canonical reusable workflow packs
+- `templates/shared/`: cross-tool guardrail, verification, and approval templates
+- `templates/opencode/`: OpenCode runtime adapters
+- `templates/github-copilot/`: GitHub Copilot runtime adapters
 - `templates/optional/`: specialist add-ons
-- `examples/`: placeholder-only example trees
-- `docs/`: compatibility, precedence, and install guidance
+- `docs/foundations/`: principles, precedence, compatibility, and control model
+- `docs/workflows/`: task routing, handoffs, approvals, monorepos, observability
+- `docs/operations/`: governance, enforcement, MCP boundaries, maintenance, troubleshooting, evals
+- `examples/`: placeholder and worked example trees
 
-For live repositories, copy capability folders into `docs/ai/capabilities/` unless your repository already has a better established AI-doc location.
+## Read In This Order
+
+1. `QUICKSTART.md`
+2. `docs/workflows/SYSTEM-WORKFLOW.md`
+3. `docs/workflows/TASK-ENTRYPOINTS.md`
+4. `docs/foundations/CAPABILITY-MODEL.md`
+5. `docs/operations/GOVERNANCE.md`
+6. `docs/RELEASE-BUNDLES.md`
+
+## Important Design Rules
+
+- Do not treat instructions as the workflow itself.
+- Keep always-on files short and policy-focused.
+- Put repeatable one-off jobs behind prompt files or commands.
+- Use staged agents for isolation, not just persona flavor.
+- Treat capabilities as the canonical source of reusable procedure.
+- Treat hooks as enforcement and instructions as advisory.
+- Document surface mismatch explicitly instead of implying parity.
 
 ## Important Note About Copilot Prompts
 
-Prompt files are included as optional guidance assets, but support varies by IDE and surface. Treat repo instructions and path instructions as the more stable foundation.
+Prompt files are first-class task entry points in this kit, but support still varies by surface and enablement state. Treat prompt files as optional adapters with a documented fallback path to repository instructions, capabilities, and agents.
 
-The Copilot adapter intentionally stays lighter than the OpenCode side. Its core workflow roles mirror OpenCode's architect, reviewer, and refactorer concepts, while specialist roles stay on the OpenCode side unless a repository has a proven Copilot-specific need.
+## Current Maturity Target
 
-If you are new to the kit, start with `docs/ONBOARDING.md`.
+This package aims for a production-grade workflow benchmark rather than a file-placement starter:
 
-See `docs/CAPABILITY-MODEL.md` for the canonical reusable workflow model, `docs/COMPOSITION-RECIPES.md` for common task flows, `docs/EVALUATION.md` for a lightweight quality rubric, and `docs/PROJECT-EXAMPLES.md` for cross-project usage examples.
+- policy separated from procedure
+- staged handoffs available
+- deterministic enforcement documented
+- runtime inspection included
+- example repos show end-to-end usage
+
+If you are new to the kit, start with `QUICKSTART.md` and `docs/workflows/SYSTEM-WORKFLOW.md`.
+
+## Validation And Packaging
+
+Use the root scripts when package metadata or generated outputs change:
+
+- `php tools/ai/validate-ai-catalog.php`
+- `php tools/ai/generate-ai-catalog.php`
+- `php tools/ai/export-ai-universal-rules.php --profile=dual-runtime-starter`

@@ -1,0 +1,31 @@
+# app-configs
+
+> Opinionated development configuration plus a reusable cross-tool AI workflow kit.
+
+## Primary Docs
+
+- [README.md](README.md): root overview, quick start, and repo layout
+- [AGENTS.md](AGENTS.md): durable repository instructions
+- [docs/ai/project-context.md](docs/ai/project-context.md): live repository context
+- [docs/ai/workflow.md](docs/ai/workflow.md): live task flow
+- [docs/ai/catalog.md](docs/ai/catalog.md): generated browse index for live and package assets
+
+## Reusable Kit
+
+- [AI-universal-rules/README.md](AI-universal-rules/README.md): package overview and operating model
+- [AI-universal-rules/QUICKSTART.md](AI-universal-rules/QUICKSTART.md): fastest install path
+- [AI-universal-rules/docs/BROWSE.md](AI-universal-rules/docs/BROWSE.md): generated package catalog
+- [AI-universal-rules/manifest.json](AI-universal-rules/manifest.json): machine-readable package manifest
+
+## Contribution And Trust
+
+- [CONTRIBUTING.md](CONTRIBUTING.md): contribution rules and generated file workflow
+- [SECURITY.md](SECURITY.md): security reporting
+- [SUPPORT.md](SUPPORT.md): support expectations and reporting guidance
+
+## Validation
+
+- `php tools/ai/validate-ai-config.php`
+- `php tools/ai/validate-ai-catalog.php`
+- `php tools/ai/generate-ai-catalog.php --check`
+- `php tools/ai/export-ai-universal-rules.php --check`

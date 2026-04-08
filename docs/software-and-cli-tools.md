@@ -1,134 +1,81 @@
-# Software & CLI Tools
+# macOS Development Environment
 
-## Terminal
+My daily macOS setup for full-stack development, terminal workflows, containers, APIs, databases, and CLI automation.
 
-- **[Ghostty](https://github.com/ghostty-org/ghostty)** — fast GPU-accelerated terminal
+## Primary Development Stack
 
-## Terminal Multiplexer
+- **Terminal:** Ghostty + tmux
+- **Shell:** Zsh + Oh My Zsh + Starship + Atuin
+- **Navigation/Search:** fzf, fd, ripgrep, ripgrep-all, zoxide, Yazi
+- **Editor:** Neovim (lazy.nvim) + BBEdit
+- **Git:** lazygit + delta
+- **Containers:** Colima + Docker
+- **Runtime/Versioning:** mise + pnpm
+- **API/DB:** Bruno, Stripe CLI, mysql-client, Sequel Ace, Medis
 
-- **[tmux](https://github.com/tmux/tmux)** — terminal multiplexer; persistent sessions, split panes
+## Terminal And Shell
 
-## Shell & ZSH Framework
+### Terminal
 
-- **[Oh My Zsh](https://github.com/ohmyzsh/ohmyzsh)** — ZSH configuration framework
-- **[Starship](https://starship.rs)** — fast, cross-shell prompt (replaces Powerlevel10k)
-- **[zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)** — inline command suggestions
-- **[zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)** — command syntax highlighting
-- **[Powerlevel10k](https://github.com/romkatv/powerlevel10k)** — high-performance ZSH theme _(disabled, kept as fallback)_
+- **[Ghostty](https://github.com/ghostty-org/ghostty)** - fast GPU-accelerated terminal
+- **[tmux](https://github.com/tmux/tmux)** - persistent sessions, split panes, and keyboard-first terminal workflows
 
-## Shell History
+### Shell
 
-- **[Atuin](https://github.com/atuinsh/atuin)** — searchable shell history with sync
+- **[Oh My Zsh](https://github.com/ohmyzsh/ohmyzsh)** - Zsh configuration framework
+- **[Starship](https://starship.rs)** - active prompt setup
+- **[zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)** - inline command suggestions
+- **[zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)** - command syntax highlighting
+- **[Atuin](https://github.com/atuinsh/atuin)** - searchable shell history with sync
 
-## System Monitor
+> Previously used: [Powerlevel10k](https://github.com/romkatv/powerlevel10k)
 
-- **[Stats](https://github.com/exelban/stats)** — macOS menu bar system monitor
-- **[btop](https://github.com/aristocratos/btop)** — terminal resource monitor
+## Navigation And CLI Workflow
 
-## File Managers
+- **[Yazi](https://github.com/sxyazi/yazi)** - terminal file manager
+- **[fzf](https://github.com/junegunn/fzf)** - fuzzy finder for terminal workflows
+- **[ripgrep](https://github.com/BurntSushi/ripgrep)** - fast regex file search
+- **[ripgrep-all](https://github.com/phiresky/ripgrep-all)** - search across PDFs, docs, and archives
+- **[fd](https://github.com/sharkdp/fd)** - modern alternative to `find`
+- **[zoxide](https://github.com/ajeetdsouza/zoxide)** - smarter directory navigation
+- **[bat](https://github.com/sharkdp/bat)** - `cat` with syntax highlighting and Git integration
+- **[eza](https://github.com/eza-community/eza)** - modern replacement for `ls`
+- **[tldr](https://github.com/tldr-pages/tldr)** - simplified command cheat sheets
+- **[just](https://github.com/casey/just)** - command runner for project-specific tasks
+- **[lnav](https://lnav.org)** - terminal log viewer with search and filtering
+- **[btop](https://github.com/aristocratos/btop)** - terminal resource monitor
 
-- **[Yazi](https://github.com/sxyazi/yazi)** — terminal file manager
+## Editors And Git
 
-## Search & Navigation
+- **[Neovim](https://github.com/neovim/neovim)** - extensible Vim-based editor
+  Plugin manager: **[lazy.nvim](https://lazy.folke.io)** - configured in `tools/nvim/`
+- **[BBEdit](https://www.barebones.com/products/bbedit/)** - lightweight macOS text editor
+- **[lazygit](https://github.com/jesseduffield/lazygit)** - terminal UI for Git workflows
+- **[delta](https://github.com/dandavison/delta)** - syntax-highlighted Git diff pager
 
-- **[fzf](https://github.com/junegunn/fzf)** — fuzzy finder for terminal workflows
-- **[ripgrep](https://github.com/BurntSushi/ripgrep)** — fast regex file search
-- **[ripgrep-all](https://github.com/phiresky/ripgrep-all)** — ripgrep extended to PDFs, docs, zip files
-- **[fd](https://github.com/sharkdp/fd)** — modern alternative to `find`
-- **[zoxide](https://github.com/ajeetdsouza/zoxide)** — smarter directory navigation
+## Containers, Runtime, And Package Management
 
-## CLI Utilities
+- **[colima](https://github.com/abiosoft/colima)** - lightweight container runtime for macOS
+- **[docker](https://docs.docker.com/engine/reference/commandline/cli/)** - Docker CLI with modern `docker compose` workflow
+- **[mise](https://github.com/jdx/mise)** - polyglot tool version manager
+- **[pnpm](https://github.com/pnpm/pnpm)** - fast Node.js package manager
 
-- **[bat](https://github.com/sharkdp/bat)** — `cat` with syntax highlighting and Git integration
-- **[eza](https://github.com/eza-community/eza)** — modern replacement for `ls`
-- **[tldr](https://github.com/tldr-pages/tldr)** — simplified command cheat sheets
-- **[just](https://github.com/casey/just)** — command runner / project-specific task scripts
-- **[lnav](https://lnav.org)** — terminal log file viewer with search and filtering
-- **[mysql-client](https://dev.mysql.com/doc/refman/en/programs-client.html)** — MySQL CLI client tools
-- **[stripe](https://stripe.com/docs/stripe-cli)** — Stripe CLI for local webhook testing
+## API And Database Tooling
 
-## Text Editors
+- **[Bruno](https://www.usebruno.com)** - open-source API client with plain-text collections
+- **[stripe](https://stripe.com/docs/stripe-cli)** - Stripe CLI for local webhook testing
+- **[mysql-client](https://dev.mysql.com/doc/refman/en/programs-client.html)** - MySQL CLI client tools
+- **[Sequel Ace](https://github.com/Sequel-Ace/Sequel-Ace)** - MySQL and MariaDB GUI
+- **[Medis](https://github.com/luin/medis)** - Redis GUI client
 
-- **[Neovim](https://github.com/neovim/neovim)** — extensible Vim-based editor
-  - Plugin manager: **[lazy.nvim](https://lazy.folke.io)** — declarative plugin manager (configured in `tools/nvim/`)
-- **[BBEdit](https://www.barebones.com/products/bbedit/)** — lightweight macOS text editor
+## Workspace And Window Management
 
-## Git Tools
+- **[AeroSpace](https://github.com/nikitabobko/AeroSpace)** - tiling window manager
+- **[IntelliJ IDEA Community](https://www.jetbrains.com/idea/)** - useful for Java work and merge conflict resolution
 
-- **[lazygit](https://github.com/jesseduffield/lazygit)** — terminal UI for Git
-- **[delta](https://github.com/dandavison/delta)** — syntax-highlighted Git diff pager
+## Install Via Homebrew
 
-## Container & Docker
-
-- **[colima](https://github.com/abiosoft/colima)** — lightweight container runtime for macOS (runs Docker daemon via Lima VM)
-- **[docker](https://docs.docker.com/engine/reference/commandline/cli/)** — Docker CLI
-- **[docker-compose](https://docs.docker.com/compose/)** — multi-container orchestration
-
-## Browser
-
-- **[Firefox](https://www.mozilla.org/firefox/)** — primary browser
-
-## API Client / HTTP Debugging
-
-- **[Bruno](https://www.usebruno.com)** — open-source API client; stores collections as plain-text files in your repo
-
-## Package Manager
-
-- **[pnpm](https://github.com/pnpm/pnpm)** — fast Node.js package manager
-
-## Database Tools
-
-- **[Sequel Ace](https://github.com/Sequel-Ace/Sequel-Ace)** — MySQL/MariaDB GUI
-- **[Medis](https://github.com/luin/medis)** — Redis GUI client
-
-## Window Management
-
-- **[AeroSpace](https://github.com/nikitabobko/AeroSpace)** — tiling window manager
-
-## Menu Bar Management
-
-- **[Ice](https://github.com/jordanbaird/Ice)** — menu bar organiser
-- **[NoTunes](https://github.com/tombonez/noTunes)** — prevents Apple Music from launching
-
-## Display Management
-
-- **[BetterDisplay](https://github.com/waydabber/BetterDisplay)** — HiDPI scaling and display control
-
-## Screenshots
-
-- **[Flameshot](https://github.com/flameshot-org/flameshot)** — cross-platform screenshot tool with annotation
-
-## Mouse & Trackpad
-
-- **[LinearMouse](https://linearmouse.app)** — mouse acceleration control
-- **[Middle Click](https://middleclick.app)** — enables trackpad middle click
-
-## App Switching
-
-- **[AltTab](https://alt-tab-macos.netlify.app)** — Windows-style application switcher
-
-## Image Editing
-
-- **[Paintbrush](https://paintbrush.sourceforge.io/)** — simple Paint-like image editor
-
-## Tool Version Manager
-
-- **[mise](https://github.com/jdx/mise)** — polyglot tool version manager (replaces asdf / nvm / rbenv)
-
-## Fonts
-
-- **[JetBrains Mono Nerd Font](https://www.nerdfonts.com)** — primary coding font with Nerd Font icons
-- **[Meslo LG Nerd Font](https://www.nerdfonts.com)** — fallback / terminal font
-
-## IDE
-
-- **[IntelliJ IDEA Community](https://www.jetbrains.com/idea/)** — free IDE, useful for Git merge conflict resolution
-
----
-
-## Install via Homebrew
-
-> Requires [Homebrew](https://brew.sh/) — install it first if not present:
+> Requires [Homebrew](https://brew.sh/) - install it first if not present:
 > `sh -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 
 ### CLI tools (`brew install`)
@@ -139,7 +86,6 @@ brew install bat
 brew install btop
 brew install colima
 brew install docker
-brew install docker-compose
 brew install eza
 brew install fd
 brew install fzf
@@ -163,36 +109,42 @@ brew install zsh-autosuggestions
 brew install zsh-syntax-highlighting
 ```
 
+> `mysql-client` is often keg-only and may require adding Homebrew's bin path to your shell config.
+
 ### GUI apps (`brew install --cask`)
 
 ```bash
-brew install --cask aerospace           # tap: nikitabobko/tap/aerospace
+brew tap nikitabobko/tap
+
+brew install --cask aerospace
 brew install --cask bbedit
-brew install --cask betterdisplay
 brew install --cask bruno
-brew install --cask firefox
-brew install --cask flameshot
-brew install --cask font-jetbrains-mono-nerd-font
-brew install --cask font-meslo-lg-nerd-font
 brew install --cask ghostty
-brew install --cask jordanbaird-ice
-brew install --cask linearmouse
-brew install --cask notunes
+brew install --cask intellij-idea-ce
 brew install --cask sequel-ace
-brew install --cask stats
 ```
 
-> AeroSpace requires its tap first: `brew tap nikitabobko/tap`
+### Installed outside Homebrew
 
-### Not available via Homebrew
+| Tool | Install method |
+| --- | --- |
+| Oh My Zsh | `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"` |
+| lazy.nvim | Auto-installed by Neovim config on first launch |
+| Medis | [App Store](https://apps.apple.com/app/medis-gui-for-redis/id1063631769) |
 
-| App              | Install method                                                                                                      |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Oh My Zsh        | `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"`                   |
-| lazy.nvim        | Auto-installed by Neovim config on first launch (see `tools/nvim/`)                                                 |
-| Medis            | [App Store](https://apps.apple.com/app/medis-gui-for-redis/id1063631769)                                            |
-| Middle Click     | [App Store](https://apps.apple.com/app/middle-click/id1387092371)                                                   |
-| Paintbrush       | [App Store](https://apps.apple.com/app/paintbrush/id407963104) or [SourceForge](https://paintbrush.sourceforge.io/) |
-| IntelliJ IDEA CE | [jetbrains.com](https://www.jetbrains.com/idea/download/) or `brew install --cask intellij-idea-ce`                 |
-| AltTab           | [alt-tab-macos.netlify.app](https://alt-tab-macos.netlify.app) or `brew install --cask alt-tab`                     |
-| LinearMouse      | [linearmouse.app](https://linearmouse.app) or `brew install --cask linearmouse`                                     |
+## macOS Utilities (Non-Development)
+
+These tools improve the daily macOS experience but are not part of the core development workflow.
+
+- **[Stats](https://github.com/exelban/stats)** - menu bar system monitor
+- **[Ice](https://github.com/jordanbaird/Ice)** - menu bar organiser
+- **[NoTunes](https://github.com/tombonez/noTunes)** - prevents Apple Music from launching
+- **[BetterDisplay](https://github.com/waydabber/BetterDisplay)** - display control
+- **[Flameshot](https://github.com/flameshot-org/flameshot)** - screenshots with annotation
+- **[LinearMouse](https://linearmouse.app)** - mouse acceleration control
+- **[Middle Click](https://middleclick.app)** - trackpad middle click
+- **[AltTab](https://alt-tab-macos.netlify.app)** - Windows-style application switcher
+- **[Paintbrush](https://paintbrush.sourceforge.io/)** - simple Paint-like image editor
+- **[Firefox](https://www.mozilla.org/firefox/)** - primary browser
+- **[JetBrains Mono Nerd Font](https://www.nerdfonts.com)** - primary coding font
+- **[Meslo LG Nerd Font](https://www.nerdfonts.com)** - fallback terminal font

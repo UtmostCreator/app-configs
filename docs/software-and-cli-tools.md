@@ -51,7 +51,6 @@
 
 - **[Neovim](https://github.com/neovim/neovim)** — extensible Vim-based editor
   - Plugin manager: **[lazy.nvim](https://lazy.folke.io)** — declarative plugin manager (configured in `tools/nvim/`)
-- **[BBEdit](https://www.barebones.com/products/bbedit/)** — lightweight macOS text editor
 
 ## Git Tools
 
@@ -89,10 +88,6 @@
 
 - **[Ice](https://github.com/jordanbaird/Ice)** — menu bar organiser
 - **[NoTunes](https://github.com/tombonez/noTunes)** — prevents Apple Music from launching
-
-## Display Management
-
-- **[BetterDisplay](https://github.com/waydabber/BetterDisplay)** — HiDPI scaling and display control
 
 ## Screenshots
 
@@ -167,7 +162,6 @@ brew install zsh-syntax-highlighting
 
 ```bash
 brew install --cask aerospace           # tap: nikitabobko/tap/aerospace
-brew install --cask bbedit
 brew install --cask betterdisplay
 brew install --cask bruno
 brew install --cask firefox

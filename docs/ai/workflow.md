@@ -10,6 +10,12 @@
 6. verify with direct evidence
 7. sync setup docs when behavior, paths, or commands changed
 
+Optional local helpers:
+
+- `just doctor` for repo health and AI workflow drift checks
+- `just ai-check` for the three bundled AI workflow validations
+- shared git hook scripts under `scripts/hooks/` when local commit-time enforcement is useful
+
 ## Capability Routing
 
 - unfamiliar area or cross-directory task -> `project-context`

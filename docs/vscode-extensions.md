@@ -30,6 +30,7 @@ ecmel.vscode-html-css
 editorconfig.editorconfig
 esbenp.prettier-vscode
 formulahendry.auto-close-tag
+github.copilot
 github.copilot-chat
 github.vscode-github-actions
 github.vscode-pull-request-github
@@ -96,6 +97,7 @@ code --install-extension ecmel.vscode-html-css
 code --install-extension editorconfig.editorconfig
 code --install-extension esbenp.prettier-vscode
 code --install-extension formulahendry.auto-close-tag
+code --install-extension github.copilot
 code --install-extension github.copilot-chat
 code --install-extension github.vscode-github-actions
 code --install-extension github.vscode-pull-request-github

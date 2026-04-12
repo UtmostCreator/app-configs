@@ -40,11 +40,11 @@ This index makes the live repo workflow layer and the reusable `AI-universal-rul
 | `capability` | verify-change | `docs/ai/capabilities/verify-change/CAPABILITY.md` | Choose the smallest relevant proof for a config, docs, or workflow change and report evidence cleanly. |
 | `exporter` | export-ai-universal-rules | `tools/ai/export-ai-universal-rules.php` | Builds starter-profile release bundles under dist/. |
 | `generator` | generate-ai-catalog | `tools/ai/generate-ai-catalog.php` | Generates catalog docs, catalog JSON, and llms.txt. |
-| `github-copilot-agent` | config-maintainer | `.github/agents/config-maintainer.agent.md` | Use when updating editor, shell, runtime, or tool configuration while preserving existing behavior and validating the narrowest safe surface first |
-| `github-copilot-agent` | workflow-auditor | `.github/agents/workflow-auditor.agent.md` | Use when reviewing AI workflow files, repo instructions, capability docs, or adapter drift across AGENTS, CLAUDE, docs/ai, and .github |
-| `github-copilot-instruction` | ai-workflow | `.github/instructions/ai-workflow.instructions.md` | Rules for AI workflow docs and runtime adapters |
-| `github-copilot-instruction` | config | `.github/instructions/config.instructions.md` | Rules for config changes in editor, shell, runtime, and tool files |
-| `github-copilot-instruction` | docs | `.github/instructions/docs.instructions.md` | Rules for setup docs, workflow docs, and examples |
+| `github-copilot-agent` | config-maintainer.agent.md | `.github/agents/config-maintainer.agent.md` |  |
+| `github-copilot-agent` | workflow-auditor.agent.md | `.github/agents/workflow-auditor.agent.md` |  |
+| `github-copilot-instruction` | ai-workflow | `.github/instructions/ai-workflow.instructions.md` |  |
+| `github-copilot-instruction` | config | `.github/instructions/config.instructions.md` |  |
+| `github-copilot-instruction` | docs | `.github/instructions/docs.instructions.md` |  |
 | `hook` | tool-guardian | `.github/hooks/tool-guardian.json` | Protects the live repo with a narrow Copilot hook guard. |
 | `validator` | validate-ai-catalog | `tools/ai/validate-ai-catalog.php` | Validates manifest, catalog, and starter profile metadata. |
 | `validator` | validate-ai-config | `tools/ai/validate-ai-config.php` | Validates the root live AI workflow layer. |
@@ -68,26 +68,26 @@ This index makes the live repo workflow layer and the reusable `AI-universal-rul
 | `foundation-doc` | Design Principles | `AI-universal-rules/docs/foundations/DESIGN-PRINCIPLES.md` | Use these principles when extending the kit. |
 | `foundation-doc` | Precedence | `AI-universal-rules/docs/foundations/PRECEDENCE.md` | This package uses layered workflow assets, so precedence and non-overlap must be explicit. |
 | `github-copilot-agent-template` | Repository Architect | `AI-universal-rules/templates/github-copilot/agents/architect.agent.md` | Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation |
-| `github-copilot-agent-template` | Repository Implementer | `AI-universal-rules/templates/github-copilot/agents/implementer.agent.md` | Use when a bounded slice is already defined and the task needs implementation plus focused verification |
+| `github-copilot-agent-template` | implementer.agent | `AI-universal-rules/templates/github-copilot/agents/implementer.agent.md` | name: Repository Implementer |
 | `github-copilot-agent-template` | Repository Refactorer | `AI-universal-rules/templates/github-copilot/agents/refactorer.agent.md` | Use when behavior is already correct and the remaining problem is structure, readability, or maintainability |
-| `github-copilot-agent-template` | Release Auditor | `AI-universal-rules/templates/github-copilot/agents/release-auditor.agent.md` | Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review |
-| `github-copilot-agent-template` | Repository Researcher | `AI-universal-rules/templates/github-copilot/agents/researcher.agent.md` | Use when ownership is unclear, the task touches an unfamiliar area, or later stages need read-only repo grounding first |
+| `github-copilot-agent-template` | release-auditor.agent | `AI-universal-rules/templates/github-copilot/agents/release-auditor.agent.md` | name: Release Auditor |
+| `github-copilot-agent-template` | researcher.agent | `AI-universal-rules/templates/github-copilot/agents/researcher.agent.md` | name: Repository Researcher |
 | `github-copilot-agent-template` | Repository Reviewer | `AI-universal-rules/templates/github-copilot/agents/reviewer.agent.md` | Use when reviewing a change set for correctness, regressions, policy fit, and missing verification starting from the diff |
 | `github-copilot-instruction-template` | Architecture Rules | `AI-universal-rules/templates/github-copilot/instructions/architecture.instructions.md` | Architecture, ownership, and layering guidance |
 | `github-copilot-instruction-template` | Frontend Rules | `AI-universal-rules/templates/github-copilot/instructions/frontend.instructions.md` | Frontend, UI, interaction, and presentation guidance |
 | `github-copilot-instruction-template` | Target Rules | `AI-universal-rules/templates/github-copilot/instructions/targets.instructions.md` | Target and platform adaptation guidance for multi-surface repositories |
 | `github-copilot-instruction-template` | Testing Rules | `AI-universal-rules/templates/github-copilot/instructions/testing.instructions.md` | Testing rules for focused, deterministic, behavior-proving tests |
 | `github-copilot-prompt-template` | bug-regression | `AI-universal-rules/templates/github-copilot/prompts/bug-regression.prompt.md` | Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence |
-| `github-copilot-prompt-template` | docs-sync | `AI-universal-rules/templates/github-copilot/prompts/docs-sync.prompt.md` | Use when changed behavior or workflow needs matching documentation updates without broad implementation planning |
+| `github-copilot-prompt-template` | docs-sync.prompt | `AI-universal-rules/templates/github-copilot/prompts/docs-sync.prompt.md` | name: docs-sync |
 | `github-copilot-prompt-template` | new-feature | `AI-universal-rules/templates/github-copilot/prompts/new-feature.prompt.md` | Use when implementing a bounded feature with existing repository patterns and focused verification |
-| `github-copilot-prompt-template` | regression-test | `AI-universal-rules/templates/github-copilot/prompts/regression-test.prompt.md` | Use when the main task is to create a failing or proving regression test for a reported bug or edge case |
-| `github-copilot-prompt-template` | release-readiness | `AI-universal-rules/templates/github-copilot/prompts/release-readiness.prompt.md` | Use when a diff or planned change needs rollout, rollback, observability, and migration-safety review |
+| `github-copilot-prompt-template` | regression-test.prompt | `AI-universal-rules/templates/github-copilot/prompts/regression-test.prompt.md` | name: regression-test |
+| `github-copilot-prompt-template` | release-readiness.prompt | `AI-universal-rules/templates/github-copilot/prompts/release-readiness.prompt.md` | name: release-readiness |
 | `github-copilot-prompt-template` | review-code | `AI-universal-rules/templates/github-copilot/prompts/review-code.prompt.md` | Use when reviewing a diff for correctness, risk, and missing tests before merge or handoff |
-| `opencode-agent-template` | architect | `AI-universal-rules/templates/opencode/agents/architect.md` | Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in <PROJECT_NAME> |
-| `opencode-agent-template` | implementer | `AI-universal-rules/templates/opencode/agents/implementer.md` | Use when a bounded slice is clear and implementation plus focused verification should happen in <PROJECT_NAME> |
+| `opencode-agent-template` | architect | `AI-universal-rules/templates/opencode/agents/architect.md` | description: Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in <PROJECT_NAME> |
+| `opencode-agent-template` | implementer | `AI-universal-rules/templates/opencode/agents/implementer.md` | description: Use when a bounded slice is clear and implementation plus focused verification should happen in <PROJECT_NAME> |
 | `opencode-agent-template` | refactorer | `AI-universal-rules/templates/opencode/agents/refactorer.md` | Use when behavior is already correct and the remaining problem is structure, readability, or maintainability in <PROJECT_NAME> |
-| `opencode-agent-template` | release-auditor | `AI-universal-rules/templates/opencode/agents/release-auditor.md` | Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review in <PROJECT_NAME> |
-| `opencode-agent-template` | researcher | `AI-universal-rules/templates/opencode/agents/researcher.md` | Use when the task touches an unfamiliar area, ownership is unclear, or a later stage needs read-only grounding before planning or implementation in <PROJECT_NAME> |
+| `opencode-agent-template` | release-auditor | `AI-universal-rules/templates/opencode/agents/release-auditor.md` | description: Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review in <PROJECT_NAME> |
+| `opencode-agent-template` | researcher | `AI-universal-rules/templates/opencode/agents/researcher.md` | description: Use when the task touches an unfamiliar area, ownership is unclear, or a later stage needs read-only grounding before planning or implementation in <PROJECT_NAME> |
 | `opencode-agent-template` | reviewer | `AI-universal-rules/templates/opencode/agents/reviewer.md` | Use when reviewing a change set for correctness, regressions, policy fit, and missing verification in <PROJECT_NAME> |
 | `opencode-command-template` | Bug Regression Command | `AI-universal-rules/templates/opencode/commands/bug-regression.md` | Use this command as the runtime entry point for a bounded bug-fix task. |
 | `opencode-command-template` | Plan Slice Command | `AI-universal-rules/templates/opencode/commands/plan-slice.md` | Use this command when a task is multi-step, ambiguous, or architecture-affecting. |
@@ -96,7 +96,7 @@ This index makes the live repo workflow layer and the reusable `AI-universal-rul
 | `opencode-skill-template` | bug-regression | `AI-universal-rules/templates/opencode/skills/bug-regression/SKILL.md` | Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence |
 | `opencode-skill-template` | dependency-upgrade | `AI-universal-rules/templates/opencode/skills/dependency-upgrade/SKILL.md` | Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance |
 | `opencode-skill-template` | project-context | `AI-universal-rules/templates/opencode/skills/project-context/SKILL.md` | Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing |
-| `opencode-skill-template` | project-stack | `AI-universal-rules/templates/opencode/skills/project-stack/SKILL.md` | Compatibility alias for the newer project-context skill |
+| `opencode-skill-template` | SKILL | `AI-universal-rules/templates/opencode/skills/project-stack/SKILL.md` | name: project-stack |
 | `opencode-skill-template` | release-safety | `AI-universal-rules/templates/opencode/skills/release-safety/SKILL.md` | Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards |
 | `opencode-skill-template` | review-diff | `AI-universal-rules/templates/opencode/skills/review-diff/SKILL.md` | Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff |
 | `opencode-skill-template` | verify-change | `AI-universal-rules/templates/opencode/skills/verify-change/SKILL.md` | Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly |

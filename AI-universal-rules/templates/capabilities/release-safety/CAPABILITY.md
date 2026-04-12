@@ -34,6 +34,7 @@ Assess rollout, rollback, observability, and compatibility posture for changes w
 2. Identify rollout, rollback, and compatibility concerns.
 3. Check for a concrete post-release success signal.
 4. Flag missing safeguards before implementation or merge.
+5. Use an approval packet when the change is destructive, production-facing, or otherwise high impact.
 
 ## Verification Expectations
 

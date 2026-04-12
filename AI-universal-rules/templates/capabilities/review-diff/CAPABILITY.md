@@ -40,6 +40,7 @@ Review a change set from the diff first, then expand only as needed to assess co
 
 - Review is not a substitute for executed verification.
 - Findings should distinguish likely issues from confirmed failures.
+- Review should start from the diff and expand only when a concern justifies it.
 
 ## Output Contract
 

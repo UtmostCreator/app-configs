@@ -44,6 +44,7 @@ Choose and run the smallest relevant verification flow for a change, then report
 - Do not claim behavior correctness from static analysis alone.
 - Separate executed evidence from unrun recommendations.
 - Do not skip straight to a broad build if a focused proof is available.
+- If environment or setup failures block verification, report that separately from code correctness.
 
 ## Output Contract
 

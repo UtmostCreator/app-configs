@@ -6,6 +6,8 @@ compatibility: opencode
 
 Use `project-context` for new installs.
 
+This alias is deprecated and should not appear in new worked examples.
+
 If this alias remains in a repository for compatibility, mirror the same project facts and point maintainers to:
 
 - `templates/opencode/skills/project-context/SKILL.md`

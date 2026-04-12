@@ -40,6 +40,7 @@ Evaluate and implement a dependency upgrade with attention to compatibility, ver
 
 - Verification depth should match the dependency's runtime impact.
 - Upgrades touching build, runtime, or shared contracts usually need broader review than a dev-only formatter change.
+- Silent dependency drift is not acceptable evidence; report the exact version change and its blast radius.
 
 ## Output Contract
 

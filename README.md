@@ -84,6 +84,13 @@ Current repo structure
     └── vscode-extensions.md
 ```
 
+## Copilot workflow (hybrid)
+
+Use VS Code Copilot as the primary interface and Copilot CLI for shell-heavy/background tasks.
+
+- Setup and invocation guide: `docs/copilot-workflow.md`
+- Critical gap audit and priorities: `docs/copilot-critical-audit.md`
+
 ## Scope
 
 - **Editor defaults** via `.editorconfig`

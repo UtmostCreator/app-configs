@@ -46,6 +46,7 @@
 - **[lnav](https://lnav.org)** — terminal log file viewer with search and filtering
 - **[mysql-client](https://dev.mysql.com/doc/refman/en/programs-client.html)** — MySQL CLI client tools
 - **[stripe](https://stripe.com/docs/stripe-cli)** — Stripe CLI for local webhook testing
+- **[GitHub Copilot CLI](https://github.com/features/copilot/cli/)** — terminal-native Copilot agent (`npm install -g @github/copilot`)
 
 ## Text Editors
 
@@ -188,5 +189,6 @@ brew install --cask stats
 | Middle Click     | [App Store](https://apps.apple.com/app/middle-click/id1387092371)                                                   |
 | Paintbrush       | [App Store](https://apps.apple.com/app/paintbrush/id407963104) or [SourceForge](https://paintbrush.sourceforge.io/) |
 | IntelliJ IDEA CE | [jetbrains.com](https://www.jetbrains.com/idea/download/) or `brew install --cask intellij-idea-ce`                 |
+| GitHub Copilot CLI | `npm install -g @github/copilot` (official install options also include script/Homebrew/WinGet)                |
 | AltTab           | [alt-tab-macos.netlify.app](https://alt-tab-macos.netlify.app) or `brew install --cask alt-tab`                     |
 | LinearMouse      | [linearmouse.app](https://linearmouse.app) or `brew install --cask linearmouse`                                     |

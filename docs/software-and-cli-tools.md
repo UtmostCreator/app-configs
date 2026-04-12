@@ -75,6 +75,74 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 
 ## Install Via Homebrew
 
+> # Requires [Homebrew](https://brew.sh/) - install it first if not present:
+
+## Container & Docker
+
+- **[colima](https://github.com/abiosoft/colima)** - lightweight container runtime for macOS (runs Docker daemon via Lima VM)
+- **[docker](https://docs.docker.com/engine/reference/commandline/cli/)** - Docker CLI
+- **[docker-compose](https://docs.docker.com/compose/)** - multi-container orchestration
+
+## Browser
+
+- **[Firefox](https://www.mozilla.org/firefox/)** - primary browser
+
+## API Client / HTTP Debugging
+
+- **[Bruno](https://www.usebruno.com)** - open-source API client; stores collections as plain-text files in your repo
+
+## Package Manager
+
+- **[pnpm](https://github.com/pnpm/pnpm)** - fast Node.js package manager
+
+## Database Tools
+
+- **[Sequel Ace](https://github.com/Sequel-Ace/Sequel-Ace)** - MySQL/MariaDB GUI
+- **[Medis](https://github.com/luin/medis)** - Redis GUI client
+
+## Window Management
+
+- **[AeroSpace](https://github.com/nikitabobko/AeroSpace)** - tiling window manager
+
+## Menu Bar Management
+
+- **[Ice](https://github.com/jordanbaird/Ice)** - menu bar organiser
+- **[NoTunes](https://github.com/tombonez/noTunes)** - prevents Apple Music from launching
+
+## Screenshots
+
+- **[Flameshot](https://github.com/flameshot-org/flameshot)** - cross-platform screenshot tool with annotation
+
+## Mouse & Trackpad
+
+- **[LinearMouse](https://linearmouse.app)** - mouse acceleration control
+- **[Middle Click](https://middleclick.app)** - enables trackpad middle click
+
+## App Switching
+
+- **[AltTab](https://alt-tab-macos.netlify.app)** - Windows-style application switcher
+
+## Image Editing
+
+- **[Paintbrush](https://paintbrush.sourceforge.io/)** - simple Paint-like image editor
+
+## Tool Version Manager
+
+- **[mise](https://github.com/jdx/mise)** - polyglot tool version manager (replaces asdf / nvm / rbenv)
+
+## Fonts
+
+- **[JetBrains Mono Nerd Font](https://www.nerdfonts.com)** - primary coding font with Nerd Font icons
+- **[Meslo LG Nerd Font](https://www.nerdfonts.com)** - fallback / terminal font
+
+## IDE
+
+- **[IntelliJ IDEA Community](https://www.jetbrains.com/idea/)** - free IDE, useful for Git merge conflict resolution
+
+---
+
+## Install via Homebrew
+
 > Requires [Homebrew](https://brew.sh/) - install it first if not present:
 > `sh -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 
@@ -115,9 +183,9 @@ brew install zsh-syntax-highlighting
 
 ```bash
 brew tap nikitabobko/tap
-
 brew install --cask aerospace
 brew install --cask bbedit
+brew install --cask betterdisplay
 brew install --cask bruno
 brew install --cask ghostty
 brew install --cask intellij-idea-ce
@@ -126,11 +194,11 @@ brew install --cask sequel-ace
 
 ### Installed outside Homebrew
 
-| Tool | Install method |
-| --- | --- |
+| Tool      | Install method                                                                                    |
+| --------- | ------------------------------------------------------------------------------------------------- |
 | Oh My Zsh | `sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"` |
-| lazy.nvim | Auto-installed by Neovim config on first launch |
-| Medis | [App Store](https://apps.apple.com/app/medis-gui-for-redis/id1063631769) |
+| lazy.nvim | Auto-installed by Neovim config on first launch                                                   |
+| Medis     | [App Store](https://apps.apple.com/app/medis-gui-for-redis/id1063631769)                          |
 
 ## macOS Utilities (Non-Development)
 

@@ -311,3 +311,53 @@ _atuin_ai_question_mark() {
 # Set up keybindings
 zle -N _atuin_ai_question_mark
 bindkey '?' _atuin_ai_question_mark # Question mark
+
+
+# update all packages, list them here
+brewup() {
+  local formulae=(
+    atuin bat btop colima docker docker-compose eza fd fzf git-delta just
+    lazygit lnav mise mysql-client neovim pnpm ripgrep ripgrep-all starship
+    tldr tmux yazi zoxide zsh-autosuggestions zsh-syntax-highlighting
+  )
+
+  local casks=(
+    aerospace bruno firefox flameshot
+    font-jetbrains-mono-nerd-font font-meslo-lg-nerd-font ghostty
+    jordanbaird-ice linearmouse notunes sequel-ace stats
+    intellij-idea-ce alt-tab
+  )
+
+  local installed_formulae=()
+  local installed_casks=()
+  local item
+
+  for item in "${formulae[@]}"; do
+    if brew list --formula "$item" >/dev/null 2>&1; then
+      installed_formulae+=("$item")
+    fi
+  done
+
+  for item in "${casks[@]}"; do
+    if brew list --cask "$item" >/dev/null 2>&1; then
+      installed_casks+=("$item")
+    fi
+  done
+
+  brew update || return 1
+
+  if (( ${#installed_formulae[@]} )); then
+    brew upgrade "${installed_formulae[@]}" || return 1
+  fi
+
+  if (( ${#installed_casks[@]} )); then
+    brew upgrade --cask "${installed_casks[@]}" || return 1
+  fi
+
+  if command -v omz >/dev/null 2>&1; then
+    omz update || return 1
+  fi
+
+  brew cleanup
+}
+

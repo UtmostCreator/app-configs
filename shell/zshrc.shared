@@ -1,0 +1,14 @@
+# Shared shell layer for app-configs.
+# Source this from ~/.zshrc:
+#   source /path/to/app-configs/shell/zshrc.shared
+
+export APP_CONFIGS_HOME="${APP_CONFIGS_HOME:-$HOME/workspace/app-configs}"
+
+alias acfg='cd "$APP_CONFIGS_HOME"'
+alias acfg-doctor='(cd "$APP_CONFIGS_HOME" && just doctor)'
+alias acfg-bootstrap='(cd "$APP_CONFIGS_HOME" && just bootstrap)'
+alias acfg-ai-review='(cd "$APP_CONFIGS_HOME" && just ai-review)'
+
+acfg-verify() {
+  (cd "$APP_CONFIGS_HOME" && just doctor)
+}

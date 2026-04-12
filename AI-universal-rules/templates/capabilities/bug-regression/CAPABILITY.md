@@ -41,6 +41,7 @@ Reproduce a bug with the smallest practical test or deterministic check, apply a
 
 - Prefer executable reproduction over narrative-only explanation when practical.
 - Keep the fix bounded to the identified fault.
+- If the bug cannot be reproduced deterministically, explain what blocks proof and what evidence is still available.
 
 ## Output Contract
 

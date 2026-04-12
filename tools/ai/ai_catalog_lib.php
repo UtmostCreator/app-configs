@@ -23,6 +23,11 @@ function aiAbsolutePath(string $root, string $relativePath): string
     return $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
 }
 
+function aiNormalizeGeneratedContent(string $content): string
+{
+    return str_replace("\r\n", "\n", $content);
+}
+
 function aiReadFile(string $root, string $relativePath): string
 {
     $content = file_get_contents(aiAbsolutePath($root, $relativePath));
@@ -175,21 +180,30 @@ function aiCollectRootResources(string $root): array
 {
     $resources = [];
 
-    foreach (glob(aiAbsolutePath($root, 'docs/ai/capabilities/*/CAPABILITY.md')) ?: [] as $path) {
+    $capabilityPaths = glob(aiAbsolutePath($root, 'docs/ai/capabilities/*/CAPABILITY.md')) ?: [];
+    sort($capabilityPaths);
+
+    foreach ($capabilityPaths as $path) {
         $relativePath = substr(aiNormalizePath($path), strlen(aiNormalizePath($root)) + 1);
         $name = basename(dirname($path));
         $content = file_get_contents($path) ?: '';
         $resources[] = aiResource('root', 'capability', $name, $relativePath, aiSummarizeMarkdown($content), 'canonical');
     }
 
-    foreach (glob(aiAbsolutePath($root, '.github/agents/*.agent.md')) ?: [] as $path) {
+    $agentPaths = glob(aiAbsolutePath($root, '.github/agents/*.agent.md')) ?: [];
+    sort($agentPaths);
+
+    foreach ($agentPaths as $path) {
         $relativePath = substr(aiNormalizePath($path), strlen(aiNormalizePath($root)) + 1);
         $content = file_get_contents($path) ?: '';
         $frontMatter = aiParseFrontMatter($content);
         $resources[] = aiResource('root', 'github-copilot-agent', $frontMatter['name'] ?? basename($path), $relativePath, $frontMatter['description'] ?? null, 'github-copilot');
     }
 
-    foreach (glob(aiAbsolutePath($root, '.github/instructions/*.instructions.md')) ?: [] as $path) {
+    $instructionPaths = glob(aiAbsolutePath($root, '.github/instructions/*.instructions.md')) ?: [];
+    sort($instructionPaths);
+
+    foreach ($instructionPaths as $path) {
         $relativePath = substr(aiNormalizePath($path), strlen(aiNormalizePath($root)) + 1);
         $content = file_get_contents($path) ?: '';
         $frontMatter = aiParseFrontMatter($content);
@@ -264,7 +278,10 @@ function aiCollectExampleResources(string $root): array
 {
     $resources = [];
 
-    foreach (glob(aiAbsolutePath($root, 'AI-universal-rules/examples/*'), GLOB_ONLYDIR) ?: [] as $directory) {
+    $exampleDirectories = glob(aiAbsolutePath($root, 'AI-universal-rules/examples/*'), GLOB_ONLYDIR) ?: [];
+    sort($exampleDirectories);
+
+    foreach ($exampleDirectories as $directory) {
         $relativePath = substr(aiNormalizePath($directory), strlen(aiNormalizePath($root)) + 1);
         $files = aiListFilesInDirectory($directory);
 
@@ -736,8 +753,9 @@ function aiCompareOrWrite(string $root, string $relativePath, string $content, b
 {
     $absolutePath = aiAbsolutePath($root, $relativePath);
     $existing = is_file($absolutePath) ? file_get_contents($absolutePath) : false;
+    $normalizedContent = aiNormalizeGeneratedContent($content);
 
-    if ($existing === $content) {
+    if ($existing !== false && aiNormalizeGeneratedContent($existing) === $normalizedContent) {
         $messages[] = "OK: {$relativePath} is up to date";
         return true;
     }
@@ -747,7 +765,7 @@ function aiCompareOrWrite(string $root, string $relativePath, string $content, b
         return false;
     }
 
-    aiWriteIfChanged($absolutePath, $content);
+    aiWriteIfChanged($absolutePath, $normalizedContent);
     $messages[] = "OK: regenerated {$relativePath}";
 
     return true;

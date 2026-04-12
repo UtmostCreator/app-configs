@@ -1,6 +1,8 @@
 # Capability Evaluation
 
-Use this rubric when deciding whether a capability is working well enough to keep, expand, or remove.
+Use this rubric when deciding whether the workflow is working well enough to keep, expand, or remove.
+
+See `docs/operations/EVAL-SCENARIOS.md` for scenario-based testing.
 
 ## Trigger Quality
 
@@ -25,6 +27,13 @@ Use this rubric when deciding whether a capability is working well enough to kee
 - Is the entry file short enough to scan quickly?
 - Are gotchas and examples in support files instead of bloating the entry file?
 - Does the capability duplicate another capability without adding value?
+
+## Workflow Separation
+
+- Is stable policy kept out of task-entry prompts and commands when possible?
+- Are repeated one-off tasks using prompt files or commands instead of always-on instructions?
+- Are staged agents used when context isolation is important?
+- Are hooks or deterministic checks used when the repo says something must always happen?
 
 ## Review Questions
 

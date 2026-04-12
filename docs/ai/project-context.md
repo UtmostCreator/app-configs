@@ -12,8 +12,8 @@
 
 ## Architecture
 
-- Primary entrypoints: `README.md, AGENTS.md, CLAUDE.md, AI-universal-rules/README.md, vscode/user/settings.json, shell/.zshrc`
-- Architecture notes: `AI-universal-rules/ is the reusable package; docs/ai/ is the root-repo instantiation; runtime-specific adapter files should stay thin and point back to canonical docs.`
+- Primary entrypoints: `README.md, AGENTS.md, CLAUDE.md, AI-universal-rules/README.md, vscode/user/settings.json, shell/.zshrc, justfile`
+- Architecture notes: `AI-universal-rules/ is the reusable package; docs/ai/ is the root-repo instantiation; runtime-specific adapter files should stay thin and point back to canonical docs; local workflow scaffolding lives in justfile plus scripts/hooks and is optional rather than canonical policy.`
 - Canonical workflow source: `docs/ai/capabilities/`
 - Runtime adapter surfaces: `.github/`, `AGENTS.md`, `CLAUDE.md`
 - Risk areas: `stale documentation, mismatched tool-specific instructions, machine-specific paths, silent workflow drift between canonical and adapter files`

@@ -44,6 +44,7 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 - **[just](https://github.com/casey/just)** - command runner for project-specific tasks
 - **[lnav](https://lnav.org)** - terminal log viewer with search and filtering
 - **[btop](https://github.com/aristocratos/btop)** - terminal resource monitor
+- **[GitHub Copilot CLI](https://github.com/github/copilot-cli)** - terminal-native Copilot workflow entrypoint
 
 ## Editors And Git
 
@@ -158,6 +159,7 @@ brew install eza
 brew install fd
 brew install fzf
 brew install git-delta
+brew install copilot-cli
 brew install just
 brew install lazygit
 brew install lnav

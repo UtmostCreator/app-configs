@@ -13,6 +13,15 @@
 | `shell/.zshrc`        | `~/.zshrc`                         |
 | `shell/starship.toml` | `~/.config/starship/starship.toml` |
 
+## Optional Local Workflow Helpers
+
+If you keep this repo checked out locally, `shell/.zshrc` also exposes small helpers for jumping into the repo and running health checks.
+
+- Set `APP_CONFIGS_HOME` if your clone is not at the default path.
+- Use `acfg` to jump to the repo.
+- Use `acfg-doctor` to run the local repo health check.
+- Use `acfg-ai-check` to run the bundled AI workflow validation commands.
+
 ## Prerequisites
 
 ```bash
@@ -38,3 +47,12 @@ That file is gitignored and never committed.
 # ~/.secrets  (create manually, never commit)
 export NPM_TOKEN="ghp_your_token_here"
 ```
+
+## Optional Workflow Commands
+
+If you install [`just`](https://github.com/casey/just), the repo includes:
+
+- `just doctor`
+- `just bootstrap`
+- `just ai-check`
+- `just hook-run-precommit`

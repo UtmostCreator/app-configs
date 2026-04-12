@@ -16,6 +16,7 @@ This repository has two related jobs:
 - VS Code settings, launch config, and extension recommendations for project work
 - Karabiner and keyboard documentation for cross-platform ergonomics
 - AI workflow validation and generation scripts for reusable repo guidance
+- optional local workflow scaffolding via `just`, `doctor`, and shared commit-hook scripts
 
 ## What Is Here
 
@@ -29,6 +30,8 @@ This repository has two related jobs:
 - `tools/karabiner/` - keyboard remapping config
 - `php/` - PHP runtime and Pint configuration
 - `vscode/` - workspace, user settings, keybindings, and launch config
+- `justfile` - optional workflow entrypoints for local health checks and AI validation
+- `scripts/` - doctor and shared git-hook scripts
 
 ## AI Workflow Kit
 
@@ -85,6 +88,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - Read the relevant setup note in `docs/`
 - Copy or merge the matching config into your local environment
 - Replace any machine-specific placeholders before using shared templates
+- Run `just doctor` after syncing config files if you use the local workflow scaffolding
 
 ### AI workflow use
 
@@ -93,9 +97,11 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - Browse `docs/ai/catalog.md` when you need the fastest path to relevant assets
 - Use the smallest relevant capability in `docs/ai/capabilities/`
 - Only then use runtime-specific adapter files such as `.github/copilot-instructions.md`
+- For GitHub Copilot, install both `github.copilot` and `github.copilot-chat`, then optionally add Copilot CLI for terminal-heavy work
 - Run `php tools/ai/validate-ai-config.php` after changing root workflow files
 - Run `php tools/ai/validate-ai-catalog.php` after changing package metadata or generated docs
 - Run `php tools/ai/generate-ai-catalog.php` after changing cataloged assets or package metadata
+- Run `just ai-check` if you want one local command that wraps the three AI workflow checks above
 
 ## Important Notes
 

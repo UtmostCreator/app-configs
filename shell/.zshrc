@@ -54,8 +54,11 @@ bindkey '^I^I' autosuggest-accept
 # Shift+Tab: accept autosuggestion (common escape sequence)
 # bindkey '^[[Z' autosuggest-accept
 
-export NPM_TOKEN=YOUR_GITHUB_PAT_HERE  # e.g. ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 export NODE_EXTRA_CA_CERTS="$HOME/Library/Application Support/Herd/config/valet/CA/LaravelValetCASelfSigned.pem"
+
+if [[ -f "$HOME/.secrets" ]]; then
+  source "$HOME/.secrets"
+fi
 
 source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
@@ -78,6 +81,30 @@ function yy() {
 
 # CMS dev workspace
 alias cms='bash ~/cms-dev.sh'
+export APP_CONFIGS_HOME="${APP_CONFIGS_HOME:-$HOME/workspace/app-configs}"
+alias acfg='cd "$APP_CONFIGS_HOME"'
+
+function acfg-doctor() {
+    if command -v just >/dev/null 2>&1; then
+        (cd "$APP_CONFIGS_HOME" && just doctor)
+    else
+        (cd "$APP_CONFIGS_HOME" && bash scripts/doctor.sh)
+    fi
+}
+
+function acfg-ai-check() {
+    if command -v just >/dev/null 2>&1; then
+        (cd "$APP_CONFIGS_HOME" && just ai-check)
+    else
+        (
+            cd "$APP_CONFIGS_HOME" &&
+            php tools/ai/validate-ai-config.php &&
+            php tools/ai/validate-ai-catalog.php &&
+            php tools/ai/generate-ai-catalog.php --check
+        )
+    fi
+}
+
 export ATUIN_TMUX_POPUP=false
 # shellcheck disable=SC2034,SC2153,SC2086,SC2155
 

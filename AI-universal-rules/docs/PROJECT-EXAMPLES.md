@@ -2,6 +2,12 @@
 
 These examples show how the capability-first model can be used in very different repositories without rewriting the whole instruction system.
 
+For worked repository trees, see:
+
+- `examples/worked-opencode-repo/`
+- `examples/worked-copilot-repo/`
+- `examples/worked-dual-tool-repo/`
+
 ## Project N: Laravel + Vue Product App
 
 Typical capability set:

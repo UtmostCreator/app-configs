@@ -11,6 +11,7 @@ For most repositories, begin with:
 - `docs/ai/capabilities/verify-change/`
 - `docs/ai/capabilities/review-diff/`
 - one adapter surface: OpenCode or GitHub Copilot
+- one shared guardrail file for common failure modes
 
 Add more only when the base layer works.
 
@@ -24,6 +25,8 @@ Add more only when the base layer works.
 - skills: runtime access to capability workflows; not the only source of workflow truth
 - commands: invocation wrappers and compatibility helpers; not canonical workflow definitions
 - prompts: optional surface-specific guidance; not guaranteed command equivalents
+- hooks: deterministic enforcement; not general policy storage
+- MCP: bounded external access; not a default assumption
 
 ## Minimum Starting Set
 
@@ -41,8 +44,10 @@ Use this as the default starting point for most repos:
 2. Replace placeholders in the base capabilities.
 3. Add repo-wide instructions.
 4. Add path-specific instructions if the repo truly needs them.
-5. Add runtime adapters such as agents, skills, commands, or prompts.
-6. Add specialist capabilities such as `bug-regression`, `release-safety`, or `dependency-upgrade` only when needed.
+5. Add task entry points such as prompts or commands for recurring one-off jobs.
+6. Add staged runtime adapters such as agents and skills.
+7. Add specialist capabilities such as `bug-regression`, `release-safety`, or `dependency-upgrade` only when needed.
+8. Add hooks and MCP boundaries only after the workflow and fallback path are clear.
 
 ## What Not To Customize Too Early
 
@@ -66,6 +71,8 @@ Use this as the default starting point for most repos:
 - Can it choose narrow-first verification instead of jumping to a broad build?
 - Can it review a diff without mostly restating it?
 - Can it explain which capability fits a request and why?
+- Can it route a repeated one-off task through a prompt or command instead of bloating always-on instructions?
+- Can it keep research, implementation, and review in distinct contexts when the task is non-trivial?
 
 ## When To Add More
 

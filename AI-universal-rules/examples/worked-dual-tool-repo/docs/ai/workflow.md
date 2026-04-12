@@ -1,0 +1,15 @@
+# Workflow
+
+## Default Task Flow
+
+1. route through `project-context` when ownership is unclear
+2. use `plan-slice` or a planning agent for multi-step work
+3. implement the bounded slice
+4. review the diff in a fresh context
+5. use `release-safety` when risk is `medium` or `high`
+
+## Entry Point Examples
+
+- bug in checkout totals -> `bug-regression`
+- contract review for an existing diff -> `review-diff` then `release-readiness`
+- docs update after behavior change -> `docs-sync`

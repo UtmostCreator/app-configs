@@ -41,6 +41,7 @@ Provide durable repository context that other capabilities, agents, and prompts 
 
 - Do not infer stack details that are not in the context file.
 - Prefer active repository truth over stale planning notes.
+- Surface unknowns explicitly instead of inventing repository facts.
 
 ## Output Contract
 
@@ -54,3 +55,4 @@ Provide durable repository context that other capabilities, agents, and prompts 
 - `verify-change`
 - `review-diff`
 - `bug-regression`
+- `release-safety`

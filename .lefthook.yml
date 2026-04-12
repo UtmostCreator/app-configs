@@ -1,0 +1,10 @@
+pre-commit:
+  parallel: false
+  commands:
+    shared-precommit:
+      run: bash scripts/hooks/pre-commit.sh
+
+commit-msg:
+  commands:
+    shared-commit-msg:
+      run: bash scripts/hooks/commit-msg.sh {1}

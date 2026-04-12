@@ -15,15 +15,17 @@
 
 Use this default workflow unless the task is clearly trivial:
 
-- `plan -> architect for medium or large changes -> implement -> review -> refactor only when structure is the problem -> verify when behavior changed`
+- `research when the owner is unclear -> plan for multi-step or risky work -> implement the bounded slice -> review in fresh context -> verify with evidence -> add release audit for medium or high risk`
 
 Workflow rules:
 
 - Prefer the smallest safe change.
+- Keep stable policy here and move procedural depth into capabilities, prompts, commands, or staged agents.
 - For non-trivial work, classify risk as `low`, `medium`, or `high` to choose review and verification depth.
 - Ground decisions in active code and configuration, not aspiration.
 - Do not invent systems, services, persistence layers, or infrastructure that are not present.
 - Escalate when ambiguity would change architecture, persistence shape, public interfaces, dependency surface, security posture, or rollout risk.
+- Say `unknown` when the repository does not prove something.
 - If a slice grows beyond roughly 6 files or 300-500 changed lines, pause and confirm it is still one bounded outcome.
 - Stop repeated review or fix loops after three iterations and surface unresolved tradeoffs clearly.
 
@@ -63,6 +65,13 @@ Inspect the current implementation before making architectural or behavioral cha
 - Capability composition notes: `<CAPABILITY_COMPOSITION_NOTES>`
 - Prefer capability folders for reusable workflow knowledge; keep this file focused on baseline policy.
 
+## Entry Point Rules
+
+- Use prompt files or commands for recurring one-off tasks.
+- Use staged agents when fresh context, tool boundaries, or handoffs improve safety.
+- Use capability folders or skills for deeper optional procedures.
+- Do not turn this file into the only bug-fix, release, or migration workflow definition.
+
 ## Release and Migration Safety
 
 - For `medium` and `high` risk changes, define rollback or disable path before implementation.
@@ -101,6 +110,7 @@ Inspect the current implementation before making architectural or behavioral cha
 - Separate direct evidence from inference.
 - For behavior changes, name the focused test, flow, or assertion that proves the result.
 - For `medium` and `high` risk work, state rollback path and success signal alongside verification.
+- Do not report recommendations, assumptions, or unrun checks as completed work.
 
 ## Review Priorities
 
@@ -123,3 +133,4 @@ Inspect the current implementation before making architectural or behavioral cha
 - Do not assume a stack, framework, or deployment target that is not confirmed.
 - Do not silently widen permissions, scope, or behavior.
 - Do not delete files or reshape the module layout without approval.
+- Do not treat always-on instructions as a replacement for task entry points, staged agents, or enforcement hooks.

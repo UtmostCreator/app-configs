@@ -98,6 +98,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - Use the smallest relevant capability in `docs/ai/capabilities/`
 - Only then use runtime-specific adapter files such as `.github/copilot-instructions.md`
 - For GitHub Copilot, install both `github.copilot` and `github.copilot-chat`, then optionally add Copilot CLI for terminal-heavy work
+- For tool-routed Copilot workflows, follow `docs/ai/copilot-tooling.md` (instructions -> wrappers -> hooks -> skills/prompts -> MCP)
 - Run `php tools/ai/validate-ai-config.php` after changing root workflow files
 - Run `php tools/ai/validate-ai-catalog.php` after changing package metadata or generated docs
 - Run `php tools/ai/generate-ai-catalog.php` after changing cataloged assets or package metadata

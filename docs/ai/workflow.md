@@ -12,6 +12,7 @@
 
 Optional local helpers:
 
+- Copilot tooling integration order and adapter split in `docs/ai/copilot-tooling.md`
 - `just doctor` for repo health and AI workflow drift checks
 - `just ai-check` for the three bundled AI workflow validations
 - shared git hook scripts under `scripts/hooks/` when local commit-time enforcement is useful

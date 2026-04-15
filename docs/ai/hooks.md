@@ -5,7 +5,10 @@ Hooks are optional adapter-level enforcement, not the canonical workflow source.
 ## Included Example
 
 - `.github/hooks/tool-guardian.json`
+- `.github/hooks/tool-policy.json`
 - `.github/hooks/scripts/tool-guardian.ps1`
+- `scripts/copilot/pre-tool-use.sh`
+- `scripts/copilot/post-tool-use.sh`
 - `.husky/pre-commit`
 - `.husky/commit-msg`
 - `.lefthook.yml`

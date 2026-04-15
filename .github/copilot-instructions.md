@@ -2,6 +2,13 @@
 
 Use these instructions as the repository-wide baseline for GitHub Copilot.
 
+## Read Order
+
+1. `docs/ai/project-context.md`
+2. `docs/ai/workflow.md`
+3. `docs/ai/copilot-tooling.md`
+4. `.github/instructions/*.instructions.md`
+
 ## Project Context
 
 - Project: `app-configs`
@@ -10,38 +17,38 @@ Use these instructions as the repository-wide baseline for GitHub Copilot.
 - Active paths: `AI-universal-rules/, docs/, vscode/, shell/, tools/, php/, .github/`
 - Avoid by default: `treat copied examples as references unless the task explicitly targets them`
 - Primary entrypoints: `README.md, AGENTS.md, docs/ai/project-context.md, AI-universal-rules/README.md, vscode/user/settings.json`
-- Project context file: `docs/ai/project-context.md`
-- Capability folders available: `docs/ai/capabilities/project-context, docs/ai/capabilities/verify-change, docs/ai/capabilities/review-diff, docs/ai/capabilities/bug-regression, docs/ai/capabilities/docs-sync, docs/ai/capabilities/config-change-safety`
+
+## Tool Routing Defaults
+
+Prefer these tools in order:
+
+1. `scripts/copilot/rg-code.sh` for broad code/text search.
+2. `scripts/copilot/fd-files.sh` for file discovery.
+3. `fzf` for interactive narrowing.
+4. `scripts/copilot/preview-file.sh` for source previews.
+5. `git grep` for tracked-only search.
+6. `scripts/copilot/git-forensics.sh` for `git log -S/-G/-L` and `git blame -L`.
+7. `scripts/copilot/gh-pr-context.sh`, GitHub MCP, or `gh` + `jq` for PR/issue/workflow context.
+8. `ast-grep` for syntax-aware matching.
+9. `semgrep` for rule-based bug/security scans.
+10. `delta` for diff rendering.
+
+Execution rules:
+
+- Prefer read-only commands first.
+- Prefer wrappers in `scripts/copilot/` over ad hoc pipelines.
+- Summarize findings with exact commands, file paths, line ranges, and commit hashes when relevant.
+- Do not run destructive commands unless explicitly requested.
+- Do not run `git push`, `sudo`, package installs, or delete commands by default.
 
 ## Working Style
 
 - Prefer the smallest safe change.
-- Read current repo files before proposing new structure.
-- Keep this file policy-focused and use `docs/ai/` for canonical workflow detail.
-- Ask for approval before changing secrets, credentials, or broad compatibility posture.
+- Keep canonical workflow guidance in `docs/ai/` and keep adapter files thin.
 - Fix adapter drift instead of teaching conflicting workflows.
-- Say `unknown` instead of guessing when the repo does not prove a fact.
-
-## Quality Bar
-
-- Keep logic close to its existing owner.
-- Sync docs when commands, paths, or setup behavior change.
-- Prioritize review around: `repo truth, path accuracy, runtime-adapter alignment, portability, and simple adoption`
-- Start verification with the narrowest non-destructive check available for the changed tool.
-- Treat broad builds as optional smoke checks, not automatic proof.
-
-## Common Gotchas
-
-- This repo is not a Laravel or product application codebase.
-- `AI-universal-rules/examples/` contains references, not root-repo facts.
-- Shared docs must call out machine-specific paths explicitly.
-- Runtime surfaces differ; do not imply parity when support varies.
+- Say `unknown` instead of guessing when the repo does not prove a claim.
 
 ## Limits
 
-- Copilot surface: `repository-scoped instructions plus optional narrower instructions and agents`
-- Stable supported features: `repo instructions, path-scoped instructions, custom agents`
-- Optional or preview features: `prompt files, advanced agent behavior, hooks, MCP depending on surface`
-- Instruction precedence notes: `narrower path-scoped instructions should refine this file, not contradict it`
-- Conflict avoidance notes: `keep canonical process in docs/ai and use Copilot files as adapters`
-- Global or shared rule sources: `AGENTS.md, CLAUDE.md, docs/ai/project-context.md, docs/ai/workflow.md, docs/ai/AI-GUARDRAILS.md`
+- Copilot surface: `repository instructions + path instructions + agents + hooks + skills + prompt files + MCP (surface-dependent)`
+- Preview/runtime caveat: `feature support varies by CLI, cloud agent, and IDE surfaces; document fallback behavior explicitly.`

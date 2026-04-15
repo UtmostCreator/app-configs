@@ -5,7 +5,11 @@ macOS development environment for full-stack work, terminal workflows, PHP tooli
 This repository has two related jobs:
 
 1. document and version my daily developer workstation across shell, terminal, Neovim, PHP, keyboard ergonomics, containers, and editor workflow
-2. provide a reusable cross-tool AI workflow kit for repo-scoped guidance, validation, and generated catalog surfaces
+2. provide a reusable cross-tool AI workflow kit for repo-scoped guidance, validation, and generated catalog surfaces3
+
+## stop pop up for apps "Ghostty.app" would like to access data from other apps.
+
+> MacOS Settings => Privacy & Security => Full Disk Access => enable Ghostty via the toggle 
 
 ## Workstation Highlights
 

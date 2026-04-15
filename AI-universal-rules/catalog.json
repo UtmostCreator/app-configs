@@ -55,7 +55,7 @@
         "root:exporter": 1,
         "root:generator": 1,
         "root:github-copilot-agent": 2,
-        "root:github-copilot-instruction": 3,
+        "root:github-copilot-instruction": 6,
         "root:hook": 1,
         "root:validator": 2
     },
@@ -250,10 +250,10 @@
         {
             "scope": "package",
             "type": "github-copilot-agent-template",
-            "name": "implementer.agent",
+            "name": "Repository Implementer",
             "path": "AI-universal-rules/templates/github-copilot/agents/implementer.agent.md",
             "runtime": "github-copilot",
-            "description": "name: Repository Implementer"
+            "description": "Use when a bounded slice is already defined and the task needs implementation plus focused verification"
         },
         {
             "scope": "package",
@@ -266,18 +266,18 @@
         {
             "scope": "package",
             "type": "github-copilot-agent-template",
-            "name": "release-auditor.agent",
+            "name": "Release Auditor",
             "path": "AI-universal-rules/templates/github-copilot/agents/release-auditor.agent.md",
             "runtime": "github-copilot",
-            "description": "name: Release Auditor"
+            "description": "Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review"
         },
         {
             "scope": "package",
             "type": "github-copilot-agent-template",
-            "name": "researcher.agent",
+            "name": "Repository Researcher",
             "path": "AI-universal-rules/templates/github-copilot/agents/researcher.agent.md",
             "runtime": "github-copilot",
-            "description": "name: Repository Researcher"
+            "description": "Use when ownership is unclear, the task touches an unfamiliar area, or later stages need read-only repo grounding first"
         },
         {
             "scope": "package",
@@ -330,10 +330,10 @@
         {
             "scope": "package",
             "type": "github-copilot-prompt-template",
-            "name": "docs-sync.prompt",
+            "name": "docs-sync",
             "path": "AI-universal-rules/templates/github-copilot/prompts/docs-sync.prompt.md",
             "runtime": "github-copilot",
-            "description": "name: docs-sync"
+            "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
         },
         {
             "scope": "package",
@@ -346,18 +346,18 @@
         {
             "scope": "package",
             "type": "github-copilot-prompt-template",
-            "name": "regression-test.prompt",
+            "name": "regression-test",
             "path": "AI-universal-rules/templates/github-copilot/prompts/regression-test.prompt.md",
             "runtime": "github-copilot",
-            "description": "name: regression-test"
+            "description": "Use when the main task is to create a failing or proving regression test for a reported bug or edge case"
         },
         {
             "scope": "package",
             "type": "github-copilot-prompt-template",
-            "name": "release-readiness.prompt",
+            "name": "release-readiness",
             "path": "AI-universal-rules/templates/github-copilot/prompts/release-readiness.prompt.md",
             "runtime": "github-copilot",
-            "description": "name: release-readiness"
+            "description": "Use when a diff or planned change needs rollout, rollback, observability, and migration-safety review"
         },
         {
             "scope": "package",
@@ -373,7 +373,7 @@
             "name": "architect",
             "path": "AI-universal-rules/templates/opencode/agents/architect.md",
             "runtime": "opencode",
-            "description": "description: Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in <PROJECT_NAME>"
+            "description": "Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -381,7 +381,7 @@
             "name": "implementer",
             "path": "AI-universal-rules/templates/opencode/agents/implementer.md",
             "runtime": "opencode",
-            "description": "description: Use when a bounded slice is clear and implementation plus focused verification should happen in <PROJECT_NAME>"
+            "description": "Use when a bounded slice is clear and implementation plus focused verification should happen in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -397,7 +397,7 @@
             "name": "release-auditor",
             "path": "AI-universal-rules/templates/opencode/agents/release-auditor.md",
             "runtime": "opencode",
-            "description": "description: Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review in <PROJECT_NAME>"
+            "description": "Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -405,7 +405,7 @@
             "name": "researcher",
             "path": "AI-universal-rules/templates/opencode/agents/researcher.md",
             "runtime": "opencode",
-            "description": "description: Use when the task touches an unfamiliar area, ownership is unclear, or a later stage needs read-only grounding before planning or implementation in <PROJECT_NAME>"
+            "description": "Use when the task touches an unfamiliar area, ownership is unclear, or a later stage needs read-only grounding before planning or implementation in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -474,10 +474,10 @@
         {
             "scope": "package",
             "type": "opencode-skill-template",
-            "name": "SKILL",
+            "name": "project-stack",
             "path": "AI-universal-rules/templates/opencode/skills/project-stack/SKILL.md",
             "runtime": "opencode",
-            "description": "name: project-stack"
+            "description": "Compatibility alias for the newer project-context skill"
         },
         {
             "scope": "package",
@@ -1026,18 +1026,18 @@
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "config-maintainer.agent.md",
+            "name": "config-maintainer",
             "path": ".github/agents/config-maintainer.agent.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "Use when updating editor, shell, runtime, or tool configuration while preserving existing behavior and validating the narrowest safe surface first"
         },
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "workflow-auditor.agent.md",
+            "name": "workflow-auditor",
             "path": ".github/agents/workflow-auditor.agent.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "Use when reviewing AI workflow files, repo instructions, capability docs, or adapter drift across AGENTS, CLAUDE, docs/ai, and .github"
         },
         {
             "scope": "root",
@@ -1045,7 +1045,15 @@
             "name": "ai-workflow",
             "path": ".github/instructions/ai-workflow.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "Rules for AI workflow docs and runtime adapters"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "ci",
+            "path": ".github/instructions/ci.instructions.md",
+            "runtime": "github-copilot",
+            "description": "CI and YAML investigation routing"
         },
         {
             "scope": "root",
@@ -1053,7 +1061,7 @@
             "name": "config",
             "path": ".github/instructions/config.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "Rules for config changes in editor, shell, runtime, and tool files"
         },
         {
             "scope": "root",
@@ -1061,7 +1069,23 @@
             "name": "docs",
             "path": ".github/instructions/docs.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "Rules for setup docs, workflow docs, and examples"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "frontend",
+            "path": ".github/instructions/frontend.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Frontend investigation and verification routing"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "php",
+            "path": ".github/instructions/php.instructions.md",
+            "runtime": "github-copilot",
+            "description": "PHP investigation and verification routing"
         },
         {
             "scope": "root",

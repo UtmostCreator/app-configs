@@ -3,13 +3,24 @@ set -euo pipefail
 
 input="$(cat)"
 tool_name="$(jq -r '.toolName // empty' <<< "$input")"
-tool_args_raw="$(jq -c '.toolArgs // {}' <<< "$input")"
+tool_args_json="$(
+  jq -c '
+    .toolArgs as $toolArgs
+    | if ($toolArgs | type) == "string" then
+        ($toolArgs | fromjson? // {})
+      elif ($toolArgs | type) == "object" then
+        $toolArgs
+      else
+        {}
+      end
+  ' <<< "$input"
+)"
 
 if [[ "$tool_name" != "bash" ]]; then
   exit 0
 fi
 
-command="$(jq -r '.command // empty' <<< "$tool_args_raw")"
+command="$(jq -r '.command // empty' <<< "$tool_args_json")"
 
 if grep -Eq '(^|[[:space:]])(sudo|mkfs|dd|shutdown|reboot)([[:space:]]|$)' <<< "$command"; then
   echo '{"permissionDecision":"deny","permissionDecisionReason":"dangerous system command blocked by repo policy"}'

@@ -32,6 +32,9 @@ Prefer these tools in order:
 8. `ast-grep` for syntax-aware matching.
 9. `semgrep` for rule-based bug/security scans.
 10. `delta` for diff rendering.
+11. `scripts/copilot/pack-context.sh` for AI context packaging (`repomix`, `files-to-prompt`, `code2prompt`).
+12. `scripts/copilot/watch-loop.sh` for file-watch verification loops (`watchexec` with `entr` fallback).
+13. `mise` + `direnv` for deterministic runtime and environment loading before broad checks.
 
 Execution rules:
 

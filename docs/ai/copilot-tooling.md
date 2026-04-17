@@ -37,6 +37,30 @@ Use these tools in this preferred order for read-first investigation:
 9. `semgrep` for rule-based bug or security sweeps.
 10. `delta` for diff rendering.
 
+Use this AI-native workflow stack when the task needs packaging, looped verification, or deterministic runtime setup:
+
+### 1) LLM Context Packaging
+
+1. `scripts/copilot/pack-context.sh auto .` to auto-select the best installed packer.
+2. `scripts/copilot/pack-context.sh repomix ...` for full-repo context packaging.
+3. `scripts/copilot/pack-context.sh files-to-prompt ...` for focused file-list packaging.
+4. `scripts/copilot/pack-context.sh code2prompt ...` for template-driven provider-specific context files.
+5. `tokei` before packaging when you need language/scope metrics in the prompt preface.
+
+### 2) File-Watch Feedback Loop
+
+1. `scripts/copilot/watch-loop.sh "<verify-command>" "<ext-list>"` for edit -> run -> observe loops.
+2. Prefer `watchexec` backend when available.
+3. Use `entr` fallback when `watchexec` is missing.
+4. Keep watch commands non-destructive and repo-local by default.
+
+### 3) Runtime + Environment Handshake
+
+1. Pin versions with `mise` (`mise.toml`).
+2. Load per-project environment with `direnv` (`.envrc`).
+3. Before multi-step verification, run `mise exec -- <command>` or `direnv exec . <command>` when available.
+4. Treat missing runtime managers as an explicit limitation in your summary instead of silently continuing.
+
 ## Guardrail Notes
 
 - Keep hooks deterministic and lightweight.

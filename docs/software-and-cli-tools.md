@@ -46,6 +46,16 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 - **[btop](https://github.com/aristocratos/btop)** - terminal resource monitor
 - **[GitHub Copilot CLI](https://github.com/github/copilot-cli)** - terminal-native Copilot workflow entrypoint
 
+### AI Workflow Critical Additions
+
+- **[repomix](https://github.com/yamadashy/repomix)** - package repository context for LLM prompts
+- **[files-to-prompt](https://github.com/simonw/files-to-prompt)** - concatenate targeted file sets with path headers
+- **[code2prompt](https://github.com/mufeedvh/code2prompt)** - template-driven prompt/context generation
+- **[watchexec](https://github.com/watchexec/watchexec)** - file-watch command loop for edit -> verify cycles
+- **[direnv](https://direnv.net/)** - auto-load per-directory environment variables
+- **[semgrep](https://semgrep.dev/)** - static analysis and security scanning
+- **[difftastic](https://github.com/Wilfred/difftastic)** - syntax-aware structural diffing for review
+
 ## Editors And Git
 
 - **[Neovim](https://github.com/neovim/neovim)** - extensible Vim-based editor
@@ -159,6 +169,8 @@ brew install eza
 brew install fd
 brew install fzf
 brew install git-delta
+brew install difftastic
+brew install direnv
 brew install copilot-cli
 brew install just
 brew install lazygit
@@ -169,10 +181,12 @@ brew install neovim
 brew install pnpm
 brew install ripgrep
 brew install ripgrep-all
+brew install semgrep
 brew install starship
 brew install stripe/stripe-cli/stripe
 brew install tldr
 brew install tmux
+brew install watchexec
 brew install yazi
 brew install zoxide
 brew install zsh-autosuggestions
@@ -180,6 +194,14 @@ brew install zsh-syntax-highlighting
 ```
 
 > `mysql-client` is often keg-only and may require adding Homebrew's bin path to your shell config.
+
+### AI context packers (outside Homebrew core list)
+
+```bash
+npm install -g repomix
+uv tool install files-to-prompt
+cargo install code2prompt
+```
 
 ### GUI apps (`brew install --cask`)
 

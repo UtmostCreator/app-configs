@@ -18,6 +18,8 @@ Always require explicit approval before:
 - destructive deletes or broad search-replace
 - secrets, env, billing, or production config changes
 
+Approval prompts are not a substitute for bounded tools, clear task scope, or deterministic enforcement where the runtime supports them.
+
 ## Medium Or High Risk Requirements
 
 Before implementation or merge, state:

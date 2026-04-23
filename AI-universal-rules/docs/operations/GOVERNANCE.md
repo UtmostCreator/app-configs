@@ -17,6 +17,7 @@ This package assumes AI instructions alone are not enough for production work.
 - approval gates for destructive or sensitive changes
 - verification evidence for behavior claims
 - documented fallback when runtime features are unavailable
+- do not rely on repeated permission prompts as the only safety control for high-risk work
 
 ## Human Ownership Rule
 

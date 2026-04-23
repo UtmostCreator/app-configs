@@ -198,6 +198,7 @@ brew install zsh-syntax-highlighting
 ### AI context packers (outside Homebrew core list)
 
 ```bash
+brew install scc
 npm install -g repomix
 uv tool install files-to-prompt
 cargo install code2prompt

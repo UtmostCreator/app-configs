@@ -103,10 +103,18 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - Only then use runtime-specific adapter files such as `.github/copilot-instructions.md`
 - For GitHub Copilot, install both `github.copilot` and `github.copilot-chat`, then optionally add Copilot CLI for terminal-heavy work
 - For tool-routed Copilot workflows, follow `docs/ai/copilot-tooling.md` (instructions -> wrappers -> hooks -> skills/prompts -> MCP)
+- For ranked per-folder AI context bundles, follow `docs/ai/context-packing.md`
 - Run `php tools/ai/validate-ai-config.php` after changing root workflow files
 - Run `php tools/ai/validate-ai-catalog.php` after changing package metadata or generated docs
 - Run `php tools/ai/generate-ai-catalog.php` after changing cataloged assets or package metadata
 - Run `just ai-check` if you want one local command that wraps the three AI workflow checks above
+
+### Context packing
+
+- `just context-stats` - analyze folder and file metrics with `scc`
+- `just context-plan` - rank folders and create a bundle plan
+- `just context-pack` - pack the current planned bundles with `repomix`
+- `just context-pack-all` - run analysis, planning, and packing in one step
 
 ## Important Notes
 

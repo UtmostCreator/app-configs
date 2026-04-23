@@ -35,6 +35,8 @@ Choose the smallest entry point that fits the task:
 - use agents when stage isolation, tool boundaries, or handoffs matter
 - use skills when deeper optional procedure should load only when relevant
 
+Start with the simplest working path. Do not add more agents, handoffs, or orchestration layers until the smaller design stops meeting safety, clarity, or verification needs.
+
 ## Staged Agent Flow
 
 Default staged flow for non-trivial work:
@@ -54,6 +56,8 @@ Use proof, not claims.
 - changes: run the smallest meaningful verification first
 - risky work: include rollback posture and post-change success signal
 - summaries: separate commands actually run from recommended next checks
+- evaluate real outcomes, not only convincing wording in the transcript
+- inspect traces, tool calls, and handoffs when the failure is at workflow level rather than code level
 
 ## Drift Resistance
 

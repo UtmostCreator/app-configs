@@ -1,7 +1,15 @@
 ---
 name: repo-investigation
-description: Investigate bugs, regressions, and change history in this repository.
+description: Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence.
 ---
+
+Use this skill when the main job is investigation, not implementation.
+
+Do not use this skill for:
+
+- straightforward code edits with clear ownership
+- broad architecture planning
+- final diff review after implementation
 
 When investigating:
 
@@ -13,3 +21,10 @@ When investigating:
 6. Prefer read-only work until root cause is identified.
 7. Summarize exact commands used, file paths, line ranges, commits, and confidence.
 8. Do not use destructive commands.
+
+Expected output:
+
+- likely root cause or narrowed hypotheses
+- exact evidence gathered
+- commands run
+- remaining uncertainty or next check

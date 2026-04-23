@@ -78,6 +78,8 @@ Do not treat runtime-specific adapters as the source of workflow truth.
 - in GitHub Copilot, skills or prompt files should reference the same workflow concepts where supported
 - capabilities remain the portable source even when one runtime has richer features than another
 
+See `docs/foundations/SKILLS.md` for packaging, trigger-description quality, portability limits, and trust posture.
+
 ## Relationship To Agents
 
 Agents are stage boundaries.

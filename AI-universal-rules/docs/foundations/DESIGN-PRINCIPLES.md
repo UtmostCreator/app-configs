@@ -18,6 +18,8 @@ Prompt files and commands should be named entry points for recurring one-off job
 
 Use agents and subagents to isolate research, planning, implementation, review, and release posture when that separation helps.
 
+Start with the simplest arrangement that can do the job. Add more staged agents only when a single-agent or single-entry workflow stops being clear, safe, or testable.
+
 ## 5. Enforcement Is Explicit
 
 Document what is advisory and what is deterministic.
@@ -29,3 +31,7 @@ Document fallbacks instead of pretending every runtime has the same control mode
 ## 7. Evidence Beats Confidence
 
 Completion claims should point to proof.
+
+## 8. Tool Contracts Matter
+
+Tool names, descriptions, boundaries, and expected outputs are part of the workflow design, not an implementation detail.

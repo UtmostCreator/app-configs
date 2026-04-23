@@ -39,7 +39,7 @@
     "counts": {
         "package:core-template": 4,
         "package:example-repo": 5,
-        "package:foundation-doc": 5,
+        "package:foundation-doc": 6,
         "package:github-copilot-agent-template": 6,
         "package:github-copilot-instruction-template": 4,
         "package:github-copilot-prompt-template": 6,
@@ -241,51 +241,59 @@
         },
         {
             "scope": "package",
+            "type": "foundation-doc",
+            "name": "Skills",
+            "path": "AI-universal-rules/docs/foundations/SKILLS.md",
+            "runtime": "canonical",
+            "description": "Skills are the runtime adapter form of deeper workflow procedure."
+        },
+        {
+            "scope": "package",
             "type": "github-copilot-agent-template",
-            "name": "Repository Architect",
+            "name": "architect.agent",
             "path": "AI-universal-rules/templates/github-copilot/agents/architect.agent.md",
             "runtime": "github-copilot",
-            "description": "Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation"
+            "description": "name: Repository Architect"
         },
         {
             "scope": "package",
             "type": "github-copilot-agent-template",
-            "name": "Repository Implementer",
+            "name": "implementer.agent",
             "path": "AI-universal-rules/templates/github-copilot/agents/implementer.agent.md",
             "runtime": "github-copilot",
-            "description": "Use when a bounded slice is already defined and the task needs implementation plus focused verification"
+            "description": "name: Repository Implementer"
         },
         {
             "scope": "package",
             "type": "github-copilot-agent-template",
-            "name": "Repository Refactorer",
+            "name": "refactorer.agent",
             "path": "AI-universal-rules/templates/github-copilot/agents/refactorer.agent.md",
             "runtime": "github-copilot",
-            "description": "Use when behavior is already correct and the remaining problem is structure, readability, or maintainability"
+            "description": "name: Repository Refactorer"
         },
         {
             "scope": "package",
             "type": "github-copilot-agent-template",
-            "name": "Release Auditor",
+            "name": "release-auditor.agent",
             "path": "AI-universal-rules/templates/github-copilot/agents/release-auditor.agent.md",
             "runtime": "github-copilot",
-            "description": "Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review"
+            "description": "name: Release Auditor"
         },
         {
             "scope": "package",
             "type": "github-copilot-agent-template",
-            "name": "Repository Researcher",
+            "name": "researcher.agent",
             "path": "AI-universal-rules/templates/github-copilot/agents/researcher.agent.md",
             "runtime": "github-copilot",
-            "description": "Use when ownership is unclear, the task touches an unfamiliar area, or later stages need read-only repo grounding first"
+            "description": "name: Repository Researcher"
         },
         {
             "scope": "package",
             "type": "github-copilot-agent-template",
-            "name": "Repository Reviewer",
+            "name": "reviewer.agent",
             "path": "AI-universal-rules/templates/github-copilot/agents/reviewer.agent.md",
             "runtime": "github-copilot",
-            "description": "Use when reviewing a change set for correctness, regressions, policy fit, and missing verification starting from the diff"
+            "description": "name: Repository Reviewer"
         },
         {
             "scope": "package",
@@ -293,7 +301,7 @@
             "name": "Architecture Rules",
             "path": "AI-universal-rules/templates/github-copilot/instructions/architecture.instructions.md",
             "runtime": "github-copilot",
-            "description": "Architecture, ownership, and layering guidance"
+            "description": "applyTo: \"<ACTIVE_PATHS>\""
         },
         {
             "scope": "package",
@@ -301,7 +309,7 @@
             "name": "Frontend Rules",
             "path": "AI-universal-rules/templates/github-copilot/instructions/frontend.instructions.md",
             "runtime": "github-copilot",
-            "description": "Frontend, UI, interaction, and presentation guidance"
+            "description": "applyTo: \"<FRONTEND_PATH_GLOB>\""
         },
         {
             "scope": "package",
@@ -309,7 +317,7 @@
             "name": "Target Rules",
             "path": "AI-universal-rules/templates/github-copilot/instructions/targets.instructions.md",
             "runtime": "github-copilot",
-            "description": "Target and platform adaptation guidance for multi-surface repositories"
+            "description": "applyTo: \"**\""
         },
         {
             "scope": "package",
@@ -317,55 +325,55 @@
             "name": "Testing Rules",
             "path": "AI-universal-rules/templates/github-copilot/instructions/testing.instructions.md",
             "runtime": "github-copilot",
-            "description": "Testing rules for focused, deterministic, behavior-proving tests"
+            "description": "applyTo: \"<TEST_PATH_GLOB>\""
         },
         {
             "scope": "package",
             "type": "github-copilot-prompt-template",
-            "name": "bug-regression",
+            "name": "bug-regression.prompt",
             "path": "AI-universal-rules/templates/github-copilot/prompts/bug-regression.prompt.md",
             "runtime": "github-copilot",
-            "description": "Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence"
+            "description": "name: bug-regression"
         },
         {
             "scope": "package",
             "type": "github-copilot-prompt-template",
-            "name": "docs-sync",
+            "name": "docs-sync.prompt",
             "path": "AI-universal-rules/templates/github-copilot/prompts/docs-sync.prompt.md",
             "runtime": "github-copilot",
-            "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+            "description": "name: docs-sync"
         },
         {
             "scope": "package",
             "type": "github-copilot-prompt-template",
-            "name": "new-feature",
+            "name": "new-feature.prompt",
             "path": "AI-universal-rules/templates/github-copilot/prompts/new-feature.prompt.md",
             "runtime": "github-copilot",
-            "description": "Use when implementing a bounded feature with existing repository patterns and focused verification"
+            "description": "name: new-feature"
         },
         {
             "scope": "package",
             "type": "github-copilot-prompt-template",
-            "name": "regression-test",
+            "name": "regression-test.prompt",
             "path": "AI-universal-rules/templates/github-copilot/prompts/regression-test.prompt.md",
             "runtime": "github-copilot",
-            "description": "Use when the main task is to create a failing or proving regression test for a reported bug or edge case"
+            "description": "name: regression-test"
         },
         {
             "scope": "package",
             "type": "github-copilot-prompt-template",
-            "name": "release-readiness",
+            "name": "release-readiness.prompt",
             "path": "AI-universal-rules/templates/github-copilot/prompts/release-readiness.prompt.md",
             "runtime": "github-copilot",
-            "description": "Use when a diff or planned change needs rollout, rollback, observability, and migration-safety review"
+            "description": "name: release-readiness"
         },
         {
             "scope": "package",
             "type": "github-copilot-prompt-template",
-            "name": "review-code",
+            "name": "review-code.prompt",
             "path": "AI-universal-rules/templates/github-copilot/prompts/review-code.prompt.md",
             "runtime": "github-copilot",
-            "description": "Use when reviewing a diff for correctness, risk, and missing tests before merge or handoff"
+            "description": "name: review-code"
         },
         {
             "scope": "package",
@@ -373,7 +381,7 @@
             "name": "architect",
             "path": "AI-universal-rules/templates/opencode/agents/architect.md",
             "runtime": "opencode",
-            "description": "Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in <PROJECT_NAME>"
+            "description": "description: Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -381,7 +389,7 @@
             "name": "implementer",
             "path": "AI-universal-rules/templates/opencode/agents/implementer.md",
             "runtime": "opencode",
-            "description": "Use when a bounded slice is clear and implementation plus focused verification should happen in <PROJECT_NAME>"
+            "description": "description: Use when a bounded slice is clear and implementation plus focused verification should happen in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -389,7 +397,7 @@
             "name": "refactorer",
             "path": "AI-universal-rules/templates/opencode/agents/refactorer.md",
             "runtime": "opencode",
-            "description": "Use when behavior is already correct and the remaining problem is structure, readability, or maintainability in <PROJECT_NAME>"
+            "description": "description: Use when behavior is already correct and the remaining problem is structure, readability, or maintainability in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -397,7 +405,7 @@
             "name": "release-auditor",
             "path": "AI-universal-rules/templates/opencode/agents/release-auditor.md",
             "runtime": "opencode",
-            "description": "Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review in <PROJECT_NAME>"
+            "description": "description: Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -405,7 +413,7 @@
             "name": "researcher",
             "path": "AI-universal-rules/templates/opencode/agents/researcher.md",
             "runtime": "opencode",
-            "description": "Use when the task touches an unfamiliar area, ownership is unclear, or a later stage needs read-only grounding before planning or implementation in <PROJECT_NAME>"
+            "description": "description: Use when the task touches an unfamiliar area, ownership is unclear, or a later stage needs read-only grounding before planning or implementation in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -413,7 +421,7 @@
             "name": "reviewer",
             "path": "AI-universal-rules/templates/opencode/agents/reviewer.md",
             "runtime": "opencode",
-            "description": "Use when reviewing a change set for correctness, regressions, policy fit, and missing verification in <PROJECT_NAME>"
+            "description": "description: Use when reviewing a change set for correctness, regressions, policy fit, and missing verification in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -437,7 +445,7 @@
             "name": "review-diff",
             "path": "AI-universal-rules/templates/opencode/commands/review-diff.md",
             "runtime": "opencode",
-            "description": "Compatibility command for diff-first review; prefer the review-diff skill for reusable guidance"
+            "description": "description: Compatibility command for diff-first review; prefer the review-diff skill for reusable guidance"
         },
         {
             "scope": "package",
@@ -445,63 +453,63 @@
             "name": "verify",
             "path": "AI-universal-rules/templates/opencode/commands/verify.md",
             "runtime": "opencode",
-            "description": "Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+            "description": "description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
         },
         {
             "scope": "package",
             "type": "opencode-skill-template",
-            "name": "bug-regression",
+            "name": "SKILL",
             "path": "AI-universal-rules/templates/opencode/skills/bug-regression/SKILL.md",
             "runtime": "opencode",
-            "description": "Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence"
+            "description": "name: bug-regression"
         },
         {
             "scope": "package",
             "type": "opencode-skill-template",
-            "name": "dependency-upgrade",
+            "name": "SKILL",
             "path": "AI-universal-rules/templates/opencode/skills/dependency-upgrade/SKILL.md",
             "runtime": "opencode",
-            "description": "Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance"
+            "description": "name: dependency-upgrade"
         },
         {
             "scope": "package",
             "type": "opencode-skill-template",
-            "name": "project-context",
+            "name": "SKILL",
             "path": "AI-universal-rules/templates/opencode/skills/project-context/SKILL.md",
             "runtime": "opencode",
-            "description": "Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing"
+            "description": "name: project-context"
         },
         {
             "scope": "package",
             "type": "opencode-skill-template",
-            "name": "project-stack",
+            "name": "SKILL",
             "path": "AI-universal-rules/templates/opencode/skills/project-stack/SKILL.md",
             "runtime": "opencode",
-            "description": "Compatibility alias for the newer project-context skill"
+            "description": "name: project-stack"
         },
         {
             "scope": "package",
             "type": "opencode-skill-template",
-            "name": "release-safety",
+            "name": "SKILL",
             "path": "AI-universal-rules/templates/opencode/skills/release-safety/SKILL.md",
             "runtime": "opencode",
-            "description": "Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards"
+            "description": "name: release-safety"
         },
         {
             "scope": "package",
             "type": "opencode-skill-template",
-            "name": "review-diff",
+            "name": "SKILL",
             "path": "AI-universal-rules/templates/opencode/skills/review-diff/SKILL.md",
             "runtime": "opencode",
-            "description": "Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff"
+            "description": "name: review-diff"
         },
         {
             "scope": "package",
             "type": "opencode-skill-template",
-            "name": "verify-change",
+            "name": "SKILL",
             "path": "AI-universal-rules/templates/opencode/skills/verify-change/SKILL.md",
             "runtime": "opencode",
-            "description": "Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly"
+            "description": "name: verify-change"
         },
         {
             "scope": "package",
@@ -570,26 +578,26 @@
         {
             "scope": "package",
             "type": "optional-template",
-            "name": "architecture-plan",
+            "name": "architecture-plan.prompt",
             "path": "AI-universal-rules/templates/optional/github-copilot/prompts/architecture-plan.prompt.md",
             "runtime": "optional",
-            "description": "Produce a focused implementation plan for a medium or large change"
+            "description": "name: architecture-plan"
         },
         {
             "scope": "package",
             "type": "optional-template",
-            "name": "dependency-upgrade",
+            "name": "dependency-upgrade.prompt",
             "path": "AI-universal-rules/templates/optional/github-copilot/prompts/dependency-upgrade.prompt.md",
             "runtime": "optional",
-            "description": "Review or implement a dependency or platform upgrade carefully"
+            "description": "name: dependency-upgrade"
         },
         {
             "scope": "package",
             "type": "optional-template",
-            "name": "docs-sync",
+            "name": "docs-sync.prompt",
             "path": "AI-universal-rules/templates/optional/github-copilot/prompts/docs-sync.prompt.md",
             "runtime": "optional",
-            "description": "Update docs to match the current implementation and verification commands"
+            "description": "name: docs-sync"
         },
         {
             "scope": "package",
@@ -597,7 +605,7 @@
             "name": "bugfix",
             "path": "AI-universal-rules/templates/optional/opencode/agents/bugfix.md",
             "runtime": "optional",
-            "description": "Use when fixing a bug in <PROJECT_NAME>, reproducing it first when practical, and keeping the fix minimal"
+            "description": "description: Use when fixing a bug in <PROJECT_NAME>, reproducing it first when practical, and keeping the fix minimal"
         },
         {
             "scope": "package",
@@ -605,7 +613,7 @@
             "name": "build-config",
             "path": "AI-universal-rules/templates/optional/opencode/agents/build-config.md",
             "runtime": "optional",
-            "description": "Update build, packaging, or verification configuration in <PROJECT_NAME>"
+            "description": "description: Update build, packaging, or verification configuration in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -613,7 +621,7 @@
             "name": "docs",
             "path": "AI-universal-rules/templates/optional/opencode/agents/docs.md",
             "runtime": "optional",
-            "description": "Update or align documentation after implementation changes in <PROJECT_NAME>"
+            "description": "description: Update or align documentation after implementation changes in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -621,7 +629,7 @@
             "name": "infra-auditor",
             "path": "AI-universal-rules/templates/optional/opencode/agents/infra-auditor.md",
             "runtime": "optional",
-            "description": "Use when auditing dependency, build, release, or compatibility risk in <PROJECT_NAME>"
+            "description": "description: Use when auditing dependency, build, release, or compatibility risk in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -629,7 +637,7 @@
             "name": "ui-builder",
             "path": "AI-universal-rules/templates/optional/opencode/agents/ui-builder.md",
             "runtime": "optional",
-            "description": "Use when implementing UI work while preserving repository interaction patterns and accessibility rules"
+            "description": "description: Use when implementing UI work while preserving repository interaction patterns and accessibility rules"
         },
         {
             "scope": "package",
@@ -637,7 +645,7 @@
             "name": "upgrade",
             "path": "AI-universal-rules/templates/optional/opencode/agents/upgrade.md",
             "runtime": "optional",
-            "description": "Plan or apply dependency and platform upgrades carefully in <PROJECT_NAME>"
+            "description": "description: Plan or apply dependency and platform upgrades carefully in <PROJECT_NAME>"
         },
         {
             "scope": "package",
@@ -1026,18 +1034,18 @@
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "config-maintainer",
+            "name": "config-maintainer.agent.md",
             "path": ".github/agents/config-maintainer.agent.md",
             "runtime": "github-copilot",
-            "description": "Use when updating editor, shell, runtime, or tool configuration while preserving existing behavior and validating the narrowest safe surface first"
+            "description": null
         },
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "workflow-auditor",
+            "name": "workflow-auditor.agent.md",
             "path": ".github/agents/workflow-auditor.agent.md",
             "runtime": "github-copilot",
-            "description": "Use when reviewing AI workflow files, repo instructions, capability docs, or adapter drift across AGENTS, CLAUDE, docs/ai, and .github"
+            "description": null
         },
         {
             "scope": "root",
@@ -1045,7 +1053,7 @@
             "name": "ai-workflow",
             "path": ".github/instructions/ai-workflow.instructions.md",
             "runtime": "github-copilot",
-            "description": "Rules for AI workflow docs and runtime adapters"
+            "description": null
         },
         {
             "scope": "root",
@@ -1053,7 +1061,7 @@
             "name": "ci",
             "path": ".github/instructions/ci.instructions.md",
             "runtime": "github-copilot",
-            "description": "CI and YAML investigation routing"
+            "description": null
         },
         {
             "scope": "root",
@@ -1061,7 +1069,7 @@
             "name": "config",
             "path": ".github/instructions/config.instructions.md",
             "runtime": "github-copilot",
-            "description": "Rules for config changes in editor, shell, runtime, and tool files"
+            "description": null
         },
         {
             "scope": "root",
@@ -1069,7 +1077,7 @@
             "name": "docs",
             "path": ".github/instructions/docs.instructions.md",
             "runtime": "github-copilot",
-            "description": "Rules for setup docs, workflow docs, and examples"
+            "description": null
         },
         {
             "scope": "root",
@@ -1077,7 +1085,7 @@
             "name": "frontend",
             "path": ".github/instructions/frontend.instructions.md",
             "runtime": "github-copilot",
-            "description": "Frontend investigation and verification routing"
+            "description": null
         },
         {
             "scope": "root",
@@ -1085,7 +1093,7 @@
             "name": "php",
             "path": ".github/instructions/php.instructions.md",
             "runtime": "github-copilot",
-            "description": "PHP investigation and verification routing"
+            "description": null
         },
         {
             "scope": "root",

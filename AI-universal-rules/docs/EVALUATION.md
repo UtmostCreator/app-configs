@@ -16,6 +16,12 @@ See `docs/operations/EVAL-SCENARIOS.md` for scenario-based testing.
 - Did it provide evidence instead of generic confidence?
 - Did it stay within scope instead of overreaching?
 
+## Outcome And Trace Quality
+
+- Did the workflow prove the real outcome, not only produce a plausible transcript?
+- When tools, handoffs, or guards were involved, does the trace show the right sequence and boundaries?
+- If the task failed, can the trace identify whether the problem came from routing, tool use, guardrails, or missing context?
+
 ## Verification Quality
 
 - Did it choose the smallest relevant verification first?
@@ -34,6 +40,12 @@ See `docs/operations/EVAL-SCENARIOS.md` for scenario-based testing.
 - Are repeated one-off tasks using prompt files or commands instead of always-on instructions?
 - Are staged agents used when context isolation is important?
 - Are hooks or deterministic checks used when the repo says something must always happen?
+
+## Tool Contract Quality
+
+- Are tool descriptions specific enough to route the model correctly?
+- Do tools avoid overlapping scope that makes selection noisy or ambiguous?
+- Does the workflow make expected inputs, outputs, and boundaries explicit?
 
 ## Review Questions
 

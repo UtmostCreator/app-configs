@@ -17,6 +17,7 @@ Thumbs.db
 .claude/tmp/
 .gemini/
 .aider*
+.repomix-context/
 
 # Dependency and build noise
 node_modules/

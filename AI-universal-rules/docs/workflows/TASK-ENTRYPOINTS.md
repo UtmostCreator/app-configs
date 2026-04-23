@@ -46,6 +46,8 @@ Examples:
 - the workflow benefits from bundled references, scripts, or templates
 - the guidance should load only when relevant
 
+Use `docs/foundations/SKILLS.md` when defining a skill so activation scope, portability, and safety stay explicit.
+
 ## Use Hooks When
 
 - the repo needs deterministic enforcement

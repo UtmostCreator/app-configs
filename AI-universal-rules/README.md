@@ -105,7 +105,8 @@ See `docs/foundations/COMPATIBILITY.md` for limits and fallbacks.
 3. `docs/workflows/TASK-ENTRYPOINTS.md`
 4. `docs/foundations/CAPABILITY-MODEL.md`
 5. `docs/operations/GOVERNANCE.md`
-6. `docs/RELEASE-BUNDLES.md`
+6. `docs/foundations/SKILLS.md`
+7. `docs/RELEASE-BUNDLES.md`
 
 ## Important Design Rules
 
@@ -114,6 +115,7 @@ See `docs/foundations/COMPATIBILITY.md` for limits and fallbacks.
 - Put repeatable one-off jobs behind prompt files or commands.
 - Use staged agents for isolation, not just persona flavor.
 - Treat capabilities as the canonical source of reusable procedure.
+- Treat skills as runtime adapters over canonical capability workflows.
 - Treat hooks as enforcement and instructions as advisory.
 - Document surface mismatch explicitly instead of implying parity.
 

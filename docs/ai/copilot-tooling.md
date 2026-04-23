@@ -15,6 +15,7 @@ This file defines how the repository wires Copilot tooling without moving canoni
 ## Responsibility Split
 
 - Repository instructions: default tool order and execution posture.
+- `docs/ai/agent-ops.md`: agentic architecture, risk, IAM, and evaluation defaults.
 - Path instructions: language or surface-specific refinements.
 - Hooks: allow/deny guardrails and post-tool usage logs.
 - Wrapper scripts: deterministic command entrypoints.
@@ -46,6 +47,9 @@ Use this AI-native workflow stack when the task needs packaging, looped verifica
 3. `scripts/copilot/pack-context.sh files-to-prompt ...` for focused file-list packaging.
 4. `scripts/copilot/pack-context.sh code2prompt ...` for template-driven provider-specific context files.
 5. `tokei` before packaging when you need language/scope metrics in the prompt preface.
+6. `scripts/copilot/repomix-scc-router.sh` when you need ranked per-folder bundle planning before packing.
+
+Use `docs/ai/context-packing.md` for the per-folder `scc` + `repomix` workflow and output files.
 
 ### 2) File-Watch Feedback Loop
 
@@ -66,4 +70,5 @@ Use this AI-native workflow stack when the task needs packaging, looped verifica
 - Keep hooks deterministic and lightweight.
 - Do not encode complete workflow logic inside hooks.
 - Treat hooks as enforcement and telemetry only.
+- For agentic workflows, require traces and bounded privileges before adding more autonomy.
 - Keep destructive commands denied by default unless explicitly requested.

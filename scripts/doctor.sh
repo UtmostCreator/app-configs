@@ -43,7 +43,7 @@ for bin in bash git rg php; do
 done
 
 echo "-- Optional binaries --"
-for bin in just code; do
+for bin in just code repomix scc; do
   check_optional_bin "$bin"
 done
 

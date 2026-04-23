@@ -23,6 +23,18 @@ ai-check:
   @php tools/ai/validate-ai-catalog.php
   @php tools/ai/generate-ai-catalog.php --check
 
+context-stats path='.' depth='1':
+  @bash scripts/copilot/repomix-scc-router.sh stats {{path}} --depth {{depth}}
+
+context-plan path='.' depth='1' top='25' min_code='300' min_files='2':
+  @bash scripts/copilot/repomix-scc-router.sh plan {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}}
+
+context-pack:
+  @bash scripts/copilot/repomix-scc-router.sh pack .
+
+context-pack-all path='.' depth='1' top='25' min_code='300' min_files='2':
+  @bash scripts/copilot/repomix-scc-router.sh all {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}}
+
 hook-run-precommit:
   @bash scripts/hooks/pre-commit.sh
 

@@ -34,6 +34,7 @@ Do not assume a workflow that works in one surface works identically in another.
 - treat OpenCode as the explicit-control reference model
 - treat GitHub Copilot as a surface-aware adapter model
 - keep canonical workflow logic in capability folders and shared docs
+- keep skills thin when advanced runtime behavior is not portable
 - document a fallback for any preview-only or surface-dependent adapter
 
 ## Safe Default

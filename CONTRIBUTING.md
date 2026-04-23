@@ -56,10 +56,21 @@ These files are generated and should not be edited by hand:
 - `AI-universal-rules/catalog.json`
 - `llms.txt`
 
+These local context outputs are also generated and should not be committed:
+
+- `.repomix-context/`
+- `repomix-output*.xml`
+
 Regenerate them with:
 
 ```powershell
 php tools/ai/generate-ai-catalog.php
+```
+
+Repomix context bundles are generated with:
+
+```powershell
+bash scripts/copilot/repomix-scc-router.sh all .
 ```
 
 ## Pull Requests

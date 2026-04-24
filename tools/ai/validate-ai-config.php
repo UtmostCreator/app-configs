@@ -15,10 +15,22 @@ $requiredFiles = [
     'CLAUDE.md',
     'docs/ai/project-context.md',
     'docs/ai/workflow.md',
+    'docs/ai/agents.md',
+    'docs/ai/failure-handling.md',
+    'docs/ai/agent-ops-checklist.md',
+    'docs/ai/integration-matrix.md',
     'docs/ai/AI-GUARDRAILS.md',
     'docs/ai/catalog.md',
     'docs/ai/capabilities/README.md',
     '.github/copilot-instructions.md',
+    'scripts/copilot/common.sh',
+    'scripts/copilot/ai-diff-context.sh',
+    'scripts/copilot/ai-search.sh',
+    'scripts/copilot/ai-edit.sh',
+    'scripts/copilot/ai-verify.sh',
+    'scripts/copilot/ai-rollback.sh',
+    'scripts/copilot/policy.yaml',
+    '.copilot-logs/README.md',
     'AI-universal-rules/manifest.json',
     'AI-universal-rules/catalog.json',
     'AI-universal-rules/docs/BROWSE.md',
@@ -31,6 +43,10 @@ $liveFiles = [
     'CLAUDE.md',
     'docs/ai/project-context.md',
     'docs/ai/workflow.md',
+    'docs/ai/agents.md',
+    'docs/ai/failure-handling.md',
+    'docs/ai/agent-ops-checklist.md',
+    'docs/ai/integration-matrix.md',
     'docs/ai/AI-GUARDRAILS.md',
     'docs/ai/catalog.md',
     'docs/ai/capabilities/README.md',
@@ -124,13 +140,110 @@ $agentsContent = safeRead($root, 'AGENTS.md');
 $claudeContent = safeRead($root, 'CLAUDE.md');
 $readmeContent = safeRead($root, 'README.md');
 $copilotContent = safeRead($root, '.github/copilot-instructions.md');
+$agentsReferenceContent = safeRead($root, 'docs/ai/agents.md');
+
+$liveAgentPaths = glob($root . DIRECTORY_SEPARATOR . '.github' . DIRECTORY_SEPARATOR . 'agents' . DIRECTORY_SEPARATOR . '*.agent.md') ?: [];
+
+foreach ($liveAgentPaths as $path) {
+    $relativePath = str_replace(DIRECTORY_SEPARATOR, '/', substr($path, strlen($root) + 1));
+
+    if ($agentsReferenceContent !== null && strpos($agentsReferenceContent, $relativePath) === false) {
+        $errors[] = "docs/ai/agents.md must reference live agent {$relativePath}";
+    }
+}
+
+$hookTargets = [
+    '.github/hooks/tool-policy.json' => [
+        'scripts/copilot/pre-tool-use.sh',
+        'scripts/copilot/post-tool-use.sh',
+    ],
+    '.github/hooks/tool-guardian.json' => [
+        '.github/hooks/scripts/tool-guardian.ps1',
+    ],
+];
+
+foreach ($hookTargets as $hookConfig => $targets) {
+    if (!is_file($root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $hookConfig))) {
+        continue;
+    }
+
+    foreach ($targets as $target) {
+        if (!is_file($root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $target))) {
+            $errors[] = "hook target missing for {$hookConfig}: {$target}";
+        }
+    }
+}
 
 if ($agentsContent !== null && strpos($agentsContent, 'docs/ai/project-context.md') === false) {
     $errors[] = 'AGENTS.md must reference docs/ai/project-context.md';
 }
 
+if ($agentsContent !== null && strpos($agentsContent, 'docs/ai/agents.md') === false) {
+    $errors[] = 'AGENTS.md must reference docs/ai/agents.md';
+}
+
+if ($agentsContent !== null && strpos($agentsContent, 'docs/ai/failure-handling.md') === false) {
+    $errors[] = 'AGENTS.md must reference docs/ai/failure-handling.md';
+}
+
+if ($agentsContent !== null && strpos($agentsContent, 'docs/ai/agent-ops-checklist.md') === false) {
+    $warnings[] = 'AGENTS.md should reference docs/ai/agent-ops-checklist.md';
+}
+
+if ($agentsContent !== null && strpos($agentsContent, 'docs/ai/integration-matrix.md') === false) {
+    $warnings[] = 'AGENTS.md should reference docs/ai/integration-matrix.md';
+}
+
 if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/') === false) {
     $errors[] = '.github/copilot-instructions.md must reference docs/ai/';
+}
+
+if ($copilotContent !== null && stripos($copilotContent, 'approval-free') === false) {
+    $warnings[] = '.github/copilot-instructions.md should document approval-free read-only commands';
+}
+
+if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/failure-handling.md') === false) {
+    $warnings[] = '.github/copilot-instructions.md should reference docs/ai/failure-handling.md';
+}
+
+if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/agent-ops-checklist.md') === false) {
+    $warnings[] = '.github/copilot-instructions.md should reference docs/ai/agent-ops-checklist.md';
+}
+
+if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/integration-matrix.md') === false) {
+    $warnings[] = '.github/copilot-instructions.md should reference docs/ai/integration-matrix.md';
+}
+
+$copilotToolingContent = safeRead($root, 'docs/ai/copilot-tooling.md');
+
+if ($copilotToolingContent !== null) {
+    foreach (['scripts/copilot/common.sh', 'scripts/copilot/ai-search.sh', 'scripts/copilot/ai-edit.sh', 'scripts/copilot/ai-verify.sh', 'scripts/copilot/ai-diff-context.sh', 'scripts/copilot/ai-rollback.sh', 'scripts/copilot/rg-code.sh', 'scripts/copilot/gh-pr-context.sh'] as $scriptReference) {
+        if (strpos($copilotToolingContent, $scriptReference) === false) {
+            $warnings[] = "docs/ai/copilot-tooling.md should reference {$scriptReference}";
+        }
+    }
+
+    foreach (['bundle-plan.json', 'WATCH_DEBOUNCE_MS', 'failureCategory'] as $capabilityReference) {
+        if (strpos($copilotToolingContent, $capabilityReference) === false) {
+            $warnings[] = "docs/ai/copilot-tooling.md should mention {$capabilityReference} now that the stronger tool layer supports it";
+        }
+    }
+}
+
+$justfileContent = safeRead($root, 'justfile');
+
+if ($justfileContent !== null) {
+    foreach (['scripts/copilot/ai-search.sh', 'scripts/copilot/ai-edit.sh', 'scripts/copilot/ai-verify.sh', 'scripts/copilot/ai-diff-context.sh', 'scripts/copilot/ai-rollback.sh', 'scripts/copilot/gh-pr-context.sh', 'scripts/copilot/rg-code.sh', 'scripts/copilot/repomix-scc-router.sh'] as $scriptReference) {
+        if (strpos($justfileContent, $scriptReference) === false) {
+            $warnings[] = "justfile should expose {$scriptReference} when the script is part of the supported tool layer";
+        }
+    }
+
+    foreach (['context-plan-since', 'context-pack-all-since', 'context-plan-json', 'verify', 'rollback-list'] as $recipeReference) {
+        if (strpos($justfileContent, $recipeReference) === false) {
+            $warnings[] = "justfile should expose {$recipeReference} for the stronger guarded tool surface";
+        }
+    }
 }
 
 if ($readmeContent !== null) {
@@ -145,6 +258,18 @@ if ($readmeContent !== null) {
 
 if ($claudeContent !== null && strpos($claudeContent, 'docs/ai/') === false) {
     $warnings[] = 'CLAUDE.md should point back to canonical docs/ai guidance';
+}
+
+if ($claudeContent !== null && strpos($claudeContent, 'docs/ai/failure-handling.md') === false) {
+    $warnings[] = 'CLAUDE.md should reference docs/ai/failure-handling.md';
+}
+
+if ($claudeContent !== null && strpos($claudeContent, 'docs/ai/agent-ops-checklist.md') === false) {
+    $warnings[] = 'CLAUDE.md should reference docs/ai/agent-ops-checklist.md';
+}
+
+if ($claudeContent !== null && strpos($claudeContent, 'docs/ai/integration-matrix.md') === false) {
+    $warnings[] = 'CLAUDE.md should reference docs/ai/integration-matrix.md';
 }
 
 if ($errors === [] && $warnings === []) {

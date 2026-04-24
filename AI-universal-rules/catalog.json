@@ -52,11 +52,14 @@
         "package:shared-template": 3,
         "package:workflow-doc": 6,
         "root:capability": 6,
+        "root:copilot-policy": 1,
+        "root:copilot-script": 10,
         "root:exporter": 1,
         "root:generator": 1,
         "root:github-copilot-agent": 2,
         "root:github-copilot-instruction": 6,
         "root:hook": 1,
+        "root:root-doc": 8,
         "root:validator": 2
     },
     "resources": [
@@ -1017,6 +1020,94 @@
         },
         {
             "scope": "root",
+            "type": "copilot-policy",
+            "name": "policy.yaml",
+            "path": "scripts/copilot/policy.yaml",
+            "runtime": "github-copilot",
+            "description": "Declarative allow, deny, and confirm rules for the Copilot command policy surface."
+        },
+        {
+            "scope": "root",
+            "type": "copilot-script",
+            "name": "ai-diff-context.sh",
+            "path": "scripts/copilot/ai-diff-context.sh",
+            "runtime": "github-copilot",
+            "description": "Incremental context packer for changed files, PR slices, recent changes, and touched areas."
+        },
+        {
+            "scope": "root",
+            "type": "copilot-script",
+            "name": "ai-edit.sh",
+            "path": "scripts/copilot/ai-edit.sh",
+            "runtime": "github-copilot",
+            "description": "Guarded broad-edit wrapper with snapshots, dry-run behavior, visible diff, and optional verification."
+        },
+        {
+            "scope": "root",
+            "type": "copilot-script",
+            "name": "ai-rollback.sh",
+            "path": "scripts/copilot/ai-rollback.sh",
+            "runtime": "github-copilot",
+            "description": "Rollback helper for explicit recovery work using session snapshots and refs."
+        },
+        {
+            "scope": "root",
+            "type": "copilot-script",
+            "name": "ai-search.sh",
+            "path": "scripts/copilot/ai-search.sh",
+            "runtime": "github-copilot",
+            "description": "Unified search entrypoint for text, file, tracked, all, and structural discovery."
+        },
+        {
+            "scope": "root",
+            "type": "copilot-script",
+            "name": "ai-verify.sh",
+            "path": "scripts/copilot/ai-verify.sh",
+            "runtime": "github-copilot",
+            "description": "Project-aware verification gate for AI-driven changes across shell, PHP, JS/TS, and security checks."
+        },
+        {
+            "scope": "root",
+            "type": "copilot-script",
+            "name": "common.sh",
+            "path": "scripts/copilot/common.sh",
+            "runtime": "github-copilot",
+            "description": "Shared helper library for Copilot wrappers, logging, snapshots, and token-budget checks."
+        },
+        {
+            "scope": "root",
+            "type": "copilot-script",
+            "name": "gh-pr-context.sh",
+            "path": "scripts/copilot/gh-pr-context.sh",
+            "runtime": "github-copilot",
+            "description": "GitHub PR context wrapper with metadata, diff, checks, reviews, and optional PR-scoped context packing."
+        },
+        {
+            "scope": "root",
+            "type": "copilot-script",
+            "name": "repomix-scc-router.sh",
+            "path": "scripts/copilot/repomix-scc-router.sh",
+            "runtime": "github-copilot",
+            "description": "Ranked context router that produces TSV and JSON bundle plans with churn-aware scoring."
+        },
+        {
+            "scope": "root",
+            "type": "copilot-script",
+            "name": "rg-code.sh",
+            "path": "scripts/copilot/rg-code.sh",
+            "runtime": "github-copilot",
+            "description": "Mode-aware ripgrep wrapper with JSON, file-list, count, and context output modes."
+        },
+        {
+            "scope": "root",
+            "type": "copilot-script",
+            "name": "watch-loop.sh",
+            "path": "scripts/copilot/watch-loop.sh",
+            "runtime": "github-copilot",
+            "description": "Watch-based verification loop with debounce and repo-local session logging."
+        },
+        {
+            "scope": "root",
             "type": "exporter",
             "name": "export-ai-universal-rules",
             "path": "tools/ai/export-ai-universal-rules.php",
@@ -1102,6 +1193,70 @@
             "path": ".github/hooks/tool-guardian.json",
             "runtime": "github-copilot",
             "description": "Protects the live repo with a narrow Copilot hook guard."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "AI Guardrails",
+            "path": "docs/ai/AI-GUARDRAILS.md",
+            "runtime": "canonical",
+            "description": "Cross-tool guardrails for approval boundaries, evidence, and recurring failure modes."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "agent-ops-checklist",
+            "path": "docs/ai/agent-ops-checklist.md",
+            "runtime": "canonical",
+            "description": "Phased verification checklist for auditing AI workflow integration in the live repo."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "agent-ops",
+            "path": "docs/ai/agent-ops.md",
+            "runtime": "canonical",
+            "description": "AgentOps model for observability, evaluation, optimization, IAM, and architecture routing."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "agents",
+            "path": "docs/ai/agents.md",
+            "runtime": "canonical",
+            "description": "Durable live-agent reference plus package-agent index for later lookup."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "failure-handling",
+            "path": "docs/ai/failure-handling.md",
+            "runtime": "canonical",
+            "description": "Failure taxonomy, retry policy, corrected usage guidance, and logging contract."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "integration-matrix",
+            "path": "docs/ai/integration-matrix.md",
+            "runtime": "canonical",
+            "description": "Coverage map that tracks which AI workflow concepts are covered, partial, or missing."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "project-context-doc",
+            "path": "docs/ai/project-context.md",
+            "runtime": "canonical",
+            "description": "Durable repository context for instructions, capabilities, and adapters."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "workflow",
+            "path": "docs/ai/workflow.md",
+            "runtime": "canonical",
+            "description": "Default live workflow for risk, verification, and docs sync."
         },
         {
             "scope": "root",

@@ -8,6 +8,9 @@
 - Prefer narrow changes and narrow verification.
 - Surface uncertainty explicitly.
 - Do not treat permission prompts alone as a sufficient safety control for destructive or high-impact work.
+- Safe repo-local read-only commands are approval-free by default unless they touch privileged, secret-bearing, or side-effecting surfaces.
+- Log every command failure and do not hide it behind a later success.
+- Do not blindly retry policy-blocked, approval-blocked, or usage-error commands.
 
 ## Approval Required
 
@@ -30,6 +33,7 @@
 - Separate executed verification from recommended next checks.
 - Treat documentation updates as incomplete if they leave stale commands or paths behind.
 - Judge success by the real outcome proved, not only by a plausible transcript.
+- When a command fails, record corrected usage and what to avoid next time.
 
 ## Drift Signals
 

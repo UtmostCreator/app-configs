@@ -16,7 +16,7 @@ tools: ["read", "edit", "search", "runInTerminal", "problems"]
 
 ## Workflow
 
-1. Read `docs/ai/project-context.md` and `docs/ai/capabilities/config-change-safety/CAPABILITY.md`.
+1. Read `docs/ai/project-context.md`, `docs/ai/capabilities/config-change-safety/CAPABILITY.md`, and `docs/ai/failure-handling.md`.
 2. Identify blast radius and machine-specific assumptions.
 3. Apply the smallest safe config change.
 4. Run the closest non-destructive validation available.

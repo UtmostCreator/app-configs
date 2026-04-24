@@ -8,6 +8,10 @@
 - [AGENTS.md](AGENTS.md): durable repository instructions
 - [docs/ai/project-context.md](docs/ai/project-context.md): live repository context
 - [docs/ai/workflow.md](docs/ai/workflow.md): live task flow
+- [docs/ai/agents.md](docs/ai/agents.md): live agent reference and package agent index
+- [docs/ai/failure-handling.md](docs/ai/failure-handling.md): command-failure taxonomy and retry policy
+- [docs/ai/agent-ops-checklist.md](docs/ai/agent-ops-checklist.md): phased verification checklist for integration audits
+- [docs/ai/integration-matrix.md](docs/ai/integration-matrix.md): concept coverage map for the live workflow layer
 - [docs/ai/catalog.md](docs/ai/catalog.md): generated browse index for live and package assets
 
 ## Reusable Kit

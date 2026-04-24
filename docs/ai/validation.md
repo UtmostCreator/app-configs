@@ -42,3 +42,5 @@ This validator is intentionally narrow.
 - after editing `AI-universal-rules/manifest.json`, cataloged templates, or examples
 - before creating a baseline commit for workflow changes
 - after copying templates into a new repo instance
+- after changing agent responsibilities, failure-handling policy, or approval-free read-only rules
+- after updating the phased checklist or concept coverage matrix for AgentOps integration

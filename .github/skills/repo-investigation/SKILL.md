@@ -13,8 +13,8 @@ Do not use this skill for:
 
 When investigating:
 
-1. Start with `scripts/copilot/rg-code.sh` for broad discovery.
-2. Use `scripts/copilot/fd-files.sh` for file discovery.
+1. Start with `scripts/copilot/ai-search.sh text ...` for broad discovery.
+2. Use `scripts/copilot/ai-search.sh files ...` or `scripts/copilot/fd-files.sh` for file discovery.
 3. Preview candidate files with `scripts/copilot/preview-file.sh`.
 4. Use `scripts/copilot/git-forensics.sh` for history tracing.
 5. Use `scripts/copilot/gh-pr-context.sh`, GitHub MCP, or `gh` for PR and issue context.

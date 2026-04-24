@@ -21,11 +21,14 @@ This index makes the live repo workflow layer and the reusable `AI-universal-rul
 - `package / shared-template` - 3
 - `package / workflow-doc` - 6
 - `root / capability` - 6
+- `root / copilot-policy` - 1
+- `root / copilot-script` - 10
 - `root / exporter` - 1
 - `root / generator` - 1
 - `root / github-copilot-agent` - 2
 - `root / github-copilot-instruction` - 6
 - `root / hook` - 1
+- `root / root-doc` - 8
 - `root / validator` - 2
 
 ## Live Repo Resources
@@ -38,6 +41,17 @@ This index makes the live repo workflow layer and the reusable `AI-universal-rul
 | `capability` | project-context | `docs/ai/capabilities/project-context/CAPABILITY.md` | Load durable repository facts before work starts so changes use the right paths, verification, and approval boundaries. |
 | `capability` | review-diff | `docs/ai/capabilities/review-diff/CAPABILITY.md` | Review the proposed change set for accuracy, drift, portability, and missing verification. |
 | `capability` | verify-change | `docs/ai/capabilities/verify-change/CAPABILITY.md` | Choose the smallest relevant proof for a config, docs, or workflow change and report evidence cleanly. |
+| `copilot-policy` | policy.yaml | `scripts/copilot/policy.yaml` | Declarative allow, deny, and confirm rules for the Copilot command policy surface. |
+| `copilot-script` | ai-diff-context.sh | `scripts/copilot/ai-diff-context.sh` | Incremental context packer for changed files, PR slices, recent changes, and touched areas. |
+| `copilot-script` | ai-edit.sh | `scripts/copilot/ai-edit.sh` | Guarded broad-edit wrapper with snapshots, dry-run behavior, visible diff, and optional verification. |
+| `copilot-script` | ai-rollback.sh | `scripts/copilot/ai-rollback.sh` | Rollback helper for explicit recovery work using session snapshots and refs. |
+| `copilot-script` | ai-search.sh | `scripts/copilot/ai-search.sh` | Unified search entrypoint for text, file, tracked, all, and structural discovery. |
+| `copilot-script` | ai-verify.sh | `scripts/copilot/ai-verify.sh` | Project-aware verification gate for AI-driven changes across shell, PHP, JS/TS, and security checks. |
+| `copilot-script` | common.sh | `scripts/copilot/common.sh` | Shared helper library for Copilot wrappers, logging, snapshots, and token-budget checks. |
+| `copilot-script` | gh-pr-context.sh | `scripts/copilot/gh-pr-context.sh` | GitHub PR context wrapper with metadata, diff, checks, reviews, and optional PR-scoped context packing. |
+| `copilot-script` | repomix-scc-router.sh | `scripts/copilot/repomix-scc-router.sh` | Ranked context router that produces TSV and JSON bundle plans with churn-aware scoring. |
+| `copilot-script` | rg-code.sh | `scripts/copilot/rg-code.sh` | Mode-aware ripgrep wrapper with JSON, file-list, count, and context output modes. |
+| `copilot-script` | watch-loop.sh | `scripts/copilot/watch-loop.sh` | Watch-based verification loop with debounce and repo-local session logging. |
 | `exporter` | export-ai-universal-rules | `tools/ai/export-ai-universal-rules.php` | Builds starter-profile release bundles under dist/. |
 | `generator` | generate-ai-catalog | `tools/ai/generate-ai-catalog.php` | Generates catalog docs, catalog JSON, and llms.txt. |
 | `github-copilot-agent` | config-maintainer.agent.md | `.github/agents/config-maintainer.agent.md` |  |
@@ -49,6 +63,14 @@ This index makes the live repo workflow layer and the reusable `AI-universal-rul
 | `github-copilot-instruction` | frontend | `.github/instructions/frontend.instructions.md` |  |
 | `github-copilot-instruction` | php | `.github/instructions/php.instructions.md` |  |
 | `hook` | tool-guardian | `.github/hooks/tool-guardian.json` | Protects the live repo with a narrow Copilot hook guard. |
+| `root-doc` | AI Guardrails | `docs/ai/AI-GUARDRAILS.md` | Cross-tool guardrails for approval boundaries, evidence, and recurring failure modes. |
+| `root-doc` | agent-ops-checklist | `docs/ai/agent-ops-checklist.md` | Phased verification checklist for auditing AI workflow integration in the live repo. |
+| `root-doc` | agent-ops | `docs/ai/agent-ops.md` | AgentOps model for observability, evaluation, optimization, IAM, and architecture routing. |
+| `root-doc` | agents | `docs/ai/agents.md` | Durable live-agent reference plus package-agent index for later lookup. |
+| `root-doc` | failure-handling | `docs/ai/failure-handling.md` | Failure taxonomy, retry policy, corrected usage guidance, and logging contract. |
+| `root-doc` | integration-matrix | `docs/ai/integration-matrix.md` | Coverage map that tracks which AI workflow concepts are covered, partial, or missing. |
+| `root-doc` | project-context-doc | `docs/ai/project-context.md` | Durable repository context for instructions, capabilities, and adapters. |
+| `root-doc` | workflow | `docs/ai/workflow.md` | Default live workflow for risk, verification, and docs sync. |
 | `validator` | validate-ai-catalog | `tools/ai/validate-ai-catalog.php` | Validates manifest, catalog, and starter profile metadata. |
 | `validator` | validate-ai-config | `tools/ai/validate-ai-config.php` | Validates the root live AI workflow layer. |
 

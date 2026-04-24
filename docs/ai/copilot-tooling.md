@@ -19,6 +19,7 @@ This file defines how the repository wires Copilot tooling without moving canoni
 - Path instructions: language or surface-specific refinements.
 - Hooks: allow/deny guardrails and post-tool usage logs.
 - Wrapper scripts: deterministic command entrypoints.
+- `scripts/copilot/common.sh`: shared dependency, logging, token-budget, and secrets-scan helpers for the stronger wrapper layer.
 - Skills: reusable multi-step investigation workflow.
 - Prompt files: explicit one-shot workflow starters.
 - GitHub MCP: GitHub-native context when available.
@@ -27,16 +28,17 @@ This file defines how the repository wires Copilot tooling without moving canoni
 
 Use these tools in this preferred order for read-first investigation:
 
-1. `scripts/copilot/rg-code.sh` (`rg`) for broad search.
-2. `scripts/copilot/fd-files.sh` (`fd`) for file discovery.
-3. `fzf` for interactive narrowing.
-4. `scripts/copilot/preview-file.sh` (`bat`) for previews.
-5. `git grep` for tracked-tree only search.
-6. `scripts/copilot/git-forensics.sh` for `git log -S/-G/-L` and `git blame -L`.
-7. `scripts/copilot/gh-pr-context.sh` plus `jq` or GitHub MCP for remote context.
-8. `ast-grep` for syntax-aware discovery.
-9. `semgrep` for rule-based bug or security sweeps.
-10. `delta` for diff rendering.
+1. `scripts/copilot/ai-search.sh` as the unified search entrypoint for `text`, `files`, `struct`, `tracked`, and `all` modes.
+2. `scripts/copilot/rg-code.sh` (`rg`) for broad search.
+3. `scripts/copilot/fd-files.sh` (`fd`) for file discovery.
+4. `fzf` for interactive narrowing.
+5. `scripts/copilot/preview-file.sh` (`bat`) for previews.
+6. `git grep` for tracked-tree only search.
+7. `scripts/copilot/git-forensics.sh` for `git log -S/-G/-L` and `git blame -L`.
+8. `scripts/copilot/gh-pr-context.sh` plus `jq` or GitHub MCP for remote context, optional diff/check/review capture, and PR-scoped context packing.
+9. `ast-grep` for syntax-aware discovery and the approved structural rewrite path through `scripts/copilot/ai-edit.sh`.
+10. `semgrep` for rule-based bug or security sweeps.
+11. `delta` for diff rendering.
 
 Use this AI-native workflow stack when the task needs packaging, looped verification, or deterministic runtime setup:
 
@@ -48,8 +50,23 @@ Use this AI-native workflow stack when the task needs packaging, looped verifica
 4. `scripts/copilot/pack-context.sh code2prompt ...` for template-driven provider-specific context files.
 5. `tokei` before packaging when you need language/scope metrics in the prompt preface.
 6. `scripts/copilot/repomix-scc-router.sh` when you need ranked per-folder bundle planning before packing.
+7. `scripts/copilot/ai-diff-context.sh` when you need PR-local, unstaged, recent, or touched-file context instead of a broad repo pack.
 
 Use `docs/ai/context-packing.md` for the per-folder `scc` + `repomix` workflow and output files.
+
+Router outputs now include:
+
+- `bundle-plan.tsv` for shell-friendly review
+- `bundle-plan.json` for agent-friendly plan consumption
+- optional changed-since filtering and churn-aware scoring when the repository has git history available
+
+Recommended `just` entrypoints for the router layer:
+
+- `just context-plan`
+- `just context-plan-since BRANCH_OR_REF`
+- `just context-pack-all`
+- `just context-pack-all-since BRANCH_OR_REF`
+- `just context-plan-json`
 
 ### 2) File-Watch Feedback Loop
 
@@ -57,6 +74,7 @@ Use `docs/ai/context-packing.md` for the per-folder `scc` + `repomix` workflow a
 2. Prefer `watchexec` backend when available.
 3. Use `entr` fallback when `watchexec` is missing.
 4. Keep watch commands non-destructive and repo-local by default.
+5. Watch sessions append start metadata to the repo-local watch loop log file and support debounce via `WATCH_DEBOUNCE_MS`.
 
 ### 3) Runtime + Environment Handshake
 
@@ -65,6 +83,15 @@ Use `docs/ai/context-packing.md` for the per-folder `scc` + `repomix` workflow a
 3. Before multi-step verification, run `mise exec -- <command>` or `direnv exec . <command>` when available.
 4. Treat missing runtime managers as an explicit limitation in your summary instead of silently continuing.
 
+### 4) Guarded Modification Path
+
+1. Use `scripts/copilot/ai-edit.sh` for broad repository edits.
+2. Keep `APPLY=0` for the first pass so the script shows a dry-run candidate set.
+3. Re-run with `APPLY=1` only after the candidate set looks correct.
+4. Use `VERIFY=1`, `scripts/copilot/ai-verify.sh`, or `just verify` after applying changes.
+5. Use `scripts/copilot/ai-rollback.sh` only for explicit recovery work because it modifies the working tree.
+6. Review the per-session manifest in `.copilot-logs/sessions/` when you need a compact record of a guarded edit run.
+
 ## Guardrail Notes
 
 - Keep hooks deterministic and lightweight.
@@ -72,3 +99,6 @@ Use `docs/ai/context-packing.md` for the per-folder `scc` + `repomix` workflow a
 - Treat hooks as enforcement and telemetry only.
 - For agentic workflows, require traces and bounded privileges before adding more autonomy.
 - Keep destructive commands denied by default unless explicitly requested.
+- Prefer the stronger wrapper scripts over ad hoc shell pipelines when the wrapper already captures search modes, token budgets, or structured output.
+- For broad modifications, do not use raw `sed`, `perl`, or shell replacement loops when `scripts/copilot/ai-edit.sh` can perform the operation with a snapshot, dry-run, diff, and verification path.
+- Post-tool telemetry now records a best-effort `failureCategory` so logs align more closely with `docs/ai/failure-handling.md`.

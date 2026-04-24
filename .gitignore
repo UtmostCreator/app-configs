@@ -17,6 +17,8 @@ Thumbs.db
 .claude/tmp/
 .gemini/
 .aider*
+.copilot-logs/*
+!.copilot-logs/README.md
 .repomix-context/
 
 # Dependency and build noise

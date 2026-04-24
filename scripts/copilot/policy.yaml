@@ -1,0 +1,64 @@
+version: 1
+
+deny:
+  - id: system-damage
+    reason: Dangerous system command blocked
+    pattern: '(^|[\s])(sudo|su -|mkfs|dd\s|shutdown|reboot|halt|poweroff|mount|umount)([\s]|$)'
+  - id: permission-mutation
+    reason: Filesystem permission mutation blocked
+    pattern: '(^|[\s])(chmod|chown|chgrp)([\s]|$)'
+  - id: rm-direct
+    reason: Direct rm blocked
+    pattern: '(^|[\s])rm([\s]|$)'
+  - id: destructive-git
+    reason: Destructive git command blocked
+    pattern: '^git\s+(push|reset\s+--hard|clean\s+-|checkout\s+--|restore\s+--|rebase\s|filter-branch|reflog\s+delete)'
+  - id: remote-pipe-shell
+    reason: Remote pipe-to-shell execution blocked
+    pattern: '(curl|wget).*\|\s*(sh|bash|zsh|python|python3|php|node|ruby)'
+  - id: exfiltration-attempt
+    reason: Possible data exfiltration blocked
+    pattern: '(curl|wget|nc|ncat|netcat)\s+.*(-d|--data|--upload-file|--data-binary)'
+  - id: env-secret-read
+    reason: Direct .env secret extraction blocked
+    pattern: '(cat|bat|less|head|tail)\s+.*\.env(?!\.example)'
+
+allow:
+  - id: read-only-tools
+    reason: Safe read-only CLI tools
+    pattern: '^(rg|fd|fzf|bat|jq|yq|mlr|fx|delta|eza|ls|pwd|cat|head|tail|wc|sort|uniq|cut|date|env|which|type|file|stat|du|df)\b'
+  - id: git-read
+    reason: Safe git read operations
+    pattern: '^git\s+(log|show|diff|status|grep|blame|ls-files|branch|tag|describe|shortlog|rev-parse|cat-file|check-ignore|stash list)\b'
+  - id: gh-read
+    reason: Safe GitHub CLI read operations
+    pattern: '^gh\s+(pr\s+(view|list|checks|diff)|issue\s+(view|list)|repo\s+view|run\s+(list|view))\b'
+  - id: ast-grep-search
+    reason: ast-grep search-only
+    pattern: '^ast-grep\s+run\b(?!.*--(rewrite|update-all|u)\b)'
+  - id: semgrep-scan
+    reason: Semgrep scan
+    pattern: '^semgrep\s+scan\b'
+  - id: gitleaks-detect
+    reason: Gitleaks scan
+    pattern: '^gitleaks\s+detect\b'
+  - id: trivy-scan
+    reason: Trivy scan
+    pattern: '^trivy\s+fs\b'
+  - id: shellcheck
+    reason: Shellcheck lint
+    pattern: '^shellcheck\b'
+  - id: shfmt-diff
+    reason: shfmt dry-run
+    pattern: '^shfmt\s+-d\b'
+  - id: approved-agent-scripts
+    reason: Approved scripts in scripts/copilot
+    pattern: '^(\./)?scripts/copilot/(ai-search|ai-edit|ai-verify|ai-diff-context|ai-rollback|repomix-scc-router|pack-context|git-forensics|preview-file|watch-loop|gh-pr-context|fd-files|rg-code)\.sh\b'
+
+confirm:
+  - id: git-commit
+    reason: Git commit requires confirmation
+    pattern: '^git\s+commit\b'
+  - id: ai-edit-apply
+    reason: ai-edit apply requires confirmation
+    pattern: '^APPLY=1\s+scripts/copilot/ai-edit\.sh\b'

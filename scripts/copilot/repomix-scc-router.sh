@@ -21,6 +21,8 @@ Options:
   --min-code <n>              Minimum code lines per folder (default: 300)
   --min-files <n>             Minimum files per folder (default: 2)
   --min-score <n>             Minimum ranking score (default: 0)
+  --changed-since <ref>       Limit planning and stats weighting to files changed since ref
+  --churn-count <n>           Commit count used for churn weighting (default: 50)
   --style <xml|markdown|json|plain>
                               Repomix output style (default: xml)
   --split-size <size>         Repomix split size, for example 10mb
@@ -212,13 +214,37 @@ collect_files() {
   (( ${#out_ref[@]} > 0 )) || die "no files available after applying ignore rules"
 }
 
+collect_changed_files() {
+  local -n out_ref=$1
+  out_ref=()
+
+  [[ -n "$CHANGED_SINCE" ]] || return 0
+
+  if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    while IFS= read -r path; do
+      [[ -n "$path" ]] || continue
+      [[ -f "$ROOT/$path" ]] || continue
+      if ! path_is_ignored "$path"; then
+        out_ref+=("$path")
+      fi
+    done < <((git -C "$ROOT" diff --name-only "$CHANGED_SINCE"...HEAD 2>/dev/null || git -C "$ROOT" diff --name-only "$CHANGED_SINCE") | sort -u)
+  fi
+}
+
 run_scc_analysis() {
   local -a files=()
+  local -a changed_files=()
   local scc_bin
 
   scc_bin="$(resolve_scc_bin)" || die "required binary 'scc' not found"
   load_ignore_patterns
   collect_files files
+  collect_changed_files changed_files
+
+  if [[ -n "$CHANGED_SINCE" ]] && (( ${#changed_files[@]} > 0 )); then
+    log "limiting stats input to ${#changed_files[@]} changed files since $CHANGED_SINCE"
+    files=("${changed_files[@]}")
+  fi
 
   mkdir -p "$OUTPUT_DIR_ABS"
 
@@ -291,10 +317,53 @@ write_file_metrics() {
 
 write_folder_metrics() {
   local summary_tmp="$OUTPUT_DIR_ABS/folder-metrics.unsorted.tsv"
+  local churn_tmp="$OUTPUT_DIR_ABS/folder-churn.tsv"
+
+  {
+    printf 'group\tchurn\n'
+    if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      git -C "$ROOT" log --name-only --pretty=format: -"$CHURN_COUNT" \
+        | awk 'NF { print }' \
+        | awk -v depth="$DEPTH" '
+            function group_for(path, depth_value,   directory, count, segment, parts, group) {
+              gsub(/\\/, "/", path)
+              sub(/^\.\//, "", path)
+              if (path !~ /\//) {
+                return "_root"
+              }
+              directory = path
+              sub(/\/[^\/]+$/, "", directory)
+              count = split(directory, parts, "/")
+              group = ""
+              for (i = 1; i <= count && i <= depth_value; i++) {
+                if (parts[i] == "") {
+                  continue
+                }
+                group = group (group == "" ? "" : "/") parts[i]
+              }
+              return group == "" ? "_root" : group
+            }
+            {
+              churn[group_for($0, depth)] += 1
+            }
+            END {
+              for (group in churn) {
+                printf "%s\t%d\n", group, churn[group]
+              }
+            }
+          ' \
+        | sort -t $'\t' -k1,1
+    fi
+  } > "$churn_tmp"
 
   awk -F'\t' '
     BEGIN { OFS = "\t" }
-    NR == 1 { next }
+    FNR == 1 && NR == 1 { next }
+    FILENAME == ARGV[1] {
+      churn[$1] = $2 + 0
+      next
+    }
+    FNR == 1 { next }
     {
       group = $1
       files[group] += 1
@@ -309,6 +378,7 @@ write_folder_metrics() {
       total_code += $5
       total_complexity += $8
       total_bytes += $9
+      total_churn += churn[group]
     }
     END {
       for (group in files) {
@@ -316,18 +386,19 @@ write_folder_metrics() {
         complexity_share = total_complexity > 0 ? complexity[group] / total_complexity : 0
         file_share = total_files > 0 ? files[group] / total_files : 0
         byte_share = total_bytes > 0 ? bytes[group] / total_bytes : 0
-        score = (code_share * 55) + (complexity_share * 25) + (file_share * 10) + (byte_share * 10)
-        printf "%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\n", group, files[group], lines[group], code[group], comments[group], blanks[group], complexity[group], bytes[group], code_share, complexity_share, file_share, byte_share, score
+        churn_share = total_churn > 0 ? churn[group] / total_churn : 0
+        score = (code_share * 45) + (complexity_share * 20) + (file_share * 10) + (byte_share * 10) + (churn_share * 15)
+        printf "%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\n", group, files[group], lines[group], code[group], comments[group], blanks[group], complexity[group], bytes[group], churn[group] + 0, code_share, complexity_share, file_share, byte_share, churn_share, score
       }
     }
-  ' "$FILE_METRICS" > "$summary_tmp"
+  ' "$churn_tmp" "$FILE_METRICS" > "$summary_tmp"
 
   {
-    printf 'group\tfiles\tlines\tcode\tcomments\tblanks\tcomplexity\tbytes\tcode_share\tcomplexity_share\tfile_share\tbyte_share\tscore\n'
-    sort -t $'\t' -k13,13nr "$summary_tmp"
+    printf 'group\tfiles\tlines\tcode\tcomments\tblanks\tcomplexity\tbytes\tchurn\tcode_share\tcomplexity_share\tfile_share\tbyte_share\tchurn_share\tscore\n'
+    sort -t $'\t' -k15,15nr "$summary_tmp"
   } > "$FOLDER_METRICS"
 
-  rm -f "$summary_tmp"
+  rm -f "$summary_tmp" "$churn_tmp"
 }
 
 run_stats() {
@@ -343,8 +414,8 @@ write_bundle_plan() {
   [[ -f "$FOLDER_METRICS" ]] || die "missing folder metrics: run 'stats' first"
 
   {
-    printf 'rank\tgroup\tfiles\tlines\tcode\tcomments\tblanks\tcomplexity\tbytes\tcode_share\tcomplexity_share\tfile_share\tbyte_share\tscore\tbundle\n'
-    tail -n +2 "$FOLDER_METRICS" | while IFS=$'\t' read -r group files lines code comments blanks complexity bytes code_share complexity_share file_share byte_share score; do
+    printf 'rank\tgroup\tfiles\tlines\tcode\tcomments\tblanks\tcomplexity\tbytes\tchurn\tcode_share\tcomplexity_share\tfile_share\tbyte_share\tchurn_share\tscore\tbundle\n'
+    tail -n +2 "$FOLDER_METRICS" | while IFS=$'\t' read -r group files lines code comments blanks complexity bytes churn code_share complexity_share file_share byte_share churn_share score; do
       [[ -n "$group" ]] || continue
 
       if (( TOP > 0 && selected >= TOP )); then
@@ -372,10 +443,12 @@ write_bundle_plan() {
         "$blanks" \
         "$complexity" \
         "$bytes" \
+        "$churn" \
         "$code_share" \
         "$complexity_share" \
         "$file_share" \
         "$byte_share" \
+        "$churn_share" \
         "$score" \
         "bundles/$(safe_group_name "$group").$STYLE_EXT"
     done
@@ -386,6 +459,17 @@ write_bundle_plan() {
   fi
 
   log "wrote bundle plan to $BUNDLE_PLAN"
+
+  jq -R -s '
+    split("\n")
+    | map(select(length > 0) | split("\t")) as $rows
+    | ($rows[0]) as $header
+    | [ $rows[1:][] as $row
+        | reduce range(0; $header|length) as $i ({}; . + { ($header[$i]): ($row[$i] // "") })
+      ]
+  ' "$BUNDLE_PLAN" > "$BUNDLE_PLAN_JSON"
+
+  log "wrote bundle plan to $BUNDLE_PLAN_JSON"
 }
 
 pack_group() {
@@ -446,7 +530,7 @@ run_pack() {
   [[ -f "$BUNDLE_PLAN" ]] || die "missing bundle plan: run 'plan' first"
   [[ -f "$FILE_METRICS" ]] || die "missing file metrics: run 'stats' first"
 
-  tail -n +2 "$BUNDLE_PLAN" | while IFS=$'\t' read -r _rank group _files _lines _code _comments _blanks _complexity _bytes _code_share _complexity_share _file_share _byte_share _score bundle; do
+  tail -n +2 "$BUNDLE_PLAN" | while IFS=$'\t' read -r _rank group _files _lines _code _comments _blanks _complexity _bytes _churn _code_share _complexity_share _file_share _byte_share _churn_share _score bundle; do
     [[ -n "$group" ]] || continue
     pack_group "$group" "$bundle"
   done
@@ -475,6 +559,8 @@ TOP=25
 MIN_CODE=300
 MIN_FILES=2
 MIN_SCORE=0
+CHANGED_SINCE=''
+CHURN_COUNT=50
 STYLE='xml'
 STYLE_EXT='xml'
 SPLIT_SIZE=''
@@ -531,6 +617,22 @@ while (( $# > 0 )); do
       ;;
     --min-score=*)
       MIN_SCORE="${1#*=}"
+      shift
+      ;;
+    --changed-since)
+      CHANGED_SINCE="$2"
+      shift 2
+      ;;
+    --changed-since=*)
+      CHANGED_SINCE="${1#*=}"
+      shift
+      ;;
+    --churn-count)
+      CHURN_COUNT="$2"
+      shift 2
+      ;;
+    --churn-count=*)
+      CHURN_COUNT="${1#*=}"
       shift
       ;;
     --style)
@@ -597,6 +699,7 @@ FILE_METRICS_RAW="$OUTPUT_DIR_ABS/file-metrics.raw.tsv"
 FILE_METRICS="$OUTPUT_DIR_ABS/file-metrics.tsv"
 FOLDER_METRICS="$OUTPUT_DIR_ABS/folder-metrics.tsv"
 BUNDLE_PLAN="$OUTPUT_DIR_ABS/bundle-plan.tsv"
+BUNDLE_PLAN_JSON="$OUTPUT_DIR_ABS/bundle-plan.json"
 
 case "$COMMAND" in
   stats)

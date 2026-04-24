@@ -2,6 +2,13 @@
 
 These folders are the canonical reusable workflow layer for the root repository.
 
+Related canonical references:
+
+- `docs/ai/agents.md` - live agent reference and package agent index
+- `docs/ai/failure-handling.md` - command failure taxonomy, retry rules, and logging contract
+- `docs/ai/agent-ops-checklist.md` - phased verification checklist for workflow integration
+- `docs/ai/integration-matrix.md` - coverage map for live AI workflow concepts
+
 - `project-context` - load durable repo facts first
 - `verify-change` - choose the smallest valid proof
 - `review-diff` - review slices for drift and missing evidence

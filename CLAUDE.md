@@ -7,6 +7,10 @@ This repository is a configuration repo and a live example of cross-tool AI work
 - `AGENTS.md`
 - `docs/ai/project-context.md`
 - `docs/ai/workflow.md`
+- `docs/ai/agents.md`
+- `docs/ai/failure-handling.md`
+- `docs/ai/agent-ops-checklist.md`
+- `docs/ai/integration-matrix.md`
 - `AI-universal-rules/README.md`
 
 ## What Matters Here
@@ -25,8 +29,15 @@ This repository is a configuration repo and a live example of cross-tool AI work
 
 ## Approval Boundaries
 
+- Safe repo-local read-only commands are approval-free by default.
 - Ask before changing secrets, machine-specific credentials, or broad compatibility posture.
 - Ask before deleting large example areas or removing a supported adapter surface.
+- Stop and ask before a read-only step needs privileged access, external side effects, or secret-bearing surfaces.
+
+## Failure Handling
+
+- Record command failures, retry choices, corrected usage, and avoid-notes using `docs/ai/failure-handling.md`.
+- Do not blindly retry blocked, denied, or mis-specified commands.
 
 ## Memory Note
 

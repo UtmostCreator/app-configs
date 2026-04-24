@@ -68,6 +68,18 @@ edit-text-apply from to path='.' :
 search-files query path='.':
   @bash scripts/copilot/fd-files.sh {{query}} {{path}}
 
+php-patterns-search query path='tools/design-patterns':
+  @bash scripts/copilot/ai-search.sh text {{query}} {{path}}
+
+php-principles-search query path='tools/design-principles':
+  @bash scripts/copilot/ai-search.sh text {{query}} {{path}}
+
+php-builtins-search query path='tools/php-built-ins':
+  @bash scripts/copilot/ai-search.sh text {{query}} {{path}}
+
+php-examples-map:
+  @printf '%s\n' 'PHP example lookup order:' '1) tools/design-patterns (primary)' '2) tools/design-principles (secondary)' '3) tools/php-built-ins (supporting)'
+
 context-since ref:
   @bash scripts/copilot/ai-diff-context.sh since {{ref}}
 

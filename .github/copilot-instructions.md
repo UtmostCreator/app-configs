@@ -20,6 +20,7 @@ Use these instructions as the repository-wide baseline for GitHub Copilot.
 - Type: `configuration repo + AI workflow kit`
 - Summary: `Opinionated local development configuration plus a live benchmark for durable cross-tool AI workflow setup.`
 - Active paths: `AI-universal-rules/, docs/, vscode/, shell/, tools/, php/, .github/`
+- PHP reference example paths (use these first for PHP guidance): `tools/design-patterns/, tools/design-principles/, tools/php-built-ins/`
 - Avoid by default: `treat copied examples as references unless the task explicitly targets them`
 - Primary entrypoints: `README.md, AGENTS.md, docs/ai/project-context.md, AI-universal-rules/README.md, vscode/user/settings.json`
 
@@ -48,6 +49,7 @@ Execution rules:
 - Prefer read-only commands first.
 - Safe repo-local read-only commands are approval-free by default.
 - Prefer wrappers in `scripts/copilot/` over ad hoc pipelines.
+- For PHP design questions, search `tools/design-patterns/` first, then `tools/design-principles/`, then `tools/php-built-ins/`.
 - Summarize findings with exact commands, file paths, line ranges, and commit hashes when relevant.
 - Do not run destructive commands unless explicitly requested.
 - Do not run `git push`, `sudo`, package installs, or delete commands by default.

@@ -32,6 +32,9 @@ This repository has two related jobs:
 - `tools/ghostty/` - terminal configuration
 - `tools/nvim/` - Neovim configuration and plugins
 - `tools/karabiner/` - keyboard remapping config
+- `tools/design-patterns/` - primary PHP design pattern example corpus
+- `tools/design-principles/` - PHP principles and composition examples
+- `tools/php-built-ins/` - PHP built-in function usage examples
 - `php/` - PHP runtime and Pint configuration
 - `vscode/` - workspace, user settings, keybindings, and launch config
 - `justfile` - optional workflow entrypoints for local health checks and AI validation
@@ -115,6 +118,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - For ranked per-folder AI context bundles, follow `docs/ai/context-packing.md`
 - Use `scripts/copilot/ai-diff-context.sh` when you need narrow context for changed files, PR files, recent edits, or touched areas
 - Use `scripts/copilot/ai-search.sh` when the agent should route all search through one stable entrypoint
+- For PHP guidance, search local examples in this order: `tools/design-patterns/` -> `tools/design-principles/` -> `tools/php-built-ins/`
 - Use `scripts/copilot/ai-edit.sh` as the only approved path for broad repository edits
 - Use `scripts/copilot/ai-verify.sh` after changes to run the project-aware verification stack
 - Use `scripts/copilot/gh-pr-context.sh` for richer PR metadata, checks, reviews, and diff summaries

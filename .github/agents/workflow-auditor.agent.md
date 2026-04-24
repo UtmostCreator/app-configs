@@ -16,7 +16,7 @@ tools: ["read", "search", "fileSearch", "edit", "runInTerminal", "problems"]
 
 ## Workflow
 
-1. Start from canonical docs in `docs/ai/`.
+1. Start from canonical docs in `docs/ai/`, especially `docs/ai/agents.md` and `docs/ai/failure-handling.md` when relevant.
 2. Compare adapter files against canonical policy and project context.
 3. Flag stale paths, unsupported feature claims, and duplicated process logic.
 4. Prefer simplifying drift away over adding more layers.

@@ -1,38 +1,164 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+POLICY_FILE="${COPILOT_POLICY_FILE:-scripts/copilot/policy.yaml}"
+
+deny() {
+  jq -cn --arg reason "$1" '{permissionDecision:"deny", permissionDecisionReason:$reason}'
+}
+
+allow() {
+  jq -cn '{permissionDecision:"allow"}'
+}
+
 input="$(cat)"
 tool_name="$(jq -r '.toolName // empty' <<< "$input")"
 tool_args_raw="$(jq -c '.toolArgs // {}' <<< "$input")"
+
+evaluate_policy_yaml() {
+  local compact="$1"
+
+  command -v yq >/dev/null 2>&1 || return 1
+  [[ -f "$POLICY_FILE" ]] || return 1
+
+  local encoded rule pattern reason
+
+  while IFS= read -r encoded; do
+    [[ -n "$encoded" ]] || continue
+    rule="$(printf '%s' "$encoded" | base64 -d)"
+    pattern="$(printf '%s' "$rule" | yq -r '.pattern')"
+    reason="$(printf '%s' "$rule" | yq -r '.reason')"
+    if grep -Eq "$pattern" <<< "$compact"; then
+      deny "$reason"
+      exit 0
+    fi
+  done < <(yq -r '.deny[]? | @base64' "$POLICY_FILE" 2>/dev/null || true)
+
+  while IFS= read -r encoded; do
+    [[ -n "$encoded" ]] || continue
+    rule="$(printf '%s' "$encoded" | base64 -d)"
+    pattern="$(printf '%s' "$rule" | yq -r '.pattern')"
+    if grep -Eq "$pattern" <<< "$compact"; then
+      allow
+      exit 0
+    fi
+  done < <(yq -r '.allow[]? | @base64' "$POLICY_FILE" 2>/dev/null || true)
+
+  while IFS= read -r encoded; do
+    [[ -n "$encoded" ]] || continue
+    rule="$(printf '%s' "$encoded" | base64 -d)"
+    pattern="$(printf '%s' "$rule" | yq -r '.pattern')"
+    reason="$(printf '%s' "$rule" | yq -r '.reason')"
+    if grep -Eq "$pattern" <<< "$compact"; then
+      jq -cn --arg reason "$reason" '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+      exit 0
+    fi
+  done < <(yq -r '.confirm[]? | @base64' "$POLICY_FILE" 2>/dev/null || true)
+
+  return 1
+}
 
 if [[ "$tool_name" != "bash" ]]; then
   exit 0
 fi
 
 command="$(jq -r '.command // empty' <<< "$tool_args_raw")"
+compact="$(tr -s '[:space:]' ' ' <<< "$command" | sed 's/^ //; s/ $//')"
 
-if grep -Eq '(^|[[:space:]])(sudo|mkfs|dd|shutdown|reboot)([[:space:]]|$)' <<< "$command"; then
-  echo '{"permissionDecision":"deny","permissionDecisionReason":"dangerous system command blocked by repo policy"}'
+evaluate_policy_yaml "$compact" || true
+
+if grep -Eq '(^|[[:space:]])(sudo|su -|mkfs|dd|shutdown|reboot|halt|poweroff|mount|umount)([[:space:]]|$)' <<< "$compact"; then
+  deny 'dangerous system command blocked by repo policy'
   exit 0
 fi
 
-if grep -Eq '(^|[[:space:]])rm([[:space:]]|$)' <<< "$command"; then
-  echo '{"permissionDecision":"deny","permissionDecisionReason":"rm blocked by repo policy"}'
+if grep -Eq '(^|[[:space:]])(chmod|chown|chgrp)([[:space:]]|$)' <<< "$compact"; then
+  deny 'filesystem permission mutation blocked by repo policy'
   exit 0
 fi
 
-if grep -Eq '^git push([[:space:]]|$)' <<< "$command"; then
-  echo '{"permissionDecision":"deny","permissionDecisionReason":"git push blocked by repo policy"}'
+if grep -Eq '(^|[[:space:]])rm([[:space:]]|$)' <<< "$compact"; then
+  deny 'rm blocked by repo policy'
   exit 0
 fi
 
-if grep -Eq '^(rg|fd|fzf|bat|jq|yq|ast-grep|semgrep|git grep|git log|git blame|git show|gh |delta|eza)\b' <<< "$command"; then
-  echo '{"permissionDecision":"allow"}'
+if grep -Eq '^git[[:space:]]+(push|reset[[:space:]]+--hard|clean[[:space:]]+-|checkout[[:space:]]+--|restore[[:space:]]+--|rebase[[:space:]]|filter-branch|reflog[[:space:]]+delete)' <<< "$compact"; then
+  deny 'destructive git command blocked by repo policy'
   exit 0
 fi
 
-if grep -Eq '^(\./)?scripts/copilot/' <<< "$command"; then
-  echo '{"permissionDecision":"allow"}'
+if grep -Eq '(curl|wget).*[|][[:space:]]*(sh|bash|zsh|python|python3|php|node|ruby)' <<< "$compact"; then
+  deny 'remote pipe-to-shell execution blocked by repo policy'
+  exit 0
+fi
+
+if grep -Eq '(curl|wget|nc|ncat|netcat)[[:space:]].*(-d|--data|--upload-file|--data-binary)' <<< "$compact"; then
+  deny 'possible data exfiltration command blocked by repo policy'
+  exit 0
+fi
+
+if grep -Eq '(cat|bat|less|head|tail)[[:space:]].*\.env(?!\.example)' <<< "$compact"; then
+  deny 'direct .env secret extraction blocked by repo policy'
+  exit 0
+fi
+
+if grep -Eq '^(rg|fd|fzf|bat|jq|yq|mlr|fx|delta|eza|ls|pwd|cat|head|tail|wc|sort|uniq|cut|date|env|which|type|file|stat|du|df)\b' <<< "$compact"; then
+  allow
+  exit 0
+fi
+
+if grep -Eq '^git[[:space:]]+(log|show|diff|status|grep|blame|ls-files|branch|tag|describe|shortlog|rev-parse|cat-file|check-ignore|stash[[:space:]]+list)\b' <<< "$compact"; then
+  allow
+  exit 0
+fi
+
+if grep -Eq '^gh[[:space:]]+(pr[[:space:]]+(view|list|checks|diff)|issue[[:space:]]+(view|list)|repo[[:space:]]+view|run[[:space:]]+(list|view))\b' <<< "$compact"; then
+  allow
+  exit 0
+fi
+
+if grep -Eq '^ast-grep[[:space:]]+run\b(?!.*--(rewrite|update-all|U)\b)' <<< "$compact"; then
+  allow
+  exit 0
+fi
+
+if grep -Eq '^(semgrep[[:space:]]+scan|gitleaks[[:space:]]+detect|trivy[[:space:]]+fs|shellcheck|actionlint)\b' <<< "$compact"; then
+  allow
+  exit 0
+fi
+
+if grep -Eq '^shfmt[[:space:]]+-d\b' <<< "$compact"; then
+  allow
+  exit 0
+fi
+
+if grep -Eq '^composer[[:space:]]+(validate|show|depends|audit|check-platform-reqs|diagnose)\b' <<< "$compact"; then
+  allow
+  exit 0
+fi
+
+if grep -Eq '^pnpm[[:space:]]+(exec[[:space:]]+(tsc|eslint|biome|knip)|audit|list|outdated)\b' <<< "$compact"; then
+  allow
+  exit 0
+fi
+
+if grep -Eq '^vendor/bin/(phpunit|pest|phpstan|psalm)\b' <<< "$compact"; then
+  allow
+  exit 0
+fi
+
+if grep -Eq '^vendor/bin/pint[[:space:]]+--test\b' <<< "$compact"; then
+  allow
+  exit 0
+fi
+
+if grep -Eq '^vendor/bin/rector[[:space:]]+process[[:space:]]+--dry-run\b' <<< "$compact"; then
+  allow
+  exit 0
+fi
+
+if grep -Eq '^(\./)?scripts/copilot/(ai-search|ai-edit|ai-verify|ai-diff-context|ai-rollback|repomix-scc-router|pack-context|git-forensics|preview-file|watch-loop|gh-pr-context|fd-files|rg-code)\.sh\b' <<< "$compact"; then
+  allow
   exit 0
 fi
 

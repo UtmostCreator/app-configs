@@ -21,6 +21,7 @@ For agentic workflows, capture enough evidence to reconstruct what happened:
 - tool execution latency for external systems
 - cost per request or per task
 - exact tool calls, retries, and stop conditions
+- failure category, corrected usage, and what to avoid next time when a command fails
 
 If a workflow can mutate external state, treat missing traceability as a release blocker.
 
@@ -35,6 +36,8 @@ Measure whether the workflow was actually good, not only whether it ran:
 - first-pass success rate when retries or escalation are part of the flow
 
 Prefer evaluation against repository truth, source documents, or live system evidence over self-grading.
+
+Use `docs/ai/failure-handling.md` for the retry policy and required failure log fields.
 
 ## Optimization
 
@@ -84,6 +87,7 @@ Treat these as recurring review categories:
 - memory or context poisoning that persists across tasks
 - insecure inter-agent communication, spoofing, or replay
 - cascading failures across delegated workflows
+- repeated retries without a new hypothesis
 - human trust exploitation where confident output bypasses verification
 - rogue or drifting behavior over time
 
@@ -116,6 +120,8 @@ Common multi-agent roles:
 - presenter
 
 Add roles only when isolation, expertise, or verification quality improves. Do not split one simple workflow into many agents without a clear safety or quality reason.
+
+Keep `docs/ai/agents.md` updated when live agents are added, removed, or repurposed.
 
 ## Multimodal Note
 

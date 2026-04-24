@@ -180,6 +180,47 @@ function aiCollectRootResources(string $root): array
 {
     $resources = [];
 
+    $rootDocMap = [
+        'docs/ai/project-context.md' => ['root-doc', 'project-context-doc', 'Durable repository context for instructions, capabilities, and adapters.'],
+        'docs/ai/workflow.md' => ['root-doc', 'workflow', 'Default live workflow for risk, verification, and docs sync.'],
+        'docs/ai/agent-ops.md' => ['root-doc', 'agent-ops', 'AgentOps model for observability, evaluation, optimization, IAM, and architecture routing.'],
+        'docs/ai/agents.md' => ['root-doc', 'agents', 'Durable live-agent reference plus package-agent index for later lookup.'],
+        'docs/ai/failure-handling.md' => ['root-doc', 'failure-handling', 'Failure taxonomy, retry policy, corrected usage guidance, and logging contract.'],
+        'docs/ai/agent-ops-checklist.md' => ['root-doc', 'agent-ops-checklist', 'Phased verification checklist for auditing AI workflow integration in the live repo.'],
+        'docs/ai/integration-matrix.md' => ['root-doc', 'integration-matrix', 'Coverage map that tracks which AI workflow concepts are covered, partial, or missing.'],
+        'docs/ai/AI-GUARDRAILS.md' => ['root-doc', 'AI Guardrails', 'Cross-tool guardrails for approval boundaries, evidence, and recurring failure modes.'],
+    ];
+
+    foreach ($rootDocMap as $relativePath => [$type, $name, $description]) {
+        if (!is_file(aiAbsolutePath($root, $relativePath))) {
+            continue;
+        }
+
+        $resources[] = aiResource('root', $type, $name, $relativePath, $description, 'canonical');
+    }
+
+    $rootScriptMap = [
+        'scripts/copilot/common.sh' => ['copilot-script', 'common.sh', 'Shared helper library for Copilot wrappers, logging, snapshots, and token-budget checks.'],
+        'scripts/copilot/ai-search.sh' => ['copilot-script', 'ai-search.sh', 'Unified search entrypoint for text, file, tracked, all, and structural discovery.'],
+        'scripts/copilot/ai-edit.sh' => ['copilot-script', 'ai-edit.sh', 'Guarded broad-edit wrapper with snapshots, dry-run behavior, visible diff, and optional verification.'],
+        'scripts/copilot/ai-verify.sh' => ['copilot-script', 'ai-verify.sh', 'Project-aware verification gate for AI-driven changes across shell, PHP, JS/TS, and security checks.'],
+        'scripts/copilot/ai-diff-context.sh' => ['copilot-script', 'ai-diff-context.sh', 'Incremental context packer for changed files, PR slices, recent changes, and touched areas.'],
+        'scripts/copilot/ai-rollback.sh' => ['copilot-script', 'ai-rollback.sh', 'Rollback helper for explicit recovery work using session snapshots and refs.'],
+        'scripts/copilot/rg-code.sh' => ['copilot-script', 'rg-code.sh', 'Mode-aware ripgrep wrapper with JSON, file-list, count, and context output modes.'],
+        'scripts/copilot/gh-pr-context.sh' => ['copilot-script', 'gh-pr-context.sh', 'GitHub PR context wrapper with metadata, diff, checks, reviews, and optional PR-scoped context packing.'],
+        'scripts/copilot/repomix-scc-router.sh' => ['copilot-script', 'repomix-scc-router.sh', 'Ranked context router that produces TSV and JSON bundle plans with churn-aware scoring.'],
+        'scripts/copilot/watch-loop.sh' => ['copilot-script', 'watch-loop.sh', 'Watch-based verification loop with debounce and repo-local session logging.'],
+        'scripts/copilot/policy.yaml' => ['copilot-policy', 'policy.yaml', 'Declarative allow, deny, and confirm rules for the Copilot command policy surface.'],
+    ];
+
+    foreach ($rootScriptMap as $relativePath => [$type, $name, $description]) {
+        if (!is_file(aiAbsolutePath($root, $relativePath))) {
+            continue;
+        }
+
+        $resources[] = aiResource('root', $type, $name, $relativePath, $description, 'github-copilot');
+    }
+
     $capabilityPaths = glob(aiAbsolutePath($root, 'docs/ai/capabilities/*/CAPABILITY.md')) ?: [];
     sort($capabilityPaths);
 
@@ -404,6 +445,10 @@ function aiRenderLlms(array $catalog): string
     $lines[] = '- [AGENTS.md](AGENTS.md): durable repository instructions';
     $lines[] = '- [docs/ai/project-context.md](docs/ai/project-context.md): live repository context';
     $lines[] = '- [docs/ai/workflow.md](docs/ai/workflow.md): live task flow';
+    $lines[] = '- [docs/ai/agents.md](docs/ai/agents.md): live agent reference and package agent index';
+    $lines[] = '- [docs/ai/failure-handling.md](docs/ai/failure-handling.md): command-failure taxonomy and retry policy';
+    $lines[] = '- [docs/ai/agent-ops-checklist.md](docs/ai/agent-ops-checklist.md): phased verification checklist for integration audits';
+    $lines[] = '- [docs/ai/integration-matrix.md](docs/ai/integration-matrix.md): concept coverage map for the live workflow layer';
     $lines[] = '- [docs/ai/catalog.md](docs/ai/catalog.md): generated browse index for live and package assets';
     $lines[] = '';
     $lines[] = '## Reusable Kit';

@@ -10,6 +10,7 @@
 - Active paths: `AI-universal-rules/, docs/, vscode/, shell/, tools/, php/, .github/`
 - Inactive or legacy paths: `none declared; treat unreferenced examples as reference material unless a task targets them`
 - Primary entrypoints: `README.md, AI-universal-rules/README.md, docs/ai/project-context.md, vscode/user/settings.json, shell/.zshrc`
+- AI reference docs: `docs/ai/agents.md, docs/ai/failure-handling.md, docs/ai/agent-ops-checklist.md, docs/ai/integration-matrix.md`
 
 ## Default Workflow
 
@@ -25,10 +26,12 @@ Workflow rules:
 
 ## Approval Required Before Proceeding
 
+- safe repo-local read-only commands do not require approval by default
 - destructive file deletion outside stale AI setup assets
 - secrets, tokens, local machine credentials, or private endpoint configuration
 - broad dependency/runtime upgrades with machine-wide impact
 - changes that intentionally drop compatibility with a supported AI surface
+- approval-free read-only work stops if it needs privileged access, external side effects, or secret-bearing surfaces
 
 ## Core Engineering Rules
 
@@ -37,6 +40,8 @@ Workflow rules:
 - Do not let tool-specific files drift away from repository truth.
 - Do not turn examples into hidden production defaults.
 - Keep guidance actionable for a human and a coding agent.
+- Document live agents in `docs/ai/agents.md` so later tasks can reference them quickly.
+- Log command failures, retry decisions, corrected usage, and avoid-notes using `docs/ai/failure-handling.md`.
 
 ## Architecture Notes
 

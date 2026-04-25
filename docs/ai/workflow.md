@@ -11,6 +11,12 @@
 7. record command failures, retries, and corrected usage when they occur
 8. sync setup docs when behavior, paths, or commands changed
 
+For medium or high risk agentic work, load `docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md` before mutating tool use.
+For medium or high risk agentic work, load `docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md` so outputs include traceable evidence.
+For behavior-changing agentic work, load `docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md` and run relevant golden-task checks.
+For medium or high risk changes requiring realistic integration checks, load `docs/ai/capabilities/preview-environments/CAPABILITY.md`.
+For cross-service or internal-tool architecture changes, load `docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md`.
+
 Prefer the simplest working path first. Add more staged agents, prompts, or runtime-specific workflow layers only when the smaller flow stops being clear, safe, or verifiable.
 
 Optional local helpers:
@@ -39,6 +45,9 @@ Optional local helpers:
 - `high` - changes affecting credentials, destructive actions, or multiple runtime surfaces at once
 
 For `medium` and `high` risk work, define rollback posture and affected surfaces before implementation.
+For `high` risk tool actions, require explicit approval before execution and record the decision in task evidence.
+Before merge of behavior-changing agent workflows, record regression evidence and apply human-review rules for medium/high-risk outcomes.
+When preview environments are used, record environment identifier, TTL posture, and cleanup outcome in task evidence.
 
 Safe repo-local read-only commands are approval-free by default. Stop and ask before a supposedly read-only step touches secrets, privileged locations, remote mutation, billing, auth, or other side-effecting surfaces.
 

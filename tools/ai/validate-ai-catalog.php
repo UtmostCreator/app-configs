@@ -46,6 +46,42 @@ foreach ($catalog['resources'] ?? [] as $resource) {
     }
 }
 
+foreach (['tools/design-patterns', 'tools/design-principles', 'tools/php-built-ins'] as $requiredPhpReferencePath) {
+    if (!aiCatalogHasPath($catalog, $requiredPhpReferencePath)) {
+        $errors[] = "catalog.json should include PHP reference corpus path {$requiredPhpReferencePath}";
+    }
+}
+
+foreach ([
+    'docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md',
+    'docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md',
+    'scripts/copilot/evidence-event.schema.json',
+] as $requiredEvidencePath) {
+    if (!aiCatalogHasPath($catalog, $requiredEvidencePath)) {
+        $errors[] = "catalog.json should include evidence support path {$requiredEvidencePath}";
+    }
+}
+
+foreach ([
+    'docs/ai/capabilities/evaluation-and-regression/GOLDEN_TASKS.md',
+    'docs/ai/capabilities/evaluation-and-regression/REPLAY_RULES.md',
+    'docs/ai/capabilities/evaluation-and-regression/HUMAN_REVIEW_RULES.md',
+] as $requiredEvaluationPath) {
+    if (!aiCatalogHasPath($catalog, $requiredEvaluationPath)) {
+        $errors[] = "catalog.json should include evaluation support path {$requiredEvaluationPath}";
+    }
+}
+
+foreach ([
+    'docs/ai/capabilities/preview-environments/LIFECYCLE.md',
+    'docs/ai/capabilities/preview-environments/DATA_AND_SECRET_RULES.md',
+    'docs/ai/capabilities/preview-environments/CHECKLIST.md',
+] as $requiredPreviewPath) {
+    if (!aiCatalogHasPath($catalog, $requiredPreviewPath)) {
+        $errors[] = "catalog.json should include preview support path {$requiredPreviewPath}";
+    }
+}
+
 foreach ($manifest['generated_outputs'] ?? [] as $path) {
     if (!file_exists(aiAbsolutePath($root, $path))) {
         $errors[] = "generated output missing {$path}";
@@ -69,3 +105,14 @@ foreach ($errors as $error) {
 }
 
 exit($errors === [] ? 0 : 1);
+
+function aiCatalogHasPath(array $catalog, string $path): bool
+{
+    foreach ($catalog['resources'] ?? [] as $resource) {
+        if (is_array($resource) && ($resource['path'] ?? null) === $path) {
+            return true;
+        }
+    }
+
+    return false;
+}

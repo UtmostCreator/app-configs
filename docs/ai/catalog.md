@@ -20,28 +20,36 @@ This index makes the live repo workflow layer and the reusable `AI-universal-rul
 - `package / package-capability` - 31
 - `package / shared-template` - 3
 - `package / workflow-doc` - 6
-- `root / capability` - 6
+- `root / capability` - 11
 - `root / copilot-policy` - 1
+- `root / copilot-schema` - 1
 - `root / copilot-script` - 10
 - `root / exporter` - 1
 - `root / generator` - 1
 - `root / github-copilot-agent` - 2
 - `root / github-copilot-instruction` - 6
 - `root / hook` - 1
-- `root / root-doc` - 8
+- `root / php-reference` - 3
+- `root / root-doc` - 16
 - `root / validator` - 2
 
 ## Live Repo Resources
 
 | Type | Name | Path | Description |
 | --- | --- | --- | --- |
+| `capability` | agent-observability-and-evidence | `docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md` | Make agent runs traceable, reviewable, and auditable before relying on optimization claims. |
+| `capability` | authorization-and-tool-governance | `docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md` | Define who can use which tools, under what scope, with which approval and audit requirements. |
 | `capability` | bug-regression | `docs/ai/capabilities/bug-regression/CAPABILITY.md` | Reproduce a config or workflow defect with the smallest reliable check, apply a bounded fix, and prove the issue is closed. |
 | `capability` | config-change-safety | `docs/ai/capabilities/config-change-safety/CAPABILITY.md` | Apply editor, shell, runtime, or machine-facing config changes without widening risk silently. |
 | `capability` | docs-sync | `docs/ai/capabilities/docs-sync/CAPABILITY.md` | Keep setup and workflow documentation aligned with the actual repository after behavior, file, or path changes. |
+| `capability` | evaluation-and-regression | `docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md` | Make agent behavior testable so quality does not depend only on ad hoc review. |
+| `capability` | preview-environments | `docs/ai/capabilities/preview-environments/CAPABILITY.md` | Define a vendor-neutral operating model for temporary end-to-end environments used during review and verification. |
 | `capability` | project-context | `docs/ai/capabilities/project-context/CAPABILITY.md` | Load durable repository facts before work starts so changes use the right paths, verification, and approval boundaries. |
 | `capability` | review-diff | `docs/ai/capabilities/review-diff/CAPABILITY.md` | Review the proposed change set for accuracy, drift, portability, and missing verification. |
+| `capability` | service-boundary-patterns | `docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md` | Define public, internal, tool, and data boundaries so agent-enabled workflows do not blur trust and risk surfaces. |
 | `capability` | verify-change | `docs/ai/capabilities/verify-change/CAPABILITY.md` | Choose the smallest relevant proof for a config, docs, or workflow change and report evidence cleanly. |
 | `copilot-policy` | policy.yaml | `scripts/copilot/policy.yaml` | Declarative allow, deny, and confirm rules for the Copilot command policy surface. |
+| `copilot-schema` | evidence-event.schema.json | `scripts/copilot/evidence-event.schema.json` | JSON schema for durable agent evidence events emitted by supported runtime surfaces. |
 | `copilot-script` | ai-diff-context.sh | `scripts/copilot/ai-diff-context.sh` | Incremental context packer for changed files, PR slices, recent changes, and touched areas. |
 | `copilot-script` | ai-edit.sh | `scripts/copilot/ai-edit.sh` | Guarded broad-edit wrapper with snapshots, dry-run behavior, visible diff, and optional verification. |
 | `copilot-script` | ai-rollback.sh | `scripts/copilot/ai-rollback.sh` | Rollback helper for explicit recovery work using session snapshots and refs. |
@@ -63,10 +71,21 @@ This index makes the live repo workflow layer and the reusable `AI-universal-rul
 | `github-copilot-instruction` | frontend | `.github/instructions/frontend.instructions.md` |  |
 | `github-copilot-instruction` | php | `.github/instructions/php.instructions.md` |  |
 | `hook` | tool-guardian | `.github/hooks/tool-guardian.json` | Protects the live repo with a narrow Copilot hook guard. |
+| `php-reference` | design-patterns | `tools/design-patterns` | Primary local PHP design pattern corpus for agent and human lookups. |
+| `php-reference` | design-principles | `tools/design-principles` | Secondary PHP principles and composition examples. |
+| `php-reference` | php-built-ins | `tools/php-built-ins` | Supporting PHP built-in usage examples. |
 | `root-doc` | AI Guardrails | `docs/ai/AI-GUARDRAILS.md` | Cross-tool guardrails for approval boundaries, evidence, and recurring failure modes. |
 | `root-doc` | agent-ops-checklist | `docs/ai/agent-ops-checklist.md` | Phased verification checklist for auditing AI workflow integration in the live repo. |
 | `root-doc` | agent-ops | `docs/ai/agent-ops.md` | AgentOps model for observability, evaluation, optimization, IAM, and architecture routing. |
 | `root-doc` | agents | `docs/ai/agents.md` | Durable live-agent reference plus package-agent index for later lookup. |
+| `root-doc` | agent-evidence-schema | `docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md` | Structured evidence event model for traceable agent runs on supported runtimes. |
+| `root-doc` | agent-failure-taxonomy | `docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md` | Normalized failure categories for agent evidence events and taxonomy mapping guidance. |
+| `root-doc` | evaluation-golden-tasks | `docs/ai/capabilities/evaluation-and-regression/GOLDEN_TASKS.md` | Golden-task patterns for behavior-regression checks in agent workflows. |
+| `root-doc` | evaluation-human-review-rules | `docs/ai/capabilities/evaluation-and-regression/HUMAN_REVIEW_RULES.md` | Human-review triggers and decision record expectations for risky agent outcomes. |
+| `root-doc` | evaluation-replay-rules | `docs/ai/capabilities/evaluation-and-regression/REPLAY_RULES.md` | Replay rules for reproducing and classifying failed or ambiguous agent runs. |
+| `root-doc` | preview-checklist | `docs/ai/capabilities/preview-environments/CHECKLIST.md` | Checklist for preview-environment readiness, evidence, and cleanup. |
+| `root-doc` | preview-data-and-secrets | `docs/ai/capabilities/preview-environments/DATA_AND_SECRET_RULES.md` | Data and secret isolation rules for preview environments. |
+| `root-doc` | preview-lifecycle | `docs/ai/capabilities/preview-environments/LIFECYCLE.md` | Vendor-neutral lifecycle and TTL expectations for temporary preview environments. |
 | `root-doc` | failure-handling | `docs/ai/failure-handling.md` | Failure taxonomy, retry policy, corrected usage guidance, and logging contract. |
 | `root-doc` | integration-matrix | `docs/ai/integration-matrix.md` | Coverage map that tracks which AI workflow concepts are covered, partial, or missing. |
 | `root-doc` | project-context-doc | `docs/ai/project-context.md` | Durable repository context for instructions, capabilities, and adapters. |

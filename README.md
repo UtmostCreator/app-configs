@@ -1,15 +1,15 @@
 # app-configs
 
-macOS development environment for full-stack work, terminal workflows, PHP tooling, editor setup, and CLI-driven delivery.
+macOS-first developer configuration repository plus a reusable cross-tool AI workflow kit.
 
 This repository has two related jobs:
 
-1. document and version my daily developer workstation across shell, terminal, Neovim, PHP, keyboard ergonomics, containers, and editor workflow
-2. provide a reusable cross-tool AI workflow kit for repo-scoped guidance, validation, and generated catalog surfaces3
+1. document and version daily workstation setup across shell, terminal, Neovim, PHP, keyboard ergonomics, and editor workflow
+2. provide a reusable cross-tool AI workflow kit for repo-scoped guidance, validation, and generated catalog surfaces
 
-## stop pop up for apps "Ghostty.app" would like to access data from other apps.
+## Ghostty Full Disk Access Popup
 
-> MacOS Settings => Privacy & Security => Full Disk Access => enable Ghostty via the toggle 
+> macOS Settings -> Privacy & Security -> Full Disk Access -> enable Ghostty via the toggle
 
 ## Workstation Highlights
 
@@ -38,7 +38,16 @@ This repository has two related jobs:
 - `php/` - PHP runtime and Pint configuration
 - `vscode/` - workspace, user settings, keybindings, and launch config
 - `justfile` - optional workflow entrypoints for local health checks and AI validation
-- `scripts/` - doctor and shared git-hook scripts
+- `scripts/` - Copilot wrappers, doctor checks, and shared git-hook scripts
+
+## Repo Packages And Manifests
+
+- `AI-universal-rules/manifest.json` - canonical package metadata for the reusable AI workflow kit
+- `AI-universal-rules/manifest.yml` - YAML mirror for the same package metadata
+- `AI-universal-rules/catalog.json` - generated machine-readable catalog of package and root resources
+- `docs/ai/catalog.md` - generated human-readable catalog index
+- `llms.txt` - generated LLM-oriented index for key docs and assets
+- Root Node and Composer package manifests are intentionally not used in this repository
 
 ## AI Workflow Kit
 
@@ -60,9 +69,26 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 
 ```text
 .
+|-- .editorconfig
+|-- .eslintrc.json
+|-- .github/
+|   |-- agents/
+|   |-- copilot-instructions.md
+|   |-- hooks/
+|   |-- instructions/
+|   |-- prompts/
+|   |-- skills/
+|   `-- workflows/
 |-- AGENTS.md
-|-- CLAUDE.md
 |-- AI-universal-rules/
+|   |-- catalog.json
+|   |-- docs/
+|   |-- examples/
+|   |-- manifest.json
+|   |-- manifest.yml
+|   `-- templates/
+|-- CLAUDE.md
+|-- CONTRIBUTING.md
 |-- docs/
 |   |-- ai/
 |   |-- keyboard.md
@@ -70,27 +96,36 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 |   |-- shell-setup.md
 |   |-- software-and-cli-tools.md
 |   `-- vscode-extensions.md
+|-- justfile
+|-- llms.txt
 |-- php/
 |   |-- php.ini
 |   `-- pint.json
+|-- scripts/
+|   |-- copilot/
+|   |-- doctor.sh
+|   `-- hooks/
+|-- SECURITY.md
 |-- shell/
+|   |-- .gitconfig
 |   |-- .zshrc
 |   `-- starship.toml
+|-- SUPPORT.md
 |-- tools/
 |   |-- ai/
+|   |-- create_structure.sh
+|   |-- design-patterns/
+|   |-- design-principles/
 |   |-- ghostty/
 |   |-- karabiner/
-|   `-- nvim/
-|-- vscode/
-|   |-- keybindings.json
-|   |-- launch.json
-|   |-- user/
-|   |-- workspace-example.json
-|   `-- workspace-template.json
-`-- .github/
-    |-- copilot-instructions.md
-    |-- agents/
-    `-- instructions/
+|   |-- nvim/
+|   `-- php-built-ins/
+`-- vscode/
+    |-- keybindings.json
+    |-- launch.json
+    |-- user/
+    |-- workspace-example.json
+    `-- workspace-template.json
 ```
 
 ## Quick Start
@@ -119,6 +154,8 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - Use `scripts/copilot/ai-diff-context.sh` when you need narrow context for changed files, PR files, recent edits, or touched areas
 - Use `scripts/copilot/ai-search.sh` when the agent should route all search through one stable entrypoint
 - For PHP guidance, search local examples in this order: `tools/design-patterns/` -> `tools/design-principles/` -> `tools/php-built-ins/`
+- Use `just php-examples-map` to print the preferred PHP example lookup order
+- Use `just php-patterns-search`, `just php-principles-search`, and `just php-builtins-search` for direct corpus search
 - Use `scripts/copilot/ai-edit.sh` as the only approved path for broad repository edits
 - Use `scripts/copilot/ai-verify.sh` after changes to run the project-aware verification stack
 - Use `scripts/copilot/gh-pr-context.sh` for richer PR metadata, checks, reviews, and diff summaries
@@ -140,13 +177,14 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - `just context-pack-all` - run analysis, planning, and packing in one step
 - `just context-pack-all-since BRANCH_OR_REF` - run changed-since stats, plan, and packing in one step
 - `just context-plan-json` - print the current `bundle-plan.json` for agent-friendly inspection
-- `scripts/copilot/repomix-scc-router.sh` now writes both `bundle-plan.tsv` and `bundle-plan.json` under `.repomix-context/`
+- `scripts/copilot/repomix-scc-router.sh` writes both `bundle-plan.tsv` and `bundle-plan.json` under `.repomix-context/`
 
 ## Important Notes
 
 - Some settings are intentionally machine-specific; shared docs should call those out instead of hiding them
 - Example repos under `AI-universal-rules/examples/` are references, not root-repo behavior
 - This repo prefers a practical production-grade workflow model over a large catalog of agents, skills, or plugins
+- Safe repo-local read-only commands are approval-free by default unless they touch privileged access, secrets, or external side effects
 
 ## Key Files
 

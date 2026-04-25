@@ -61,7 +61,7 @@
         "root:github-copilot-instruction": 6,
         "root:hook": 1,
         "root:php-reference": 3,
-        "root:root-doc": 16,
+        "root:root-doc": 17,
         "root:validator": 2
     },
     "resources": [
@@ -1363,6 +1363,14 @@
             "path": "docs/ai/capabilities/preview-environments/LIFECYCLE.md",
             "runtime": "canonical",
             "description": "Vendor-neutral lifecycle and TTL expectations for temporary preview environments."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "copilot-getting-started",
+            "path": "docs/ai/copilot-getting-started.md",
+            "runtime": "canonical",
+            "description": "Quick-start onboarding for Copilot setup, read order, and end-to-end task examples."
         },
         {
             "scope": "root",

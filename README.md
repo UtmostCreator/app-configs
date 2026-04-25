@@ -140,6 +140,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 ### AI workflow use
 
 - Start with `AGENTS.md`
+- For a Copilot-first onboarding and minimal install map, read `docs/ai/copilot-getting-started.md`
 - Read `docs/ai/project-context.md`
 - Browse `docs/ai/catalog.md` when you need the fastest path to relevant assets
 - Use `docs/ai/agents.md` when you need to know which live or package agent fits the job
@@ -166,6 +167,13 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - Run `just ai-check` if you want one local command that wraps the three AI workflow checks above
 - Use `just verify` for the guarded post-edit verification path
 - Use `just edit-ast`, `just edit-text`, and their `-apply` variants instead of raw mass-edit shell commands
+
+### GitHub Copilot install and read order
+
+- Minimum folders and files to copy into another repo: `.github/copilot-instructions.md`, `docs/ai/project-context.md`, `docs/ai/workflow.md`, `docs/ai/agents.md`, `docs/ai/failure-handling.md`, `docs/ai/capabilities/project-context/`, `docs/ai/capabilities/verify-change/`, `docs/ai/capabilities/review-diff/`
+- Optional Copilot add-ons after baseline works: `.github/instructions/`, `.github/agents/`, `.github/prompts/`, `.github/skills/`, `.github/hooks/`, `scripts/copilot/`, `docs/ai/copilot-tooling.md`
+- Recommended read order in this repo: `README.md` -> `.github/copilot-instructions.md` -> `docs/ai/project-context.md` -> `docs/ai/workflow.md` -> `docs/ai/agents.md` -> `docs/ai/failure-handling.md` -> relevant `docs/ai/capabilities/*`
+- Use `docs/ai/catalog.md` as the live generated inventory when you need the full list of agents, instructions, hooks, prompts, scripts, and canonical docs
 
 ### Context packing
 

@@ -51,15 +51,17 @@
         "package:package-capability": 31,
         "package:shared-template": 3,
         "package:workflow-doc": 6,
-        "root:capability": 6,
+        "root:capability": 11,
         "root:copilot-policy": 1,
+        "root:copilot-schema": 1,
         "root:copilot-script": 10,
         "root:exporter": 1,
         "root:generator": 1,
         "root:github-copilot-agent": 2,
         "root:github-copilot-instruction": 6,
         "root:hook": 1,
-        "root:root-doc": 8,
+        "root:php-reference": 3,
+        "root:root-doc": 16,
         "root:validator": 2
     },
     "resources": [
@@ -973,6 +975,22 @@
         {
             "scope": "root",
             "type": "capability",
+            "name": "agent-observability-and-evidence",
+            "path": "docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Make agent runs traceable, reviewable, and auditable before relying on optimization claims."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
+            "name": "authorization-and-tool-governance",
+            "path": "docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Define who can use which tools, under what scope, with which approval and audit requirements."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
             "name": "bug-regression",
             "path": "docs/ai/capabilities/bug-regression/CAPABILITY.md",
             "runtime": "canonical",
@@ -997,6 +1015,22 @@
         {
             "scope": "root",
             "type": "capability",
+            "name": "evaluation-and-regression",
+            "path": "docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Make agent behavior testable so quality does not depend only on ad hoc review."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
+            "name": "preview-environments",
+            "path": "docs/ai/capabilities/preview-environments/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Define a vendor-neutral operating model for temporary end-to-end environments used during review and verification."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
             "name": "project-context",
             "path": "docs/ai/capabilities/project-context/CAPABILITY.md",
             "runtime": "canonical",
@@ -1013,6 +1047,14 @@
         {
             "scope": "root",
             "type": "capability",
+            "name": "service-boundary-patterns",
+            "path": "docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Define public, internal, tool, and data boundaries so agent-enabled workflows do not blur trust and risk surfaces."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
             "name": "verify-change",
             "path": "docs/ai/capabilities/verify-change/CAPABILITY.md",
             "runtime": "canonical",
@@ -1025,6 +1067,14 @@
             "path": "scripts/copilot/policy.yaml",
             "runtime": "github-copilot",
             "description": "Declarative allow, deny, and confirm rules for the Copilot command policy surface."
+        },
+        {
+            "scope": "root",
+            "type": "copilot-schema",
+            "name": "evidence-event.schema.json",
+            "path": "scripts/copilot/evidence-event.schema.json",
+            "runtime": "github-copilot",
+            "description": "JSON schema for durable agent evidence events emitted by supported runtime surfaces."
         },
         {
             "scope": "root",
@@ -1196,6 +1246,30 @@
         },
         {
             "scope": "root",
+            "type": "php-reference",
+            "name": "design-patterns",
+            "path": "tools/design-patterns",
+            "runtime": "php",
+            "description": "Primary local PHP design pattern corpus for agent and human lookups."
+        },
+        {
+            "scope": "root",
+            "type": "php-reference",
+            "name": "design-principles",
+            "path": "tools/design-principles",
+            "runtime": "php",
+            "description": "Secondary PHP principles and composition examples."
+        },
+        {
+            "scope": "root",
+            "type": "php-reference",
+            "name": "php-built-ins",
+            "path": "tools/php-built-ins",
+            "runtime": "php",
+            "description": "Supporting PHP built-in usage examples."
+        },
+        {
+            "scope": "root",
             "type": "root-doc",
             "name": "AI Guardrails",
             "path": "docs/ai/AI-GUARDRAILS.md",
@@ -1225,6 +1299,70 @@
             "path": "docs/ai/agents.md",
             "runtime": "canonical",
             "description": "Durable live-agent reference plus package-agent index for later lookup."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "agent-evidence-schema",
+            "path": "docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md",
+            "runtime": "canonical",
+            "description": "Structured evidence event model for traceable agent runs on supported runtimes."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "agent-failure-taxonomy",
+            "path": "docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md",
+            "runtime": "canonical",
+            "description": "Normalized failure categories for agent evidence events and taxonomy mapping guidance."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "evaluation-golden-tasks",
+            "path": "docs/ai/capabilities/evaluation-and-regression/GOLDEN_TASKS.md",
+            "runtime": "canonical",
+            "description": "Golden-task patterns for behavior-regression checks in agent workflows."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "evaluation-human-review-rules",
+            "path": "docs/ai/capabilities/evaluation-and-regression/HUMAN_REVIEW_RULES.md",
+            "runtime": "canonical",
+            "description": "Human-review triggers and decision record expectations for risky agent outcomes."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "evaluation-replay-rules",
+            "path": "docs/ai/capabilities/evaluation-and-regression/REPLAY_RULES.md",
+            "runtime": "canonical",
+            "description": "Replay rules for reproducing and classifying failed or ambiguous agent runs."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "preview-checklist",
+            "path": "docs/ai/capabilities/preview-environments/CHECKLIST.md",
+            "runtime": "canonical",
+            "description": "Checklist for preview-environment readiness, evidence, and cleanup."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "preview-data-and-secrets",
+            "path": "docs/ai/capabilities/preview-environments/DATA_AND_SECRET_RULES.md",
+            "runtime": "canonical",
+            "description": "Data and secret isolation rules for preview environments."
+        },
+        {
+            "scope": "root",
+            "type": "root-doc",
+            "name": "preview-lifecycle",
+            "path": "docs/ai/capabilities/preview-environments/LIFECYCLE.md",
+            "runtime": "canonical",
+            "description": "Vendor-neutral lifecycle and TTL expectations for temporary preview environments."
         },
         {
             "scope": "root",

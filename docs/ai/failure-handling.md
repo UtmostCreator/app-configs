@@ -44,6 +44,23 @@ Record each failure in the task summary or other durable task record with these 
 | `verification-failed` | a check ran correctly and found a real problem | treat as signal, investigate before rerunning |
 | `unknown` | evidence is insufficient to classify confidently | do one narrower diagnostic step before retrying |
 
+For agent evidence events, use normalized categories from `docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md` when the runtime supports structured event output.
+
+## Agent Evidence Mapping
+
+Use this mapping when both command-level retry policy and event-level evidence are recorded:
+
+| Command-Level Category | Evidence Category Guidance |
+| --- | --- |
+| `policy-blocked` | `authorization_denied` or `unsafe_mutation_blocked` |
+| `approval-blocked` | `approval_missing` |
+| `environment-missing` | `tool_unavailable` |
+| `transient-runtime` | `tool_timeout` when timeout is proven, otherwise `external_dependency_failure` |
+| `usage-error` | `invalid_tool_input` |
+| `verification-failed` | `test_failure`, `lint_failure`, or `schema_validation_failure` based on the failing check |
+| `network-remote` | `external_dependency_failure` |
+| `unknown` | `unknown` |
+
 ## Reattempt Policy
 
 - Reattempt at most once for `transient-runtime` unless the tool output clearly recommends another safe retry.
@@ -71,6 +88,7 @@ Record each failure in the task summary or other durable task record with these 
 - For normal task execution, include failure records in the final summary when any command failed.
 - For recurring workflow failures or policy changes, update the durable docs in `docs/ai/` in the same slice.
 - When a command succeeds on retry, keep the original failure in the record and note why the retry was valid.
+- For behavior-changing agent workflows, include regression evidence and replay notes from `docs/ai/capabilities/evaluation-and-regression/` in the task summary.
 
 ## Minimal Record Example
 

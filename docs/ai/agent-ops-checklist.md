@@ -47,6 +47,8 @@ Verify:
 - the project context mentions approval-free read-only work and failure policy
 - the guardrails mention command-failure logging and retry constraints
 - the agent-ops doc covers observability, evaluation, and optimization in that order
+- behavior-changing agent workflows reference golden tasks, replay rules, or human-review triggers
+- preview-environment workflows define lifecycle, data/secret isolation, and cleanup expectations when used
 - the agent-ops doc covers shift-left code risk, IAM maturity, common agent risks, ADK versus RAG routing, role design, and multimodal caveats
 - the agent reference lists every live agent and explains when to use it
 - the failure-handling doc defines taxonomy, retry rules, and logging fields
@@ -124,6 +126,11 @@ Focus areas:
 - AgentOps core model
 - code risk intelligence and shift-left posture
 - IAM maturity for agents
+- authorization and tool governance capability coverage
+- agent observability and evidence capability coverage
+- evaluation and regression capability coverage
+- preview environments capability coverage
+- service boundary patterns capability coverage
 - common agent-security risks
 - ADK versus RAG architecture choices
 - multi-agent role design

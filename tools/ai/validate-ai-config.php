@@ -22,7 +22,21 @@ $requiredFiles = [
     'docs/ai/AI-GUARDRAILS.md',
     'docs/ai/catalog.md',
     'docs/ai/capabilities/README.md',
+    'docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md',
+    'docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md',
+    'docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md',
+    'docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md',
+    'docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md',
+    'docs/ai/capabilities/evaluation-and-regression/GOLDEN_TASKS.md',
+    'docs/ai/capabilities/evaluation-and-regression/REPLAY_RULES.md',
+    'docs/ai/capabilities/evaluation-and-regression/HUMAN_REVIEW_RULES.md',
+    'docs/ai/capabilities/preview-environments/CAPABILITY.md',
+    'docs/ai/capabilities/preview-environments/LIFECYCLE.md',
+    'docs/ai/capabilities/preview-environments/DATA_AND_SECRET_RULES.md',
+    'docs/ai/capabilities/preview-environments/CHECKLIST.md',
+    'docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md',
     '.github/copilot-instructions.md',
+    '.github/instructions/php.instructions.md',
     'scripts/copilot/common.sh',
     'scripts/copilot/ai-diff-context.sh',
     'scripts/copilot/ai-search.sh',
@@ -30,11 +44,18 @@ $requiredFiles = [
     'scripts/copilot/ai-verify.sh',
     'scripts/copilot/ai-rollback.sh',
     'scripts/copilot/policy.yaml',
+    'scripts/copilot/evidence-event.schema.json',
     '.copilot-logs/README.md',
     'AI-universal-rules/manifest.json',
     'AI-universal-rules/catalog.json',
     'AI-universal-rules/docs/BROWSE.md',
     'llms.txt',
+];
+
+$requiredDirectories = [
+    'tools/design-patterns',
+    'tools/design-principles',
+    'tools/php-built-ins',
 ];
 
 $liveFiles = [
@@ -62,6 +83,11 @@ $liveFiles = [
     'docs/ai/capabilities/bug-regression/CAPABILITY.md',
     'docs/ai/capabilities/docs-sync/CAPABILITY.md',
     'docs/ai/capabilities/config-change-safety/CAPABILITY.md',
+    'docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md',
+    'docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md',
+    'docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md',
+    'docs/ai/capabilities/preview-environments/CAPABILITY.md',
+    'docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md',
     'AI-universal-rules/manifest.json',
     'AI-universal-rules/catalog.json',
     'AI-universal-rules/docs/BROWSE.md',
@@ -140,6 +166,8 @@ $agentsContent = safeRead($root, 'AGENTS.md');
 $claudeContent = safeRead($root, 'CLAUDE.md');
 $readmeContent = safeRead($root, 'README.md');
 $copilotContent = safeRead($root, '.github/copilot-instructions.md');
+$phpInstructionsContent = safeRead($root, '.github/instructions/php.instructions.md');
+$projectContextContent = safeRead($root, 'docs/ai/project-context.md');
 $agentsReferenceContent = safeRead($root, 'docs/ai/agents.md');
 
 $liveAgentPaths = glob($root . DIRECTORY_SEPARATOR . '.github' . DIRECTORY_SEPARATOR . 'agents' . DIRECTORY_SEPARATOR . '*.agent.md') ?: [];
@@ -149,6 +177,12 @@ foreach ($liveAgentPaths as $path) {
 
     if ($agentsReferenceContent !== null && strpos($agentsReferenceContent, $relativePath) === false) {
         $errors[] = "docs/ai/agents.md must reference live agent {$relativePath}";
+    }
+}
+
+foreach ($requiredDirectories as $relativePath) {
+    if (!is_dir($root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath))) {
+        $errors[] = "missing required directory: {$relativePath}";
     }
 }
 
@@ -214,6 +248,42 @@ if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/integration-mat
     $warnings[] = '.github/copilot-instructions.md should reference docs/ai/integration-matrix.md';
 }
 
+if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md') === false) {
+    $warnings[] = '.github/copilot-instructions.md should reference docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md for traceable agent output expectations';
+}
+
+if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md') === false) {
+    $warnings[] = '.github/copilot-instructions.md should reference docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md for behavior-regression expectations';
+}
+
+if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/capabilities/preview-environments/CAPABILITY.md') === false) {
+    $warnings[] = '.github/copilot-instructions.md should reference docs/ai/capabilities/preview-environments/CAPABILITY.md for temporary environment validation guidance';
+}
+
+if ($copilotContent !== null) {
+    foreach (['tools/design-patterns/', 'tools/design-principles/', 'tools/php-built-ins/'] as $phpReferencePath) {
+        if (strpos($copilotContent, $phpReferencePath) === false) {
+            $warnings[] = ".github/copilot-instructions.md should reference {$phpReferencePath} for PHP guidance routing";
+        }
+    }
+}
+
+if ($phpInstructionsContent !== null) {
+    foreach (['tools/design-patterns/', 'tools/design-principles/', 'tools/php-built-ins/'] as $phpReferencePath) {
+        if (strpos($phpInstructionsContent, $phpReferencePath) === false) {
+            $warnings[] = ".github/instructions/php.instructions.md should reference {$phpReferencePath}";
+        }
+    }
+}
+
+if ($projectContextContent !== null) {
+    foreach (['tools/design-patterns/', 'tools/design-principles/', 'tools/php-built-ins/'] as $phpReferencePath) {
+        if (strpos($projectContextContent, $phpReferencePath) === false) {
+            $warnings[] = "docs/ai/project-context.md should reference {$phpReferencePath}";
+        }
+    }
+}
+
 $copilotToolingContent = safeRead($root, 'docs/ai/copilot-tooling.md');
 
 if ($copilotToolingContent !== null) {
@@ -244,6 +314,12 @@ if ($justfileContent !== null) {
             $warnings[] = "justfile should expose {$recipeReference} for the stronger guarded tool surface";
         }
     }
+
+    foreach (['php-patterns-search', 'php-principles-search', 'php-builtins-search', 'php-examples-map'] as $recipeReference) {
+        if (strpos($justfileContent, $recipeReference) === false) {
+            $warnings[] = "justfile should expose {$recipeReference} for PHP example corpus navigation";
+        }
+    }
 }
 
 if ($readmeContent !== null) {
@@ -253,6 +329,12 @@ if ($readmeContent !== null) {
 
     if (stripos($readmeContent, 'configuration') === false) {
         $warnings[] = 'README.md should describe the repo config purpose';
+    }
+
+    foreach (['tools/design-patterns/', 'tools/design-principles/', 'tools/php-built-ins/'] as $phpReferencePath) {
+        if (strpos($readmeContent, $phpReferencePath) === false) {
+            $warnings[] = "README.md should reference {$phpReferencePath} in AI workflow and tooling guidance";
+        }
     }
 }
 

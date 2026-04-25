@@ -6,6 +6,7 @@
 
 - [README.md](README.md): root overview, quick start, and repo layout
 - [AGENTS.md](AGENTS.md): durable repository instructions
+- [docs/ai/copilot-getting-started.md](docs/ai/copilot-getting-started.md): minimal Copilot install map and read order
 - [docs/ai/project-context.md](docs/ai/project-context.md): live repository context
 - [docs/ai/workflow.md](docs/ai/workflow.md): live task flow
 - [docs/ai/agents.md](docs/ai/agents.md): live agent reference and package agent index

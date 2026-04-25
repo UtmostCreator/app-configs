@@ -189,6 +189,14 @@ function aiCollectRootResources(string $root): array
         'docs/ai/agent-ops-checklist.md' => ['root-doc', 'agent-ops-checklist', 'Phased verification checklist for auditing AI workflow integration in the live repo.'],
         'docs/ai/integration-matrix.md' => ['root-doc', 'integration-matrix', 'Coverage map that tracks which AI workflow concepts are covered, partial, or missing.'],
         'docs/ai/AI-GUARDRAILS.md' => ['root-doc', 'AI Guardrails', 'Cross-tool guardrails for approval boundaries, evidence, and recurring failure modes.'],
+        'docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md' => ['root-doc', 'agent-evidence-schema', 'Structured evidence event model for traceable agent runs on supported runtimes.'],
+        'docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md' => ['root-doc', 'agent-failure-taxonomy', 'Normalized failure categories for agent evidence events and taxonomy mapping guidance.'],
+        'docs/ai/capabilities/evaluation-and-regression/GOLDEN_TASKS.md' => ['root-doc', 'evaluation-golden-tasks', 'Golden-task patterns for behavior-regression checks in agent workflows.'],
+        'docs/ai/capabilities/evaluation-and-regression/REPLAY_RULES.md' => ['root-doc', 'evaluation-replay-rules', 'Replay rules for reproducing and classifying failed or ambiguous agent runs.'],
+        'docs/ai/capabilities/evaluation-and-regression/HUMAN_REVIEW_RULES.md' => ['root-doc', 'evaluation-human-review-rules', 'Human-review triggers and decision record expectations for risky agent outcomes.'],
+        'docs/ai/capabilities/preview-environments/LIFECYCLE.md' => ['root-doc', 'preview-lifecycle', 'Vendor-neutral lifecycle and TTL expectations for temporary preview environments.'],
+        'docs/ai/capabilities/preview-environments/DATA_AND_SECRET_RULES.md' => ['root-doc', 'preview-data-and-secrets', 'Data and secret isolation rules for preview environments.'],
+        'docs/ai/capabilities/preview-environments/CHECKLIST.md' => ['root-doc', 'preview-checklist', 'Checklist for preview-environment readiness, evidence, and cleanup.'],
     ];
 
     foreach ($rootDocMap as $relativePath => [$type, $name, $description]) {
@@ -211,6 +219,7 @@ function aiCollectRootResources(string $root): array
         'scripts/copilot/repomix-scc-router.sh' => ['copilot-script', 'repomix-scc-router.sh', 'Ranked context router that produces TSV and JSON bundle plans with churn-aware scoring.'],
         'scripts/copilot/watch-loop.sh' => ['copilot-script', 'watch-loop.sh', 'Watch-based verification loop with debounce and repo-local session logging.'],
         'scripts/copilot/policy.yaml' => ['copilot-policy', 'policy.yaml', 'Declarative allow, deny, and confirm rules for the Copilot command policy surface.'],
+        'scripts/copilot/evidence-event.schema.json' => ['copilot-schema', 'evidence-event.schema.json', 'JSON schema for durable agent evidence events emitted by supported runtime surfaces.'],
     ];
 
     foreach ($rootScriptMap as $relativePath => [$type, $name, $description]) {
@@ -219,6 +228,20 @@ function aiCollectRootResources(string $root): array
         }
 
         $resources[] = aiResource('root', $type, $name, $relativePath, $description, 'github-copilot');
+    }
+
+    $phpReferenceMap = [
+        'tools/design-patterns' => ['php-reference', 'design-patterns', 'Primary local PHP design pattern corpus for agent and human lookups.'],
+        'tools/design-principles' => ['php-reference', 'design-principles', 'Secondary PHP principles and composition examples.'],
+        'tools/php-built-ins' => ['php-reference', 'php-built-ins', 'Supporting PHP built-in usage examples.'],
+    ];
+
+    foreach ($phpReferenceMap as $relativePath => [$type, $name, $description]) {
+        if (!file_exists(aiAbsolutePath($root, $relativePath))) {
+            continue;
+        }
+
+        $resources[] = aiResource('root', $type, $name, $relativePath, $description, 'php');
     }
 
     $capabilityPaths = glob(aiAbsolutePath($root, 'docs/ai/capabilities/*/CAPABILITY.md')) ?: [];

@@ -11,8 +11,12 @@ Use these instructions as the repository-wide baseline for GitHub Copilot.
 5. `docs/ai/agent-ops-checklist.md` when verifying workflow integration or drift
 6. `docs/ai/integration-matrix.md` when checking concept coverage or maturity gaps
 7. `docs/ai/agent-ops.md` when the task involves agents, RAG, security review, or multi-step automation
-8. `docs/ai/copilot-tooling.md`
-9. `.github/instructions/*.instructions.md`
+8. `docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md` before mutating or high-risk tool use
+9. `docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md` when tool evidence or failure classification matters
+10. `docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md` when behavior-changing agent work needs regression proof
+11. `docs/ai/capabilities/preview-environments/CAPABILITY.md` when medium/high-risk changes need temporary environment validation
+12. `docs/ai/copilot-tooling.md`
+13. `.github/instructions/*.instructions.md`
 
 ## Project Context
 
@@ -49,6 +53,10 @@ Execution rules:
 - Prefer read-only commands first.
 - Safe repo-local read-only commands are approval-free by default.
 - Prefer wrappers in `scripts/copilot/` over ad hoc pipelines.
+- For mutating or high-risk tool calls, follow `docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md` before execution.
+- For medium or high-risk agentic tasks, include traceable evidence fields (`trace_id`, `session_id`, `task_id`, tool evidence, and failure category) in the task output when available.
+- For behavior-changing agent workflows, include regression evidence (golden-task checks, replay notes, and human-review status when required).
+- For preview-environment workflows, include environment identifier, TTL posture, and cleanup status in task evidence.
 - For PHP design questions, search `tools/design-patterns/` first, then `tools/design-principles/`, then `tools/php-built-ins/`.
 - Summarize findings with exact commands, file paths, line ranges, and commit hashes when relevant.
 - Do not run destructive commands unless explicitly requested.

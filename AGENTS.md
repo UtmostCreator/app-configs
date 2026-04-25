@@ -60,7 +60,7 @@ Workflow rules:
 ## Capability Map
 
 - Core project context file: `docs/ai/project-context.md`
-- Available capabilities: `project-context, verify-change, review-diff, bug-regression, docs-sync, config-change-safety`
+- Available capabilities: `project-context, verify-change, review-diff, bug-regression, docs-sync, config-change-safety, authorization-and-tool-governance, agent-observability-and-evidence, evaluation-and-regression, preview-environments, service-boundary-patterns`
 - Capability composition notes: `start with project-context for unfamiliar areas; use config-change-safety before risky editor or shell edits; use docs-sync whenever setup or workflow behavior changes`
 
 ## Verification Rules

@@ -25,6 +25,8 @@ For agentic workflows, capture enough evidence to reconstruct what happened:
 
 If a workflow can mutate external state, treat missing traceability as a release blocker.
 
+Use `docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md` and `docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md` when defining durable evidence outputs.
+
 ## Evaluation
 
 Measure whether the workflow was actually good, not only whether it ran:
@@ -38,6 +40,7 @@ Measure whether the workflow was actually good, not only whether it ran:
 Prefer evaluation against repository truth, source documents, or live system evidence over self-grading.
 
 Use `docs/ai/failure-handling.md` for the retry policy and required failure log fields.
+Use `docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md` for golden tasks, replay rules, and human-review triggers.
 
 ## Optimization
 
@@ -74,6 +77,8 @@ Default posture:
 - preserve on-behalf-of delegation chains when an agent acts for a user or another agent
 - log who acted, with what rights, and on whose behalf
 - escalate when a workflow needs long-lived credentials or broad cross-system access
+
+Use `docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md` as the canonical source for actor roles, tool scopes, approval gates, and audit requirements.
 
 ## Common Agent Risks
 

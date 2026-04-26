@@ -9,6 +9,8 @@ This repo uses:
 
 The router script lives at `scripts/copilot/repomix-scc-router.sh`.
 
+For recursive whole-project contextualization with parent/child references, use `scripts/copilot/repomix-context-tree.sh`.
+
 ## Why This Exists
 
 Full-repo context packing is still useful, but it can add noise when the task really targets one subsystem.
@@ -30,7 +32,17 @@ Treat `.repomix-context/` as local generated output. It is for analysis and bund
 - `file-metrics.tsv` - per-file metrics plus assigned folder group
 - `folder-metrics.tsv` - aggregated folder metrics with ranking score
 - `bundle-plan.tsv` - the selected groups that will be packed
+- `bundle-plan.json` - machine-friendly version of the bundle plan for agent or script consumption
 - `bundles/` - generated repomix bundle files
+
+The recursive tree planner writes its own outputs under `.repomix-context/tree-context/` by default:
+
+- `tree-plan.tsv` - shell-friendly recursive split plan
+- `tree-plan.json` - machine-friendly recursive plan with status and budgets
+- `tree-manifest.json` - budget/config summary plus node list
+- `bundles/` - leaf context artifacts that fit the usable budget
+- `indexes/` - parent reference artifacts that point to child contexts instead of duplicating them
+- `index.md` / `index.json` - top-level project context tree entrypoints
 
 ## Default Grouping
 
@@ -70,16 +82,31 @@ bash scripts/copilot/repomix-scc-router.sh pack .
 
 # run the full flow in one step
 bash scripts/copilot/repomix-scc-router.sh all . --depth 1 --top 25 --min-code 300 --min-files 2
+
+# skip mostly declarative folders when you only want implementation-heavy bundles
+bash scripts/copilot/repomix-scc-router.sh plan . --depth 2 --min-complexity 1
+
+# remove generated bundles but keep metrics and plans
+bash scripts/copilot/repomix-scc-router.sh clean .
+
+# remove the full generated output directory
+bash scripts/copilot/repomix-scc-router.sh purge .
 ```
 
 ### For developers using `just`
 
-```bash
+````bash
 just context-stats
 just context-plan
 just context-pack
 just context-pack-all
-```
+just context-plan-json
+just context-clean
+just context-purge
+just context-tree-analyze opts='--compress'
+just context-tree-plan opts='--compress'
+just context-tree-pack opts='--compress'
+``
 
 ## Recommended Usage Patterns
 
@@ -103,6 +130,9 @@ The most useful tuning knobs are:
 - `--top`
 - `--min-code`
 - `--min-files`
+- `--min-complexity`
+
+Use `--min-complexity 1` when you want to skip folders that are mostly docs or declarative config and focus on implementation-heavy bundles.
 
 ## Repomix Options Passed Through
 
@@ -125,7 +155,7 @@ bash scripts/copilot/repomix-scc-router.sh all . \
   --split-size 10mb \
   --include-logs \
   --include-logs-count 20
-```
+````
 
 ## Ignore Behavior
 
@@ -149,11 +179,12 @@ Use this workflow when:
 
 Suggested agent flow:
 
-1. run `stats` or `plan`
-2. inspect `folder-metrics.tsv`
-3. choose the smallest useful folder bundle
-4. open only that bundle first
-5. expand to neighboring bundles only if the task crosses boundaries
+1. run `stats` or `plan` for ranked folder weight
+2. run `context-tree-analyze` when the task may need full-project coverage under a fixed token budget
+3. inspect `folder-metrics.tsv` or `tree-plan.json`
+4. choose the smallest useful folder bundle or recursive leaf context
+5. open only that bundle or leaf context first
+6. expand to neighboring bundles or follow parent/child references only if the task crosses boundaries
 
 ## Dependencies
 

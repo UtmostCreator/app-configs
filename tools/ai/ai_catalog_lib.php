@@ -30,7 +30,7 @@ function aiNormalizeGeneratedContent(string $content): string
 
 function aiReadFile(string $root, string $relativePath): string
 {
-    $content = file_get_contents(aiAbsolutePath($root, $relativePath));
+    $content = @file_get_contents(aiAbsolutePath($root, $relativePath));
 
     if ($content === false) {
         throw new RuntimeException("Unable to read {$relativePath}.");

@@ -67,6 +67,20 @@ Recommended `just` entrypoints for the router layer:
 - `just context-pack-all`
 - `just context-pack-all-since BRANCH_OR_REF`
 - `just context-plan-json`
+- `just context-clean`
+- `just context-purge`
+- `just context-tree-analyze path='.' opts='--compress'` for Repomix-aware recursive fit analysis using packed output size
+- `just context-tree-plan path='.' opts='--compress'` to write a recursive plan and manifest
+- `just context-tree-pack path='.' opts='--compress'` to generate leaf bundles plus parent reference indexes
+- `just query-usage path='.' multiplier='1' label='1x'` for read-only raw-token and weighted-usage closeout reporting
+
+Recommended prompt starters in `.github/prompts/`:
+
+- `investigate-bug`
+- `trace-regression`
+- `docs-sync`
+- `new-feature`
+- `review-code`
 
 ### 2) File-Watch Feedback Loop
 
@@ -84,6 +98,20 @@ Recommended `just` entrypoints for the router layer:
 4. Treat missing runtime managers as an explicit limitation in your summary instead of silently continuing.
 
 ### 4) Guarded Modification Path
+
+Wrapper scripts in `scripts/copilot/` are classified by the three-tier command risk taxonomy in `docs/ai/command-risk-taxonomy.md`. Tier is determined by invocation shape, not script name.
+
+| Wrapper                                                                                            | Invocation                       | Tier | Approval                     |
+| -------------------------------------------------------------------------------------------------- | -------------------------------- | ---- | ---------------------------- |
+| `ai-search.sh`, `ai-verify.sh`, `git-forensics.sh`, `fd-files.sh`, `rg-code.sh`, `preview-file.sh` | any                              | 1    | auto                         |
+| `repo-stats.sh`, `query-usage.sh`                                                                  | any                              | 1    | auto                         |
+| `ai-diff-context.sh`, `pack-context.sh`, `gh-pr-context.sh`, `repomix-context-tree.sh`             | any                              | 1†   | auto (generated-output only) |
+| `ai-edit.sh`                                                                                       | dry-run (no `APPLY=1`)           | 1    | auto                         |
+| `ai-edit.sh`                                                                                       | `APPLY=1` or `VERIFY=1`          | 2    | confirm                      |
+| `ai-rollback.sh`                                                                                   | `list`, `show`                   | 1    | auto                         |
+| `ai-rollback.sh`                                                                                   | `apply`                          | 3    | explicit approval            |
+| `repomix-scc-router.sh`                                                                            | `stats`, `plan`, `run`, `bundle` | 1    | auto                         |
+| `repomix-scc-router.sh`                                                                            | `clean`, `purge`                 | 3    | explicit approval            |
 
 1. Use `scripts/copilot/ai-edit.sh` for broad repository edits.
 2. Keep `APPLY=0` for the first pass so the script shows a dry-run candidate set.

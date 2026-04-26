@@ -3,11 +3,11 @@ set -euo pipefail
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-mkdir -p .copilot-logs
+mkdir -p "$COPILOT_LOG_DIR"
 input="$(cat)"
 
 classify_failure() {
-  jq -r '
+    jq -r '
     .toolResult as $r
     | (.toolArgs.command // "") as $cmd
     | (.toolResult.error // "") as $err
@@ -19,25 +19,25 @@ classify_failure() {
       elif ($cmd | test("validate-ai-config|validate-ai-catalog|generate-ai-catalog|phpstan|psalm|phpunit|pest|eslint|biome|tsc|semgrep|trivy|gitleaks")) then "verification-failed"
       else "unknown"
       end
-  ' <<< "$input"
+  ' <<<"$input"
 }
 
 failure_category="unknown"
-if jq -e '.toolResult.resultType? == "error" or .toolResult.isError? == true' >/dev/null 2>&1 <<< "$input"; then
-  failure_category="$(classify_failure)"
+if jq -e '.toolResult.resultType? == "error" or .toolResult.isError? == true' >/dev/null 2>&1 <<<"$input"; then
+    failure_category="$(classify_failure)"
 fi
 
 jq -c '{
-  ts: .timestamp,
+  ts: (.timestamp // (now | strftime("%Y-%m-%dT%H:%M:%SZ"))),
   tool: .toolName,
   args: .toolArgs,
   result: (.toolResult.resultType // "unknown"),
   isError: (.toolResult.isError // false),
-  durationMs: (.toolResult.durationMs // null),
+  durationMs: (.durationMs // .toolResult.durationMs // null),
   error: (.toolResult.error // null),
   failureCategory: $category
-}' --arg category "$failure_category" <<< "$input" >> .copilot-logs/tool-usage.jsonl
+}' --arg category "$failure_category" <<<"$input" >>"$COPILOT_LOG_DIR/tool-usage.jsonl"
 
-if jq -e '.toolResult.resultType? == "error" or .toolResult.isError? == true' >/dev/null 2>&1 <<< "$input"; then
-  log_json "tool.failure" "$(jq -c --arg category "$failure_category" '{tool: .toolName, args: .toolArgs, result: (.toolResult.resultType // "unknown"), error: (.toolResult.error // null), failureCategory: $category}' <<< "$input")" || true
+if jq -e '.toolResult.resultType? == "error" or .toolResult.isError? == true' >/dev/null 2>&1 <<<"$input"; then
+    log_json "tool.failure" "$(jq -c --arg category "$failure_category" '{tool: .toolName, args: .toolArgs, result: (.toolResult.resultType // "unknown"), error: (.toolResult.error // null), failureCategory: $category}' <<<"$input")" || true
 fi

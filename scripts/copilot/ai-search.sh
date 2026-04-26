@@ -5,7 +5,7 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 usage() {
-  cat <<'EOF'
+    cat <<'EOF'
 Usage:
   ai-search.sh MODE QUERY [root]
 
@@ -22,25 +22,31 @@ mode="${1:-}"
 query="${2:-}"
 root="${3:-.}"
 
-[[ -n "$mode" && -n "$query" ]] || { usage; exit 2; }
+[[ -n "$mode" && -n "$query" ]] || {
+    usage
+    exit 2
+}
 
 case "$mode" in
-  text)
+text)
     "$(dirname "${BASH_SOURCE[0]}")/rg-code.sh" "$query" "$root"
     ;;
-  files)
+files)
     "$(dirname "${BASH_SOURCE[0]}")/fd-files.sh" "$query" "$root"
     ;;
-  struct)
+struct)
     require_bins ast-grep
     lang="${AI_LANG:-php}"
     ast-grep run --lang "$lang" --pattern "$query" "$root"
     ;;
-  tracked)
+tracked)
     "$(dirname "${BASH_SOURCE[0]}")/rg-code.sh" "$query" "$root" --mode tracked
     ;;
-  all)
+all)
     "$(dirname "${BASH_SOURCE[0]}")/rg-code.sh" "$query" "$root" --mode all
     ;;
-  *) usage; die "unknown mode: $mode" ;;
+*)
+    usage
+    die "unknown mode: $mode"
+    ;;
 esac

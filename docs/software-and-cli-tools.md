@@ -55,6 +55,12 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 - **[direnv](https://direnv.net/)** - auto-load per-directory environment variables
 - **[semgrep](https://semgrep.dev/)** - static analysis and security scanning
 - **[difftastic](https://github.com/Wilfred/difftastic)** - syntax-aware structural diffing for review
+- **[shellcheck](https://github.com/koalaman/shellcheck)** - shell linting for repo scripts and hooks
+- **[shfmt](https://github.com/mvdan/sh)** - shell formatting check for tracked scripts
+- **[actionlint](https://github.com/rhysd/actionlint)** - GitHub Actions workflow validation
+- **[lychee](https://github.com/lycheeverse/lychee)** - Markdown and text link checking for repo docs
+- **[bats-core](https://github.com/bats-core/bats-core)** - shell test runner used by `tests/shell/`
+- **[yq](https://github.com/mikefarah/yq)** - YAML querying for Copilot command policy loading
 
 ## Editors And Git
 
@@ -175,6 +181,7 @@ brew install copilot-cli
 brew install just
 brew install lazygit
 brew install lnav
+brew install lychee
 brew install mise
 brew install mysql-client
 brew install neovim
@@ -182,15 +189,20 @@ brew install pnpm
 brew install ripgrep
 brew install ripgrep-all
 brew install semgrep
+brew install shellcheck
+brew install shfmt
 brew install starship
 brew install stripe/stripe-cli/stripe
 brew install tldr
 brew install tmux
 brew install watchexec
 brew install yazi
+brew install yq
 brew install zoxide
 brew install zsh-autosuggestions
 brew install zsh-syntax-highlighting
+brew install bats-core
+brew install actionlint
 ```
 
 > `mysql-client` is often keg-only and may require adding Homebrew's bin path to your shell config.

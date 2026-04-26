@@ -51,14 +51,57 @@ allow:
   - id: shfmt-diff
     reason: shfmt dry-run
     pattern: '^shfmt\s+-d\b'
-  - id: approved-agent-scripts
-    reason: Approved scripts in scripts/copilot
-    pattern: '^(\./)?scripts/copilot/(ai-search|ai-edit|ai-verify|ai-diff-context|ai-rollback|repomix-scc-router|pack-context|git-forensics|preview-file|watch-loop|gh-pr-context|fd-files|rg-code)\.sh\b'
+  - id: actionlint
+    reason: actionlint workflow lint
+    pattern: '^actionlint\b'
+  - id: lychee
+    reason: lychee offline link check
+    pattern: '^lychee\b'
+  # Tier 1 — read-only wrapper scripts (auto-approve)
+  # See docs/ai/command-risk-taxonomy.md for the full invocation matrix.
+  - id: tier1-read-only-scripts
+    reason: "Tier 1: read-only copilot scripts (no source mutation)"
+    pattern: '^(\./)?scripts/copilot/(ai-search|ai-verify|preview-file|fd-files|rg-code|git-forensics|repo-stats|query-usage)\.sh\b'
+  # Tier 1† — read-only-adjacent scripts (write only to generated directories)
+  - id: tier1-generated-output-scripts
+    reason: "Tier 1\u2020: generated-output writes to .copilot-logs/ or .repomix-context/ only"
+    pattern: '^(\./)?scripts/copilot/(ai-diff-context|pack-context|gh-pr-context|repomix-context-tree)\.sh\b'
+  # Tier 1 — ai-edit dry-run only (no APPLY or VERIFY flag)
+  - id: tier1-ai-edit-dryrun
+    reason: "Tier 1: ai-edit dry-run (no APPLY=1 or VERIFY=1)"
+    pattern: '^(\./)?scripts/copilot/ai-edit\.sh\b(?!.*\b(APPLY|VERIFY)=1)'
+  # Tier 1 — ai-rollback read-only subcommands
+  - id: tier1-ai-rollback-read
+    reason: "Tier 1: ai-rollback list or show \u2014 read-only inspection"
+    pattern: '^(\./)?scripts/copilot/ai-rollback\.sh\s+(list|show)\b'
+  # Tier 1 — repomix-scc-router read-only subcommands
+  - id: tier1-repomix-read
+    reason: "Tier 1: repomix-scc-router stats, plan, run, or bundle \u2014 read-only or generated-output"
+    pattern: '^(\./)?scripts/copilot/repomix-scc-router\.sh\s+(stats|plan|run|bundle)\b'
 
 confirm:
+  # Tier 2 — modification (confirm before execution)
+  # See docs/ai/command-risk-taxonomy.md for the full invocation matrix.
   - id: git-commit
-    reason: Git commit requires confirmation
+    reason: "Tier 2: git commit modifies history \u2014 confirm required"
     pattern: '^git\s+commit\b'
+  - id: git-stash-push
+    reason: "Tier 2: git stash push modifies working state \u2014 confirm required"
+    pattern: '^git\s+stash\s+(push|drop|pop)\b'
   - id: ai-edit-apply
-    reason: ai-edit apply requires confirmation
-    pattern: '^APPLY=1\s+scripts/copilot/ai-edit\.sh\b'
+    reason: "Tier 2: ai-edit apply mode mutates source files \u2014 confirm required"
+    pattern: '^(APPLY=1|VERIFY=1).*scripts/copilot/ai-edit\.sh\b'
+  - id: ai-edit-apply-env-prefix
+    reason: "Tier 2: ai-edit with APPLY or VERIFY env vars \u2014 confirm required"
+    pattern: '^(\./)?scripts/copilot/ai-edit\.sh\b.*\b(APPLY|VERIFY)=1'
+  # Tier 3 — deletion/recovery (deny by default; listed here as confirm so the hook can
+  # surface an explicit approval prompt rather than a silent deny)
+  - id: ai-rollback-apply
+    reason: "Tier 3: ai-rollback apply is a recovery mutation \u2014 explicit approval required"
+    pattern: '^(\./)?scripts/copilot/ai-rollback\.sh\s+apply\b'
+  - id: repomix-clean-purge
+    reason: "Tier 3: repomix-scc-router clean or purge deletes generated artifacts \u2014 explicit approval required"
+    pattern: '^(\./)?scripts/copilot/repomix-scc-router\.sh\s+(clean|purge)\b'
+  - id: just-context-clean-purge
+    reason: "Tier 3: just context-clean or context-purge deletes generated artifacts \u2014 explicit approval required"
+    pattern: '^just\s+context-(clean|purge)\b'

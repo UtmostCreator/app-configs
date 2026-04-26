@@ -36,6 +36,15 @@
 - Preferred narrow-first verification pattern: `validate the changed config or instruction directly, then run a broader smoke check only if the slice crosses tools`
 - Failure policy: `log command failures, corrected usage, and retry decisions using docs/ai/failure-handling.md`
 
+## Query Closeout
+
+- For context-heavy repo investigation, context-packing, or folder-scoped analysis tasks, end with the read-only usage summary from `scripts/copilot/query-usage.sh` or `just query-usage` against the actual scope you inspected.
+- Report both `raw estimated tokens` (for context-fit) and `weighted usage` (for Copilot quota planning) in the closeout when the task materially depends on prompt size.
+- Treat `raw estimated tokens ~= bytes / 4` as a planning heuristic, not an exact provider token count.
+- Treat `weighted usage = raw estimated tokens × model multiplier` as a Copilot planning heuristic, not an official runtime billing formula.
+- Use the active model's documented multiplier when known; otherwise say `unknown` rather than guessing.
+- This closeout step is approval-free because `query-usage.sh` is read-only and only analyzes repo-local content.
+
 ## Review Priorities
 
 - repo truth over borrowed patterns

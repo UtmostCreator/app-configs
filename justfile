@@ -26,20 +26,55 @@ ai-check:
 context-stats path='.' depth='1':
   @bash scripts/copilot/repomix-scc-router.sh stats {{path}} --depth {{depth}}
 
-context-plan path='.' depth='1' top='25' min_code='300' min_files='2':
-  @bash scripts/copilot/repomix-scc-router.sh plan {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}}
+# Print per-file and per-directory line/size metrics. Stdout only, no files written.
+repo-info path='.' large_file='500' large_dir='5000':
+  @bash scripts/copilot/repo-stats.sh {{path}} --large-file {{large_file}} --large-dir {{large_dir}}
 
-context-plan-since ref path='.' depth='1' top='25' min_code='300' min_files='2' churn_count='50':
-  @bash scripts/copilot/repomix-scc-router.sh plan {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}} --changed-since {{ref}} --churn-count {{churn_count}}
+# Same as repo-info but scoped to a file extension (e.g. php,blade.php)
+repo-info-ext path='.' ext='php':
+  @bash scripts/copilot/repo-stats.sh {{path}} --ext {{ext}}
+
+# Emit flat per-file JSON for downstream processing
+repo-info-json path='.':
+  @bash scripts/copilot/repo-stats.sh {{path}} --json
+
+# Read-only summary for closeout reporting after context-heavy queries.
+query-usage path='.' multiplier='1' label='1x' reserved='4000':
+  @bash scripts/copilot/query-usage.sh {{path}} --multiplier {{multiplier}} --multiplier-label {{label}} --reserved-output {{reserved}}
+
+# Repomix-aware recursive context planner. Use opts to pass --compress, --context-window, etc.
+context-tree-analyze path='.' opts='':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh analyze "$path" $opts'
+
+context-tree-plan path='.' opts='':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh plan "$path" $opts'
+
+context-tree-pack path='.' opts='':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh pack "$path" $opts'
+
+context-tree-all path='.' opts='':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh all "$path" $opts'
+
+context-plan path='.' depth='1' top='25' min_code='300' min_files='2' min_complexity='0':
+  @bash scripts/copilot/repomix-scc-router.sh plan {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}} --min-complexity {{min_complexity}}
+
+context-plan-since ref path='.' depth='1' top='25' min_code='300' min_files='2' min_complexity='0' churn_count='50':
+  @bash scripts/copilot/repomix-scc-router.sh plan {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}} --min-complexity {{min_complexity}} --changed-since {{ref}} --churn-count {{churn_count}}
 
 context-pack:
   @bash scripts/copilot/repomix-scc-router.sh pack .
 
-context-pack-all path='.' depth='1' top='25' min_code='300' min_files='2':
-  @bash scripts/copilot/repomix-scc-router.sh all {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}}
+context-pack-all path='.' depth='1' top='25' min_code='300' min_files='2' min_complexity='0':
+  @bash scripts/copilot/repomix-scc-router.sh all {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}} --min-complexity {{min_complexity}}
 
-context-pack-all-since ref path='.' depth='1' top='25' min_code='300' min_files='2' churn_count='50':
-  @bash scripts/copilot/repomix-scc-router.sh all {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}} --changed-since {{ref}} --churn-count {{churn_count}}
+context-pack-all-since ref path='.' depth='1' top='25' min_code='300' min_files='2' min_complexity='0' churn_count='50':
+  @bash scripts/copilot/repomix-scc-router.sh all {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}} --min-complexity {{min_complexity}} --changed-since {{ref}} --churn-count {{churn_count}}
+
+context-clean path='.':
+  @bash scripts/copilot/repomix-scc-router.sh clean {{path}}
+
+context-purge path='.':
+  @bash scripts/copilot/repomix-scc-router.sh purge {{path}}
 
 context-plan-json path='.':
   @bash -lc 'test -f {{path}}/.repomix-context/bundle-plan.json && cat {{path}}/.repomix-context/bundle-plan.json || { echo "bundle-plan.json not found; run just context-plan or context-pack-all first" >&2; exit 1; }'
@@ -121,3 +156,23 @@ secret-scan-gitleaks:
 
 secret-scan-trufflehog:
   @trufflehog git file://. --since-commit HEAD --results=verified,unknown --fail
+
+health-check mode='full':
+  @bash scripts/repo-health-check.sh {{mode}}
+
+lint:
+  @shellcheck -x $(git ls-files '*.sh')
+  @shfmt -d $(git ls-files '*.sh')
+  @actionlint
+  @bash scripts/run-link-check.sh
+
+test-php:
+  @composer install --no-interaction --prefer-dist
+  @vendor/bin/phpunit --colors=never
+
+test-shell:
+  @LC_ALL=C LANG=C TZ=UTC bats tests/shell/
+
+test: test-php test-shell
+
+ci: ai-check lint test

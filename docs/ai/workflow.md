@@ -51,6 +51,18 @@ When preview environments are used, record environment identifier, TTL posture, 
 
 Safe repo-local read-only commands are approval-free by default. Stop and ask before a supposedly read-only step touches secrets, privileged locations, remote mutation, billing, auth, or other side-effecting surfaces.
 
+## Command Risk Tiers
+
+Task risk labels (low/medium/high) describe overall task scope and blast radius. Command risk tiers describe the reversibility of a single command invocation. See `docs/ai/command-risk-taxonomy.md` for the canonical classification matrix and entrypoint table.
+
+| Tier | Label               | Default approval         | Examples                                            |
+| ---- | ------------------- | ------------------------ | --------------------------------------------------- |
+| 1    | read-only           | auto-approve             | `git log`, `rg`, read-only wrapper scripts          |
+| 2    | modification        | confirm                  | `git commit`, `ai-edit apply`, source file writes   |
+| 3    | deletion / recovery | deny / explicit approval | `rm`, `purge`, `ai-rollback apply`, destructive git |
+
+For mixed-risk wrappers (ai-edit, ai-rollback, repomix-scc-router), tier is determined by the subcommand or flag, not the script name. See `docs/ai/command-risk-taxonomy.md` for the full invocation matrix.
+
 ## Agentic Work
 
 When the task involves agents, RAG, tool loops, or multi-stage handoffs:

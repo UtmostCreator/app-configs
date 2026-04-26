@@ -27,6 +27,7 @@ vendor/
 dist/
 build/
 coverage/
+.phpunit.result.cache
 
 # Local env and secrets
 .env

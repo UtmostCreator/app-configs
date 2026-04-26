@@ -11,25 +11,25 @@ mkdir -p "$COPILOT_LOG_DIR"
 watch_log="$COPILOT_LOG_DIR/watch-loop.jsonl"
 
 log_watch_event() {
-  local event="$1"
-  jq -cn --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg event "$event" --arg command "$command_to_run" --arg extensions "$extensions" --arg debounce "$debounce_ms" '{ts:$ts, event:$event, command:$command, extensions:$extensions, debounceMs:($debounce|tonumber)}' >> "$watch_log"
+    local event="$1"
+    jq -cn --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg event "$event" --arg command "$command_to_run" --arg extensions "$extensions" --arg debounce "$debounce_ms" '{ts:$ts, event:$event, command:$command, extensions:$extensions, debounceMs:($debounce|tonumber)}' >>"$watch_log"
 }
 
 if command -v watchexec >/dev/null 2>&1; then
-  log_watch_event "watch.start.watchexec"
-  watchexec --debounce "$debounce_ms" -e "$extensions" -- bash -lc "$command_to_run"
-  exit 0
+    log_watch_event "watch.start.watchexec"
+    watchexec --debounce "$debounce_ms" -e "$extensions" -- bash -lc "$command_to_run"
+    exit 0
 fi
 
 if command -v entr >/dev/null 2>&1; then
-  log_watch_event "watch.start.entr"
-  rg --files \
-    -g '!vendor' \
-    -g '!node_modules' \
-    -g '!dist' \
-    -g '!.git' \
-    | entr -r bash -lc "$command_to_run"
-  exit 0
+    log_watch_event "watch.start.entr"
+    rg --files \
+        -g '!vendor' \
+        -g '!node_modules' \
+        -g '!dist' \
+        -g '!.git' |
+        entr -r bash -lc "$command_to_run"
+    exit 0
 fi
 
 echo "No file watcher found. Install watchexec (preferred) or entr." >&2

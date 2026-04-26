@@ -47,6 +47,50 @@ php tools/ai/export-ai-universal-rules.php --check
 
 Run only the checks that match your change unless you touched shared generation or release metadata.
 
+## Local Development and Testing
+
+Run all checks end-to-end:
+
+```bash
+just ci
+bash scripts/repo-health-check.sh
+```
+
+Run individual layers:
+
+```bash
+just ai-check      # PHP AI validators (config, catalog, generated-output staleness)
+just health-check  # doctor + ai-check + lint + test-php + test-shell
+just lint          # shellcheck + shfmt + actionlint + lychee (offline docs link check)
+just test-php      # PHPUnit — tools/ai/ai_catalog_lib.php + CLI entrypoint contracts
+just test-shell    # bats — pre-tool-use.sh, post-tool-use.sh, doctor.sh
+just test          # test-php + test-shell
+```
+
+The pre-commit hook now runs `bash scripts/repo-health-check.sh staged` whenever staged changes exist, so new changes go through the full project health matrix before commit.
+
+### Required in CI (must be installed for lint/test-shell to pass)
+
+| Tool         | Install                   |
+| ------------ | ------------------------- |
+| `shellcheck` | `brew install shellcheck` |
+| `shfmt`      | `brew install shfmt`      |
+| `actionlint` | `brew install actionlint` |
+| `lychee`     | `brew install lychee`     |
+| `bats`       | `brew install bats-core`  |
+| `jq`         | `brew install jq`         |
+| `yq`         | `brew install yq`         |
+
+In CI these tools are installed at pinned versions (see `.github/workflows/validate-ai-surface.yml`). For macOS local use, `brew install` each tool + `brew pin` it to keep versions stable.
+
+### Optional locally (warnings only)
+
+`bats`, `actionlint`, `shellcheck`, `shfmt`, `lychee`, `jq`, and `yq` — `just doctor` warns if absent but does not fail. The full repo health check does require them.
+
+### Test fixtures
+
+All test fixtures live under `tests/fixtures/`. They must be stack-agnostic: no Laravel, Vue, product-specific, or external-network references. Shell tests must not touch the live working tree — use isolated temp directories.
+
 ## Generated Files
 
 These files are generated and should not be edited by hand:

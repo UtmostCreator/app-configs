@@ -51,9 +51,9 @@ Prefer these tools in order:
 Execution rules:
 
 - Prefer read-only commands first.
-- Safe repo-local read-only commands are approval-free by default.
-- Prefer wrappers in `scripts/copilot/` over ad hoc pipelines.
-- For mutating or high-risk tool calls, follow `docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md` before execution.
+- Safe repo-local read-only commands are approval-free by default (tier 1). Commands that mutate source files or git history require confirmation (tier 2). Deletion, recovery, and destructive operations are denied by default (tier 3). See `docs/ai/command-risk-taxonomy.md` for the canonical classification matrix.
+- Prefer wrappers in `scripts/copilot/` over ad hoc pipelines. Mixed-risk wrappers (ai-edit, ai-rollback, repomix-scc-router) are classified by invocation shape, not script name.
+- For tier 2 or tier 3 tool calls, follow `docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md` before execution.
 - For medium or high-risk agentic tasks, include traceable evidence fields (`trace_id`, `session_id`, `task_id`, tool evidence, and failure category) in the task output when available.
 - For behavior-changing agent workflows, include regression evidence (golden-task checks, replay notes, and human-review status when required).
 - For preview-environment workflows, include environment identifier, TTL posture, and cleanup status in task evidence.

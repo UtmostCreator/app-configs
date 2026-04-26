@@ -20,8 +20,14 @@ The repo also includes optional git commit hooks that both Husky and Lefthook ca
 
 ## Current Guard Scope
 
-- destructive git commands such as `git reset --hard` and `git push --force`
-- destructive shell deletion commands such as `rm -rf`, `del /s`, and `rmdir /s`
+The bash hook (`scripts/copilot/pre-tool-use.sh`) enforces the three-tier command risk taxonomy from `docs/ai/command-risk-taxonomy.md`:
+
+- **Tier 1 (read-only)** — auto-approved: pure read CLI tools, git history/diff/blame, scan-only security tools, read-only copilot wrapper scripts, and read-only-adjacent generated-output wrappers
+- **Tier 2 (modification)** — confirmation required: `git commit`, `git stash push/pop/drop`, `ai-edit` apply mode
+- **Tier 3 (deletion/recovery)** — denied or explicit approval required: `rm`, destructive git (`git reset --hard`, `git push --force`), `ai-rollback apply`, `repomix-scc-router clean/purge`, `just context-clean/purge`
+
+Additionally blocked regardless of tier:
+
 - obvious secret-adjacent file targeting such as `.env`, `credentials`, `secret`, `token`, or `id_rsa`
 - staged merge-conflict markers before commit
 - staged PHP syntax errors before commit when `php` is available
@@ -36,7 +42,7 @@ The repo also includes optional git commit hooks that both Husky and Lefthook ca
 
 ## Limitations
 
-- this example is PowerShell-first for the current Windows environment
+- the bash hook (`pre-tool-use.sh`) is the primary enforcement path on macOS/Linux; the PowerShell guard (`tool-guardian.ps1`) is an optional complementary surface
 - some runtimes or surfaces may not load repo hooks automatically
 - the hook is pattern-based and should be treated as a safety net, not a complete security system
 - secret scanning remains best-effort locally; CI or broader audits should still exist for higher assurance

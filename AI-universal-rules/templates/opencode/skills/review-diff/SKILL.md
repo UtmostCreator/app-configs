@@ -7,6 +7,7 @@ compatibility: opencode
 ## What I Do
 
 I review the current change set from the diff first and only expand into unchanged files when needed to verify a concern.
+I require duplicate-logic screening evidence before a pass verdict and flag roughly `>=75%` overlap as reuse or replacement candidates.
 
 ## When To Use Me
 

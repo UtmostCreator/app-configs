@@ -140,7 +140,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 ### AI workflow use
 
 - Start with `AGENTS.md`
-- For a Copilot-first onboarding and minimal install map, read `docs/ai/copilot-getting-started.md`
+- For a Copilot-first onboarding and repo-copy install map, read `docs/ai/copilot-cli-repo-integration.md`
 - Read `docs/ai/project-context.md`
 - Browse `docs/ai/catalog.md` when you need the fastest path to relevant assets
 - Use `docs/ai/agents.md` when you need to know which live or package agent fits the job
@@ -151,7 +151,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - Only then use runtime-specific adapter files such as `.github/copilot-instructions.md`
 - For GitHub Copilot, install both `github.copilot` and `github.copilot-chat`, then optionally add Copilot CLI for terminal-heavy work
 - For tool-routed Copilot workflows, follow `docs/ai/copilot-tooling.md` (instructions -> wrappers -> hooks -> skills/prompts -> MCP)
-- For ranked per-folder AI context bundles, follow `docs/ai/context-packing.md`
+- For the default tree-context workflow and legacy ranked-folder compatibility, follow `docs/ai/context-packing.md`
 - Use `scripts/copilot/ai-diff-context.sh` when you need narrow context for changed files, PR files, recent edits, or touched areas
 - Use `scripts/copilot/ai-search.sh` when the agent should route all search through one stable entrypoint
 - For PHP guidance, search local examples in this order: `tools/design-patterns/` -> `tools/design-principles/` -> `tools/php-built-ins/`
@@ -170,22 +170,21 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 
 ### GitHub Copilot install and read order
 
-- Minimum folders and files to copy into another repo: `.github/copilot-instructions.md`, `docs/ai/project-context.md`, `docs/ai/workflow.md`, `docs/ai/agents.md`, `docs/ai/failure-handling.md`, `docs/ai/capabilities/project-context/`, `docs/ai/capabilities/verify-change/`, `docs/ai/capabilities/review-diff/`
+- Minimum folders and files to copy into another repo: `.github/copilot-instructions.md`, `.github/hooks/tool-policy.json`, `docs/ai/project-context.md`, `docs/ai/workflow.md`, `docs/ai/agents.md`, `docs/ai/failure-handling.md`, `docs/ai/copilot-cli-repo-integration.md`, `docs/ai/capabilities/project-context/`, `docs/ai/capabilities/verify-change/`, `docs/ai/capabilities/review-diff/`, `scripts/copilot/`
 - Optional Copilot add-ons after baseline works: `.github/instructions/`, `.github/agents/`, `.github/prompts/`, `.github/skills/`, `.github/hooks/`, `scripts/copilot/`, `docs/ai/copilot-tooling.md`
 - Recommended read order in this repo: `README.md` -> `.github/copilot-instructions.md` -> `docs/ai/project-context.md` -> `docs/ai/workflow.md` -> `docs/ai/agents.md` -> `docs/ai/failure-handling.md` -> relevant `docs/ai/capabilities/*`
 - Use `docs/ai/catalog.md` as the live generated inventory when you need the full list of agents, instructions, hooks, prompts, scripts, and canonical docs
 
 ### Context packing
 
-- `just context-stats` - analyze folder and file metrics with `scc`
-- `just context-plan` - rank folders and create a bundle plan
-- `just context-plan-since BRANCH_OR_REF` - create a churn-aware bundle plan limited to files changed since a git ref
-- `just context-since BRANCH_OR_REF` - plan or pack a narrower changed-files context slice through `ai-diff-context.sh`
-- `just context-pack` - pack the current planned bundles with `repomix`
-- `just context-pack-all` - run analysis, planning, and packing in one step
-- `just context-pack-all-since BRANCH_OR_REF` - run changed-since stats, plan, and packing in one step
-- `just context-plan-json` - print the current `bundle-plan.json` for agent-friendly inspection
-- `scripts/copilot/repomix-scc-router.sh` writes both `bundle-plan.tsv` and `bundle-plan.json` under `.repomix-context/`
+- `just context-analyze` - inspect how the repo splits under the default tree-context budget
+- `just context-stats` - alias for the default tree-context analysis step
+- `just context-plan` - write the default tree-context plan and manifest
+- `just context-pack` - pack the default tree-context leaf bundles and child indexes
+- `just context-pack-all` - run the full default tree-context build in one step
+- `just context-plan-json` - print the current `tree-plan.json` for agent-friendly inspection
+- `scripts/copilot/repomix-context-tree.sh` writes the default root index, child indexes, and leaf bundles under `.repomix-context/tree-context/`
+- `scripts/copilot/repomix-scc-router.sh` remains available when you explicitly want ranked-folder router output under `.repomix-context/`
 
 ## Important Notes
 

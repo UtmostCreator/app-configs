@@ -23,33 +23,40 @@ evaluate_policy_yaml() {
 
     local encoded rule pattern reason
 
+    policy_match() {
+        local pattern="$1"
+        PATTERN="$pattern" perl -e 'my $pattern = $ENV{PATTERN}; my $input = do { local $/; <STDIN> }; exit(($input =~ /$pattern/m) ? 0 : 1);' <<<"$compact"
+    }
+
     while IFS= read -r encoded; do
         [[ -n "$encoded" ]] || continue
         rule="$(printf '%s' "$encoded" | base64 -d)"
         pattern="$(printf '%s' "$rule" | yq -r '.pattern')"
         reason="$(printf '%s' "$rule" | yq -r '.reason')"
-        if grep -Eq "$pattern" <<<"$compact"; then
+        if policy_match "$pattern"; then
             deny "$reason"
             exit 0
         fi
     done < <(yq -r '.deny[]? | @base64' "$POLICY_FILE" 2>/dev/null || true)
 
-    while IFS= read -r encoded; do
-        [[ -n "$encoded" ]] || continue
-        rule="$(printf '%s' "$encoded" | base64 -d)"
-        pattern="$(printf '%s' "$rule" | yq -r '.pattern')"
-        if grep -Eq "$pattern" <<<"$compact"; then
-            allow
-            exit 0
-        fi
-    done < <(yq -r '.allow[]? | @base64' "$POLICY_FILE" 2>/dev/null || true)
+    if [[ "${COPILOT_STRICT_ALLOWLIST:-0}" != '1' ]]; then
+        while IFS= read -r encoded; do
+            [[ -n "$encoded" ]] || continue
+            rule="$(printf '%s' "$encoded" | base64 -d)"
+            pattern="$(printf '%s' "$rule" | yq -r '.pattern')"
+            if policy_match "$pattern"; then
+                allow
+                exit 0
+            fi
+        done < <(yq -r '.allow[]? | @base64' "$POLICY_FILE" 2>/dev/null || true)
+    fi
 
     while IFS= read -r encoded; do
         [[ -n "$encoded" ]] || continue
         rule="$(printf '%s' "$encoded" | base64 -d)"
         pattern="$(printf '%s' "$rule" | yq -r '.pattern')"
         reason="$(printf '%s' "$rule" | yq -r '.reason')"
-        if grep -Eq "$pattern" <<<"$compact"; then
+        if policy_match "$pattern"; then
             jq -cn --arg reason "$reason" '{permissionDecision:"ask", permissionDecisionReason:$reason}'
             exit 0
         fi
@@ -64,6 +71,7 @@ fi
 
 command="$(jq -r '.command // empty' <<<"$tool_args_raw")"
 compact="$(tr -s '[:space:]' ' ' <<<"$command" | sed 's/^ //; s/ $//')"
+strict_allowlist="${COPILOT_STRICT_ALLOWLIST:-0}"
 
 evaluate_policy_yaml "$compact" || true
 
@@ -97,7 +105,9 @@ if grep -Eq '(curl|wget|nc|ncat|netcat)[[:space:]].*(-d|--data|--upload-file|--d
     exit 0
 fi
 
-if grep -Eq '(cat|bat|less|head|tail)[[:space:]].*\.env(?!\.example)' <<<"$compact"; then
+if grep -Eq '(^|[[:space:]])(cat|bat|less|head|tail)([[:space:]]|$)' <<<"$compact" \
+    && grep -Eq '(^|[[:space:]])[^[:space:]]*\.env([^[:space:]]*)?([[:space:]]|$)' <<<"$compact" \
+    && ! grep -Eq '(^|[[:space:]])[^[:space:]]*\.env\.example([[:space:]]|$)' <<<"$compact"; then
     deny 'direct .env secret extraction blocked by repo policy'
     exit 0
 fi
@@ -117,7 +127,8 @@ if grep -Eq '^gh[[:space:]]+(pr[[:space:]]+(view|list|checks|diff)|issue[[:space
     exit 0
 fi
 
-if grep -Eq '^ast-grep[[:space:]]+run\b(?!.*--(rewrite|update-all|U)\b)' <<<"$compact"; then
+if grep -Eq '^ast-grep[[:space:]]+run([[:space:]]|$)' <<<"$compact" \
+    && ! grep -Eq '(^|[[:space:]])--(rewrite|update-all|U)([[:space:]]|$)' <<<"$compact"; then
     allow
     exit 0
 fi
@@ -190,6 +201,13 @@ if grep -Eq '^(\./)?scripts/copilot/repomix-scc-router\.sh[[:space:]]+(clean|pur
     exit 0
 fi
 
+# Tier 3: repomix-context-tree clean or purge
+if grep -Eq '^(\./)?scripts/copilot/repomix-context-tree\.sh[[:space:]]+(clean|purge)\b' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 3: repomix-context-tree clean/purge deletes generated artifacts — explicit approval required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
 # Tier 3: just context-clean or context-purge
 if grep -Eq '^just[[:space:]]+context-(clean|purge)\b' <<<"$compact"; then
     jq -cn --arg reason 'Tier 3: just context-clean/purge deletes generated artifacts — explicit approval required' \
@@ -228,5 +246,24 @@ if grep -Eq '^(\./)?scripts/copilot/repomix-scc-router\.sh[[:space:]]+(stats|pla
 fi
 
 # watch-loop: tier is inherited from the delegated command; fall through to other rules
+
+if [[ "$strict_allowlist" == '1' ]]; then
+    if grep -Eq '(^|[^|])[;]|&&|\|\||(^|[^>])>([^>]|$)|`|\$\(|(^|[[:space:]])tee([[:space:]]|$)' <<<"$compact"; then
+        deny 'strict allowlist mode blocks shell metacharacters and tee to prevent safe-prefix bypasses'
+        exit 0
+    fi
+
+    if grep -Eq '^(rg|fd|fzf|bat|jq|yq|ast-grep|semgrep|delta|eza|ls|wc|cut|sort|uniq|tr|stat|file|du|tree|pwd|whoami|id|uname|date|env|printenv|echo|printf)([[:space:]]|$)' <<<"$compact" \
+        || grep -Eq '^git([[:space:]]+--no-pager)?[[:space:]]+(grep|log|blame|show|diff|status|rev-parse|symbolic-ref|describe|ls-files|range-diff)([[:space:]]|$)' <<<"$compact" \
+        || grep -Eq '^git([[:space:]]+--no-pager)?[[:space:]]+worktree[[:space:]]+list([[:space:]]|$)' <<<"$compact" \
+        || grep -Eq '^gh[[:space:]]+(issue[[:space:]]+(view|list)|pr[[:space:]]+(view|list|checks)|repo[[:space:]]+view|search[[:space:]]+(issues|prs)|workflow[[:space:]]+view|run[[:space:]]+(view|list))([[:space:]]|$)' <<<"$compact" \
+        || grep -Eq '^(\./)?scripts/copilot/(rg-code|fd-files|preview-file|git-forensics|gh-pr-context|ast-search|ai-search|ai-verify|repo-stats|query-usage|pack-context|repomix-context-tree|repomix-scc-router)\.sh([[:space:]]|$)' <<<"$compact"; then
+        allow
+        exit 0
+    fi
+
+    deny 'strict allowlist mode denies commands outside the explicit read-only and approved-script list'
+    exit 0
+fi
 
 exit 0

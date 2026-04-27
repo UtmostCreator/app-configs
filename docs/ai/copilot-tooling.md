@@ -9,8 +9,11 @@ This file defines how the repository wires Copilot tooling without moving canoni
 3. Add path-level refinements from `.github/instructions/*.instructions.md`.
 4. Install wrapper scripts in `scripts/copilot/` and keep them executable.
 5. Enable hooks with `.github/hooks/tool-policy.json` for guardrails and audit logging.
-6. Add task workflows through `.github/skills/` and `.github/prompts/`.
-7. Use GitHub MCP or `gh` for PR, issue, and workflow context.
+6. Export `COPILOT_STRICT_ALLOWLIST=1` in the shell that launches Copilot CLI so raw search and preview commands are forced through the repo wrappers.
+7. Add task workflows through `.github/skills/` and `.github/prompts/`.
+8. Use GitHub MCP or `gh` for PR, issue, and workflow context.
+
+For a repo-copy checklist, shell setup, and the minimum files to bring into another project, use `docs/ai/copilot-cli-repo-integration.md`.
 
 ## Responsibility Split
 
@@ -48,30 +51,40 @@ Use this AI-native workflow stack when the task needs packaging, looped verifica
 2. `scripts/copilot/pack-context.sh repomix ...` for full-repo context packaging.
 3. `scripts/copilot/pack-context.sh files-to-prompt ...` for focused file-list packaging.
 4. `scripts/copilot/pack-context.sh code2prompt ...` for template-driven provider-specific context files.
-5. `tokei` before packaging when you need language/scope metrics in the prompt preface.
-6. `scripts/copilot/repomix-scc-router.sh` when you need ranked per-folder bundle planning before packing.
-7. `scripts/copilot/ai-diff-context.sh` when you need PR-local, unstaged, recent, or touched-file context instead of a broad repo pack.
+5. `scripts/copilot/repomix-context-tree.sh` when you want a root index plus child indexes and only want to load the smallest relevant bundle first.
+6. `tokei` before packaging when you need language/scope metrics in the prompt preface.
+7. `scripts/copilot/repomix-scc-router.sh` only when you specifically want legacy ranked per-folder bundles instead of the tree-context workflow.
+8. `scripts/copilot/ai-diff-context.sh` when you need PR-local, unstaged, recent, or touched-file context instead of a broad repo pack.
 
-Use `docs/ai/context-packing.md` for the per-folder `scc` + `repomix` workflow and output files.
+Use `docs/ai/context-packing.md` for the tree-context workflow, root index outputs, and legacy router compatibility.
 
-Router outputs now include:
+Tree-context outputs now include:
+
+- `.repomix-context/tree-context/index.md` for the human-readable root entrypoint
+- `.repomix-context/tree-context/tree-manifest.json` for machine-readable budget and node metadata
+- `.repomix-context/tree-context/indexes/` for split-directory routing
+- `.repomix-context/tree-context/bundles/` for leaf Repomix artifacts
+
+Legacy router outputs include:
 
 - `bundle-plan.tsv` for shell-friendly review
 - `bundle-plan.json` for agent-friendly plan consumption
 - optional changed-since filtering and churn-aware scoring when the repository has git history available
 
-Recommended `just` entrypoints for the router layer:
+Recommended `just` entrypoints for the tree layer:
 
+- `just context-analyze`
+- `just context-stats`
 - `just context-plan`
-- `just context-plan-since BRANCH_OR_REF`
+- `just context-pack`
 - `just context-pack-all`
-- `just context-pack-all-since BRANCH_OR_REF`
-- `just context-plan-json`
 - `just context-clean`
 - `just context-purge`
 - `just context-tree-analyze path='.' opts='--compress'` for Repomix-aware recursive fit analysis using packed output size
 - `just context-tree-plan path='.' opts='--compress'` to write a recursive plan and manifest
 - `just context-tree-pack path='.' opts='--compress'` to generate leaf bundles plus parent reference indexes
+- `just context-tree-all path='.' opts='--compress --style xml'` to build the full tree in one step
+- `just context-plan-json` to inspect the tree plan JSON
 - `just query-usage path='.' multiplier='1' label='1x'` for read-only raw-token and weighted-usage closeout reporting
 
 Recommended prompt starters in `.github/prompts/`:
@@ -112,6 +125,7 @@ Wrapper scripts in `scripts/copilot/` are classified by the three-tier command r
 | `ai-rollback.sh`                                                                                   | `apply`                          | 3    | explicit approval            |
 | `repomix-scc-router.sh`                                                                            | `stats`, `plan`, `run`, `bundle` | 1    | auto                         |
 | `repomix-scc-router.sh`                                                                            | `clean`, `purge`                 | 3    | explicit approval            |
+| `repomix-context-tree.sh`                                                                          | `clean`, `purge`                 | 3    | explicit approval            |
 
 1. Use `scripts/copilot/ai-edit.sh` for broad repository edits.
 2. Keep `APPLY=0` for the first pass so the script shows a dry-run candidate set.
@@ -128,5 +142,6 @@ Wrapper scripts in `scripts/copilot/` are classified by the three-tier command r
 - For agentic workflows, require traces and bounded privileges before adding more autonomy.
 - Keep destructive commands denied by default unless explicitly requested.
 - Prefer the stronger wrapper scripts over ad hoc shell pipelines when the wrapper already captures search modes, token budgets, or structured output.
+- For CLI sessions, the repo hook file plus `COPILOT_STRICT_ALLOWLIST=1` are what force raw `grep`, `find`, and `cat` toward the repo wrappers.
 - For broad modifications, do not use raw `sed`, `perl`, or shell replacement loops when `scripts/copilot/ai-edit.sh` can perform the operation with a snapshot, dry-run, diff, and verification path.
 - Post-tool telemetry now records a best-effort `failureCategory` so logs align more closely with `docs/ai/failure-handling.md`.

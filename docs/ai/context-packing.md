@@ -7,9 +7,8 @@ This repo uses:
 - `scc` to analyze files and folder weight
 - `repomix` to pack exact file lists into AI-friendly bundle files
 
-The router script lives at `scripts/copilot/repomix-scc-router.sh`.
-
-For recursive whole-project contextualization with parent/child references, use `scripts/copilot/repomix-context-tree.sh`.
+The primary tree planner lives at `scripts/copilot/repomix-context-tree.sh`.
+The older ranked-folder router at `scripts/copilot/repomix-scc-router.sh` is legacy compatibility only.
 
 ## Why This Exists
 
@@ -18,15 +17,24 @@ Full-repo context packing is still useful, but it can add noise when the task re
 This workflow helps by:
 
 - counting folder-level code, comments, blank lines, bytes, and complexity
-- ranking folders by implementation weight
-- creating one repomix bundle per selected folder group
-- keeping bundle selection explicit and repeatable
+- measuring whether directories fit inside a usable context budget
+- creating root and child indexes that point at the smallest matching leaf artifact
+- keeping context selection explicit, repeatable, and agent-friendly
 
 ## Outputs
 
-By default the script writes to `.repomix-context/`.
+By default the tree workflow writes to `.repomix-context/tree-context/`.
 
 Treat `.repomix-context/` as local generated output. It is for analysis and bundle handoff, not for source control.
+
+- `tree-plan.tsv` - shell-friendly recursive split plan
+- `tree-plan.json` - machine-friendly recursive plan with status and budgets
+- `tree-manifest.json` - budget/config summary plus node list
+- `index.md` / `index.json` - top-level project context tree entrypoints
+- `indexes/` - parent reference artifacts that point to child contexts instead of duplicating them
+- `bundles/` - leaf context artifacts that fit the usable budget
+
+The legacy router still writes to `.repomix-context/` and produces:
 
 - `scc-openmetrics.txt` - raw `scc` output
 - `file-metrics.tsv` - per-file metrics plus assigned folder group
@@ -35,108 +43,116 @@ Treat `.repomix-context/` as local generated output. It is for analysis and bund
 - `bundle-plan.json` - machine-friendly version of the bundle plan for agent or script consumption
 - `bundles/` - generated repomix bundle files
 
-The recursive tree planner writes its own outputs under `.repomix-context/tree-context/` by default:
+## Standard Tree Build
 
-- `tree-plan.tsv` - shell-friendly recursive split plan
-- `tree-plan.json` - machine-friendly recursive plan with status and budgets
-- `tree-manifest.json` - budget/config summary plus node list
-- `bundles/` - leaf context artifacts that fit the usable budget
-- `indexes/` - parent reference artifacts that point to child contexts instead of duplicating them
-- `index.md` / `index.json` - top-level project context tree entrypoints
+This is the default rebuild command for this repository. It creates a compressed XML tree context with root and child indexes.
 
-## Default Grouping
+```bash
+scripts/copilot/repomix-context-tree.sh all . \
+  --compress \
+  --style xml
+```
 
-The script groups files by folder depth.
+Useful outputs after a run:
 
-Examples:
+- `.repomix-context/tree-context/index.md`
+- `.repomix-context/tree-context/tree-manifest.json`
+- `.repomix-context/tree-context/indexes/`
+- `.repomix-context/tree-context/bundles/`
 
-- `--depth 1` -> `.github`, `docs`, `tools`, `AI-universal-rules`
-- `--depth 2` -> `docs/ai`, `tools/ai`, `tools/nvim`, `AI-universal-rules/docs`
+## How The Tree Splits
 
-Root-level files are grouped as `_root`.
+The tree planner starts at the repo root, estimates packed token size, and keeps recursing until a node fits inside the usable budget.
 
-## Default Ranking
-
-Folder score is calculated from repository share:
-
-- 55% code share
-- 25% complexity share
-- 10% file-count share
-- 10% byte-size share
-
-This is meant to bias toward implementation-heavy folders without ignoring breadth or payload size.
+- Directories that fit become leaf bundles in `bundles/`
+- Directories that do not fit become index nodes in `indexes/`
+- Direct-file residue in oversized directories is split into smaller leaf bundles or single-file artifacts
+- Root-level routing is written to `index.md` and `index.json`
 
 ## Common Commands
 
-### For AI workflow prep
+### Tree lifecycle
 
 ```bash
-# analyze the repo at top-level folders
-bash scripts/copilot/repomix-scc-router.sh stats . --depth 1
+# inspect how the tree will split
+bash scripts/copilot/repomix-context-tree.sh analyze . --compress --style xml
 
-# create a bundle plan from the strongest folders
-bash scripts/copilot/repomix-scc-router.sh plan . --depth 1 --top 25 --min-code 300 --min-files 2
+# write the recursive plan and manifest without packing leaf artifacts yet
+bash scripts/copilot/repomix-context-tree.sh plan . --compress --style xml
 
-# pack the selected folders into repomix bundles
-bash scripts/copilot/repomix-scc-router.sh pack .
+# pack leaf bundles and child indexes from the current tree plan
+bash scripts/copilot/repomix-context-tree.sh pack . --compress --style xml
 
 # run the full flow in one step
-bash scripts/copilot/repomix-scc-router.sh all . --depth 1 --top 25 --min-code 300 --min-files 2
+bash scripts/copilot/repomix-context-tree.sh all . --compress --style xml
 
-# skip mostly declarative folders when you only want implementation-heavy bundles
-bash scripts/copilot/repomix-scc-router.sh plan . --depth 2 --min-complexity 1
-
-# remove generated bundles but keep metrics and plans
-bash scripts/copilot/repomix-scc-router.sh clean .
+# remove bundles and indexes but keep plan files
+bash scripts/copilot/repomix-context-tree.sh clean .
 
 # remove the full generated output directory
-bash scripts/copilot/repomix-scc-router.sh purge .
+bash scripts/copilot/repomix-context-tree.sh purge . --output-dir .repomix-context
+```
+
+### Legacy ranked-folder router
+
+Use the router only when you explicitly want weighted folder ranking instead of the tree-context workflow.
+
+```bash
+bash scripts/copilot/repomix-scc-router.sh stats . --depth 1
+bash scripts/copilot/repomix-scc-router.sh plan . --depth 1 --top 25 --min-code 300 --min-files 2
+bash scripts/copilot/repomix-scc-router.sh pack .
 ```
 
 ### For developers using `just`
 
 ````bash
 just context-stats
+just context-analyze
 just context-plan
 just context-pack
 just context-pack-all
-just context-plan-json
 just context-clean
 just context-purge
+just context-plan-json
 just context-tree-analyze opts='--compress'
 just context-tree-plan opts='--compress'
 just context-tree-pack opts='--compress'
-``
+just context-tree-all opts='--compress --style xml'
+```
 
 ## Recommended Usage Patterns
 
-### 1. Explore first
+### 1. Open `index.md` first
 
-Start with `stats` or `plan` and inspect `folder-metrics.tsv` before packing everything.
+That is the stable root entrypoint for Copilot agents and humans.
 
-### 2. Use `--depth 1` first
+### 2. Follow child indexes only when needed
 
-This is the best default when you want a quick top-level routing view.
+If a directory exceeds budget, use the matching file in `indexes/` rather than loading every sibling bundle.
 
-### 3. Use `--depth 2` for AI workflow internals
+### 3. Use the router only for ranking-heavy workflows
 
-When the task is clearly inside `docs/ai`, `tools/ai`, or one package area, `--depth 2` is usually more useful.
+The router is still useful when you want churn-weighted or folder-ranked planning, but it is no longer the default context loading flow.
 
-### 4. Keep filters narrow
+### 4. Keep recursion shallow when exploring ownership
+
+Use `--max-depth 1` for a quick subsystem routing view.
+
+### 5. Adjust budget only when the default split is clearly wrong
 
 The most useful tuning knobs are:
 
-- `--depth`
-- `--top`
-- `--min-code`
-- `--min-files`
-- `--min-complexity`
+- `--context-window`
+- `--reserved-output`
+- `--instruction-overhead`
+- `--safety-factor`
+- `--max-depth`
 
-Use `--min-complexity 1` when you want to skip folders that are mostly docs or declarative config and focus on implementation-heavy bundles.
+Use router filters like `--depth`, `--top`, and `--min-complexity` only when you intentionally choose the legacy ranked-folder workflow.
 
 ## Repomix Options Passed Through
 
-The router supports these packing options:
+The tree planner supports these packing options:
 
 - `--style`
 - `--compress`
@@ -148,18 +164,16 @@ The router supports these packing options:
 Example:
 
 ```bash
-bash scripts/copilot/repomix-scc-router.sh all . \
-  --depth 1 \
-  --top 20 \
+bash scripts/copilot/repomix-context-tree.sh all . \
   --compress \
   --split-size 10mb \
   --include-logs \
   --include-logs-count 20
-````
+```
 
 ## Ignore Behavior
 
-The router filters files before analysis using tracked or unignored repository files plus `.repomixignore` exclusions.
+Both workflows filter files before analysis using tracked or unignored repository files plus `.repomixignore` exclusions.
 
 This repo intentionally keeps `AI-universal-rules/examples/` packable by default because those examples are useful reference material.
 
@@ -174,15 +188,15 @@ Generated router output is also excluded from future runs through `.repomixignor
 Use this workflow when:
 
 - the full repo is too noisy for the current task
-- you need a ranked view of the heaviest folders first
-- you want one bundle per subsystem instead of one monolithic export
+- you want a root entrypoint and only want to load the smallest relevant leaf bundle first
+- you need a ranked router only after the tree workflow proves too coarse for the task
 
 Suggested agent flow:
 
-1. run `stats` or `plan` for ranked folder weight
-2. run `context-tree-analyze` when the task may need full-project coverage under a fixed token budget
-3. inspect `folder-metrics.tsv` or `tree-plan.json`
-4. choose the smallest useful folder bundle or recursive leaf context
+1. run `context-tree-analyze` or `context-plan`
+2. inspect `index.md` or `tree-plan.json`
+3. choose the smallest useful leaf bundle or child index
+4. use the ranked router only if you explicitly need folder-score planning
 5. open only that bundle or leaf context first
 6. expand to neighboring bundles or follow parent/child references only if the task crosses boundaries
 
@@ -199,9 +213,10 @@ Other install methods are listed in `docs/software-and-cli-tools.md`.
 
 ## Verification
 
-The script itself can be syntax-checked with:
+The scripts themselves can be syntax-checked with:
 
 ```bash
+bash -n scripts/copilot/repomix-context-tree.sh
 bash -n scripts/copilot/repomix-scc-router.sh
 ```
 

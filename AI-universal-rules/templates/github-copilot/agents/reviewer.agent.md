@@ -35,6 +35,9 @@ Check for:
 - architecture or ownership mistakes
 - security or privacy concerns
 - repository policy drift
+- duplicate-logic screening evidence before pass
+  - confirm a similarity search was run for changed logic
+  - if overlap is roughly `>=75%`, flag as potential reuse or replacement candidate
 - for `medium` and `high` risk: rollback or disable path, observability signal, and feature-flag posture
 - for risky migrations: expand-contract strategy when data shape changes are breaking
 

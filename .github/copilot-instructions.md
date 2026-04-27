@@ -73,6 +73,7 @@ Execution rules:
 ## Working Style
 
 - Prefer the smallest safe change.
+- Before adding non-trivial new logic, search for similar existing patterns; when overlap is roughly `>=75%`, flag reuse or replacement instead of duplicating logic.
 - Keep canonical workflow guidance in `docs/ai/` and keep adapter files thin.
 - Fix adapter drift instead of teaching conflicting workflows.
 - Say `unknown` instead of guessing when the repo does not prove a claim.

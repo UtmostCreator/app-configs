@@ -5,11 +5,13 @@
 1. read `docs/ai/project-context.md` when the target area or ownership is unclear
 2. classify risk as `low`, `medium`, or `high`
 3. choose the smallest fitting capability
-4. update the bounded slice
-5. review the diff against canonical docs and adapter files
-6. verify with direct evidence
-7. record command failures, retries, and corrected usage when they occur
-8. sync setup docs when behavior, paths, or commands changed
+4. before adding non-trivial logic, search for similar existing patterns in the affected area and nearby owners
+5. if overlap is roughly `>=75%`, flag it as a reuse or replacement candidate to avoid duplicate logic
+6. update the bounded slice
+7. review the diff against canonical docs and adapter files
+8. verify with direct evidence
+9. record command failures, retries, and corrected usage when they occur
+10. sync setup docs when behavior, paths, or commands changed
 
 For medium or high risk agentic work, load `docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md` before mutating tool use.
 For medium or high risk agentic work, load `docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md` so outputs include traceable evidence.

@@ -18,6 +18,15 @@ ai-validate-catalog:
 ai-generate-catalog:
   @php tools/ai/generate-ai-catalog.php
 
+repo-structure opts='--with-scc':
+  @php tools/ai/generate-repo-structure.php {{opts}}
+
+repo-structure-check opts='--with-scc':
+  @php tools/ai/generate-repo-structure.php --check {{opts}}
+
+install-copilot-kit target='.' profile='minimal' opts='--dry-run':
+  @bash tools/ai/install-copilot-kit.sh --target {{target}} --profile {{profile}} {{opts}}
+
 ai-check:
   @php tools/ai/validate-ai-config.php
   @php tools/ai/validate-ai-catalog.php

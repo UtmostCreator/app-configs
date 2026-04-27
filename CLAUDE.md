@@ -24,6 +24,7 @@ This repository is a configuration repo and a live example of cross-tool AI work
 
 - Start narrow and keep changes bounded.
 - For non-trivial edits, use `project-context` first and then the smallest fitting capability.
+- Before adding non-trivial new logic, search for similar existing patterns; when overlap is roughly `>=75%`, flag reuse or replacement instead of duplicating logic.
 - For config changes, verify with the closest parser, linter, or tool-specific sanity check available.
 - If a runtime surface cannot support a workflow step directly, document the fallback instead of pretending parity.
 

@@ -19,6 +19,7 @@
 Workflow rules:
 
 - Prefer the smallest safe change that keeps configuration readable.
+- Before adding non-trivial new logic, search for similar existing patterns; when overlap is roughly `>=75%`, flag reuse or replacement instead of duplicating logic.
 - Keep canonical workflow logic in `docs/ai/capabilities/`, not in one giant instruction file.
 - Treat this repository as both a live config repo and a worked example of repo-scoped AI workflow design.
 - Preserve portability where practical; avoid coupling the root design to one assistant runtime.

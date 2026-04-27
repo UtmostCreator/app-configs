@@ -45,8 +45,11 @@ Review checklist:
 8. Unnecessary complexity or misleading naming
 9. Missing tests when behavior changed
 10. Drift from repository policy
-11. For `medium` and `high` risk: rollback or disable path, observability signal, and feature-flag posture
-12. For risky migrations: expand-contract strategy when data shape changes are breaking
+11. Duplicate-logic screening was completed before pass
+    - confirm a similarity search was run for changed logic
+    - if overlap is roughly `>=75%`, flag as potential reuse or replacement candidate
+12. For `medium` and `high` risk: rollback or disable path, observability signal, and feature-flag posture
+13. For risky migrations: expand-contract strategy when data shape changes are breaking
 
 Review priorities:
 

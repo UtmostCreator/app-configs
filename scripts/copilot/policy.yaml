@@ -21,7 +21,7 @@ deny:
     pattern: '(curl|wget|nc|ncat|netcat)\s+.*(-d|--data|--upload-file|--data-binary)'
   - id: env-secret-read
     reason: Direct .env secret extraction blocked
-    pattern: '(cat|bat|less|head|tail)\s+.*\.env(?!\.example)'
+    pattern: '(^|[[:space:]])(cat|bat|less|head|tail)([[:space:]]|$).*\.env([^[:space:]]*)?([[:space:]]|$)'
 
 allow:
   - id: read-only-tools
@@ -102,6 +102,9 @@ confirm:
   - id: repomix-clean-purge
     reason: "Tier 3: repomix-scc-router clean or purge deletes generated artifacts \u2014 explicit approval required"
     pattern: '^(\./)?scripts/copilot/repomix-scc-router\.sh\s+(clean|purge)\b'
+  - id: repomix-tree-clean-purge
+    reason: "Tier 3: repomix-context-tree clean or purge deletes generated artifacts \u2014 explicit approval required"
+    pattern: '^(\./)?scripts/copilot/repomix-context-tree\.sh\s+(clean|purge)\b'
   - id: just-context-clean-purge
     reason: "Tier 3: just context-clean or context-purge deletes generated artifacts \u2014 explicit approval required"
     pattern: '^just\s+context-(clean|purge)\b'

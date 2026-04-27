@@ -44,9 +44,10 @@ Prefer these tools in order:
 10. `semgrep` for rule-based bug/security scans.
 11. `delta` for diff rendering.
 12. `scripts/copilot/pack-context.sh` for AI context packaging (`repomix`, `files-to-prompt`, `code2prompt`).
-13. `scripts/copilot/repomix-scc-router.sh` for ranked per-folder context bundles and JSON bundle planning.
-14. `scripts/copilot/watch-loop.sh` for file-watch verification loops (`watchexec` with `entr` fallback).
-15. `mise` + `direnv` for deterministic runtime and environment loading before broad checks.
+13. `scripts/copilot/repomix-context-tree.sh` for budget-aware root indexes, child indexes, and routed Repomix artifacts.
+14. `scripts/copilot/repomix-scc-router.sh` only when an older local ranked-bundle workflow still specifically depends on it.
+15. `scripts/copilot/watch-loop.sh` for file-watch verification loops (`watchexec` with `entr` fallback).
+16. `mise` + `direnv` for deterministic runtime and environment loading before broad checks.
 
 Execution rules:
 
@@ -61,6 +62,7 @@ Execution rules:
 - Summarize findings with exact commands, file paths, line ranges, and commit hashes when relevant.
 - Do not run destructive commands unless explicitly requested.
 - Do not run `git push`, `sudo`, package installs, or delete commands by default.
+- For Copilot CLI hook enforcement, set `COPILOT_STRICT_ALLOWLIST=1` in the shell that launches `gh copilot`.
 - Stop and ask before a read-only step touches secrets, privileged locations, installs, auth, billing, or remote side effects.
 - Log command failures, retries, corrected usage, and avoid-notes using `docs/ai/failure-handling.md`.
 - Do not blindly retry blocked, denied, or mis-specified commands.

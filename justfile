@@ -23,8 +23,11 @@ ai-check:
   @php tools/ai/validate-ai-catalog.php
   @php tools/ai/generate-ai-catalog.php --check
 
-context-stats path='.' depth='1':
-  @bash scripts/copilot/repomix-scc-router.sh stats {{path}} --depth {{depth}}
+context-analyze path='.' opts='':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh analyze "$path" $opts'
+
+context-stats path='.' opts='':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh analyze "$path" $opts'
 
 # Print per-file and per-directory line/size metrics. Stdout only, no files written.
 repo-info path='.' large_file='500' large_dir='5000':
@@ -55,29 +58,41 @@ context-tree-pack path='.' opts='':
 context-tree-all path='.' opts='':
   @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh all "$path" $opts'
 
-context-plan path='.' depth='1' top='25' min_code='300' min_files='2' min_complexity='0':
+context-router-stats path='.' depth='1':
+  @bash scripts/copilot/repomix-scc-router.sh stats {{path}} --depth {{depth}}
+
+context-plan path='.' opts='':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh plan "$path" $opts'
+
+context-router-plan path='.' depth='1' top='25' min_code='300' min_files='2' min_complexity='0':
   @bash scripts/copilot/repomix-scc-router.sh plan {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}} --min-complexity {{min_complexity}}
 
 context-plan-since ref path='.' depth='1' top='25' min_code='300' min_files='2' min_complexity='0' churn_count='50':
   @bash scripts/copilot/repomix-scc-router.sh plan {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}} --min-complexity {{min_complexity}} --changed-since {{ref}} --churn-count {{churn_count}}
 
-context-pack:
+context-pack path='.' opts='':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh pack "$path" $opts'
+
+context-router-pack:
   @bash scripts/copilot/repomix-scc-router.sh pack .
 
-context-pack-all path='.' depth='1' top='25' min_code='300' min_files='2' min_complexity='0':
+context-pack-all path='.' opts='--compress --style xml':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh all "$path" $opts'
+
+context-router-pack-all path='.' depth='1' top='25' min_code='300' min_files='2' min_complexity='0':
   @bash scripts/copilot/repomix-scc-router.sh all {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}} --min-complexity {{min_complexity}}
 
 context-pack-all-since ref path='.' depth='1' top='25' min_code='300' min_files='2' min_complexity='0' churn_count='50':
   @bash scripts/copilot/repomix-scc-router.sh all {{path}} --depth {{depth}} --top {{top}} --min-code {{min_code}} --min-files {{min_files}} --min-complexity {{min_complexity}} --changed-since {{ref}} --churn-count {{churn_count}}
 
-context-clean path='.':
-  @bash scripts/copilot/repomix-scc-router.sh clean {{path}}
+context-clean path='.' opts='':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh clean "$path" $opts'
 
-context-purge path='.':
-  @bash scripts/copilot/repomix-scc-router.sh purge {{path}}
+context-purge path='.' opts='--output-dir .repomix-context':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh purge "$path" $opts'
 
 context-plan-json path='.':
-  @bash -lc 'test -f {{path}}/.repomix-context/bundle-plan.json && cat {{path}}/.repomix-context/bundle-plan.json || { echo "bundle-plan.json not found; run just context-plan or context-pack-all first" >&2; exit 1; }'
+  @bash -lc 'test -f {{path}}/.repomix-context/tree-context/tree-plan.json && cat {{path}}/.repomix-context/tree-context/tree-plan.json || { echo "tree-plan.json not found; run just context-plan or context-pack-all first" >&2; exit 1; }'
 
 search pattern path='.' mode='default':
   @bash scripts/copilot/rg-code.sh {{pattern}} {{path}} --mode {{mode}}

@@ -26,6 +26,8 @@ The bash hook (`scripts/copilot/pre-tool-use.sh`) enforces the three-tier comman
 - **Tier 2 (modification)** — confirmation required: `git commit`, `git stash push/pop/drop`, `ai-edit` apply mode
 - **Tier 3 (deletion/recovery)** — denied or explicit approval required: `rm`, destructive git (`git reset --hard`, `git push --force`), `ai-rollback apply`, `repomix-scc-router clean/purge`, `just context-clean/purge`
 
+When `COPILOT_STRICT_ALLOWLIST=1` is set in the shell that launches Copilot CLI, the hook also denies commands outside the explicit read-only and approved-wrapper list. In practice this forces raw `grep`, `find`, and `cat`-style AI tool use toward the repo wrappers such as `scripts/copilot/rg-code.sh`, `scripts/copilot/fd-files.sh`, and `scripts/copilot/preview-file.sh`.
+
 Additionally blocked regardless of tier:
 
 - obvious secret-adjacent file targeting such as `.env`, `credentials`, `secret`, `token`, or `id_rsa`
@@ -44,5 +46,10 @@ Additionally blocked regardless of tier:
 
 - the bash hook (`pre-tool-use.sh`) is the primary enforcement path on macOS/Linux; the PowerShell guard (`tool-guardian.ps1`) is an optional complementary surface
 - some runtimes or surfaces may not load repo hooks automatically
+- VS Code IDE agent mode does not load repository hooks; strict allowlist enforcement is a Copilot CLI or cloud-agent concern, not an IDE-agent concern
 - the hook is pattern-based and should be treated as a safety net, not a complete security system
 - secret scanning remains best-effort locally; CI or broader audits should still exist for higher assurance
+
+## Reuse In Other Repos
+
+For a copy-ready integration checklist, see `docs/ai/copilot-cli-repo-integration.md`.

@@ -11,6 +11,7 @@ Steps:
 
 1. Start from the diff.
 2. Inspect unchanged files only when needed to verify a concern.
-3. Prioritize correctness, regressions, contract drift, and missing tests.
-4. Summarize findings before any broad overview.
-5. Separate confirmed failures from likely concerns.
+3. Require duplicate-logic screening before pass; flag roughly `>=75%` overlap as reuse or replacement candidates.
+4. Prioritize correctness, regressions, contract drift, and missing tests.
+5. Summarize findings before any broad overview.
+6. Separate confirmed failures from likely concerns.

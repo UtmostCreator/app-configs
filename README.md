@@ -152,6 +152,8 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - For GitHub Copilot, install both `github.copilot` and `github.copilot-chat`, then optionally add Copilot CLI for terminal-heavy work
 - For tool-routed Copilot workflows, follow `docs/ai/copilot-tooling.md` (instructions -> wrappers -> hooks -> skills/prompts -> MCP)
 - For the default tree-context workflow and legacy ranked-folder compatibility, follow `docs/ai/context-packing.md`
+- For deterministic folder/file inventory generation, follow `docs/ai/repo-documentation-generation.md`
+- For bootstrap install into another repository, follow `docs/ai/external-repo-install.md`
 - Use `scripts/copilot/ai-diff-context.sh` when you need narrow context for changed files, PR files, recent edits, or touched areas
 - Use `scripts/copilot/ai-search.sh` when the agent should route all search through one stable entrypoint
 - For PHP guidance, search local examples in this order: `tools/design-patterns/` -> `tools/design-principles/` -> `tools/php-built-ins/`

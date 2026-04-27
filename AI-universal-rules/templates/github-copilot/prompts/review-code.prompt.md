@@ -21,6 +21,7 @@ Prioritize:
 3. security and privacy issues
 4. contract drift
 5. missing tests
+6. duplicate-logic screening evidence before pass (`>=75%` overlap should be flagged as reuse or replacement candidate)
 
 Gotchas:
 

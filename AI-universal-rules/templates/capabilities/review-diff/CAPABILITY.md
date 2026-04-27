@@ -33,8 +33,10 @@ Review a change set from the diff first, then expand only as needed to assess co
 1. Start from the diff.
 2. Check whether risk classification fits the actual change.
 3. Inspect unchanged files only when needed to verify a concern.
-4. Prioritize correctness, contracts, regressions, and missing tests.
-5. Escalate review depth for `medium` and `high` risk changes.
+4. Require duplicate-logic screening before passing review.
+5. If overlap is roughly `>=75%`, flag potential reuse or replacement instead of allowing silent duplication.
+6. Prioritize correctness, contracts, regressions, and missing tests.
+7. Escalate review depth for `medium` and `high` risk changes.
 
 ## Verification Expectations
 
@@ -47,6 +49,7 @@ Review a change set from the diff first, then expand only as needed to assess co
 - verdict
 - findings with severity and location
 - risk assessment
+- duplicate-logic screening result (`pass` | `issue` | `not-applicable`) with evidence
 - recommended next step
 
 ## Related Capabilities

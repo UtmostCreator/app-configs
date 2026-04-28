@@ -12,7 +12,7 @@ tools: ["read", "search", "fileSearch", "edit", "runInTerminal", "problems"]
 - `CLAUDE.md`
 - `docs/ai/`
 - `.github/`
-- `AI-universal-rules/` when root files claim to derive from it
+- `packages/ai-universal-rules/` when root files claim to derive from it
 
 ## Workflow
 

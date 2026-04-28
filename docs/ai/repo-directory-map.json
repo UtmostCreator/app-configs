@@ -47,12 +47,12 @@
       "notes": "Schema source of truth for generated AI package artifacts."
     },
     {
-      "path": "AI-universal-rules",
-      "purpose": "Reusable cross-runtime AI workflow package, templates, and examples.",
+      "path": "packages",
+      "purpose": "Reusable cross-runtime AI workflow package source and assets.",
       "designed_for": "Teams bootstrapping AI workflows in external repositories.",
-      "install_guide": "AI-universal-rules/QUICKSTART.md",
+      "install_guide": "packages/ai-universal-rules/QUICKSTART.md",
       "install_script": "tools/ai/install-copilot-kit.sh",
-      "ai_entrypoint": "AI-universal-rules/README.md",
+      "ai_entrypoint": "packages/ai-universal-rules/README.md",
       "notes": "Portable package benchmark; examples are references, not root repo runtime defaults."
     },
     {

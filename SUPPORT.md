@@ -5,9 +5,9 @@ Use this repository as a worked example and reusable kit, not a managed service.
 ## Best Ways To Get Help
 
 - read `README.md` for the root repo layout
-- read `AI-universal-rules/README.md` and `AI-universal-rules/QUICKSTART.md` for kit adoption
+- read `packages/ai-universal-rules/README.md` and `packages/ai-universal-rules/QUICKSTART.md` for kit adoption
 - read `docs/ai/project-context.md` and `docs/ai/capabilities/` for the live root instantiation
-- inspect `docs/ai/catalog.md` and `AI-universal-rules/docs/BROWSE.md` for generated indexes
+- inspect `docs/ai/catalog.md` and `packages/ai-universal-rules/docs/BROWSE.md` for generated indexes
 
 ## When Reporting A Problem
 

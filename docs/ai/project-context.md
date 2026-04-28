@@ -7,14 +7,14 @@
 - Primary language: `Markdown, JSON, shell config, Lua`
 - Primary runtime: `local developer tooling`
 - Supported targets: `VS Code, shell, Ghostty, Karabiner, Neovim, PHP tooling, GitHub Copilot, Claude-style agent runtimes`
-- Active paths: `AI-universal-rules/, docs/, configs/vscode/, configs/shell/, tools/, configs/php/, .github/`
+- Active paths: `packages/ai-universal-rules/, docs/, configs/vscode/, configs/shell/, tools/, configs/php/, .github/`
 - Inactive paths: `none declared; treat stale examples or copied stack-specific files as defects`
 
 ## Architecture
 
-- Primary entrypoints: `README.md, AGENTS.md, CLAUDE.md, AI-universal-rules/README.md, configs/vscode/user/settings.json, configs/shell/.zshrc, justfile`
+- Primary entrypoints: `README.md, AGENTS.md, CLAUDE.md, packages/ai-universal-rules/README.md, configs/vscode/user/settings.json, configs/shell/.zshrc, justfile`
 - AI reference docs: `docs/ai/agents.md, docs/ai/failure-handling.md, docs/ai/agent-ops-checklist.md, docs/ai/integration-matrix.md`
-- Architecture notes: `AI-universal-rules/ is the reusable package; docs/ai/ is the root-repo instantiation; runtime-specific adapter files should stay thin and point back to canonical docs; local workflow scaffolding lives in justfile plus scripts/hooks and is optional rather than canonical policy.`
+- Architecture notes: `packages/ai-universal-rules/ is the reusable package; docs/ai/ is the root-repo instantiation; runtime-specific adapter files should stay thin and point back to canonical docs; local workflow scaffolding lives in justfile plus scripts/hooks and is optional rather than canonical policy.`
 - PHP reference corpus: `reference/php/design-patterns/` (primary), `reference/php/design-principles/` (secondary), and `reference/php/php-built-ins/` (supporting examples).
 - Canonical workflow source: `docs/ai/capabilities/`
 - Runtime adapter surfaces: `.github/`, `AGENTS.md`, `CLAUDE.md`

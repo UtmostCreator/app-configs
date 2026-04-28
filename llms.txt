@@ -17,10 +17,10 @@
 
 ## Reusable Kit
 
-- [AI-universal-rules/README.md](AI-universal-rules/README.md): package overview and operating model
-- [AI-universal-rules/QUICKSTART.md](AI-universal-rules/QUICKSTART.md): fastest install path
-- [AI-universal-rules/docs/BROWSE.md](AI-universal-rules/docs/BROWSE.md): generated package catalog
-- [AI-universal-rules/manifest.json](AI-universal-rules/manifest.json): machine-readable package manifest
+- [packages/ai-universal-rules/README.md](packages/ai-universal-rules/README.md): package overview and operating model
+- [packages/ai-universal-rules/QUICKSTART.md](packages/ai-universal-rules/QUICKSTART.md): fastest install path
+- [packages/ai-universal-rules/docs/BROWSE.md](packages/ai-universal-rules/docs/BROWSE.md): generated package catalog
+- [packages/ai-universal-rules/manifest.json](packages/ai-universal-rules/manifest.json): machine-readable package manifest
 
 ## Contribution And Trust
 

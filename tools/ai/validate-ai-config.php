@@ -46,9 +46,9 @@ $requiredFiles = [
     'policies/copilot/policy.yaml',
     '.schemas/evidence-event.schema.json',
     '.copilot-logs/README.md',
-    'AI-universal-rules/manifest.json',
-    'AI-universal-rules/catalog.json',
-    'AI-universal-rules/docs/BROWSE.md',
+    'packages/ai-universal-rules/manifest.json',
+    'packages/ai-universal-rules/catalog.json',
+    'packages/ai-universal-rules/docs/BROWSE.md',
     'llms.txt',
 ];
 
@@ -88,9 +88,9 @@ $liveFiles = [
     'docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md',
     'docs/ai/capabilities/preview-environments/CAPABILITY.md',
     'docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md',
-    'AI-universal-rules/manifest.json',
-    'AI-universal-rules/catalog.json',
-    'AI-universal-rules/docs/BROWSE.md',
+    'packages/ai-universal-rules/manifest.json',
+    'packages/ai-universal-rules/catalog.json',
+    'packages/ai-universal-rules/docs/BROWSE.md',
     'CONTRIBUTING.md',
     'SECURITY.md',
     'SUPPORT.md',
@@ -106,8 +106,8 @@ $bannedTerms = [
 
 $generatedCatalogFiles = [
     'docs/ai/catalog.md',
-    'AI-universal-rules/catalog.json',
-    'AI-universal-rules/docs/BROWSE.md',
+    'packages/ai-universal-rules/catalog.json',
+    'packages/ai-universal-rules/docs/BROWSE.md',
 ];
 
 $errors = [];

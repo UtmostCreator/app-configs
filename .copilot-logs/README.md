@@ -17,6 +17,6 @@ When runtime support allows, evidence events should align with:
 
 - `docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md`
 - `docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md`
-- `scripts/copilot/evidence-event.schema.json`
+- `.schemas/evidence-event.schema.json`
 
 Treat the contents as local runtime artifacts, not canonical policy or durable repository truth.

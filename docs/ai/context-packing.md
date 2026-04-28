@@ -180,7 +180,7 @@ This repo intentionally keeps `AI-universal-rules/examples/` packable by default
 
 The hard local exclusion to keep is:
 
-- `tools/karabiner/karabiner.json`
+- `configs/karabiner/karabiner.json`
 
 Generated router output is also excluded from future runs through `.repomixignore`.
 

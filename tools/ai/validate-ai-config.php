@@ -43,8 +43,8 @@ $requiredFiles = [
     'scripts/copilot/ai-edit.sh',
     'scripts/copilot/ai-verify.sh',
     'scripts/copilot/ai-rollback.sh',
-    'scripts/copilot/policy.yaml',
-    'scripts/copilot/evidence-event.schema.json',
+    'policies/copilot/policy.yaml',
+    '.schemas/evidence-event.schema.json',
     '.copilot-logs/README.md',
     'AI-universal-rules/manifest.json',
     'AI-universal-rules/catalog.json',
@@ -53,9 +53,9 @@ $requiredFiles = [
 ];
 
 $requiredDirectories = [
-    'tools/design-patterns',
-    'tools/design-principles',
-    'tools/php-built-ins',
+    'reference/php/design-patterns',
+    'reference/php/design-principles',
+    'reference/php/php-built-ins',
 ];
 
 $liveFiles = [
@@ -261,7 +261,7 @@ if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/capabilities/pr
 }
 
 if ($copilotContent !== null) {
-    foreach (['tools/design-patterns/', 'tools/design-principles/', 'tools/php-built-ins/'] as $phpReferencePath) {
+    foreach (['reference/php/design-patterns/', 'reference/php/design-principles/', 'reference/php/php-built-ins/'] as $phpReferencePath) {
         if (strpos($copilotContent, $phpReferencePath) === false) {
             $warnings[] = ".github/copilot-instructions.md should reference {$phpReferencePath} for PHP guidance routing";
         }
@@ -269,7 +269,7 @@ if ($copilotContent !== null) {
 }
 
 if ($phpInstructionsContent !== null) {
-    foreach (['tools/design-patterns/', 'tools/design-principles/', 'tools/php-built-ins/'] as $phpReferencePath) {
+    foreach (['reference/php/design-patterns/', 'reference/php/design-principles/', 'reference/php/php-built-ins/'] as $phpReferencePath) {
         if (strpos($phpInstructionsContent, $phpReferencePath) === false) {
             $warnings[] = ".github/instructions/php.instructions.md should reference {$phpReferencePath}";
         }
@@ -277,7 +277,7 @@ if ($phpInstructionsContent !== null) {
 }
 
 if ($projectContextContent !== null) {
-    foreach (['tools/design-patterns/', 'tools/design-principles/', 'tools/php-built-ins/'] as $phpReferencePath) {
+    foreach (['reference/php/design-patterns/', 'reference/php/design-principles/', 'reference/php/php-built-ins/'] as $phpReferencePath) {
         if (strpos($projectContextContent, $phpReferencePath) === false) {
             $warnings[] = "docs/ai/project-context.md should reference {$phpReferencePath}";
         }
@@ -331,7 +331,7 @@ if ($readmeContent !== null) {
         $warnings[] = 'README.md should describe the repo config purpose';
     }
 
-    foreach (['tools/design-patterns/', 'tools/design-principles/', 'tools/php-built-ins/'] as $phpReferencePath) {
+    foreach (['reference/php/design-patterns/', 'reference/php/design-principles/', 'reference/php/php-built-ins/'] as $phpReferencePath) {
         if (strpos($readmeContent, $phpReferencePath) === false) {
             $warnings[] = "README.md should reference {$phpReferencePath} in AI workflow and tooling guidance";
         }

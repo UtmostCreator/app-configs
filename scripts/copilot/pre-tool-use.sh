@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-POLICY_FILE="${COPILOT_POLICY_FILE:-scripts/copilot/policy.yaml}"
+POLICY_FILE="${COPILOT_POLICY_FILE:-policies/copilot/policy.yaml}"
 
 deny() {
     jq -cn --arg reason "$1" '{permissionDecision:"deny", permissionDecisionReason:$reason}'

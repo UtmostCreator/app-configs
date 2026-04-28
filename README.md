@@ -42,9 +42,9 @@ This repository has two related jobs:
 
 ## Repo Packages And Manifests
 
-- `AI-universal-rules/manifest.json` - canonical package metadata for the reusable AI workflow kit
-- `AI-universal-rules/manifest.yml` - YAML mirror for the same package metadata
-- `AI-universal-rules/catalog.json` - generated machine-readable catalog of package and root resources
+- `packages/ai-universal-rules/manifest.json` - canonical package metadata for the reusable AI workflow kit
+- `packages/ai-universal-rules/manifest.yml` - YAML mirror for the same package metadata
+- `packages/ai-universal-rules/catalog.json` - generated machine-readable catalog of package and root resources
 - `docs/ai/catalog.md` - generated human-readable catalog index
 - `llms.txt` - generated LLM-oriented index for key docs and assets
 - Root Node and Composer package manifests are intentionally not used in this repository
@@ -53,7 +53,7 @@ This repository has two related jobs:
 
 The repo also contains a reusable AI workflow layer for repo-scoped guidance across multiple tools.
 
-- `AI-universal-rules/` - canonical reusable package
+- `packages/ai-universal-rules/` - canonical reusable package
 - `docs/ai/` - live repo-specific AI workflow docs and capability catalog
 - `docs/ai/agents.md` - live agent reference and package agent index
 - `docs/ai/failure-handling.md` - failure taxonomy, retry rules, and logging contract
@@ -80,7 +80,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 |   |-- skills/
 |   `-- workflows/
 |-- AGENTS.md
-|-- AI-universal-rules/
+|-- packages/ai-universal-rules/
 |   |-- catalog.json
 |   |-- docs/
 |   |-- examples/
@@ -196,7 +196,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 ## Important Notes
 
 - Some settings are intentionally machine-specific; shared docs should call those out instead of hiding them
-- Example repos under `AI-universal-rules/examples/` are references, not root-repo behavior
+- Example repos under `packages/ai-universal-rules/examples/` are references, not root-repo behavior
 - This repo prefers a practical production-grade workflow model over a large catalog of agents, skills, or plugins
 - Safe repo-local read-only commands are approval-free by default unless they touch privileged access, secrets, or external side effects
 

@@ -7,9 +7,9 @@
 - Summary: `Opinionated editor, shell, terminal, PHP, and keyboard configuration plus a reusable cross-tool AI workflow package.`
 - Primary language: `Markdown, JSON, shell config, Lua`
 - Primary runtime: `local developer tooling`
-- Active paths: `AI-universal-rules/, docs/, configs/vscode/, configs/shell/, tools/, configs/php/, .github/`
+- Active paths: `packages/ai-universal-rules/, docs/, configs/vscode/, configs/shell/, tools/, configs/php/, .github/`
 - Inactive or legacy paths: `none declared; treat unreferenced examples as reference material unless a task targets them`
-- Primary entrypoints: `README.md, AI-universal-rules/README.md, docs/ai/project-context.md, configs/vscode/user/settings.json, configs/shell/.zshrc`
+- Primary entrypoints: `README.md, packages/ai-universal-rules/README.md, docs/ai/project-context.md, configs/vscode/user/settings.json, configs/shell/.zshrc`
 - AI reference docs: `docs/ai/agents.md, docs/ai/failure-handling.md, docs/ai/agent-ops-checklist.md, docs/ai/integration-matrix.md`
 
 ## Default Workflow
@@ -46,7 +46,7 @@ Workflow rules:
 
 ## Architecture Notes
 
-- `AI-universal-rules/` is the reusable package and benchmark model.
+- `packages/ai-universal-rules/` is the reusable package and benchmark model.
 - Root `docs/ai/` is the live instantiation for this repository itself.
 - Root `.github/` is the GitHub Copilot adapter, not the canonical source of truth.
 - Root `AGENTS.md` and `CLAUDE.md` are portable memory surfaces that should stay short and durable.
@@ -84,7 +84,7 @@ Workflow rules:
 ## Common Gotchas
 
 - this repo is not a Laravel app, frontend app, or monolith product codebase
-- examples inside `AI-universal-rules/examples/` are references, not root-repo facts
+- examples inside `packages/ai-universal-rules/examples/` are references, not root-repo facts
 - user settings may intentionally contain local-machine assumptions; shared docs must call those out explicitly
 
 ## Do Not

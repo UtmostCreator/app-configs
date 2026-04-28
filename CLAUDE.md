@@ -11,7 +11,7 @@ This repository is a configuration repo and a live example of cross-tool AI work
 - `docs/ai/failure-handling.md`
 - `docs/ai/agent-ops-checklist.md`
 - `docs/ai/integration-matrix.md`
-- `AI-universal-rules/README.md`
+- `packages/ai-universal-rules/README.md`
 
 ## What Matters Here
 
@@ -42,4 +42,4 @@ This repository is a configuration repo and a live example of cross-tool AI work
 
 ## Memory Note
 
-If deeper process is needed, prefer `docs/ai/capabilities/` and `AI-universal-rules/` over expanding this file.
+If deeper process is needed, prefer `docs/ai/capabilities/` and `packages/ai-universal-rules/` over expanding this file.

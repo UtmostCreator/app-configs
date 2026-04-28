@@ -274,19 +274,19 @@ apply_placeholders() {
 }
 
 install_base() {
-    copy_file 'AI-universal-rules/templates/core/AGENTS.template.md' 'AGENTS.md'
-    copy_file 'AI-universal-rules/templates/core/project-context.template.md' 'docs/ai/project-context.md'
-    copy_file 'AI-universal-rules/templates/core/copilot-instructions.template.md' '.github/copilot-instructions.md'
-    copy_file 'AI-universal-rules/templates/shared/guardrails/AI-GUARDRAILS.md' 'docs/ai/AI-GUARDRAILS.md'
-    copy_dir 'AI-universal-rules/templates/capabilities/project-context' 'docs/ai/capabilities/project-context'
-    copy_dir 'AI-universal-rules/templates/capabilities/verify-change' 'docs/ai/capabilities/verify-change'
-    copy_dir 'AI-universal-rules/templates/capabilities/review-diff' 'docs/ai/capabilities/review-diff'
+    copy_file 'packages/ai-universal-rules/templates/core/AGENTS.template.md' 'AGENTS.md'
+    copy_file 'packages/ai-universal-rules/templates/core/project-context.template.md' 'docs/ai/project-context.md'
+    copy_file 'packages/ai-universal-rules/templates/core/copilot-instructions.template.md' '.github/copilot-instructions.md'
+    copy_file 'packages/ai-universal-rules/templates/shared/guardrails/AI-GUARDRAILS.md' 'docs/ai/AI-GUARDRAILS.md'
+    copy_dir 'packages/ai-universal-rules/templates/capabilities/project-context' 'docs/ai/capabilities/project-context'
+    copy_dir 'packages/ai-universal-rules/templates/capabilities/verify-change' 'docs/ai/capabilities/verify-change'
+    copy_dir 'packages/ai-universal-rules/templates/capabilities/review-diff' 'docs/ai/capabilities/review-diff'
 }
 
 install_copilot_profile() {
-    copy_dir 'AI-universal-rules/templates/github-copilot/instructions' '.github/instructions'
-    copy_dir 'AI-universal-rules/templates/github-copilot/agents' '.github/agents'
-    copy_dir 'AI-universal-rules/templates/github-copilot/prompts' '.github/prompts'
+    copy_dir 'packages/ai-universal-rules/templates/github-copilot/instructions' '.github/instructions'
+    copy_dir 'packages/ai-universal-rules/templates/github-copilot/agents' '.github/agents'
+    copy_dir 'packages/ai-universal-rules/templates/github-copilot/prompts' '.github/prompts'
 }
 
 install_guarded_profile() {

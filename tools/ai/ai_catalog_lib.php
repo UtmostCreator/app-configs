@@ -121,7 +121,7 @@ function aiResource(string $scope, string $type, string $name, string $path, ?st
 
 function aiCollectCatalog(string $root): array
 {
-    $manifest = aiLoadJson($root, 'AI-universal-rules/manifest.json');
+    $manifest = aiLoadJson($root, 'packages/ai-universal-rules/manifest.json');
     $resources = [];
 
     foreach (aiCollectRootResources($root) as $resource) {
@@ -151,14 +151,14 @@ function aiCollectCatalog(string $root): array
     ksort($counts);
 
     return [
-        '$schema' => '../.schemas/ai-catalog.schema.json',
+        '$schema' => '../../.schemas/ai-catalog.schema.json',
         'generated_by' => 'php tools/ai/generate-ai-catalog.php',
         'repository' => [
             'name' => 'app-configs',
             'summary' => 'Opinionated development configuration plus a reusable cross-tool AI workflow kit.',
             'catalog_docs' => [
                 'docs/ai/catalog.md',
-                'AI-universal-rules/docs/BROWSE.md',
+                'packages/ai-universal-rules/docs/BROWSE.md',
                 'llms.txt',
             ],
         ],
@@ -291,23 +291,23 @@ function aiCollectPackageResources(string $root): array
 {
     $resources = [];
     $prefixMap = [
-        'AI-universal-rules/templates/core/' => ['core-template', 'canonical'],
-        'AI-universal-rules/templates/shared/' => ['shared-template', 'canonical'],
-        'AI-universal-rules/templates/capabilities/' => ['package-capability', 'canonical'],
-        'AI-universal-rules/templates/opencode/agents/' => ['opencode-agent-template', 'opencode'],
-        'AI-universal-rules/templates/opencode/commands/' => ['opencode-command-template', 'opencode'],
-        'AI-universal-rules/templates/opencode/skills/' => ['opencode-skill-template', 'opencode'],
-        'AI-universal-rules/templates/github-copilot/agents/' => ['github-copilot-agent-template', 'github-copilot'],
-        'AI-universal-rules/templates/github-copilot/instructions/' => ['github-copilot-instruction-template', 'github-copilot'],
-        'AI-universal-rules/templates/github-copilot/prompts/' => ['github-copilot-prompt-template', 'github-copilot'],
-        'AI-universal-rules/templates/optional/' => ['optional-template', 'optional'],
-        'AI-universal-rules/docs/foundations/' => ['foundation-doc', 'canonical'],
-        'AI-universal-rules/docs/workflows/' => ['workflow-doc', 'canonical'],
-        'AI-universal-rules/docs/operations/' => ['operations-doc', 'canonical'],
+        'packages/ai-universal-rules/templates/core/' => ['core-template', 'canonical'],
+        'packages/ai-universal-rules/templates/shared/' => ['shared-template', 'canonical'],
+        'packages/ai-universal-rules/templates/capabilities/' => ['package-capability', 'canonical'],
+        'packages/ai-universal-rules/templates/opencode/agents/' => ['opencode-agent-template', 'opencode'],
+        'packages/ai-universal-rules/templates/opencode/commands/' => ['opencode-command-template', 'opencode'],
+        'packages/ai-universal-rules/templates/opencode/skills/' => ['opencode-skill-template', 'opencode'],
+        'packages/ai-universal-rules/templates/github-copilot/agents/' => ['github-copilot-agent-template', 'github-copilot'],
+        'packages/ai-universal-rules/templates/github-copilot/instructions/' => ['github-copilot-instruction-template', 'github-copilot'],
+        'packages/ai-universal-rules/templates/github-copilot/prompts/' => ['github-copilot-prompt-template', 'github-copilot'],
+        'packages/ai-universal-rules/templates/optional/' => ['optional-template', 'optional'],
+        'packages/ai-universal-rules/docs/foundations/' => ['foundation-doc', 'canonical'],
+        'packages/ai-universal-rules/docs/workflows/' => ['workflow-doc', 'canonical'],
+        'packages/ai-universal-rules/docs/operations/' => ['operations-doc', 'canonical'],
     ];
 
     $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator(aiAbsolutePath($root, 'AI-universal-rules'), FilesystemIterator::SKIP_DOTS)
+        new RecursiveDirectoryIterator(aiAbsolutePath($root, 'packages/ai-universal-rules'), FilesystemIterator::SKIP_DOTS)
     );
 
     foreach ($iterator as $file) {
@@ -317,7 +317,7 @@ function aiCollectPackageResources(string $root): array
 
         $relativePath = substr(aiNormalizePath($file->getPathname()), strlen(aiNormalizePath($root)) + 1);
 
-        if (in_array($relativePath, ['AI-universal-rules/catalog.json', 'AI-universal-rules/docs/BROWSE.md', 'AI-universal-rules/manifest.json', 'AI-universal-rules/manifest.yml'], true)) {
+        if (in_array($relativePath, ['packages/ai-universal-rules/catalog.json', 'packages/ai-universal-rules/docs/BROWSE.md', 'packages/ai-universal-rules/manifest.json', 'packages/ai-universal-rules/manifest.yml'], true)) {
             continue;
         }
 
@@ -343,7 +343,7 @@ function aiCollectExampleResources(string $root): array
 {
     $resources = [];
 
-    $exampleDirectories = glob(aiAbsolutePath($root, 'AI-universal-rules/examples/*'), GLOB_ONLYDIR) ?: [];
+    $exampleDirectories = glob(aiAbsolutePath($root, 'packages/ai-universal-rules/examples/*'), GLOB_ONLYDIR) ?: [];
     sort($exampleDirectories);
 
     foreach ($exampleDirectories as $directory) {
@@ -385,7 +385,7 @@ function aiRenderRootCatalogMarkdown(array $catalog): string
     $lines[] = '';
     $lines[] = '_Generated by `php tools/ai/generate-ai-catalog.php`. Do not edit by hand._';
     $lines[] = '';
-    $lines[] = 'This generated file is the live inventory for AI workflow assets in this repository and the reusable `AI-universal-rules/` package.';
+    $lines[] = 'This generated file is the live inventory for AI workflow assets in this repository and the reusable `packages/ai-universal-rules/` package.';
     $lines[] = '';
     $lines[] = 'Use `docs/ai/copilot-getting-started.md` for quick onboarding, then use this catalog when you need the full indexed list of agents, instructions, hooks, prompts, scripts, capabilities, and docs.';
     $lines[] = '';
@@ -444,7 +444,9 @@ function aiRenderBrowseMarkdown(array $catalog): string
     $lines[] = '';
     $lines[] = '## Starter Profiles';
     $lines[] = '';
-    foreach ($catalog['starter_profiles'] as $profile) {
+    $starterProfiles = $catalog['starter_profiles'];
+    $starterCount = count($starterProfiles);
+    foreach ($starterProfiles as $index => $profile) {
         $lines[] = '### `' . $profile['id'] . '`';
         $lines[] = '';
         $lines[] = $profile['description'];
@@ -452,7 +454,9 @@ function aiRenderBrowseMarkdown(array $catalog): string
         foreach ($profile['includes'] as $include) {
             $lines[] = '- `' . $include . '`';
         }
-        $lines[] = '';
+        if ($index < $starterCount - 1) {
+            $lines[] = '';
+        }
     }
 
     return implode("\n", $lines) . "\n";
@@ -480,10 +484,10 @@ function aiRenderLlms(array $catalog): string
     $lines[] = '';
     $lines[] = '## Reusable Kit';
     $lines[] = '';
-    $lines[] = '- [AI-universal-rules/README.md](AI-universal-rules/README.md): package overview and operating model';
-    $lines[] = '- [AI-universal-rules/QUICKSTART.md](AI-universal-rules/QUICKSTART.md): fastest install path';
-    $lines[] = '- [AI-universal-rules/docs/BROWSE.md](AI-universal-rules/docs/BROWSE.md): generated package catalog';
-    $lines[] = '- [AI-universal-rules/manifest.json](AI-universal-rules/manifest.json): machine-readable package manifest';
+    $lines[] = '- [packages/ai-universal-rules/README.md](packages/ai-universal-rules/README.md): package overview and operating model';
+    $lines[] = '- [packages/ai-universal-rules/QUICKSTART.md](packages/ai-universal-rules/QUICKSTART.md): fastest install path';
+    $lines[] = '- [packages/ai-universal-rules/docs/BROWSE.md](packages/ai-universal-rules/docs/BROWSE.md): generated package catalog';
+    $lines[] = '- [packages/ai-universal-rules/manifest.json](packages/ai-universal-rules/manifest.json): machine-readable package manifest';
     $lines[] = '';
     $lines[] = '## Contribution And Trust';
     $lines[] = '';
@@ -854,7 +858,7 @@ function aiValidateManifest(array $manifest, string $root): array
     }
 
     foreach ($manifest['required_templates'] ?? [] as $path) {
-        if (!file_exists(aiAbsolutePath($root, 'AI-universal-rules/' . ltrim($path, '/')))) {
+        if (!file_exists(aiAbsolutePath($root, 'packages/ai-universal-rules/' . ltrim($path, '/')))) {
             $errors[] = "manifest.json references missing template {$path}";
         }
     }
@@ -872,7 +876,7 @@ function aiValidateManifest(array $manifest, string $root): array
         }
 
         foreach ($profile['includes'] as $include) {
-            if (!file_exists(aiAbsolutePath($root, 'AI-universal-rules/' . ltrim($include, '/')))) {
+            if (!file_exists(aiAbsolutePath($root, 'packages/ai-universal-rules/' . ltrim($include, '/')))) {
                 $errors[] = "starter profile {$profile['id']} references missing path {$include}";
             }
         }
@@ -883,7 +887,7 @@ function aiValidateManifest(array $manifest, string $root): array
 
 function aiReadManifestYamlSummary(string $root): array
 {
-    $content = aiReadFile($root, 'AI-universal-rules/manifest.yml');
+    $content = aiReadFile($root, 'packages/ai-universal-rules/manifest.yml');
     $summary = [];
 
     foreach (preg_split('/\r?\n/', $content) ?: [] as $line) {

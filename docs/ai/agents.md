@@ -20,28 +20,28 @@ Use this file as the durable reference for what the repository agents do, when t
 
 ## Reusable Package Agent Templates
 
-These are reference assets in `AI-universal-rules/`. They are not live root-repo agents unless a runtime adapter installs them.
+These are reference assets in `packages/ai-universal-rules/`. They are not live root-repo agents unless a runtime adapter installs them.
 
 | Runtime | Agent | Path | Purpose |
 | --- | --- | --- | --- |
-| `opencode` | `architect` | `AI-universal-rules/templates/opencode/agents/architect.md` | plan medium or large changes, affected areas, and rollout posture |
-| `opencode` | `implementer` | `AI-universal-rules/templates/opencode/agents/implementer.md` | implement a bounded slice with focused verification |
-| `opencode` | `refactorer` | `AI-universal-rules/templates/opencode/agents/refactorer.md` | improve structure when behavior is already correct |
-| `opencode` | `release-auditor` | `AI-universal-rules/templates/opencode/agents/release-auditor.md` | review rollout, rollback, observability, and migration safety |
-| `opencode` | `researcher` | `AI-universal-rules/templates/opencode/agents/researcher.md` | provide read-only grounding before planning or implementation |
-| `opencode` | `reviewer` | `AI-universal-rules/templates/opencode/agents/reviewer.md` | review correctness, regressions, policy fit, and missing verification |
-| `opencode optional` | `bugfix` | `AI-universal-rules/templates/optional/opencode/agents/bugfix.md` | reproduce and fix a bounded bug with minimal scope |
-| `opencode optional` | `build-config` | `AI-universal-rules/templates/optional/opencode/agents/build-config.md` | update build, packaging, or verification configuration |
-| `opencode optional` | `docs` | `AI-universal-rules/templates/optional/opencode/agents/docs.md` | align documentation after behavior or setup changes |
-| `opencode optional` | `infra-auditor` | `AI-universal-rules/templates/optional/opencode/agents/infra-auditor.md` | audit dependency, release, build, or compatibility risk |
-| `opencode optional` | `ui-builder` | `AI-universal-rules/templates/optional/opencode/agents/ui-builder.md` | implement UI work while preserving interaction patterns and accessibility |
-| `opencode optional` | `upgrade` | `AI-universal-rules/templates/optional/opencode/agents/upgrade.md` | plan or apply dependency and platform upgrades carefully |
-| `github-copilot` | `Repository Architect` | `AI-universal-rules/templates/github-copilot/agents/architect.agent.md` | plan medium or large changes and risk posture |
-| `github-copilot` | `Repository Implementer` | `AI-universal-rules/templates/github-copilot/agents/implementer.agent.md` | implement a bounded slice with focused verification |
-| `github-copilot` | `Repository Refactorer` | `AI-universal-rules/templates/github-copilot/agents/refactorer.agent.md` | refactor structure without changing correct behavior |
-| `github-copilot` | `Release Auditor` | `AI-universal-rules/templates/github-copilot/agents/release-auditor.agent.md` | assess rollout, rollback, observability, and migration safety |
-| `github-copilot` | `Repository Researcher` | `AI-universal-rules/templates/github-copilot/agents/researcher.agent.md` | gather read-only repo grounding before action |
-| `github-copilot` | `Repository Reviewer` | `AI-universal-rules/templates/github-copilot/agents/reviewer.agent.md` | review a change set from the diff first |
+| `opencode` | `architect` | `packages/ai-universal-rules/templates/opencode/agents/architect.md` | plan medium or large changes, affected areas, and rollout posture |
+| `opencode` | `implementer` | `packages/ai-universal-rules/templates/opencode/agents/implementer.md` | implement a bounded slice with focused verification |
+| `opencode` | `refactorer` | `packages/ai-universal-rules/templates/opencode/agents/refactorer.md` | improve structure when behavior is already correct |
+| `opencode` | `release-auditor` | `packages/ai-universal-rules/templates/opencode/agents/release-auditor.md` | review rollout, rollback, observability, and migration safety |
+| `opencode` | `researcher` | `packages/ai-universal-rules/templates/opencode/agents/researcher.md` | provide read-only grounding before planning or implementation |
+| `opencode` | `reviewer` | `packages/ai-universal-rules/templates/opencode/agents/reviewer.md` | review correctness, regressions, policy fit, and missing verification |
+| `opencode optional` | `bugfix` | `packages/ai-universal-rules/templates/optional/opencode/agents/bugfix.md` | reproduce and fix a bounded bug with minimal scope |
+| `opencode optional` | `build-config` | `packages/ai-universal-rules/templates/optional/opencode/agents/build-config.md` | update build, packaging, or verification configuration |
+| `opencode optional` | `docs` | `packages/ai-universal-rules/templates/optional/opencode/agents/docs.md` | align documentation after behavior or setup changes |
+| `opencode optional` | `infra-auditor` | `packages/ai-universal-rules/templates/optional/opencode/agents/infra-auditor.md` | audit dependency, release, build, or compatibility risk |
+| `opencode optional` | `ui-builder` | `packages/ai-universal-rules/templates/optional/opencode/agents/ui-builder.md` | implement UI work while preserving interaction patterns and accessibility |
+| `opencode optional` | `upgrade` | `packages/ai-universal-rules/templates/optional/opencode/agents/upgrade.md` | plan or apply dependency and platform upgrades carefully |
+| `github-copilot` | `Repository Architect` | `packages/ai-universal-rules/templates/github-copilot/agents/architect.agent.md` | plan medium or large changes and risk posture |
+| `github-copilot` | `Repository Implementer` | `packages/ai-universal-rules/templates/github-copilot/agents/implementer.agent.md` | implement a bounded slice with focused verification |
+| `github-copilot` | `Repository Refactorer` | `packages/ai-universal-rules/templates/github-copilot/agents/refactorer.agent.md` | refactor structure without changing correct behavior |
+| `github-copilot` | `Release Auditor` | `packages/ai-universal-rules/templates/github-copilot/agents/release-auditor.agent.md` | assess rollout, rollback, observability, and migration safety |
+| `github-copilot` | `Repository Researcher` | `packages/ai-universal-rules/templates/github-copilot/agents/researcher.agent.md` | gather read-only repo grounding before action |
+| `github-copilot` | `Repository Reviewer` | `packages/ai-universal-rules/templates/github-copilot/agents/reviewer.agent.md` | review a change set from the diff first |
 
 ## Selection Rules
 

@@ -339,7 +339,7 @@ class AiCatalogLibTest extends TestCase
     public function testCollectExampleEntrypointsFindsKnownSuffixes(): void
     {
         $root = aiRepoRoot();
-        $relDir = 'AI-universal-rules/examples/generic-placeholder-repo';
+        $relDir = 'packages/ai-universal-rules/examples/generic-placeholder-repo';
         $prefix = $root . '/' . $relDir . '/';
         $files = [
             $prefix . 'README.md',
@@ -356,7 +356,7 @@ class AiCatalogLibTest extends TestCase
     public function testCollectExampleEntrypointsMaxSix(): void
     {
         $root = aiRepoRoot();
-        $relDir = 'AI-universal-rules/examples/worked-dual-tool-repo';
+        $relDir = 'packages/ai-universal-rules/examples/worked-dual-tool-repo';
         $prefix = $root . '/' . $relDir . '/';
         // Feed more than 6 matching paths
         $files = [

@@ -59,7 +59,7 @@ for file in \
     docs/ai/workflow.md \
     docs/software-and-cli-tools.md \
     docs/vscode-extensions.md \
-    shell/.zshrc \
+    configs/shell/.zshrc \
     .github/copilot-instructions.md \
     justfile \
     scripts/hooks/pre-commit.sh \

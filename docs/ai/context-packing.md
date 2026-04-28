@@ -176,7 +176,7 @@ bash scripts/copilot/repomix-context-tree.sh all . \
 
 Both workflows filter files before analysis using tracked or unignored repository files plus `.repomixignore` exclusions.
 
-This repo intentionally keeps `AI-universal-rules/examples/` packable by default because those examples are useful reference material.
+This repo intentionally keeps `packages/ai-universal-rules/examples/` packable by default because those examples are useful reference material.
 
 The hard local exclusion to keep is:
 

@@ -177,6 +177,14 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - Recommended read order in this repo: `README.md` -> `.github/copilot-instructions.md` -> `docs/ai/project-context.md` -> `docs/ai/workflow.md` -> `docs/ai/agents.md` -> `docs/ai/failure-handling.md` -> relevant `docs/ai/capabilities/*`
 - Use `docs/ai/catalog.md` as the live generated inventory when you need the full list of agents, instructions, hooks, prompts, scripts, and canonical docs
 
+### Recommended AI footprint
+
+- Start with one instruction surface, one durable project context file, and three core capabilities: `project-context`, `verify-change`, `review-diff`
+- Keep live agents small at first (`2-4` total); default core set is `researcher`, `architect`, `implementer`, `reviewer`
+- Add optional agents such as `release-auditor` and `refactorer` only when recurring risk patterns justify them
+- Keep skills and prompt packs minimal until real workflow repetition exists; avoid large catalogs without clear ownership
+- Prioritize documented and verified workflows over quantity of agents, skills, or plugins
+
 ### Context packing
 
 - `just context-analyze` - inspect how the repo splits under the default tree-context budget

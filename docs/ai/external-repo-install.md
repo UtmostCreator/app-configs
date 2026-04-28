@@ -47,3 +47,4 @@ Current installer runtime support:
 - this installer is intentionally starter-focused
 - review and refine `AGENTS.md` and `docs/ai/project-context.md` after install
 - run repo-specific verification after installation
+- for folder-level install wiring and intent mapping, consult `docs/ai/repo-directory-map.json`

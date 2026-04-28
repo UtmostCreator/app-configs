@@ -7,7 +7,7 @@ This repository is both a live personal config repo and a reusable AI workflow k
 ## What To Contribute
 
 - fixes for stale paths, broken commands, or drift between canonical docs and runtime adapters
-- improvements to `AI-universal-rules/` that make the kit more portable, verifiable, or easier to adopt
+- improvements to `packages/ai-universal-rules/` that make the kit more portable, verifiable, or easier to adopt
 - tighter validation, generation, or packaging workflows
 - setup docs that are more copy-paste safe without hiding machine-specific assumptions
 
@@ -20,7 +20,7 @@ This repository is both a live personal config repo and a reusable AI workflow k
 
 ## Design Rules
 
-- keep canonical workflow logic in `docs/ai/capabilities/` or `AI-universal-rules/templates/capabilities/`
+- keep canonical workflow logic in `docs/ai/capabilities/` or `packages/ai-universal-rules/templates/capabilities/`
 - keep runtime adapters thin and pointed back to canonical docs
 - preserve portability where practical
 - prefer the smallest coherent change over broad rewrites
@@ -96,8 +96,8 @@ All test fixtures live under `tests/fixtures/`. They must be stack-agnostic: no 
 These files are generated and should not be edited by hand:
 
 - `docs/ai/catalog.md`
-- `AI-universal-rules/docs/BROWSE.md`
-- `AI-universal-rules/catalog.json`
+- `packages/ai-universal-rules/docs/BROWSE.md`
+- `packages/ai-universal-rules/catalog.json`
 - `llms.txt`
 
 These local context outputs are also generated and should not be committed:

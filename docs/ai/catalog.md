@@ -50,8 +50,8 @@ Use `docs/ai/copilot-getting-started.md` for quick onboarding, then use this cat
 | `capability` | review-diff | `docs/ai/capabilities/review-diff/CAPABILITY.md` | Review the proposed change set for accuracy, drift, portability, and missing verification. |
 | `capability` | service-boundary-patterns | `docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md` | Define public, internal, tool, and data boundaries so agent-enabled workflows do not blur trust and risk surfaces. |
 | `capability` | verify-change | `docs/ai/capabilities/verify-change/CAPABILITY.md` | Choose the smallest relevant proof for a config, docs, or workflow change and report evidence cleanly. |
-| `copilot-policy` | policy.yaml | `scripts/copilot/policy.yaml` | Declarative allow, deny, and confirm rules for the Copilot command policy surface. |
-| `copilot-schema` | evidence-event.schema.json | `scripts/copilot/evidence-event.schema.json` | JSON schema for durable agent evidence events emitted by supported runtime surfaces. |
+| `copilot-policy` | policy.yaml | `policies/copilot/policy.yaml` | Declarative allow, deny, and confirm rules for the Copilot command policy surface. |
+| `copilot-schema` | evidence-event.schema.json | `.schemas/evidence-event.schema.json` | JSON schema for durable agent evidence events emitted by supported runtime surfaces. |
 | `copilot-script` | ai-diff-context.sh | `scripts/copilot/ai-diff-context.sh` | Incremental context packer for changed files, PR slices, recent changes, and touched areas. |
 | `copilot-script` | ai-edit.sh | `scripts/copilot/ai-edit.sh` | Guarded broad-edit wrapper with snapshots, dry-run behavior, visible diff, and optional verification. |
 | `copilot-script` | ai-rollback.sh | `scripts/copilot/ai-rollback.sh` | Rollback helper for explicit recovery work using session snapshots and refs. |
@@ -64,18 +64,18 @@ Use `docs/ai/copilot-getting-started.md` for quick onboarding, then use this cat
 | `copilot-script` | watch-loop.sh | `scripts/copilot/watch-loop.sh` | Watch-based verification loop with debounce and repo-local session logging. |
 | `exporter` | export-ai-universal-rules | `tools/ai/export-ai-universal-rules.php` | Builds starter-profile release bundles under dist/. |
 | `generator` | generate-ai-catalog | `tools/ai/generate-ai-catalog.php` | Generates catalog docs, catalog JSON, and llms.txt. |
-| `github-copilot-agent` | config-maintainer.agent.md | `.github/agents/config-maintainer.agent.md` |  |
+| `github-copilot-agent` | config-maintainer | `.github/agents/config-maintainer.agent.md` | Use when updating editor, shell, runtime, or tool configuration while preserving existing behavior and validating the narrowest safe surface first |
 | `github-copilot-agent` | workflow-auditor.agent.md | `.github/agents/workflow-auditor.agent.md` |  |
-| `github-copilot-instruction` | ai-workflow | `.github/instructions/ai-workflow.instructions.md` |  |
+| `github-copilot-instruction` | ai-workflow | `.github/instructions/ai-workflow.instructions.md` | Rules for AI workflow docs and runtime adapters |
 | `github-copilot-instruction` | ci | `.github/instructions/ci.instructions.md` |  |
-| `github-copilot-instruction` | config | `.github/instructions/config.instructions.md` |  |
+| `github-copilot-instruction` | config | `.github/instructions/config.instructions.md` | Rules for config changes in editor, shell, runtime, and tool files |
 | `github-copilot-instruction` | docs | `.github/instructions/docs.instructions.md` |  |
 | `github-copilot-instruction` | frontend | `.github/instructions/frontend.instructions.md` |  |
-| `github-copilot-instruction` | php | `.github/instructions/php.instructions.md` |  |
+| `github-copilot-instruction` | php | `.github/instructions/php.instructions.md` | PHP investigation and verification routing |
 | `hook` | tool-guardian | `.github/hooks/tool-guardian.json` | Protects the live repo with a narrow Copilot hook guard. |
-| `php-reference` | design-patterns | `tools/design-patterns` | Primary local PHP design pattern corpus for agent and human lookups. |
-| `php-reference` | design-principles | `tools/design-principles` | Secondary PHP principles and composition examples. |
-| `php-reference` | php-built-ins | `tools/php-built-ins` | Supporting PHP built-in usage examples. |
+| `php-reference` | design-patterns | `reference/php/design-patterns` | Primary local PHP design pattern corpus for agent and human lookups. |
+| `php-reference` | design-principles | `reference/php/design-principles` | Secondary PHP principles and composition examples. |
+| `php-reference` | php-built-ins | `reference/php/php-built-ins` | Supporting PHP built-in usage examples. |
 | `root-doc` | AI Guardrails | `docs/ai/AI-GUARDRAILS.md` | Cross-tool guardrails for approval boundaries, evidence, and recurring failure modes. |
 | `root-doc` | agent-ops-checklist | `docs/ai/agent-ops-checklist.md` | Phased verification checklist for auditing AI workflow integration in the live repo. |
 | `root-doc` | agent-ops | `docs/ai/agent-ops.md` | AgentOps model for observability, evaluation, optimization, IAM, and architecture routing. |

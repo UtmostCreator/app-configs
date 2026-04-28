@@ -46,7 +46,7 @@ foreach ($catalog['resources'] ?? [] as $resource) {
     }
 }
 
-foreach (['tools/design-patterns', 'tools/design-principles', 'tools/php-built-ins'] as $requiredPhpReferencePath) {
+foreach (['reference/php/design-patterns', 'reference/php/design-principles', 'reference/php/php-built-ins'] as $requiredPhpReferencePath) {
     if (!aiCatalogHasPath($catalog, $requiredPhpReferencePath)) {
         $errors[] = "catalog.json should include PHP reference corpus path {$requiredPhpReferencePath}";
     }
@@ -55,7 +55,7 @@ foreach (['tools/design-patterns', 'tools/design-principles', 'tools/php-built-i
 foreach ([
     'docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md',
     'docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md',
-    'scripts/copilot/evidence-event.schema.json',
+    '.schemas/evidence-event.schema.json',
 ] as $requiredEvidencePath) {
     if (!aiCatalogHasPath($catalog, $requiredEvidencePath)) {
         $errors[] = "catalog.json should include evidence support path {$requiredEvidencePath}";

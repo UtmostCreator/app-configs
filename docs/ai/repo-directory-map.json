@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "directories": [
+    {
+      "path": ".",
+      "purpose": "Repository root files and project-level entrypoints.",
+      "designed_for": "Humans, CI, package managers, and AI agents.",
+      "install_guide": "docs/ai/external-repo-install.md",
+      "install_script": "none",
+      "ai_entrypoint": "README.md",
+      "notes": "Contains root configuration, README, justfile, and project-level metadata."
+    },
+    {
+      "path": ".copilot-logs",
+      "purpose": "Stores local Copilot log handling notes and examples.",
+      "designed_for": "Maintainers documenting local logging expectations.",
+      "install_guide": "docs/ai/copilot-tooling.md",
+      "install_script": "none",
+      "ai_entrypoint": "docs/ai/failure-handling.md",
+      "notes": "Reference-only docs surface for local logs."
+    },
+    {
+      "path": ".github",
+      "purpose": "GitHub Copilot adapter surfaces including instructions, agents, prompts, hooks, and workflows.",
+      "designed_for": "GitHub Copilot users and CI automation.",
+      "install_guide": "docs/ai/external-repo-install.md",
+      "install_script": "tools/ai/install-copilot-kit.sh",
+      "ai_entrypoint": ".github/copilot-instructions.md",
+      "notes": "Adapter layer; canonical workflow logic remains under docs/ai capabilities."
+    },
+    {
+      "path": ".husky",
+      "purpose": "Git hook entrypoints for local validation before commit.",
+      "designed_for": "Developers using local Git hook automation.",
+      "install_guide": "docs/software-and-cli-tools.md",
+      "install_script": "none",
+      "ai_entrypoint": "docs/ai/validation.md",
+      "notes": "Thin wrappers that invoke scripts/hooks for policy checks."
+    },
+    {
+      "path": ".schemas",
+      "purpose": "JSON schemas used by validators for catalog and manifest contracts.",
+      "designed_for": "Validation tooling and maintainers updating AI metadata formats.",
+      "install_guide": "docs/ai/validation.md",
+      "install_script": "none",
+      "ai_entrypoint": "tools/ai/validate-ai-catalog.php",
+      "notes": "Schema source of truth for generated AI package artifacts."
+    },
+    {
+      "path": "AI-universal-rules",
+      "purpose": "Reusable cross-runtime AI workflow package, templates, and examples.",
+      "designed_for": "Teams bootstrapping AI workflows in external repositories.",
+      "install_guide": "AI-universal-rules/QUICKSTART.md",
+      "install_script": "tools/ai/install-copilot-kit.sh",
+      "ai_entrypoint": "AI-universal-rules/README.md",
+      "notes": "Portable package benchmark; examples are references, not root repo runtime defaults."
+    },
+    {
+      "path": "docs",
+      "purpose": "Repository documentation for setup, AI workflow, and operating guidance.",
+      "designed_for": "Humans and AI agents reading durable project instructions.",
+      "install_guide": "docs/ai/external-repo-install.md",
+      "install_script": "tools/ai/install-copilot-kit.sh",
+      "ai_entrypoint": "docs/ai/project-context.md",
+      "notes": "Canonical guidance surface for repo-specific behavior and procedures."
+    },
+    {
+      "path": "configs",
+      "purpose": "Optional local developer environment profiles for shell, editor, terminal, and tool setup.",
+      "designed_for": "Developers applying local configuration templates.",
+      "install_guide": "docs/software-and-cli-tools.md",
+      "install_script": "none",
+      "ai_entrypoint": "configs/vscode/user/settings.json",
+      "notes": "Configuration profiles are optional and may include machine-local assumptions."
+    },
+    {
+      "path": "scripts",
+      "purpose": "Operational scripts for Copilot workflows, verification, search, context packing, and hooks.",
+      "designed_for": "Humans and AI agents running repeatable repo workflows.",
+      "install_guide": "docs/ai/copilot-tooling.md",
+      "install_script": "tools/ai/install-copilot-kit.sh",
+      "ai_entrypoint": "scripts/copilot/run-repomix-context.sh",
+      "notes": "Execution surface for guarded automation and evidence-oriented checks."
+    },
+    {
+      "path": "policies",
+      "purpose": "Governance policy instances consumed by script-level policy enforcement.",
+      "designed_for": "Maintainers defining allow, deny, and confirmation command behavior.",
+      "install_guide": "docs/ai/copilot-tooling.md",
+      "install_script": "none",
+      "ai_entrypoint": "policies/copilot/policy.yaml",
+      "notes": "Policy instances live here; schema contracts live in .schemas."
+    },
+    {
+      "path": "reference",
+      "purpose": "Non-runtime reference and learning material, including PHP examples and scaffolds.",
+      "designed_for": "Humans and AI agents needing local language and pattern references.",
+      "install_guide": "reference/README.md",
+      "install_script": "none",
+      "ai_entrypoint": "reference/php/README.md",
+      "notes": "Reference corpus is not runtime-critical unless explicitly used by a tool or test."
+    },
+    {
+      "path": "tests",
+      "purpose": "PHP and shell test suites plus fixtures for workflow verification.",
+      "designed_for": "Maintainers verifying behavior and preventing regressions.",
+      "install_guide": "docs/ai/validation.md",
+      "install_script": "none",
+      "ai_entrypoint": "justfile",
+      "notes": "Covers validators, shell wrappers, and context-tree workflows."
+    },
+    {
+      "path": "tools",
+      "purpose": "Utility scripts and reference corpora including AI tooling and PHP examples.",
+      "designed_for": "Maintainers and agents generating catalogs, exports, and docs artifacts.",
+      "install_guide": "docs/ai/external-repo-install.md",
+      "install_script": "tools/ai/install-copilot-kit.sh",
+      "ai_entrypoint": "tools/ai/generate-ai-catalog.php",
+      "notes": "Contains generators/validators plus non-runtime reference material."
+    }
+  ],
+  "metadata_exemptions": [
+    {
+      "path": ".repomix-context",
+      "reason": "Generated context output directory and not a tracked source folder."
+    }
+  ]
+}

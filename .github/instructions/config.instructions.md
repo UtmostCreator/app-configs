@@ -1,5 +1,5 @@
 ---
-applyTo: "vscode/**,shell/**,tools/**,php/**,.editorconfig,.eslintrc.json,.prettierrc.json,.stylelintrc.json"
+applyTo: "configs/vscode/**,configs/shell/**,tools/**,configs/php/**,.editorconfig,.eslintrc.json,.prettierrc.json,.stylelintrc.json"
 description: "Rules for config changes in editor, shell, runtime, and tool files"
 ---
 

@@ -2,7 +2,7 @@
 
 Use this schema model for durable agent evidence events when the runtime surface supports structured logs.
 
-Canonical schema file: `scripts/copilot/evidence-event.schema.json`
+Canonical schema file: `.schemas/evidence-event.schema.json`
 
 ## Required Fields
 

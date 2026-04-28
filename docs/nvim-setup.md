@@ -10,7 +10,7 @@
 
 | Repo path     | Deploy to         |
 | ------------- | ----------------- |
-| `tools/nvim/` | `~/.config/nvim/` |
+| `configs/nvim/` | `~/.config/nvim/` |
 
 ## Deploy
 
@@ -19,7 +19,7 @@
 mv ~/.config/nvim ~/.config/nvim.bak 2>/dev/null
 
 # Symlink from repo
-ln -s /path/to/app-configs/tools/nvim ~/.config/
+ln -s /path/to/app-configs/configs/nvim ~/.config/
 ```
 
 Then open Neovim — lazy.nvim will auto-install plugins on first launch.

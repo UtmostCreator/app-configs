@@ -16,7 +16,7 @@ foreach ($argv as $argument) {
 }
 
 $root = aiRepoRoot();
-$manifest = aiLoadJson($root, 'AI-universal-rules/manifest.json');
+$manifest = aiLoadJson($root, 'packages/ai-universal-rules/manifest.json');
 $profiles = [];
 
 foreach ($manifest['starter_profiles'] as $profile) {
@@ -31,7 +31,7 @@ if (!isset($profiles[$profileId])) {
 if ($checkOnly && $explicitProfile === false) {
     foreach ($profiles as $candidate) {
         foreach ($candidate['includes'] as $include) {
-            $source = aiAbsolutePath($root, 'AI-universal-rules/' . $include);
+            $source = aiAbsolutePath($root, 'packages/ai-universal-rules/' . $include);
 
             if (!file_exists($source)) {
                 fwrite(STDERR, "ERROR: missing export source {$include} for profile {$candidate['id']}\n");
@@ -50,7 +50,7 @@ $exportRoot = aiAbsolutePath($root, $manifest['release']['export_root']);
 $bundleDirectory = $exportRoot . DIRECTORY_SEPARATOR . $manifest['version'] . DIRECTORY_SEPARATOR . $profileId;
 
 foreach ($profile['includes'] as $include) {
-    $source = aiAbsolutePath($root, 'AI-universal-rules/' . $include);
+    $source = aiAbsolutePath($root, 'packages/ai-universal-rules/' . $include);
 
     if (!file_exists($source)) {
         fwrite(STDERR, "ERROR: missing export source {$include}\n");
@@ -70,7 +70,7 @@ if (!is_dir($bundleDirectory) && !mkdir($bundleDirectory, 0777, true) && !is_dir
 
 foreach ($profile['includes'] as $include) {
     aiCopyPath(
-        aiAbsolutePath($root, 'AI-universal-rules/' . $include),
+        aiAbsolutePath($root, 'packages/ai-universal-rules/' . $include),
         $bundleDirectory . DIRECTORY_SEPARATOR . $include
     );
 }

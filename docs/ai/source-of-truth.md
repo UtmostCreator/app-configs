@@ -9,7 +9,7 @@
 | Generic agent adapter | `AGENTS.md` | Portable agent adapter |
 | Claude adapter | `CLAUDE.md` | Claude-specific adapter |
 | AI-readable index | `llms.txt` | Root AI navigation and index file |
-| Reusable package | `AI-universal-rules/` | Current package source until package-boundary move |
+| Reusable package | `packages/ai-universal-rules/` | Canonical reusable AI workflow package source |
 | Runtime scripts | `scripts/` | Executable operations |
 | Copilot runtime logs | `.copilot-logs/` | Default local log and snapshot path |
 | Governance policies | `policies/` | Policy instances |

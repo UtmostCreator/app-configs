@@ -36,6 +36,14 @@ This validator is intentionally narrow.
 - `WARN` - likely drift or stale wording worth reviewing
 - `ERROR` - missing files, placeholders, or broken references
 
+## Hook Adapters
+
+This repository keeps both Husky and Lefthook surfaces as optional hook adapters.
+
+- Canonical hook behavior lives in `scripts/hooks/`
+- `.husky/` is the optional Node/Husky adapter
+- `.lefthook.yml` is the optional polyglot Lefthook adapter
+
 ## When To Run It
 
 - after editing `AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/ai/`, or `.github/`

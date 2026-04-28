@@ -8,10 +8,10 @@ tools: ["read", "edit", "search", "runInTerminal", "problems"]
 
 ## Focus
 
-- `vscode/`
-- `shell/`
+- `configs/vscode/`
+- `configs/shell/`
 - `tools/`
-- `php/`
+- `configs/php/`
 - shared repo config files at root
 
 ## Workflow

@@ -10,12 +10,12 @@
 
 | Repo path             | Deploy to                          |
 | --------------------- | ---------------------------------- |
-| `shell/.zshrc`        | `~/.zshrc`                         |
-| `shell/starship.toml` | `~/.config/starship/starship.toml` |
+| `configs/shell/.zshrc`        | `~/.zshrc`                         |
+| `configs/shell/starship.toml` | `~/.config/starship/starship.toml` |
 
 ## Optional Local Workflow Helpers
 
-If you keep this repo checked out locally, `shell/.zshrc` also exposes small helpers for jumping into the repo and running health checks.
+If you keep this repo checked out locally, `configs/shell/.zshrc` also exposes small helpers for jumping into the repo and running health checks.
 
 - Set `APP_CONFIGS_HOME` if your clone is not at the default path.
 - Use `acfg` to jump to the repo.

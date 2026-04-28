@@ -1064,7 +1064,7 @@
             "scope": "root",
             "type": "copilot-policy",
             "name": "policy.yaml",
-            "path": "scripts/copilot/policy.yaml",
+            "path": "policies/copilot/policy.yaml",
             "runtime": "github-copilot",
             "description": "Declarative allow, deny, and confirm rules for the Copilot command policy surface."
         },
@@ -1072,7 +1072,7 @@
             "scope": "root",
             "type": "copilot-schema",
             "name": "evidence-event.schema.json",
-            "path": "scripts/copilot/evidence-event.schema.json",
+            "path": ".schemas/evidence-event.schema.json",
             "runtime": "github-copilot",
             "description": "JSON schema for durable agent evidence events emitted by supported runtime surfaces."
         },
@@ -1175,10 +1175,10 @@
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "config-maintainer.agent.md",
+            "name": "config-maintainer",
             "path": ".github/agents/config-maintainer.agent.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "Use when updating editor, shell, runtime, or tool configuration while preserving existing behavior and validating the narrowest safe surface first"
         },
         {
             "scope": "root",
@@ -1194,7 +1194,7 @@
             "name": "ai-workflow",
             "path": ".github/instructions/ai-workflow.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "Rules for AI workflow docs and runtime adapters"
         },
         {
             "scope": "root",
@@ -1210,7 +1210,7 @@
             "name": "config",
             "path": ".github/instructions/config.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "Rules for config changes in editor, shell, runtime, and tool files"
         },
         {
             "scope": "root",
@@ -1234,7 +1234,7 @@
             "name": "php",
             "path": ".github/instructions/php.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "PHP investigation and verification routing"
         },
         {
             "scope": "root",
@@ -1248,7 +1248,7 @@
             "scope": "root",
             "type": "php-reference",
             "name": "design-patterns",
-            "path": "tools/design-patterns",
+            "path": "reference/php/design-patterns",
             "runtime": "php",
             "description": "Primary local PHP design pattern corpus for agent and human lookups."
         },
@@ -1256,7 +1256,7 @@
             "scope": "root",
             "type": "php-reference",
             "name": "design-principles",
-            "path": "tools/design-principles",
+            "path": "reference/php/design-principles",
             "runtime": "php",
             "description": "Secondary PHP principles and composition examples."
         },
@@ -1264,7 +1264,7 @@
             "scope": "root",
             "type": "php-reference",
             "name": "php-built-ins",
-            "path": "tools/php-built-ins",
+            "path": "reference/php/php-built-ins",
             "runtime": "php",
             "description": "Supporting PHP built-in usage examples."
         },

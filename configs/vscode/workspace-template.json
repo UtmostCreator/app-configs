@@ -1,4 +1,4 @@
-// per-workspace settings e.g. .vscode/settings.json
+// per-workspace settings e.g. .configs/vscode/settings.json
 {
   // =========================
   // Formatting / code style only

@@ -7,9 +7,9 @@
 - Summary: `Opinionated editor, shell, terminal, PHP, and keyboard configuration plus a reusable cross-tool AI workflow package.`
 - Primary language: `Markdown, JSON, shell config, Lua`
 - Primary runtime: `local developer tooling`
-- Active paths: `AI-universal-rules/, docs/, vscode/, shell/, tools/, php/, .github/`
+- Active paths: `AI-universal-rules/, docs/, configs/vscode/, configs/shell/, tools/, configs/php/, .github/`
 - Inactive or legacy paths: `none declared; treat unreferenced examples as reference material unless a task targets them`
-- Primary entrypoints: `README.md, AI-universal-rules/README.md, docs/ai/project-context.md, vscode/user/settings.json, shell/.zshrc`
+- Primary entrypoints: `README.md, AI-universal-rules/README.md, docs/ai/project-context.md, configs/vscode/user/settings.json, configs/shell/.zshrc`
 - AI reference docs: `docs/ai/agents.md, docs/ai/failure-handling.md, docs/ai/agent-ops-checklist.md, docs/ai/integration-matrix.md`
 
 ## Default Workflow

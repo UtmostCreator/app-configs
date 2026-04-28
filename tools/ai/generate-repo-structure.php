@@ -51,6 +51,18 @@ $trackedFiles = array_values(
     )
 );
 
+$generatedExclusions = [
+    'docs/ai/generated/repo-structure.json' => true,
+    'docs/ai/generated/repo-structure.csv' => true,
+    'docs/ai/generated/repo-structure.md' => true,
+    'docs/ai/generated/repo-structure.log' => true,
+];
+
+$trackedFiles = array_values(array_filter(
+    $trackedFiles,
+    static fn(string $path): bool => !array_key_exists($path, $generatedExclusions)
+));
+
 sort($trackedFiles, SORT_STRING);
 
 if ($trackedFiles === []) {

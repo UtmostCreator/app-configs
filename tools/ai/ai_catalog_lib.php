@@ -219,8 +219,8 @@ function aiCollectRootResources(string $root): array
         'scripts/copilot/gh-pr-context.sh' => ['copilot-script', 'gh-pr-context.sh', 'GitHub PR context wrapper with metadata, diff, checks, reviews, and optional PR-scoped context packing.'],
         'scripts/copilot/repomix-scc-router.sh' => ['copilot-script', 'repomix-scc-router.sh', 'Ranked context router that produces TSV and JSON bundle plans with churn-aware scoring.'],
         'scripts/copilot/watch-loop.sh' => ['copilot-script', 'watch-loop.sh', 'Watch-based verification loop with debounce and repo-local session logging.'],
-        'scripts/copilot/policy.yaml' => ['copilot-policy', 'policy.yaml', 'Declarative allow, deny, and confirm rules for the Copilot command policy surface.'],
-        'scripts/copilot/evidence-event.schema.json' => ['copilot-schema', 'evidence-event.schema.json', 'JSON schema for durable agent evidence events emitted by supported runtime surfaces.'],
+        'policies/copilot/policy.yaml' => ['copilot-policy', 'policy.yaml', 'Declarative allow, deny, and confirm rules for the Copilot command policy surface.'],
+        '.schemas/evidence-event.schema.json' => ['copilot-schema', 'evidence-event.schema.json', 'JSON schema for durable agent evidence events emitted by supported runtime surfaces.'],
     ];
 
     foreach ($rootScriptMap as $relativePath => [$type, $name, $description]) {
@@ -232,9 +232,9 @@ function aiCollectRootResources(string $root): array
     }
 
     $phpReferenceMap = [
-        'tools/design-patterns' => ['php-reference', 'design-patterns', 'Primary local PHP design pattern corpus for agent and human lookups.'],
-        'tools/design-principles' => ['php-reference', 'design-principles', 'Secondary PHP principles and composition examples.'],
-        'tools/php-built-ins' => ['php-reference', 'php-built-ins', 'Supporting PHP built-in usage examples.'],
+        'reference/php/design-patterns' => ['php-reference', 'design-patterns', 'Primary local PHP design pattern corpus for agent and human lookups.'],
+        'reference/php/design-principles' => ['php-reference', 'design-principles', 'Secondary PHP principles and composition examples.'],
+        'reference/php/php-built-ins' => ['php-reference', 'php-built-ins', 'Supporting PHP built-in usage examples.'],
     ];
 
     foreach ($phpReferenceMap as $relativePath => [$type, $name, $description]) {

@@ -29,14 +29,14 @@ This repository has two related jobs:
 - `docs/nvim-setup.md` - Neovim deployment and prerequisites
 - `docs/vscode-extensions.md` - VS Code extension recommendations
 - `docs/keyboard.md` - keyboard and Karabiner ergonomics notes
-- `tools/ghostty/` - terminal configuration
-- `tools/nvim/` - Neovim configuration and plugins
-- `tools/karabiner/` - keyboard remapping config
-- `tools/design-patterns/` - primary PHP design pattern example corpus
-- `tools/design-principles/` - PHP principles and composition examples
-- `tools/php-built-ins/` - PHP built-in function usage examples
-- `php/` - PHP runtime and Pint configuration
-- `vscode/` - workspace, user settings, keybindings, and launch config
+- `configs/ghostty/` - terminal configuration
+- `configs/nvim/` - Neovim configuration and plugins
+- `configs/karabiner/` - keyboard remapping config
+- `reference/php/design-patterns/` - primary PHP design pattern example corpus
+- `reference/php/design-principles/` - PHP principles and composition examples
+- `reference/php/php-built-ins/` - PHP built-in function usage examples
+- `configs/php/` - PHP runtime and Pint configuration
+- `configs/vscode/` - workspace, user settings, keybindings, and launch config
 - `justfile` - optional workflow entrypoints for local health checks and AI validation
 - `scripts/` - Copilot wrappers, doctor checks, and shared git-hook scripts
 
@@ -98,29 +98,24 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 |   `-- vscode-extensions.md
 |-- justfile
 |-- llms.txt
-|-- php/
-|   |-- php.ini
-|   `-- pint.json
 |-- scripts/
 |   |-- copilot/
 |   |-- doctor.sh
 |   `-- hooks/
 |-- SECURITY.md
-|-- shell/
-|   |-- .gitconfig
-|   |-- .zshrc
-|   `-- starship.toml
 |-- SUPPORT.md
 |-- tools/
-|   |-- ai/
-|   |-- create_structure.sh
-|   |-- design-patterns/
-|   |-- design-principles/
+|   `-- ai/
+|-- reference/
+|   `-- php/
+|-- configs/
 |   |-- ghostty/
 |   |-- karabiner/
 |   |-- nvim/
-|   `-- php-built-ins/
-`-- vscode/
+|   |-- php/
+|   |-- shell/
+|   `-- vscode/
+`-- configs/vscode/
     |-- keybindings.json
     |-- launch.json
     |-- user/
@@ -156,7 +151,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - For bootstrap install into another repository, follow `docs/ai/external-repo-install.md`
 - Use `scripts/copilot/ai-diff-context.sh` when you need narrow context for changed files, PR files, recent edits, or touched areas
 - Use `scripts/copilot/ai-search.sh` when the agent should route all search through one stable entrypoint
-- For PHP guidance, search local examples in this order: `tools/design-patterns/` -> `tools/design-principles/` -> `tools/php-built-ins/`
+- For PHP guidance, search local examples in this order: `reference/php/design-patterns/` -> `reference/php/design-principles/` -> `reference/php/php-built-ins/`
 - Use `just php-examples-map` to print the preferred PHP example lookup order
 - Use `just php-patterns-search`, `just php-principles-search`, and `just php-builtins-search` for direct corpus search
 - Use `scripts/copilot/ai-edit.sh` as the only approved path for broad repository edits
@@ -212,8 +207,8 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - `docs/nvim-setup.md`
 - `docs/keyboard.md`
 - `docs/vscode-extensions.md`
-- `tools/ghostty/config`
-- `tools/nvim/init.lua`
-- `php/pint.json`
+- `configs/ghostty/config`
+- `configs/nvim/init.lua`
+- `configs/php/pint.json`
 - `docs/ai/project-context.md`
 - `docs/ai/catalog.md`

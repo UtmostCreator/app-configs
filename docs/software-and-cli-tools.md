@@ -65,7 +65,7 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 ## Editors And Git
 
 - **[Neovim](https://github.com/neovim/neovim)** - extensible Vim-based editor
-  Plugin manager: **[lazy.nvim](https://lazy.folke.io)** - configured in `tools/nvim/`
+  Plugin manager: **[lazy.nvim](https://lazy.folke.io)** - configured in `configs/nvim/`
 - **[BBEdit](https://www.barebones.com/products/bbedit/)** - lightweight macOS text editor
 - **[lazygit](https://github.com/jesseduffield/lazygit)** - terminal UI for Git workflows
 - **[delta](https://github.com/dandavison/delta)** - syntax-highlighted Git diff pager

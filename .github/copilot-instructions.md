@@ -23,10 +23,10 @@ Use these instructions as the repository-wide baseline for GitHub Copilot.
 - Project: `app-configs`
 - Type: `configuration repo + AI workflow kit`
 - Summary: `Opinionated local development configuration plus a live benchmark for durable cross-tool AI workflow setup.`
-- Active paths: `AI-universal-rules/, docs/, vscode/, shell/, tools/, php/, .github/`
-- PHP reference example paths (use these first for PHP guidance): `tools/design-patterns/, tools/design-principles/, tools/php-built-ins/`
+- Active paths: `AI-universal-rules/, docs/, configs/vscode/, configs/shell/, tools/, configs/php/, .github/`
+- PHP reference example paths (use these first for PHP guidance): `reference/php/design-patterns/, reference/php/design-principles/, reference/php/php-built-ins/`
 - Avoid by default: `treat copied examples as references unless the task explicitly targets them`
-- Primary entrypoints: `README.md, AGENTS.md, docs/ai/project-context.md, AI-universal-rules/README.md, vscode/user/settings.json`
+- Primary entrypoints: `README.md, AGENTS.md, docs/ai/project-context.md, AI-universal-rules/README.md, configs/vscode/user/settings.json`
 
 ## Tool Routing Defaults
 
@@ -58,7 +58,7 @@ Execution rules:
 - For medium or high-risk agentic tasks, include traceable evidence fields (`trace_id`, `session_id`, `task_id`, tool evidence, and failure category) in the task output when available.
 - For behavior-changing agent workflows, include regression evidence (golden-task checks, replay notes, and human-review status when required).
 - For preview-environment workflows, include environment identifier, TTL posture, and cleanup status in task evidence.
-- For PHP design questions, search `tools/design-patterns/` first, then `tools/design-principles/`, then `tools/php-built-ins/`.
+- For PHP design questions, search `reference/php/design-patterns/` first, then `reference/php/design-principles/`, then `reference/php/php-built-ins/`.
 - Summarize findings with exact commands, file paths, line ranges, and commit hashes when relevant.
 - Do not run destructive commands unless explicitly requested.
 - Do not run `git push`, `sudo`, package installs, or delete commands by default.
@@ -67,7 +67,7 @@ Execution rules:
 - Log command failures, retries, corrected usage, and avoid-notes using `docs/ai/failure-handling.md`.
 - Do not blindly retry blocked, denied, or mis-specified commands.
 - For broad edits, route through `scripts/copilot/ai-edit.sh` and verify with `scripts/copilot/ai-verify.sh` or `just verify`.
-- Treat `scripts/copilot/policy.yaml` plus the hook scripts as the live Copilot command policy surface.
+- Treat `policies/copilot/policy.yaml` plus the hook scripts as the live Copilot command policy surface.
 - Use `scripts/copilot/ai-rollback.sh` only for explicit recovery work because it modifies the working tree.
 
 ## Working Style

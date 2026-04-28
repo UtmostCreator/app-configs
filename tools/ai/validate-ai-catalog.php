@@ -7,7 +7,7 @@ require_once __DIR__ . '/ai_catalog_lib.php';
 $root = aiRepoRoot();
 $errors = [];
 $warnings = [];
-$manifest = aiLoadJson($root, 'AI-universal-rules/manifest.json');
+$manifest = aiLoadJson($root, 'packages/ai-universal-rules/manifest.json');
 
 foreach (aiValidateManifest($manifest, $root) as $error) {
     $errors[] = $error;
@@ -21,7 +21,7 @@ foreach (['name', 'version', 'description'] as $key) {
     }
 }
 
-$catalog = aiLoadJson($root, 'AI-universal-rules/catalog.json');
+$catalog = aiLoadJson($root, 'packages/ai-universal-rules/catalog.json');
 
 foreach (['generated_by', 'repository', 'package', 'counts', 'resources', 'starter_profiles'] as $key) {
     if (!array_key_exists($key, $catalog)) {

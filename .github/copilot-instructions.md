@@ -23,10 +23,10 @@ Use these instructions as the repository-wide baseline for GitHub Copilot.
 - Project: `app-configs`
 - Type: `configuration repo + AI workflow kit`
 - Summary: `Opinionated local development configuration plus a live benchmark for durable cross-tool AI workflow setup.`
-- Active paths: `AI-universal-rules/, docs/, configs/vscode/, configs/shell/, tools/, configs/php/, .github/`
+- Active paths: `packages/ai-universal-rules/, docs/, configs/vscode/, configs/shell/, tools/, configs/php/, .github/`
 - PHP reference example paths (use these first for PHP guidance): `reference/php/design-patterns/, reference/php/design-principles/, reference/php/php-built-ins/`
 - Avoid by default: `treat copied examples as references unless the task explicitly targets them`
-- Primary entrypoints: `README.md, AGENTS.md, docs/ai/project-context.md, AI-universal-rules/README.md, configs/vscode/user/settings.json`
+- Primary entrypoints: `README.md, AGENTS.md, docs/ai/project-context.md, packages/ai-universal-rules/README.md, configs/vscode/user/settings.json`
 
 ## Tool Routing Defaults
 

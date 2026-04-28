@@ -1,5 +1,5 @@
 ---
-applyTo: "README.md,docs/**,AI-universal-rules/**/*.md"
+applyTo: "README.md,docs/**,packages/ai-universal-rules/**/*.md"
 description: "Rules for setup docs, workflow docs, and examples"
 ---
 

@@ -55,6 +55,7 @@ Use this AI-native workflow stack when the task needs packaging, looped verifica
 6. `tokei` before packaging when you need language/scope metrics in the prompt preface.
 7. `scripts/copilot/repomix-scc-router.sh` only when you specifically want legacy ranked per-folder bundles instead of the tree-context workflow.
 8. `scripts/copilot/ai-diff-context.sh` when you need PR-local, unstaged, recent, or touched-file context instead of a broad repo pack.
+9. `scripts/copilot/run-repomix-context.sh` when you want one command that validates dependencies, generates the tree outputs, and prints wiring guidance.
 
 Use `docs/ai/context-packing.md` for the tree-context workflow, root index outputs, and legacy router compatibility.
 
@@ -84,6 +85,7 @@ Recommended `just` entrypoints for the tree layer:
 - `just context-tree-plan path='.' opts='--compress'` to write a recursive plan and manifest
 - `just context-tree-pack path='.' opts='--compress'` to generate leaf bundles plus parent reference indexes
 - `just context-tree-all path='.' opts='--compress --style xml'` to build the full tree in one step
+- `just context-tree-run path='.' opts='--compress --style xml'` to run the guided wrapper with dependency checks and wiring output
 - `just context-plan-json` to inspect the tree plan JSON
 - `just query-usage path='.' multiplier='1' label='1x'` for read-only raw-token and weighted-usage closeout reporting
 

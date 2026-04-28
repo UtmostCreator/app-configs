@@ -67,6 +67,9 @@ context-tree-pack path='.' opts='':
 context-tree-all path='.' opts='':
   @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/repomix-context-tree.sh all "$path" $opts'
 
+context-tree-run path='.' opts='':
+  @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/copilot/run-repomix-context.sh "$path" $opts'
+
 context-router-stats path='.' depth='1':
   @bash scripts/copilot/repomix-scc-router.sh stats {{path}} --depth {{depth}}
 

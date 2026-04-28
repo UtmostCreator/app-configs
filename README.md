@@ -184,8 +184,10 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - `just context-plan` - write the default tree-context plan and manifest
 - `just context-pack` - pack the default tree-context leaf bundles and child indexes
 - `just context-pack-all` - run the full default tree-context build in one step
+- `just context-tree-run` - run the guided context build wrapper with dependency checks and post-run wiring instructions
 - `just context-plan-json` - print the current `tree-plan.json` for agent-friendly inspection
 - `scripts/copilot/repomix-context-tree.sh` writes the default root index, child indexes, and leaf bundles under `.repomix-context/tree-context/`
+- `scripts/copilot/run-repomix-context.sh` is the easiest entrypoint for humans and agents; it validates dependencies, runs generation, and prints what to open plus where to wire it
 - `scripts/copilot/repomix-scc-router.sh` remains available when you explicitly want ranked-folder router output under `.repomix-context/`
 
 ## Important Notes

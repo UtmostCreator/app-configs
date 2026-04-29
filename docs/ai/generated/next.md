@@ -1,8 +1,8 @@
 # Next
 
 - Status: `blocked`
-- Generated at: `2026-04-29T00:47:18+00:00`
-- Commit: `799b5e6`
+- Generated at: `2026-04-29T01:20:33+00:00`
+- Commit: `fe37d92`
 - Branch: `feat/installer-transaction-engine`
 - Recommended next action: `Regenerate stale artifact before continuing.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "next.json",
-    "generated_at": "2026-04-29T00:47:18+00:00",
+    "generated_at": "2026-04-29T01:20:33+00:00",
     "command": "php tools/ai/ai.php next",
-    "based_on_commit": "799b5e6",
+    "based_on_commit": "fe37d92",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
     "status": "blocked",
@@ -30,6 +30,7 @@
             "diff-summary.json",
             "risk.json",
             "verify.json",
+            "next.json",
             "rebase-state.json",
             "decision-add.json",
             "why.json",
@@ -45,7 +46,10 @@
             "ask.json",
             "conflicts.json",
             "find.json",
-            "symbols.json"
+            "symbols.json",
+            "adapter-validate.json",
+            "rollback.json",
+            "upgrade.json"
         ],
         "next_action": "php tools/ai/ai.php project-snapshot"
     }

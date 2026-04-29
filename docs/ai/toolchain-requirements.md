@@ -70,11 +70,20 @@ npm install -g repomix
 Run these checks:
 
 ```bash
+php tools/ai/ai.php toolchain --with repomix,scc --check
+php tools/ai/ai.php toolchain --with repomix,scc --install-plan
 bash scripts/doctor.sh
 php tools/ai/validate-ai-config.php
 php tools/ai/validate-ai-catalog.php
 php tools/ai/generate-ai-catalog.php --check
 php tools/ai/generate-repo-structure.php --check --with-scc
+```
+
+If scripts-pack is installed, use:
+
+```bash
+php tools/ai/ai.php run-script --list
+php tools/ai/ai.php run-script repomix-context --dry-run
 ```
 
 ## Windows PATH Note

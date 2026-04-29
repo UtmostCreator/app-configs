@@ -51,7 +51,7 @@
         "package:package-capability": 31,
         "package:shared-template": 3,
         "package:workflow-doc": 6,
-        "root:capability": 11,
+        "root:capability": 12,
         "root:copilot-policy": 1,
         "root:copilot-schema": 1,
         "root:copilot-script": 10,
@@ -1035,6 +1035,14 @@
             "path": "docs/ai/capabilities/project-context/CAPABILITY.md",
             "runtime": "canonical",
             "description": "Load durable repository facts before work starts so changes use the right paths, verification, and approval boundaries."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
+            "name": "release-safety",
+            "path": "docs/ai/capabilities/release-safety/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Assess rollout, rollback, observability, and compatibility posture for changes whose risk extends beyond local correctness."
         },
         {
             "scope": "root",

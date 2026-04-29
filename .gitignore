@@ -20,6 +20,8 @@ Thumbs.db
 .copilot-logs/*
 !.copilot-logs/README.md
 .repomix-context/
+.ai-backups/
+.ai-tmp/
 
 # Dependency and build noise
 node_modules/

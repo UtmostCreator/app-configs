@@ -1,13 +1,13 @@
 # Full Install Verify
 
-- Status: `partial`
-- Generated at: `2026-04-29T22:49:51+00:00`
+- Status: `full`
+- Generated at: `2026-04-29T23:27:52+00:00`
 
 ## Executed Steps
 
 - Step 1 (`preflight`): `"C:\xampp\php\php.exe" tools/ai/ai.php preflight` -> exit `0`, artifact status `ok`
   - Goal: Installer prerequisites are ready.
-- Step 2 (`package-verify`): `"C:\xampp\php\php.exe" tools/ai/ai.php package-verify` -> exit `1`, artifact status `failed`
+- Step 2 (`package-verify`): `"C:\xampp\php\php.exe" tools/ai/ai.php package-verify` -> exit `0`, artifact status `ok`
   - Goal: Template package lock is valid.
 - Step 3 (`adapter-plan`): `"C:\xampp\php\php.exe" tools/ai/ai.php adapter-plan --profile full-governance --mode safe-merge --force --allow-core-overwrite --reinstall` -> exit `0`, artifact status `ok`
   - Goal: Install plan is deterministic and conflict-aware.
@@ -21,13 +21,12 @@
   - Goal: Catalog outputs are up to date.
 - Step 8 (`repomix-analyze`): `bash scripts/ai/repomix-context-tree.sh analyze .` -> exit `0`, artifact status `unknown`
   - Goal: Repository structure/context signals are generated.
-- Step 9 (`advisor-all`): `"C:\xampp\php\php.exe" tools/ai/ai.php advisor --all` -> exit `1`, artifact status `blocked`
+- Step 9 (`advisor-all`): `"C:\xampp\php\php.exe" tools/ai/ai.php advisor --all` -> exit `0`, artifact status `ok`
   - Goal: Advisor analyzes repo and suggests fixes.
-- Step 10 (`verify-changed`): `"C:\xampp\php\php.exe" tools/ai/ai.php verify --changed` -> exit `2`, artifact status `failed`
+- Step 10 (`verify-changed`): `"C:\xampp\php\php.exe" tools/ai/ai.php verify --changed` -> exit `0`, artifact status `passed`
   - Goal: Changed-scope verification summary is current.
 
 ## Recommended Next Steps
 
-- 1) Re-run failed step(s) in listed order.
-- 2) If advisor is blocked, review docs/ai/generated/advisor-secret-findings.json.
-- 3) Re-run: php tools/ai/ai.php verify --changed.
+- 1) Install state is full for this verification sequence.
+- 2) Optionally run: php tools/ai/ai.php next.

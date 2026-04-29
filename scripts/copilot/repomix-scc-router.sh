@@ -246,13 +246,16 @@ run_scc_analysis() {
     local -a files=()
     local -a changed_files=()
     local scc_bin
+    local chunk_size=200
+    local idx=0
+    local total=0
 
     scc_bin="$(resolve_scc_bin)" || die "required binary 'scc' not found"
     load_ignore_patterns
     collect_files files
     collect_changed_files changed_files
 
-    if [[ -n "$CHANGED_SINCE" ]] && ((${#changed_files[@]} > 0)); then
+    if [[ -n "$CHANGED_SINCE" ]]; then
         log "limiting stats input to ${#changed_files[@]} changed files since $CHANGED_SINCE"
         files=("${changed_files[@]}")
     fi
@@ -260,13 +263,25 @@ run_scc_analysis() {
     mkdir -p "$OUTPUT_DIR_ABS"
 
     log "running scc on ${#files[@]} files"
+    : >"$RAW_METRICS"
+
+    if ((${#files[@]} == 0)); then
+        log "no files selected for analysis; writing empty metrics"
+        return 0
+    fi
+
     (
         cd "$ROOT"
-        if ((${#files[@]} == 0)); then
-            "$scc_bin" --by-file --format openmetrics --output "$RAW_METRICS" --no-cocomo .
-        elif ((${#files[@]} > 200)); then
-            log "file list too large for argv; running scc from repo root"
-            "$scc_bin" --by-file --format openmetrics --output "$RAW_METRICS" --no-cocomo .
+        if ((${#files[@]} > chunk_size)); then
+            total=${#files[@]}
+            while ((idx < total)); do
+                local -a chunk=("${files[@]:idx:chunk_size}")
+                local chunk_output="$OUTPUT_DIR_ABS/scc-openmetrics-$idx.txt"
+                "$scc_bin" --by-file --format openmetrics --output "$chunk_output" --no-cocomo "${chunk[@]}"
+                cat "$chunk_output" >>"$RAW_METRICS"
+                rm -f "$chunk_output"
+                idx=$((idx + chunk_size))
+            done
         else
             "$scc_bin" --by-file --format openmetrics --output "$RAW_METRICS" --no-cocomo "${files[@]}"
         fi

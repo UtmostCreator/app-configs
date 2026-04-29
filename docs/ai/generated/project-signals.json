@@ -1,7 +1,7 @@
 {
     "schema_version": 1,
     "project": "app-configs",
-    "tracked_files_count": 681,
+    "tracked_files_count": 731,
     "top_level_paths": [
         ".ai-install-manifest.json",
         ".copilot-logs",
@@ -42,7 +42,8 @@
         "tests_php": 11,
         "tests_shell": 4,
         "scripts_copilot": 19,
-        "tools_ai_php": 31
+        "scripts_ai": 22,
+        "tools_ai_php": 36
     },
     "ai_surface": {
         "AGENTS.md": true,
@@ -52,9 +53,9 @@
     },
     "toolchain": {
         "git": true,
-        "php": false,
-        "jq": false,
-        "rg": false,
+        "php": true,
+        "jq": true,
+        "rg": true,
         "repomix": true,
         "scc": true
     }

@@ -1,8 +1,8 @@
 # Verify
 
-- Status: `failed`
-- Generated at: `2026-04-29T22:49:51+00:00`
-- Commit: `670fe37`
+- Status: `passed`
+- Generated at: `2026-04-29T23:27:52+00:00`
+- Commit: `45c4a3a`
 - Branch: `feat/installer-transaction-engine`
 - Recommended next action: `Run next to choose commit or PR closeout action.`
 
@@ -10,21 +10,21 @@
 {
     "schema_version": 1,
     "artifact": "verify.json",
-    "generated_at": "2026-04-29T22:49:51+00:00",
+    "generated_at": "2026-04-29T23:27:52+00:00",
     "command": "php tools/ai/ai.php verify --changed",
-    "based_on_commit": "670fe37",
+    "based_on_commit": "45c4a3a",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
-    "status": "failed",
+    "status": "passed",
     "score": null,
     "stale": false,
     "recommended_next_action": "Run next to choose commit or PR closeout action.",
     "data": {
-        "status": "failed",
+        "status": "passed",
         "mode": "default",
         "summary": {
-            "errors": 6,
-            "warnings": 12,
+            "errors": 0,
+            "warnings": 17,
             "info": 23
         },
         "check_count": 6,
@@ -36,7 +36,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260430-004948/validate-ai-config.log"
+                "log": "docs/ai/generated/logs/verify-20260430-012748/validate-ai-config.log"
             },
             {
                 "name": "validate-ai-catalog",
@@ -44,7 +44,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260430-004948/validate-ai-catalog.log"
+                "log": "docs/ai/generated/logs/verify-20260430-012748/validate-ai-catalog.log"
             },
             {
                 "name": "generate-ai-catalog-check",
@@ -52,7 +52,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260430-004948/generate-ai-catalog-check.log"
+                "log": "docs/ai/generated/logs/verify-20260430-012748/generate-ai-catalog-check.log"
             },
             {
                 "name": "generate-repo-structure-check",
@@ -60,7 +60,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": true,
-                "log": "docs/ai/generated/logs/verify-20260430-004948/generate-repo-structure-check.log"
+                "log": "docs/ai/generated/logs/verify-20260430-012748/generate-repo-structure-check.log"
             },
             {
                 "name": "install-docs-check",
@@ -68,7 +68,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260430-004948/install-docs-check.log"
+                "log": "docs/ai/generated/logs/verify-20260430-012748/install-docs-check.log"
             },
             {
                 "name": "advisor-check",
@@ -76,7 +76,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260430-004948/advisor-check.log"
+                "log": "docs/ai/generated/logs/verify-20260430-012748/advisor-check.log"
             }
         ],
         "findings": [
@@ -167,6 +167,62 @@
             {
                 "severity": "WARNING",
                 "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": "scripts/ai/repomix-context-tree.sh",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": "scripts/ai/repomix-context-tree.sh",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": "scripts/ai/repomix-scc-router.sh",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": "scripts/ai/repomix-scc-router.sh",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": ".github/workflows/validate-ai-surface.yml",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": ".github/workflows/validate-ai-surface.yml",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": "docs/ai/validation.md",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": "docs/ai/validation.md",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
                 "file": "docs/ai/context-packing.md",
                 "message": "Managed file hash drift detected.",
                 "suggested_fix": "Review local customization and merge with source updates."
@@ -249,60 +305,18 @@
                 "suggested_fix": "Keep or merge local changes intentionally."
             },
             {
-                "severity": "ERROR",
-                "code": "MISSING_REQUIRED_TOOL",
-                "file": "scripts/ai",
-                "message": "Required tool missing: bash",
-                "suggested_fix": "Install required scripts-pack dependency."
-            },
-            {
-                "severity": "ERROR",
-                "code": "MISSING_REQUIRED_TOOL",
-                "file": "scripts/ai",
-                "message": "Required tool missing: git",
-                "suggested_fix": "Install required scripts-pack dependency."
-            },
-            {
-                "severity": "ERROR",
-                "code": "MISSING_REQUIRED_TOOL",
-                "file": "scripts/ai",
-                "message": "Required tool missing: jq",
-                "suggested_fix": "Install required scripts-pack dependency."
-            },
-            {
-                "severity": "ERROR",
-                "code": "MISSING_REQUIRED_TOOL",
-                "file": "scripts/ai",
-                "message": "Required tool missing: rg",
-                "suggested_fix": "Install required scripts-pack dependency."
-            },
-            {
-                "severity": "ERROR",
-                "code": "MISSING_REQUIRED_TOOL",
-                "file": "scripts/ai",
-                "message": "Required tool missing: repomix",
-                "suggested_fix": "Install required scripts-pack dependency."
-            },
-            {
-                "severity": "ERROR",
-                "code": "MISSING_REQUIRED_TOOL",
-                "file": "scripts/ai",
-                "message": "Required tool missing: scc",
-                "suggested_fix": "Install required scripts-pack dependency."
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": "tools/ai/advisor",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
             },
             {
                 "severity": "INFO",
-                "code": "MISSING_OPTIONAL_TOOL",
-                "file": "scripts/ai",
-                "message": "Optional tool missing: fd",
-                "suggested_fix": "Install optional tooling for faster workflows."
-            },
-            {
-                "severity": "INFO",
-                "code": "MISSING_OPTIONAL_TOOL",
-                "file": "scripts/ai",
-                "message": "Optional tool missing: gh",
-                "suggested_fix": "Install optional tooling for faster workflows."
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": "tools/ai/advisor",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
             },
             {
                 "severity": "INFO",
@@ -315,28 +329,7 @@
                 "severity": "INFO",
                 "code": "MISSING_OPTIONAL_TOOL",
                 "file": "scripts/ai",
-                "message": "Optional tool missing: bat",
-                "suggested_fix": "Install optional tooling for faster workflows."
-            },
-            {
-                "severity": "INFO",
-                "code": "MISSING_OPTIONAL_TOOL",
-                "file": "scripts/ai",
                 "message": "Optional tool missing: delta",
-                "suggested_fix": "Install optional tooling for faster workflows."
-            },
-            {
-                "severity": "INFO",
-                "code": "MISSING_OPTIONAL_TOOL",
-                "file": "scripts/ai",
-                "message": "Optional tool missing: yq",
-                "suggested_fix": "Install optional tooling for faster workflows."
-            },
-            {
-                "severity": "INFO",
-                "code": "MISSING_OPTIONAL_TOOL",
-                "file": "scripts/ai",
-                "message": "Optional tool missing: shellcheck",
                 "suggested_fix": "Install optional tooling for faster workflows."
             },
             {
@@ -368,7 +361,7 @@
                 "suggested_fix": "Verify hook execution manually on Windows."
             }
         ],
-        "log_dir": "docs/ai/generated/logs/verify-20260430-004948"
+        "log_dir": "docs/ai/generated/logs/verify-20260430-012748"
     }
 }
 ```

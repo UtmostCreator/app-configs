@@ -34,18 +34,12 @@ function aiInstallerRun(array $argv): int
     $missingRequired = [];
     $missingOptional = [];
     foreach ($dep['required'] as $tool) {
-        $out = [];
-        $exit = 0;
-        exec('command -v ' . escapeshellarg((string) $tool) . ' >/dev/null 2>&1', $out, $exit);
-        if ($exit !== 0) {
+        if (!aiInstallerCommandExists((string) $tool)) {
             $missingRequired[] = $tool;
         }
     }
     foreach ($dep['optional'] as $tool) {
-        $out = [];
-        $exit = 0;
-        exec('command -v ' . escapeshellarg((string) $tool) . ' >/dev/null 2>&1', $out, $exit);
-        if ($exit !== 0) {
+        if (!aiInstallerCommandExists((string) $tool)) {
             $missingOptional[] = $tool;
         }
     }

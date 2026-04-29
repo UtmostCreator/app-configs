@@ -1,0 +1,45 @@
+# Adapter plan
+
+- Status: `ok`
+- Generated at: `2026-04-29T00:47:09+00:00`
+- Commit: `799b5e6`
+- Branch: `feat/installer-transaction-engine`
+- Recommended next action: `Run install --dry-run then install --backup-only before apply.`
+
+```json
+{
+    "schema_version": 1,
+    "artifact": "adapter-plan.json",
+    "generated_at": "2026-04-29T00:47:09+00:00",
+    "command": "php tools/ai/ai.php adapter-plan",
+    "based_on_commit": "799b5e6",
+    "based_on_branch": "feat/installer-transaction-engine",
+    "input_hashes": {},
+    "status": "ok",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "Run install --dry-run then install --backup-only before apply.",
+    "data": {
+        "mode": "sidecar-only",
+        "targets": [
+            "copilot",
+            "opencode"
+        ],
+        "create": [
+            ".github/instructions/",
+            ".opencode/"
+        ],
+        "modify": [],
+        "conflicts": [],
+        "backup_required": true,
+        "atomic_transaction_steps": [
+            "preflight",
+            "package-verify",
+            "backup",
+            "stage",
+            "apply",
+            "validate"
+        ]
+    }
+}
+```

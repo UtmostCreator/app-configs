@@ -14,6 +14,9 @@ $adapterFiles = [
     '.github/copilot-instructions.md',
 ];
 
+$failOnWarn = in_array('--fail-on-warn', $argv, true);
+$changedOnly = in_array('--changed-only', $argv, true);
+
 foreach (glob($root . '/.github/agents/*.md') ?: [] as $file) {
     $adapterFiles[] = str_replace('\\', '/', substr($file, strlen($root) + 1));
 }
@@ -35,6 +38,28 @@ if (is_dir($opencodeRoot)) {
 }
 
 $adapterFiles = array_values(array_unique($adapterFiles));
+
+if ($changedOnly) {
+    $baseRef = getenv('GITHUB_BASE_REF');
+    if (!is_string($baseRef) || $baseRef === '') {
+        $baseRef = 'main';
+    }
+
+    $changedOutput = [];
+    $exitCode = 0;
+    exec('git -C ' . escapeshellarg($root) . ' diff --name-only ' . escapeshellarg($baseRef . '...HEAD'), $changedOutput, $exitCode);
+    if ($exitCode === 0) {
+        $changedSet = [];
+        foreach ($changedOutput as $changedPath) {
+            $changedSet[str_replace('\\', '/', trim($changedPath))] = true;
+        }
+
+        $adapterFiles = array_values(array_filter($adapterFiles, static function (string $path) use ($changedSet): bool {
+            $normalized = str_replace('\\', '/', $path);
+            return isset($changedSet[$normalized]);
+        }));
+    }
+}
 
 $requiredRefs = [
     'docs/ai/project-context.md',
@@ -85,4 +110,5 @@ if ($errors === []) {
     fwrite(STDOUT, "OK: adapter drift validation completed\n");
 }
 
-exit($errors === [] ? 0 : 1);
+$hasFailure = $errors !== [] || ($failOnWarn && $warnings !== []);
+exit($hasFailure ? 1 : 0);

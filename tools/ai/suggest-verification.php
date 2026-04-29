@@ -23,21 +23,26 @@ $paths = array_values(array_filter(array_map('trim', explode(',', $changedArg)),
 
 $recommend = [];
 $risk = 'low';
+$matchedAny = false;
 
 foreach ($paths as $path) {
     if (str_starts_with($path, 'tools/ai/') || str_starts_with($path, 'scripts/')) {
+        $matchedAny = true;
         $recommend['php tools/ai/validate-ai-config.php'] = true;
         $recommend['bash scripts/doctor.sh'] = true;
         $risk = $risk === 'high' ? 'high' : 'medium';
     }
     if (str_starts_with($path, '.github/') || str_starts_with($path, '.opencode/')) {
+        $matchedAny = true;
         $recommend['php tools/ai/validate-adapter-drift.php'] = true;
         $risk = $risk === 'high' ? 'high' : 'medium';
     }
     if (str_starts_with($path, 'docs/ai/')) {
+        $matchedAny = true;
         $recommend['php tools/ai/validate-ai-config.php'] = true;
     }
     if (str_starts_with($path, 'policies/') || str_starts_with($path, '.schemas/')) {
+        $matchedAny = true;
         $recommend['php tools/ai/validate-generated-artifacts.php'] = true;
         $risk = 'high';
     }
@@ -45,6 +50,10 @@ foreach ($paths as $path) {
 
 if ($recommend === []) {
     $recommend['php tools/ai/validate-ai-config.php'] = true;
+}
+
+if (!$matchedAny) {
+    $risk = 'medium';
 }
 
 fwrite(STDOUT, "Risk: {$risk}\n");

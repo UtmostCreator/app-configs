@@ -13,6 +13,7 @@ $required = [
     'packages/ai-universal-rules/catalog.json' => 'php tools/ai/generate-ai-catalog.php --check',
     'packages/ai-universal-rules/docs/BROWSE.md' => 'php tools/ai/generate-ai-catalog.php --check',
     'llms.txt' => 'php tools/ai/generate-ai-catalog.php --check',
+    'docs/ai/repo-required-tools.md' => 'bash scripts/ai/repo-tool-inventory.sh',
 ];
 
 $errors = [];
@@ -34,6 +35,17 @@ if ($runCheck) {
     if ($exit !== 0) {
         $errors[] = 'generated artifact drift detected by generate-ai-catalog --check';
         foreach ($output as $line) {
+            fwrite(STDERR, "CHECK: {$line}\n");
+        }
+    }
+
+    $toolsCheckCmd = 'bash scripts/ai/repo-tool-inventory.sh --check';
+    $toolsOutput = [];
+    $toolsExit = 0;
+    exec('cd ' . escapeshellarg($root) . ' && ' . $toolsCheckCmd . ' 2>&1', $toolsOutput, $toolsExit);
+    if ($toolsExit !== 0) {
+        $errors[] = 'generated artifact drift detected by repo-tool-inventory --check';
+        foreach ($toolsOutput as $line) {
             fwrite(STDERR, "CHECK: {$line}\n");
         }
     }

@@ -47,6 +47,9 @@ function aiInstallerBuildInstalledInstructionsData(string $targetRoot, array $ma
             'placeholders' => 'php tools/ai/ai.php placeholders --fail',
             'toolchain_check' => 'php tools/ai/ai.php toolchain --with repomix,scc --check',
             'toolchain_plan' => 'php tools/ai/ai.php toolchain --with repomix,scc --install-plan',
+            'repo_tools_check' => 'bash scripts/ai/repo-tool-inventory.sh --check',
+            'repo_tools_generate' => 'bash scripts/ai/repo-tool-inventory.sh',
+            'mandatory_tools_install_dry_run' => 'bash scripts/ai/install-mandatory-tools.sh --dry-run',
             'scripts_list' => 'php tools/ai/ai.php run-script --list',
             'repomix_analyze' => 'bash scripts/ai/repomix-context-tree.sh analyze .',
             'advisor_all' => 'php tools/ai/ai.php advisor --all',
@@ -92,6 +95,9 @@ function aiInstallerRenderInstalledInstructionsMarkdown(array $data): string
     $md .= "- Verify: `" . ($commands['verify'] ?? 'php tools/ai/ai.php verify --json') . "`\n";
     $md .= "- Resolve placeholders: `" . ($commands['placeholders'] ?? 'php tools/ai/ai.php placeholders --fail') . "`\n";
     $md .= "- Toolchain check: `" . ($commands['toolchain_check'] ?? 'php tools/ai/ai.php toolchain --check') . "`\n";
+    $md .= "- Required-tools inventory check: `" . ($commands['repo_tools_check'] ?? 'bash scripts/ai/repo-tool-inventory.sh --check') . "`\n";
+    $md .= "- Required-tools inventory regenerate: `" . ($commands['repo_tools_generate'] ?? 'bash scripts/ai/repo-tool-inventory.sh') . "`\n";
+    $md .= "- Mandatory-tools installer dry-run: `" . ($commands['mandatory_tools_install_dry_run'] ?? 'bash scripts/ai/install-mandatory-tools.sh --dry-run') . "`\n";
     $md .= "- Script list: `" . ($commands['scripts_list'] ?? 'php tools/ai/ai.php run-script --list') . "`\n\n";
     $md .= "- Repomix analyze: `" . ($commands['repomix_analyze'] ?? 'bash scripts/ai/repomix-context-tree.sh analyze .') . "`\n";
     $md .= "- Advisor analyze/fixes: `" . ($commands['advisor_all'] ?? 'php tools/ai/ai.php advisor --all') . "`\n";

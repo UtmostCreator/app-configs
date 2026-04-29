@@ -1,0 +1,30 @@
+# Rollback
+
+- Status: `ok`
+- Generated at: `2026-04-29T00:47:18+00:00`
+- Commit: `799b5e6`
+- Branch: `feat/installer-transaction-engine`
+- Recommended next action: `Dry-run complete; use --apply to restore from ZIP.`
+
+```json
+{
+    "schema_version": 1,
+    "artifact": "rollback.json",
+    "generated_at": "2026-04-29T00:47:18+00:00",
+    "command": "php tools/ai/ai.php rollback --backup install-20260429-004537",
+    "based_on_commit": "799b5e6",
+    "based_on_branch": "feat/installer-transaction-engine",
+    "input_hashes": {},
+    "status": "ok",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "Dry-run complete; use --apply to restore from ZIP.",
+    "data": {
+        "status": "ok",
+        "backup": "install-20260429-004537",
+        "dry_run": true,
+        "target_count": 2,
+        "restored_targets": []
+    }
+}
+```

@@ -1,18 +1,18 @@
 # Ai commands
 
 - Status: `ok`
-- Generated at: `2026-04-29T00:34:17+00:00`
-- Commit: `92d5dbc`
-- Branch: `main`
+- Generated at: `2026-04-29T00:42:42+00:00`
+- Commit: `799b5e6`
+- Branch: `feat/installer-transaction-engine`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "ai-commands.json",
-    "generated_at": "2026-04-29T00:34:17+00:00",
+    "generated_at": "2026-04-29T00:42:42+00:00",
     "command": "php tools/ai/ai.php list",
-    "based_on_commit": "92d5dbc",
-    "based_on_branch": "main",
+    "based_on_commit": "799b5e6",
+    "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
     "status": "ok",
     "score": null,
@@ -45,7 +45,16 @@
             "estimate",
             "conflicts",
             "find",
-            "symbols"
+            "symbols",
+            "preflight",
+            "package-lock",
+            "package-verify",
+            "audit-instructions",
+            "adapter-plan",
+            "install",
+            "upgrade",
+            "adapter-validate",
+            "rollback"
         ]
     }
 }

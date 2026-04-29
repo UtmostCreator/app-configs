@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "commands": {
+    "snapshot": {
+      "requires_fresh": [],
+      "invalidates": [],
+      "should_precede": [
+        "freshness",
+        "budget",
+        "next"
+      ]
+    },
+    "freshness": {
+      "requires_fresh": [],
+      "invalidates": [],
+      "should_precede": [
+        "next"
+      ]
+    },
+    "budget": {
+      "requires_fresh": [
+        "freshness"
+      ],
+      "invalidates": [],
+      "should_precede": [
+        "next"
+      ]
+    },
+    "workflow": {
+      "requires_fresh": [],
+      "invalidates": [],
+      "should_precede": [
+        "next"
+      ]
+    },
+    "diff-summary": {
+      "requires_fresh": [
+        "snapshot"
+      ],
+      "invalidates": [
+        "risk",
+        "verify",
+        "next",
+        "rebase-state"
+      ],
+      "should_precede": [
+        "risk",
+        "verify",
+        "next"
+      ]
+    },
+    "risk": {
+      "requires_fresh": [
+        "diff-summary"
+      ],
+      "invalidates": [
+        "next",
+        "rebase-state"
+      ],
+      "should_precede": [
+        "verify",
+        "next"
+      ]
+    },
+    "verify": {
+      "requires_fresh": [
+        "diff-summary"
+      ],
+      "invalidates": [
+        "next",
+        "rebase-state"
+      ],
+      "should_precede": [
+        "next"
+      ]
+    },
+    "rebase-state": {
+      "requires_fresh": [],
+      "invalidates": [],
+      "should_precede": [
+        "next"
+      ]
+    },
+    "next": {
+      "requires_fresh": [
+        "snapshot",
+        "freshness",
+        "budget",
+        "workflow",
+        "diff-summary",
+        "risk",
+        "verify"
+      ],
+      "invalidates": [],
+      "should_precede": []
+    }
+  }
+}

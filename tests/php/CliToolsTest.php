@@ -148,4 +148,135 @@ class CliToolsTest extends TestCase
         $combined = $result['stdout'] . $result['stderr'];
         $this->assertStringContainsString('OK: export profile', $combined);
     }
+
+    // ---- generate-repo-structure.php --check --with-scc ----
+
+    public function testGenerateRepoStructureCheckModeExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/generate-repo-structure.php --check --with-scc');
+        $this->assertSame(
+            0,
+            $result['exit'],
+            "generate-repo-structure.php --check --with-scc exited non-zero:\n" . $result['stderr']
+        );
+    }
+
+    public function testGenerateRepoStructureCheckModeOutputsUpToDateLines(): void
+    {
+        $result = $this->runTool('php tools/ai/generate-repo-structure.php --check --with-scc');
+        $combined = $result['stdout'] . $result['stderr'];
+        $this->assertStringContainsString('is up to date', $combined);
+    }
+
+    // ---- ai.php foundational workflow commands ----
+
+    public function testAiCliListExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php list');
+        $this->assertSame(0, $result['exit'], "ai.php list exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliSnapshotExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php snapshot');
+        $this->assertSame(0, $result['exit'], "ai.php snapshot exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliFreshnessExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php freshness');
+        $this->assertSame(0, $result['exit'], "ai.php freshness exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliDiffSummaryExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php diff-summary --base main');
+        $this->assertSame(0, $result['exit'], "ai.php diff-summary exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliRiskExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php risk --base main');
+        $this->assertSame(0, $result['exit'], "ai.php risk exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliVerifyExitsZeroOrKnownFailureCode(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php verify --changed');
+        $this->assertContains(
+            $result['exit'],
+            [0, 2],
+            "ai.php verify exited with unexpected code:\n" . $result['stderr']
+        );
+    }
+
+    public function testAiCliNextExitsZeroOrBlocked(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php next');
+        $this->assertContains(
+            $result['exit'],
+            [0, 1],
+            "ai.php next exited with unexpected code:\n" . $result['stderr']
+        );
+    }
+
+    public function testAiCliEnvCheckExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php env-check');
+        $this->assertSame(0, $result['exit'], "ai.php env-check exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliImpactExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php impact --base main');
+        $this->assertSame(0, $result['exit'], "ai.php impact exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliAskExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php ask "Which runtime adapter is in scope?" --options "copilot,opencode,both" --default both');
+        $this->assertSame(0, $result['exit'], "ai.php ask exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliAskResolveExitsZero(): void
+    {
+        $seed = $this->runTool('php tools/ai/ai.php ask "Which runtime adapter is in scope?" --options "copilot,opencode,both" --default both');
+        $this->assertSame(0, $seed['exit'], "ai.php ask seed exited non-zero:\n" . $seed['stderr']);
+
+        $askPath = __DIR__ . '/../../docs/ai/generated/ask.json';
+        $decoded = json_decode((string) file_get_contents($askPath), true);
+        $id = (string) ($decoded['data']['question_id'] ?? '');
+        $this->assertNotSame('', $id, 'ask question_id should exist');
+
+        $result = $this->runTool('php tools/ai/ai.php ask --resolve ' . escapeshellarg($id) . ' --answer ' . escapeshellarg('both'));
+        $this->assertSame(0, $result['exit'], "ai.php ask resolve exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliEstimateExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php estimate "add workflow-control command"');
+        $this->assertSame(0, $result['exit'], "ai.php estimate exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliConflictsExitsZeroOrBlocked(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php conflicts');
+        $this->assertContains(
+            $result['exit'],
+            [0, 1],
+            "ai.php conflicts exited with unexpected code:\n" . $result['stderr']
+        );
+    }
+
+    public function testAiCliFindExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php find workflow');
+        $this->assertSame(0, $result['exit'], "ai.php find exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliSymbolsExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php symbols aiRun');
+        $this->assertSame(0, $result['exit'], "ai.php symbols exited non-zero:\n" . $result['stderr']);
+    }
 }

@@ -1,0 +1,7 @@
+STDOUT:
+OK: C:\xampp\htdocs\app-configs\docs\ai\generated\repo-structure.log is up to date
+
+STDERR:
+ERROR: generated output drift detected in C:\xampp\htdocs\app-configs\docs\ai\generated\repo-structure.json
+ERROR: generated output drift detected in C:\xampp\htdocs\app-configs\docs\ai\generated\repo-structure.csv
+ERROR: generated output drift detected in C:\xampp\htdocs\app-configs\docs\ai\generated\repo-structure.md

@@ -1,0 +1,63 @@
+# Verify
+
+- Status: `passed`
+- Generated at: `2026-04-29T00:30:54+00:00`
+- Commit: `92d5dbc`
+- Branch: `main`
+- Recommended next action: `Run next to choose commit or PR closeout action.`
+
+```json
+{
+    "schema_version": 1,
+    "artifact": "verify.json",
+    "generated_at": "2026-04-29T00:30:54+00:00",
+    "command": "php tools/ai/ai.php verify --changed",
+    "based_on_commit": "92d5dbc",
+    "based_on_branch": "main",
+    "input_hashes": {},
+    "status": "passed",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "Run next to choose commit or PR closeout action.",
+    "data": {
+        "status": "passed",
+        "check_count": 4,
+        "failed_checks": [],
+        "results": [
+            {
+                "name": "validate-ai-config",
+                "command": "php tools/ai/validate-ai-config.php",
+                "exit": 0,
+                "passed": true,
+                "auto_fix_applied": false,
+                "log": "docs/ai/generated/logs/verify-20260429-003053/validate-ai-config.log"
+            },
+            {
+                "name": "validate-ai-catalog",
+                "command": "php tools/ai/validate-ai-catalog.php",
+                "exit": 0,
+                "passed": true,
+                "auto_fix_applied": false,
+                "log": "docs/ai/generated/logs/verify-20260429-003053/validate-ai-catalog.log"
+            },
+            {
+                "name": "generate-ai-catalog-check",
+                "command": "php tools/ai/generate-ai-catalog.php --check",
+                "exit": 0,
+                "passed": true,
+                "auto_fix_applied": false,
+                "log": "docs/ai/generated/logs/verify-20260429-003053/generate-ai-catalog-check.log"
+            },
+            {
+                "name": "generate-repo-structure-check",
+                "command": "php tools/ai/generate-repo-structure.php --check --with-scc",
+                "exit": 0,
+                "passed": true,
+                "auto_fix_applied": false,
+                "log": "docs/ai/generated/logs/verify-20260429-003053/generate-repo-structure-check.log"
+            }
+        ],
+        "log_dir": "docs/ai/generated/logs/verify-20260429-003053"
+    }
+}
+```

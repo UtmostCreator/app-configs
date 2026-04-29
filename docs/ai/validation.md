@@ -8,18 +8,20 @@ Use the root validator to catch the most common AI workflow setup failures befor
 php tools/ai/validate-ai-config.php
 php tools/ai/validate-ai-catalog.php
 php tools/ai/generate-ai-catalog.php --check
+php tools/ai/generate-repo-structure.php --check --with-scc
 php tools/ai/export-ai-universal-rules.php --check
 ```
 
 ## What It Checks
 
 - required root AI workflow files exist
-- unresolved placeholder leaks like `<PROJECT_NAME>`
+- unresolved placeholder leaks like `app-configs`
 - broken backtick path references in the live root AI docs and adapters
 - obvious stack leakage from old mismatched instructions
 - a few key drift rules between `AGENTS.md`, `CLAUDE.md`, `README.md`, and `.github/copilot-instructions.md`
 - package manifest and generated catalog structure
 - generated docs and `llms.txt` drift against source metadata
+- generated repo-structure outputs drift against source metadata and tracked files
 - starter profile export definitions for `AI-universal-rules`
 
 ## Scope

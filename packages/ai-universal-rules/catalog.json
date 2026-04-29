@@ -1183,10 +1183,10 @@
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "workflow-auditor",
+            "name": "workflow-auditor.agent.md",
             "path": ".github/agents/workflow-auditor.agent.md",
             "runtime": "github-copilot",
-            "description": "Use when reviewing AI workflow files, repo instructions, capability docs, or adapter drift across AGENTS, CLAUDE, docs/ai, and .github"
+            "description": null
         },
         {
             "scope": "root",
@@ -1218,7 +1218,7 @@
             "name": "docs",
             "path": ".github/instructions/docs.instructions.md",
             "runtime": "github-copilot",
-            "description": "Rules for setup docs, workflow docs, and examples"
+            "description": null
         },
         {
             "scope": "root",

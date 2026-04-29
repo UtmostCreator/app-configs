@@ -1,0 +1,40 @@
+{
+    "schema_version": 1,
+    "artifact": "session-resume.json",
+    "generated_at": "2026-04-29T00:23:18+00:00",
+    "command": "php tools/ai/ai.php session-resume",
+    "based_on_commit": "92d5dbc",
+    "based_on_branch": "main",
+    "input_hashes": {},
+    "status": "ok",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "Resume work from next_action and current verify/risk posture.",
+    "data": {
+        "snapshot": {
+            "branch": "main",
+            "commit": "92d5dbc",
+            "dirty": true,
+            "changed_files_count": 53
+        },
+        "diff": {
+            "changed_files_count": 0,
+            "base": "main"
+        },
+        "risk": {
+            "risk_level": "low",
+            "risk_score": 0
+        },
+        "verify": {
+            "status": "passed",
+            "failed_checks": []
+        },
+        "freshness": {
+            "stale_count": 0
+        },
+        "next": {
+            "status": "ok",
+            "next_action": "Prepare commit message or PR summary from current diff."
+        }
+    }
+}

@@ -4,6 +4,19 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ERRORS=0
 
+add_winget_paths() {
+    local user_name="${USER:-${USERNAME:-}}"
+    local base="/c/Users/${user_name}/AppData/Local/Microsoft/WinGet/Packages"
+    [[ -d "$base" ]] || return 0
+    local dir
+    while IFS= read -r dir; do
+        case ":$PATH:" in
+        *":$dir:"*) ;;
+        *) PATH="$PATH:$dir" ;;
+        esac
+    done < <(find "$base" -maxdepth 3 -type f -name '*.exe' -printf '%h\n' 2>/dev/null | sort -u)
+}
+
 ok() { printf "[OK] %s\n" "$1"; }
 warn() { printf "[WARN] %s\n" "$1"; }
 fail() {
@@ -39,6 +52,7 @@ check_file() {
 }
 
 echo "== app-configs doctor =="
+add_winget_paths
 
 echo "-- Required binaries --"
 for bin in bash git rg php; do
@@ -68,7 +82,7 @@ for file in \
 done
 
 echo "-- AI adapter checks --"
-if rg -n '^github\.copilot$' "$ROOT_DIR/docs/vscode-extensions.md" >/dev/null 2>&1; then
+if rg -n '\bgithub\.copilot\b' "$ROOT_DIR/docs/vscode-extensions.md" >/dev/null 2>&1; then
     ok "VS Code Copilot base extension documented"
 else
     fail "docs/vscode-extensions.md is missing github.copilot"

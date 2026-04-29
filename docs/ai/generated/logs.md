@@ -1,0 +1,33 @@
+# Logs
+
+- Status: `ok`
+- Generated at: `2026-04-29T00:30:45+00:00`
+- Commit: `92d5dbc`
+- Branch: `main`
+- Recommended next action: `Use logs <entry-or-file> to inspect details.`
+
+```json
+{
+    "schema_version": 1,
+    "artifact": "logs.json",
+    "generated_at": "2026-04-29T00:30:45+00:00",
+    "command": "php tools/ai/ai.php logs",
+    "based_on_commit": "92d5dbc",
+    "based_on_branch": "main",
+    "input_hashes": {},
+    "status": "ok",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "Use logs <entry-or-file> to inspect details.",
+    "data": {
+        "log_root": "docs/ai/generated/logs",
+        "entries": [
+            "verify-20260429-001858",
+            "verify-20260429-001909",
+            "verify-20260429-001942",
+            "verify-20260429-002345"
+        ],
+        "count": 4
+    }
+}
+```

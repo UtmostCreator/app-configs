@@ -65,11 +65,11 @@ Use `docs/ai/copilot-getting-started.md` for quick onboarding, then use this cat
 | `exporter` | export-ai-universal-rules | `tools/ai/export-ai-universal-rules.php` | Builds starter-profile release bundles under dist/. |
 | `generator` | generate-ai-catalog | `tools/ai/generate-ai-catalog.php` | Generates catalog docs, catalog JSON, and llms.txt. |
 | `github-copilot-agent` | config-maintainer | `.github/agents/config-maintainer.agent.md` | Use when updating editor, shell, runtime, or tool configuration while preserving existing behavior and validating the narrowest safe surface first |
-| `github-copilot-agent` | workflow-auditor | `.github/agents/workflow-auditor.agent.md` | Use when reviewing AI workflow files, repo instructions, capability docs, or adapter drift across AGENTS, CLAUDE, docs/ai, and .github |
+| `github-copilot-agent` | workflow-auditor.agent.md | `.github/agents/workflow-auditor.agent.md` |  |
 | `github-copilot-instruction` | ai-workflow | `.github/instructions/ai-workflow.instructions.md` | Rules for AI workflow docs and runtime adapters |
 | `github-copilot-instruction` | ci | `.github/instructions/ci.instructions.md` |  |
 | `github-copilot-instruction` | config | `.github/instructions/config.instructions.md` | Rules for config changes in editor, shell, runtime, and tool files |
-| `github-copilot-instruction` | docs | `.github/instructions/docs.instructions.md` | Rules for setup docs, workflow docs, and examples |
+| `github-copilot-instruction` | docs | `.github/instructions/docs.instructions.md` |  |
 | `github-copilot-instruction` | frontend | `.github/instructions/frontend.instructions.md` |  |
 | `github-copilot-instruction` | php | `.github/instructions/php.instructions.md` | PHP investigation and verification routing |
 | `hook` | tool-guardian | `.github/hooks/tool-guardian.json` | Protects the live repo with a narrow Copilot hook guard. |

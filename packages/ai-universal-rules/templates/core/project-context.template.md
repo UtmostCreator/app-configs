@@ -29,6 +29,12 @@ Use this file as durable project context for instructions, agents, prompts, and 
 
 - `<REVIEW_PRIORITIES>`
 
+## Change Hygiene
+
+- Before changing code, config, docs, or workflow logic, search for similar existing patterns in the touched area and nearby owners and report the closest overlap as a percentage.
+- If overlap is roughly `>=75%`, flag reuse or replacement immediately and recommend updating the existing pattern instead of adding a duplicate.
+- After completing the change, run a touched-scope stale sweep on edited files and nearby references for stale methods, stale data assumptions, stale commands/paths, outdated docs, unresolved placeholders, and generated-output drift.
+
 ## Approval Boundaries
 
 - `<APPROVAL_REQUIRED_CHANGES>`

@@ -10,13 +10,36 @@ if ($root === false) {
 
 function hasBin(string $name): bool
 {
+    if (PHP_OS_FAMILY === 'Windows') {
+        $output = [];
+        $exit = 0;
+        exec('where ' . escapeshellarg($name) . ' >NUL 2>NUL', $output, $exit);
+        if ($exit === 0) {
+            return true;
+        }
+    }
+
     $output = [];
     $exit = 0;
     exec('command -v ' . escapeshellarg($name) . ' >/dev/null 2>&1', $output, $exit);
     return $exit === 0;
 }
 
-$scope = $argv[1] ?? '--all';
+$strict = false;
+$scope = '--all';
+
+for ($i = 1; $i < $argc; $i++) {
+    $arg = (string) $argv[$i];
+    if ($arg === '--strict') {
+        $strict = true;
+        continue;
+    }
+    if ($arg === '--staged' || $arg === '--all') {
+        $scope = $arg;
+    }
+}
+
+$isCi = strtolower((string) getenv('CI')) === 'true' || getenv('GITHUB_ACTIONS') === 'true';
 
 if (hasBin('gitleaks')) {
     $cmd = 'gitleaks detect --source ' . escapeshellarg($root) . ' --redact --no-banner';
@@ -30,5 +53,12 @@ if (hasBin('trufflehog')) {
     exit((int) $exit);
 }
 
-fwrite(STDOUT, "WARN: no secret scanner found (gitleaks/trufflehog). scope={$scope}\n");
+$message = "no secret scanner found (gitleaks/trufflehog). scope={$scope}";
+
+if ($strict || $isCi) {
+    fwrite(STDERR, "ERROR: {$message}\n");
+    exit(1);
+}
+
+fwrite(STDOUT, "WARN: {$message}\n");
 exit(0);

@@ -28,6 +28,28 @@ jobs:
       - name: Check generated docs drift
         run: php tools/ai/generate-ai-catalog.php --check
 
+      - name: Validate generated artifact policy
+        run: php tools/ai/validate-generated-artifacts.php
+
+      - name: Validate adapter drift on changed files
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+        run: php tools/ai/validate-adapter-drift.php --changed-only --fail-on-warn
+
+      - name: Install gitleaks (pinned)
+        run: |
+          curl -sSLo /tmp/gitleaks.tar.gz \
+            https://github.com/gitleaks/gitleaks/releases/download/v8.24.2/gitleaks_8.24.2_linux_x64.tar.gz
+          echo "94488a303ca27a4b6f49170632f8d2f4f5f4882de75bc61d3d11f411b9f35684  /tmp/gitleaks.tar.gz" | sha256sum -c
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+          gitleaks version
+
+      - name: Secret scan (strict in CI)
+        env:
+          CI: true
+        run: php tools/ai/secret-scan.php --staged --strict
+
       - name: Check starter bundle definitions
         run: php tools/ai/export-ai-universal-rules.php --check
 

@@ -8,6 +8,9 @@ Use the root validator to catch the most common AI workflow setup failures befor
 php tools/ai/validate-ai-config.php
 php tools/ai/validate-ai-catalog.php
 php tools/ai/generate-ai-catalog.php --check
+php tools/ai/validate-generated-artifacts.php
+php tools/ai/validate-adapter-drift.php --changed-only --fail-on-warn
+php tools/ai/secret-scan.php --staged --strict
 php tools/ai/generate-repo-structure.php --check --with-scc
 php tools/ai/export-ai-universal-rules.php --check
 ```
@@ -37,6 +40,12 @@ This validator is intentionally narrow.
 - `OK` - the root layer passed the current checks
 - `WARN` - likely drift or stale wording worth reviewing
 - `ERROR` - missing files, placeholders, or broken references
+
+## Warning Policy
+
+- For changed adapter files in a PR, adapter-drift warnings should be treated as blocking.
+- For untouched backlog files, warnings may remain temporarily only with explicit follow-up.
+- In CI/strict mode, missing secret scanners are treated as errors.
 
 ## Hook Adapters
 

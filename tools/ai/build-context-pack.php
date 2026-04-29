@@ -20,6 +20,18 @@ for ($i = 1; $i < $argc; $i++) {
     }
 }
 
+$scope = str_replace('\\', '/', trim($scope));
+if ($scope === '' || str_contains($scope, '..') || str_starts_with($scope, '/')) {
+    fwrite(STDERR, "ERROR: invalid scope '{$scope}'\n");
+    exit(1);
+}
+
+$scopePath = realpath($root . '/' . $scope);
+if ($scope !== '.' && ($scopePath === false || !str_starts_with(str_replace('\\', '/', $scopePath), str_replace('\\', '/', $root)))) {
+    fwrite(STDERR, "ERROR: scope escapes repository root\n");
+    exit(1);
+}
+
 $manifestDir = $root . '/.repomix-context/tree-context';
 if (!is_dir($manifestDir)) {
     @mkdir($manifestDir, 0777, true);

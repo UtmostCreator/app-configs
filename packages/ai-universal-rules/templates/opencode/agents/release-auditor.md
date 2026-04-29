@@ -1,7 +1,7 @@
 ---
 description: Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review in <PROJECT_NAME>
 mode: subagent
-hidden: true
+hidden: false
 temperature: 0.0
 permission:
   edit: deny

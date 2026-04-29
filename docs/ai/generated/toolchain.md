@@ -1,8 +1,8 @@
 # Toolchain
 
 - Status: `ok`
-- Generated at: `2026-04-29T18:30:47+00:00`
-- Commit: `047d291`
+- Generated at: `2026-04-29T19:36:08+00:00`
+- Commit: `fdd960a`
 - Branch: `feat/installer-transaction-engine`
 - Recommended next action: `Review missing tools and rerun with --toolchain-apply only when needed.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "toolchain.json",
-    "generated_at": "2026-04-29T18:30:47+00:00",
+    "generated_at": "2026-04-29T19:36:08+00:00",
     "command": "php tools/ai/ai.php toolchain",
-    "based_on_commit": "047d291",
+    "based_on_commit": "fdd960a",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
     "status": "ok",
@@ -32,13 +32,32 @@
         "check_requested": true,
         "install_plan_requested": false,
         "apply_requested": false,
-        "tools": [],
-        "install_actions": [],
-        "apply_results": []
-    }
-}
-```
-
+        "tools": [
+            {
+                "tool": "repomix",
+                "label": "Repomix",
+                "present": true,
+                "version": "1.13.1",
+                "safe_auto_install": true,
+                "requires_before_install": [
+                    "node",
+                    "npm"
+                ],
+                "install_hints": {
+                    "npm": "npm install -g repomix"
+                },
+                "install_commands": {
+                    "npm": [
+                        "npm",
+                        "install",
+                        "-g",
+                        "repomix"
+                    ]
+                }
+            },
+            {
+                "tool": "scc",
+                "label": "SCC",
                 "present": true,
                 "version": "scc version 3.7.0",
                 "safe_auto_install": false,

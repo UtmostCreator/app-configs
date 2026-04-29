@@ -38,3 +38,13 @@ coverage/
 *.pem
 *.key
 *.token
+
+# Local Composer binary
+/composer.phar
+
+# Timestamped generated verification logs
+/docs/ai/generated/logs/
+
+# Optional installed packs; source lives under packages/ai-universal-rules/templates/optional/
+.github/prompts-optional/
+.opencode/agents-optional/

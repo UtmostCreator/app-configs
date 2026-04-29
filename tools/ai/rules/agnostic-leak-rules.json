@@ -1,0 +1,16 @@
+{
+  "banned_terms": [
+    "Statamic",
+    "Nuxt",
+    "Vue 3",
+    "PHPUnit 11",
+    "headless-cms",
+    "rabbies",
+    "UtmostCreator",
+    "DEV-"
+  ],
+  "allowed_paths": [
+    "packages/ai-universal-rules/examples/",
+    "docs/ai/source-audit.md"
+  ]
+}

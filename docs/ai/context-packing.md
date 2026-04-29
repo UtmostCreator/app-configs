@@ -2,6 +2,8 @@
 
 Use this workflow when you want more targeted repository context than a single full-repo `repomix` export.
 
+For safety policy (secret-scan + manifest requirements), also read `docs/ai/context-packaging.md`.
+
 This repo uses:
 
 - `scc` to analyze files and folder weight

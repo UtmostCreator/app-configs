@@ -262,7 +262,14 @@ run_scc_analysis() {
     log "running scc on ${#files[@]} files"
     (
         cd "$ROOT"
-        "$scc_bin" --by-file --format openmetrics --output "$RAW_METRICS" --no-cocomo "${files[@]}"
+        if ((${#files[@]} == 0)); then
+            "$scc_bin" --by-file --format openmetrics --output "$RAW_METRICS" --no-cocomo .
+        elif ((${#files[@]} > 200)); then
+            log "file list too large for argv; running scc from repo root"
+            "$scc_bin" --by-file --format openmetrics --output "$RAW_METRICS" --no-cocomo .
+        else
+            "$scc_bin" --by-file --format openmetrics --output "$RAW_METRICS" --no-cocomo "${files[@]}"
+        fi
     )
 }
 

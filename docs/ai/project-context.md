@@ -1,59 +1,46 @@
 # app-configs Project Context
 
+Use this file as durable project context for instructions, agents, prompts, and capabilities.
+
 ## Project Shape
 
-- Project type: `configuration repo + AI workflow kit`
-- Summary: `Reusable local development configuration plus a live benchmark for durable cross-tool AI workflow setup.`
-- Primary language: `Markdown, JSON, shell config, Lua`
-- Primary runtime: `local developer tooling`
-- Supported targets: `VS Code, shell, Ghostty, Karabiner, Neovim, PHP tooling, GitHub Copilot, Claude-style agent runtimes`
-- Active paths: `packages/ai-universal-rules/, docs/, configs/vscode/, configs/shell/, tools/, configs/php/, .github/`
-- Inactive paths: `none declared; treat stale examples or copied stack-specific files as defects`
+- Project type: `php project`
+- Summary: `AI workflow starter for app-configs`
+- Primary language: `unknown`
+- Primary runtime: `unknown`
+- Supported targets: `unknown`
+- Active paths: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
+- Inactive paths: `unknown`
 
 ## Architecture
 
-- Primary entrypoints: `README.md, AGENTS.md, CLAUDE.md, packages/ai-universal-rules/README.md, configs/vscode/user/settings.json, configs/shell/.zshrc, justfile`
-- AI reference docs: `docs/ai/agents.md, docs/ai/failure-handling.md, docs/ai/agent-ops-checklist.md, docs/ai/integration-matrix.md`
-- Architecture notes: `packages/ai-universal-rules/ is the reusable package; docs/ai/ is the root-repo instantiation; runtime-specific adapter files should stay thin and point back to canonical docs; local workflow scaffolding lives in justfile plus scripts/hooks and is optional rather than canonical policy.`
-- PHP reference corpus: `reference/php/design-patterns/` (primary), `reference/php/design-principles/` (secondary), and `reference/php/php-built-ins/` (supporting examples).
-- Canonical workflow source: `docs/ai/capabilities/`
-- Runtime adapter surfaces: `.github/`, `AGENTS.md`, `CLAUDE.md`
-- Risk areas: `stale documentation, mismatched tool-specific instructions, machine-specific paths, silent workflow drift between canonical and adapter files`
-
-## Approval Boundaries
-
-- secrets or credentials
-- machine-wide runtime or dependency changes with broad impact
-- removal of a supported AI runtime surface
-- destructive cleanup outside obviously stale AI adapter files
-- safe repo-local read-only commands are approval-free unless they need secrets, privileged access, or external side effects
+- Primary entrypoints: `README.md, docs/ai/project-context.md`
+- Architecture notes: `Keep policy and capability docs canonical; keep runtime adapters thin.`
+- Risk areas: `stale docs, adapter drift, unsafe command usage`
 
 ## Verification
 
-- Main verification command: `no single global command; choose the narrowest non-destructive check supported by the edited tool`
-- Main build command: `none required for most changes`
-- Main test command: `none global; use targeted validation such as JSON parse, editor load, CLI dry-run, or docs consistency checks`
-- Preferred narrow-first verification pattern: `validate the changed config or instruction directly, then run a broader smoke check only if the slice crosses tools`
-- Failure policy: `log command failures, corrected usage, and retry decisions using docs/ai/failure-handling.md`
+- Main verification command: `unknown`
+- Main build command: `unknown`
+- Main test command: `unknown`
+- Preferred narrow-first verification pattern: `start with the narrowest repo-local check and escalate only if needed`
 
-## Query Closeout
+## Review Focus
 
-- For context-heavy repo investigation, context-packing, or folder-scoped analysis tasks, end with the read-only usage summary from `scripts/copilot/query-usage.sh` or `just query-usage` against the actual scope you inspected.
-- Report both `raw estimated tokens` (for context-fit) and `weighted usage` (for Copilot quota planning) in the closeout when the task materially depends on prompt size.
-- Treat `raw estimated tokens ~= bytes / 4` as a planning heuristic, not an exact provider token count.
-- Treat `weighted usage = raw estimated tokens × model multiplier` as a Copilot planning heuristic, not an official runtime billing formula.
-- Use the active model's documented multiplier when known; otherwise say `unknown` rather than guessing.
-- This closeout step is approval-free because `query-usage.sh` is read-only and only analyzes repo-local content.
-
-## Review Priorities
-
-- repo truth over borrowed patterns
-- portability over vendor lock-in where practical
-- simple install paths and clear fallbacks
-- evidence-backed docs and commands
+- `correctness, regressions, configuration drift`
 
 ## Change Hygiene
 
 - Before changing code, config, docs, or workflow logic, search for similar existing patterns in the touched area and nearby owners and report the closest overlap as a percentage.
-- If overlap is roughly `>=75%`, flag it immediately and recommend reuse, replacement, or updating the existing pattern instead of adding a duplicate.
-- After completing the change, run a touched-scope stale sweep across edited files and nearby references for stale methods, stale data assumptions, stale commands/paths, outdated docs, unresolved placeholders, and generated-output drift.
+- If overlap is roughly `>=75%`, flag reuse or replacement immediately and recommend updating the existing pattern instead of adding a duplicate.
+- After completing the change, run a touched-scope stale sweep on edited files and nearby references for stale methods, stale data assumptions, stale commands/paths, outdated docs, unresolved placeholders, and generated-output drift.
+
+## Approval Boundaries
+
+- `secrets, destructive changes, auth or billing changes`
+
+## Workflow Notes
+
+- Capability composition hints: `start with project-context, then verify-change, then review-diff`
+- Release safety notes: `define rollback posture for medium/high risk changes`
+- Known gotcha themes: `stale paths, broad edits without evidence, guessed behavior`

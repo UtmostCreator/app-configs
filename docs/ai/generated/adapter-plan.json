@@ -1,9 +1,9 @@
 {
     "schema_version": 1,
     "artifact": "adapter-plan.json",
-    "generated_at": "2026-04-29T14:12:27+00:00",
+    "generated_at": "2026-04-29T22:49:30+00:00",
     "command": "php tools/ai/ai.php adapter-plan",
-    "based_on_commit": "047d291",
+    "based_on_commit": "670fe37",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
     "status": "ok",
@@ -11,70 +11,138 @@
     "stale": false,
     "recommended_next_action": "Run install --dry-run then install --backup-only before apply.",
     "data": {
-        "mode": "sidecar-only",
+        "mode": "safe-merge",
         "targets": [
+            "copilot",
             "opencode"
         ],
+        "profile": "full-governance",
         "packs": [
-            "adapter-opencode",
-            "capabilities-extended-lite"
+            "capabilities-extended-full",
+            "hooks-pack",
+            "ci-pack",
+            "base"
         ],
         "create": [],
         "modify": [],
-        "conflicts": [
-            ".opencode/agents",
-            ".opencode/commands",
-            ".opencode/skills",
-            "docs/ai/capabilities/bug-regression",
-            "docs/ai/capabilities/release-safety"
-        ],
+        "conflicts": [],
         "actions": [
             {
-                "pack": "adapter-opencode",
+                "pack": "capabilities-extended-full",
                 "type": "dir",
-                "source": "packages/ai-universal-rules/templates/opencode/agents",
-                "target": ".opencode/agents",
-                "action": "SKIP_EXISTING_UNMANAGED",
+                "source": "packages/ai-universal-rules/templates/capabilities/dependency-upgrade",
+                "target": "docs/ai/capabilities/dependency-upgrade",
+                "action": "OVERWRITE_MANAGED",
                 "required": true,
                 "merge_strategy": "replace",
                 "reason": "target exists"
             },
             {
-                "pack": "adapter-opencode",
-                "type": "dir",
-                "source": "packages/ai-universal-rules/templates/opencode/commands",
-                "target": ".opencode/commands",
-                "action": "SKIP_EXISTING_UNMANAGED",
+                "pack": "hooks-pack",
+                "type": "file",
+                "source": "scripts/hooks/pre-commit.sh",
+                "target": "scripts/hooks/pre-commit.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "skip-if-exists",
+                "reason": "target exists"
+            },
+            {
+                "pack": "hooks-pack",
+                "type": "file",
+                "source": "scripts/hooks/commit-msg.sh",
+                "target": "scripts/hooks/commit-msg.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "skip-if-exists",
+                "reason": "target exists"
+            },
+            {
+                "pack": "hooks-pack",
+                "type": "file",
+                "source": "docs/ai/hooks.md",
+                "target": "docs/ai/hooks.md",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "skip-if-exists",
+                "reason": "target exists"
+            },
+            {
+                "pack": "ci-pack",
+                "type": "file",
+                "source": ".github/workflows/validate-ai-surface.yml",
+                "target": ".github/workflows/validate-ai-surface.yml",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "skip-if-exists",
+                "reason": "target exists"
+            },
+            {
+                "pack": "ci-pack",
+                "type": "file",
+                "source": "docs/ai/validation.md",
+                "target": "docs/ai/validation.md",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "skip-if-exists",
+                "reason": "target exists"
+            },
+            {
+                "pack": "base",
+                "type": "file",
+                "source": "packages/ai-universal-rules/templates/core/AGENTS.template.md",
+                "target": "AGENTS.md",
+                "action": "OVERWRITE_MANAGED",
                 "required": true,
                 "merge_strategy": "replace",
                 "reason": "target exists"
             },
             {
-                "pack": "adapter-opencode",
-                "type": "dir",
-                "source": "packages/ai-universal-rules/templates/opencode/skills",
-                "target": ".opencode/skills",
-                "action": "SKIP_EXISTING_UNMANAGED",
+                "pack": "base",
+                "type": "file",
+                "source": "packages/ai-universal-rules/templates/core/project-context.template.md",
+                "target": "docs/ai/project-context.md",
+                "action": "OVERWRITE_MANAGED",
                 "required": true,
                 "merge_strategy": "replace",
                 "reason": "target exists"
             },
             {
-                "pack": "capabilities-extended-lite",
-                "type": "dir",
-                "source": "packages/ai-universal-rules/templates/capabilities/bug-regression",
-                "target": "docs/ai/capabilities/bug-regression",
-                "action": "SKIP_EXISTING_UNMANAGED",
+                "pack": "base",
+                "type": "file",
+                "source": "packages/ai-universal-rules/templates/shared/guardrails/AI-GUARDRAILS.md",
+                "target": "docs/ai/AI-GUARDRAILS.md",
+                "action": "OVERWRITE_MANAGED",
                 "required": true,
                 "merge_strategy": "replace",
                 "reason": "target exists"
             },
             {
-                "pack": "capabilities-extended-lite",
+                "pack": "base",
                 "type": "dir",
-                "source": "packages/ai-universal-rules/templates/capabilities/release-safety",
-                "target": "docs/ai/capabilities/release-safety",
-                "action": "SKIP_EXISTING_UNMANAGED",
+                "source": "packages/ai-universal-rules/templates/capabilities/project-context",
+                "target": "docs/ai/capabilities/project-context",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "base",
+                "type": "dir",
+                "source": "packages/ai-universal-rules/templates/capabilities/verify-change",
+                "target": "docs/ai/capabilities/verify-change",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "base",
+                "type": "dir",
+                "source": "packages/ai-universal-rules/templates/capabilities/review-diff",
+                "target": "docs/ai/capabilities/review-diff",
+                "action": "OVERWRITE_MANAGED",
                 "required": true,
                 "merge_strategy": "replace",
                 "reason": "target exists"

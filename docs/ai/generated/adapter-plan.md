@@ -1,8 +1,8 @@
 # Adapter plan
 
 - Status: `ok`
-- Generated at: `2026-04-29T22:49:30+00:00`
-- Commit: `670fe37`
+- Generated at: `2026-04-29T23:27:27+00:00`
+- Commit: `45c4a3a`
 - Branch: `feat/installer-transaction-engine`
 - Recommended next action: `Run install --dry-run then install --backup-only before apply.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "adapter-plan.json",
-    "generated_at": "2026-04-29T22:49:30+00:00",
+    "generated_at": "2026-04-29T23:27:27+00:00",
     "command": "php tools/ai/ai.php adapter-plan",
-    "based_on_commit": "670fe37",
+    "based_on_commit": "45c4a3a",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
     "status": "ok",

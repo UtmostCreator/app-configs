@@ -208,8 +208,10 @@ INDEX_JSON="$TREE_DIR/index.json"
 ROUTER_FOLDER_METRICS="$TREE_DIR/folder-metrics.tsv"
 ROUTER_FILE_METRICS="$TREE_DIR/file-metrics.tsv"
 STYLE_EXT="$(ext_for_style "$STYLE")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROUTER_SCRIPT="$SCRIPT_DIR/repomix-scc-router.sh"
 
-router_args=(scripts/copilot/repomix-scc-router.sh stats . --output-dir "$TREE_DIR" --depth "$DEPTH" --top "$TOP" --min-code "$MIN_CODE" --min-files "$MIN_FILES" --min-score "$MIN_SCORE" --min-complexity "$MIN_COMPLEXITY" --churn-count "$CHURN_COUNT" --style "$STYLE" --include-logs-count "$INCLUDE_LOGS_COUNT")
+router_args=("$ROUTER_SCRIPT" stats . --output-dir "$TREE_DIR" --depth "$DEPTH" --top "$TOP" --min-code "$MIN_CODE" --min-files "$MIN_FILES" --min-score "$MIN_SCORE" --min-complexity "$MIN_COMPLEXITY" --churn-count "$CHURN_COUNT" --style "$STYLE" --include-logs-count "$INCLUDE_LOGS_COUNT")
 [[ -n "$CHANGED_SINCE" ]] && router_args+=(--changed-since "$CHANGED_SINCE")
 [[ -n "$SPLIT_SIZE" ]] && router_args+=(--split-size "$SPLIT_SIZE")
 [[ "$COMPRESS" == "1" ]] && router_args+=(--compress)

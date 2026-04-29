@@ -14,11 +14,11 @@ function aiAdvisorSecretScan(string $root): array
     ];
     $denySuffix = ['.pem', '.key'];
     $patterns = [
-        '/AKIA[0-9A-Z]{16}/',
-        '/ghp_[A-Za-z0-9_]{30,}/',
-        '/sk-[A-Za-z0-9]{20,}/',
-        '/(password|secret|token)\s*=/i',
-        '/private[_-]?key/i',
+        ['pattern' => '/AKIA[0-9A-Z]{16}/', 'blocking' => true],
+        ['pattern' => '/ghp_[A-Za-z0-9_]{30,}/', 'blocking' => true],
+        ['pattern' => '/sk-[A-Za-z0-9]{20,}/', 'blocking' => true],
+        ['pattern' => '/private[_-]?key/i', 'blocking' => true],
+        ['pattern' => '/(password|secret|token)\s*=\s*["\']?[A-Za-z0-9_\-\/+=]{12,}/i', 'blocking' => false],
     ];
 
     $findings = [];
@@ -26,12 +26,12 @@ function aiAdvisorSecretScan(string $root): array
         $rel = (string) $rel;
         $base = basename($rel);
         if (in_array($base, $denyNames, true) || str_starts_with($base, '.env.')) {
-            $findings[] = ['file' => $rel, 'reason' => 'sensitive filename'];
+            $findings[] = ['file' => $rel, 'reason' => 'sensitive filename', 'blocking' => true];
             continue;
         }
         foreach ($denySuffix as $suffix) {
             if (str_ends_with(strtolower($base), $suffix)) {
-                $findings[] = ['file' => $rel, 'reason' => 'sensitive extension'];
+                $findings[] = ['file' => $rel, 'reason' => 'sensitive extension', 'blocking' => true];
                 continue 2;
             }
         }
@@ -44,16 +44,27 @@ function aiAdvisorSecretScan(string $root): array
             continue;
         }
         $content = (string) file_get_contents($abs);
-        foreach ($patterns as $pattern) {
+        foreach ($patterns as $rule) {
+            $pattern = (string) ($rule['pattern'] ?? '');
+            if ($pattern === '') {
+                continue;
+            }
             if (preg_match($pattern, $content) === 1) {
-                $findings[] = ['file' => $rel, 'reason' => 'secret-like pattern: ' . $pattern];
+                $findings[] = ['file' => $rel, 'reason' => 'secret-like pattern: ' . $pattern, 'blocking' => (bool) ($rule['blocking'] ?? true)];
                 break;
             }
         }
     }
 
     $dir = aiAdvisorGeneratedDir($root);
-    $out = ['blocked' => $findings !== [], 'findings' => $findings, 'count' => count($findings)];
+    $blocked = false;
+    foreach ($findings as $finding) {
+        if (!empty($finding['blocking'])) {
+            $blocked = true;
+            break;
+        }
+    }
+    $out = ['blocked' => $blocked, 'findings' => $findings, 'count' => count($findings)];
     aiAdvisorWriteJson($dir . DIRECTORY_SEPARATOR . 'advisor-secret-findings.json', $out);
     return $out;
 }

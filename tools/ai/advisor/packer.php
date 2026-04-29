@@ -11,6 +11,7 @@ function aiAdvisorDefaultIncludePrefixes(): array
         'CLAUDE.md',
         'llms.txt',
         'tools/ai/',
+        'scripts/ai/',
         'scripts/copilot/',
         'tests/',
         '.github/workflows/',

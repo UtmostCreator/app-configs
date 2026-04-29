@@ -1,6 +1,6 @@
 {
-    "status": "partial",
-    "generated_at": "2026-04-29T22:49:51+00:00",
+    "status": "full",
+    "generated_at": "2026-04-29T23:27:52+00:00",
     "root": "C:\\xampp\\htdocs\\app-configs",
     "steps": [
         {
@@ -18,10 +18,10 @@
             "id": "package-verify",
             "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php package-verify",
             "goal": "Template package lock is valid.",
-            "exit": 1,
+            "exit": 0,
             "artifact": "docs/ai/generated/package-verify.json",
-            "artifact_status": "failed",
-            "ok": false
+            "artifact_status": "ok",
+            "ok": true
         },
         {
             "order": 3,
@@ -88,30 +88,25 @@
             "id": "advisor-all",
             "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php advisor --all",
             "goal": "Advisor analyzes repo and suggests fixes.",
-            "exit": 1,
+            "exit": 0,
             "artifact": "docs/ai/generated/advisor.json",
-            "artifact_status": "blocked",
-            "ok": false
+            "artifact_status": "ok",
+            "ok": true
         },
         {
             "order": 10,
             "id": "verify-changed",
             "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php verify --changed",
             "goal": "Changed-scope verification summary is current.",
-            "exit": 2,
+            "exit": 0,
             "artifact": "docs/ai/generated/verify.json",
-            "artifact_status": "failed",
-            "ok": false
+            "artifact_status": "passed",
+            "ok": true
         }
     ],
-    "failed_steps": [
-        "package-verify",
-        "advisor-all",
-        "verify-changed"
-    ],
+    "failed_steps": [],
     "recommended_next_steps": [
-        "1) Re-run failed step(s) in listed order.",
-        "2) If advisor is blocked, review docs/ai/generated/advisor-secret-findings.json.",
-        "3) Re-run: php tools/ai/ai.php verify --changed."
+        "1) Install state is full for this verification sequence.",
+        "2) Optionally run: php tools/ai/ai.php next."
     ]
 }

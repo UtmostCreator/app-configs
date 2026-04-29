@@ -207,6 +207,53 @@ function aiRunCommand(string $root, string $command): array
     ];
 }
 
+function aiCliCommandExists(string $command): bool
+{
+    $out = [];
+    $exit = 0;
+    if (PHP_OS_FAMILY === 'Windows') {
+        exec('where ' . escapeshellarg($command) . ' >NUL 2>&1', $out, $exit);
+        if ($exit === 0) {
+            return true;
+        }
+        $user = getenv('USERPROFILE');
+        if (is_string($user) && $user !== '') {
+            $base = $user . DIRECTORY_SEPARATOR . 'AppData' . DIRECTORY_SEPARATOR . 'Local' . DIRECTORY_SEPARATOR . 'Microsoft' . DIRECTORY_SEPARATOR . 'WinGet' . DIRECTORY_SEPARATOR . 'Packages';
+            if (is_dir($base)) {
+                $wanted = strtolower($command . '.exe');
+                $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS));
+                foreach ($it as $entry) {
+                    if (!$entry->isFile()) {
+                        continue;
+                    }
+                    if (strtolower($entry->getFilename()) === $wanted) {
+                        $dir = (string) $entry->getPath();
+                        $path = (string) getenv('PATH');
+                        $parts = preg_split('/;/', $path) ?: [];
+                        $hasDir = false;
+                        foreach ($parts as $part) {
+                            if (strcasecmp(trim($part), $dir) === 0) {
+                                $hasDir = true;
+                                break;
+                            }
+                        }
+                        if (!$hasDir) {
+                            $newPath = $dir . ';' . $path;
+                            putenv('PATH=' . $newPath);
+                            $_SERVER['PATH'] = $newPath;
+                            $_ENV['PATH'] = $newPath;
+                        }
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+    exec('command -v ' . escapeshellarg($command) . ' >/dev/null 2>&1', $out, $exit);
+    return $exit === 0;
+}
+
 function aiEvaluateStaleEntries(string $root): array
 {
     $registry = aiCliLoadArtifactsRegistry(aiCliGeneratedDir($root));
@@ -600,10 +647,7 @@ function aiRunVerify(string $root, array $args): int
         $requiredTools = ['bash', 'git', 'jq', 'rg', 'repomix', 'scc'];
         $optionalTools = ['fd', 'gh', 'fzf', 'bat', 'delta', 'yq', 'shellcheck', 'semgrep', 'ast-grep'];
         foreach ($requiredTools as $tool) {
-            $out = [];
-            $exit = 0;
-            exec('command -v ' . escapeshellarg($tool) . ' >/dev/null 2>&1', $out, $exit);
-            if ($exit !== 0) {
+            if (!aiCliCommandExists($tool)) {
                 $findings[] = [
                     'severity' => 'ERROR',
                     'code' => 'MISSING_REQUIRED_TOOL',
@@ -614,10 +658,7 @@ function aiRunVerify(string $root, array $args): int
             }
         }
         foreach ($optionalTools as $tool) {
-            $out = [];
-            $exit = 0;
-            exec('command -v ' . escapeshellarg($tool) . ' >/dev/null 2>&1', $out, $exit);
-            if ($exit !== 0) {
+            if (!aiCliCommandExists($tool)) {
                 $findings[] = [
                     'severity' => $strict ? 'WARNING' : 'INFO',
                     'code' => 'MISSING_OPTIONAL_TOOL',
@@ -2595,18 +2636,12 @@ function aiRunInstallWizard(string $root): int
     $missingRequired = [];
     $missingOptional = [];
     foreach ($dep['required'] as $tool) {
-        $out = [];
-        $exit = 0;
-        exec('command -v ' . escapeshellarg((string) $tool) . ' >/dev/null 2>&1', $out, $exit);
-        if ($exit !== 0) {
+        if (!aiCliCommandExists((string) $tool)) {
             $missingRequired[] = $tool;
         }
     }
     foreach ($dep['optional'] as $tool) {
-        $out = [];
-        $exit = 0;
-        exec('command -v ' . escapeshellarg((string) $tool) . ' >/dev/null 2>&1', $out, $exit);
-        if ($exit !== 0) {
+        if (!aiCliCommandExists((string) $tool)) {
             $missingOptional[] = $tool;
         }
     }

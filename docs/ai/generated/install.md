@@ -1,8 +1,8 @@
 # Install
 
 - Status: `ok`
-- Generated at: `2026-04-29T22:49:31+00:00`
-- Commit: `670fe37`
+- Generated at: `2026-04-29T23:27:28+00:00`
+- Commit: `45c4a3a`
 - Branch: `feat/installer-transaction-engine`
 - Recommended next action: `Run install --backup-only before install --apply.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "install.json",
-    "generated_at": "2026-04-29T22:49:31+00:00",
+    "generated_at": "2026-04-29T23:27:28+00:00",
     "command": "php tools/ai/ai.php install --dry-run",
-    "based_on_commit": "670fe37",
+    "based_on_commit": "45c4a3a",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
     "status": "ok",

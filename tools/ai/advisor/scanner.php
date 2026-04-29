@@ -30,6 +30,7 @@ function aiAdvisorScan(string $root): array
         'tests_php' => 0,
         'tests_shell' => 0,
         'scripts_copilot' => 0,
+        'scripts_ai' => 0,
         'tools_ai_php' => 0,
     ];
     foreach ($tracked as $file) {
@@ -42,6 +43,9 @@ function aiAdvisorScan(string $root): array
         }
         if (str_starts_with($f, 'scripts/copilot/') && str_ends_with($f, '.sh')) {
             $counts['scripts_copilot']++;
+        }
+        if (str_starts_with($f, 'scripts/ai/') && str_ends_with($f, '.sh')) {
+            $counts['scripts_ai']++;
         }
         if (str_starts_with($f, 'tools/ai/') && str_ends_with($f, '.php')) {
             $counts['tools_ai_php']++;

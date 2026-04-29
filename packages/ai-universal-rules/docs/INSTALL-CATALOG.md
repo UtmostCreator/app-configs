@@ -23,7 +23,7 @@ Deterministic catalog generated from installer registries.
 - `capabilities-extended-lite` (2 items)
 - `capabilities-extended-full` (1 items)
 - `policy-pack` (3 items)
-- `scripts-pack` (19 items)
+- `scripts-pack` (23 items)
 - `hooks-pack` (3 items)
 - `ci-pack` (2 items)
 - `evidence-pack` (2 items)
@@ -43,6 +43,8 @@ Deterministic catalog generated from installer registries.
 - `repomix-tree` -> `scripts/ai/repomix-context-tree.sh`
 - `repomix-scc-router` -> `scripts/ai/repomix-scc-router.sh`
 - `pack-context` -> `scripts/ai/pack-context.sh`
+- `repo-tool-inventory` -> `scripts/ai/repo-tool-inventory.sh`
+- `install-mandatory-tools` -> `scripts/ai/install-mandatory-tools.sh`
 
 ## Toolchain
 

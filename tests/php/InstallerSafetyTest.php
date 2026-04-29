@@ -129,4 +129,18 @@ class InstallerSafetyTest extends TestCase
         }
         $this->assertTrue($blocked, 'scc should be explicitly blocked for auto-install');
     }
+
+    public function testOpencodeAgentsAreVisibleByDefault(): void
+    {
+        $agentDir = self::$repoRoot . DIRECTORY_SEPARATOR . '.opencode' . DIRECTORY_SEPARATOR . 'agents';
+        $this->assertDirectoryExists($agentDir);
+        $files = glob($agentDir . DIRECTORY_SEPARATOR . '*.md') ?: [];
+        $this->assertNotEmpty($files, 'expected at least one OpenCode agent file');
+
+        foreach ($files as $file) {
+            $content = (string) file_get_contents($file);
+            $this->assertStringContainsString('mode: subagent', $content, 'agent must declare subagent mode: ' . basename($file));
+            $this->assertStringContainsString('hidden: false', $content, 'agent should be visible in listings: ' . basename($file));
+        }
+    }
 }

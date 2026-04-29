@@ -1,7 +1,7 @@
 ---
 description: Use when a bounded slice is clear and implementation plus focused verification should happen in <PROJECT_NAME>
 mode: subagent
-hidden: true
+hidden: false
 temperature: 0.1
 ---
 

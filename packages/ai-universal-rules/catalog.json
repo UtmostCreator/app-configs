@@ -51,14 +51,14 @@
         "package:package-capability": 31,
         "package:shared-template": 3,
         "package:workflow-doc": 6,
-        "root:capability": 12,
+        "root:capability": 13,
         "root:copilot-policy": 1,
         "root:copilot-schema": 1,
         "root:copilot-script": 10,
         "root:exporter": 1,
         "root:generator": 1,
-        "root:github-copilot-agent": 2,
-        "root:github-copilot-instruction": 6,
+        "root:github-copilot-agent": 8,
+        "root:github-copilot-instruction": 9,
         "root:hook": 1,
         "root:php-reference": 3,
         "root:root-doc": 17,
@@ -994,7 +994,7 @@
             "name": "bug-regression",
             "path": "docs/ai/capabilities/bug-regression/CAPABILITY.md",
             "runtime": "canonical",
-            "description": "Reproduce a config or workflow defect with the smallest reliable check, apply a bounded fix, and prove the issue is closed."
+            "description": "Reproduce a bug with the smallest practical test or deterministic check, apply a minimal fix, and prove the regression is closed."
         },
         {
             "scope": "root",
@@ -1003,6 +1003,14 @@
             "path": "docs/ai/capabilities/config-change-safety/CAPABILITY.md",
             "runtime": "canonical",
             "description": "Apply editor, shell, runtime, or machine-facing config changes without widening risk silently."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
+            "name": "dependency-upgrade",
+            "path": "docs/ai/capabilities/dependency-upgrade/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Evaluate and implement a dependency upgrade with attention to compatibility, verification depth, and release risk."
         },
         {
             "scope": "root",
@@ -1034,7 +1042,7 @@
             "name": "project-context",
             "path": "docs/ai/capabilities/project-context/CAPABILITY.md",
             "runtime": "canonical",
-            "description": "Load durable repository facts before work starts so changes use the right paths, verification, and approval boundaries."
+            "description": "Provide durable repository context that other capabilities, agents, and prompts can rely on before planning, implementing, reviewing, or verifying changes."
         },
         {
             "scope": "root",
@@ -1050,7 +1058,7 @@
             "name": "review-diff",
             "path": "docs/ai/capabilities/review-diff/CAPABILITY.md",
             "runtime": "canonical",
-            "description": "Review the proposed change set for accuracy, drift, portability, and missing verification."
+            "description": "Review a change set from the diff first, then expand only as needed to assess correctness, regression risk, policy fit, and missing verification."
         },
         {
             "scope": "root",
@@ -1066,7 +1074,7 @@
             "name": "verify-change",
             "path": "docs/ai/capabilities/verify-change/CAPABILITY.md",
             "runtime": "canonical",
-            "description": "Choose the smallest relevant proof for a config, docs, or workflow change and report evidence cleanly."
+            "description": "Choose and run the smallest relevant verification flow for a change, then report evidence clearly."
         },
         {
             "scope": "root",
@@ -1183,10 +1191,58 @@
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "config-maintainer",
+            "name": "architect.agent.md",
+            "path": ".github/agents/architect.agent.md",
+            "runtime": "github-copilot",
+            "description": null
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
+            "name": "config-maintainer.agent.md",
             "path": ".github/agents/config-maintainer.agent.md",
             "runtime": "github-copilot",
-            "description": "Use when updating editor, shell, runtime, or tool configuration while preserving existing behavior and validating the narrowest safe surface first"
+            "description": null
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
+            "name": "implementer.agent.md",
+            "path": ".github/agents/implementer.agent.md",
+            "runtime": "github-copilot",
+            "description": null
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
+            "name": "refactorer.agent.md",
+            "path": ".github/agents/refactorer.agent.md",
+            "runtime": "github-copilot",
+            "description": null
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
+            "name": "release-auditor.agent.md",
+            "path": ".github/agents/release-auditor.agent.md",
+            "runtime": "github-copilot",
+            "description": null
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
+            "name": "researcher.agent.md",
+            "path": ".github/agents/researcher.agent.md",
+            "runtime": "github-copilot",
+            "description": null
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
+            "name": "reviewer.agent.md",
+            "path": ".github/agents/reviewer.agent.md",
+            "runtime": "github-copilot",
+            "description": null
         },
         {
             "scope": "root",
@@ -1202,7 +1258,15 @@
             "name": "ai-workflow",
             "path": ".github/instructions/ai-workflow.instructions.md",
             "runtime": "github-copilot",
-            "description": "Rules for AI workflow docs and runtime adapters"
+            "description": null
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "architecture",
+            "path": ".github/instructions/architecture.instructions.md",
+            "runtime": "github-copilot",
+            "description": null
         },
         {
             "scope": "root",
@@ -1218,7 +1282,7 @@
             "name": "config",
             "path": ".github/instructions/config.instructions.md",
             "runtime": "github-copilot",
-            "description": "Rules for config changes in editor, shell, runtime, and tool files"
+            "description": null
         },
         {
             "scope": "root",
@@ -1242,7 +1306,23 @@
             "name": "php",
             "path": ".github/instructions/php.instructions.md",
             "runtime": "github-copilot",
-            "description": "PHP investigation and verification routing"
+            "description": null
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "targets",
+            "path": ".github/instructions/targets.instructions.md",
+            "runtime": "github-copilot",
+            "description": null
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "testing",
+            "path": ".github/instructions/testing.instructions.md",
+            "runtime": "github-copilot",
+            "description": null
         },
         {
             "scope": "root",

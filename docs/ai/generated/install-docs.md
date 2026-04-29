@@ -1,8 +1,8 @@
 # Install docs
 
 - Status: `ok`
-- Generated at: `2026-04-29T18:53:38+00:00`
-- Commit: `047d291`
+- Generated at: `2026-04-29T22:49:50+00:00`
+- Commit: `670fe37`
 - Branch: `feat/installer-transaction-engine`
 - Recommended next action: `Install docs are up to date.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "install-docs.json",
-    "generated_at": "2026-04-29T18:53:38+00:00",
+    "generated_at": "2026-04-29T22:49:50+00:00",
     "command": "php tools/ai/ai.php install-docs --check",
-    "based_on_commit": "047d291",
+    "based_on_commit": "670fe37",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
     "status": "ok",

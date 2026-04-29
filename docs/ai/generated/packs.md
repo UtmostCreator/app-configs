@@ -1,8 +1,8 @@
 # Packs
 
 - Status: `ok`
-- Generated at: `2026-04-29T18:53:37+00:00`
-- Commit: `047d291`
+- Generated at: `2026-04-29T19:22:16+00:00`
+- Commit: `fdd960a`
 - Branch: `feat/installer-transaction-engine`
 - Recommended next action: `Pack contracts validated.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "packs.json",
-    "generated_at": "2026-04-29T18:53:37+00:00",
+    "generated_at": "2026-04-29T19:22:16+00:00",
     "command": "php tools/ai/ai.php packs",
-    "based_on_commit": "047d291",
+    "based_on_commit": "fdd960a",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
     "status": "ok",
@@ -104,7 +104,7 @@
             "advisor-pack"
         ],
         "registry_errors": [],
-        "validation_requested": true,
+        "validation_requested": false,
         "notes": [
             "docs-reference is optional add-on only"
         ]

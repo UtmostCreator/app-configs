@@ -2071,7 +2071,7 @@ function aiInstallerConfigFromAiArgs(string $root, array $args, bool $forceDryRu
     $normalized = [];
     for ($i = 0; $i < count($args); $i++) {
         $arg = (string) $args[$i];
-        if (in_array($arg, ['--interactive', '--backup-only', '--apply', '--no-interaction', '--agent', '--ci', '--wizard', '--yes'], true)) {
+        if (in_array($arg, ['--interactive', '--backup-only', '--apply', '--reinstall', '--no-interaction', '--agent', '--ci', '--wizard', '--yes'], true)) {
             continue;
         }
         if (in_array($arg, ['--backup', '--resolve'], true)) {
@@ -2370,6 +2370,12 @@ function aiRunInstallWorkflow(string $root, array $args): int
     $cmd = 'php tools/ai/install-ai-kit.php --target . --runtime ' . escapeshellarg($runtime) . ' --profile ' . escapeshellarg((string) $installConfig['profile']);
     if ($mode === 'sidecar-only') {
         $cmd .= ' --no-base';
+    }
+    if (!empty($installConfig['force'])) {
+        $cmd .= ' --force';
+    }
+    if (!empty($installConfig['allowCoreOverwrite'])) {
+        $cmd .= ' --allow-core-overwrite';
     }
     if (!empty($installConfig['allFeatures'])) {
         $cmd .= ' --all-features';

@@ -1,7 +1,7 @@
 ---
 description: Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in <PROJECT_NAME>
 mode: subagent
-hidden: true
+hidden: false
 temperature: 0.1
 permission:
   edit: deny

@@ -47,6 +47,19 @@ log() {
     printf '[repomix-tree] %s\n' "$1"
 }
 
+add_winget_paths() {
+    local user_name="${USER:-${USERNAME:-}}"
+    local base="/c/Users/${user_name}/AppData/Local/Microsoft/WinGet/Packages"
+    [[ -d "$base" ]] || return 0
+    local dir
+    while IFS= read -r dir; do
+        case ":$PATH:" in
+        *":$dir:"*) ;;
+        *) PATH="$PATH:$dir" ;;
+        esac
+    done < <(find "$base" -maxdepth 3 -type f -name '*.exe' -printf '%h\n' 2>/dev/null | sort -u)
+}
+
 need_bin() {
     local name="$1"
     command -v "$name" >/dev/null 2>&1 || die "required binary '$name' not found"
@@ -175,6 +188,8 @@ done
 
 ROOT="$(abs_path "$ROOT_INPUT")"
 [[ -d "$ROOT" ]] || die "root directory '$ROOT' does not exist"
+
+add_winget_paths
 
 if [[ "$OUTPUT_DIR" = /* ]]; then
     OUTPUT_DIR_ABS="$OUTPUT_DIR"

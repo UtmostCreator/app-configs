@@ -27,6 +27,9 @@ repo-structure-check opts='--with-scc':
 install-copilot-kit target='.' profile='minimal' opts='--dry-run':
   @bash tools/ai/install-copilot-kit.sh --target {{target}} --profile {{profile}} {{opts}}
 
+install-ai-kit target='.' profile='dual' runtime='' opts='--dry-run':
+  @bash -lc 'runtime="{{runtime}}"; if [[ -n "$runtime" ]]; then runtime="--runtime $runtime"; fi; php tools/ai/install-ai-kit.php --target {{target}} --profile {{profile}} $runtime {{opts}}'
+
 ai-check:
   @php tools/ai/validate-ai-config.php
   @php tools/ai/validate-ai-catalog.php

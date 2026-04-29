@@ -45,12 +45,12 @@
             "ai_entrypoint": "README.md",
             "notes": "Contains root configuration, README, justfile, and project-level metadata.",
             "metrics": {
-                "lines": 672,
-                "code": 531,
+                "lines": 677,
+                "code": 536,
                 "comments": 4,
                 "blanks": 137,
                 "complexity": 0,
-                "bytes": 29642
+                "bytes": 30895
             }
         },
         {
@@ -111,7 +111,7 @@
                 "comments": 0,
                 "blanks": 128,
                 "complexity": 19,
-                "bytes": 26639
+                "bytes": 26926
             }
         },
         {
@@ -262,12 +262,12 @@
             "ai_entrypoint": "docs/ai/project-context.md",
             "notes": "Canonical guidance surface for repo-specific behavior and procedures.",
             "metrics": {
-                "lines": 3332,
-                "code": 2573,
+                "lines": 3358,
+                "code": 2595,
                 "comments": 0,
-                "blanks": 759,
+                "blanks": 763,
                 "complexity": 0,
-                "bytes": 171111
+                "bytes": 174665
             }
         },
         {
@@ -505,12 +505,12 @@
             "ai_entrypoint": "packages/ai-universal-rules/README.md",
             "notes": "Portable package benchmark; examples are references, not root repo runtime defaults.",
             "metrics": {
-                "lines": 6489,
-                "code": 5163,
+                "lines": 6504,
+                "code": 5174,
                 "comments": 0,
-                "blanks": 1326,
+                "blanks": 1330,
                 "complexity": 0,
-                "bytes": 258831
+                "bytes": 261060
             }
         },
         {
@@ -650,12 +650,12 @@
             "ai_entrypoint": "scripts/copilot/run-repomix-context.sh",
             "notes": "Execution surface for guarded automation and evidence-oriented checks.",
             "metrics": {
-                "lines": 3254,
-                "code": 2771,
+                "lines": 3298,
+                "code": 2810,
                 "comments": 48,
-                "blanks": 435,
-                "complexity": 444,
-                "bytes": 96721
+                "blanks": 440,
+                "complexity": 450,
+                "bytes": 98030
             }
         },
         {
@@ -689,12 +689,12 @@
             "ai_entrypoint": "justfile",
             "notes": "Covers validators, shell wrappers, and context-tree workflows.",
             "metrics": {
-                "lines": 1162,
-                "code": 898,
-                "comments": 64,
-                "blanks": 200,
+                "lines": 1293,
+                "code": 1006,
+                "comments": 66,
+                "blanks": 221,
                 "complexity": 19,
-                "bytes": 38755
+                "bytes": 44476
             }
         },
         {
@@ -717,12 +717,12 @@
             "ai_entrypoint": "tools/ai/generate-ai-catalog.php",
             "notes": "Contains generators/validators plus non-runtime reference material.",
             "metrics": {
-                "lines": 2531,
-                "code": 2212,
+                "lines": 2267,
+                "code": 1991,
                 "comments": 5,
-                "blanks": 314,
-                "complexity": 226,
-                "bytes": 90567
+                "blanks": 271,
+                "complexity": 185,
+                "bytes": 83662
             }
         }
     ]

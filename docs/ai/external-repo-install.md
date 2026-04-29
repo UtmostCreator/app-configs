@@ -5,25 +5,34 @@ Use the installer to bootstrap this AI workflow kit into another repository.
 ## Dry-Run First
 
 ```bash
-bash tools/ai/install-copilot-kit.sh --target /path/to/target-repo --profile minimal --dry-run
+php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile dual --dry-run
 ```
 
 ## Apply Install
 
 ```bash
-bash tools/ai/install-copilot-kit.sh --target /path/to/target-repo --profile copilot
+php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile dual
 ```
 
 ## Profiles
 
 - `minimal`: core policy + project context + guardrails + three base capabilities
 - `copilot`: `minimal` plus Copilot instructions, agents, and prompts from templates
-- `copilot-guarded`: `copilot` plus hook and wrapper script surfaces
+- `opencode`: `minimal` plus OpenCode agents, commands, and skills from templates
+- `dual`: `minimal` plus both Copilot and OpenCode runtime adapters
+- `guarded`: same assets as `dual`, with an explicit prompt to apply local guard/hook policies manually
+
+Legacy wrapper still works:
+
+- `tools/ai/install-copilot-kit.sh --profile minimal|copilot|copilot-guarded`
+- `tools/ai/install-ai-kit.sh` (shell wrapper around PHP installer)
 
 ## Overwrite Behavior
 
 - existing files are skipped by default
 - use `--force` to overwrite existing paths
+- use `--no-base` when you only want runtime adapters (`.github` and/or `.opencode`) without replacing base policy files
+- core base policy paths remain protected even with `--force`; pass `--allow-core-overwrite` only when intentional
 
 ## Adaptation Behavior
 
@@ -41,6 +50,8 @@ Unknown values remain explicit as `unknown` instead of guessed.
 Current installer runtime support:
 
 - `github-copilot`
+- `opencode`
+- `both` (via `--runtime both` or `--profile dual`)
 
 ## Notes
 
@@ -48,3 +59,4 @@ Current installer runtime support:
 - review and refine `AGENTS.md` and `docs/ai/project-context.md` after install
 - run repo-specific verification after installation
 - for folder-level install wiring and intent mapping, consult `docs/ai/repo-directory-map.json`
+- for architecture and complete installed asset map, read `docs/ai/installer-architecture.md`

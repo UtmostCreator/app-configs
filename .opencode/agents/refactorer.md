@@ -1,7 +1,7 @@
 ---
 description: Use when behavior is already correct and the remaining problem is structure, readability, or maintainability in app-configs
 mode: subagent
-hidden: true
+hidden: false
 temperature: 0.1
 ---
 

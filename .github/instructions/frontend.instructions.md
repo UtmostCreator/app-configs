@@ -1,10 +1,11 @@
 ---
-applyTo: "**/*.{js,ts,tsx,vue}"
-description: "Frontend investigation and verification routing"
+applyTo: "<FRONTEND_PATH_GLOB>"
+description: "Frontend, UI, interaction, and presentation guidance"
 ---
 
-For frontend work:
+# Frontend Rules
 
-- Prefer `rg` first and `ast-grep` when plain-text search is noisy.
-- Check related tests, stories, or examples before editing UI components.
-- Prefer `scripts/copilot/git-forensics.sh G ...` for template or JSX shape changes.
+- Keep presentation code focused on rendering and user interaction.
+- Avoid moving heavy business logic into UI components if the repository already separates those concerns.
+- Preserve accessibility and primary user flows.
+- Reuse existing UI primitives before adding new ones.

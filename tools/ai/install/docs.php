@@ -37,21 +37,46 @@ function aiInstallerBuildInstalledInstructionsData(string $targetRoot, array $ma
         'required_tools' => $toolReq['required'] ?? [],
         'optional_tools' => $toolReq['optional'] ?? [],
         'commands' => [
+            'preflight' => 'php tools/ai/ai.php preflight',
+            'package_verify' => 'php tools/ai/ai.php package-verify',
+            'adapter_plan' => 'php tools/ai/ai.php adapter-plan --profile ' . $profile,
+            'install_dry_run' => 'php tools/ai/ai.php install --profile ' . $profile . ' --reinstall --dry-run',
+            'install_backup' => 'php tools/ai/ai.php install --backup-only --apply --profile ' . $profile . ' --reinstall',
+            'install_apply' => 'php tools/ai/ai.php install --apply --profile ' . $profile . ' --reinstall --backup <backup-id>',
             'verify' => 'php tools/ai/ai.php verify --json',
             'placeholders' => 'php tools/ai/ai.php placeholders --fail',
             'toolchain_check' => 'php tools/ai/ai.php toolchain --with repomix,scc --check',
             'toolchain_plan' => 'php tools/ai/ai.php toolchain --with repomix,scc --install-plan',
             'scripts_list' => 'php tools/ai/ai.php run-script --list',
+            'repomix_analyze' => 'bash scripts/ai/repomix-context-tree.sh analyze .',
+            'advisor_all' => 'php tools/ai/ai.php advisor --all',
+            'full_install_verify' => 'php tools/ai/verify-full-install.php',
         ],
     ];
 }
 
 function aiInstallerRenderInstalledInstructionsMarkdown(array $data): string
 {
+    $commands = is_array($data['commands'] ?? null) ? $data['commands'] : [];
+
     $md = "# Install Instructions\n\n";
     $md .= "- Installed at: `" . ($data['installed_at'] ?? 'unknown') . "`\n";
     $md .= "- Profile: `" . ($data['profile'] ?? 'unknown') . "`\n";
     $md .= "- Packs: `" . implode(', ', $data['packs'] ?? []) . "`\n\n";
+
+    $md .= "## Step Chain\n\n";
+    $md .= "1. Step 1 -> Preflight: `" . ($commands['preflight'] ?? 'php tools/ai/ai.php preflight') . "`\n";
+    $md .= "   - Next: Step 2 (`package-verify`)\n";
+    $md .= "2. Step 2 -> Package Verify: `" . ($commands['package_verify'] ?? 'php tools/ai/ai.php package-verify') . "`\n";
+    $md .= "   - Next: Step 3 (`adapter-plan`)\n";
+    $md .= "3. Step 3 -> Adapter Plan: `" . ($commands['adapter_plan'] ?? 'php tools/ai/ai.php adapter-plan') . "`\n";
+    $md .= "   - Next: Step 4 (`install --dry-run`)\n";
+    $md .= "4. Step 4 -> Install Dry-Run: `" . ($commands['install_dry_run'] ?? 'php tools/ai/ai.php install --dry-run') . "`\n";
+    $md .= "   - Next: Step 5 (`install --backup-only`)\n";
+    $md .= "5. Step 5 -> Backup: `" . ($commands['install_backup'] ?? 'php tools/ai/ai.php install --backup-only --apply') . "`\n";
+    $md .= "   - Next: Step 6 (`install --apply --backup <id>`)\n";
+    $md .= "6. Step 6 -> Apply: `" . ($commands['install_apply'] ?? 'php tools/ai/ai.php install --apply --backup <backup-id>') . "`\n";
+    $md .= "   - Next: Step 7 (post-install verification sequence)\n\n";
 
     $md .= "## Before Install\n\n";
     $md .= "1. Run dry-run first.\n";
@@ -59,15 +84,25 @@ function aiInstallerRenderInstalledInstructionsMarkdown(array $data): string
     $md .= "3. Check required tools for selected packs.\n\n";
 
     $md .= "## During Install\n\n";
-    $md .= "- Dry-run: `php tools/ai/ai.php install --profile " . ($data['profile'] ?? 'dual') . " --dry-run`\n";
-    $md .= "- Backup: `php tools/ai/ai.php install --backup-only --apply --profile " . ($data['profile'] ?? 'dual') . "`\n";
-    $md .= "- Apply: `php tools/ai/ai.php install --apply --profile " . ($data['profile'] ?? 'dual') . " --backup <backup-id>`\n\n";
+    $md .= "- Dry-run: `" . ($commands['install_dry_run'] ?? ('php tools/ai/ai.php install --profile ' . ($data['profile'] ?? 'dual') . ' --dry-run')) . "`\n";
+    $md .= "- Backup: `" . ($commands['install_backup'] ?? ('php tools/ai/ai.php install --backup-only --apply --profile ' . ($data['profile'] ?? 'dual'))) . "`\n";
+    $md .= "- Apply: `" . ($commands['install_apply'] ?? ('php tools/ai/ai.php install --apply --profile ' . ($data['profile'] ?? 'dual') . ' --backup <backup-id>')) . "`\n\n";
 
     $md .= "## After Install\n\n";
-    $md .= "- Verify: `" . ($data['commands']['verify'] ?? 'php tools/ai/ai.php verify --json') . "`\n";
-    $md .= "- Resolve placeholders: `" . ($data['commands']['placeholders'] ?? 'php tools/ai/ai.php placeholders --fail') . "`\n";
-    $md .= "- Toolchain check: `" . ($data['commands']['toolchain_check'] ?? 'php tools/ai/ai.php toolchain --check') . "`\n";
-    $md .= "- Script list: `" . ($data['commands']['scripts_list'] ?? 'php tools/ai/ai.php run-script --list') . "`\n\n";
+    $md .= "- Verify: `" . ($commands['verify'] ?? 'php tools/ai/ai.php verify --json') . "`\n";
+    $md .= "- Resolve placeholders: `" . ($commands['placeholders'] ?? 'php tools/ai/ai.php placeholders --fail') . "`\n";
+    $md .= "- Toolchain check: `" . ($commands['toolchain_check'] ?? 'php tools/ai/ai.php toolchain --check') . "`\n";
+    $md .= "- Script list: `" . ($commands['scripts_list'] ?? 'php tools/ai/ai.php run-script --list') . "`\n\n";
+    $md .= "- Repomix analyze: `" . ($commands['repomix_analyze'] ?? 'bash scripts/ai/repomix-context-tree.sh analyze .') . "`\n";
+    $md .= "- Advisor analyze/fixes: `" . ($commands['advisor_all'] ?? 'php tools/ai/ai.php advisor --all') . "`\n";
+    $md .= "- Full-install verifier: `" . ($commands['full_install_verify'] ?? 'php tools/ai/verify-full-install.php') . "`\n\n";
+    $md .= "Advisor recommendations are strongest after a full OpenCode install and fresh Repomix analysis, because advisor consumes generated repository signals/context artifacts under `docs/ai/generated/`.\n\n";
+    $md .= "OpenCode agent visibility note: agents in `.opencode/agents/` must not be marked `hidden: true` in frontmatter if you expect them in normal agent listings.\n\n";
+
+    $md .= "## Completion Criteria\n\n";
+    $md .= "- Run `" . ($commands['full_install_verify'] ?? 'php tools/ai/verify-full-install.php') . "` after the sequence above.\n";
+    $md .= "- Completion is `full` only when install, validation, repomix analysis, and advisor checks all pass in order.\n";
+    $md .= "- If status is not `full`, follow the script output for ordered remediation steps.\n\n";
 
     $md .= "## Installed Scripts\n\n";
     if (($data['scripts'] ?? []) === []) {

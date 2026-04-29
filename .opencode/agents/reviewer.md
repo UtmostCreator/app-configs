@@ -1,7 +1,7 @@
 ---
 description: Use when reviewing a change set for correctness, regressions, policy fit, and missing verification in app-configs
 mode: subagent
-hidden: true
+hidden: false
 temperature: 0.0
 permission:
   edit: deny

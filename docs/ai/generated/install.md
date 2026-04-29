@@ -1,28 +1,47 @@
 # Install
 
-- Status: `blocked`
-- Generated at: `2026-04-29T18:30:47+00:00`
-- Commit: `047d291`
+- Status: `ok`
+- Generated at: `2026-04-29T22:49:31+00:00`
+- Commit: `670fe37`
 - Branch: `feat/installer-transaction-engine`
-- Recommended next action: `Use upgrade for existing installs unless forced reinstall is intended.`
+- Recommended next action: `Run install --backup-only before install --apply.`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "install.json",
-    "generated_at": "2026-04-29T18:30:47+00:00",
-    "command": "php tools/ai/ai.php install",
-    "based_on_commit": "047d291",
+    "generated_at": "2026-04-29T22:49:31+00:00",
+    "command": "php tools/ai/ai.php install --dry-run",
+    "based_on_commit": "670fe37",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
-    "status": "blocked",
+    "status": "ok",
     "score": null,
     "stale": false,
-    "recommended_next_action": "Use upgrade for existing installs unless forced reinstall is intended.",
+    "recommended_next_action": "Run install --backup-only before install --apply.",
     "data": {
-        "status": "blocked",
-        "reason": "manifest already exists; use upgrade or install --reinstall",
-        "manifest_path": ".ai-install-manifest.json"
+        "status": "planned",
+        "mode": "safe-merge",
+        "runtime_mode": "AI_AGENT",
+        "profile": "full-governance",
+        "packs": [
+            "capabilities-extended-full",
+            "hooks-pack",
+            "ci-pack",
+            "base"
+        ],
+        "apply": false,
+        "summary": {
+            "create": 0,
+            "skip": 0
+        },
+        "install_kind": "reinstall",
+        "required_first": [
+            "preflight",
+            "package-verify",
+            "adapter-plan",
+            "install --backup-only"
+        ]
     }
 }
 ```

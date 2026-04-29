@@ -45,5 +45,25 @@ function aiInstallerScriptRegistry(): array
             'supports_dry_run' => true,
             'default_args' => [],
         ],
+        'repo-tool-inventory' => [
+            'label' => 'Generate/check required tools inventory doc',
+            'source_path' => 'scripts/ai/repo-tool-inventory.sh',
+            'installed_path' => 'scripts/ai/repo-tool-inventory.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'git'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'install-mandatory-tools' => [
+            'label' => 'Install mandatory CLI tools by OS',
+            'source_path' => 'scripts/ai/install-mandatory-tools.sh',
+            'installed_path' => 'scripts/ai/install-mandatory-tools.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash'],
+            'risk' => 'mutating',
+            'supports_dry_run' => true,
+            'default_args' => ['--dry-run'],
+        ],
     ];
 }

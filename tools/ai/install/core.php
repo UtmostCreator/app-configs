@@ -1,0 +1,258 @@
+<?php
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/packs.php';
+require_once __DIR__ . '/planner.php';
+require_once __DIR__ . '/manifest.php';
+require_once __DIR__ . '/docs.php';
+require_once __DIR__ . '/toolchain.php';
+require_once __DIR__ . '/script-runner.php';
+
+function aiInstallerRun(array $argv): int
+{
+    $config = aiInstallerParseArgs($argv);
+    if (($config['help'] ?? false) === true) {
+        aiInstallerUsage();
+        return 0;
+    }
+
+    aiInstallerLog('source root: ' . $config['sourceRoot']);
+    aiInstallerLog('target root: ' . $config['targetRoot']);
+    aiInstallerLog('profile: ' . $config['profile']);
+    aiInstallerLog('runtime: ' . $config['runtime']);
+
+    $registry = aiInstallerPackRegistry();
+    $registryErrors = aiInstallerValidatePackRegistry($registry);
+    if ($registryErrors !== []) {
+        throw new RuntimeException('invalid pack registry: ' . implode('; ', $registryErrors));
+    }
+    $packs = aiInstallerResolveSelectedPacks($config, $registry);
+
+    $dep = aiInstallerPackToolRequirements($packs);
+    $missingRequired = [];
+    $missingOptional = [];
+    foreach ($dep['required'] as $tool) {
+        $out = [];
+        $exit = 0;
+        exec('command -v ' . escapeshellarg((string) $tool) . ' >/dev/null 2>&1', $out, $exit);
+        if ($exit !== 0) {
+            $missingRequired[] = $tool;
+        }
+    }
+    foreach ($dep['optional'] as $tool) {
+        $out = [];
+        $exit = 0;
+        exec('command -v ' . escapeshellarg((string) $tool) . ' >/dev/null 2>&1', $out, $exit);
+        if ($exit !== 0) {
+            $missingOptional[] = $tool;
+        }
+    }
+    if ($missingRequired !== [] && ($config['dependencyMode'] ?? 'strict') === 'strict') {
+        throw new RuntimeException('missing required tools for selected packs: ' . implode(', ', $missingRequired));
+    }
+
+    $plan = aiInstallerBuildPlan($config, $registry, $packs);
+
+    $applied = [];
+    foreach ($plan as $item) {
+        if ($item['action'] === 'SKIP_EXISTING_UNMANAGED' || $item['action'] === 'SKIP_PROTECTED_CORE') {
+            aiInstallerLog('skip ' . $item['target'] . ' (' . strtolower($item['action']) . ')');
+            continue;
+        }
+        if ($config['dryRun']) {
+            aiInstallerLog('plan ' . strtolower($item['type']) . ': ' . $item['source'] . ' -> ' . $item['target']);
+            continue;
+        }
+
+        $src = $config['sourceRoot'] . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $item['source']);
+        $dest = $config['targetRoot'] . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $item['target']);
+        if ($item['type'] === 'file') {
+            aiInstallerCopyFile($src, $dest);
+        } else {
+            aiInstallerCopyDir($src, $dest);
+        }
+        $applied[] = $item;
+        aiInstallerLog('copied ' . $item['type'] . ': ' . $item['target']);
+    }
+
+    if (!$config['dryRun']) {
+        aiInstallerApplyPlaceholders($config['targetRoot'], $config['projectName'], $applied);
+        $manifest = aiInstallerBuildManifest($config, $packs, $applied);
+        aiInstallerWriteManifest($config['targetRoot'], $manifest);
+    }
+
+    aiInstallerLog($config['dryRun'] ? 'dry-run complete; no files changed' : 'install complete');
+    aiInstallerLog('actions: ' . count($plan));
+    aiInstallerLog('selected packs: ' . implode(', ', $packs));
+    if ($missingRequired !== []) {
+        aiInstallerLog('missing required tools: ' . implode(', ', $missingRequired));
+    }
+    if ($missingOptional !== []) {
+        aiInstallerLog('missing optional tools: ' . implode(', ', $missingOptional));
+    }
+    aiInstallerLog('next steps:');
+    aiInstallerLog('1) review AGENTS.md and docs/ai/project-context.md');
+    aiInstallerLog('2) run php tools/ai/validate-ai-config.php');
+    aiInstallerLog('3) run php tools/ai/validate-ai-catalog.php (if catalog files changed)');
+
+    return 0;
+}
+
+function aiInstallerApplyPlaceholders(string $targetRoot, string $projectName, array $applied): void
+{
+    $map = [
+        '<PROJECT_NAME>' => $projectName,
+        '<PROJECT_SUMMARY>' => 'AI workflow starter for ' . $projectName,
+        '<PROJECT_TYPE>' => aiInstallerDetectProjectType($targetRoot),
+        '<PRIMARY_LANGUAGE>' => 'unknown',
+        '<PRIMARY_RUNTIME>' => 'unknown',
+        '<ACTIVE_PATHS>' => aiInstallerCollectActivePaths($targetRoot),
+        '<INACTIVE_PATHS>' => 'unknown',
+        '<PRIMARY_ENTRYPOINTS>' => 'README.md, docs/ai/project-context.md',
+        '<PRIMARY_VERIFY_COMMAND>' => 'unknown',
+        '<PRIMARY_BUILD_COMMAND>' => 'unknown',
+        '<PRIMARY_TEST_COMMAND>' => 'unknown',
+        '<PROJECT_CONTEXT_PATH>' => 'docs/ai/project-context.md',
+        '<AVAILABLE_CAPABILITIES>' => 'project-context, verify-change, review-diff',
+        '<REVIEW_PRIORITIES>' => 'correctness, regressions, configuration drift',
+        '<APPROVAL_REQUIRED_CHANGES>' => 'secrets, destructive changes, auth or billing changes',
+        '<TARGET_PLATFORMS>' => 'unknown',
+        '<ARCHITECTURE_NOTES>' => 'Keep policy and capability docs canonical; keep runtime adapters thin.',
+        '<RISK_AREAS>' => 'stale docs, adapter drift, unsafe command usage',
+        '<NARROW_VERIFY_GUIDANCE>' => 'start with the narrowest repo-local check and escalate only if needed',
+        '<CAPABILITY_COMPOSITION_NOTES>' => 'start with project-context, then verify-change, then review-diff',
+        '<RELEASE_SAFETY_NOTES>' => 'define rollback posture for medium/high risk changes',
+        '<KNOWN_GOTCHA_THEMES>' => 'stale paths, broad edits without evidence, guessed behavior',
+        '<COPILOT_SURFACE>' => 'VS Code, CLI, GitHub.com',
+        '<SUPPORTED_FEATURES>' => 'repo instructions, path instructions',
+        '<OPTIONAL_FEATURES>' => 'prompt files, custom agents, hooks, MCP',
+        '<INSTRUCTION_PRECEDENCE_NOTES>' => 'Nearest AGENTS.md wins for agent instructions.',
+        '<CONFLICT_AVOIDANCE_NOTES>' => 'Keep repo-wide and path-specific guidance complementary.',
+        '<GLOBAL_OR_SHARED_RULE_SOURCES>' => 'organization instructions, user-level instructions',
+        '<OPTIONAL_VERIFY_COMMAND>' => 'unknown',
+    ];
+
+    foreach ($applied as $item) {
+        $abs = $targetRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $item['target']);
+        if (is_file($abs) && str_ends_with(strtolower($abs), '.md')) {
+            $content = (string) file_get_contents($abs);
+            file_put_contents($abs, str_replace(array_keys($map), array_values($map), $content));
+            continue;
+        }
+        if (!is_dir($abs)) {
+            continue;
+        }
+        $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($abs, FilesystemIterator::SKIP_DOTS));
+        foreach ($it as $file) {
+            if (!$file->isFile() || strtolower($file->getExtension()) !== 'md') {
+                continue;
+            }
+            $content = (string) file_get_contents($file->getPathname());
+            file_put_contents($file->getPathname(), str_replace(array_keys($map), array_values($map), $content));
+        }
+    }
+}
+
+function aiInstallerDetectProjectType(string $targetRoot): string
+{
+    if (is_file($targetRoot . DIRECTORY_SEPARATOR . 'composer.json')) {
+        return 'php project';
+    }
+    if (is_file($targetRoot . DIRECTORY_SEPARATOR . 'package.json')) {
+        return 'node project';
+    }
+    if (is_file($targetRoot . DIRECTORY_SEPARATOR . 'go.mod')) {
+        return 'go project';
+    }
+    return 'repository';
+}
+
+function aiInstallerCollectActivePaths(string $targetRoot): string
+{
+    $gitDir = $targetRoot . DIRECTORY_SEPARATOR . '.git';
+    if (!is_dir($gitDir)) {
+        return '_root';
+    }
+    $output = [];
+    exec('git -C ' . escapeshellarg($targetRoot) . ' ls-files', $output);
+    if ($output === []) {
+        return '_root';
+    }
+    $tops = [];
+    foreach ($output as $line) {
+        $parts = explode('/', $line);
+        $tops[$parts[0] !== '' ? $parts[0] : '_root'] = true;
+    }
+    return implode(',', array_keys($tops));
+}
+
+function aiInstallerCopyFile(string $src, string $dest): void
+{
+    if (!is_file($src)) {
+        throw new RuntimeException('missing source file: ' . $src);
+    }
+    aiInstallerMkdir(dirname($dest));
+    if (!copy($src, $dest)) {
+        throw new RuntimeException('failed to copy file: ' . $src);
+    }
+}
+
+function aiInstallerCopyDir(string $src, string $dest): void
+{
+    if (!is_dir($src)) {
+        throw new RuntimeException('missing source directory: ' . $src);
+    }
+    if (file_exists($dest)) {
+        aiInstallerDeleteTree($dest);
+    }
+    aiInstallerMkdir($dest);
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($src, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST);
+    foreach ($it as $item) {
+        $target = $dest . DIRECTORY_SEPARATOR . $it->getSubPathName();
+        if ($item->isDir()) {
+            aiInstallerMkdir($target);
+            continue;
+        }
+        aiInstallerMkdir(dirname($target));
+        if (!copy($item->getPathname(), $target)) {
+            throw new RuntimeException('failed to copy file: ' . $item->getPathname());
+        }
+    }
+}
+
+function aiInstallerDeleteTree(string $path): void
+{
+    if (is_file($path) || is_link($path)) {
+        @unlink($path);
+        return;
+    }
+    if (!is_dir($path)) {
+        return;
+    }
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+    foreach ($it as $item) {
+        if ($item->isDir()) {
+            @rmdir($item->getPathname());
+        } else {
+            @unlink($item->getPathname());
+        }
+    }
+    @rmdir($path);
+}
+
+function aiInstallerMkdir(string $path): void
+{
+    if (is_dir($path)) {
+        return;
+    }
+    if (!mkdir($path, 0777, true) && !is_dir($path)) {
+        throw new RuntimeException('failed to create directory: ' . $path);
+    }
+}
+
+function aiInstallerLog(string $message): void
+{
+    fwrite(STDOUT, '[install-ai-kit] ' . $message . PHP_EOL);
+}

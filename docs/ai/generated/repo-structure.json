@@ -3,7 +3,7 @@
     "source": "git ls-files",
     "with_scc": true,
     "folder_count": 14,
-    "tracked_file_count": 565,
+    "tracked_file_count": 580,
     "metadata": {
         "schema_version": 1,
         "coverage_required": true,
@@ -241,7 +241,7 @@
         },
         {
             "path": "docs",
-            "file_count": 147,
+            "file_count": 151,
             "files": [
                 "docs/ai/AI-GUARDRAILS.md",
                 "docs/ai/agent-ops-checklist.md",
@@ -360,10 +360,14 @@
                 "docs/ai/generated/risk.md",
                 "docs/ai/generated/rollback.json",
                 "docs/ai/generated/rollback.md",
+                "docs/ai/generated/scripts.json",
+                "docs/ai/generated/scripts.md",
                 "docs/ai/generated/session-resume.json",
                 "docs/ai/generated/session-resume.md",
                 "docs/ai/generated/symbols.json",
                 "docs/ai/generated/symbols.md",
+                "docs/ai/generated/toolchain.json",
+                "docs/ai/generated/toolchain.md",
                 "docs/ai/generated/upgrade.json",
                 "docs/ai/generated/upgrade.md",
                 "docs/ai/generated/verify.json",
@@ -391,7 +395,7 @@
                 "docs/software-and-cli-tools.md",
                 "docs/vscode-extensions.md"
             ],
-            "files_csv": "docs/ai/AI-GUARDRAILS.md,docs/ai/agent-ops-checklist.md,docs/ai/agent-ops.md,docs/ai/agents.md,docs/ai/capabilities/README.md,docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md,docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md,docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md,docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md,docs/ai/capabilities/bug-regression/CAPABILITY.md,docs/ai/capabilities/config-change-safety/CAPABILITY.md,docs/ai/capabilities/docs-sync/CAPABILITY.md,docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md,docs/ai/capabilities/evaluation-and-regression/GOLDEN_TASKS.md,docs/ai/capabilities/evaluation-and-regression/HUMAN_REVIEW_RULES.md,docs/ai/capabilities/evaluation-and-regression/REPLAY_RULES.md,docs/ai/capabilities/preview-environments/CAPABILITY.md,docs/ai/capabilities/preview-environments/CHECKLIST.md,docs/ai/capabilities/preview-environments/DATA_AND_SECRET_RULES.md,docs/ai/capabilities/preview-environments/LIFECYCLE.md,docs/ai/capabilities/project-context/CAPABILITY.md,docs/ai/capabilities/review-diff/CAPABILITY.md,docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md,docs/ai/capabilities/service-boundary-patterns/DATA_BOUNDARIES.md,docs/ai/capabilities/service-boundary-patterns/INTERNAL_TOOL_SURFACES.md,docs/ai/capabilities/service-boundary-patterns/SERVICE_BOUNDARIES.md,docs/ai/capabilities/verify-change/CAPABILITY.md,docs/ai/catalog.md,docs/ai/command-risk-taxonomy.md,docs/ai/context-packing.md,docs/ai/copilot-getting-started.md,docs/ai/copilot-tooling.md,docs/ai/decisions.jsonl,docs/ai/decisions.md,docs/ai/external-repo-install.md,docs/ai/failure-handling.md,docs/ai/generated/README.md,docs/ai/generated/adapter-plan.json,docs/ai/generated/adapter-plan.md,docs/ai/generated/adapter-validate.json,docs/ai/generated/adapter-validate.md,docs/ai/generated/ai-commands.json,docs/ai/generated/ai-commands.md,docs/ai/generated/artifacts.json,docs/ai/generated/ask.json,docs/ai/generated/ask.md,docs/ai/generated/auto-fix.json,docs/ai/generated/auto-fix.md,docs/ai/generated/budget.json,docs/ai/generated/budget.md,docs/ai/generated/commit-msg.json,docs/ai/generated/commit-msg.md,docs/ai/generated/commit-msg.txt,docs/ai/generated/conflicts.json,docs/ai/generated/conflicts.md,docs/ai/generated/decision-add.json,docs/ai/generated/decision-add.md,docs/ai/generated/diff-summary.json,docs/ai/generated/diff-summary.md,docs/ai/generated/env-check.json,docs/ai/generated/env-check.md,docs/ai/generated/estimate.json,docs/ai/generated/estimate.md,docs/ai/generated/file-context.json,docs/ai/generated/file-context.md,docs/ai/generated/find.json,docs/ai/generated/find.md,docs/ai/generated/freshness.json,docs/ai/generated/freshness.md,docs/ai/generated/impact.json,docs/ai/generated/impact.md,docs/ai/generated/install.json,docs/ai/generated/install.md,docs/ai/generated/instruction-audit.json,docs/ai/generated/instruction-audit.md,docs/ai/generated/logs.json,docs/ai/generated/logs.md,docs/ai/generated/logs/verify-20260429-001858/generate-ai-catalog-check.log,docs/ai/generated/logs/verify-20260429-001858/generate-repo-structure-check.log,docs/ai/generated/logs/verify-20260429-001858/validate-ai-catalog.log,docs/ai/generated/logs/verify-20260429-001858/validate-ai-config.log,docs/ai/generated/logs/verify-20260429-001909/generate-ai-catalog-check.log,docs/ai/generated/logs/verify-20260429-001909/generate-repo-structure-check.log,docs/ai/generated/logs/verify-20260429-001909/validate-ai-catalog.log,docs/ai/generated/logs/verify-20260429-001909/validate-ai-config.log,docs/ai/generated/logs/verify-20260429-001942/generate-ai-catalog-check.log,docs/ai/generated/logs/verify-20260429-001942/generate-repo-structure-check.log,docs/ai/generated/logs/verify-20260429-001942/validate-ai-catalog.log,docs/ai/generated/logs/verify-20260429-001942/validate-ai-config.log,docs/ai/generated/logs/verify-20260429-002345/generate-ai-catalog-check.log,docs/ai/generated/logs/verify-20260429-002345/generate-repo-structure-check.log,docs/ai/generated/logs/verify-20260429-002345/validate-ai-catalog.log,docs/ai/generated/logs/verify-20260429-002345/validate-ai-config.log,docs/ai/generated/logs/verify-20260429-003053/generate-ai-catalog-check.log,docs/ai/generated/logs/verify-20260429-003053/generate-repo-structure-check.log,docs/ai/generated/logs/verify-20260429-003053/validate-ai-catalog.log,docs/ai/generated/logs/verify-20260429-003053/validate-ai-config.log,docs/ai/generated/next.json,docs/ai/generated/next.md,docs/ai/generated/orphans.json,docs/ai/generated/orphans.md,docs/ai/generated/package-lock.json,docs/ai/generated/package-lock.md,docs/ai/generated/package-verify.json,docs/ai/generated/package-verify.md,docs/ai/generated/pr-summary.json,docs/ai/generated/pr-summary.md,docs/ai/generated/preflight.json,docs/ai/generated/preflight.md,docs/ai/generated/project-snapshot.json,docs/ai/generated/project-snapshot.md,docs/ai/generated/rebase-state.json,docs/ai/generated/rebase-state.md,docs/ai/generated/risk.json,docs/ai/generated/risk.md,docs/ai/generated/rollback.json,docs/ai/generated/rollback.md,docs/ai/generated/session-resume.json,docs/ai/generated/session-resume.md,docs/ai/generated/symbols.json,docs/ai/generated/symbols.md,docs/ai/generated/upgrade.json,docs/ai/generated/upgrade.md,docs/ai/generated/verify.json,docs/ai/generated/verify.md,docs/ai/generated/why.json,docs/ai/generated/why.md,docs/ai/generated/workflow.json,docs/ai/generated/workflow.md,docs/ai/hooks.md,docs/ai/installer-architecture.md,docs/ai/installer-open-items.md,docs/ai/integration-matrix.md,docs/ai/project-context.md,docs/ai/repo-directory-map.json,docs/ai/repo-documentation-generation.md,docs/ai/scripts-reference.md,docs/ai/source-of-truth.md,docs/ai/toolchain-requirements.md,docs/ai/validation.md,docs/ai/workflow-graph.json,docs/ai/workflow.md,docs/keyboard.md,docs/nvim-setup.md,docs/shell-setup.md,docs/software-and-cli-tools.md,docs/vscode-extensions.md",
+            "files_csv": "docs/ai/AI-GUARDRAILS.md,docs/ai/agent-ops-checklist.md,docs/ai/agent-ops.md,docs/ai/agents.md,docs/ai/capabilities/README.md,docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md,docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md,docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md,docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md,docs/ai/capabilities/bug-regression/CAPABILITY.md,docs/ai/capabilities/config-change-safety/CAPABILITY.md,docs/ai/capabilities/docs-sync/CAPABILITY.md,docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md,docs/ai/capabilities/evaluation-and-regression/GOLDEN_TASKS.md,docs/ai/capabilities/evaluation-and-regression/HUMAN_REVIEW_RULES.md,docs/ai/capabilities/evaluation-and-regression/REPLAY_RULES.md,docs/ai/capabilities/preview-environments/CAPABILITY.md,docs/ai/capabilities/preview-environments/CHECKLIST.md,docs/ai/capabilities/preview-environments/DATA_AND_SECRET_RULES.md,docs/ai/capabilities/preview-environments/LIFECYCLE.md,docs/ai/capabilities/project-context/CAPABILITY.md,docs/ai/capabilities/review-diff/CAPABILITY.md,docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md,docs/ai/capabilities/service-boundary-patterns/DATA_BOUNDARIES.md,docs/ai/capabilities/service-boundary-patterns/INTERNAL_TOOL_SURFACES.md,docs/ai/capabilities/service-boundary-patterns/SERVICE_BOUNDARIES.md,docs/ai/capabilities/verify-change/CAPABILITY.md,docs/ai/catalog.md,docs/ai/command-risk-taxonomy.md,docs/ai/context-packing.md,docs/ai/copilot-getting-started.md,docs/ai/copilot-tooling.md,docs/ai/decisions.jsonl,docs/ai/decisions.md,docs/ai/external-repo-install.md,docs/ai/failure-handling.md,docs/ai/generated/README.md,docs/ai/generated/adapter-plan.json,docs/ai/generated/adapter-plan.md,docs/ai/generated/adapter-validate.json,docs/ai/generated/adapter-validate.md,docs/ai/generated/ai-commands.json,docs/ai/generated/ai-commands.md,docs/ai/generated/artifacts.json,docs/ai/generated/ask.json,docs/ai/generated/ask.md,docs/ai/generated/auto-fix.json,docs/ai/generated/auto-fix.md,docs/ai/generated/budget.json,docs/ai/generated/budget.md,docs/ai/generated/commit-msg.json,docs/ai/generated/commit-msg.md,docs/ai/generated/commit-msg.txt,docs/ai/generated/conflicts.json,docs/ai/generated/conflicts.md,docs/ai/generated/decision-add.json,docs/ai/generated/decision-add.md,docs/ai/generated/diff-summary.json,docs/ai/generated/diff-summary.md,docs/ai/generated/env-check.json,docs/ai/generated/env-check.md,docs/ai/generated/estimate.json,docs/ai/generated/estimate.md,docs/ai/generated/file-context.json,docs/ai/generated/file-context.md,docs/ai/generated/find.json,docs/ai/generated/find.md,docs/ai/generated/freshness.json,docs/ai/generated/freshness.md,docs/ai/generated/impact.json,docs/ai/generated/impact.md,docs/ai/generated/install.json,docs/ai/generated/install.md,docs/ai/generated/instruction-audit.json,docs/ai/generated/instruction-audit.md,docs/ai/generated/logs.json,docs/ai/generated/logs.md,docs/ai/generated/logs/verify-20260429-001858/generate-ai-catalog-check.log,docs/ai/generated/logs/verify-20260429-001858/generate-repo-structure-check.log,docs/ai/generated/logs/verify-20260429-001858/validate-ai-catalog.log,docs/ai/generated/logs/verify-20260429-001858/validate-ai-config.log,docs/ai/generated/logs/verify-20260429-001909/generate-ai-catalog-check.log,docs/ai/generated/logs/verify-20260429-001909/generate-repo-structure-check.log,docs/ai/generated/logs/verify-20260429-001909/validate-ai-catalog.log,docs/ai/generated/logs/verify-20260429-001909/validate-ai-config.log,docs/ai/generated/logs/verify-20260429-001942/generate-ai-catalog-check.log,docs/ai/generated/logs/verify-20260429-001942/generate-repo-structure-check.log,docs/ai/generated/logs/verify-20260429-001942/validate-ai-catalog.log,docs/ai/generated/logs/verify-20260429-001942/validate-ai-config.log,docs/ai/generated/logs/verify-20260429-002345/generate-ai-catalog-check.log,docs/ai/generated/logs/verify-20260429-002345/generate-repo-structure-check.log,docs/ai/generated/logs/verify-20260429-002345/validate-ai-catalog.log,docs/ai/generated/logs/verify-20260429-002345/validate-ai-config.log,docs/ai/generated/logs/verify-20260429-003053/generate-ai-catalog-check.log,docs/ai/generated/logs/verify-20260429-003053/generate-repo-structure-check.log,docs/ai/generated/logs/verify-20260429-003053/validate-ai-catalog.log,docs/ai/generated/logs/verify-20260429-003053/validate-ai-config.log,docs/ai/generated/next.json,docs/ai/generated/next.md,docs/ai/generated/orphans.json,docs/ai/generated/orphans.md,docs/ai/generated/package-lock.json,docs/ai/generated/package-lock.md,docs/ai/generated/package-verify.json,docs/ai/generated/package-verify.md,docs/ai/generated/pr-summary.json,docs/ai/generated/pr-summary.md,docs/ai/generated/preflight.json,docs/ai/generated/preflight.md,docs/ai/generated/project-snapshot.json,docs/ai/generated/project-snapshot.md,docs/ai/generated/rebase-state.json,docs/ai/generated/rebase-state.md,docs/ai/generated/risk.json,docs/ai/generated/risk.md,docs/ai/generated/rollback.json,docs/ai/generated/rollback.md,docs/ai/generated/scripts.json,docs/ai/generated/scripts.md,docs/ai/generated/session-resume.json,docs/ai/generated/session-resume.md,docs/ai/generated/symbols.json,docs/ai/generated/symbols.md,docs/ai/generated/toolchain.json,docs/ai/generated/toolchain.md,docs/ai/generated/upgrade.json,docs/ai/generated/upgrade.md,docs/ai/generated/verify.json,docs/ai/generated/verify.md,docs/ai/generated/why.json,docs/ai/generated/why.md,docs/ai/generated/workflow.json,docs/ai/generated/workflow.md,docs/ai/hooks.md,docs/ai/installer-architecture.md,docs/ai/installer-open-items.md,docs/ai/integration-matrix.md,docs/ai/project-context.md,docs/ai/repo-directory-map.json,docs/ai/repo-documentation-generation.md,docs/ai/scripts-reference.md,docs/ai/source-of-truth.md,docs/ai/toolchain-requirements.md,docs/ai/validation.md,docs/ai/workflow-graph.json,docs/ai/workflow.md,docs/keyboard.md,docs/nvim-setup.md,docs/shell-setup.md,docs/software-and-cli-tools.md,docs/vscode-extensions.md",
             "purpose": "Repository documentation for setup, AI workflow, and operating guidance.",
             "designed_for": "Humans and AI agents reading durable project instructions.",
             "install_guide": "docs/ai/external-repo-install.md",
@@ -399,12 +403,12 @@
             "ai_entrypoint": "docs/ai/project-context.md",
             "notes": "Canonical guidance surface for repo-specific behavior and procedures.",
             "metrics": {
-                "lines": 8752,
-                "code": 7835,
+                "lines": 9323,
+                "code": 8388,
                 "comments": 0,
-                "blanks": 917,
+                "blanks": 935,
                 "complexity": 0,
-                "bytes": 376238
+                "bytes": 398558
             }
         },
         {
@@ -643,12 +647,12 @@
             "ai_entrypoint": "packages/ai-universal-rules/README.md",
             "notes": "Portable package benchmark; examples are references, not root repo runtime defaults.",
             "metrics": {
-                "lines": 6595,
-                "code": 5265,
+                "lines": 6608,
+                "code": 5276,
                 "comments": 0,
-                "blanks": 1330,
+                "blanks": 1332,
                 "complexity": 0,
-                "bytes": 272732
+                "bytes": 273296
             }
         },
         {
@@ -798,7 +802,7 @@
         },
         {
             "path": "tests",
-            "file_count": 18,
+            "file_count": 19,
             "files": [
                 "tests/fixtures/bin/repomix",
                 "tests/fixtures/bin/scc",
@@ -813,13 +817,14 @@
                 "tests/php/AiCatalogLibTest.php",
                 "tests/php/CliToolsTest.php",
                 "tests/php/GenerateRepoStructureTest.php",
+                "tests/php/InstallerSafetyTest.php",
                 "tests/php/bootstrap.php",
                 "tests/shell/doctor.bats",
                 "tests/shell/post-tool-use.bats",
                 "tests/shell/pre-tool-use.bats",
                 "tests/shell/repomix-context-tree.bats"
             ],
-            "files_csv": "tests/fixtures/bin/repomix,tests/fixtures/bin/scc,tests/fixtures/json/allow-input.json,tests/fixtures/json/confirm-input.json,tests/fixtures/json/deny-input.json,tests/fixtures/php/frontmatter-empty.md,tests/fixtures/php/frontmatter-malformed.md,tests/fixtures/php/frontmatter-valid.md,tests/fixtures/repos/minimal/setup.sh,tests/php/AiCatalogLibIoTest.php,tests/php/AiCatalogLibTest.php,tests/php/CliToolsTest.php,tests/php/GenerateRepoStructureTest.php,tests/php/bootstrap.php,tests/shell/doctor.bats,tests/shell/post-tool-use.bats,tests/shell/pre-tool-use.bats,tests/shell/repomix-context-tree.bats",
+            "files_csv": "tests/fixtures/bin/repomix,tests/fixtures/bin/scc,tests/fixtures/json/allow-input.json,tests/fixtures/json/confirm-input.json,tests/fixtures/json/deny-input.json,tests/fixtures/php/frontmatter-empty.md,tests/fixtures/php/frontmatter-malformed.md,tests/fixtures/php/frontmatter-valid.md,tests/fixtures/repos/minimal/setup.sh,tests/php/AiCatalogLibIoTest.php,tests/php/AiCatalogLibTest.php,tests/php/CliToolsTest.php,tests/php/GenerateRepoStructureTest.php,tests/php/InstallerSafetyTest.php,tests/php/bootstrap.php,tests/shell/doctor.bats,tests/shell/post-tool-use.bats,tests/shell/pre-tool-use.bats,tests/shell/repomix-context-tree.bats",
             "purpose": "PHP and shell test suites plus fixtures for workflow verification.",
             "designed_for": "Maintainers verifying behavior and preventing regressions.",
             "install_guide": "docs/ai/validation.md",
@@ -827,17 +832,17 @@
             "ai_entrypoint": "justfile",
             "notes": "Covers validators, shell wrappers, and context-tree workflows.",
             "metrics": {
-                "lines": 1347,
-                "code": 1053,
-                "comments": 66,
-                "blanks": 228,
-                "complexity": 19,
-                "bytes": 46578
+                "lines": 1479,
+                "code": 1166,
+                "comments": 68,
+                "blanks": 245,
+                "complexity": 22,
+                "bytes": 52079
             }
         },
         {
             "path": "tools",
-            "file_count": 15,
+            "file_count": 25,
             "files": [
                 "tools/ai/ai.php",
                 "tools/ai/ai_catalog_lib.php",
@@ -849,13 +854,23 @@
                 "tools/ai/install-ai-kit.sh",
                 "tools/ai/install-copilot-kit.sh",
                 "tools/ai/install/base.sh",
+                "tools/ai/install/config.php",
+                "tools/ai/install/core.php",
                 "tools/ai/install/lib.sh",
+                "tools/ai/install/manifest.php",
+                "tools/ai/install/packs.php",
+                "tools/ai/install/planner.php",
+                "tools/ai/install/profiles.php",
                 "tools/ai/install/runtime-copilot.sh",
                 "tools/ai/install/runtime-opencode.sh",
+                "tools/ai/install/script-registry.php",
+                "tools/ai/install/script-runner.php",
+                "tools/ai/install/toolchain-registry.php",
+                "tools/ai/install/toolchain.php",
                 "tools/ai/validate-ai-catalog.php",
                 "tools/ai/validate-ai-config.php"
             ],
-            "files_csv": "tools/ai/ai.php,tools/ai/ai_catalog_lib.php,tools/ai/ai_output_lib.php,tools/ai/export-ai-universal-rules.php,tools/ai/generate-ai-catalog.php,tools/ai/generate-repo-structure.php,tools/ai/install-ai-kit.php,tools/ai/install-ai-kit.sh,tools/ai/install-copilot-kit.sh,tools/ai/install/base.sh,tools/ai/install/lib.sh,tools/ai/install/runtime-copilot.sh,tools/ai/install/runtime-opencode.sh,tools/ai/validate-ai-catalog.php,tools/ai/validate-ai-config.php",
+            "files_csv": "tools/ai/ai.php,tools/ai/ai_catalog_lib.php,tools/ai/ai_output_lib.php,tools/ai/export-ai-universal-rules.php,tools/ai/generate-ai-catalog.php,tools/ai/generate-repo-structure.php,tools/ai/install-ai-kit.php,tools/ai/install-ai-kit.sh,tools/ai/install-copilot-kit.sh,tools/ai/install/base.sh,tools/ai/install/config.php,tools/ai/install/core.php,tools/ai/install/lib.sh,tools/ai/install/manifest.php,tools/ai/install/packs.php,tools/ai/install/planner.php,tools/ai/install/profiles.php,tools/ai/install/runtime-copilot.sh,tools/ai/install/runtime-opencode.sh,tools/ai/install/script-registry.php,tools/ai/install/script-runner.php,tools/ai/install/toolchain-registry.php,tools/ai/install/toolchain.php,tools/ai/validate-ai-catalog.php,tools/ai/validate-ai-config.php",
             "purpose": "Utility scripts and reference corpora including AI tooling and PHP examples.",
             "designed_for": "Maintainers and agents generating catalogs, exports, and docs artifacts.",
             "install_guide": "docs/ai/external-repo-install.md",
@@ -863,12 +878,12 @@
             "ai_entrypoint": "tools/ai/generate-ai-catalog.php",
             "notes": "Contains generators/validators plus non-runtime reference material.",
             "metrics": {
-                "lines": 5446,
-                "code": 4807,
-                "comments": 21,
-                "blanks": 618,
-                "complexity": 522,
-                "bytes": 204005
+                "lines": 7574,
+                "code": 6815,
+                "comments": 13,
+                "blanks": 746,
+                "complexity": 799,
+                "bytes": 304529
             }
         }
     ]

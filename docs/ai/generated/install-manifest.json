@@ -1,0 +1,22 @@
+{
+    "schema_version": 1,
+    "installer_version": "0.2.0",
+    "installed_at": "2026-04-29T13:36:17+00:00",
+    "updated_at": "2026-04-29T13:36:17+00:00",
+    "profile": "dual",
+    "mode": "sidecar-only",
+    "runtime": "both",
+    "package": {
+        "name": "ai-universal-rules",
+        "distribution": "git-tag",
+        "source_repository": "UtmostCreator/app-configs",
+        "source_remote": "origin",
+        "source_ref": "unknown",
+        "source_commit": "unknown",
+        "installed_version": "unknown"
+    },
+    "managed_paths": [
+        "docs/ai/capabilities/release-safety"
+    ],
+    "package_lock_sha256": "sha256:790d25c9064d93bcbfc924e99673d92832deb159cc6725b139afc62ad6189f0b"
+}

@@ -130,6 +130,25 @@ class CliToolsTest extends TestCase
         $this->assertSame(0, $after['exit']);
     }
 
+    // ---- validate-generated-artifacts.php ----
+
+    public function testValidateGeneratedArtifactsExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/validate-generated-artifacts.php');
+        $this->assertSame(
+            0,
+            $result['exit'],
+            "validate-generated-artifacts.php exited non-zero:\n" . $result['stderr']
+        );
+    }
+
+    public function testValidateGeneratedArtifactsOutputsOk(): void
+    {
+        $result = $this->runTool('php tools/ai/validate-generated-artifacts.php');
+        $combined = $result['stdout'] . $result['stderr'];
+        $this->assertStringContainsString('OK', $combined);
+    }
+
     // ---- export-ai-universal-rules.php --check ----
 
     public function testExportAiUniversalRulesCheckModeExitsZero(): void

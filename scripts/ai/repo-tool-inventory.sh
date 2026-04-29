@@ -3,6 +3,11 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUT_MD="$ROOT_DIR/docs/ai/repo-required-tools.md"
+CHECK_MODE=0
+
+if [[ "${1:-}" == "--check" ]]; then
+    CHECK_MODE=1
+fi
 
 tmp_tools="$(mktemp)"
 tmp_tools_sorted="$(mktemp)"
@@ -15,13 +20,13 @@ extract_tools_from_script() {
     sed -nE "s/.*command -v[[:space:]]+['\"]?([a-zA-Z0-9_.-]+).*/\1/p" "$script" >>"$tmp_tools" || true
 
     # required=(tool1 tool2 ...)
-    sed -nE "s/.*required=\(([^)]*)\).*/\1/p" "$script" \
+    sed -nE "s/^[[:space:]]*required=\(([^)]*)\).*/\1/p" "$script" \
         | tr ' ' '\n' \
         | sed -E 's/["'"'"']//g' \
         | sed '/^$/d' >>"$tmp_tools" || true
 
     # for bin in a b c; do
-    sed -nE "s/.*for[[:space:]]+bin[[:space:]]+in[[:space:]]+([^;]+);.*/\1/p" "$script" \
+    sed -nE "s/^[[:space:]]*for[[:space:]]+bin[[:space:]]+in[[:space:]]+([^;]+);.*/\1/p" "$script" \
         | tr ' ' '\n' \
         | sed -E 's/["'"'"']//g' \
         | sed '/^$/d' >>"$tmp_tools" || true
@@ -45,6 +50,9 @@ sed -E '/^\$|^\{|^\}|^#|^if$|^then$|^fi$|^do$|^done$/d' "$tmp_tools" \
     | sed -E '/^(for|in|while|local|case|esac|return|exit|printf|echo)$/d' \
     | sed -E '/[^a-zA-Z0-9_.-]/d' \
     | sort -u >"$tmp_tools_sorted"
+
+generated_md="$(mktemp)"
+trap 'rm -f "$tmp_tools" "$tmp_tools_sorted" "$generated_md"' EXIT
 
 mkdir -p "$(dirname "$OUT_MD")"
 
@@ -71,6 +79,23 @@ mkdir -p "$(dirname "$OUT_MD")"
     printf 'bash scripts/doctor.sh\n'
     printf 'php tools/ai/ai.php toolchain --with repomix,scc --check\n'
     printf '```\n'
-} >"$OUT_MD"
+} >"$generated_md"
+
+if [[ "$CHECK_MODE" -eq 1 ]]; then
+    if [[ ! -f "$OUT_MD" ]]; then
+        printf 'Drift: %s is missing. Run: bash scripts/ai/repo-tool-inventory.sh\n' "$OUT_MD" >&2
+        exit 1
+    fi
+
+    if cmp -s "$generated_md" "$OUT_MD"; then
+        printf 'OK: %s is up to date\n' "$OUT_MD"
+        exit 0
+    fi
+
+    printf 'Drift: %s is out of date. Run: bash scripts/ai/repo-tool-inventory.sh\n' "$OUT_MD" >&2
+    exit 1
+fi
+
+cp "$generated_md" "$OUT_MD"
 
 printf 'Wrote %s\n' "$OUT_MD"

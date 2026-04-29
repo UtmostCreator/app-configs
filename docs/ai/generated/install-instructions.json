@@ -132,6 +132,23 @@
                 "jq",
                 "rg"
             ]
+        },
+        {
+            "id": "repo-tool-inventory",
+            "label": "Generate/check required tools inventory doc",
+            "path": "scripts/ai/repo-tool-inventory.sh",
+            "required_tools": [
+                "bash",
+                "git"
+            ]
+        },
+        {
+            "id": "install-mandatory-tools",
+            "label": "Install mandatory CLI tools by OS",
+            "path": "scripts/ai/install-mandatory-tools.sh",
+            "required_tools": [
+                "bash"
+            ]
         }
     ],
     "required_tools": [
@@ -164,6 +181,9 @@
         "placeholders": "php tools/ai/ai.php placeholders --fail",
         "toolchain_check": "php tools/ai/ai.php toolchain --with repomix,scc --check",
         "toolchain_plan": "php tools/ai/ai.php toolchain --with repomix,scc --install-plan",
+        "repo_tools_check": "bash scripts/ai/repo-tool-inventory.sh --check",
+        "repo_tools_generate": "bash scripts/ai/repo-tool-inventory.sh",
+        "mandatory_tools_install_dry_run": "bash scripts/ai/install-mandatory-tools.sh --dry-run",
         "scripts_list": "php tools/ai/ai.php run-script --list",
         "repomix_analyze": "bash scripts/ai/repomix-context-tree.sh analyze .",
         "advisor_all": "php tools/ai/ai.php advisor --all",

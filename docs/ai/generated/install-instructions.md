@@ -36,6 +36,9 @@
 - Verify: `php tools/ai/ai.php verify --json`
 - Resolve placeholders: `php tools/ai/ai.php placeholders --fail`
 - Toolchain check: `php tools/ai/ai.php toolchain --with repomix,scc --check`
+- Required-tools inventory check: `bash scripts/ai/repo-tool-inventory.sh --check`
+- Required-tools inventory regenerate: `bash scripts/ai/repo-tool-inventory.sh`
+- Mandatory-tools installer dry-run: `bash scripts/ai/install-mandatory-tools.sh --dry-run`
 - Script list: `php tools/ai/ai.php run-script --list`
 
 - Repomix analyze: `bash scripts/ai/repomix-context-tree.sh analyze .`
@@ -58,6 +61,8 @@ OpenCode agent visibility note: agents in `.opencode/agents/` must not be marked
 - `repomix-tree` -> `scripts/ai/repomix-context-tree.sh`
 - `repomix-scc-router` -> `scripts/ai/repomix-scc-router.sh`
 - `pack-context` -> `scripts/ai/pack-context.sh`
+- `repo-tool-inventory` -> `scripts/ai/repo-tool-inventory.sh`
+- `install-mandatory-tools` -> `scripts/ai/install-mandatory-tools.sh`
 
 ## Installed Files
 

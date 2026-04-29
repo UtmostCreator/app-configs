@@ -1,19 +1,19 @@
 # Verify
 
 - Status: `passed`
-- Generated at: `2026-04-29T00:30:54+00:00`
-- Commit: `92d5dbc`
-- Branch: `main`
+- Generated at: `2026-04-29T18:53:38+00:00`
+- Commit: `047d291`
+- Branch: `feat/installer-transaction-engine`
 - Recommended next action: `Run next to choose commit or PR closeout action.`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "verify.json",
-    "generated_at": "2026-04-29T00:30:54+00:00",
+    "generated_at": "2026-04-29T18:53:38+00:00",
     "command": "php tools/ai/ai.php verify --changed",
-    "based_on_commit": "92d5dbc",
-    "based_on_branch": "main",
+    "based_on_commit": "047d291",
+    "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
     "status": "passed",
     "score": null,
@@ -21,7 +21,13 @@
     "recommended_next_action": "Run next to choose commit or PR closeout action.",
     "data": {
         "status": "passed",
-        "check_count": 4,
+        "mode": "default",
+        "summary": {
+            "errors": 0,
+            "warnings": 1,
+            "info": 3
+        },
+        "check_count": 6,
         "failed_checks": [],
         "results": [
             {
@@ -30,7 +36,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260429-003053/validate-ai-config.log"
+                "log": "docs/ai/generated/logs/verify-20260429-185337/validate-ai-config.log"
             },
             {
                 "name": "validate-ai-catalog",
@@ -38,7 +44,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260429-003053/validate-ai-catalog.log"
+                "log": "docs/ai/generated/logs/verify-20260429-185337/validate-ai-catalog.log"
             },
             {
                 "name": "generate-ai-catalog-check",
@@ -46,7 +52,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260429-003053/generate-ai-catalog-check.log"
+                "log": "docs/ai/generated/logs/verify-20260429-185337/generate-ai-catalog-check.log"
             },
             {
                 "name": "generate-repo-structure-check",
@@ -54,10 +60,56 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260429-003053/generate-repo-structure-check.log"
+                "log": "docs/ai/generated/logs/verify-20260429-185337/generate-repo-structure-check.log"
+            },
+            {
+                "name": "install-docs-check",
+                "command": "php tools/ai/ai.php install-docs --check",
+                "exit": 0,
+                "passed": true,
+                "auto_fix_applied": false,
+                "log": "docs/ai/generated/logs/verify-20260429-185337/install-docs-check.log"
+            },
+            {
+                "name": "advisor-check",
+                "command": "php tools/ai/ai.php advisor --check",
+                "exit": 0,
+                "passed": true,
+                "auto_fix_applied": false,
+                "log": "docs/ai/generated/logs/verify-20260429-185337/advisor-check.log"
             }
         ],
-        "log_dir": "docs/ai/generated/logs/verify-20260429-003053"
+        "findings": [
+            {
+                "severity": "WARNING",
+                "code": "UNFILLED_REQUIRED_PLACEHOLDER",
+                "file": "docs/ai",
+                "message": "Unresolved placeholders detected.",
+                "suggested_fix": "Run php tools/ai/ai.php placeholders --fail and update placeholders."
+            },
+            {
+                "severity": "INFO",
+                "code": "UNFILLED_OPTIONAL_PLACEHOLDER",
+                "file": "docs/ai",
+                "message": "Optional placeholders may remain unresolved.",
+                "suggested_fix": "Review placeholder list and fill values as needed for strict mode."
+            },
+            {
+                "severity": "INFO",
+                "code": "HOOK_EXEC_CHECK_PLATFORM_LIMIT",
+                "file": "scripts/hooks/pre-commit.sh",
+                "message": "Executable bit check skipped on Windows.",
+                "suggested_fix": "Verify hook execution manually on Windows."
+            },
+            {
+                "severity": "INFO",
+                "code": "HOOK_EXEC_CHECK_PLATFORM_LIMIT",
+                "file": "scripts/hooks/commit-msg.sh",
+                "message": "Executable bit check skipped on Windows.",
+                "suggested_fix": "Verify hook execution manually on Windows."
+            }
+        ],
+        "log_dir": "docs/ai/generated/logs/verify-20260429-185337"
     }
 }
 ```

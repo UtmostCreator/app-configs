@@ -1,0 +1,64 @@
+# Placeholders
+
+- Status: `failed`
+- Generated at: `2026-04-29T13:36:34+00:00`
+- Commit: `047d291`
+- Branch: `feat/installer-transaction-engine`
+- Recommended next action: `Resolve placeholders before strict verification.`
+
+```json
+{
+    "schema_version": 1,
+    "artifact": "placeholders.json",
+    "generated_at": "2026-04-29T13:36:34+00:00",
+    "command": "php tools/ai/ai.php placeholders",
+    "based_on_commit": "047d291",
+    "based_on_branch": "feat/installer-transaction-engine",
+    "input_hashes": {},
+    "status": "failed",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "Resolve placeholders before strict verification.",
+    "data": {
+        "count": 4,
+        "items": [
+            {
+                "path": "docs/ai/catalog.md",
+                "placeholders": [
+                    "<PROJECT_NAME>",
+                    "<ACTIVE_PATHS>",
+                    "<FRONTEND_PATH_GLOB>",
+                    "<TEST_PATH_GLOB>",
+                    "<CHANGE_REQUEST>",
+                    "<CLAIM_BEING_PROVED>"
+                ]
+            },
+            {
+                "path": "docs/ai/external-repo-install.md",
+                "placeholders": [
+                    "<PLACEHOLDER_NAME>"
+                ]
+            },
+            {
+                "path": "docs/ai/generated/placeholders.md",
+                "placeholders": [
+                    "<PROJECT_NAME>",
+                    "<ACTIVE_PATHS>",
+                    "<FRONTEND_PATH_GLOB>",
+                    "<TEST_PATH_GLOB>",
+                    "<CHANGE_REQUEST>",
+                    "<CLAIM_BEING_PROVED>",
+                    "<PLACEHOLDER_NAME>"
+                ]
+            },
+            {
+                "path": "docs/ai/installer-architecture.md",
+                "placeholders": [
+                    "<PLACEHOLDER_NAME>"
+                ]
+            }
+        ],
+        "mode": "fail"
+    }
+}
+```

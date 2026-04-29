@@ -22,7 +22,7 @@ Use `docs/ai/copilot-getting-started.md` for quick onboarding, then use this cat
 - `package / package-capability` - 31
 - `package / shared-template` - 3
 - `package / workflow-doc` - 6
-- `root / capability` - 11
+- `root / capability` - 12
 - `root / copilot-policy` - 1
 - `root / copilot-schema` - 1
 - `root / copilot-script` - 10
@@ -47,6 +47,7 @@ Use `docs/ai/copilot-getting-started.md` for quick onboarding, then use this cat
 | `capability` | evaluation-and-regression | `docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md` | Make agent behavior testable so quality does not depend only on ad hoc review. |
 | `capability` | preview-environments | `docs/ai/capabilities/preview-environments/CAPABILITY.md` | Define a vendor-neutral operating model for temporary end-to-end environments used during review and verification. |
 | `capability` | project-context | `docs/ai/capabilities/project-context/CAPABILITY.md` | Load durable repository facts before work starts so changes use the right paths, verification, and approval boundaries. |
+| `capability` | release-safety | `docs/ai/capabilities/release-safety/CAPABILITY.md` | Assess rollout, rollback, observability, and compatibility posture for changes whose risk extends beyond local correctness. |
 | `capability` | review-diff | `docs/ai/capabilities/review-diff/CAPABILITY.md` | Review the proposed change set for accuracy, drift, portability, and missing verification. |
 | `capability` | service-boundary-patterns | `docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md` | Define public, internal, tool, and data boundaries so agent-enabled workflows do not blur trust and risk surfaces. |
 | `capability` | verify-change | `docs/ai/capabilities/verify-change/CAPABILITY.md` | Choose the smallest relevant proof for a config, docs, or workflow change and report evidence cleanly. |

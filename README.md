@@ -151,6 +151,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - For bootstrap install into another repository, follow `docs/ai/external-repo-install.md`
 - For installer internals, runtime asset map, and verification flow, follow `docs/ai/installer-architecture.md`
 - For package prerequisites and dependency setup, follow `docs/ai/toolchain-requirements.md`
+- For generated repository-wide tool discovery from shell scripts, use `docs/ai/repo-required-tools.md` and `bash scripts/ai/repo-tool-inventory.sh`
 - For maintained script usage and generated-output ownership, follow `docs/ai/scripts-reference.md`
 - Use `scripts/copilot/ai-diff-context.sh` when you need narrow context for changed files, PR files, recent edits, or touched areas
 - Use `scripts/copilot/ai-search.sh` when the agent should route all search through one stable entrypoint

@@ -2,6 +2,8 @@
 
 Use this checklist before running installation, validation, and context-pack workflows.
 
+For a generated repository-wide inventory (from tracked shell scripts), see `docs/ai/repo-required-tools.md` and regenerate it with `bash scripts/ai/repo-tool-inventory.sh`.
+
 ## Required
 
 - `bash` - shell runtime for wrapper scripts.

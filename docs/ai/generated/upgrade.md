@@ -1,0 +1,28 @@
+# Upgrade
+
+- Status: `blocked`
+- Generated at: `2026-04-29T00:47:09+00:00`
+- Commit: `799b5e6`
+- Branch: `feat/installer-transaction-engine`
+- Recommended next action: `Install workflow must create manifest before upgrade.`
+
+```json
+{
+    "schema_version": 1,
+    "artifact": "upgrade.json",
+    "generated_at": "2026-04-29T00:47:09+00:00",
+    "command": "php tools/ai/ai.php upgrade",
+    "based_on_commit": "799b5e6",
+    "based_on_branch": "feat/installer-transaction-engine",
+    "input_hashes": {},
+    "status": "blocked",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "Install workflow must create manifest before upgrade.",
+    "data": {
+        "status": "blocked",
+        "reason": "no install manifest found; run install first",
+        "manifest_path": "docs/ai/generated/adapter-install-manifest.json"
+    }
+}
+```

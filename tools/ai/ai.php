@@ -33,6 +33,15 @@ Commands:
   conflicts      Summarize merge conflict state and suggested resolution posture
   find           Search tracked files by deterministic path/content match
   symbols        Extract top-level code symbols from tracked source files
+  preflight      Check installer prerequisites and environment readiness
+  package-lock   Check or update source template checksum lock
+  package-verify Verify source templates against checksum lock
+  audit-instructions Audit local instruction surfaces and ownership hints
+  adapter-plan   Generate deterministic install/upgrade plan preview
+  install        Run installer workflow (dry-run/default safe)
+  upgrade        Preview or apply manifest-aware upgrades (planned)
+  adapter-validate Validate installed adapter state and managed assets
+  rollback       Restore from installer backup artifacts
   freshness      Evaluate generated artifact freshness
   budget         Estimate context token budget from generated artifacts
   workflow       Show workflow dependency graph summary
@@ -66,6 +75,10 @@ Examples:
   php tools/ai/ai.php conflicts
   php tools/ai/ai.php find workflow
   php tools/ai/ai.php symbols aiRun
+  php tools/ai/ai.php preflight
+  php tools/ai/ai.php package-lock --check
+  php tools/ai/ai.php package-verify
+  php tools/ai/ai.php install --dry-run --mode sidecar-only
 TXT;
 
     fwrite(STDOUT, $usage . PHP_EOL);
@@ -101,6 +114,15 @@ function aiRunList(string $root): int
             'conflicts',
             'find',
             'symbols',
+            'preflight',
+            'package-lock',
+            'package-verify',
+            'audit-instructions',
+            'adapter-plan',
+            'install',
+            'upgrade',
+            'adapter-validate',
+            'rollback',
         ],
     ];
 
@@ -419,6 +441,30 @@ function aiRunNext(string $root): int
             'next_action' => 'php tools/ai/ai.php ' . $baseName,
         ];
         $written = aiCliWriteArtifact($root, 'next', 'php tools/ai/ai.php next', $data, 'blocked', null, 'Regenerate stale artifact before continuing.');
+        fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+        return 1;
+    }
+
+    $preflight = aiLoadArtifactData($root, 'preflight.json');
+    if ($preflight !== null && ($preflight['data']['status'] ?? 'unknown') === 'failed') {
+        $data = [
+            'status' => 'blocked',
+            'reason' => 'installer preflight failed',
+            'next_action' => 'php tools/ai/ai.php preflight',
+        ];
+        $written = aiCliWriteArtifact($root, 'next', 'php tools/ai/ai.php next', $data, 'blocked', null, 'Fix preflight failures before install/apply commands.');
+        fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+        return 1;
+    }
+
+    $packageVerify = aiLoadArtifactData($root, 'package-verify.json');
+    if ($packageVerify !== null && ($packageVerify['status'] ?? 'unknown') === 'failed') {
+        $data = [
+            'status' => 'blocked',
+            'reason' => 'source package integrity mismatch',
+            'next_action' => 'php tools/ai/ai.php package-lock --update && php tools/ai/ai.php package-verify',
+        ];
+        $written = aiCliWriteArtifact($root, 'next', 'php tools/ai/ai.php next', $data, 'blocked', null, 'Resolve package checksum drift before installation changes.');
         fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
         return 1;
     }
@@ -1516,6 +1562,606 @@ function aiRunSnapshot(string $root): int
     return 0;
 }
 
+function aiPackageLockPath(string $root): string
+{
+    return $root . DIRECTORY_SEPARATOR . 'packages' . DIRECTORY_SEPARATOR . 'ai-universal-rules' . DIRECTORY_SEPARATOR . 'package-lock.ai.json';
+}
+
+function aiInstallManifestPath(string $root): string
+{
+    return aiCliGeneratedDir($root) . DIRECTORY_SEPARATOR . 'adapter-install-manifest.json';
+}
+
+function aiCollectTemplateChecksums(string $root): array
+{
+    $base = $root . DIRECTORY_SEPARATOR . 'packages' . DIRECTORY_SEPARATOR . 'ai-universal-rules' . DIRECTORY_SEPARATOR . 'templates';
+    if (!is_dir($base)) {
+        throw new RuntimeException('Missing package templates directory at packages/ai-universal-rules/templates');
+    }
+
+    $checksums = [];
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS));
+    foreach ($it as $file) {
+        if (!$file->isFile()) {
+            continue;
+        }
+        $abs = $file->getPathname();
+        $rel = 'templates/' . str_replace('\\', '/', substr($abs, strlen($base) + 1));
+        $checksums[$rel] = 'sha256:' . hash_file('sha256', $abs);
+    }
+    ksort($checksums);
+    return $checksums;
+}
+
+function aiRunPreflight(string $root): int
+{
+    $checks = [];
+
+    $checks[] = ['name' => 'php_version', 'status' => version_compare(PHP_VERSION, '8.2.0', '>=') ? 'passed' : 'failed', 'required' => '>=8.2'];
+    $checks[] = ['name' => 'ext_json', 'status' => extension_loaded('json') ? 'passed' : 'failed'];
+    $checks[] = ['name' => 'ext_mbstring', 'status' => extension_loaded('mbstring') ? 'passed' : 'failed'];
+    $checks[] = ['name' => 'ext_zip', 'status' => extension_loaded('zip') ? 'passed' : 'failed', 'reason' => extension_loaded('zip') ? null : 'ZipArchive is required for ZIP backups'];
+
+    $gitOut = [];
+    $gitExit = 0;
+    exec('git --version', $gitOut, $gitExit);
+    $checks[] = ['name' => 'git', 'status' => $gitExit === 0 ? 'passed' : 'failed'];
+
+    $generated = aiCliGeneratedDir($root);
+    $checks[] = ['name' => 'generated_dir_writable', 'status' => is_dir($generated) && is_writable($generated) ? 'passed' : 'failed'];
+
+    $templates = $root . DIRECTORY_SEPARATOR . 'packages' . DIRECTORY_SEPARATOR . 'ai-universal-rules' . DIRECTORY_SEPARATOR . 'templates';
+    $checks[] = ['name' => 'templates_readable', 'status' => is_dir($templates) && is_readable($templates) ? 'passed' : 'failed'];
+
+    $failed = array_values(array_filter($checks, static fn(array $c): bool => ($c['status'] ?? 'failed') !== 'passed'));
+    $status = $failed === [] ? 'ok' : 'failed';
+    $data = [
+        'status' => $status,
+        'checks' => $checks,
+        'recommended_next_action' => $failed === [] ? 'Run package-verify then adapter-plan.' : 'Resolve failed checks before install/apply.',
+    ];
+
+    $written = aiCliWriteArtifact($root, 'preflight', 'php tools/ai/ai.php preflight', $data, $status, null, (string) $data['recommended_next_action']);
+    fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+    return $failed === [] ? 0 : 1;
+}
+
+function aiRunPackageLock(string $root, array $args): int
+{
+    $update = in_array('--update', $args, true);
+    $check = in_array('--check', $args, true) || !$update;
+
+    $checksums = aiCollectTemplateChecksums($root);
+    $payload = [
+        'schema_version' => 1,
+        'package' => 'ai-universal-rules',
+        'source_checksums' => $checksums,
+    ];
+
+    $path = aiPackageLockPath($root);
+    if ($update) {
+        file_put_contents($path, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+    }
+
+    $existing = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
+    $matches = is_array($existing) && ($existing['source_checksums'] ?? null) === $checksums;
+
+    $data = [
+        'path' => 'packages/ai-universal-rules/package-lock.ai.json',
+        'mode' => $update ? 'update' : ($check ? 'check' : 'unknown'),
+        'entry_count' => count($checksums),
+        'matches' => $matches,
+    ];
+
+    $status = $matches ? 'ok' : ($update ? 'ok' : 'failed');
+    $next = $matches ? 'Package lock matches template sources.' : 'Run package-lock --update to refresh checksums.';
+    $written = aiCliWriteArtifact($root, 'package-lock', 'php tools/ai/ai.php package-lock', $data, $status, null, $next);
+    fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+    return $status === 'ok' ? 0 : 1;
+}
+
+function aiRunPackageVerify(string $root): int
+{
+    $path = aiPackageLockPath($root);
+    if (!is_file($path)) {
+        throw new RuntimeException('Missing package lock file: packages/ai-universal-rules/package-lock.ai.json');
+    }
+
+    $lock = json_decode((string) file_get_contents($path), true);
+    if (!is_array($lock)) {
+        throw new RuntimeException('Invalid JSON in package lock file');
+    }
+
+    $expected = $lock['source_checksums'] ?? [];
+    if (!is_array($expected)) {
+        throw new RuntimeException('Invalid source_checksums in package lock file');
+    }
+    $current = aiCollectTemplateChecksums($root);
+
+    $mismatches = [];
+    foreach ($current as $file => $hash) {
+        if (!isset($expected[$file])) {
+            $mismatches[] = ['path' => $file, 'reason' => 'missing_from_lock', 'current' => $hash];
+            continue;
+        }
+        if ((string) $expected[$file] !== $hash) {
+            $mismatches[] = ['path' => $file, 'reason' => 'checksum_mismatch', 'expected' => (string) $expected[$file], 'current' => $hash];
+        }
+    }
+    foreach ($expected as $file => $hash) {
+        if (!isset($current[$file])) {
+            $mismatches[] = ['path' => (string) $file, 'reason' => 'missing_from_templates', 'expected' => (string) $hash];
+        }
+    }
+
+    $status = $mismatches === [] ? 'ok' : 'failed';
+    $data = [
+        'path' => 'packages/ai-universal-rules/package-lock.ai.json',
+        'mismatch_count' => count($mismatches),
+        'mismatches' => $mismatches,
+    ];
+
+    $written = aiCliWriteArtifact($root, 'package-verify', 'php tools/ai/ai.php package-verify', $data, $status, null, $status === 'ok' ? 'Source package integrity verified.' : 'Refresh lock or revert unintended template drift.');
+    fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+    return $status === 'ok' ? 0 : 1;
+}
+
+function aiRunAuditInstructions(string $root): int
+{
+    $surfaces = [
+        '.github/copilot-instructions.md',
+        'AGENTS.md',
+        'CLAUDE.md',
+        'GEMINI.md',
+        'AI.md',
+    ];
+
+    $found = [];
+    foreach ($surfaces as $path) {
+        if (is_file($root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path))) {
+            $found[] = ['path' => $path, 'ownership_hint' => 'mixed_or_user'];
+        }
+    }
+
+    $extra = [];
+    exec('git -C ' . escapeshellarg($root) . ' ls-files ".github/instructions/*.instructions.md" ".opencode/**"', $extra);
+    foreach ($extra as $path) {
+        $found[] = ['path' => $path, 'ownership_hint' => 'runtime_adapter'];
+    }
+
+    $data = [
+        'count' => count($found),
+        'entries' => $found,
+        'notes' => [
+            'Copilot root instructions are broadly supported; sidecar support varies by surface.',
+            'OpenCode project rules primarily use AGENTS.md.',
+        ],
+    ];
+    $written = aiCliWriteArtifact($root, 'instruction-audit', 'php tools/ai/ai.php audit-instructions', $data, 'ok', null, 'Use adapter-plan to choose safe merge or sidecar-only mode.');
+    fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+    return 0;
+}
+
+function aiRunAdapterPlan(string $root, array $args): int
+{
+    $mode = aiParseArg($args, 'mode') ?? 'sidecar-only';
+    $targetsRaw = aiParseArg($args, 'targets') ?? 'copilot,opencode';
+    $targets = array_values(array_filter(array_map('trim', explode(',', $targetsRaw)), static fn(string $v): bool => $v !== ''));
+
+    $creates = [];
+    if (in_array('copilot', $targets, true)) {
+        $creates[] = '.github/instructions/';
+    }
+    if (in_array('opencode', $targets, true)) {
+        $creates[] = '.opencode/';
+    }
+
+    $data = [
+        'mode' => $mode,
+        'targets' => $targets,
+        'create' => $creates,
+        'modify' => [],
+        'conflicts' => [],
+        'backup_required' => true,
+        'atomic_transaction_steps' => ['preflight', 'package-verify', 'backup', 'stage', 'apply', 'validate'],
+    ];
+
+    $written = aiCliWriteArtifact($root, 'adapter-plan', 'php tools/ai/ai.php adapter-plan', $data, 'ok', null, 'Run install --dry-run then install --backup-only before apply.');
+    fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+    return 0;
+}
+
+function aiRunInstallWorkflow(string $root, array $args): int
+{
+    $runtimeMode = aiDetectRuntimeMode($args);
+    $noInteraction = in_array('--no-interaction', $args, true);
+    $isInteractiveEntry = $runtimeMode === 'HUMAN_TTY' && !$noInteraction && !in_array('--apply', $args, true) && !in_array('--dry-run', $args, true) && !in_array('--backup-only', $args, true);
+    if ($isInteractiveEntry) {
+        $data = [
+            'status' => 'planned',
+            'runtime_mode' => $runtimeMode,
+            'interactive' => true,
+            'recommended_flow' => [
+                'php tools/ai/ai.php install --dry-run --mode sidecar-only',
+                'php tools/ai/ai.php install --backup-only --apply --mode sidecar-only',
+                'php tools/ai/ai.php install --apply --mode sidecar-only --backup <backup-id>',
+                'php tools/ai/ai.php adapter-validate',
+            ],
+        ];
+        $written = aiCliWriteArtifact($root, 'install', 'php tools/ai/ai.php install', $data, 'ok', null, 'Interactive mode scaffold: follow recommended commands for deterministic safety.');
+        fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+        return 0;
+    }
+
+    $preflight = aiRunPreflight($root);
+    if ($preflight !== 0 && in_array('--apply', $args, true)) {
+        $data = ['status' => 'blocked', 'reason' => 'preflight failed', 'next_action' => 'fix preflight and rerun install'];
+        $written = aiCliWriteArtifact($root, 'install', 'php tools/ai/ai.php install', $data, 'blocked', null, 'Preflight must pass before apply.');
+        fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+        return 1;
+    }
+
+    $dryRun = in_array('--dry-run', $args, true) || !in_array('--apply', $args, true);
+    $mode = aiParseArg($args, 'mode') ?? 'sidecar-only';
+    $reinstall = in_array('--reinstall', $args, true);
+    $manifestPath = aiInstallManifestPath($root);
+    $hasManifest = is_file($manifestPath);
+
+    if ($hasManifest && !$reinstall) {
+        $data = [
+            'status' => 'blocked',
+            'reason' => 'manifest already exists; use upgrade or install --reinstall',
+            'manifest_path' => 'docs/ai/generated/adapter-install-manifest.json',
+        ];
+        $written = aiCliWriteArtifact($root, 'install', 'php tools/ai/ai.php install', $data, 'blocked', null, 'Use upgrade for existing installs unless forced reinstall is intended.');
+        fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+        return 1;
+    }
+
+    if ($dryRun) {
+        $data = [
+            'status' => 'planned',
+            'mode' => $mode,
+            'runtime_mode' => $runtimeMode,
+            'apply' => false,
+            'install_kind' => $hasManifest ? 'reinstall' : 'fresh_install',
+            'required_first' => ['preflight', 'package-verify', 'adapter-plan', 'install --backup-only'],
+        ];
+        $written = aiCliWriteArtifact($root, 'install', 'php tools/ai/ai.php install --dry-run', $data, 'ok', null, 'Run install --backup-only before install --apply.');
+        fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+        return 0;
+    }
+
+    $backupOnly = in_array('--backup-only', $args, true);
+    if ($backupOnly) {
+        $plan = aiLoadArtifactData($root, 'adapter-plan.json');
+        $creates = $plan['data']['create'] ?? [];
+        $modifies = $plan['data']['modify'] ?? [];
+        $targets = [];
+        foreach ([$creates, $modifies] as $list) {
+            if (!is_array($list)) {
+                continue;
+            }
+            foreach ($list as $item) {
+                if (!is_string($item) || $item === '') {
+                    continue;
+                }
+                $targets[] = $item;
+            }
+        }
+        $targets = array_values(array_unique($targets));
+
+        $backupRoot = $root . DIRECTORY_SEPARATOR . '.ai-backups';
+        if (!is_dir($backupRoot)) {
+            mkdir($backupRoot, 0777, true);
+        }
+        $backupId = 'install-' . gmdate('Ymd-His');
+        $dir = $backupRoot . DIRECTORY_SEPARATOR . $backupId;
+        mkdir($dir, 0777, true);
+
+        $zipPath = $dir . DIRECTORY_SEPARATOR . 'backup.zip';
+        $zipStatus = 'skipped';
+        if (class_exists('ZipArchive')) {
+            $zip = new ZipArchive();
+            if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
+                foreach ($targets as $rel) {
+                    $abs = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, rtrim($rel, '/'));
+                    if (is_file($abs)) {
+                        $zip->addFile($abs, str_replace('\\', '/', rtrim($rel, '/')));
+                    }
+                }
+                $zip->close();
+                $zipStatus = 'created';
+            }
+        }
+
+        $manifest = [
+            'backup_id' => $backupId,
+            'created_at_utc' => gmdate('c'),
+            'zip_status' => $zipStatus,
+            'targets' => $targets,
+        ];
+        file_put_contents($dir . DIRECTORY_SEPARATOR . 'manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+
+        $data = [
+            'status' => 'ok',
+            'mode' => $mode,
+            'runtime_mode' => $runtimeMode,
+            'backup_id' => $backupId,
+            'backup_dir' => '.ai-backups/' . $backupId,
+            'zip_status' => $zipStatus,
+            'target_count' => count($targets),
+        ];
+        $written = aiCliWriteArtifact($root, 'install', 'php tools/ai/ai.php install --backup-only', $data, 'ok', null, 'Backup created; proceed to install --apply once transaction apply is enabled.');
+        fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+        return 0;
+    }
+
+    $backupId = aiParseArg($args, 'backup') ?? '';
+    if ($backupId === '') {
+        $data = [
+            'status' => 'blocked',
+            'mode' => $mode,
+            'runtime_mode' => $runtimeMode,
+            'reason' => 'apply requires explicit backup id',
+            'next_action' => 'php tools/ai/ai.php install --backup-only --apply --mode ' . $mode,
+        ];
+        $written = aiCliWriteArtifact($root, 'install', 'php tools/ai/ai.php install --apply', $data, 'blocked', null, 'Create backup first, then rerun apply with --backup <backup-id>.');
+        fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+        return 1;
+    }
+    $backupManifestPath = $root . DIRECTORY_SEPARATOR . '.ai-backups' . DIRECTORY_SEPARATOR . $backupId . DIRECTORY_SEPARATOR . 'manifest.json';
+    if (!is_file($backupManifestPath)) {
+        throw new RuntimeException('backup manifest not found for apply backup id: ' . $backupId);
+    }
+
+    $transactionId = 'install-' . gmdate('Ymd-His');
+    $stagingDir = '.ai-tmp/' . $transactionId;
+    $tx = [
+        'transaction_id' => $transactionId,
+        'status' => 'prepared',
+        'staging_dir' => $stagingDir,
+        'mode' => $mode,
+        'runtime_mode' => $runtimeMode,
+    ];
+    aiCliWriteArtifact($root, 'install-transaction', 'php tools/ai/ai.php install --apply', $tx, 'ok', null, 'Transaction prepared; apply command execution follows.');
+
+    $plan = aiLoadArtifactData($root, 'adapter-plan.json');
+    $targets = $plan['data']['targets'] ?? ['copilot', 'opencode'];
+    $runtime = 'both';
+    if (is_array($targets)) {
+        $hasCopilot = in_array('copilot', $targets, true);
+        $hasOpenCode = in_array('opencode', $targets, true);
+        if ($hasCopilot && !$hasOpenCode) {
+            $runtime = 'github-copilot';
+        } elseif (!$hasCopilot && $hasOpenCode) {
+            $runtime = 'opencode';
+        }
+    }
+
+    $cmd = 'php tools/ai/install-ai-kit.php --target . --runtime ' . escapeshellarg($runtime) . ' --profile dual --no-base';
+    if ($mode !== 'sidecar-only') {
+        $cmd = 'php tools/ai/install-ai-kit.php --target . --runtime ' . escapeshellarg($runtime) . ' --profile dual';
+    }
+
+    $run = aiRunCommand($root, $cmd);
+    $status = $run['exit'] === 0 ? 'ok' : 'failed';
+
+    if ($status === 'ok') {
+        $plan = aiLoadArtifactData($root, 'adapter-plan.json');
+        $managed = [];
+        if (is_array($plan) && is_array($plan['data']['create'] ?? null)) {
+            foreach ($plan['data']['create'] as $item) {
+                if (is_string($item) && $item !== '') {
+                    $managed[] = $item;
+                }
+            }
+        }
+        $manifest = [
+            'schema_version' => 1,
+            'installed_at_utc' => gmdate('c'),
+            'mode' => $mode,
+            'runtime' => $runtime,
+            'managed_paths' => $managed,
+            'package_lock_sha256' => is_file(aiPackageLockPath($root)) ? 'sha256:' . hash_file('sha256', aiPackageLockPath($root)) : 'unknown',
+        ];
+        file_put_contents($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+    }
+
+    $data = [
+        'status' => $status,
+        'mode' => $mode,
+        'runtime_mode' => $runtimeMode,
+        'backup_id' => $backupId,
+        'transaction_id' => $transactionId,
+        'installer_command' => $cmd,
+        'installer_exit' => $run['exit'],
+        'installer_stdout_preview' => substr($run['stdout'], 0, 3000),
+        'installer_stderr_preview' => substr($run['stderr'], 0, 3000),
+    ];
+    $written = aiCliWriteArtifact($root, 'install', 'php tools/ai/ai.php install --apply', $data, $status, null, $status === 'ok' ? 'Install apply completed; run adapter-validate next.' : 'Inspect installer output and rerun install after fixing errors.');
+    fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+    return $status === 'ok' ? 0 : 1;
+}
+
+function aiRunUpgradeWorkflow(string $root, array $args): int
+{
+    $manifestPath = aiInstallManifestPath($root);
+    if (!is_file($manifestPath)) {
+        $data = [
+            'status' => 'blocked',
+            'reason' => 'no install manifest found; run install first',
+            'manifest_path' => 'docs/ai/generated/adapter-install-manifest.json',
+        ];
+        $written = aiCliWriteArtifact($root, 'upgrade', 'php tools/ai/ai.php upgrade', $data, 'blocked', null, 'Install workflow must create manifest before upgrade.');
+        fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+        return 1;
+    }
+
+    $manifest = json_decode((string) file_get_contents($manifestPath), true);
+    if (!is_array($manifest)) {
+        throw new RuntimeException('Invalid install manifest JSON at docs/ai/generated/adapter-install-manifest.json');
+    }
+
+    $dryRun = in_array('--dry-run', $args, true) || !in_array('--apply', $args, true);
+    $verifyExit = aiRunPackageVerify($root);
+    $verify = aiLoadArtifactData($root, 'package-verify.json');
+
+    $changes = [];
+    if ($verifyExit !== 0) {
+        $changes[] = [
+            'type' => 'source_checksum_drift',
+            'action' => 'review package-lock and template changes',
+        ];
+    }
+
+    if ($dryRun) {
+        $data = [
+            'status' => $changes === [] ? 'ok' : 'warning',
+            'mode' => 'dry-run',
+            'manifest_runtime' => $manifest['runtime'] ?? 'unknown',
+            'manifest_mode' => $manifest['mode'] ?? 'unknown',
+            'detected_changes' => $changes,
+            'package_verify_status' => $verify['status'] ?? 'unknown',
+        ];
+        $written = aiCliWriteArtifact($root, 'upgrade', 'php tools/ai/ai.php upgrade --dry-run', $data, $changes === [] ? 'ok' : 'warning', null, 'If changes look safe, run upgrade --apply.');
+        fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+        return 0;
+    }
+
+    $mode = (string) ($manifest['mode'] ?? 'sidecar-only');
+    $backupId = aiParseArg($args, 'backup') ?? '';
+    if ($backupId === '') {
+        $data = [
+            'status' => 'blocked',
+            'reason' => 'upgrade apply requires explicit backup id',
+            'next_action' => 'php tools/ai/ai.php install --backup-only --apply --mode ' . $mode,
+        ];
+        $written = aiCliWriteArtifact($root, 'upgrade', 'php tools/ai/ai.php upgrade --apply', $data, 'blocked', null, 'Create backup first, then rerun upgrade --apply --backup <id>.');
+        fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+        return 1;
+    }
+
+    $installArgs = ['--apply', '--reinstall', '--mode', $mode, '--backup', $backupId, '--no-interaction'];
+    if (in_array('--agent', $args, true)) {
+        $installArgs[] = '--agent';
+    }
+    if (in_array('--ci', $args, true)) {
+        $installArgs[] = '--ci';
+    }
+    $exit = aiRunInstallWorkflow($root, $installArgs);
+    $install = aiLoadArtifactData($root, 'install.json');
+    $status = $exit === 0 ? 'ok' : 'failed';
+    $data = [
+        'status' => $status,
+        'mode' => 'apply',
+        'backup_id' => $backupId,
+        'install_status' => $install['status'] ?? 'unknown',
+    ];
+    $written = aiCliWriteArtifact($root, 'upgrade', 'php tools/ai/ai.php upgrade --apply', $data, $status, null, $status === 'ok' ? 'Upgrade apply completed; run adapter-validate.' : 'Upgrade apply failed; inspect install artifact.');
+    fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+    return $exit;
+
+    $data = [
+        'status' => 'blocked',
+        'reason' => 'upgrade apply not yet enabled',
+        'next_action' => 'run upgrade --dry-run and apply via install --reinstall after review',
+    ];
+    $written = aiCliWriteArtifact($root, 'upgrade', 'php tools/ai/ai.php upgrade', $data, 'blocked', null, 'Use install --dry-run for now.');
+    fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+    return 1;
+}
+
+function aiRunAdapterValidate(string $root): int
+{
+    $lock = aiLoadArtifactData($root, 'package-verify.json');
+    $manifestPath = aiInstallManifestPath($root);
+    $manifestExists = is_file($manifestPath);
+    $status = ($lock['status'] ?? 'unknown') === 'ok' && $manifestExists ? 'ok' : 'warning';
+    $data = [
+        'status' => $status,
+        'package_verify_status' => $lock['status'] ?? 'unknown',
+        'install_manifest_present' => $manifestExists,
+        'checks' => ['package-verify artifact', 'instruction-audit artifact', 'install manifest present'],
+    ];
+    $written = aiCliWriteArtifact($root, 'adapter-validate', 'php tools/ai/ai.php adapter-validate', $data, $status, null, 'Run package-verify and audit-instructions first if missing.');
+    fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+    return 0;
+}
+
+function aiRunRollbackWorkflow(string $root, array $args): int
+{
+    $backupId = aiParseArg($args, 'backup') ?? '';
+    if ($backupId === '') {
+        throw new RuntimeException('rollback requires --backup <backup-id>');
+    }
+
+    $dryRun = in_array('--dry-run', $args, true) || !in_array('--apply', $args, true);
+    $base = $root . DIRECTORY_SEPARATOR . '.ai-backups' . DIRECTORY_SEPARATOR . $backupId;
+    $manifestPath = $base . DIRECTORY_SEPARATOR . 'manifest.json';
+    if (!is_file($manifestPath)) {
+        throw new RuntimeException('backup manifest not found for backup id: ' . $backupId);
+    }
+    $manifest = json_decode((string) file_get_contents($manifestPath), true);
+    if (!is_array($manifest)) {
+        throw new RuntimeException('invalid backup manifest JSON for backup id: ' . $backupId);
+    }
+
+    $targets = $manifest['targets'] ?? [];
+    $zipPath = $base . DIRECTORY_SEPARATOR . 'backup.zip';
+    $restored = [];
+    if (!$dryRun && is_file($zipPath) && class_exists('ZipArchive')) {
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath) === true) {
+            $zip->extractTo($root);
+            $zip->close();
+            $restored = is_array($targets) ? $targets : [];
+        }
+    }
+
+    $data = [
+        'status' => 'ok',
+        'backup' => $backupId,
+        'dry_run' => $dryRun,
+        'target_count' => is_array($targets) ? count($targets) : 0,
+        'restored_targets' => $restored,
+    ];
+    $written = aiCliWriteArtifact($root, 'rollback', 'php tools/ai/ai.php rollback --backup ' . $backupId, $data, 'ok', null, $dryRun ? 'Dry-run complete; use --apply to restore from ZIP.' : 'Rollback applied from ZIP backup.');
+    fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
+    return 0;
+}
+
+function aiDetectRuntimeMode(array $args): string
+{
+    if (in_array('--agent', $args, true)) {
+        return 'AI_AGENT';
+    }
+    if (in_array('--ci', $args, true)) {
+        return 'CI';
+    }
+    if (in_array('--interactive', $args, true)) {
+        return 'HUMAN_TTY';
+    }
+
+    $ci = (string) getenv('CI');
+    $gh = (string) getenv('GITHUB_ACTIONS');
+    if (strtolower($ci) === 'true' || strtolower($gh) === 'true') {
+        return 'CI';
+    }
+
+    $envKeys = array_keys($_ENV + $_SERVER);
+    foreach ($envKeys as $key) {
+        if (str_starts_with((string) $key, 'OPENCODE_') || str_starts_with((string) $key, 'CLAUDE_') || str_starts_with((string) $key, 'COPILOT_')) {
+            return 'AI_AGENT';
+        }
+    }
+
+    if (function_exists('stream_isatty') && stream_isatty(STDIN)) {
+        return 'HUMAN_TTY';
+    }
+    return 'CI';
+}
+
 try {
     $root = aiCliRepoRoot();
     $argv = $_SERVER['argv'] ?? [];
@@ -1580,6 +2226,24 @@ try {
             exit(aiRunFind($root, $args));
         case 'symbols':
             exit(aiRunSymbols($root, $args));
+        case 'preflight':
+            exit(aiRunPreflight($root));
+        case 'package-lock':
+            exit(aiRunPackageLock($root, $args));
+        case 'package-verify':
+            exit(aiRunPackageVerify($root));
+        case 'audit-instructions':
+            exit(aiRunAuditInstructions($root));
+        case 'adapter-plan':
+            exit(aiRunAdapterPlan($root, $args));
+        case 'install':
+            exit(aiRunInstallWorkflow($root, $args));
+        case 'upgrade':
+            exit(aiRunUpgradeWorkflow($root, $args));
+        case 'adapter-validate':
+            exit(aiRunAdapterValidate($root));
+        case 'rollback':
+            exit(aiRunRollbackWorkflow($root, $args));
         default:
             fwrite(STDERR, "Error: unknown command '{$command}'" . PHP_EOL . PHP_EOL);
             aiUsage();

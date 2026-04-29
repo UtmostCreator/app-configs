@@ -1,0 +1,28 @@
+# Install
+
+- Status: `blocked`
+- Generated at: `2026-04-29T00:47:17+00:00`
+- Commit: `799b5e6`
+- Branch: `feat/installer-transaction-engine`
+- Recommended next action: `Preflight must pass before apply.`
+
+```json
+{
+    "schema_version": 1,
+    "artifact": "install.json",
+    "generated_at": "2026-04-29T00:47:17+00:00",
+    "command": "php tools/ai/ai.php install",
+    "based_on_commit": "799b5e6",
+    "based_on_branch": "feat/installer-transaction-engine",
+    "input_hashes": {},
+    "status": "blocked",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "Preflight must pass before apply.",
+    "data": {
+        "status": "blocked",
+        "reason": "preflight failed",
+        "next_action": "fix preflight and rerun install"
+    }
+}
+```

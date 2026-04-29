@@ -29,6 +29,15 @@
       "notes": "Adapter layer; canonical workflow logic remains under docs/ai capabilities."
     },
     {
+      "path": ".opencode",
+      "purpose": "OpenCode runtime adapter surfaces including agents, commands, and skills.",
+      "designed_for": "OpenCode users executing repo-scoped workflows.",
+      "install_guide": "docs/ai/external-repo-install.md",
+      "install_script": "tools/ai/install-ai-kit.php",
+      "ai_entrypoint": ".opencode/agents/architect.md",
+      "notes": "Adapter layer for OpenCode; canonical policy remains in docs/ai and package templates."
+    },
+    {
       "path": ".husky",
       "purpose": "Git hook entrypoints for local validation before commit.",
       "designed_for": "Developers using local Git hook automation.",

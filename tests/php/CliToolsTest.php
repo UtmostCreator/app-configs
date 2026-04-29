@@ -279,4 +279,58 @@ class CliToolsTest extends TestCase
         $result = $this->runTool('php tools/ai/ai.php symbols aiRun');
         $this->assertSame(0, $result['exit'], "ai.php symbols exited non-zero:\n" . $result['stderr']);
     }
+
+    public function testAiCliPreflightExitsZeroOrFailed(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php preflight');
+        $this->assertContains(
+            $result['exit'],
+            [0, 1],
+            "ai.php preflight exited with unexpected code:\n" . $result['stderr']
+        );
+    }
+
+    public function testAiCliPackageLockCheckExitsZeroOrFailed(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php package-lock --check');
+        $this->assertContains(
+            $result['exit'],
+            [0, 1],
+            "ai.php package-lock --check exited with unexpected code:\n" . $result['stderr']
+        );
+    }
+
+    public function testAiCliPackageVerifyExitsZeroOrFailed(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php package-verify');
+        $this->assertContains(
+            $result['exit'],
+            [0, 1],
+            "ai.php package-verify exited with unexpected code:\n" . $result['stderr']
+        );
+    }
+
+    public function testAiCliInstructionAuditExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php audit-instructions');
+        $this->assertSame(0, $result['exit'], "ai.php audit-instructions exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliAdapterPlanExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php adapter-plan --targets copilot,opencode --mode sidecar-only');
+        $this->assertSame(0, $result['exit'], "ai.php adapter-plan exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliInstallDryRunExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php install --dry-run --mode sidecar-only');
+        $this->assertSame(0, $result['exit'], "ai.php install --dry-run exited non-zero:\n" . $result['stderr']);
+    }
+
+    public function testAiCliAdapterValidateExitsZero(): void
+    {
+        $result = $this->runTool('php tools/ai/ai.php adapter-validate');
+        $this->assertSame(0, $result['exit'], "ai.php adapter-validate exited non-zero:\n" . $result['stderr']);
+    }
 }

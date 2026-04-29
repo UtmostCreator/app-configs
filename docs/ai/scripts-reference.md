@@ -18,7 +18,7 @@ This document explains installer, validation, generation, and context scripts ma
 
 - `php tools/ai/ai.php`
   - Unified entrypoint for workflow-control commands.
-  - Current commands: `list`, `snapshot`, `freshness`, `budget`, `workflow`, `diff-summary`, `risk`, `verify`, `next`, `rebase-state`, `decision`, `why`, `session-resume`, `commit-msg`, `pr-summary`, `logs`, `env-check`, `file-context`, `orphans`, `auto-fix`, `impact`, `ask`, `estimate`, `conflicts`, `find`, `symbols`.
+  - Current commands: `list`, `snapshot`, `freshness`, `budget`, `workflow`, `diff-summary`, `risk`, `verify`, `next`, `rebase-state`, `decision`, `why`, `session-resume`, `commit-msg`, `pr-summary`, `logs`, `env-check`, `file-context`, `orphans`, `auto-fix`, `impact`, `ask`, `estimate`, `conflicts`, `find`, `symbols`, `preflight`, `package-lock`, `package-verify`, `audit-instructions`, `adapter-plan`, `install`, `upgrade`, `adapter-validate`, `rollback`.
   - Writes paired outputs under `docs/ai/generated/` and updates `docs/ai/generated/artifacts.json`.
 
 ## Validation And Generation

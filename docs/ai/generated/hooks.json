@@ -1,0 +1,28 @@
+{
+    "schema_version": 1,
+    "artifact": "hooks.json",
+    "generated_at": "2026-04-29T13:24:33+00:00",
+    "command": "php tools/ai/ai.php hooks",
+    "based_on_commit": "047d291",
+    "based_on_branch": "feat/installer-transaction-engine",
+    "input_hashes": {},
+    "status": "ok",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "Install hooks explicitly per selected driver.",
+    "data": {
+        "status": "manual-required",
+        "install_requested": true,
+        "driver": "native",
+        "supported_drivers": [
+            "husky",
+            "lefthook",
+            "native"
+        ],
+        "wiring_commands": [
+            "cp scripts/hooks/pre-commit.sh .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit",
+            "cp scripts/hooks/commit-msg.sh .git/hooks/commit-msg && chmod +x .git/hooks/commit-msg"
+        ],
+        "note": "Hook wiring remains explicit and opt-in."
+    }
+}

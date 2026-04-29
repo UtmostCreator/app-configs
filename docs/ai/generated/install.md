@@ -1,36 +1,28 @@
 # Install
 
-- Status: `ok`
-- Generated at: `2026-04-29T01:20:33+00:00`
-- Commit: `fe37d92`
+- Status: `blocked`
+- Generated at: `2026-04-29T18:30:47+00:00`
+- Commit: `047d291`
 - Branch: `feat/installer-transaction-engine`
-- Recommended next action: `Run install --backup-only before install --apply.`
+- Recommended next action: `Use upgrade for existing installs unless forced reinstall is intended.`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "install.json",
-    "generated_at": "2026-04-29T01:20:33+00:00",
-    "command": "php tools/ai/ai.php install --dry-run",
-    "based_on_commit": "fe37d92",
+    "generated_at": "2026-04-29T18:30:47+00:00",
+    "command": "php tools/ai/ai.php install",
+    "based_on_commit": "047d291",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
-    "status": "ok",
+    "status": "blocked",
     "score": null,
     "stale": false,
-    "recommended_next_action": "Run install --backup-only before install --apply.",
+    "recommended_next_action": "Use upgrade for existing installs unless forced reinstall is intended.",
     "data": {
-        "status": "planned",
-        "mode": "sidecar-only",
-        "runtime_mode": "AI_AGENT",
-        "apply": false,
-        "install_kind": "fresh_install",
-        "required_first": [
-            "preflight",
-            "package-verify",
-            "adapter-plan",
-            "install --backup-only"
-        ]
+        "status": "blocked",
+        "reason": "manifest already exists; use upgrade or install --reinstall",
+        "manifest_path": ".ai-install-manifest.json"
     }
 }
 ```

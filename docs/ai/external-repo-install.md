@@ -14,6 +14,13 @@ php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile dual --d
 php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile dual
 ```
 
+After apply, generate install instructions and catalog docs:
+
+```bash
+php tools/ai/ai.php install-docs --target /path/to/target-repo --write
+php tools/ai/ai.php install-docs --check
+```
+
 ## Profiles
 
 - `minimal`: core policy + project context + guardrails + three base capabilities
@@ -52,6 +59,20 @@ Current installer runtime support:
 - `github-copilot`
 - `opencode`
 - `both` (via `--runtime both` or `--profile dual`)
+
+## Compatibility Guarantees During V2 Migration
+
+- existing installer/adapter workflow commands stay supported while new aliases are introduced
+- direct installer entrypoint (`install-ai-kit.php`) stays available as a compatibility shim
+- placeholder syntax stays `<PLACEHOLDER_NAME>`
+- canonical install state lives in `.ai-install-manifest.json`
+- generated evidence copy may be written to `docs/ai/generated/install-manifest.json`
+
+## Backup Requirements
+
+- backups remain mandatory before apply in workflow mode
+- `ZipArchive` is preferred when available
+- when `ext_zip` is missing, installer uses directory backup fallback instead of hard-blocking install
 
 ## Notes
 

@@ -106,6 +106,11 @@ After changing templates, docs, or examples:
 3. validate with `php tools/ai/validate-ai-catalog.php`
 4. preview a starter bundle with `php tools/ai/export-ai-universal-rules.php --profile=dual-runtime-starter`
 
+Also generate installation instruction docs from live registries:
+
+1. run `php tools/ai/ai.php install-docs --write`
+2. verify drift with `php tools/ai/ai.php install-docs --check`
+
 ## What Good Looks Like
 
 - policy is short and stable

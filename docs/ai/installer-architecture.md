@@ -8,6 +8,30 @@ This document explains the full installer model, what gets installed, and how to
 - `bash tools/ai/install-ai-kit.sh` is a thin shell wrapper that forwards all args to PHP.
 - `bash tools/ai/install-copilot-kit.sh` is a compatibility wrapper for legacy Copilot-only workflows.
 
+## V2 Compatibility And Design Lock
+
+- Preserve existing command compatibility during migration:
+  - keep `adapter-plan`, `adapter-validate`, `preflight`, `package-lock`, `package-verify`, `install`, `upgrade`, `rollback`
+  - add `plan` as `adapter-plan` successor/alias
+  - evolve `verify` without removing existing install-validation surfaces
+- Keep direct installer compatibility:
+  - `install-ai-kit.php` remains a stable entrypoint
+  - implementation moves to shared installer core so `install-ai-kit.php` and `ai.php install` do not diverge
+- Manifest authority model:
+  - canonical machine state: `.ai-install-manifest.json`
+  - derived evidence copy: `docs/ai/generated/install-manifest.json`
+  - verify must detect drift between canonical and derived copy
+- Placeholder syntax remains `<PLACEHOLDER_NAME>` in v2.
+- Distribution baseline remains `git-tag` for source-aware upgrades.
+- `docs-reference-pack` is optional add-on and not part of default `full-governance` install.
+- `fd` is optional in scripts validation unless a selected script explicitly requires it.
+- `ext_zip` is optional for backups:
+  - preferred: zip backup via `ZipArchive`
+  - fallback: directory backup
+- Hook executable checks are platform-aware:
+  - Windows: warning/info only
+  - Unix with explicit hook wiring: error if non-executable
+
 ## Install Profiles
 
 - `minimal`: base policy + project context + guardrails + 3 core capabilities.
@@ -15,6 +39,16 @@ This document explains the full installer model, what gets installed, and how to
 - `opencode`: `minimal` + OpenCode runtime assets.
 - `dual`: `minimal` + both runtime adapters.
 - `guarded`: same files as `dual`; adds explicit operator reminder for guard/hook policy layering.
+
+V2 target profile model:
+
+- `minimal`: `base + setup-docs + capabilities-core`
+- `copilot`: `minimal + adapter-copilot`
+- `opencode`: `minimal + adapter-opencode`
+- `dual`: `minimal + adapter-copilot + adapter-opencode + capabilities-extended-lite`
+- `accelerated`: `dual + scripts-pack + policy-pack + evidence-pack`
+- `full-governance`: `accelerated + capabilities-extended-full + hooks-pack + ci-pack`
+- `docs-reference`: optional add-on only
 
 Flags:
 

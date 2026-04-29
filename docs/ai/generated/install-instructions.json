@@ -1,0 +1,16 @@
+{
+    "installed_at": "2026-04-29T13:36:17+00:00",
+    "profile": "dual",
+    "packs": [],
+    "files": [],
+    "scripts": [],
+    "required_tools": [],
+    "optional_tools": [],
+    "commands": {
+        "verify": "php tools/ai/ai.php verify --json",
+        "placeholders": "php tools/ai/ai.php placeholders --fail",
+        "toolchain_check": "php tools/ai/ai.php toolchain --with repomix,scc --check",
+        "toolchain_plan": "php tools/ai/ai.php toolchain --with repomix,scc --install-plan",
+        "scripts_list": "php tools/ai/ai.php run-script --list"
+    }
+}

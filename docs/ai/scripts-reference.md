@@ -18,8 +18,13 @@ This document explains installer, validation, generation, and context scripts ma
 
 - `php tools/ai/ai.php`
   - Unified entrypoint for workflow-control commands.
-  - Current commands: `list`, `snapshot`, `freshness`, `budget`, `workflow`, `diff-summary`, `risk`, `verify`, `next`, `rebase-state`, `decision`, `why`, `session-resume`, `commit-msg`, `pr-summary`, `logs`, `env-check`, `file-context`, `orphans`, `auto-fix`, `impact`, `ask`, `estimate`, `conflicts`, `find`, `symbols`, `preflight`, `package-lock`, `package-verify`, `audit-instructions`, `adapter-plan`, `install`, `upgrade`, `adapter-validate`, `rollback`.
+  - Current commands: `list`, `snapshot`, `freshness`, `budget`, `workflow`, `diff-summary`, `risk`, `verify`, `next`, `rebase-state`, `decision`, `why`, `session-resume`, `commit-msg`, `pr-summary`, `logs`, `env-check`, `file-context`, `orphans`, `auto-fix`, `impact`, `ask`, `estimate`, `conflicts`, `find`, `symbols`, `preflight`, `package-lock`, `package-verify`, `audit-instructions`, `adapter-plan`, `plan`, `install`, `upgrade`, `adapter-validate`, `rollback`, `version`, `packs`, `placeholders`, `hooks`, `toolchain`, `run-script`, `install-docs`.
   - Writes paired outputs under `docs/ai/generated/` and updates `docs/ai/generated/artifacts.json`.
+  - Wizard entrypoint: `php tools/ai/ai.php install --wizard`.
+  - Toolchain helper: `php tools/ai/ai.php toolchain --with repomix,scc --install-plan`.
+  - Script runner: `php tools/ai/ai.php run-script --list` then `php tools/ai/ai.php run-script repomix-context --dry-run`.
+  - Install docs generator: `php tools/ai/ai.php install-docs --write` and drift check via `php tools/ai/ai.php install-docs --check`.
+  - Compatibility contract: existing command names remain supported while successor aliases are introduced.
 
 ## Validation And Generation
 
@@ -37,6 +42,9 @@ This document explains installer, validation, generation, and context scripts ma
   - Verifies or exports package release bundles.
 
 ## Context Packing Scripts
+
+- Source scripts in this repository are under `scripts/copilot/`.
+- Installed scripts-pack targets are written to `scripts/ai/` by installer exports.
 
 - `bash scripts/copilot/run-repomix-context.sh <path>`
   - Dependency-checking entrypoint for context packing.

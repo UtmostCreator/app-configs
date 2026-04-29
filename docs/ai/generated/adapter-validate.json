@@ -1,23 +1,26 @@
 {
     "schema_version": 1,
     "artifact": "adapter-validate.json",
-    "generated_at": "2026-04-29T00:47:18+00:00",
+    "generated_at": "2026-04-29T13:36:17+00:00",
     "command": "php tools/ai/ai.php adapter-validate",
-    "based_on_commit": "799b5e6",
+    "based_on_commit": "047d291",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
-    "status": "warning",
+    "status": "ok",
     "score": null,
     "stale": false,
     "recommended_next_action": "Run package-verify and audit-instructions first if missing.",
     "data": {
-        "status": "warning",
+        "status": "ok",
         "package_verify_status": "ok",
-        "install_manifest_present": false,
+        "install_manifest_present": true,
+        "derived_install_manifest_present": true,
+        "manifest_drift_detected": false,
         "checks": [
             "package-verify artifact",
             "instruction-audit artifact",
-            "install manifest present"
+            "install manifest present",
+            "derived manifest drift"
         ]
     }
 }

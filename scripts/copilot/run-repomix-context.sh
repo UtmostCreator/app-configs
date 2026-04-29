@@ -4,6 +4,21 @@ set -euo pipefail
 ROOT="${1:-.}"
 shift || true
 
+add_winget_paths() {
+    local user_name="${USER:-${USERNAME:-}}"
+    local base="/c/Users/${user_name}/AppData/Local/Microsoft/WinGet/Packages"
+    [[ -d "$base" ]] || return 0
+    local dir
+    while IFS= read -r dir; do
+        case ":$PATH:" in
+        *":$dir:"*) ;;
+        *) PATH="$PATH:$dir" ;;
+        esac
+    done < <(find "$base" -maxdepth 3 -type f -name '*.exe' -printf '%h\n' 2>/dev/null | sort -u)
+}
+
+add_winget_paths
+
 die() {
     printf 'Error: %s\n' "$1" >&2
     exit "${2:-1}"

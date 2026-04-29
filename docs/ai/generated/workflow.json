@@ -1,0 +1,61 @@
+{
+    "schema_version": 1,
+    "artifact": "workflow.json",
+    "generated_at": "2026-04-29T00:14:49+00:00",
+    "command": "php tools/ai/ai.php workflow",
+    "based_on_commit": "92d5dbc",
+    "based_on_branch": "main",
+    "input_hashes": {},
+    "status": "ok",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "Use workflow dependencies to choose the next required command.",
+    "data": {
+        "workflow_graph": "docs/ai/workflow-graph.json",
+        "command_count": 5,
+        "commands": {
+            "snapshot": {
+                "requires_fresh": [],
+                "invalidates": [],
+                "should_precede": [
+                    "freshness",
+                    "budget",
+                    "next"
+                ]
+            },
+            "freshness": {
+                "requires_fresh": [],
+                "invalidates": [],
+                "should_precede": [
+                    "next"
+                ]
+            },
+            "budget": {
+                "requires_fresh": [
+                    "freshness"
+                ],
+                "invalidates": [],
+                "should_precede": [
+                    "next"
+                ]
+            },
+            "workflow": {
+                "requires_fresh": [],
+                "invalidates": [],
+                "should_precede": [
+                    "next"
+                ]
+            },
+            "next": {
+                "requires_fresh": [
+                    "snapshot",
+                    "freshness",
+                    "budget",
+                    "workflow"
+                ],
+                "invalidates": [],
+                "should_precede": []
+            }
+        }
+    }
+}

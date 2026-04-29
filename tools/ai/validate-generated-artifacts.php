@@ -9,10 +9,10 @@ if ($root === false) {
 }
 
 $required = [
-    'docs/ai/catalog.md' => 'php tools/ai/generate-ai-catalog.php',
-    'packages/ai-universal-rules/catalog.json' => 'php tools/ai/generate-ai-catalog.php',
-    'packages/ai-universal-rules/docs/BROWSE.md' => 'php tools/ai/generate-ai-catalog.php',
-    'llms.txt' => 'php tools/ai/generate-ai-catalog.php',
+    'docs/ai/catalog.md' => 'php tools/ai/generate-ai-catalog.php --check',
+    'packages/ai-universal-rules/catalog.json' => 'php tools/ai/generate-ai-catalog.php --check',
+    'packages/ai-universal-rules/docs/BROWSE.md' => 'php tools/ai/generate-ai-catalog.php --check',
+    'llms.txt' => 'php tools/ai/generate-ai-catalog.php --check',
 ];
 
 $errors = [];
@@ -20,6 +20,22 @@ $errors = [];
 foreach ($required as $path => $generator) {
     if (!is_file($root . '/' . $path)) {
         $errors[] = "missing generated artifact {$path} (generator: {$generator})";
+    }
+}
+
+$runCheck = !in_array('--existence-only', $argv, true);
+
+if ($runCheck) {
+    $phpBin = defined('PHP_BINARY') ? (string) PHP_BINARY : 'php';
+    $checkCmd = escapeshellarg($phpBin) . ' tools/ai/generate-ai-catalog.php --check';
+    $output = [];
+    $exit = 0;
+    exec('cd ' . escapeshellarg($root) . ' && ' . $checkCmd . ' 2>&1', $output, $exit);
+    if ($exit !== 0) {
+        $errors[] = 'generated artifact drift detected by generate-ai-catalog --check';
+        foreach ($output as $line) {
+            fwrite(STDERR, "CHECK: {$line}\n");
+        }
     }
 }
 

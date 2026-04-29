@@ -1,8 +1,8 @@
 # Preflight
 
 - Status: `failed`
-- Generated at: `2026-04-29T00:47:17+00:00`
-- Commit: `799b5e6`
+- Generated at: `2026-04-29T01:20:33+00:00`
+- Commit: `fe37d92`
 - Branch: `feat/installer-transaction-engine`
 - Recommended next action: `Resolve failed checks before install/apply.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "preflight.json",
-    "generated_at": "2026-04-29T00:47:17+00:00",
+    "generated_at": "2026-04-29T01:20:33+00:00",
     "command": "php tools/ai/ai.php preflight",
-    "based_on_commit": "799b5e6",
+    "based_on_commit": "fe37d92",
     "based_on_branch": "feat/installer-transaction-engine",
     "input_hashes": {},
     "status": "failed",

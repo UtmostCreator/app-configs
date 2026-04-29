@@ -18,11 +18,13 @@ repomix-output*.xml
 repomix-*.xml
 context-*.md
 .repomix-context/**
+.ai-backups/**
+.ai-tmp/**
 
 # Generated catalog surfaces
 docs/ai/catalog.md
-AI-universal-rules/docs/BROWSE.md
-AI-universal-rules/catalog.json
+packages/ai-universal-rules/docs/BROWSE.md
+packages/ai-universal-rules/catalog.json
 llms.txt
 
 # Binary assets with low code-review value

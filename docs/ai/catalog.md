@@ -22,14 +22,14 @@ Use `docs/ai/copilot-getting-started.md` for quick onboarding, then use this cat
 - `package / package-capability` - 31
 - `package / shared-template` - 3
 - `package / workflow-doc` - 6
-- `root / capability` - 12
+- `root / capability` - 13
 - `root / copilot-policy` - 1
 - `root / copilot-schema` - 1
 - `root / copilot-script` - 10
 - `root / exporter` - 1
 - `root / generator` - 1
-- `root / github-copilot-agent` - 2
-- `root / github-copilot-instruction` - 6
+- `root / github-copilot-agent` - 8
+- `root / github-copilot-instruction` - 9
 - `root / hook` - 1
 - `root / php-reference` - 3
 - `root / root-doc` - 17
@@ -41,16 +41,17 @@ Use `docs/ai/copilot-getting-started.md` for quick onboarding, then use this cat
 | --- | --- | --- | --- |
 | `capability` | agent-observability-and-evidence | `docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md` | Make agent runs traceable, reviewable, and auditable before relying on optimization claims. |
 | `capability` | authorization-and-tool-governance | `docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md` | Define who can use which tools, under what scope, with which approval and audit requirements. |
-| `capability` | bug-regression | `docs/ai/capabilities/bug-regression/CAPABILITY.md` | Reproduce a config or workflow defect with the smallest reliable check, apply a bounded fix, and prove the issue is closed. |
+| `capability` | bug-regression | `docs/ai/capabilities/bug-regression/CAPABILITY.md` | Reproduce a bug with the smallest practical test or deterministic check, apply a minimal fix, and prove the regression is closed. |
 | `capability` | config-change-safety | `docs/ai/capabilities/config-change-safety/CAPABILITY.md` | Apply editor, shell, runtime, or machine-facing config changes without widening risk silently. |
+| `capability` | dependency-upgrade | `docs/ai/capabilities/dependency-upgrade/CAPABILITY.md` | Evaluate and implement a dependency upgrade with attention to compatibility, verification depth, and release risk. |
 | `capability` | docs-sync | `docs/ai/capabilities/docs-sync/CAPABILITY.md` | Keep setup and workflow documentation aligned with the actual repository after behavior, file, or path changes. |
 | `capability` | evaluation-and-regression | `docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md` | Make agent behavior testable so quality does not depend only on ad hoc review. |
 | `capability` | preview-environments | `docs/ai/capabilities/preview-environments/CAPABILITY.md` | Define a vendor-neutral operating model for temporary end-to-end environments used during review and verification. |
-| `capability` | project-context | `docs/ai/capabilities/project-context/CAPABILITY.md` | Load durable repository facts before work starts so changes use the right paths, verification, and approval boundaries. |
+| `capability` | project-context | `docs/ai/capabilities/project-context/CAPABILITY.md` | Provide durable repository context that other capabilities, agents, and prompts can rely on before planning, implementing, reviewing, or verifying changes. |
 | `capability` | release-safety | `docs/ai/capabilities/release-safety/CAPABILITY.md` | Assess rollout, rollback, observability, and compatibility posture for changes whose risk extends beyond local correctness. |
-| `capability` | review-diff | `docs/ai/capabilities/review-diff/CAPABILITY.md` | Review the proposed change set for accuracy, drift, portability, and missing verification. |
+| `capability` | review-diff | `docs/ai/capabilities/review-diff/CAPABILITY.md` | Review a change set from the diff first, then expand only as needed to assess correctness, regression risk, policy fit, and missing verification. |
 | `capability` | service-boundary-patterns | `docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md` | Define public, internal, tool, and data boundaries so agent-enabled workflows do not blur trust and risk surfaces. |
-| `capability` | verify-change | `docs/ai/capabilities/verify-change/CAPABILITY.md` | Choose the smallest relevant proof for a config, docs, or workflow change and report evidence cleanly. |
+| `capability` | verify-change | `docs/ai/capabilities/verify-change/CAPABILITY.md` | Choose and run the smallest relevant verification flow for a change, then report evidence clearly. |
 | `copilot-policy` | policy.yaml | `policies/copilot/policy.yaml` | Declarative allow, deny, and confirm rules for the Copilot command policy surface. |
 | `copilot-schema` | evidence-event.schema.json | `.schemas/evidence-event.schema.json` | JSON schema for durable agent evidence events emitted by supported runtime surfaces. |
 | `copilot-script` | ai-diff-context.sh | `scripts/copilot/ai-diff-context.sh` | Incremental context packer for changed files, PR slices, recent changes, and touched areas. |
@@ -65,14 +66,23 @@ Use `docs/ai/copilot-getting-started.md` for quick onboarding, then use this cat
 | `copilot-script` | watch-loop.sh | `scripts/copilot/watch-loop.sh` | Watch-based verification loop with debounce and repo-local session logging. |
 | `exporter` | export-ai-universal-rules | `tools/ai/export-ai-universal-rules.php` | Builds starter-profile release bundles under dist/. |
 | `generator` | generate-ai-catalog | `tools/ai/generate-ai-catalog.php` | Generates catalog docs, catalog JSON, and llms.txt. |
-| `github-copilot-agent` | config-maintainer | `.github/agents/config-maintainer.agent.md` | Use when updating editor, shell, runtime, or tool configuration while preserving existing behavior and validating the narrowest safe surface first |
+| `github-copilot-agent` | architect.agent.md | `.github/agents/architect.agent.md` |  |
+| `github-copilot-agent` | config-maintainer.agent.md | `.github/agents/config-maintainer.agent.md` |  |
+| `github-copilot-agent` | implementer.agent.md | `.github/agents/implementer.agent.md` |  |
+| `github-copilot-agent` | refactorer.agent.md | `.github/agents/refactorer.agent.md` |  |
+| `github-copilot-agent` | release-auditor.agent.md | `.github/agents/release-auditor.agent.md` |  |
+| `github-copilot-agent` | researcher.agent.md | `.github/agents/researcher.agent.md` |  |
+| `github-copilot-agent` | reviewer.agent.md | `.github/agents/reviewer.agent.md` |  |
 | `github-copilot-agent` | workflow-auditor.agent.md | `.github/agents/workflow-auditor.agent.md` |  |
-| `github-copilot-instruction` | ai-workflow | `.github/instructions/ai-workflow.instructions.md` | Rules for AI workflow docs and runtime adapters |
+| `github-copilot-instruction` | ai-workflow | `.github/instructions/ai-workflow.instructions.md` |  |
+| `github-copilot-instruction` | architecture | `.github/instructions/architecture.instructions.md` |  |
 | `github-copilot-instruction` | ci | `.github/instructions/ci.instructions.md` |  |
-| `github-copilot-instruction` | config | `.github/instructions/config.instructions.md` | Rules for config changes in editor, shell, runtime, and tool files |
+| `github-copilot-instruction` | config | `.github/instructions/config.instructions.md` |  |
 | `github-copilot-instruction` | docs | `.github/instructions/docs.instructions.md` |  |
 | `github-copilot-instruction` | frontend | `.github/instructions/frontend.instructions.md` |  |
-| `github-copilot-instruction` | php | `.github/instructions/php.instructions.md` | PHP investigation and verification routing |
+| `github-copilot-instruction` | php | `.github/instructions/php.instructions.md` |  |
+| `github-copilot-instruction` | targets | `.github/instructions/targets.instructions.md` |  |
+| `github-copilot-instruction` | testing | `.github/instructions/testing.instructions.md` |  |
 | `hook` | tool-guardian | `.github/hooks/tool-guardian.json` | Protects the live repo with a narrow Copilot hook guard. |
 | `php-reference` | design-patterns | `reference/php/design-patterns` | Primary local PHP design pattern corpus for agent and human lookups. |
 | `php-reference` | design-principles | `reference/php/design-principles` | Secondary PHP principles and composition examples. |

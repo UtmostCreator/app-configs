@@ -1,7 +1,7 @@
 ---
 description: Use when a bounded slice is clear and implementation plus focused verification should happen in app-configs
-mode: subagent
-hidden: true
+mode: all
+hidden: false
 temperature: 0.1
 ---
 

@@ -1,8 +1,23 @@
 # Install Instructions
 
-- Installed at: `2026-04-29T13:36:17+00:00`
-- Profile: `dual`
-- Packs: ``
+- Installed at: `2026-04-29T19:33:34+00:00`
+- Profile: `full-governance`
+- Packs: `base, setup-docs, capabilities-core, capabilities-extended-lite, capabilities-extended-full, adapter-copilot, adapter-opencode, scripts-pack, policy-pack, hooks-pack, ci-pack, evidence-pack, docs-reference-pack, delivery-pack, optional-agents-pack, optional-prompts-pack, preview-environments-pack, evaluation-pack, service-boundary-pack, mcp-boundaries-pack, advisor-pack`
+
+## Step Chain
+
+1. Step 1 -> Preflight: `php tools/ai/ai.php preflight`
+   - Next: Step 2 (`package-verify`)
+2. Step 2 -> Package Verify: `php tools/ai/ai.php package-verify`
+   - Next: Step 3 (`adapter-plan`)
+3. Step 3 -> Adapter Plan: `php tools/ai/ai.php adapter-plan --profile full-governance`
+   - Next: Step 4 (`install --dry-run`)
+4. Step 4 -> Install Dry-Run: `php tools/ai/ai.php install --profile full-governance --reinstall --dry-run`
+   - Next: Step 5 (`install --backup-only`)
+5. Step 5 -> Backup: `php tools/ai/ai.php install --backup-only --apply --profile full-governance --reinstall`
+   - Next: Step 6 (`install --apply --backup <id>`)
+6. Step 6 -> Apply: `php tools/ai/ai.php install --apply --profile full-governance --reinstall --backup <backup-id>`
+   - Next: Step 7 (post-install verification sequence)
 
 ## Before Install
 
@@ -12,9 +27,9 @@
 
 ## During Install
 
-- Dry-run: `php tools/ai/ai.php install --profile dual --dry-run`
-- Backup: `php tools/ai/ai.php install --backup-only --apply --profile dual`
-- Apply: `php tools/ai/ai.php install --apply --profile dual --backup <backup-id>`
+- Dry-run: `php tools/ai/ai.php install --profile full-governance --reinstall --dry-run`
+- Backup: `php tools/ai/ai.php install --backup-only --apply --profile full-governance --reinstall`
+- Apply: `php tools/ai/ai.php install --apply --profile full-governance --reinstall --backup <backup-id>`
 
 ## After Install
 
@@ -23,9 +38,88 @@
 - Toolchain check: `php tools/ai/ai.php toolchain --with repomix,scc --check`
 - Script list: `php tools/ai/ai.php run-script --list`
 
+- Repomix analyze: `bash scripts/ai/repomix-context-tree.sh analyze .`
+- Advisor analyze/fixes: `php tools/ai/ai.php advisor --all`
+- Full-install verifier: `php tools/ai/verify-full-install.php`
+
+Advisor recommendations are strongest after a full OpenCode install and fresh Repomix analysis, because advisor consumes generated repository signals/context artifacts under `docs/ai/generated/`.
+
+OpenCode agent visibility note: agents in `.opencode/agents/` must not be marked `hidden: true` in frontmatter if you expect them in normal agent listings.
+
+## Completion Criteria
+
+- Run `php tools/ai/verify-full-install.php` after the sequence above.
+- Completion is `full` only when install, validation, repomix analysis, and advisor checks all pass in order.
+- If status is not `full`, follow the script output for ordered remediation steps.
+
 ## Installed Scripts
 
-- none
+- `repomix-context` -> `scripts/ai/run-repomix-context.sh`
+- `repomix-tree` -> `scripts/ai/repomix-context-tree.sh`
+- `repomix-scc-router` -> `scripts/ai/repomix-scc-router.sh`
+- `pack-context` -> `scripts/ai/pack-context.sh`
 
 ## Installed Files
 
+- `.github/agents`
+- `.github/copilot-instructions.md`
+- `.github/instructions`
+- `.github/prompts`
+- `.github/prompts-optional`
+- `.github/workflows/validate-ai-surface.yml`
+- `.opencode/agents`
+- `.opencode/agents-optional`
+- `.opencode/commands`
+- `.opencode/skills`
+- `.schemas/advisor-recommendation.schema.json`
+- `.schemas/evidence-event.schema.json`
+- `.schemas/project-scorecard.schema.json`
+- `.schemas/project-signals.schema.json`
+- `AGENTS.md`
+- `docs/ai/AI-GUARDRAILS.md`
+- `docs/ai/MCP-BOUNDARIES.md`
+- `docs/ai/agent-ops-checklist.md`
+- `docs/ai/agent-ops.md`
+- `docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md`
+- `docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md`
+- `docs/ai/capabilities/bug-regression`
+- `docs/ai/capabilities/dependency-upgrade`
+- `docs/ai/capabilities/evaluation-and-regression`
+- `docs/ai/capabilities/preview-environments`
+- `docs/ai/capabilities/project-context`
+- `docs/ai/capabilities/release-safety`
+- `docs/ai/capabilities/review-diff`
+- `docs/ai/capabilities/service-boundary-patterns`
+- `docs/ai/capabilities/verify-change`
+- `docs/ai/command-risk-taxonomy.md`
+- `docs/ai/context-packing.md`
+- `docs/ai/delivery/README.md`
+- `docs/ai/delivery/slice-card.template.md`
+- `docs/ai/failure-handling.md`
+- `docs/ai/hooks.md`
+- `docs/ai/project-context.md`
+- `docs/ai/scripts-reference.md`
+- `docs/ai/toolchain-requirements.md`
+- `docs/ai/validation.md`
+- `scripts/ai/ai-diff-context.sh`
+- `scripts/ai/ai-edit.sh`
+- `scripts/ai/ai-rollback.sh`
+- `scripts/ai/ai-search.sh`
+- `scripts/ai/ai-verify.sh`
+- `scripts/ai/common.sh`
+- `scripts/ai/fd-files.sh`
+- `scripts/ai/gh-pr-context.sh`
+- `scripts/ai/git-forensics.sh`
+- `scripts/ai/pack-context.sh`
+- `scripts/ai/post-tool-use.sh`
+- `scripts/ai/pre-tool-use.sh`
+- `scripts/ai/preview-file.sh`
+- `scripts/ai/query-usage.sh`
+- `scripts/ai/repomix-context-tree.sh`
+- `scripts/ai/repomix-scc-router.sh`
+- `scripts/ai/rg-code.sh`
+- `scripts/ai/run-repomix-context.sh`
+- `scripts/ai/watch-loop.sh`
+- `scripts/hooks/commit-msg.sh`
+- `scripts/hooks/pre-commit.sh`
+- `tools/ai/advisor`

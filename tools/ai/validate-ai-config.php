@@ -97,12 +97,9 @@ $liveFiles = [
     'llms.txt',
 ];
 
-$bannedTerms = [
-    'Statamic',
-    'Nuxt',
-    'Vue 3',
-    'PHPUnit 11',
-];
+$agnosticRules = loadAgnosticLeakRules($root);
+$bannedTerms = $agnosticRules['banned_terms'];
+$allowedLeakPaths = $agnosticRules['allowed_paths'];
 
 $generatedCatalogFiles = [
     'docs/ai/catalog.md',
@@ -138,9 +135,19 @@ foreach ($liveFiles as $relativePath) {
         $errors[] = "placeholder leak found in {$relativePath}";
     }
 
-    foreach ($bannedTerms as $term) {
-        if (stripos($content, $term) !== false) {
-            $warnings[] = "unexpected stack term '{$term}' in {$relativePath}";
+    $allowLeakScan = false;
+    foreach ($allowedLeakPaths as $allowedPathPrefix) {
+        if (str_starts_with($relativePath, $allowedPathPrefix)) {
+            $allowLeakScan = true;
+            break;
+        }
+    }
+
+    if (!$allowLeakScan) {
+        foreach ($bannedTerms as $term) {
+            if (stripos($content, $term) !== false) {
+                $warnings[] = "unexpected stack term '{$term}' in {$relativePath}";
+            }
         }
     }
 
@@ -154,9 +161,23 @@ foreach ($liveFiles as $relativePath) {
         }
 
         $normalizedPath = trim($path);
-        $target = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $normalizedPath);
+        $candidates = [];
+        $candidates[] = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $normalizedPath);
 
-        if (!file_exists($target)) {
+        $baseDir = dirname($relativePath);
+        if ($baseDir !== '.' && $baseDir !== '') {
+            $candidates[] = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $baseDir . '/' . $normalizedPath);
+        }
+
+        $exists = false;
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate)) {
+                $exists = true;
+                break;
+            }
+        }
+
+        if (!$exists) {
             $errors[] = "broken path reference in {$relativePath}: {$path}";
         }
     }
@@ -421,4 +442,36 @@ function shouldSkipPathCheck(string $path): bool
     }
 
     return false;
+}
+
+function loadAgnosticLeakRules(string $root): array
+{
+    $defaults = [
+        'banned_terms' => ['Statamic', 'Nuxt', 'Vue 3', 'PHPUnit 11'],
+        'allowed_paths' => [],
+    ];
+
+    $rulesPath = $root . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'rules' . DIRECTORY_SEPARATOR . 'agnostic-leak-rules.json';
+
+    if (!is_file($rulesPath)) {
+        return $defaults;
+    }
+
+    $raw = file_get_contents($rulesPath);
+    if ($raw === false) {
+        return $defaults;
+    }
+
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return $defaults;
+    }
+
+    $bannedTerms = $decoded['banned_terms'] ?? $defaults['banned_terms'];
+    $allowedPaths = $decoded['allowed_paths'] ?? [];
+
+    return [
+        'banned_terms' => is_array($bannedTerms) ? array_values(array_filter($bannedTerms, 'is_string')) : $defaults['banned_terms'],
+        'allowed_paths' => is_array($allowedPaths) ? array_values(array_filter($allowedPaths, 'is_string')) : [],
+    ];
 }

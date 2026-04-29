@@ -96,6 +96,8 @@ function aiInstallerRun(array $argv): int
     aiInstallerLog('1) review AGENTS.md and docs/ai/project-context.md');
     aiInstallerLog('2) run php tools/ai/validate-ai-config.php');
     aiInstallerLog('3) run php tools/ai/validate-ai-catalog.php (if catalog files changed)');
+    aiInstallerLog('4) run bash scripts/ai/repomix-context-tree.sh analyze . (or scripts/copilot/...)');
+    aiInstallerLog('5) run php tools/ai/ai.php advisor --all');
 
     return 0;
 }
@@ -193,6 +195,11 @@ function aiInstallerCopyFile(string $src, string $dest): void
     if (!is_file($src)) {
         throw new RuntimeException('missing source file: ' . $src);
     }
+    $srcReal = realpath($src);
+    $destReal = file_exists($dest) ? realpath($dest) : false;
+    if ($srcReal !== false && $destReal !== false && $srcReal === $destReal) {
+        return;
+    }
     aiInstallerMkdir(dirname($dest));
     if (!copy($src, $dest)) {
         throw new RuntimeException('failed to copy file: ' . $src);
@@ -203,6 +210,11 @@ function aiInstallerCopyDir(string $src, string $dest): void
 {
     if (!is_dir($src)) {
         throw new RuntimeException('missing source directory: ' . $src);
+    }
+    $srcReal = realpath($src);
+    $destReal = file_exists($dest) ? realpath($dest) : false;
+    if ($srcReal !== false && $destReal !== false && $srcReal === $destReal) {
+        return;
     }
     if (file_exists($dest)) {
         aiInstallerDeleteTree($dest);

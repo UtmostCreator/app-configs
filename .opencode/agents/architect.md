@@ -1,7 +1,7 @@
 ---
 description: Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in app-configs
-mode: subagent
-hidden: true
+mode: all
+hidden: false
 temperature: 0.1
 permission:
   edit: deny
@@ -23,7 +23,7 @@ Before answering:
 
 - inspect the relevant code and recent diff when useful
 - load the project-context skill if available
-- ground the plan in active paths only: `.copilot-logs,.editorconfig,.eslintrc.json,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
+- ground the plan in active paths only: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
 - treat inactive paths cautiously: `unknown`
 - avoid introducing new subsystems unless the task truly requires them
 - classify risk as `low`, `medium`, or `high`

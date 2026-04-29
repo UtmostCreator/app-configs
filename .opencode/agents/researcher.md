@@ -1,7 +1,7 @@
 ---
 description: Use when the task touches an unfamiliar area, ownership is unclear, or a later stage needs read-only grounding before planning or implementation in app-configs
 mode: subagent
-hidden: true
+hidden: false
 temperature: 0.0
 permission:
   edit: deny

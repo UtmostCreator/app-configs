@@ -18,11 +18,15 @@ This document explains installer, validation, generation, and context scripts ma
 
 - `php tools/ai/ai.php`
   - Unified entrypoint for workflow-control commands.
-  - Current commands: `list`, `snapshot`, `freshness`, `budget`, `workflow`, `diff-summary`, `risk`, `verify`, `next`, `rebase-state`, `decision`, `why`, `session-resume`, `commit-msg`, `pr-summary`, `logs`, `env-check`, `file-context`, `orphans`, `auto-fix`, `impact`, `ask`, `estimate`, `conflicts`, `find`, `symbols`, `preflight`, `package-lock`, `package-verify`, `audit-instructions`, `adapter-plan`, `plan`, `install`, `upgrade`, `adapter-validate`, `rollback`, `version`, `packs`, `placeholders`, `hooks`, `toolchain`, `run-script`, `install-docs`.
+  - Current commands: `list`, `snapshot`, `freshness`, `budget`, `workflow`, `diff-summary`, `risk`, `verify`, `next`, `rebase-state`, `decision`, `why`, `session-resume`, `commit-msg`, `pr-summary`, `logs`, `env-check`, `file-context`, `orphans`, `auto-fix`, `impact`, `ask`, `estimate`, `conflicts`, `find`, `symbols`, `preflight`, `package-lock`, `package-verify`, `audit-instructions`, `adapter-plan`, `plan`, `install`, `upgrade`, `adapter-validate`, `rollback`, `version`, `packs`, `placeholders`, `hooks`, `toolchain`, `run-script`, `install-docs`, `advisor`.
   - Writes paired outputs under `docs/ai/generated/` and updates `docs/ai/generated/artifacts.json`.
   - Wizard entrypoint: `php tools/ai/ai.php install --wizard`.
   - Toolchain helper: `php tools/ai/ai.php toolchain --with repomix,scc --install-plan`.
   - Script runner: `php tools/ai/ai.php run-script --list` then `php tools/ai/ai.php run-script repomix-context --dry-run`.
+  - Recommended analysis path before final verification: run Repomix context analysis, then advisor.
+  - Repomix-first: `bash scripts/ai/repomix-context-tree.sh analyze .` (or `bash scripts/copilot/repomix-context-tree.sh analyze .`).
+  - Advisor pass: `php tools/ai/ai.php advisor --all`.
+  - Advisor uses generated repository signals and context artifacts (`docs/ai/generated/project-signals.json`, `docs/ai/generated/advisor-context.md`) to provide deterministic fix suggestions.
   - Install docs generator: `php tools/ai/ai.php install-docs --write` and drift check via `php tools/ai/ai.php install-docs --check`.
   - Compatibility contract: existing command names remain supported while successor aliases are introduced.
 
@@ -38,6 +42,10 @@ This document explains installer, validation, generation, and context scripts ma
 - `php tools/ai/generate-repo-structure.php`
   - Regenerates `docs/ai/generated/repo-structure.{json,csv,md,log}`.
   - Use `--check --with-scc` to enforce drift checks.
+- `php tools/ai/verify-full-install.php`
+  - Runs the ordered full-install verification chain (preflight -> package verify -> plan -> dry-run -> validation -> repomix -> advisor -> verify).
+  - Writes `docs/ai/generated/full-install-verify.json` and `docs/ai/generated/full-install-verify.md`.
+  - Reports whether install state is `full` or `partial`, which steps ran, and ordered remediation steps.
 - `php tools/ai/export-ai-universal-rules.php`
   - Verifies or exports package release bundles.
 

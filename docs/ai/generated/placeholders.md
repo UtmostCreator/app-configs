@@ -1,27 +1,33 @@
 # Placeholders
 
 - Status: `failed`
-- Generated at: `2026-04-29T19:33:42+00:00`
-- Commit: `fdd960a`
-- Branch: `feat/installer-transaction-engine`
+- Generated at: `2026-04-30T23:01:54+00:00`
+- Commit: `dfa2cd8`
+- Branch: `main`
 - Recommended next action: `Resolve placeholders before strict verification.`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "placeholders.json",
-    "generated_at": "2026-04-29T19:33:42+00:00",
+    "generated_at": "2026-04-30T23:01:54+00:00",
     "command": "php tools/ai/ai.php placeholders",
-    "based_on_commit": "fdd960a",
-    "based_on_branch": "feat/installer-transaction-engine",
+    "based_on_commit": "dfa2cd8",
+    "based_on_branch": "main",
     "input_hashes": {},
     "status": "failed",
     "score": null,
     "stale": false,
     "recommended_next_action": "Resolve placeholders before strict verification.",
     "data": {
-        "count": 6,
+        "count": 9,
         "items": [
+            {
+                "path": "docs/ai/architecture-locks.md",
+                "placeholders": [
+                    "<PROJECT_NAME>"
+                ]
+            },
             {
                 "path": "docs/ai/catalog.md",
                 "placeholders": [
@@ -40,6 +46,46 @@
                 ]
             },
             {
+                "path": "docs/ai/generated/advisor-context.md",
+                "placeholders": [
+                    "<PLACEHOLDER_NAME>",
+                    "<PROJECT_NAME>",
+                    "<ACTIVE_PATHS>",
+                    "<FRONTEND_PATH_GLOB>",
+                    "<TEST_PATH_GLOB>",
+                    "<CHANGE_REQUEST>",
+                    "<CLAIM_BEING_PROVED>",
+                    "<STDIN>",
+                    "<PROJECT_SUMMARY>",
+                    "<PROJECT_TYPE>",
+                    "<PRIMARY_LANGUAGE>",
+                    "<PRIMARY_RUNTIME>",
+                    "<INACTIVE_PATHS>",
+                    "<PRIMARY_ENTRYPOINTS>",
+                    "<PRIMARY_VERIFY_COMMAND>",
+                    "<PRIMARY_BUILD_COMMAND>",
+                    "<PRIMARY_TEST_COMMAND>",
+                    "<PROJECT_CONTEXT_PATH>",
+                    "<AVAILABLE_CAPABILITIES>",
+                    "<REVIEW_PRIORITIES>",
+                    "<APPROVAL_REQUIRED_CHANGES>",
+                    "<TARGET_PLATFORMS>",
+                    "<ARCHITECTURE_NOTES>",
+                    "<RISK_AREAS>",
+                    "<NARROW_VERIFY_GUIDANCE>",
+                    "<CAPABILITY_COMPOSITION_NOTES>",
+                    "<RELEASE_SAFETY_NOTES>",
+                    "<KNOWN_GOTCHA_THEMES>",
+                    "<COPILOT_SURFACE>",
+                    "<SUPPORTED_FEATURES>",
+                    "<OPTIONAL_FEATURES>",
+                    "<INSTRUCTION_PRECEDENCE_NOTES>",
+                    "<CONFLICT_AVOIDANCE_NOTES>",
+                    "<GLOBAL_OR_SHARED_RULE_SOURCES>",
+                    "<OPTIONAL_VERIFY_COMMAND>"
+                ]
+            },
+            {
                 "path": "docs/ai/generated/placeholders.md",
                 "placeholders": [
                     "<PROJECT_NAME>",
@@ -55,6 +101,12 @@
                 "path": "docs/ai/installer-architecture.md",
                 "placeholders": [
                     "<PLACEHOLDER_NAME>"
+                ]
+            },
+            {
+                "path": "docs/ai/readiness-scorecard.md",
+                "placeholders": [
+                    "<PLACEHOLDER>"
                 ]
             },
             {

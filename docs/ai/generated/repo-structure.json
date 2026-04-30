@@ -3,7 +3,7 @@
     "source": "git ls-files",
     "with_scc": true,
     "folder_count": 14,
-    "tracked_file_count": 742,
+    "tracked_file_count": 743,
     "metadata": {
         "schema_version": 1,
         "coverage_required": true,
@@ -511,12 +511,12 @@
             "ai_entrypoint": "docs/ai/project-context.md",
             "notes": "Canonical guidance surface for repo-specific behavior and procedures.",
             "metrics": {
-                "lines": 34519,
-                "code": 30271,
+                "lines": 35678,
+                "code": 31430,
                 "comments": 0,
                 "blanks": 4248,
                 "complexity": 0,
-                "bytes": 1312819
+                "bytes": 1359982
             }
         },
         {
@@ -981,7 +981,7 @@
         },
         {
             "path": "tools",
-            "file_count": 48,
+            "file_count": 49,
             "files": [
                 "tools/ai/advisor/SecretScanGate.php",
                 "tools/ai/advisor/drift.php",
@@ -1029,10 +1029,11 @@
                 "tools/ai/validate-ai-catalog.php",
                 "tools/ai/validate-ai-config.php",
                 "tools/ai/validate-generated-artifacts.php",
+                "tools/ai/validate-install-surface.php",
                 "tools/ai/validate-placeholders.php",
                 "tools/ai/verify-full-install.php"
             ],
-            "files_csv": "tools/ai/advisor/SecretScanGate.php,tools/ai/advisor/drift.php,tools/ai/advisor/packer.php,tools/ai/advisor/prompt-builder.php,tools/ai/advisor/registry.php,tools/ai/advisor/scanner.php,tools/ai/advisor/scorer.php,tools/ai/advisor/secret-scan.php,tools/ai/advisor/submitter.php,tools/ai/advisor/token-budget.php,tools/ai/advisor/validator.php,tools/ai/ai.php,tools/ai/ai_catalog_lib.php,tools/ai/ai_output_lib.php,tools/ai/build-context-pack.php,tools/ai/export-ai-universal-rules.php,tools/ai/generate-ai-catalog.php,tools/ai/generate-repo-structure.php,tools/ai/install-ai-kit.php,tools/ai/install-ai-kit.sh,tools/ai/install-copilot-kit.sh,tools/ai/install/base.sh,tools/ai/install/config.php,tools/ai/install/core.php,tools/ai/install/docs.php,tools/ai/install/lib.sh,tools/ai/install/manifest.php,tools/ai/install/packs.php,tools/ai/install/planner.php,tools/ai/install/profiles.php,tools/ai/install/runtime-copilot.sh,tools/ai/install/runtime-opencode.sh,tools/ai/install/script-registry.php,tools/ai/install/script-runner.php,tools/ai/install/toolchain-registry.php,tools/ai/install/toolchain.php,tools/ai/install/verify-install-result.php,tools/ai/install/verify-manifest.php,tools/ai/install/verify-no-overwrite.php,tools/ai/rules/agnostic-leak-rules.json,tools/ai/secret-scan.php,tools/ai/suggest-verification.php,tools/ai/validate-adapter-drift.php,tools/ai/validate-ai-catalog.php,tools/ai/validate-ai-config.php,tools/ai/validate-generated-artifacts.php,tools/ai/validate-placeholders.php,tools/ai/verify-full-install.php",
+            "files_csv": "tools/ai/advisor/SecretScanGate.php,tools/ai/advisor/drift.php,tools/ai/advisor/packer.php,tools/ai/advisor/prompt-builder.php,tools/ai/advisor/registry.php,tools/ai/advisor/scanner.php,tools/ai/advisor/scorer.php,tools/ai/advisor/secret-scan.php,tools/ai/advisor/submitter.php,tools/ai/advisor/token-budget.php,tools/ai/advisor/validator.php,tools/ai/ai.php,tools/ai/ai_catalog_lib.php,tools/ai/ai_output_lib.php,tools/ai/build-context-pack.php,tools/ai/export-ai-universal-rules.php,tools/ai/generate-ai-catalog.php,tools/ai/generate-repo-structure.php,tools/ai/install-ai-kit.php,tools/ai/install-ai-kit.sh,tools/ai/install-copilot-kit.sh,tools/ai/install/base.sh,tools/ai/install/config.php,tools/ai/install/core.php,tools/ai/install/docs.php,tools/ai/install/lib.sh,tools/ai/install/manifest.php,tools/ai/install/packs.php,tools/ai/install/planner.php,tools/ai/install/profiles.php,tools/ai/install/runtime-copilot.sh,tools/ai/install/runtime-opencode.sh,tools/ai/install/script-registry.php,tools/ai/install/script-runner.php,tools/ai/install/toolchain-registry.php,tools/ai/install/toolchain.php,tools/ai/install/verify-install-result.php,tools/ai/install/verify-manifest.php,tools/ai/install/verify-no-overwrite.php,tools/ai/rules/agnostic-leak-rules.json,tools/ai/secret-scan.php,tools/ai/suggest-verification.php,tools/ai/validate-adapter-drift.php,tools/ai/validate-ai-catalog.php,tools/ai/validate-ai-config.php,tools/ai/validate-generated-artifacts.php,tools/ai/validate-install-surface.php,tools/ai/validate-placeholders.php,tools/ai/verify-full-install.php",
             "purpose": "Utility scripts and reference corpora including AI tooling and PHP examples.",
             "designed_for": "Maintainers and agents generating catalogs, exports, and docs artifacts.",
             "install_guide": "docs/ai/external-repo-install.md",
@@ -1040,12 +1041,12 @@
             "ai_entrypoint": "tools/ai/generate-ai-catalog.php",
             "notes": "Contains generators/validators plus non-runtime reference material.",
             "metrics": {
-                "lines": 9428,
-                "code": 8425,
+                "lines": 9653,
+                "code": 8619,
                 "comments": 17,
-                "blanks": 986,
-                "complexity": 1028,
-                "bytes": 379358
+                "blanks": 1017,
+                "complexity": 1065,
+                "bytes": 387062
             }
         }
     ]

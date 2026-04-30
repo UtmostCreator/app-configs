@@ -1,5 +1,6 @@
 {
-    "schema_version": 1,
+    "saved_at": "2026-04-30T23:03:10+00:00",
+    "overall": 84,
     "scores": {
         "ai_surface_coverage": 100,
         "test_readiness": 100,
@@ -7,6 +8,5 @@
         "toolchain_readiness": 100,
         "complexity_risk": 16,
         "generated_doc_hygiene": 85
-    },
-    "overall": 84
+    }
 }

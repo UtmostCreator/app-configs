@@ -1,19 +1,19 @@
 # Adapter plan
 
 - Status: `ok`
-- Generated at: `2026-04-29T23:27:27+00:00`
-- Commit: `45c4a3a`
-- Branch: `feat/installer-transaction-engine`
+- Generated at: `2026-04-30T23:03:09+00:00`
+- Commit: `dfa2cd8`
+- Branch: `main`
 - Recommended next action: `Run install --dry-run then install --backup-only before apply.`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "adapter-plan.json",
-    "generated_at": "2026-04-29T23:27:27+00:00",
+    "generated_at": "2026-04-30T23:03:09+00:00",
     "command": "php tools/ai/ai.php adapter-plan",
-    "based_on_commit": "45c4a3a",
-    "based_on_branch": "feat/installer-transaction-engine",
+    "based_on_commit": "dfa2cd8",
+    "based_on_branch": "main",
     "input_hashes": {},
     "status": "ok",
     "score": null,
@@ -30,7 +30,15 @@
             "capabilities-extended-full",
             "hooks-pack",
             "ci-pack",
-            "base"
+            "scripts-pack",
+            "policy-pack",
+            "evidence-pack",
+            "adapter-copilot",
+            "adapter-opencode",
+            "capabilities-extended-lite",
+            "base",
+            "setup-docs",
+            "capabilities-core"
         ],
         "create": [],
         "modify": [],
@@ -94,6 +102,376 @@
                 "action": "OVERWRITE_MANAGED",
                 "required": true,
                 "merge_strategy": "skip-if-exists",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/common.sh",
+                "target": "scripts/ai/common.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/ai-search.sh",
+                "target": "scripts/ai/ai-search.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/ai-diff-context.sh",
+                "target": "scripts/ai/ai-diff-context.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/ai-verify.sh",
+                "target": "scripts/ai/ai-verify.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/ai-rollback.sh",
+                "target": "scripts/ai/ai-rollback.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/ai-edit.sh",
+                "target": "scripts/ai/ai-edit.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/pack-context.sh",
+                "target": "scripts/ai/pack-context.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/pre-tool-use.sh",
+                "target": "scripts/ai/pre-tool-use.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/post-tool-use.sh",
+                "target": "scripts/ai/post-tool-use.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/run-repomix-context.sh",
+                "target": "scripts/ai/run-repomix-context.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/repomix-context-tree.sh",
+                "target": "scripts/ai/repomix-context-tree.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/repomix-scc-router.sh",
+                "target": "scripts/ai/repomix-scc-router.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/git-forensics.sh",
+                "target": "scripts/ai/git-forensics.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/gh-pr-context.sh",
+                "target": "scripts/ai/gh-pr-context.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/preview-file.sh",
+                "target": "scripts/ai/preview-file.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/query-usage.sh",
+                "target": "scripts/ai/query-usage.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/fd-files.sh",
+                "target": "scripts/ai/fd-files.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/rg-code.sh",
+                "target": "scripts/ai/rg-code.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/copilot/watch-loop.sh",
+                "target": "scripts/ai/watch-loop.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/ai/repo-tool-inventory.sh",
+                "target": "scripts/ai/repo-tool-inventory.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": false,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "scripts/ai/install-mandatory-tools.sh",
+                "target": "scripts/ai/install-mandatory-tools.sh",
+                "action": "OVERWRITE_MANAGED",
+                "required": false,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "docs/ai/repo-required-tools.md",
+                "target": "docs/ai/repo-required-tools.md",
+                "action": "OVERWRITE_MANAGED",
+                "required": false,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "scripts-pack",
+                "type": "file",
+                "source": "docs/ai/mandatory-tools-install.md",
+                "target": "docs/ai/mandatory-tools-install.md",
+                "action": "OVERWRITE_MANAGED",
+                "required": false,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "policy-pack",
+                "type": "file",
+                "source": "docs/ai/command-risk-taxonomy.md",
+                "target": "docs/ai/command-risk-taxonomy.md",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "skip-if-exists",
+                "reason": "target exists"
+            },
+            {
+                "pack": "policy-pack",
+                "type": "file",
+                "source": "docs/ai/failure-handling.md",
+                "target": "docs/ai/failure-handling.md",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "skip-if-exists",
+                "reason": "target exists"
+            },
+            {
+                "pack": "policy-pack",
+                "type": "file",
+                "source": ".schemas/evidence-event.schema.json",
+                "target": ".schemas/evidence-event.schema.json",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "skip-if-exists",
+                "reason": "target exists"
+            },
+            {
+                "pack": "evidence-pack",
+                "type": "file",
+                "source": "docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md",
+                "target": "docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "skip-if-exists",
+                "reason": "target exists"
+            },
+            {
+                "pack": "evidence-pack",
+                "type": "file",
+                "source": "docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md",
+                "target": "docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "skip-if-exists",
+                "reason": "target exists"
+            },
+            {
+                "pack": "adapter-copilot",
+                "type": "file",
+                "source": "packages/ai-universal-rules/templates/core/copilot-instructions.template.md",
+                "target": ".github/copilot-instructions.md",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "adapter-copilot",
+                "type": "dir",
+                "source": "packages/ai-universal-rules/templates/github-copilot/instructions",
+                "target": ".github/instructions",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "adapter-copilot",
+                "type": "dir",
+                "source": "packages/ai-universal-rules/templates/github-copilot/agents",
+                "target": ".github/agents",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "adapter-copilot",
+                "type": "dir",
+                "source": "packages/ai-universal-rules/templates/github-copilot/prompts",
+                "target": ".github/prompts",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "adapter-opencode",
+                "type": "dir",
+                "source": "packages/ai-universal-rules/templates/opencode/agents",
+                "target": ".opencode/agents",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "adapter-opencode",
+                "type": "dir",
+                "source": "packages/ai-universal-rules/templates/opencode/commands",
+                "target": ".opencode/commands",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "adapter-opencode",
+                "type": "dir",
+                "source": "packages/ai-universal-rules/templates/opencode/skills",
+                "target": ".opencode/skills",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "capabilities-extended-lite",
+                "type": "dir",
+                "source": "packages/ai-universal-rules/templates/capabilities/bug-regression",
+                "target": "docs/ai/capabilities/bug-regression",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
+                "reason": "target exists"
+            },
+            {
+                "pack": "capabilities-extended-lite",
+                "type": "dir",
+                "source": "packages/ai-universal-rules/templates/capabilities/release-safety",
+                "target": "docs/ai/capabilities/release-safety",
+                "action": "OVERWRITE_MANAGED",
+                "required": true,
+                "merge_strategy": "replace",
                 "reason": "target exists"
             },
             {

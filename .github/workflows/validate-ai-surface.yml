@@ -31,6 +31,9 @@ jobs:
       - name: Validate generated artifact policy
         run: php tools/ai/validate-generated-artifacts.php
 
+      - name: Validate install surface references
+        run: php tools/ai/validate-install-surface.php --strict
+
       - name: Validate adapter drift on changed files
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}

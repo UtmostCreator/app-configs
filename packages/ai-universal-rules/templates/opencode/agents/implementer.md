@@ -30,6 +30,7 @@ Output format:
 ## Remaining Risks Or Follow-Up
 
 ## Recommended Next Step
+- `reviewer` means reviewer agent handoff (OpenCode command: `/review-diff`)
 - reviewer
 - release-auditor
 - user if blocked

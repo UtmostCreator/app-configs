@@ -5,6 +5,7 @@ declare(strict_types=1);
 function aiInstallerParseArgs(array $argv): array
 {
     $target = '.';
+    $source = '';
     $profile = 'dual';
     $runtime = '';
     $projectName = '';
@@ -28,6 +29,9 @@ function aiInstallerParseArgs(array $argv): array
     $toolchainApply = false;
     $toolchainTools = [];
     $runAfterInstall = null;
+    $allowPlaceholders = false;
+    $nonInteractive = false;
+    $outputJson = '';
 
     for ($i = 1; $i < count($argv); $i++) {
         $arg = $argv[$i];
@@ -49,6 +53,22 @@ function aiInstallerParseArgs(array $argv): array
         }
         if ($arg === '--wizard') {
             $wizard = true;
+            continue;
+        }
+        if ($arg === '--non-interactive') {
+            $nonInteractive = true;
+            continue;
+        }
+        if ($arg === '--allow-placeholders') {
+            $allowPlaceholders = true;
+            continue;
+        }
+        if (str_starts_with($arg, '--output-json=')) {
+            $outputJson = substr($arg, 14);
+            continue;
+        }
+        if ($arg === '--output-json') {
+            $outputJson = $argv[++$i] ?? '';
             continue;
         }
         if ($arg === '--backup') {
@@ -151,6 +171,14 @@ function aiInstallerParseArgs(array $argv): array
             $profile = substr($arg, 10);
             continue;
         }
+        if (str_starts_with($arg, '--source=')) {
+            $source = substr($arg, 9);
+            continue;
+        }
+        if ($arg === '--source') {
+            $source = $argv[++$i] ?? '';
+            continue;
+        }
         if ($arg === '--profile') {
             $profile = $argv[++$i] ?? '';
             continue;
@@ -179,6 +207,9 @@ function aiInstallerParseArgs(array $argv): array
         throw new RuntimeException('unable to resolve script dir');
     }
     $sourceRoot = realpath($scriptDir . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..');
+    if ($source !== '') {
+        $sourceRoot = realpath($source);
+    }
     if ($sourceRoot === false) {
         throw new RuntimeException('unable to resolve source root');
     }
@@ -249,6 +280,9 @@ function aiInstallerParseArgs(array $argv): array
         'toolchainApply' => $toolchainApply,
         'toolchainTools' => array_values(array_unique($toolchainTools)),
         'runAfterInstall' => $runAfterInstall,
+        'allowPlaceholders' => $allowPlaceholders,
+        'nonInteractive' => $nonInteractive,
+        'outputJson' => $outputJson,
     ];
 }
 
@@ -268,6 +302,7 @@ Usage:
 
 Options:
   --target <dir>      Target repository root (default: .)
+  --source <dir>      Source package/repo root (default: this repository root)
   --profile <name>    Install profile: minimal|copilot|opencode|dual|guarded|accelerated|full-governance|docs-reference (default: dual)
   --runtime <name>    Runtime override: github-copilot|opencode|both
   --project-name <n>  Override inferred project name
@@ -282,6 +317,9 @@ Options:
   --dependency-mode <m> Dependency checks: strict|warn
   --verify-after      Run verify after apply
   --wizard            Interactive wizard mode
+  --non-interactive   Disable interactive prompts and rely on flags/defaults
+  --allow-placeholders Allow unresolved placeholders in strict profiles
+  --output-json <file> Write install summary JSON
   --toolchain-check   Check toolchain for selected packs
   --toolchain-install-plan Print install guidance for missing tools
   --toolchain-apply   Apply safe tool installs only

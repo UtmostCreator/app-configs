@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./common.sh
+source "$SCRIPT_DIR/common.sh"
+
 backend="${1:-auto}"
 shift || true
+
+require_clean_secret_scan "$@"
 
 run_repomix() {
     repomix "$@"

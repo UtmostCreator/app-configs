@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./common.sh
+source "$COMMON_DIR/common.sh"
+
 shopt -s extglob
 if ((BASH_VERSINFO[0] >= 4)); then
     shopt -s globstar
@@ -754,6 +758,8 @@ done
 
 ROOT="$(abs_path "$ROOT_INPUT")"
 [[ -d "$ROOT" ]] || die "root directory '$ROOT' does not exist"
+
+(cd "$ROOT" && require_clean_secret_scan "$@")
 
 if [[ "$OUTPUT_DIR" = /* ]]; then
     OUTPUT_DIR_ABS="$OUTPUT_DIR"

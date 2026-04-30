@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./common.sh
+source "$SCRIPT_DIR/common.sh"
+
 ROOT="${1:-.}"
 shift || true
 
@@ -18,6 +22,8 @@ add_winget_paths() {
 }
 
 add_winget_paths
+
+(cd "$ROOT" && require_clean_secret_scan "$@")
 
 die() {
     printf 'Error: %s\n' "$1" >&2
@@ -57,7 +63,6 @@ if ((${#missing[@]} > 0)); then
     exit 127
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TREE_SCRIPT="$SCRIPT_DIR/repomix-context-tree.sh"
 
 [[ -x "$TREE_SCRIPT" || -f "$TREE_SCRIPT" ]] || die "missing tree script at $TREE_SCRIPT" 2

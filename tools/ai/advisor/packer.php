@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/registry.php';
+require_once __DIR__ . '/SecretScanGate.php';
 
 function aiAdvisorDefaultIncludePrefixes(): array
 {
@@ -34,6 +35,8 @@ function aiAdvisorDefaultExcludeRegex(): array
 
 function aiAdvisorPackContext(string $root): array
 {
+    aiAdvisorRequireCleanSecretScan($root);
+
     $tracked = [];
     exec('git -C ' . escapeshellarg($root) . ' ls-files', $tracked);
     $includePrefixes = aiAdvisorDefaultIncludePrefixes();

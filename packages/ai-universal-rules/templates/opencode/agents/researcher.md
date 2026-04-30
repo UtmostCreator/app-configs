@@ -37,6 +37,7 @@ Output format:
 ## Risks Or Unknowns
 
 ## Recommended Next Step
+- `reviewer` means reviewer agent handoff (OpenCode command: `/review-diff`)
 - planner
 - implementer
 - reviewer

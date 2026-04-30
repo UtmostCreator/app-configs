@@ -145,7 +145,9 @@ function aiInstallerResolveSelectedPacks(array $config, array $registry): array
     $runtime = (string) ($config['runtime'] ?? 'both');
     $allFeatures = (bool) ($config['allFeatures'] ?? false);
 
-    $packs = $allFeatures ? aiInstallerAllFeaturePacks() : ($profileDefs[$profile] ?? []);
+    $packs = $allFeatures
+        ? aiInstallerAllFeaturePacks()
+        : aiInstallerExpandProfilePacks((array) ($profileDefs[$profile] ?? []), $profileDefs, $registry);
 
     if (($config['installBase'] ?? true) && !in_array('base', $packs, true)) {
         $packs[] = 'base';
@@ -172,9 +174,39 @@ function aiInstallerResolveSelectedPacks(array $config, array $registry): array
         $packs = array_values(array_filter($packs, static fn(string $v): bool => $v !== $pack));
     }
 
+    $packs = aiInstallerExpandProfilePacks($packs, $profileDefs, $registry);
     $packs = array_values(array_unique($packs));
     $packs = array_values(array_filter($packs, static fn(string $pack): bool => isset($registry[$pack])));
     return $packs;
+}
+
+function aiInstallerExpandProfilePacks(array $items, array $profileDefs, array $registry): array
+{
+    $expanded = [];
+    $queue = array_values($items);
+    $seenProfiles = [];
+
+    while ($queue !== []) {
+        $item = (string) array_shift($queue);
+        if ($item === '') {
+            continue;
+        }
+        if (isset($registry[$item])) {
+            $expanded[] = $item;
+            continue;
+        }
+        if (isset($profileDefs[$item])) {
+            if (isset($seenProfiles[$item])) {
+                continue;
+            }
+            $seenProfiles[$item] = true;
+            foreach ((array) $profileDefs[$item] as $nested) {
+                $queue[] = (string) $nested;
+            }
+        }
+    }
+
+    return array_values(array_unique($expanded));
 }
 
 function aiInstallerPackToolRequirements(array $selectedPacks): array

@@ -71,9 +71,26 @@ function aiInstallerRun(array $argv): int
         aiInstallerLog('copied ' . $item['type'] . ': ' . $item['target']);
     }
 
+    $placeholderStatus = [
+        'unresolved_required' => [],
+        'unresolved_optional' => [],
+        'resolved_values_hash' => 'unknown',
+    ];
+
     if (!$config['dryRun']) {
         aiInstallerApplyPlaceholders($config['targetRoot'], $config['projectName'], $applied);
+        $placeholderStatus = aiInstallerCollectPlaceholderStatus($config['targetRoot']);
+
+        $strictProfiles = ['guarded', 'accelerated', 'full-governance'];
+        if (in_array((string) $config['profile'], $strictProfiles, true)
+            && $placeholderStatus['unresolved_required'] !== []
+            && !($config['allowPlaceholders'] ?? false)
+        ) {
+            throw new RuntimeException('unresolved required placeholders found for strict profile; rerun with --allow-placeholders only when intentional');
+        }
+
         $manifest = aiInstallerBuildManifest($config, $packs, $applied);
+        $manifest['placeholders'] = $placeholderStatus;
         aiInstallerWriteManifest($config['targetRoot'], $manifest);
     }
 
@@ -93,7 +110,71 @@ function aiInstallerRun(array $argv): int
     aiInstallerLog('4) run bash scripts/ai/repomix-context-tree.sh analyze . (or scripts/copilot/...)');
     aiInstallerLog('5) run php tools/ai/ai.php advisor --all');
 
+    if (($config['outputJson'] ?? '') !== '') {
+        $payload = [
+            'status' => 'ok',
+            'profile' => $config['profile'],
+            'runtime' => $config['runtime'],
+            'dry_run' => (bool) $config['dryRun'],
+            'target' => $config['targetRoot'],
+            'source' => $config['sourceRoot'],
+            'selected_packs' => $packs,
+            'plan_actions' => count($plan),
+            'applied_actions' => count($applied),
+            'missing_required_tools' => $missingRequired,
+            'missing_optional_tools' => $missingOptional,
+            'placeholders' => $placeholderStatus,
+        ];
+        $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        file_put_contents((string) $config['outputJson'], $json);
+    }
+
     return 0;
+}
+
+function aiInstallerCollectPlaceholderStatus(string $targetRoot): array
+{
+    $required = [
+        '<PROJECT_NAME>', '<PROJECT_TYPE>', '<PRIMARY_LANGUAGE>', '<PRIMARY_RUNTIME>',
+        '<SOURCE_DIRS>', '<TEST_DIRS>', '<TEST_COMMAND>', '<BUILD_COMMAND>',
+        '<LINT_COMMAND>', '<PACKAGE_MANAGER>', '<CI_COMMANDS>', '<PROTECTED_PATHS>',
+    ];
+    $hits = [];
+    $scanRoots = ['AGENTS.md', 'docs/ai', '.github', '.opencode'];
+    foreach ($scanRoots as $path) {
+        $abs = $targetRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path);
+        if (is_file($abs)) {
+            $hits = array_merge($hits, aiInstallerExtractPlaceholders((string) file_get_contents($abs)));
+            continue;
+        }
+        if (!is_dir($abs)) {
+            continue;
+        }
+        $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($abs, FilesystemIterator::SKIP_DOTS));
+        foreach ($it as $f) {
+            if (!$f->isFile() || strtolower($f->getExtension()) !== 'md') {
+                continue;
+            }
+            $hits = array_merge($hits, aiInstallerExtractPlaceholders((string) file_get_contents($f->getPathname())));
+        }
+    }
+    $hits = array_values(array_unique($hits));
+    $unresolvedRequired = array_values(array_intersect($required, $hits));
+    $unresolvedOptional = array_values(array_diff($hits, $required));
+    $resolvedHash = 'sha256:' . hash('sha256', json_encode(['required' => $unresolvedRequired, 'optional' => $unresolvedOptional], JSON_UNESCAPED_SLASHES));
+    return [
+        'unresolved_required' => $unresolvedRequired,
+        'unresolved_optional' => $unresolvedOptional,
+        'resolved_values_hash' => $resolvedHash,
+    ];
+}
+
+function aiInstallerExtractPlaceholders(string $content): array
+{
+    if (preg_match_all('/<[A-Z0-9_]+>/', $content, $m) !== 1 && (!isset($m[0]) || $m[0] === [])) {
+        return [];
+    }
+    return array_values(array_unique($m[0] ?? []));
 }
 
 function aiInstallerApplyPlaceholders(string $targetRoot, string $projectName, array $applied): void
@@ -115,6 +196,14 @@ function aiInstallerApplyPlaceholders(string $targetRoot, string $projectName, a
         '<REVIEW_PRIORITIES>' => 'correctness, regressions, configuration drift',
         '<APPROVAL_REQUIRED_CHANGES>' => 'secrets, destructive changes, auth or billing changes',
         '<TARGET_PLATFORMS>' => 'unknown',
+        '<SOURCE_DIRS>' => 'unknown',
+        '<TEST_DIRS>' => 'unknown',
+        '<TEST_COMMAND>' => 'unknown',
+        '<BUILD_COMMAND>' => 'unknown',
+        '<LINT_COMMAND>' => 'unknown',
+        '<PACKAGE_MANAGER>' => 'unknown',
+        '<CI_COMMANDS>' => 'unknown',
+        '<PROTECTED_PATHS>' => 'unknown',
         '<ARCHITECTURE_NOTES>' => 'Keep policy and capability docs canonical; keep runtime adapters thin.',
         '<RISK_AREAS>' => 'stale docs, adapter drift, unsafe command usage',
         '<NARROW_VERIFY_GUIDANCE>' => 'start with the narrowest repo-local check and escalate only if needed',

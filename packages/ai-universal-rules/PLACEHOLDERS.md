@@ -49,6 +49,23 @@ Use uppercase snake case for every token. Replace each token with repository-spe
 | `<CONFLICT_AVOIDANCE_NOTES>` | Short warning about overlapping instructions | `Keep repo-wide and path-specific guidance complementary.` | Docs, examples |
 | `<GLOBAL_OR_SHARED_RULE_SOURCES>` | Any higher-level or shared instruction sources | `organization instructions, personal instructions` | Docs, examples |
 | `<OPTIONAL_VERIFY_COMMAND>` | Additional verification command if needed | `pnpm lint` | Snippets, commands |
+| `<CHANGE_REQUEST>` | Short problem/request statement for planning prompts | `Add release safety checks for migration workflow` | Prompt templates |
+| `<RISK_LEVEL>` | Requested/assumed risk posture used in planning prompts | `medium` | Prompt templates |
+| `<AFFECTED_PATHS>` | Candidate touched paths for scoped planning prompts | `tools/ai/, docs/ai/` | Prompt templates |
+| `<APPROVAL_REASON>` | Why approval may be required for a planned change | `schema mutation and rollback impact` | Prompt templates |
+| `<PROPOSED_CHANGE_SUMMARY>` | Brief implementation summary in planning outputs | `Add strict placeholder validator and profile gate` | Prompt templates |
+| `<NON_GOALS>` | Explicit out-of-scope items in planning outputs | `No runtime adapter redesign` | Prompt templates |
+| `<ROLLBACK_PATH>` | Rollback plan statement in planning outputs | `Revert commit and restore manifest-backed files` | Prompt templates |
+| `<SUCCESS_SIGNAL>` | Observable success signal in planning outputs | `validator and fixture matrix pass` | Prompt templates |
+| `<VERIFICATION_PLAN>` | Ordered verification steps in planning outputs | `unit checks -> installer dry-run -> catalog check` | Prompt templates |
+| `<OPEN_QUESTIONS>` | Known unknowns that block safe implementation | `final guarded profile pack composition` | Prompt templates |
+| `<CLAIM_BEING_PROVED>` | Behavior claim under verification | `strict profiles block unresolved required placeholders` | Capability templates |
+| `<FOCUSED_PROOF_COMMAND>` | Primary narrow proof command | `php tools/ai/validate-placeholders.php` | Capability templates |
+| `<PASS_FAIL_OR_OUTPUT>` | Result field recorded in proof templates | `exit 0` | Capability templates |
+| `<FOCUSED_PROOF_EXPLANATION>` | Explanation of what the focused proof demonstrates | `registry covers all template tokens` | Capability templates |
+| `<OPTIONAL_VERIFY_EXPLANATION>` | Explanation for optional secondary verification | `catalog check confirms no generated drift` | Capability templates |
+| `<UNRUN_CHECKS_AND_REASON>` | Explicit unrun checks disclosure token | `full fixture matrix deferred to next slice` | Capability templates |
+| `<RESIDUAL_RISK_NOTES>` | Residual risk statement token | `profile migration edge cases remain` | Capability templates |
 
 ## Notes
 

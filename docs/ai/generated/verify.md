@@ -1,19 +1,19 @@
 # Verify
 
 - Status: `passed`
-- Generated at: `2026-04-29T23:27:52+00:00`
-- Commit: `45c4a3a`
-- Branch: `feat/installer-transaction-engine`
+- Generated at: `2026-04-30T23:03:34+00:00`
+- Commit: `dfa2cd8`
+- Branch: `main`
 - Recommended next action: `Run next to choose commit or PR closeout action.`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "verify.json",
-    "generated_at": "2026-04-29T23:27:52+00:00",
+    "generated_at": "2026-04-30T23:03:34+00:00",
     "command": "php tools/ai/ai.php verify --changed",
-    "based_on_commit": "45c4a3a",
-    "based_on_branch": "feat/installer-transaction-engine",
+    "based_on_commit": "dfa2cd8",
+    "based_on_branch": "main",
     "input_hashes": {},
     "status": "passed",
     "score": null,
@@ -24,8 +24,8 @@
         "mode": "default",
         "summary": {
             "errors": 0,
-            "warnings": 17,
-            "info": 23
+            "warnings": 27,
+            "info": 33
         },
         "check_count": 6,
         "failed_checks": [],
@@ -36,7 +36,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260430-012748/validate-ai-config.log"
+                "log": "docs/ai/generated/logs/verify-20260501-010331/validate-ai-config.log"
             },
             {
                 "name": "validate-ai-catalog",
@@ -44,7 +44,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260430-012748/validate-ai-catalog.log"
+                "log": "docs/ai/generated/logs/verify-20260501-010331/validate-ai-catalog.log"
             },
             {
                 "name": "generate-ai-catalog-check",
@@ -52,15 +52,15 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260430-012748/generate-ai-catalog-check.log"
+                "log": "docs/ai/generated/logs/verify-20260501-010331/generate-ai-catalog-check.log"
             },
             {
                 "name": "generate-repo-structure-check",
                 "command": "php tools/ai/generate-repo-structure.php --check --with-scc",
                 "exit": 0,
                 "passed": true,
-                "auto_fix_applied": true,
-                "log": "docs/ai/generated/logs/verify-20260430-012748/generate-repo-structure-check.log"
+                "auto_fix_applied": false,
+                "log": "docs/ai/generated/logs/verify-20260501-010331/generate-repo-structure-check.log"
             },
             {
                 "name": "install-docs-check",
@@ -68,7 +68,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260430-012748/install-docs-check.log"
+                "log": "docs/ai/generated/logs/verify-20260501-010331/install-docs-check.log"
             },
             {
                 "name": "advisor-check",
@@ -76,7 +76,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260430-012748/advisor-check.log"
+                "log": "docs/ai/generated/logs/verify-20260501-010331/advisor-check.log"
             }
         ],
         "findings": [
@@ -111,6 +111,20 @@
             {
                 "severity": "WARNING",
                 "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": "docs/ai/project-context.md",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": "docs/ai/project-context.md",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
                 "file": ".github/instructions",
                 "message": "Managed file hash drift detected.",
                 "suggested_fix": "Review local customization and merge with source updates."
@@ -167,6 +181,76 @@
             {
                 "severity": "WARNING",
                 "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": ".opencode/skills",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": ".opencode/skills",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": "scripts/ai/common.sh",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": "scripts/ai/common.sh",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": "scripts/ai/pack-context.sh",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": "scripts/ai/pack-context.sh",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": "scripts/ai/pre-tool-use.sh",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": "scripts/ai/pre-tool-use.sh",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": "scripts/ai/run-repomix-context.sh",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": "scripts/ai/run-repomix-context.sh",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
                 "file": "scripts/ai/repomix-context-tree.sh",
                 "message": "Managed file hash drift detected.",
                 "suggested_fix": "Review local customization and merge with source updates."
@@ -189,6 +273,20 @@
                 "severity": "INFO",
                 "code": "CUSTOMISED_MANAGED_FILE",
                 "file": "scripts/ai/repomix-scc-router.sh",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": "scripts/ai/query-usage.sh",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": "scripts/ai/query-usage.sh",
                 "message": "Managed file appears customized locally.",
                 "suggested_fix": "Keep or merge local changes intentionally."
             },
@@ -315,6 +413,48 @@
                 "severity": "INFO",
                 "code": "CUSTOMISED_MANAGED_FILE",
                 "file": "tools/ai/advisor",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": ".schemas/project-signals.schema.json",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": ".schemas/project-signals.schema.json",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": ".schemas/project-scorecard.schema.json",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": ".schemas/project-scorecard.schema.json",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": ".schemas/advisor-recommendation.schema.json",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": ".schemas/advisor-recommendation.schema.json",
                 "message": "Managed file appears customized locally.",
                 "suggested_fix": "Keep or merge local changes intentionally."
             },
@@ -361,7 +501,7 @@
                 "suggested_fix": "Verify hook execution manually on Windows."
             }
         ],
-        "log_dir": "docs/ai/generated/logs/verify-20260430-012748"
+        "log_dir": "docs/ai/generated/logs/verify-20260501-010331"
     }
 }
 ```

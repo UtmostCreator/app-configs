@@ -1,19 +1,19 @@
 # Preflight
 
 - Status: `ok`
-- Generated at: `2026-04-29T23:27:28+00:00`
-- Commit: `45c4a3a`
-- Branch: `feat/installer-transaction-engine`
+- Generated at: `2026-04-30T23:03:21+00:00`
+- Commit: `dfa2cd8`
+- Branch: `main`
 - Recommended next action: `Run package-verify then adapter-plan.`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "preflight.json",
-    "generated_at": "2026-04-29T23:27:28+00:00",
+    "generated_at": "2026-04-30T23:03:21+00:00",
     "command": "php tools/ai/ai.php preflight",
-    "based_on_commit": "45c4a3a",
-    "based_on_branch": "feat/installer-transaction-engine",
+    "based_on_commit": "dfa2cd8",
+    "based_on_branch": "main",
     "input_hashes": {},
     "status": "ok",
     "score": null,

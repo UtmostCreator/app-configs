@@ -1,46 +1,35 @@
 # Install
 
-- Status: `ok`
-- Generated at: `2026-04-29T23:27:28+00:00`
-- Commit: `45c4a3a`
-- Branch: `feat/installer-transaction-engine`
-- Recommended next action: `Run install --backup-only before install --apply.`
+- Status: `blocked`
+- Generated at: `2026-04-30T23:03:22+00:00`
+- Commit: `dfa2cd8`
+- Branch: `main`
+- Recommended next action: `Add the required pack with --with or choose a profile that includes it.`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "install.json",
-    "generated_at": "2026-04-29T23:27:28+00:00",
-    "command": "php tools/ai/ai.php install --dry-run",
-    "based_on_commit": "45c4a3a",
-    "based_on_branch": "feat/installer-transaction-engine",
+    "generated_at": "2026-04-30T23:03:22+00:00",
+    "command": "php tools/ai/ai.php install",
+    "based_on_commit": "dfa2cd8",
+    "based_on_branch": "main",
     "input_hashes": {},
-    "status": "ok",
+    "status": "blocked",
     "score": null,
     "stale": false,
-    "recommended_next_action": "Run install --backup-only before install --apply.",
+    "recommended_next_action": "Add the required pack with --with or choose a profile that includes it.",
     "data": {
-        "status": "planned",
-        "mode": "safe-merge",
-        "runtime_mode": "AI_AGENT",
-        "profile": "full-governance",
-        "packs": [
-            "capabilities-extended-full",
-            "hooks-pack",
-            "ci-pack",
-            "base"
-        ],
-        "apply": false,
-        "summary": {
-            "create": 0,
-            "skip": 0
-        },
-        "install_kind": "reinstall",
-        "required_first": [
-            "preflight",
-            "package-verify",
-            "adapter-plan",
-            "install --backup-only"
+        "status": "blocked",
+        "reason": "post-install script requires missing pack: scripts-pack",
+        "script_id": "repomix-context",
+        "selected_packs": [
+            "adapter-copilot",
+            "adapter-opencode",
+            "capabilities-extended-lite",
+            "base",
+            "setup-docs",
+            "capabilities-core"
         ]
     }
 }

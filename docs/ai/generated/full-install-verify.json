@@ -1,6 +1,6 @@
 {
-    "status": "full",
-    "generated_at": "2026-04-29T23:27:52+00:00",
+    "status": "partial",
+    "generated_at": "2026-04-30T23:03:17+00:00",
     "root": "C:\\xampp\\htdocs\\app-configs",
     "steps": [
         {
@@ -18,10 +18,10 @@
             "id": "package-verify",
             "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php package-verify",
             "goal": "Template package lock is valid.",
-            "exit": 0,
+            "exit": 1,
             "artifact": "docs/ai/generated/package-verify.json",
-            "artifact_status": "ok",
-            "ok": true
+            "artifact_status": "failed",
+            "ok": false
         },
         {
             "order": 3,
@@ -78,20 +78,20 @@
             "id": "repomix-analyze",
             "command": "bash scripts/ai/repomix-context-tree.sh analyze .",
             "goal": "Repository structure/context signals are generated.",
-            "exit": 0,
+            "exit": 1,
             "artifact": ".repomix-context/tree-context/tree-plan.json",
             "artifact_status": "unknown",
-            "ok": true
+            "ok": false
         },
         {
             "order": 9,
             "id": "advisor-all",
             "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php advisor --all",
             "goal": "Advisor analyzes repo and suggests fixes.",
-            "exit": 0,
+            "exit": 1,
             "artifact": "docs/ai/generated/advisor.json",
             "artifact_status": "ok",
-            "ok": true
+            "ok": false
         },
         {
             "order": 10,
@@ -104,9 +104,14 @@
             "ok": true
         }
     ],
-    "failed_steps": [],
+    "failed_steps": [
+        "package-verify",
+        "repomix-analyze",
+        "advisor-all"
+    ],
     "recommended_next_steps": [
-        "1) Install state is full for this verification sequence.",
-        "2) Optionally run: php tools/ai/ai.php next."
+        "1) Re-run failed step(s) in listed order.",
+        "2) If advisor is blocked, review docs/ai/generated/advisor-secret-findings.json.",
+        "3) Re-run: php tools/ai/ai.php verify --changed."
     ]
 }

@@ -1,37 +1,22 @@
 {
     "schema_version": 1,
     "artifact": "scripts.json",
-    "generated_at": "2026-04-29T19:33:44+00:00",
-    "command": "php tools/ai/ai.php run-script --list",
-    "based_on_commit": "fdd960a",
-    "based_on_branch": "feat/installer-transaction-engine",
+    "generated_at": "2026-04-30T23:03:22+00:00",
+    "command": "php tools/ai/ai.php run-script repomix-context",
+    "based_on_commit": "unknown",
+    "based_on_branch": "unknown",
     "input_hashes": {},
-    "status": "ok",
+    "status": "failed",
     "score": null,
     "stale": false,
-    "recommended_next_action": "Run one with: php tools/ai/ai.php run-script <id> --dry-run",
+    "recommended_next_action": "Fix script/tool errors and retry.",
     "data": {
-        "scripts": [
-            {
-                "id": "repomix-context",
-                "label": "Generate Repomix context bundle",
-                "pack": "scripts-pack"
-            },
-            {
-                "id": "repomix-tree",
-                "label": "Generate Repomix context tree",
-                "pack": "scripts-pack"
-            },
-            {
-                "id": "repomix-scc-router",
-                "label": "Generate SCC-ranked Repomix context",
-                "pack": "scripts-pack"
-            },
-            {
-                "id": "pack-context",
-                "label": "Pack AI context bundle",
-                "pack": "scripts-pack"
-            }
+        "exit": 1,
+        "error": "missing required tools: bash, git, repomix",
+        "missing_tools": [
+            "bash",
+            "git",
+            "repomix"
         ]
     }
 }

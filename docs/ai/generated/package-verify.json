@@ -1,18 +1,55 @@
 {
     "schema_version": 1,
     "artifact": "package-verify.json",
-    "generated_at": "2026-04-29T23:27:27+00:00",
+    "generated_at": "2026-04-30T23:03:09+00:00",
     "command": "php tools/ai/ai.php package-verify",
-    "based_on_commit": "45c4a3a",
-    "based_on_branch": "feat/installer-transaction-engine",
+    "based_on_commit": "dfa2cd8",
+    "based_on_branch": "main",
     "input_hashes": {},
-    "status": "ok",
+    "status": "failed",
     "score": null,
     "stale": false,
-    "recommended_next_action": "Source package integrity verified.",
+    "recommended_next_action": "Refresh lock or revert unintended template drift.",
     "data": {
         "path": "packages/ai-universal-rules/package-lock.ai.json",
-        "mismatch_count": 0,
-        "mismatches": []
+        "mismatch_count": 6,
+        "mismatches": [
+            {
+                "path": "templates/opencode/agents/architect.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:ee2dc498fb57ccb257d4fadd1efcc99743dc0b2dfe31b19522cb42bccd6cfb85",
+                "current": "sha256:f85fd4853e300f0c8097a67f05cc7408a4308c1460df047962232b0ab1511a9e"
+            },
+            {
+                "path": "templates/opencode/agents/implementer.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:e2ddff98a8ab50d7f4b7d736c59fb74fb9a59e5fa5df20723d4bb573ebda6642",
+                "current": "sha256:f97c41effa175a117f9ae9bfebabbfb32fe8288720d7088e7506008790e09c4f"
+            },
+            {
+                "path": "templates/opencode/agents/refactorer.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:a57375d9e5d7548264d0450508ce3d882401f4ff19d9d9547302b85de3b166d1",
+                "current": "sha256:54c56187855de603d08e3a19565566f160f7ca0d572979d437525208633208eb"
+            },
+            {
+                "path": "templates/opencode/agents/release-auditor.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:d74feaeb34e7bd4f5dc0e70a65a0c14b5830aea571381583ddacab5881bec6fd",
+                "current": "sha256:0f190092fb76e96bb5de9703f507160a176cc577aacfd29822c41f3fc3dee6a2"
+            },
+            {
+                "path": "templates/opencode/agents/researcher.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:38421da9f0ecb4c3ff0e60bba7c0aed69bc5ce865fa29c6ec9ed591afb5dcfe4",
+                "current": "sha256:c8b000fa0809ddec5924e9fe8f2e70651c2cb8bc1473b7ec85383ceb01d4a0b5"
+            },
+            {
+                "path": "templates/opencode/agents/reviewer.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:72f2b8877957bcd3c2c1a3fef08d1e29f8c0065e738e8495ea42712d923b7c52",
+                "current": "sha256:9af76c534fc418c9dc21ae3eaac4d5f8a3e5fd1ab01b44ff6820e7bd253dd036"
+            }
+        ]
     }
 }

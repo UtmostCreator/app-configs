@@ -19,6 +19,12 @@
             "adapter-opencode",
             "capabilities-extended-lite"
         ],
+        "guarded": [
+            "dual",
+            "policy-pack",
+            "hooks-pack",
+            "evidence-pack"
+        ],
         "accelerated": [
             "dual",
             "scripts-pack",

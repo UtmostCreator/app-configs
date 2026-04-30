@@ -53,6 +53,16 @@ jobs:
       - name: Check starter bundle definitions
         run: php tools/ai/export-ai-universal-rules.php --check
 
+      - name: Ensure local-only secret override is not baked into workflows
+        run: |
+          set -euo pipefail
+          hits="$(grep -R --line-number -- '--allow-secret-findings=local-only' .github/workflows || true)"
+          if [[ -n "$hits" ]]; then
+            printf '%s\n' "$hits"
+            echo "FAIL: local-only secret override must not be committed in workflow defaults"
+            exit 1
+          fi
+
   lint:
     runs-on: ubuntu-latest
 

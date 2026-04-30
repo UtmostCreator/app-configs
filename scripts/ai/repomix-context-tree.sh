@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./common.sh
+source "$COMMON_DIR/common.sh"
+
 usage() {
     cat <<'EOF'
 Usage:
@@ -188,6 +192,8 @@ done
 
 ROOT="$(abs_path "$ROOT_INPUT")"
 [[ -d "$ROOT" ]] || die "root directory '$ROOT' does not exist"
+
+(cd "$ROOT" && require_clean_secret_scan "$@")
 
 add_winget_paths
 

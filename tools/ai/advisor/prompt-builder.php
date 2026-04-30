@@ -3,9 +3,12 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/registry.php';
+require_once __DIR__ . '/SecretScanGate.php';
 
 function aiAdvisorBuildPrompt(string $root): string
 {
+    aiAdvisorRequireCleanSecretScan($root);
+
     $dir = aiAdvisorGeneratedDir($root);
     $signals = aiAdvisorReadJson($dir . DIRECTORY_SEPARATOR . 'project-signals.json');
     $score = aiAdvisorReadJson($dir . DIRECTORY_SEPARATOR . 'project-scorecard.json');

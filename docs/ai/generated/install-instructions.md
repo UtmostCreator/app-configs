@@ -1,8 +1,8 @@
 # Install Instructions
 
-- Installed at: `2026-04-29T19:33:34+00:00`
+- Installed at: `2026-05-01T00:03:26+00:00`
 - Profile: `full-governance`
-- Packs: `base, setup-docs, capabilities-core, capabilities-extended-lite, capabilities-extended-full, adapter-copilot, adapter-opencode, scripts-pack, policy-pack, hooks-pack, ci-pack, evidence-pack, docs-reference-pack, delivery-pack, optional-agents-pack, optional-prompts-pack, preview-environments-pack, evaluation-pack, service-boundary-pack, mcp-boundaries-pack, advisor-pack`
+- Packs: `capabilities-extended-full, hooks-pack, ci-pack, scripts-pack, policy-pack, evidence-pack, adapter-opencode, capabilities-extended-lite, base, setup-docs, capabilities-core`
 
 ## Step Chain
 
@@ -66,45 +66,27 @@ OpenCode agent visibility note: agents in `.opencode/agents/` must not be marked
 
 ## Installed Files
 
-- `.github/agents`
-- `.github/copilot-instructions.md`
-- `.github/instructions`
-- `.github/prompts`
-- `.github/prompts-optional`
 - `.github/workflows/validate-ai-surface.yml`
 - `.opencode/agents`
-- `.opencode/agents-optional`
 - `.opencode/commands`
 - `.opencode/skills`
-- `.schemas/advisor-recommendation.schema.json`
 - `.schemas/evidence-event.schema.json`
-- `.schemas/project-scorecard.schema.json`
-- `.schemas/project-signals.schema.json`
 - `AGENTS.md`
 - `docs/ai/AI-GUARDRAILS.md`
-- `docs/ai/MCP-BOUNDARIES.md`
-- `docs/ai/agent-ops-checklist.md`
-- `docs/ai/agent-ops.md`
 - `docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md`
 - `docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md`
 - `docs/ai/capabilities/bug-regression`
 - `docs/ai/capabilities/dependency-upgrade`
-- `docs/ai/capabilities/evaluation-and-regression`
-- `docs/ai/capabilities/preview-environments`
 - `docs/ai/capabilities/project-context`
 - `docs/ai/capabilities/release-safety`
 - `docs/ai/capabilities/review-diff`
-- `docs/ai/capabilities/service-boundary-patterns`
 - `docs/ai/capabilities/verify-change`
 - `docs/ai/command-risk-taxonomy.md`
-- `docs/ai/context-packing.md`
-- `docs/ai/delivery/README.md`
-- `docs/ai/delivery/slice-card.template.md`
 - `docs/ai/failure-handling.md`
 - `docs/ai/hooks.md`
+- `docs/ai/mandatory-tools-install.md`
 - `docs/ai/project-context.md`
-- `docs/ai/scripts-reference.md`
-- `docs/ai/toolchain-requirements.md`
+- `docs/ai/repo-required-tools.md`
 - `docs/ai/validation.md`
 - `scripts/ai/ai-diff-context.sh`
 - `scripts/ai/ai-edit.sh`
@@ -115,11 +97,13 @@ OpenCode agent visibility note: agents in `.opencode/agents/` must not be marked
 - `scripts/ai/fd-files.sh`
 - `scripts/ai/gh-pr-context.sh`
 - `scripts/ai/git-forensics.sh`
+- `scripts/ai/install-mandatory-tools.sh`
 - `scripts/ai/pack-context.sh`
 - `scripts/ai/post-tool-use.sh`
 - `scripts/ai/pre-tool-use.sh`
 - `scripts/ai/preview-file.sh`
 - `scripts/ai/query-usage.sh`
+- `scripts/ai/repo-tool-inventory.sh`
 - `scripts/ai/repomix-context-tree.sh`
 - `scripts/ai/repomix-scc-router.sh`
 - `scripts/ai/rg-code.sh`
@@ -127,4 +111,3 @@ OpenCode agent visibility note: agents in `.opencode/agents/` must not be marked
 - `scripts/ai/watch-loop.sh`
 - `scripts/hooks/commit-msg.sh`
 - `scripts/hooks/pre-commit.sh`
-- `tools/ai/advisor`

@@ -1,11 +1,10 @@
 # Post Install
 
 - Profile: `full-governance`
-- Packs: `base, setup-docs, capabilities-core, capabilities-extended-lite, capabilities-extended-full, adapter-copilot, adapter-opencode, scripts-pack, policy-pack, hooks-pack, ci-pack, evidence-pack, docs-reference-pack, delivery-pack, optional-agents-pack, optional-prompts-pack, preview-environments-pack, evaluation-pack, service-boundary-pack, mcp-boundaries-pack, advisor-pack`
+- Packs: `capabilities-extended-full, hooks-pack, ci-pack, scripts-pack, policy-pack, evidence-pack, adapter-opencode, capabilities-extended-lite, base, setup-docs, capabilities-core`
 
 ## How To Use Installed Assets
 
-- Copilot assets: `.github/copilot-instructions.md`, `.github/instructions/`, `.github/agents/`, `.github/prompts/`.
 - OpenCode assets: `.opencode/agents/`, `.opencode/commands/`, `.opencode/skills/`.
 - Scripts installed under `scripts/ai/` for search, context packing, verify, rollback, and investigation flows.
 - Required tools: `bash`, `git`, `jq`, `rg`, `repomix`, `scc`.
@@ -29,9 +28,3 @@
 - Fill project facts and commands in `docs/ai/project-context.md`.
 - Confirm risk areas and approval-required changes.
 - Confirm active/inactive paths and runtime targets.
-
-## OpenCode Agent Visibility Troubleshooting
-
-- If OpenCode does not list agents, confirm files exist in `.opencode/agents/`.
-- Ensure each agent frontmatter uses `mode: subagent` and `hidden: false`.
-- Re-run installer apply if needed, then restart OpenCode CLI session.

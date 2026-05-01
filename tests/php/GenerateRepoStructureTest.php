@@ -10,6 +10,7 @@ class GenerateRepoStructureTest extends TestCase
 {
     private string $tmpDir;
     private string $repoRoot;
+    private string $phpBin;
 
     protected function setUp(): void
     {
@@ -19,6 +20,7 @@ class GenerateRepoStructureTest extends TestCase
         }
 
         $this->repoRoot = $root;
+        $this->phpBin = (string) PHP_BINARY;
         $this->tmpDir = sys_get_temp_dir() . '/repo_structure_test_' . uniqid('', true);
         mkdir($this->tmpDir, 0700, true);
     }
@@ -200,7 +202,8 @@ class GenerateRepoStructureTest extends TestCase
     private function runGenerator(string $fixture, string $metadataPath): array
     {
         $command = sprintf(
-            'php %s --root=. --output-dir=out --metadata=%s',
+            '%s %s --root=. --output-dir=out --metadata=%s',
+            escapeshellarg($this->phpBin),
             escapeshellarg($this->repoRoot . '/tools/ai/generate-repo-structure.php'),
             escapeshellarg($metadataPath)
         );

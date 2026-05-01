@@ -1,8 +1,8 @@
 # Verify
 
 - Status: `passed`
-- Generated at: `2026-04-30T23:03:34+00:00`
-- Commit: `dfa2cd8`
+- Generated at: `2026-05-01T00:01:02+00:00`
+- Commit: `28fe104`
 - Branch: `main`
 - Recommended next action: `Run next to choose commit or PR closeout action.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "verify.json",
-    "generated_at": "2026-04-30T23:03:34+00:00",
+    "generated_at": "2026-05-01T00:01:02+00:00",
     "command": "php tools/ai/ai.php verify --changed",
-    "based_on_commit": "dfa2cd8",
+    "based_on_commit": "28fe104",
     "based_on_branch": "main",
     "input_hashes": {},
     "status": "passed",
@@ -24,8 +24,8 @@
         "mode": "default",
         "summary": {
             "errors": 0,
-            "warnings": 27,
-            "info": 33
+            "warnings": 28,
+            "info": 34
         },
         "check_count": 6,
         "failed_checks": [],
@@ -36,7 +36,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260501-010331/validate-ai-config.log"
+                "log": "docs/ai/generated/logs/verify-20260501-020058/validate-ai-config.log"
             },
             {
                 "name": "validate-ai-catalog",
@@ -44,7 +44,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260501-010331/validate-ai-catalog.log"
+                "log": "docs/ai/generated/logs/verify-20260501-020058/validate-ai-catalog.log"
             },
             {
                 "name": "generate-ai-catalog-check",
@@ -52,7 +52,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260501-010331/generate-ai-catalog-check.log"
+                "log": "docs/ai/generated/logs/verify-20260501-020058/generate-ai-catalog-check.log"
             },
             {
                 "name": "generate-repo-structure-check",
@@ -60,7 +60,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260501-010331/generate-repo-structure-check.log"
+                "log": "docs/ai/generated/logs/verify-20260501-020058/generate-repo-structure-check.log"
             },
             {
                 "name": "install-docs-check",
@@ -68,7 +68,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260501-010331/install-docs-check.log"
+                "log": "docs/ai/generated/logs/verify-20260501-020058/install-docs-check.log"
             },
             {
                 "name": "advisor-check",
@@ -76,7 +76,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260501-010331/advisor-check.log"
+                "log": "docs/ai/generated/logs/verify-20260501-020058/advisor-check.log"
             }
         ],
         "findings": [
@@ -293,6 +293,20 @@
             {
                 "severity": "WARNING",
                 "code": "HASH_DRIFT_MANAGED_FILE",
+                "file": "docs/ai/failure-handling.md",
+                "message": "Managed file hash drift detected.",
+                "suggested_fix": "Review local customization and merge with source updates."
+            },
+            {
+                "severity": "INFO",
+                "code": "CUSTOMISED_MANAGED_FILE",
+                "file": "docs/ai/failure-handling.md",
+                "message": "Managed file appears customized locally.",
+                "suggested_fix": "Keep or merge local changes intentionally."
+            },
+            {
+                "severity": "WARNING",
+                "code": "HASH_DRIFT_MANAGED_FILE",
                 "file": ".github/workflows/validate-ai-surface.yml",
                 "message": "Managed file hash drift detected.",
                 "suggested_fix": "Review local customization and merge with source updates."
@@ -501,7 +515,7 @@
                 "suggested_fix": "Verify hook execution manually on Windows."
             }
         ],
-        "log_dir": "docs/ai/generated/logs/verify-20260501-010331"
+        "log_dir": "docs/ai/generated/logs/verify-20260501-020058"
     }
 }
 ```

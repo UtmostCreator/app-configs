@@ -18,6 +18,7 @@ use PHPUnit\Framework\TestCase;
 class CliToolsTest extends TestCase
 {
     private static string $repoRoot;
+    private static string $phpBin;
 
     public static function setUpBeforeClass(): void
     {
@@ -28,6 +29,7 @@ class CliToolsTest extends TestCase
         }
 
         self::$repoRoot = $root;
+        self::$phpBin = (string) PHP_BINARY;
     }
 
     /**
@@ -50,6 +52,7 @@ class CliToolsTest extends TestCase
             'PATH'              => (string) getenv('PATH'),
         ];
 
+        $command = $this->normalizePhpCommand($command);
         $process = proc_open($command, $descriptors, $pipes, self::$repoRoot, $env);
 
         $this->assertIsResource($process, "proc_open failed for: $command");
@@ -62,6 +65,14 @@ class CliToolsTest extends TestCase
         $exit = proc_close($process);
 
         return ['stdout' => $stdout, 'stderr' => $stderr, 'exit' => $exit];
+    }
+
+    private function normalizePhpCommand(string $command): string
+    {
+        if (str_starts_with($command, 'php ')) {
+            return escapeshellarg(self::$phpBin) . substr($command, 3);
+        }
+        return $command;
     }
 
     // ---- validate-ai-config.php (no flags; runs unconditionally) ----

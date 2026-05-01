@@ -1,8 +1,8 @@
 # Preflight
 
 - Status: `ok`
-- Generated at: `2026-04-30T23:03:21+00:00`
-- Commit: `dfa2cd8`
+- Generated at: `2026-04-30T23:59:42+00:00`
+- Commit: `28fe104`
 - Branch: `main`
 - Recommended next action: `Run package-verify then adapter-plan.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "preflight.json",
-    "generated_at": "2026-04-30T23:03:21+00:00",
+    "generated_at": "2026-04-30T23:59:42+00:00",
     "command": "php tools/ai/ai.php preflight",
-    "based_on_commit": "dfa2cd8",
+    "based_on_commit": "28fe104",
     "based_on_branch": "main",
     "input_hashes": {},
     "status": "ok",

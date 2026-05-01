@@ -10,6 +10,8 @@ Use this file as the durable reference for what the repository agents do, when t
 - Repo-local read-only commands are approval-free by default when they do not change files, install software, use privileged access, or mutate remote systems.
 - Read-only status does not override approval for secrets, credentials, private endpoints, billing, auth, admin surfaces, or external systems with side effects.
 - If an agent hits a command failure, record it using `docs/ai/failure-handling.md`.
+- For long-running commands, agents must use timeout/health controls when available and must not let commands run indefinitely without progress evidence.
+- Agents should prefer watchdog-enabled orchestration (for example `tools/ai/full-install-validation.php`) over direct long-running command execution.
 
 ## Live Repo Agents
 

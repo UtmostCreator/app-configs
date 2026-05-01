@@ -71,6 +71,30 @@ Use this mapping when both command-level retry policy and event-level evidence a
 - For `verification-failed`, fix or explain the underlying issue before rerunning the check.
 - If two attempts fail for the same reason, stop looping and record the blocker.
 
+## Long-Running Command Controls
+
+- For long-running checks, use watchdog-enabled wrappers when available.
+- Require three guardrails for long runs: **timeout**, **cancellation**, and **heartbeat logging**.
+- Treat commands with no output beyond the idle threshold as unhealthy and terminate/retry according to policy.
+- Prefer bounded retries (`<=1` retry by default) over infinite rerun loops.
+- If cancellation is requested, terminate safely, persist logs, and mark the stage as `cancelled`.
+
+Recommended repository runner:
+
+```bash
+php tools/ai/full-install-validation.php --smoke --with-scc --timeout-sec=300 --idle-timeout-sec=120 --heartbeat-sec=5 --clear-cancel
+```
+
+Full mode (includes apply and phpunit):
+
+```bash
+php tools/ai/full-install-validation.php --profile=full-governance --mode=safe-merge --with-scc --apply --timeout-sec=900 --idle-timeout-sec=300 --heartbeat-sec=5 --retries=1 --clear-cancel
+```
+
+Cancellation flag:
+
+- Create `docs/ai/generated/full-install-validation.cancel` during execution to request graceful termination.
+
 ## Scenario Matrix
 
 | Scenario                                                       | Category                                    | Treat It As                     | Record                                  | What To Avoid                                    |

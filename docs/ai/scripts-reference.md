@@ -46,6 +46,16 @@ This document explains installer, validation, generation, and context scripts ma
   - Runs the ordered full-install verification chain (preflight -> package verify -> plan -> dry-run -> validation -> repomix -> advisor -> verify).
   - Writes `docs/ai/generated/full-install-verify.json` and `docs/ai/generated/full-install-verify.md`.
   - Reports whether install state is `full` or `partial`, which steps ran, and ordered remediation steps.
+- `php tools/ai/full-install-validation.php`
+  - One-command 0-100 validation runner for install, verification, inventory, linting, and tests.
+  - Includes watchdog controls: timeout, idle-timeout, heartbeat logs, retry policy, and cancellation flag.
+  - Writes `docs/ai/generated/full-install-validation.{json,md,log}`.
+  - Fast default excludes the heaviest gates (`phpunit`, deep full-install verify) unless explicitly enabled.
+  - Use `--release-gate` for major releases to enable heavy gates.
+  - Optional flags: `--include-phpunit`, `--include-deep-verify`.
+  - Smoke mode example: `php tools/ai/full-install-validation.php --smoke --with-scc --timeout-sec=300 --idle-timeout-sec=120 --heartbeat-sec=5 --clear-cancel`.
+  - Full mode example: `php tools/ai/full-install-validation.php --profile=full-governance --mode=safe-merge --with-scc --apply --timeout-sec=900 --idle-timeout-sec=300 --heartbeat-sec=5 --retries=1 --clear-cancel`.
+  - Release-gate example: `php tools/ai/full-install-validation.php --profile=full-governance --mode=safe-merge --with-scc --apply --release-gate --timeout-sec=900 --idle-timeout-sec=300 --heartbeat-sec=5 --retries=1 --clear-cancel`.
 - `php tools/ai/export-ai-universal-rules.php`
   - Verifies or exports package release bundles.
 

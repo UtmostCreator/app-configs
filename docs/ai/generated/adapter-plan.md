@@ -1,8 +1,8 @@
 # Adapter plan
 
 - Status: `ok`
-- Generated at: `2026-04-30T23:03:09+00:00`
-- Commit: `dfa2cd8`
+- Generated at: `2026-04-30T23:59:36+00:00`
+- Commit: `28fe104`
 - Branch: `main`
 - Recommended next action: `Run install --dry-run then install --backup-only before apply.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "adapter-plan.json",
-    "generated_at": "2026-04-30T23:03:09+00:00",
+    "generated_at": "2026-04-30T23:59:36+00:00",
     "command": "php tools/ai/ai.php adapter-plan",
-    "based_on_commit": "dfa2cd8",
+    "based_on_commit": "28fe104",
     "based_on_branch": "main",
     "input_hashes": {},
     "status": "ok",

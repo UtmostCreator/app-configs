@@ -1,0 +1,3970 @@
+{
+    "status": "failed",
+    "generated_at": "2026-04-30T23:59:34+00:00",
+    "root": "C:\\xampp\\htdocs\\app-configs",
+    "profile": "full-governance",
+    "mode": "safe-merge",
+    "with_scc": true,
+    "apply": true,
+    "smoke": false,
+    "release_gate": false,
+    "include_phpunit": false,
+    "include_deep_verify": false,
+    "timeout_sec": 600,
+    "idle_timeout_sec": 180,
+    "heartbeat_sec": 5,
+    "retries": 1,
+    "cancel_flag": "C:\\xampp\\htdocs\\app-configs/docs/ai/generated/full-install-validation.cancel",
+    "log_file": "docs/ai/generated/full-install-validation.log",
+    "stages": [
+        {
+            "id": "preflight",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php preflight",
+                "exit": 0,
+                "attempts": 1,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 0.6684420108795166,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "package-verify",
+            "ok": false,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php package-verify",
+                "exit": 1,
+                "attempts": 2,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 0.5909430980682373,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "adapter-plan",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php adapter-plan --profile full-governance --mode safe-merge --force --allow-core-overwrite --reinstall",
+                "exit": 0,
+                "attempts": 1,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 0.5392248630523682,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "install-dry-run",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php install --profile full-governance --mode safe-merge --force --allow-core-overwrite --reinstall --dry-run",
+                "exit": 0,
+                "attempts": 1,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 0.929940938949585,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "install-backup-only",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php install --backup-only --apply --profile full-governance --mode safe-merge --force --allow-core-overwrite --reinstall",
+                "exit": 0,
+                "attempts": 1,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 0.881519079208374,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "install-apply",
+            "ok": false,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php install --apply --profile full-governance --mode safe-merge --force --allow-core-overwrite --reinstall --backup install-20260430-235938",
+                "exit": 1,
+                "attempts": 2,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 2.8394880294799805,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "bash-lint-all",
+            "ok": true,
+            "data": {
+                "checked_files": 55
+            }
+        },
+        {
+            "id": "php-lint-all",
+            "ok": true,
+            "data": {
+                "checked_files": 61
+            }
+        },
+        {
+            "id": "json-parse-all",
+            "ok": false,
+            "data": {
+                "checked_files": 91
+            }
+        },
+        {
+            "id": "yaml-parse-all",
+            "ok": true,
+            "data": {
+                "checked_files": 7,
+                "skipped": true,
+                "reason": "yq not found"
+            }
+        },
+        {
+            "id": "run-script-list",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php run-script --list",
+                "exit": 0,
+                "attempts": 1,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 0.5541009902954102,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "run-script-dry-run-all",
+            "ok": true,
+            "data": {
+                "scripts": [
+                    {
+                        "id": "repomix-context",
+                        "exit": 0,
+                        "attempts": 1
+                    },
+                    {
+                        "id": "repomix-tree",
+                        "exit": 0,
+                        "attempts": 1
+                    },
+                    {
+                        "id": "repomix-scc-router",
+                        "exit": 0,
+                        "attempts": 1
+                    },
+                    {
+                        "id": "pack-context",
+                        "exit": 0,
+                        "attempts": 1
+                    },
+                    {
+                        "id": "repo-tool-inventory",
+                        "exit": 0,
+                        "attempts": 1
+                    },
+                    {
+                        "id": "install-mandatory-tools",
+                        "exit": 0,
+                        "attempts": 1
+                    }
+                ]
+            }
+        },
+        {
+            "id": "validate-install-surface",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/validate-install-surface.php --strict",
+                "exit": 0,
+                "attempts": 1,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 0.3203139305114746,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "validate-ai-config",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/validate-ai-config.php",
+                "exit": 0,
+                "attempts": 1,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 0.3223459720611572,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "validate-ai-catalog",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/validate-ai-catalog.php",
+                "exit": 0,
+                "attempts": 1,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 0.3204481601715088,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "generate-ai-catalog-check",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/generate-ai-catalog.php --check",
+                "exit": 0,
+                "attempts": 1,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 0.35263705253601074,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "generate-repo-structure-check",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/generate-repo-structure.php --check --with-scc",
+                "exit": 0,
+                "attempts": 2,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 0.6209690570831299,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "validate-generated-artifacts",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/validate-generated-artifacts.php",
+                "exit": 0,
+                "attempts": 1,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 23.88453984260559,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "verify-json",
+            "ok": true,
+            "data": {
+                "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php verify --json",
+                "exit": 0,
+                "attempts": 1,
+                "timed_out": false,
+                "cancelled": false,
+                "duration_sec": 3.8604540824890137,
+                "idle_timed_out": false
+            }
+        },
+        {
+            "id": "verify-full-install",
+            "ok": true,
+            "data": {
+                "skipped": true,
+                "reason": "enable with --include-deep-verify or --release-gate"
+            }
+        },
+        {
+            "id": "phpunit",
+            "ok": true,
+            "data": {
+                "skipped": true,
+                "reason": "enable with --include-phpunit or --release-gate"
+            }
+        }
+    ],
+    "shell_inventory": {
+        "files": [
+            "reference/php/create-design-patterns-structure.sh",
+            "scripts/ai/ai-diff-context.sh",
+            "scripts/ai/ai-edit.sh",
+            "scripts/ai/ai-rollback.sh",
+            "scripts/ai/ai-search.sh",
+            "scripts/ai/ai-verify.sh",
+            "scripts/ai/common.sh",
+            "scripts/ai/fd-files.sh",
+            "scripts/ai/gh-pr-context.sh",
+            "scripts/ai/git-forensics.sh",
+            "scripts/ai/install-mandatory-tools.sh",
+            "scripts/ai/pack-context.sh",
+            "scripts/ai/post-tool-use.sh",
+            "scripts/ai/pre-tool-use.sh",
+            "scripts/ai/preview-file.sh",
+            "scripts/ai/query-usage.sh",
+            "scripts/ai/repo-tool-inventory.sh",
+            "scripts/ai/repomix-context-tree.sh",
+            "scripts/ai/repomix-scc-router.sh",
+            "scripts/ai/rg-code.sh",
+            "scripts/ai/run-repomix-context.sh",
+            "scripts/ai/session-checkpoint.sh",
+            "scripts/ai/watch-loop.sh",
+            "scripts/copilot/ai-diff-context.sh",
+            "scripts/copilot/ai-edit.sh",
+            "scripts/copilot/ai-rollback.sh",
+            "scripts/copilot/ai-search.sh",
+            "scripts/copilot/ai-verify.sh",
+            "scripts/copilot/common.sh",
+            "scripts/copilot/fd-files.sh",
+            "scripts/copilot/gh-pr-context.sh",
+            "scripts/copilot/git-forensics.sh",
+            "scripts/copilot/pack-context.sh",
+            "scripts/copilot/post-tool-use.sh",
+            "scripts/copilot/pre-tool-use.sh",
+            "scripts/copilot/preview-file.sh",
+            "scripts/copilot/query-usage.sh",
+            "scripts/copilot/repomix-context-tree.sh",
+            "scripts/copilot/repomix-scc-router.sh",
+            "scripts/copilot/rg-code.sh",
+            "scripts/copilot/run-repomix-context.sh",
+            "scripts/copilot/watch-loop.sh",
+            "scripts/doctor.sh",
+            "scripts/hooks/commit-msg.sh",
+            "scripts/hooks/pre-commit.sh",
+            "tests/fixtures/repos/blank-generic/setup.sh",
+            "tests/fixtures/repos/existing-copilot/setup.sh",
+            "tests/fixtures/repos/existing-opencode/setup.sh",
+            "tests/fixtures/repos/minimal/setup.sh",
+            "tools/ai/install-ai-kit.sh",
+            "tools/ai/install-copilot-kit.sh",
+            "tools/ai/install/base.sh",
+            "tools/ai/install/lib.sh",
+            "tools/ai/install/runtime-copilot.sh",
+            "tools/ai/install/runtime-opencode.sh"
+        ],
+        "total": 55,
+        "scc_enabled": true,
+        "items": [
+            {
+                "path": "reference/php/create-design-patterns-structure.sh",
+                "scc": {
+                    "lines": 59,
+                    "code": 43,
+                    "complexity": 3
+                }
+            },
+            {
+                "path": "scripts/ai/ai-diff-context.sh",
+                "scc": {
+                    "lines": 242,
+                    "code": 198,
+                    "complexity": 29
+                }
+            },
+            {
+                "path": "scripts/ai/ai-edit.sh",
+                "scc": {
+                    "lines": 138,
+                    "code": 119,
+                    "complexity": 12
+                }
+            },
+            {
+                "path": "scripts/ai/ai-rollback.sh",
+                "scc": {
+                    "lines": 134,
+                    "code": 114,
+                    "complexity": 18
+                }
+            },
+            {
+                "path": "scripts/ai/ai-search.sh",
+                "scc": {
+                    "lines": 52,
+                    "code": 44,
+                    "complexity": 2
+                }
+            },
+            {
+                "path": "scripts/ai/ai-verify.sh",
+                "scc": {
+                    "lines": 75,
+                    "code": 61,
+                    "complexity": 23
+                }
+            },
+            {
+                "path": "scripts/ai/common.sh",
+                "scc": {
+                    "lines": 193,
+                    "code": 168,
+                    "complexity": 29
+                }
+            },
+            {
+                "path": "scripts/ai/fd-files.sh",
+                "scc": {
+                    "lines": 75,
+                    "code": 62,
+                    "complexity": 9
+                }
+            },
+            {
+                "path": "scripts/ai/gh-pr-context.sh",
+                "scc": {
+                    "lines": 133,
+                    "code": 113,
+                    "complexity": 26
+                }
+            },
+            {
+                "path": "scripts/ai/git-forensics.sh",
+                "scc": {
+                    "lines": 82,
+                    "code": 70,
+                    "complexity": 13
+                }
+            },
+            {
+                "path": "scripts/ai/install-mandatory-tools.sh",
+                "scc": {
+                    "lines": 127,
+                    "code": 103,
+                    "complexity": 20
+                }
+            },
+            {
+                "path": "scripts/ai/pack-context.sh",
+                "scc": {
+                    "lines": 51,
+                    "code": 41,
+                    "complexity": 7
+                }
+            },
+            {
+                "path": "scripts/ai/post-tool-use.sh",
+                "scc": {
+                    "lines": 43,
+                    "code": 36,
+                    "complexity": 3
+                }
+            },
+            {
+                "path": "scripts/ai/pre-tool-use.sh",
+                "scc": {
+                    "lines": 269,
+                    "code": 207,
+                    "complexity": 61
+                }
+            },
+            {
+                "path": "scripts/ai/preview-file.sh",
+                "scc": {
+                    "lines": 58,
+                    "code": 47,
+                    "complexity": 8
+                }
+            },
+            {
+                "path": "scripts/ai/query-usage.sh",
+                "scc": {
+                    "lines": 62,
+                    "code": 52,
+                    "complexity": 8
+                }
+            },
+            {
+                "path": "scripts/ai/repo-tool-inventory.sh",
+                "scc": {
+                    "lines": 101,
+                    "code": 83,
+                    "complexity": 8
+                }
+            },
+            {
+                "path": "scripts/ai/repomix-context-tree.sh",
+                "scc": {
+                    "lines": 498,
+                    "code": 440,
+                    "complexity": 65
+                }
+            },
+            {
+                "path": "scripts/ai/repomix-scc-router.sh",
+                "scc": {
+                    "lines": 807,
+                    "code": 711,
+                    "complexity": 100
+                }
+            },
+            {
+                "path": "scripts/ai/rg-code.sh",
+                "scc": {
+                    "lines": 137,
+                    "code": 122,
+                    "complexity": 6
+                }
+            },
+            {
+                "path": "scripts/ai/run-repomix-context.sh",
+                "scc": {
+                    "lines": 108,
+                    "code": 84,
+                    "complexity": 18
+                }
+            },
+            {
+                "path": "scripts/ai/session-checkpoint.sh",
+                "scc": {
+                    "lines": 26,
+                    "code": 18,
+                    "complexity": 2
+                }
+            },
+            {
+                "path": "scripts/ai/watch-loop.sh",
+                "scc": {
+                    "lines": 36,
+                    "code": 28,
+                    "complexity": 2
+                }
+            },
+            {
+                "path": "scripts/copilot/ai-diff-context.sh",
+                "scc": {
+                    "lines": 242,
+                    "code": 198,
+                    "complexity": 29
+                }
+            },
+            {
+                "path": "scripts/copilot/ai-edit.sh",
+                "scc": {
+                    "lines": 138,
+                    "code": 119,
+                    "complexity": 12
+                }
+            },
+            {
+                "path": "scripts/copilot/ai-rollback.sh",
+                "scc": {
+                    "lines": 134,
+                    "code": 114,
+                    "complexity": 18
+                }
+            },
+            {
+                "path": "scripts/copilot/ai-search.sh",
+                "scc": {
+                    "lines": 52,
+                    "code": 44,
+                    "complexity": 2
+                }
+            },
+            {
+                "path": "scripts/copilot/ai-verify.sh",
+                "scc": {
+                    "lines": 75,
+                    "code": 61,
+                    "complexity": 23
+                }
+            },
+            {
+                "path": "scripts/copilot/common.sh",
+                "scc": {
+                    "lines": 160,
+                    "code": 140,
+                    "complexity": 21
+                }
+            },
+            {
+                "path": "scripts/copilot/fd-files.sh",
+                "scc": {
+                    "lines": 75,
+                    "code": 62,
+                    "complexity": 9
+                }
+            },
+            {
+                "path": "scripts/copilot/gh-pr-context.sh",
+                "scc": {
+                    "lines": 133,
+                    "code": 113,
+                    "complexity": 26
+                }
+            },
+            {
+                "path": "scripts/copilot/git-forensics.sh",
+                "scc": {
+                    "lines": 82,
+                    "code": 70,
+                    "complexity": 13
+                }
+            },
+            {
+                "path": "scripts/copilot/pack-context.sh",
+                "scc": {
+                    "lines": 51,
+                    "code": 41,
+                    "complexity": 7
+                }
+            },
+            {
+                "path": "scripts/copilot/post-tool-use.sh",
+                "scc": {
+                    "lines": 43,
+                    "code": 36,
+                    "complexity": 3
+                }
+            },
+            {
+                "path": "scripts/copilot/pre-tool-use.sh",
+                "scc": {
+                    "lines": 269,
+                    "code": 207,
+                    "complexity": 61
+                }
+            },
+            {
+                "path": "scripts/copilot/preview-file.sh",
+                "scc": {
+                    "lines": 58,
+                    "code": 47,
+                    "complexity": 8
+                }
+            },
+            {
+                "path": "scripts/copilot/query-usage.sh",
+                "scc": {
+                    "lines": 62,
+                    "code": 52,
+                    "complexity": 8
+                }
+            },
+            {
+                "path": "scripts/copilot/repomix-context-tree.sh",
+                "scc": {
+                    "lines": 498,
+                    "code": 440,
+                    "complexity": 65
+                }
+            },
+            {
+                "path": "scripts/copilot/repomix-scc-router.sh",
+                "scc": {
+                    "lines": 807,
+                    "code": 711,
+                    "complexity": 100
+                }
+            },
+            {
+                "path": "scripts/copilot/rg-code.sh",
+                "scc": {
+                    "lines": 137,
+                    "code": 122,
+                    "complexity": 6
+                }
+            },
+            {
+                "path": "scripts/copilot/run-repomix-context.sh",
+                "scc": {
+                    "lines": 108,
+                    "code": 84,
+                    "complexity": 18
+                }
+            },
+            {
+                "path": "scripts/copilot/watch-loop.sh",
+                "scc": {
+                    "lines": 36,
+                    "code": 28,
+                    "complexity": 2
+                }
+            },
+            {
+                "path": "scripts/doctor.sh",
+                "scc": {
+                    "lines": 118,
+                    "code": 101,
+                    "complexity": 13
+                }
+            },
+            {
+                "path": "scripts/hooks/commit-msg.sh",
+                "scc": {
+                    "lines": 18,
+                    "code": 13,
+                    "complexity": 3
+                }
+            },
+            {
+                "path": "scripts/hooks/pre-commit.sh",
+                "scc": {
+                    "lines": 49,
+                    "code": 40,
+                    "complexity": 13
+                }
+            },
+            {
+                "path": "tests/fixtures/repos/blank-generic/setup.sh",
+                "scc": {
+                    "lines": 15,
+                    "code": 11,
+                    "complexity": 0
+                }
+            },
+            {
+                "path": "tests/fixtures/repos/existing-copilot/setup.sh",
+                "scc": {
+                    "lines": 20,
+                    "code": 14,
+                    "complexity": 0
+                }
+            },
+            {
+                "path": "tests/fixtures/repos/existing-opencode/setup.sh",
+                "scc": {
+                    "lines": 25,
+                    "code": 20,
+                    "complexity": 0
+                }
+            },
+            {
+                "path": "tests/fixtures/repos/minimal/setup.sh",
+                "scc": {
+                    "lines": 32,
+                    "code": 22,
+                    "complexity": 1
+                }
+            },
+            {
+                "path": "tools/ai/install-ai-kit.sh",
+                "scc": {
+                    "lines": 6,
+                    "code": 3,
+                    "complexity": 1
+                }
+            },
+            {
+                "path": "tools/ai/install-copilot-kit.sh",
+                "scc": {
+                    "lines": 62,
+                    "code": 53,
+                    "complexity": 2
+                }
+            },
+            {
+                "path": "tools/ai/install/base.sh",
+                "scc": {
+                    "lines": 45,
+                    "code": 38,
+                    "complexity": 4
+                }
+            },
+            {
+                "path": "tools/ai/install/lib.sh",
+                "scc": {
+                    "lines": 73,
+                    "code": 59,
+                    "complexity": 8
+                }
+            },
+            {
+                "path": "tools/ai/install/runtime-copilot.sh",
+                "scc": {
+                    "lines": 43,
+                    "code": 36,
+                    "complexity": 4
+                }
+            },
+            {
+                "path": "tools/ai/install/runtime-opencode.sh",
+                "scc": {
+                    "lines": 42,
+                    "code": 35,
+                    "complexity": 4
+                }
+            }
+        ]
+    },
+    "php_inventory": {
+        "files": [
+            "reference/php/design-patterns/behavioral/delegation/example-real-world/delegation.php",
+            "reference/php/design-patterns/behavioral/strategy/example-real-world/strategy-1.php",
+            "reference/php/design-patterns/behavioral/strategy/example-real-world/strategy-2.php",
+            "reference/php/design-patterns/creational/singleton/example-thread-safe/singleton.php",
+            "reference/php/design-patterns/structural/composite/example-basic/composite.php",
+            "reference/php/design-principles/Composition.php",
+            "reference/php/design-principles/SOLID.php",
+            "reference/php/php-built-ins/using-arrays.php",
+            "tests/php/AdvisorDriftTest.php",
+            "tests/php/AdvisorScannerTest.php",
+            "tests/php/AdvisorSchemaTest.php",
+            "tests/php/AdvisorSecretScanTest.php",
+            "tests/php/AdvisorTokenBudgetTest.php",
+            "tests/php/AiCatalogLibIoTest.php",
+            "tests/php/AiCatalogLibTest.php",
+            "tests/php/CliToolsTest.php",
+            "tests/php/GenerateRepoStructureTest.php",
+            "tests/php/InstallerSafetyTest.php",
+            "tests/php/bootstrap.php",
+            "tools/ai/advisor/SecretScanGate.php",
+            "tools/ai/advisor/drift.php",
+            "tools/ai/advisor/packer.php",
+            "tools/ai/advisor/prompt-builder.php",
+            "tools/ai/advisor/registry.php",
+            "tools/ai/advisor/scanner.php",
+            "tools/ai/advisor/scorer.php",
+            "tools/ai/advisor/secret-scan.php",
+            "tools/ai/advisor/submitter.php",
+            "tools/ai/advisor/token-budget.php",
+            "tools/ai/advisor/validator.php",
+            "tools/ai/ai.php",
+            "tools/ai/ai_catalog_lib.php",
+            "tools/ai/ai_output_lib.php",
+            "tools/ai/build-context-pack.php",
+            "tools/ai/export-ai-universal-rules.php",
+            "tools/ai/generate-ai-catalog.php",
+            "tools/ai/generate-repo-structure.php",
+            "tools/ai/install-ai-kit.php",
+            "tools/ai/install/config.php",
+            "tools/ai/install/core.php",
+            "tools/ai/install/docs.php",
+            "tools/ai/install/manifest.php",
+            "tools/ai/install/packs.php",
+            "tools/ai/install/planner.php",
+            "tools/ai/install/profiles.php",
+            "tools/ai/install/script-registry.php",
+            "tools/ai/install/script-runner.php",
+            "tools/ai/install/toolchain-registry.php",
+            "tools/ai/install/toolchain.php",
+            "tools/ai/install/verify-install-result.php",
+            "tools/ai/install/verify-manifest.php",
+            "tools/ai/install/verify-no-overwrite.php",
+            "tools/ai/secret-scan.php",
+            "tools/ai/suggest-verification.php",
+            "tools/ai/validate-adapter-drift.php",
+            "tools/ai/validate-ai-catalog.php",
+            "tools/ai/validate-ai-config.php",
+            "tools/ai/validate-generated-artifacts.php",
+            "tools/ai/validate-install-surface.php",
+            "tools/ai/validate-placeholders.php",
+            "tools/ai/verify-full-install.php"
+        ],
+        "total": 61,
+        "scc_enabled": false,
+        "items": [
+            {
+                "path": "reference/php/design-patterns/behavioral/delegation/example-real-world/delegation.php",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/strategy/example-real-world/strategy-1.php",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/strategy/example-real-world/strategy-2.php",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/creational/singleton/example-thread-safe/singleton.php",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/structural/composite/example-basic/composite.php",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-principles/Composition.php",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-principles/SOLID.php",
+                "scc": null
+            },
+            {
+                "path": "reference/php/php-built-ins/using-arrays.php",
+                "scc": null
+            },
+            {
+                "path": "tests/php/AdvisorDriftTest.php",
+                "scc": null
+            },
+            {
+                "path": "tests/php/AdvisorScannerTest.php",
+                "scc": null
+            },
+            {
+                "path": "tests/php/AdvisorSchemaTest.php",
+                "scc": null
+            },
+            {
+                "path": "tests/php/AdvisorSecretScanTest.php",
+                "scc": null
+            },
+            {
+                "path": "tests/php/AdvisorTokenBudgetTest.php",
+                "scc": null
+            },
+            {
+                "path": "tests/php/AiCatalogLibIoTest.php",
+                "scc": null
+            },
+            {
+                "path": "tests/php/AiCatalogLibTest.php",
+                "scc": null
+            },
+            {
+                "path": "tests/php/CliToolsTest.php",
+                "scc": null
+            },
+            {
+                "path": "tests/php/GenerateRepoStructureTest.php",
+                "scc": null
+            },
+            {
+                "path": "tests/php/InstallerSafetyTest.php",
+                "scc": null
+            },
+            {
+                "path": "tests/php/bootstrap.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/advisor/SecretScanGate.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/advisor/drift.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/advisor/packer.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/advisor/prompt-builder.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/advisor/registry.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/advisor/scanner.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/advisor/scorer.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/advisor/secret-scan.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/advisor/submitter.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/advisor/token-budget.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/advisor/validator.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/ai.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/ai_catalog_lib.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/ai_output_lib.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/build-context-pack.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/export-ai-universal-rules.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/generate-ai-catalog.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/generate-repo-structure.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install-ai-kit.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/config.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/core.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/docs.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/manifest.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/packs.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/planner.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/profiles.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/script-registry.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/script-runner.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/toolchain-registry.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/toolchain.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/verify-install-result.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/verify-manifest.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/install/verify-no-overwrite.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/secret-scan.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/suggest-verification.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/validate-adapter-drift.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/validate-ai-catalog.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/validate-ai-config.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/validate-generated-artifacts.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/validate-install-surface.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/validate-placeholders.php",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/verify-full-install.php",
+                "scc": null
+            }
+        ]
+    },
+    "json_inventory": {
+        "files": [
+            ".ai-install-manifest.json",
+            ".eslintrc.json",
+            ".github/hooks/tool-guardian.json",
+            ".github/hooks/tool-policy.json",
+            ".prettierrc.json",
+            ".schemas/advisor-recommendation.schema.json",
+            ".schemas/ai-catalog.schema.json",
+            ".schemas/ai-handoff.schema.json",
+            ".schemas/ai-universal-rules-manifest.schema.json",
+            ".schemas/evidence-event.schema.json",
+            ".schemas/generated-artifacts.schema.json",
+            ".schemas/project-placeholders.schema.json",
+            ".schemas/project-scorecard.schema.json",
+            ".schemas/project-signals.schema.json",
+            ".schemas/verification-matrix.schema.json",
+            ".stylelintrc.json",
+            "composer.json",
+            "configs/karabiner/karabiner.json",
+            "configs/php/pint.json",
+            "configs/vscode/keybindings.json",
+            "configs/vscode/launch.json",
+            "configs/vscode/user/settings.json",
+            "configs/vscode/user/settings.minimal.json",
+            "configs/vscode/workspace-example.json",
+            "configs/vscode/workspace-template.json",
+            "docs/ai/capabilities/bug-regression/config.example.json",
+            "docs/ai/generated/adapter-plan.json",
+            "docs/ai/generated/adapter-validate.json",
+            "docs/ai/generated/advisor-baseline.json",
+            "docs/ai/generated/advisor-secret-findings.json",
+            "docs/ai/generated/advisor-token-budget.json",
+            "docs/ai/generated/advisor.json",
+            "docs/ai/generated/ai-commands.json",
+            "docs/ai/generated/artifacts.json",
+            "docs/ai/generated/ask.json",
+            "docs/ai/generated/auto-fix.json",
+            "docs/ai/generated/budget.json",
+            "docs/ai/generated/commit-msg.json",
+            "docs/ai/generated/conflicts.json",
+            "docs/ai/generated/decision-add.json",
+            "docs/ai/generated/diff-summary.json",
+            "docs/ai/generated/env-check.json",
+            "docs/ai/generated/estimate.json",
+            "docs/ai/generated/file-context.json",
+            "docs/ai/generated/find.json",
+            "docs/ai/generated/freshness.json",
+            "docs/ai/generated/full-install-verify.json",
+            "docs/ai/generated/hooks.json",
+            "docs/ai/generated/impact.json",
+            "docs/ai/generated/install-catalog.json",
+            "docs/ai/generated/install-docs.json",
+            "docs/ai/generated/install-instructions.json",
+            "docs/ai/generated/install-manifest.json",
+            "docs/ai/generated/install-transaction.json",
+            "docs/ai/generated/install.json",
+            "docs/ai/generated/instruction-audit.json",
+            "docs/ai/generated/logs.json",
+            "docs/ai/generated/next.json",
+            "docs/ai/generated/orphans.json",
+            "docs/ai/generated/package-lock.json",
+            "docs/ai/generated/package-verify.json",
+            "docs/ai/generated/packs.json",
+            "docs/ai/generated/placeholders.json",
+            "docs/ai/generated/pr-summary.json",
+            "docs/ai/generated/preflight.json",
+            "docs/ai/generated/project-scorecard.json",
+            "docs/ai/generated/project-signals.json",
+            "docs/ai/generated/project-snapshot.json",
+            "docs/ai/generated/rebase-state.json",
+            "docs/ai/generated/repo-structure.json",
+            "docs/ai/generated/risk.json",
+            "docs/ai/generated/rollback.json",
+            "docs/ai/generated/scripts.json",
+            "docs/ai/generated/session-resume.json",
+            "docs/ai/generated/symbols.json",
+            "docs/ai/generated/toolchain.json",
+            "docs/ai/generated/upgrade.json",
+            "docs/ai/generated/verify.json",
+            "docs/ai/generated/version.json",
+            "docs/ai/generated/why.json",
+            "docs/ai/generated/workflow.json",
+            "docs/ai/repo-directory-map.json",
+            "docs/ai/workflow-graph.json",
+            "packages/ai-universal-rules/catalog.json",
+            "packages/ai-universal-rules/manifest.json",
+            "packages/ai-universal-rules/package-lock.ai.json",
+            "packages/ai-universal-rules/templates/capabilities/bug-regression/config.example.json",
+            "tests/fixtures/json/allow-input.json",
+            "tests/fixtures/json/confirm-input.json",
+            "tests/fixtures/json/deny-input.json",
+            "tools/ai/rules/agnostic-leak-rules.json"
+        ],
+        "total": 91,
+        "scc_enabled": false,
+        "items": [
+            {
+                "path": ".ai-install-manifest.json",
+                "scc": null
+            },
+            {
+                "path": ".eslintrc.json",
+                "scc": null
+            },
+            {
+                "path": ".github/hooks/tool-guardian.json",
+                "scc": null
+            },
+            {
+                "path": ".github/hooks/tool-policy.json",
+                "scc": null
+            },
+            {
+                "path": ".prettierrc.json",
+                "scc": null
+            },
+            {
+                "path": ".schemas/advisor-recommendation.schema.json",
+                "scc": null
+            },
+            {
+                "path": ".schemas/ai-catalog.schema.json",
+                "scc": null
+            },
+            {
+                "path": ".schemas/ai-handoff.schema.json",
+                "scc": null
+            },
+            {
+                "path": ".schemas/ai-universal-rules-manifest.schema.json",
+                "scc": null
+            },
+            {
+                "path": ".schemas/evidence-event.schema.json",
+                "scc": null
+            },
+            {
+                "path": ".schemas/generated-artifacts.schema.json",
+                "scc": null
+            },
+            {
+                "path": ".schemas/project-placeholders.schema.json",
+                "scc": null
+            },
+            {
+                "path": ".schemas/project-scorecard.schema.json",
+                "scc": null
+            },
+            {
+                "path": ".schemas/project-signals.schema.json",
+                "scc": null
+            },
+            {
+                "path": ".schemas/verification-matrix.schema.json",
+                "scc": null
+            },
+            {
+                "path": ".stylelintrc.json",
+                "scc": null
+            },
+            {
+                "path": "composer.json",
+                "scc": null
+            },
+            {
+                "path": "configs/karabiner/karabiner.json",
+                "scc": null
+            },
+            {
+                "path": "configs/php/pint.json",
+                "scc": null
+            },
+            {
+                "path": "configs/vscode/keybindings.json",
+                "scc": null
+            },
+            {
+                "path": "configs/vscode/launch.json",
+                "scc": null
+            },
+            {
+                "path": "configs/vscode/user/settings.json",
+                "scc": null
+            },
+            {
+                "path": "configs/vscode/user/settings.minimal.json",
+                "scc": null
+            },
+            {
+                "path": "configs/vscode/workspace-example.json",
+                "scc": null
+            },
+            {
+                "path": "configs/vscode/workspace-template.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/bug-regression/config.example.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/adapter-plan.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/adapter-validate.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/advisor-baseline.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/advisor-secret-findings.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/advisor-token-budget.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/advisor.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/ai-commands.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/artifacts.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/ask.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/auto-fix.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/budget.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/commit-msg.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/conflicts.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/decision-add.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/diff-summary.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/env-check.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/estimate.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/file-context.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/find.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/freshness.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/full-install-verify.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/hooks.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/impact.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install-catalog.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install-docs.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install-instructions.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install-manifest.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install-transaction.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/instruction-audit.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/logs.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/next.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/orphans.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/package-lock.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/package-verify.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/packs.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/placeholders.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/pr-summary.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/preflight.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/project-scorecard.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/project-signals.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/project-snapshot.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/rebase-state.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/repo-structure.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/risk.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/rollback.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/scripts.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/session-resume.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/symbols.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/toolchain.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/upgrade.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/verify.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/version.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/why.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/workflow.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/repo-directory-map.json",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/workflow-graph.json",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/catalog.json",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/manifest.json",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/package-lock.ai.json",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/bug-regression/config.example.json",
+                "scc": null
+            },
+            {
+                "path": "tests/fixtures/json/allow-input.json",
+                "scc": null
+            },
+            {
+                "path": "tests/fixtures/json/confirm-input.json",
+                "scc": null
+            },
+            {
+                "path": "tests/fixtures/json/deny-input.json",
+                "scc": null
+            },
+            {
+                "path": "tools/ai/rules/agnostic-leak-rules.json",
+                "scc": null
+            }
+        ]
+    },
+    "yaml_inventory": {
+        "files": [
+            ".github/workflows/export-ai-universal-rules-preview.yml",
+            ".github/workflows/test-external-install.yml",
+            ".github/workflows/validate-ai-surface.yml",
+            ".lefthook.yml",
+            ".markdownlint-cli2.yaml",
+            "packages/ai-universal-rules/manifest.yml",
+            "policies/copilot/policy.yaml"
+        ],
+        "total": 7,
+        "scc_enabled": false,
+        "items": [
+            {
+                "path": ".github/workflows/export-ai-universal-rules-preview.yml",
+                "scc": null
+            },
+            {
+                "path": ".github/workflows/test-external-install.yml",
+                "scc": null
+            },
+            {
+                "path": ".github/workflows/validate-ai-surface.yml",
+                "scc": null
+            },
+            {
+                "path": ".lefthook.yml",
+                "scc": null
+            },
+            {
+                "path": ".markdownlint-cli2.yaml",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/manifest.yml",
+                "scc": null
+            },
+            {
+                "path": "policies/copilot/policy.yaml",
+                "scc": null
+            }
+        ]
+    },
+    "markdown_inventory": {
+        "files": [
+            ".copilot-logs/README.md",
+            ".github/agents/architect.agent.md",
+            ".github/agents/config-maintainer.agent.md",
+            ".github/agents/implementer.agent.md",
+            ".github/agents/refactorer.agent.md",
+            ".github/agents/release-auditor.agent.md",
+            ".github/agents/researcher.agent.md",
+            ".github/agents/reviewer.agent.md",
+            ".github/agents/workflow-auditor.agent.md",
+            ".github/copilot-instructions.md",
+            ".github/instructions/ai-workflow.instructions.md",
+            ".github/instructions/architecture.instructions.md",
+            ".github/instructions/ci.instructions.md",
+            ".github/instructions/config.instructions.md",
+            ".github/instructions/docs.instructions.md",
+            ".github/instructions/frontend.instructions.md",
+            ".github/instructions/php.instructions.md",
+            ".github/instructions/targets.instructions.md",
+            ".github/instructions/testing.instructions.md",
+            ".github/prompts/bug-regression.prompt.md",
+            ".github/prompts/docs-sync.prompt.md",
+            ".github/prompts/investigate-bug.prompt.md",
+            ".github/prompts/new-feature.prompt.md",
+            ".github/prompts/regression-test.prompt.md",
+            ".github/prompts/release-readiness.prompt.md",
+            ".github/prompts/review-code.prompt.md",
+            ".github/prompts/trace-regression.prompt.md",
+            ".github/pull_request_template.md",
+            ".github/skills/repo-investigation/SKILL.md",
+            ".opencode/agents/architect.md",
+            ".opencode/agents/implementer.md",
+            ".opencode/agents/refactorer.md",
+            ".opencode/agents/release-auditor.md",
+            ".opencode/agents/researcher.md",
+            ".opencode/agents/reviewer.md",
+            ".opencode/commands/bug-regression.md",
+            ".opencode/commands/plan-slice.md",
+            ".opencode/commands/review-diff.md",
+            ".opencode/commands/verify.md",
+            ".opencode/skills/bug-regression/SKILL.md",
+            ".opencode/skills/dependency-upgrade/SKILL.md",
+            ".opencode/skills/project-context/SKILL.md",
+            ".opencode/skills/project-stack/SKILL.md",
+            ".opencode/skills/release-safety/SKILL.md",
+            ".opencode/skills/review-diff/SKILL.md",
+            ".opencode/skills/verify-change/SKILL.md",
+            "AGENTS.md",
+            "CLAUDE.md",
+            "CONTRIBUTING.md",
+            "README.md",
+            "SECURITY.md",
+            "SUPPORT.md",
+            "configs/README.md",
+            "docs/ai/AI-GUARDRAILS.md",
+            "docs/ai/MCP-BOUNDARIES.md",
+            "docs/ai/POST-INSTALL.md",
+            "docs/ai/SETUP.md",
+            "docs/ai/adapter-contract.md",
+            "docs/ai/agent-ops-checklist.md",
+            "docs/ai/agent-ops.md",
+            "docs/ai/agents.md",
+            "docs/ai/approval-boundaries.md",
+            "docs/ai/architecture-locks.md",
+            "docs/ai/available-packs.md",
+            "docs/ai/capabilities/README.md",
+            "docs/ai/capabilities/adapter-drift/README.md",
+            "docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md",
+            "docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md",
+            "docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md",
+            "docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md",
+            "docs/ai/capabilities/bug-regression/CAPABILITY.md",
+            "docs/ai/capabilities/bug-regression/checklist.md",
+            "docs/ai/capabilities/bug-regression/examples.md",
+            "docs/ai/capabilities/bug-regression/gotchas.md",
+            "docs/ai/capabilities/bug-regression/reference.md",
+            "docs/ai/capabilities/config-change-safety/CAPABILITY.md",
+            "docs/ai/capabilities/dependency-upgrade/CAPABILITY.md",
+            "docs/ai/capabilities/dependency-upgrade/checklist.md",
+            "docs/ai/capabilities/dependency-upgrade/examples.md",
+            "docs/ai/capabilities/dependency-upgrade/gotchas.md",
+            "docs/ai/capabilities/dependency-upgrade/reference.md",
+            "docs/ai/capabilities/docs-sync/CAPABILITY.md",
+            "docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md",
+            "docs/ai/capabilities/evaluation-and-regression/GOLDEN_TASKS.md",
+            "docs/ai/capabilities/evaluation-and-regression/HUMAN_REVIEW_RULES.md",
+            "docs/ai/capabilities/evaluation-and-regression/REPLAY_RULES.md",
+            "docs/ai/capabilities/preview-environments/CAPABILITY.md",
+            "docs/ai/capabilities/preview-environments/CHECKLIST.md",
+            "docs/ai/capabilities/preview-environments/DATA_AND_SECRET_RULES.md",
+            "docs/ai/capabilities/preview-environments/LIFECYCLE.md",
+            "docs/ai/capabilities/project-context/CAPABILITY.md",
+            "docs/ai/capabilities/project-context/examples.md",
+            "docs/ai/capabilities/project-context/gotchas.md",
+            "docs/ai/capabilities/project-context/reference.md",
+            "docs/ai/capabilities/release-safety/CAPABILITY.md",
+            "docs/ai/capabilities/release-safety/checklist.md",
+            "docs/ai/capabilities/release-safety/examples.md",
+            "docs/ai/capabilities/release-safety/gotchas.md",
+            "docs/ai/capabilities/release-safety/reference.md",
+            "docs/ai/capabilities/review-diff/CAPABILITY.md",
+            "docs/ai/capabilities/review-diff/checklist.md",
+            "docs/ai/capabilities/review-diff/examples.md",
+            "docs/ai/capabilities/review-diff/gotchas.md",
+            "docs/ai/capabilities/review-diff/reference.md",
+            "docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md",
+            "docs/ai/capabilities/service-boundary-patterns/DATA_BOUNDARIES.md",
+            "docs/ai/capabilities/service-boundary-patterns/INTERNAL_TOOL_SURFACES.md",
+            "docs/ai/capabilities/service-boundary-patterns/SERVICE_BOUNDARIES.md",
+            "docs/ai/capabilities/verify-change/CAPABILITY.md",
+            "docs/ai/capabilities/verify-change/checklist.md",
+            "docs/ai/capabilities/verify-change/examples.md",
+            "docs/ai/capabilities/verify-change/gotchas.md",
+            "docs/ai/capabilities/verify-change/reference.md",
+            "docs/ai/catalog.md",
+            "docs/ai/command-risk-taxonomy.md",
+            "docs/ai/context-packaging.md",
+            "docs/ai/context-packing.md",
+            "docs/ai/copilot-getting-started.md",
+            "docs/ai/copilot-tooling.md",
+            "docs/ai/decisions.md",
+            "docs/ai/delivery/README.md",
+            "docs/ai/delivery/slice-card.template.md",
+            "docs/ai/external-repo-install.md",
+            "docs/ai/failure-handling.md",
+            "docs/ai/generated-artifacts.md",
+            "docs/ai/generated/README.md",
+            "docs/ai/generated/adapter-plan.md",
+            "docs/ai/generated/adapter-validate.md",
+            "docs/ai/generated/advisor-context.index.md",
+            "docs/ai/generated/advisor-context.md",
+            "docs/ai/generated/advisor-drift.md",
+            "docs/ai/generated/advisor-prompt.md",
+            "docs/ai/generated/advisor.md",
+            "docs/ai/generated/ai-commands.md",
+            "docs/ai/generated/ask.md",
+            "docs/ai/generated/auto-fix.md",
+            "docs/ai/generated/budget.md",
+            "docs/ai/generated/commit-msg.md",
+            "docs/ai/generated/conflicts.md",
+            "docs/ai/generated/decision-add.md",
+            "docs/ai/generated/diff-summary.md",
+            "docs/ai/generated/env-check.md",
+            "docs/ai/generated/estimate.md",
+            "docs/ai/generated/file-context.md",
+            "docs/ai/generated/find.md",
+            "docs/ai/generated/freshness.md",
+            "docs/ai/generated/full-install-verify.md",
+            "docs/ai/generated/hooks.md",
+            "docs/ai/generated/impact.md",
+            "docs/ai/generated/install-catalog.md",
+            "docs/ai/generated/install-docs.md",
+            "docs/ai/generated/install-instructions.md",
+            "docs/ai/generated/install-summary.md",
+            "docs/ai/generated/install-transaction.md",
+            "docs/ai/generated/install.md",
+            "docs/ai/generated/instruction-audit.md",
+            "docs/ai/generated/logs.md",
+            "docs/ai/generated/next.md",
+            "docs/ai/generated/orphans.md",
+            "docs/ai/generated/package-lock.md",
+            "docs/ai/generated/package-verify.md",
+            "docs/ai/generated/packs.md",
+            "docs/ai/generated/placeholders.md",
+            "docs/ai/generated/pr-summary.md",
+            "docs/ai/generated/preflight.md",
+            "docs/ai/generated/project-scorecard.md",
+            "docs/ai/generated/project-signals.md",
+            "docs/ai/generated/project-snapshot.md",
+            "docs/ai/generated/rebase-state.md",
+            "docs/ai/generated/repo-focus-map.md",
+            "docs/ai/generated/repo-structure.md",
+            "docs/ai/generated/risk.md",
+            "docs/ai/generated/rollback.md",
+            "docs/ai/generated/scripts.md",
+            "docs/ai/generated/session-resume.md",
+            "docs/ai/generated/symbols.md",
+            "docs/ai/generated/toolchain.md",
+            "docs/ai/generated/upgrade.md",
+            "docs/ai/generated/verify.md",
+            "docs/ai/generated/version.md",
+            "docs/ai/generated/why.md",
+            "docs/ai/generated/workflow.md",
+            "docs/ai/handoff-contract.md",
+            "docs/ai/hooks.md",
+            "docs/ai/install-safety.md",
+            "docs/ai/installed-files.md",
+            "docs/ai/installer-architecture.md",
+            "docs/ai/installer-open-items.md",
+            "docs/ai/integration-matrix.md",
+            "docs/ai/mandatory-tools-install.md",
+            "docs/ai/metadata-policy.md",
+            "docs/ai/ownership.md",
+            "docs/ai/package-boundaries.md",
+            "docs/ai/project-configuration.md",
+            "docs/ai/project-context.md",
+            "docs/ai/readiness-scorecard.md",
+            "docs/ai/repo-documentation-generation.md",
+            "docs/ai/repo-required-tools.md",
+            "docs/ai/risk-taxonomy.md",
+            "docs/ai/scripts-reference.md",
+            "docs/ai/session-reentry.md",
+            "docs/ai/source-of-truth.md",
+            "docs/ai/tool-policy.md",
+            "docs/ai/toolchain-requirements.md",
+            "docs/ai/validation.md",
+            "docs/ai/verification-matrix.md",
+            "docs/ai/workflow.md",
+            "docs/keyboard.md",
+            "docs/nvim-setup.md",
+            "docs/shell-setup.md",
+            "docs/software-and-cli-tools.md",
+            "docs/vscode-extensions.md",
+            "packages/ai-universal-rules/PLACEHOLDERS.md",
+            "packages/ai-universal-rules/QUICKSTART.md",
+            "packages/ai-universal-rules/README.md",
+            "packages/ai-universal-rules/docs/BROWSE.md",
+            "packages/ai-universal-rules/docs/CAPABILITY-MODEL.md",
+            "packages/ai-universal-rules/docs/COMPATIBILITY.md",
+            "packages/ai-universal-rules/docs/COMPOSITION-RECIPES.md",
+            "packages/ai-universal-rules/docs/CONTROL-MODEL.md",
+            "packages/ai-universal-rules/docs/DESIGN-PRINCIPLES.md",
+            "packages/ai-universal-rules/docs/EVALUATION.md",
+            "packages/ai-universal-rules/docs/INSTALL-CATALOG.md",
+            "packages/ai-universal-rules/docs/INSTALL-GITHUB-COPILOT.md",
+            "packages/ai-universal-rules/docs/INSTALL-OPENCODE.md",
+            "packages/ai-universal-rules/docs/ONBOARDING.md",
+            "packages/ai-universal-rules/docs/PRECEDENCE.md",
+            "packages/ai-universal-rules/docs/PROJECT-EXAMPLES.md",
+            "packages/ai-universal-rules/docs/RELEASE-BUNDLES.md",
+            "packages/ai-universal-rules/docs/foundations/CAPABILITY-MODEL.md",
+            "packages/ai-universal-rules/docs/foundations/COMPATIBILITY.md",
+            "packages/ai-universal-rules/docs/foundations/CONTROL-MODEL.md",
+            "packages/ai-universal-rules/docs/foundations/DESIGN-PRINCIPLES.md",
+            "packages/ai-universal-rules/docs/foundations/PRECEDENCE.md",
+            "packages/ai-universal-rules/docs/foundations/SKILLS.md",
+            "packages/ai-universal-rules/docs/operations/EVAL-SCENARIOS.md",
+            "packages/ai-universal-rules/docs/operations/GOVERNANCE.md",
+            "packages/ai-universal-rules/docs/operations/HOOKS-AND-ENFORCEMENT.md",
+            "packages/ai-universal-rules/docs/operations/MAINTENANCE.md",
+            "packages/ai-universal-rules/docs/operations/MCP-BOUNDARIES.md",
+            "packages/ai-universal-rules/docs/operations/TROUBLESHOOTING.md",
+            "packages/ai-universal-rules/docs/workflows/AGENT-HANDOFFS.md",
+            "packages/ai-universal-rules/docs/workflows/MONOREPO-STRATEGY.md",
+            "packages/ai-universal-rules/docs/workflows/RISK-AND-APPROVALS.md",
+            "packages/ai-universal-rules/docs/workflows/RUNTIME-OBSERVABILITY.md",
+            "packages/ai-universal-rules/docs/workflows/SYSTEM-WORKFLOW.md",
+            "packages/ai-universal-rules/docs/workflows/TASK-ENTRYPOINTS.md",
+            "packages/ai-universal-rules/examples/expanded-placeholder-repo/AGENTS.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/agents/refactorer.agent.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/agents/reviewer.agent.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/copilot-instructions.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/instructions/architecture.instructions.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/instructions/frontend.instructions.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/instructions/targets.instructions.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/instructions/testing.instructions.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/prompts/bug-regression.prompt.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/prompts/new-feature.prompt.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/prompts/review-code.prompt.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/agents/architect.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/agents/refactorer.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/agents/reviewer.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/commands/review-diff.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/commands/verify.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/bug-regression/SKILL.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/dependency-upgrade/SKILL.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/project-context/SKILL.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/project-stack/SKILL.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/release-safety/SKILL.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/review-diff/SKILL.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/verify-change/SKILL.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/AGENTS.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/bug-regression/CAPABILITY.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/bug-regression/checklist.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/bug-regression/examples.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/bug-regression/gotchas.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/dependency-upgrade/CAPABILITY.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/dependency-upgrade/checklist.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/dependency-upgrade/examples.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/dependency-upgrade/gotchas.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/project-context/CAPABILITY.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/project-context/examples.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/project-context/gotchas.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/release-safety/CAPABILITY.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/release-safety/checklist.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/release-safety/examples.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/release-safety/gotchas.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/review-diff/CAPABILITY.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/review-diff/checklist.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/review-diff/examples.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/review-diff/gotchas.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/verify-change/CAPABILITY.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/verify-change/checklist.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/verify-change/examples.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/verify-change/gotchas.md",
+            "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/project-context.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/.github/agents/implementer.agent.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/.github/agents/release-auditor.agent.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/.github/agents/researcher.agent.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/.github/agents/reviewer.agent.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/.github/copilot-instructions.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/.github/instructions/architecture.instructions.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/.github/instructions/testing.instructions.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/.github/prompts/docs-sync.prompt.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/.github/prompts/regression-test.prompt.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/.github/prompts/release-readiness.prompt.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/AGENTS.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/README.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/docs/ai/AI-GUARDRAILS.md",
+            "packages/ai-universal-rules/examples/worked-copilot-repo/docs/ai/project-context.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/agents/implementer.agent.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/agents/release-auditor.agent.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/agents/researcher.agent.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/agents/reviewer.agent.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/copilot-instructions.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/instructions/testing.instructions.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/prompts/docs-sync.prompt.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/prompts/regression-test.prompt.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/prompts/release-readiness.prompt.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/agents/implementer.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/agents/release-auditor.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/agents/researcher.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/agents/reviewer.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/commands/bug-regression.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/commands/plan-slice.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/AGENTS.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/CLAUDE.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/README.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/AI-GUARDRAILS.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/capabilities/bug-regression/CAPABILITY.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/capabilities/project-context/CAPABILITY.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/capabilities/review-diff/CAPABILITY.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/capabilities/verify-change/CAPABILITY.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/project-context.md",
+            "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/workflow.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/agents/implementer.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/agents/release-auditor.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/agents/researcher.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/agents/reviewer.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/commands/bug-regression.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/commands/plan-slice.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/skills/bug-regression/SKILL.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/skills/project-context/SKILL.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/skills/verify-change/SKILL.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/AGENTS.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/README.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/docs/ai/AI-GUARDRAILS.md",
+            "packages/ai-universal-rules/examples/worked-opencode-repo/docs/ai/project-context.md",
+            "packages/ai-universal-rules/templates/capabilities/README.md",
+            "packages/ai-universal-rules/templates/capabilities/bug-regression/CAPABILITY.md",
+            "packages/ai-universal-rules/templates/capabilities/bug-regression/checklist.md",
+            "packages/ai-universal-rules/templates/capabilities/bug-regression/examples.md",
+            "packages/ai-universal-rules/templates/capabilities/bug-regression/gotchas.md",
+            "packages/ai-universal-rules/templates/capabilities/bug-regression/reference.md",
+            "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/CAPABILITY.md",
+            "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/checklist.md",
+            "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/examples.md",
+            "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/gotchas.md",
+            "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/reference.md",
+            "packages/ai-universal-rules/templates/capabilities/project-context/CAPABILITY.md",
+            "packages/ai-universal-rules/templates/capabilities/project-context/examples.md",
+            "packages/ai-universal-rules/templates/capabilities/project-context/gotchas.md",
+            "packages/ai-universal-rules/templates/capabilities/project-context/reference.md",
+            "packages/ai-universal-rules/templates/capabilities/release-safety/CAPABILITY.md",
+            "packages/ai-universal-rules/templates/capabilities/release-safety/checklist.md",
+            "packages/ai-universal-rules/templates/capabilities/release-safety/examples.md",
+            "packages/ai-universal-rules/templates/capabilities/release-safety/gotchas.md",
+            "packages/ai-universal-rules/templates/capabilities/release-safety/reference.md",
+            "packages/ai-universal-rules/templates/capabilities/review-diff/CAPABILITY.md",
+            "packages/ai-universal-rules/templates/capabilities/review-diff/checklist.md",
+            "packages/ai-universal-rules/templates/capabilities/review-diff/examples.md",
+            "packages/ai-universal-rules/templates/capabilities/review-diff/gotchas.md",
+            "packages/ai-universal-rules/templates/capabilities/review-diff/reference.md",
+            "packages/ai-universal-rules/templates/capabilities/verify-change/CAPABILITY.md",
+            "packages/ai-universal-rules/templates/capabilities/verify-change/checklist.md",
+            "packages/ai-universal-rules/templates/capabilities/verify-change/examples.md",
+            "packages/ai-universal-rules/templates/capabilities/verify-change/gotchas.md",
+            "packages/ai-universal-rules/templates/capabilities/verify-change/reference.md",
+            "packages/ai-universal-rules/templates/core/AGENTS.template.md",
+            "packages/ai-universal-rules/templates/core/copilot-instructions.template.md",
+            "packages/ai-universal-rules/templates/core/project-context.template.md",
+            "packages/ai-universal-rules/templates/core/project-stack.template.md",
+            "packages/ai-universal-rules/templates/github-copilot/agents/architect.agent.md",
+            "packages/ai-universal-rules/templates/github-copilot/agents/implementer.agent.md",
+            "packages/ai-universal-rules/templates/github-copilot/agents/refactorer.agent.md",
+            "packages/ai-universal-rules/templates/github-copilot/agents/release-auditor.agent.md",
+            "packages/ai-universal-rules/templates/github-copilot/agents/researcher.agent.md",
+            "packages/ai-universal-rules/templates/github-copilot/agents/reviewer.agent.md",
+            "packages/ai-universal-rules/templates/github-copilot/instructions/architecture.instructions.md",
+            "packages/ai-universal-rules/templates/github-copilot/instructions/frontend.instructions.md",
+            "packages/ai-universal-rules/templates/github-copilot/instructions/targets.instructions.md",
+            "packages/ai-universal-rules/templates/github-copilot/instructions/testing.instructions.md",
+            "packages/ai-universal-rules/templates/github-copilot/prompts/bug-regression.prompt.md",
+            "packages/ai-universal-rules/templates/github-copilot/prompts/docs-sync.prompt.md",
+            "packages/ai-universal-rules/templates/github-copilot/prompts/new-feature.prompt.md",
+            "packages/ai-universal-rules/templates/github-copilot/prompts/regression-test.prompt.md",
+            "packages/ai-universal-rules/templates/github-copilot/prompts/release-readiness.prompt.md",
+            "packages/ai-universal-rules/templates/github-copilot/prompts/review-code.prompt.md",
+            "packages/ai-universal-rules/templates/opencode/agents/architect.md",
+            "packages/ai-universal-rules/templates/opencode/agents/implementer.md",
+            "packages/ai-universal-rules/templates/opencode/agents/refactorer.md",
+            "packages/ai-universal-rules/templates/opencode/agents/release-auditor.md",
+            "packages/ai-universal-rules/templates/opencode/agents/researcher.md",
+            "packages/ai-universal-rules/templates/opencode/agents/reviewer.md",
+            "packages/ai-universal-rules/templates/opencode/commands/bug-regression.md",
+            "packages/ai-universal-rules/templates/opencode/commands/plan-slice.md",
+            "packages/ai-universal-rules/templates/opencode/commands/review-diff.md",
+            "packages/ai-universal-rules/templates/opencode/commands/verify.md",
+            "packages/ai-universal-rules/templates/opencode/skills/bug-regression/SKILL.md",
+            "packages/ai-universal-rules/templates/opencode/skills/dependency-upgrade/SKILL.md",
+            "packages/ai-universal-rules/templates/opencode/skills/project-context/SKILL.md",
+            "packages/ai-universal-rules/templates/opencode/skills/project-stack/SKILL.md",
+            "packages/ai-universal-rules/templates/opencode/skills/release-safety/SKILL.md",
+            "packages/ai-universal-rules/templates/opencode/skills/review-diff/SKILL.md",
+            "packages/ai-universal-rules/templates/opencode/skills/verify-change/SKILL.md",
+            "packages/ai-universal-rules/templates/optional/delivery/README.md",
+            "packages/ai-universal-rules/templates/optional/delivery/slice-card.template.md",
+            "packages/ai-universal-rules/templates/optional/github-copilot/prompts/architecture-plan.prompt.md",
+            "packages/ai-universal-rules/templates/optional/github-copilot/prompts/dependency-upgrade.prompt.md",
+            "packages/ai-universal-rules/templates/optional/github-copilot/prompts/docs-sync.prompt.md",
+            "packages/ai-universal-rules/templates/optional/opencode/agents/bugfix.md",
+            "packages/ai-universal-rules/templates/optional/opencode/agents/build-config.md",
+            "packages/ai-universal-rules/templates/optional/opencode/agents/docs.md",
+            "packages/ai-universal-rules/templates/optional/opencode/agents/infra-auditor.md",
+            "packages/ai-universal-rules/templates/optional/opencode/agents/ui-builder.md",
+            "packages/ai-universal-rules/templates/optional/opencode/agents/upgrade.md",
+            "packages/ai-universal-rules/templates/shared/approvals/APPROVAL-PACKET.template.md",
+            "packages/ai-universal-rules/templates/shared/guardrails/AI-GUARDRAILS.md",
+            "packages/ai-universal-rules/templates/shared/verification/VERIFICATION-EVIDENCE.template.md",
+            "packages/ai-universal-rules/templates/snippets/approvals.snippet.md",
+            "packages/ai-universal-rules/templates/snippets/verification.snippet.md",
+            "packages/ai-universal-rules/templates/snippets/workflow.snippet.md",
+            "policies/README.md",
+            "reference/README.md",
+            "reference/php/README.md",
+            "reference/php/design-patterns/README.md",
+            "reference/php/design-patterns/behavioral/chain-of-responsibility/README.md",
+            "reference/php/design-patterns/behavioral/command/README.md",
+            "reference/php/design-patterns/behavioral/delegation/README.md",
+            "reference/php/design-patterns/behavioral/iterator/README.md",
+            "reference/php/design-patterns/behavioral/mediator/README.md",
+            "reference/php/design-patterns/behavioral/memento/README.md",
+            "reference/php/design-patterns/behavioral/observer/README.md",
+            "reference/php/design-patterns/behavioral/state/README.md",
+            "reference/php/design-patterns/behavioral/strategy/README.md",
+            "reference/php/design-patterns/behavioral/template-method/README.md",
+            "reference/php/design-patterns/behavioral/visitor/README.md",
+            "reference/php/design-patterns/creational/abstract-factory/README.md",
+            "reference/php/design-patterns/creational/builder/README.md",
+            "reference/php/design-patterns/creational/factory-method/README.md",
+            "reference/php/design-patterns/creational/prototype/README.md",
+            "reference/php/design-patterns/creational/singleton/README.md",
+            "reference/php/design-patterns/structural/adapter/README.md",
+            "reference/php/design-patterns/structural/bridge/README.md",
+            "reference/php/design-patterns/structural/composite/README.md",
+            "reference/php/design-patterns/structural/decorator/README.md",
+            "reference/php/design-patterns/structural/facade/README.md",
+            "reference/php/design-patterns/structural/flyweight/README.md",
+            "reference/php/design-patterns/structural/proxy/README.md",
+            "tests/fixtures/php/frontmatter-empty.md",
+            "tests/fixtures/php/frontmatter-malformed.md",
+            "tests/fixtures/php/frontmatter-valid.md"
+        ],
+        "total": 461,
+        "scc_enabled": false,
+        "items": [
+            {
+                "path": ".copilot-logs/README.md",
+                "scc": null
+            },
+            {
+                "path": ".github/agents/architect.agent.md",
+                "scc": null
+            },
+            {
+                "path": ".github/agents/config-maintainer.agent.md",
+                "scc": null
+            },
+            {
+                "path": ".github/agents/implementer.agent.md",
+                "scc": null
+            },
+            {
+                "path": ".github/agents/refactorer.agent.md",
+                "scc": null
+            },
+            {
+                "path": ".github/agents/release-auditor.agent.md",
+                "scc": null
+            },
+            {
+                "path": ".github/agents/researcher.agent.md",
+                "scc": null
+            },
+            {
+                "path": ".github/agents/reviewer.agent.md",
+                "scc": null
+            },
+            {
+                "path": ".github/agents/workflow-auditor.agent.md",
+                "scc": null
+            },
+            {
+                "path": ".github/copilot-instructions.md",
+                "scc": null
+            },
+            {
+                "path": ".github/instructions/ai-workflow.instructions.md",
+                "scc": null
+            },
+            {
+                "path": ".github/instructions/architecture.instructions.md",
+                "scc": null
+            },
+            {
+                "path": ".github/instructions/ci.instructions.md",
+                "scc": null
+            },
+            {
+                "path": ".github/instructions/config.instructions.md",
+                "scc": null
+            },
+            {
+                "path": ".github/instructions/docs.instructions.md",
+                "scc": null
+            },
+            {
+                "path": ".github/instructions/frontend.instructions.md",
+                "scc": null
+            },
+            {
+                "path": ".github/instructions/php.instructions.md",
+                "scc": null
+            },
+            {
+                "path": ".github/instructions/targets.instructions.md",
+                "scc": null
+            },
+            {
+                "path": ".github/instructions/testing.instructions.md",
+                "scc": null
+            },
+            {
+                "path": ".github/prompts/bug-regression.prompt.md",
+                "scc": null
+            },
+            {
+                "path": ".github/prompts/docs-sync.prompt.md",
+                "scc": null
+            },
+            {
+                "path": ".github/prompts/investigate-bug.prompt.md",
+                "scc": null
+            },
+            {
+                "path": ".github/prompts/new-feature.prompt.md",
+                "scc": null
+            },
+            {
+                "path": ".github/prompts/regression-test.prompt.md",
+                "scc": null
+            },
+            {
+                "path": ".github/prompts/release-readiness.prompt.md",
+                "scc": null
+            },
+            {
+                "path": ".github/prompts/review-code.prompt.md",
+                "scc": null
+            },
+            {
+                "path": ".github/prompts/trace-regression.prompt.md",
+                "scc": null
+            },
+            {
+                "path": ".github/pull_request_template.md",
+                "scc": null
+            },
+            {
+                "path": ".github/skills/repo-investigation/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/agents/architect.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/agents/implementer.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/agents/refactorer.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/agents/release-auditor.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/agents/researcher.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/agents/reviewer.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/commands/bug-regression.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/commands/plan-slice.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/commands/review-diff.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/commands/verify.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/skills/bug-regression/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/skills/dependency-upgrade/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/skills/project-context/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/skills/project-stack/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/skills/release-safety/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/skills/review-diff/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": ".opencode/skills/verify-change/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "AGENTS.md",
+                "scc": null
+            },
+            {
+                "path": "CLAUDE.md",
+                "scc": null
+            },
+            {
+                "path": "CONTRIBUTING.md",
+                "scc": null
+            },
+            {
+                "path": "README.md",
+                "scc": null
+            },
+            {
+                "path": "SECURITY.md",
+                "scc": null
+            },
+            {
+                "path": "SUPPORT.md",
+                "scc": null
+            },
+            {
+                "path": "configs/README.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/AI-GUARDRAILS.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/MCP-BOUNDARIES.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/POST-INSTALL.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/SETUP.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/adapter-contract.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/agent-ops-checklist.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/agent-ops.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/agents.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/approval-boundaries.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/architecture-locks.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/available-packs.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/README.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/adapter-drift/README.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/authorization-and-tool-governance/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/bug-regression/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/bug-regression/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/bug-regression/examples.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/bug-regression/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/bug-regression/reference.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/config-change-safety/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/dependency-upgrade/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/dependency-upgrade/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/dependency-upgrade/examples.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/dependency-upgrade/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/dependency-upgrade/reference.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/docs-sync/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/evaluation-and-regression/GOLDEN_TASKS.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/evaluation-and-regression/HUMAN_REVIEW_RULES.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/evaluation-and-regression/REPLAY_RULES.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/preview-environments/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/preview-environments/CHECKLIST.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/preview-environments/DATA_AND_SECRET_RULES.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/preview-environments/LIFECYCLE.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/project-context/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/project-context/examples.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/project-context/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/project-context/reference.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/release-safety/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/release-safety/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/release-safety/examples.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/release-safety/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/release-safety/reference.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/review-diff/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/review-diff/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/review-diff/examples.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/review-diff/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/review-diff/reference.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/service-boundary-patterns/DATA_BOUNDARIES.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/service-boundary-patterns/INTERNAL_TOOL_SURFACES.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/service-boundary-patterns/SERVICE_BOUNDARIES.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/verify-change/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/verify-change/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/verify-change/examples.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/verify-change/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/capabilities/verify-change/reference.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/catalog.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/command-risk-taxonomy.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/context-packaging.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/context-packing.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/copilot-getting-started.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/copilot-tooling.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/decisions.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/delivery/README.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/delivery/slice-card.template.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/external-repo-install.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/failure-handling.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated-artifacts.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/README.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/adapter-plan.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/adapter-validate.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/advisor-context.index.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/advisor-context.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/advisor-drift.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/advisor-prompt.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/advisor.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/ai-commands.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/ask.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/auto-fix.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/budget.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/commit-msg.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/conflicts.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/decision-add.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/diff-summary.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/env-check.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/estimate.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/file-context.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/find.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/freshness.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/full-install-verify.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/hooks.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/impact.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install-catalog.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install-docs.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install-instructions.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install-summary.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install-transaction.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/install.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/instruction-audit.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/logs.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/next.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/orphans.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/package-lock.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/package-verify.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/packs.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/placeholders.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/pr-summary.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/preflight.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/project-scorecard.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/project-signals.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/project-snapshot.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/rebase-state.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/repo-focus-map.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/repo-structure.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/risk.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/rollback.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/scripts.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/session-resume.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/symbols.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/toolchain.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/upgrade.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/verify.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/version.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/why.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/generated/workflow.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/handoff-contract.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/hooks.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/install-safety.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/installed-files.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/installer-architecture.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/installer-open-items.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/integration-matrix.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/mandatory-tools-install.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/metadata-policy.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/ownership.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/package-boundaries.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/project-configuration.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/project-context.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/readiness-scorecard.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/repo-documentation-generation.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/repo-required-tools.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/risk-taxonomy.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/scripts-reference.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/session-reentry.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/source-of-truth.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/tool-policy.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/toolchain-requirements.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/validation.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/verification-matrix.md",
+                "scc": null
+            },
+            {
+                "path": "docs/ai/workflow.md",
+                "scc": null
+            },
+            {
+                "path": "docs/keyboard.md",
+                "scc": null
+            },
+            {
+                "path": "docs/nvim-setup.md",
+                "scc": null
+            },
+            {
+                "path": "docs/shell-setup.md",
+                "scc": null
+            },
+            {
+                "path": "docs/software-and-cli-tools.md",
+                "scc": null
+            },
+            {
+                "path": "docs/vscode-extensions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/PLACEHOLDERS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/QUICKSTART.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/README.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/BROWSE.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/CAPABILITY-MODEL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/COMPATIBILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/COMPOSITION-RECIPES.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/CONTROL-MODEL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/DESIGN-PRINCIPLES.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/EVALUATION.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/INSTALL-CATALOG.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/INSTALL-GITHUB-COPILOT.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/INSTALL-OPENCODE.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/ONBOARDING.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/PRECEDENCE.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/PROJECT-EXAMPLES.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/RELEASE-BUNDLES.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/foundations/CAPABILITY-MODEL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/foundations/COMPATIBILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/foundations/CONTROL-MODEL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/foundations/DESIGN-PRINCIPLES.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/foundations/PRECEDENCE.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/foundations/SKILLS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/operations/EVAL-SCENARIOS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/operations/GOVERNANCE.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/operations/HOOKS-AND-ENFORCEMENT.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/operations/MAINTENANCE.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/operations/MCP-BOUNDARIES.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/operations/TROUBLESHOOTING.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/workflows/AGENT-HANDOFFS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/workflows/MONOREPO-STRATEGY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/workflows/RISK-AND-APPROVALS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/workflows/RUNTIME-OBSERVABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/workflows/SYSTEM-WORKFLOW.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/docs/workflows/TASK-ENTRYPOINTS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/expanded-placeholder-repo/AGENTS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/agents/refactorer.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/agents/reviewer.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/copilot-instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/instructions/architecture.instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/instructions/frontend.instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/instructions/targets.instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/instructions/testing.instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/prompts/bug-regression.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/prompts/new-feature.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.github/prompts/review-code.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/agents/architect.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/agents/refactorer.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/agents/reviewer.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/commands/review-diff.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/commands/verify.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/bug-regression/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/dependency-upgrade/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/project-context/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/project-stack/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/release-safety/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/review-diff/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/.opencode/skills/verify-change/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/AGENTS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/bug-regression/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/bug-regression/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/bug-regression/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/bug-regression/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/dependency-upgrade/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/dependency-upgrade/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/dependency-upgrade/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/dependency-upgrade/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/project-context/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/project-context/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/project-context/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/release-safety/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/release-safety/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/release-safety/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/release-safety/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/review-diff/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/review-diff/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/review-diff/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/review-diff/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/verify-change/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/verify-change/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/verify-change/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/capabilities/verify-change/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/generic-placeholder-repo/docs/ai/project-context.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/.github/agents/implementer.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/.github/agents/release-auditor.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/.github/agents/researcher.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/.github/agents/reviewer.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/.github/copilot-instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/.github/instructions/architecture.instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/.github/instructions/testing.instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/.github/prompts/docs-sync.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/.github/prompts/regression-test.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/.github/prompts/release-readiness.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/AGENTS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/README.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/docs/ai/AI-GUARDRAILS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-copilot-repo/docs/ai/project-context.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/agents/implementer.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/agents/release-auditor.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/agents/researcher.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/agents/reviewer.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/copilot-instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/instructions/testing.instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/prompts/docs-sync.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/prompts/regression-test.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.github/prompts/release-readiness.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/agents/implementer.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/agents/release-auditor.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/agents/researcher.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/agents/reviewer.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/commands/bug-regression.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/.opencode/commands/plan-slice.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/AGENTS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/CLAUDE.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/README.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/AI-GUARDRAILS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/capabilities/bug-regression/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/capabilities/project-context/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/capabilities/review-diff/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/capabilities/verify-change/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/project-context.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-dual-tool-repo/docs/ai/workflow.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/agents/implementer.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/agents/release-auditor.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/agents/researcher.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/agents/reviewer.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/commands/bug-regression.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/commands/plan-slice.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/skills/bug-regression/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/skills/project-context/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/.opencode/skills/verify-change/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/AGENTS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/README.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/docs/ai/AI-GUARDRAILS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/examples/worked-opencode-repo/docs/ai/project-context.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/README.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/bug-regression/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/bug-regression/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/bug-regression/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/bug-regression/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/bug-regression/reference.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/reference.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/project-context/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/project-context/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/project-context/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/project-context/reference.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/release-safety/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/release-safety/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/release-safety/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/release-safety/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/release-safety/reference.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/review-diff/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/review-diff/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/review-diff/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/review-diff/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/review-diff/reference.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/verify-change/CAPABILITY.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/verify-change/checklist.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/verify-change/examples.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/verify-change/gotchas.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/capabilities/verify-change/reference.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/core/AGENTS.template.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/core/copilot-instructions.template.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/core/project-context.template.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/core/project-stack.template.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/agents/architect.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/agents/implementer.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/agents/refactorer.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/agents/release-auditor.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/agents/researcher.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/agents/reviewer.agent.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/instructions/architecture.instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/instructions/frontend.instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/instructions/targets.instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/instructions/testing.instructions.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/prompts/bug-regression.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/prompts/docs-sync.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/prompts/new-feature.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/prompts/regression-test.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/prompts/release-readiness.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/github-copilot/prompts/review-code.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/agents/architect.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/agents/implementer.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/agents/refactorer.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/agents/release-auditor.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/agents/researcher.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/agents/reviewer.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/commands/bug-regression.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/commands/plan-slice.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/commands/review-diff.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/commands/verify.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/skills/bug-regression/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/skills/dependency-upgrade/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/skills/project-context/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/skills/project-stack/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/skills/release-safety/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/skills/review-diff/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/opencode/skills/verify-change/SKILL.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/optional/delivery/README.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/optional/delivery/slice-card.template.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/optional/github-copilot/prompts/architecture-plan.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/optional/github-copilot/prompts/dependency-upgrade.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/optional/github-copilot/prompts/docs-sync.prompt.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/optional/opencode/agents/bugfix.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/optional/opencode/agents/build-config.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/optional/opencode/agents/docs.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/optional/opencode/agents/infra-auditor.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/optional/opencode/agents/ui-builder.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/optional/opencode/agents/upgrade.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/shared/approvals/APPROVAL-PACKET.template.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/shared/guardrails/AI-GUARDRAILS.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/shared/verification/VERIFICATION-EVIDENCE.template.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/snippets/approvals.snippet.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/snippets/verification.snippet.md",
+                "scc": null
+            },
+            {
+                "path": "packages/ai-universal-rules/templates/snippets/workflow.snippet.md",
+                "scc": null
+            },
+            {
+                "path": "policies/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/chain-of-responsibility/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/command/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/delegation/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/iterator/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/mediator/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/memento/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/observer/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/state/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/strategy/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/template-method/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/behavioral/visitor/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/creational/abstract-factory/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/creational/builder/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/creational/factory-method/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/creational/prototype/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/creational/singleton/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/structural/adapter/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/structural/bridge/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/structural/composite/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/structural/decorator/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/structural/facade/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/structural/flyweight/README.md",
+                "scc": null
+            },
+            {
+                "path": "reference/php/design-patterns/structural/proxy/README.md",
+                "scc": null
+            },
+            {
+                "path": "tests/fixtures/php/frontmatter-empty.md",
+                "scc": null
+            },
+            {
+                "path": "tests/fixtures/php/frontmatter-malformed.md",
+                "scc": null
+            },
+            {
+                "path": "tests/fixtures/php/frontmatter-valid.md",
+                "scc": null
+            }
+        ]
+    },
+    "backup_id": "install-20260430-235938",
+    "failures": [
+        {
+            "id": "package-verify",
+            "message": "required stage failed",
+            "data": {
+                "stderr": "",
+                "stdout_excerpt": "OK: wrote docs/ai/generated/package-verify.json and docs/ai/generated/package-verify.md",
+                "attempts": 2,
+                "timed_out": false,
+                "cancelled": false,
+                "idle_timed_out": false,
+                "next_action": "rectify error and rerun this stage"
+            }
+        },
+        {
+            "id": "install-apply",
+            "message": "required stage failed",
+            "data": {
+                "stderr": "",
+                "stdout_excerpt": "OK: wrote docs/ai/generated/preflight.json and docs/ai/generated/preflight.md\r\nOK: wrote docs/ai/generated/install.json and docs/ai/generated/install.md",
+                "attempts": 2,
+                "timed_out": false,
+                "cancelled": false,
+                "idle_timed_out": false,
+                "next_action": "rectify error and rerun this stage"
+            }
+        },
+        {
+            "id": "json-parse-all",
+            "message": "json parse failures found",
+            "data": {
+                "failures": [
+                    {
+                        "file": "configs/vscode/user/settings.json",
+                        "error": "Syntax error"
+                    },
+                    {
+                        "file": "configs/vscode/workspace-example.json",
+                        "error": "Syntax error"
+                    }
+                ]
+            }
+        }
+    ],
+    "notes": [
+        "Create docs/ai/generated/full-install-validation.cancel to request cancellation."
+    ]
+}

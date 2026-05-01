@@ -1,32 +1,22 @@
 # AI Setup
 
-- Installed at: `2026-04-29T19:33:34+00:00`
+- Installed at: `2026-05-01T00:03:26+00:00`
 - Profile: `full-governance`
 - Package: `ai-universal-rules`
 
 ## Installed Packs
 
+- `capabilities-extended-full`
+- `hooks-pack`
+- `ci-pack`
+- `scripts-pack`
+- `policy-pack`
+- `evidence-pack`
+- `adapter-opencode`
+- `capabilities-extended-lite`
 - `base`
 - `setup-docs`
 - `capabilities-core`
-- `capabilities-extended-lite`
-- `capabilities-extended-full`
-- `adapter-copilot`
-- `adapter-opencode`
-- `scripts-pack`
-- `policy-pack`
-- `hooks-pack`
-- `ci-pack`
-- `evidence-pack`
-- `docs-reference-pack`
-- `delivery-pack`
-- `optional-agents-pack`
-- `optional-prompts-pack`
-- `preview-environments-pack`
-- `evaluation-pack`
-- `service-boundary-pack`
-- `mcp-boundaries-pack`
-- `advisor-pack`
 
 ## Next Steps
 

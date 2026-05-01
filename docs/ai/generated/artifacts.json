@@ -1,7 +1,7 @@
 {
     "schema_version": 1,
-    "updated_at": "2026-05-01T00:01:02+00:00",
-    "current_commit": "28fe104",
+    "updated_at": "2026-05-01T00:03:52+00:00",
+    "current_commit": "104ee24",
     "artifacts": {
         "preflight.json": {
             "generated_at": "2026-04-30T23:59:42+00:00",
@@ -31,8 +31,8 @@
             "md_path": "docs/ai/generated/scripts.md"
         },
         "advisor.json": {
-            "generated_at": "2026-05-01T00:01:00+00:00",
-            "based_on_commit": "28fe104",
+            "generated_at": "2026-05-01T00:03:50+00:00",
+            "based_on_commit": "104ee24",
             "command": "php tools/ai/ai.php advisor",
             "estimated_tokens": 283,
             "stale": false,
@@ -40,8 +40,8 @@
             "md_path": "docs/ai/generated/advisor.md"
         },
         "install-docs.json": {
-            "generated_at": "2026-05-01T00:00:59+00:00",
-            "based_on_commit": "28fe104",
+            "generated_at": "2026-05-01T00:03:49+00:00",
+            "based_on_commit": "104ee24",
             "command": "php tools/ai/ai.php install-docs --check",
             "estimated_tokens": 132,
             "stale": false,
@@ -112,10 +112,10 @@
             "md_path": "docs/ai/generated/toolchain.md"
         },
         "verify.json": {
-            "generated_at": "2026-05-01T00:01:02+00:00",
-            "based_on_commit": "28fe104",
+            "generated_at": "2026-05-01T00:03:52+00:00",
+            "based_on_commit": "104ee24",
             "command": "php tools/ai/ai.php verify --changed",
-            "estimated_tokens": 5744,
+            "estimated_tokens": 1426,
             "stale": false,
             "json_path": "docs/ai/generated/verify.json",
             "md_path": "docs/ai/generated/verify.md"

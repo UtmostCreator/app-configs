@@ -1,6 +1,6 @@
 ---
 description: Use when a bounded slice is clear and implementation plus focused verification should happen in app-configs
-mode: all
+mode: subagent
 hidden: false
 temperature: 0.1
 ---
@@ -30,6 +30,7 @@ Output format:
 ## Remaining Risks Or Follow-Up
 
 ## Recommended Next Step
+- `reviewer` means reviewer agent handoff (OpenCode command: `/review-diff`)
 - reviewer
 - release-auditor
 - user if blocked

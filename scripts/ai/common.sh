@@ -37,9 +37,6 @@ log_json() {
     local event="${1:-event}"
     local payload="${2:-{}}"
     local entry
-    if ! command -v jq >/dev/null 2>&1; then
-        return 0
-    fi
     entry="$(jq -cn \
         --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --arg session "${SESSION_ID:-unknown}" \
@@ -61,9 +58,7 @@ log_error() { printf '%b[ERROR]%b %s\n' "$_C_RED" "$_C_RESET" "$*" >&2; }
 
 die() {
     log_error "$*"
-    if command -v jq >/dev/null 2>&1; then
-        log_json "error" "$(jq -cn --arg msg "$*" '{msg:$msg}')" || true
-    fi
+    log_json "error" "$(jq -cn --arg msg "$*" '{msg:$msg}')" || true
     exit 1
 }
 
@@ -91,34 +86,6 @@ require_clean_tree() {
 
 git_root() {
     git rev-parse --show-toplevel 2>/dev/null || pwd
-}
-
-require_clean_secret_scan() {
-    local allow_local_only=0
-    local arg
-    for arg in "$@"; do
-        if [[ "$arg" == "--allow-secret-findings=local-only" ]]; then
-            allow_local_only=1
-            break
-        fi
-    done
-
-    local root
-    root="$(git_root)"
-    local php_bin="${PHP_BIN:-php}"
-
-    if "$php_bin" "$root/tools/ai/secret-scan.php" --strict >/dev/null 2>&1; then
-        return 0
-    fi
-
-    if [[ "$allow_local_only" -eq 1 ]]; then
-        mkdir -p "$root/docs/ai/generated/logs"
-        printf '[AUDIT] %s allow-secret-findings=local-only user=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${USER:-${USERNAME:-unknown}}" >>"$root/docs/ai/generated/logs/secret-scan-overrides.log"
-        log_warn "Secret scan failed; proceeding due to local-only override."
-        return 0
-    fi
-
-    die "Secret scan failed. Context/advisor packing aborted. Use --allow-secret-findings=local-only only for local debugging."
 }
 
 run_with_timeout() {

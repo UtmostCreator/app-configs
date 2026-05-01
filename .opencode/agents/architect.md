@@ -1,6 +1,6 @@
 ---
 description: Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in app-configs
-mode: all
+mode: subagent
 hidden: false
 temperature: 0.1
 permission:

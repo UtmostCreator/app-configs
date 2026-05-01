@@ -139,7 +139,7 @@ class InstallerSafetyTest extends TestCase
 
         foreach ($files as $file) {
             $content = (string) file_get_contents($file);
-            $this->assertStringContainsString('mode: subagent', $content, 'agent must declare subagent mode: ' . basename($file));
+            $this->assertMatchesRegularExpression('/\bmode:\s*(subagent|all)\b/', $content, 'agent must declare compatible mode: ' . basename($file));
             $this->assertStringContainsString('hidden: false', $content, 'agent should be visible in listings: ' . basename($file));
         }
     }

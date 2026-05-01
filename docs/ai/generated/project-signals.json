@@ -1,7 +1,7 @@
 {
     "schema_version": 1,
     "project": "app-configs",
-    "tracked_files_count": 747,
+    "tracked_files_count": 749,
     "top_level_paths": [
         ".ai-install-manifest.json",
         ".copilot-logs",

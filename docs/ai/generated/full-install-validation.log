@@ -1,0 +1,20 @@
+[2026-04-30T23:59:34+00:00] start full-install-validation
+[2026-04-30T23:59:34+00:00] stage=preflight attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/ai.php preflight
+[2026-04-30T23:59:35+00:00] stage=package-verify attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/ai.php package-verify
+[2026-04-30T23:59:36+00:00] stage=package-verify attempt=2 cmd="C:\xampp\php\php.exe" tools/ai/ai.php package-verify
+[2026-04-30T23:59:36+00:00] stage=adapter-plan attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/ai.php adapter-plan --profile full-governance --mode safe-merge --force --allow-core-overwrite --reinstall
+[2026-04-30T23:59:37+00:00] stage=install-dry-run attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/ai.php install --profile full-governance --mode safe-merge --force --allow-core-overwrite --reinstall --dry-run
+[2026-04-30T23:59:38+00:00] stage=install-backup-only attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/ai.php install --backup-only --apply --profile full-governance --mode safe-merge --force --allow-core-overwrite --reinstall
+[2026-04-30T23:59:39+00:00] stage=install-apply attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/ai.php install --apply --profile full-governance --mode safe-merge --force --allow-core-overwrite --reinstall --backup install-20260430-235938
+[2026-04-30T23:59:42+00:00] stage=install-apply attempt=2 cmd="C:\xampp\php\php.exe" tools/ai/ai.php install --apply --profile full-governance --mode safe-merge --force --allow-core-overwrite --reinstall --backup install-20260430-235938
+[2026-05-01T00:00:23+00:00] stage=run-script-list attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/ai.php run-script --list
+[2026-05-01T00:00:31+00:00] stage=validate-install-surface attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/validate-install-surface.php --strict
+[2026-05-01T00:00:31+00:00] stage=validate-ai-config attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/validate-ai-config.php
+[2026-05-01T00:00:32+00:00] stage=validate-ai-catalog attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/validate-ai-catalog.php
+[2026-05-01T00:00:32+00:00] stage=generate-ai-catalog-check attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/generate-ai-catalog.php --check
+[2026-05-01T00:00:32+00:00] stage=generate-repo-structure-check attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/generate-repo-structure.php --check --with-scc
+[2026-05-01T00:00:34+00:00] stage=generate-repo-structure-check attempt=2 cmd="C:\xampp\php\php.exe" tools/ai/generate-repo-structure.php --check --with-scc
+[2026-05-01T00:00:34+00:00] stage=validate-generated-artifacts attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/validate-generated-artifacts.php
+[2026-05-01T00:00:58+00:00] heartbeat stage=validate-generated-artifacts elapsed=23.7s idle=0s running=yes
+[2026-05-01T00:00:58+00:00] stage=verify-json attempt=1 cmd="C:\xampp\php\php.exe" tools/ai/ai.php verify --json
+[2026-05-01T00:01:02+00:00] done status=failed

@@ -1,0 +1,216 @@
+{
+    "schema_version": 1,
+    "artifact": "freshness.json",
+    "generated_at": "2026-05-03T16:30:35+00:00",
+    "command": "php tools/ai/ai.php freshness",
+    "based_on_commit": "92683f9",
+    "based_on_branch": "main",
+    "input_hashes": {},
+    "status": "warning",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "php tools/ai/ai.php snapshot",
+    "data": {
+        "status": "warning",
+        "stale_count": 2,
+        "artifact_count": 28,
+        "artifacts": [
+            {
+                "artifact": "preflight.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "install.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "scripts.json",
+                "based_on_commit": "unknown",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "advisor.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "install-docs.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "packs.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "adapter-validate.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "package-verify.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "adapter-plan.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "install-transaction.json",
+                "based_on_commit": "28fe104",
+                "current_commit": "92683f9",
+                "stale": true,
+                "recommendation": "Regenerate this artifact before using next."
+            },
+            {
+                "artifact": "placeholders.json",
+                "based_on_commit": "dfa2cd8",
+                "current_commit": "92683f9",
+                "stale": true,
+                "recommendation": "Regenerate this artifact before using next."
+            },
+            {
+                "artifact": "toolchain.json",
+                "based_on_commit": "unknown",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "verify.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "package-lock.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "ai-commands.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "project-snapshot.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "freshness.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "diff-summary.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "risk.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "next.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "env-check.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "impact.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "ask.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "estimate.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "conflicts.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "find.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "symbols.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            },
+            {
+                "artifact": "instruction-audit.json",
+                "based_on_commit": "92683f9",
+                "current_commit": "92683f9",
+                "stale": false,
+                "recommendation": "Current at HEAD."
+            }
+        ]
+    }
+}

@@ -4,7 +4,7 @@
     "preToolUse": [
       {
         "type": "command",
-        "bash": "./scripts/copilot/pre-tool-use.sh",
+        "bash": "./scripts/ai/pre-tool-use.sh",
         "cwd": ".",
         "timeoutSec": 10
       }
@@ -12,7 +12,7 @@
     "postToolUse": [
       {
         "type": "command",
-        "bash": "./scripts/copilot/post-tool-use.sh",
+        "bash": "./scripts/ai/post-tool-use.sh",
         "cwd": ".",
         "timeoutSec": 10
       }

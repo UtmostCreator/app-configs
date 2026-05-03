@@ -1,92 +1,93 @@
 #!/usr/bin/env bash
+# Generate repository context tree through the safer shared wrapper path.
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./common.sh
+# shellcheck source=scripts/ai/common.sh
 source "$SCRIPT_DIR/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  run-repomix-context.sh [root] [options passed to repomix-context-tree.sh]
+
+Defaults:
+  --compress
+  --style xml
+
+Examples:
+  scripts/ai/run-repomix-context.sh .
+  scripts/ai/run-repomix-context.sh . --depth 2 --top 20
+EOF
+}
+
+case "${1:-}" in
+--help|-h)
+    usage
+    exit 0
+    ;;
+esac
 
 ROOT="${1:-.}"
 shift || true
 
-add_winget_paths() {
-    local user_name="${USER:-${USERNAME:-}}"
-    local base="/c/Users/${user_name}/AppData/Local/Microsoft/WinGet/Packages"
-    [[ -d "$base" ]] || return 0
-    local dir
-    while IFS= read -r dir; do
-        case ":$PATH:" in
-        *":$dir:"*) ;;
-        *) PATH="$PATH:$dir" ;;
-        esac
-    done < <(find "$base" -maxdepth 3 -type f -name '*.exe' -printf '%h\n' 2>/dev/null | sort -u)
-}
+agent_session_init "run-repomix-context"
+require_bins git jq rg scc repomix
 
-add_winget_paths
-
-(cd "$ROOT" && require_clean_secret_scan "$@")
-
-die() {
-    printf 'Error: %s\n' "$1" >&2
-    exit "${2:-1}"
-}
-
-need_bin() {
-    local name="$1"
-    command -v "$name" >/dev/null 2>&1 || return 1
-}
-
-install_hint() {
-    local name="$1"
-    case "$name" in
-    rg) printf '%s\n' 'Install ripgrep: winget install BurntSushi.ripgrep.MSVC | brew install ripgrep | apt install ripgrep' ;;
-    scc) printf '%s\n' 'Install scc: winget install BenBoyter.scc | brew install scc | use release binary/Go install on Linux' ;;
-    jq) printf '%s\n' 'Install jq: winget install jqlang.jq | brew install jq | apt install jq' ;;
-    repomix) printf '%s\n' 'Install repomix: npm install -g repomix' ;;
-    *) printf 'Install missing dependency: %s\n' "$name" ;;
-    esac
-}
-
-required=(bash git rg scc jq repomix)
-missing=()
-for bin in "${required[@]}"; do
-    if ! need_bin "$bin"; then
-        missing+=("$bin")
-    fi
-done
-
-if ((${#missing[@]} > 0)); then
-    printf 'Missing required dependencies:\n' >&2
-    for bin in "${missing[@]}"; do
-        printf '  - %s\n' "$bin" >&2
-        install_hint "$bin" >&2
-    done
-    exit 127
-fi
-
+root_abs="$(cd "$ROOT" && pwd)"
 TREE_SCRIPT="$SCRIPT_DIR/repomix-context-tree.sh"
 
-[[ -x "$TREE_SCRIPT" || -f "$TREE_SCRIPT" ]] || die "missing tree script at $TREE_SCRIPT" 2
+[[ -f "$TREE_SCRIPT" ]] || die "missing tree script at $TREE_SCRIPT"
 
-if ! bash "$TREE_SCRIPT" all "$ROOT" --compress --style xml "$@"; then
-    die "context tree generation failed" 3
+section "Secrets scan"
+require_clean_secret_scan "$root_abs"
+
+section "Generate context tree"
+
+if ! bash "$TREE_SCRIPT" all "$root_abs" --compress --style xml "$@"; then
+    die "context tree generation failed"
 fi
 
-OUTPUT_DIR="$ROOT/.repomix-context/tree-context"
+OUTPUT_DIR="$root_abs/.repomix-context/tree-context"
 INDEX_MD="$OUTPUT_DIR/index.md"
 PLAN_JSON="$OUTPUT_DIR/tree-plan.json"
+MANIFEST_JSON="$OUTPUT_DIR/tree-manifest.json"
 BUNDLES_DIR="$OUTPUT_DIR/bundles"
 
-[[ -f "$INDEX_MD" ]] || die "missing generated index: $INDEX_MD" 4
-[[ -f "$PLAN_JSON" ]] || die "missing generated plan: $PLAN_JSON" 4
-[[ -d "$BUNDLES_DIR" ]] || die "missing generated bundles directory: $BUNDLES_DIR" 4
+[[ -f "$INDEX_MD" ]] || die "missing generated index: $INDEX_MD"
+[[ -f "$PLAN_JSON" ]] || die "missing generated plan: $PLAN_JSON"
+[[ -f "$MANIFEST_JSON" ]] || die "missing generated manifest: $MANIFEST_JSON"
+[[ -d "$BUNDLES_DIR" ]] || die "missing generated bundles directory: $BUNDLES_DIR"
 
-if ! jq . "$PLAN_JSON" >/dev/null 2>&1; then
-    die "invalid JSON: $PLAN_JSON" 5
+jq . "$PLAN_JSON" >/dev/null
+jq . "$MANIFEST_JSON" >/dev/null
+
+bundle_count="$(find "$BUNDLES_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')"
+
+if [[ "$bundle_count" == "0" ]]; then
+    die "no context bundles generated in $BUNDLES_DIR"
 fi
 
-if ! jq -e 'length > 0' "$PLAN_JSON" >/dev/null 2>&1; then
-    die "no routes generated in $PLAN_JSON" 6
-fi
+jq -n \
+    --arg root "$root_abs" \
+    --arg index "$INDEX_MD" \
+    --arg plan "$PLAN_JSON" \
+    --arg manifest "$MANIFEST_JSON" \
+    --arg bundles "$BUNDLES_DIR" \
+    --argjson bundle_count "$bundle_count" \
+    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{
+      root: $root,
+      index: $index,
+      plan: $plan,
+      manifest: $manifest,
+      bundles: $bundles,
+      bundle_count: $bundle_count,
+      ts: $ts
+    }' >"$OUTPUT_DIR/run-manifest.json"
+
+log_json "context.tree.run" "$(cat "$OUTPUT_DIR/run-manifest.json")"
 
 cat <<EOF
 Context package generated.
@@ -97,12 +98,9 @@ Open first:
 Machine plan:
   .repomix-context/tree-context/tree-plan.json
 
+Manifest:
+  .repomix-context/tree-context/tree-manifest.json
+
 Bundles:
   .repomix-context/tree-context/bundles/
-
-Wire into AI agents:
-  - AGENTS.md
-  - .github/copilot-instructions.md
-  - docs/ai/copilot-tooling.md
-  - docs/ai/context-packing.md
 EOF

@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# Tests for scripts/copilot/pre-tool-use.sh
+# Tests for scripts/ai/pre-tool-use.sh
 #
 # Input contract: {"toolName":"bash","toolArgs":{"command":"..."}}
 # If toolName != "bash" the script exits 0 immediately (non-bash passthrough).
@@ -9,7 +9,7 @@
 # All tests skip gracefully if dependencies are missing.
 
 REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
-SCRIPT="$REPO_ROOT/scripts/copilot/pre-tool-use.sh"
+SCRIPT="$REPO_ROOT/scripts/ai/pre-tool-use.sh"
 
 # ---- helpers ----
 
@@ -130,7 +130,7 @@ teardown() {
 }
 
 @test "allows ai-search.sh read-only script" {
-    output=$(_hook '{"toolName":"bash","toolArgs":{"command":"scripts/copilot/ai-search.sh text foo ."}}')
+    output=$(_hook '{"toolName":"bash","toolArgs":{"command":"scripts/ai/ai-search.sh text foo ."}}')
     [ "$(_decision "$output")" = "allow" ]
 }
 

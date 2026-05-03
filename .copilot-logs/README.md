@@ -1,6 +1,6 @@
 # Copilot Logs
 
-This directory is the repo-local runtime log surface for the stronger `scripts/copilot/` tool layer.
+This directory is the repo-local runtime log surface for the stronger `scripts/ai/` tool layer.
 
 Committed file:
 

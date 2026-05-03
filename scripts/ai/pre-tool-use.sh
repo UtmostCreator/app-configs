@@ -181,28 +181,42 @@ if grep -Eq '^git[[:space:]]+stash[[:space:]]+(push|drop|pop)\b' <<<"$compact"; 
 fi
 
 # Tier 2: ai-edit in apply mode (APPLY=1 or VERIFY=1 prefix)
-if grep -Eq '(^|[[:space:]])(APPLY|VERIFY)=1' <<<"$compact" && grep -Eq 'scripts/copilot/ai-edit\.sh' <<<"$compact"; then
+if grep -Eq '(^|[[:space:]])(APPLY|VERIFY)=1' <<<"$compact" && grep -Eq 'scripts/ai/ai-edit\.sh' <<<"$compact"; then
     jq -cn --arg reason 'Tier 2: ai-edit apply mode mutates source files — confirm required' \
         '{permissionDecision:"ask", permissionDecisionReason:$reason}'
     exit 0
 fi
 
+# Tier 2: ai-edit dirty-tree apply mode
+if grep -Eq '(^|[[:space:]])REQUIRE_CLEAN_TREE=0' <<<"$compact" && grep -Eq 'scripts/ai/ai-edit\.sh' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 2: ai-edit with REQUIRE_CLEAN_TREE=0 may edit on a dirty worktree — confirm required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
 # Tier 3: ai-rollback apply
-if grep -Eq '^(\./)?scripts/copilot/ai-rollback\.sh[[:space:]]+apply\b' <<<"$compact"; then
+if grep -Eq '^(\./)?scripts/ai/ai-rollback\.sh[[:space:]]+apply\b' <<<"$compact"; then
     jq -cn --arg reason 'Tier 3: ai-rollback apply is a recovery mutation — explicit approval required' \
         '{permissionDecision:"ask", permissionDecisionReason:$reason}'
     exit 0
 fi
 
+# Tier 3: ai-rollback prune
+if grep -Eq '^(\./)?scripts/ai/ai-rollback\.sh[[:space:]]+prune\b' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 3: ai-rollback prune deletes rollback snapshots — explicit approval required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
 # Tier 3: repomix-scc-router clean or purge
-if grep -Eq '^(\./)?scripts/copilot/repomix-scc-router\.sh[[:space:]]+(clean|purge)\b' <<<"$compact"; then
+if grep -Eq '^(\./)?scripts/ai/repomix-scc-router\.sh[[:space:]]+(clean|purge)\b' <<<"$compact"; then
     jq -cn --arg reason 'Tier 3: repomix-scc-router clean/purge deletes generated artifacts — explicit approval required' \
         '{permissionDecision:"ask", permissionDecisionReason:$reason}'
     exit 0
 fi
 
 # Tier 3: repomix-context-tree clean or purge
-if grep -Eq '^(\./)?scripts/copilot/repomix-context-tree\.sh[[:space:]]+(clean|purge)\b' <<<"$compact"; then
+if grep -Eq '^(\./)?scripts/ai/repomix-context-tree\.sh[[:space:]]+(clean|purge)\b' <<<"$compact"; then
     jq -cn --arg reason 'Tier 3: repomix-context-tree clean/purge deletes generated artifacts — explicit approval required' \
         '{permissionDecision:"ask", permissionDecisionReason:$reason}'
     exit 0
@@ -216,31 +230,41 @@ if grep -Eq '^just[[:space:]]+context-(clean|purge)\b' <<<"$compact"; then
 fi
 
 # Tier 1: pure read-only copilot scripts
-if grep -Eq '^(\./)?scripts/copilot/(ai-search|ai-verify|preview-file|fd-files|rg-code|git-forensics|repo-stats|query-usage)\.sh\b' <<<"$compact"; then
+if grep -Eq '^(\./)?scripts/ai/(ai-search|ai-verify|preview-file|fd-files|rg-code|git-forensics|repo-stats|query-usage)\.sh\b' <<<"$compact"; then
     allow
     exit 0
 fi
 
 # Tier 1†: read-only-adjacent scripts (write only to known generated directories)
-if grep -Eq '^(\./)?scripts/copilot/(ai-diff-context|pack-context|gh-pr-context|repomix-context-tree)\.sh\b' <<<"$compact"; then
+if grep -Eq '^(\./)?scripts/ai/(ai-diff-context|pack-context|gh-pr-context|repomix-context-tree)\.sh\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^(\./)?scripts/(ai|copilot|opencode)/(ai-structured|ai-task)\.sh\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^(\./)?scripts/(ai|copilot|opencode)/(ai-test-select|ai-doc-check)\.sh\b' <<<"$compact"; then
     allow
     exit 0
 fi
 
 # Tier 1: ai-edit dry-run (no APPLY=1 or VERIFY=1)
-if grep -Eq '^(\./)?scripts/copilot/ai-edit\.sh\b' <<<"$compact"; then
+if grep -Eq '^(\./)?scripts/ai/ai-edit\.sh\b' <<<"$compact"; then
     allow
     exit 0
 fi
 
 # Tier 1: ai-rollback read-only subcommands (list, show)
-if grep -Eq '^(\./)?scripts/copilot/ai-rollback\.sh[[:space:]]+(list|show)\b' <<<"$compact"; then
+if grep -Eq '^(\./)?scripts/ai/ai-rollback\.sh[[:space:]]+(list|show)\b' <<<"$compact"; then
     allow
     exit 0
 fi
 
 # Tier 1: repomix-scc-router read-only subcommands
-if grep -Eq '^(\./)?scripts/copilot/repomix-scc-router\.sh[[:space:]]+(stats|plan|run|bundle)\b' <<<"$compact"; then
+if grep -Eq '^(\./)?scripts/ai/repomix-scc-router\.sh[[:space:]]+(stats|plan|run|bundle)\b' <<<"$compact"; then
     allow
     exit 0
 fi
@@ -257,7 +281,7 @@ if [[ "$strict_allowlist" == '1' ]]; then
         || grep -Eq '^git([[:space:]]+--no-pager)?[[:space:]]+(grep|log|blame|show|diff|status|rev-parse|symbolic-ref|describe|ls-files|range-diff)([[:space:]]|$)' <<<"$compact" \
         || grep -Eq '^git([[:space:]]+--no-pager)?[[:space:]]+worktree[[:space:]]+list([[:space:]]|$)' <<<"$compact" \
         || grep -Eq '^gh[[:space:]]+(issue[[:space:]]+(view|list)|pr[[:space:]]+(view|list|checks)|repo[[:space:]]+view|search[[:space:]]+(issues|prs)|workflow[[:space:]]+view|run[[:space:]]+(view|list))([[:space:]]|$)' <<<"$compact" \
-        || grep -Eq '^(\./)?scripts/copilot/(rg-code|fd-files|preview-file|git-forensics|gh-pr-context|ast-search|ai-search|ai-verify|repo-stats|query-usage|pack-context|repomix-context-tree|repomix-scc-router)\.sh([[:space:]]|$)' <<<"$compact"; then
+        || grep -Eq '^(\./)?scripts/ai/(rg-code|fd-files|preview-file|git-forensics|gh-pr-context|ast-search|ai-search|ai-verify|repo-stats|query-usage|pack-context|repomix-context-tree|repomix-scc-router)\.sh([[:space:]]|$)' <<<"$compact"; then
         allow
         exit 0
     fi

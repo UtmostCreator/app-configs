@@ -51,18 +51,26 @@
         "package:package-capability": 31,
         "package:shared-template": 3,
         "package:workflow-doc": 6,
+        "root:adapter-doc": 1,
+        "root:adapter-hook": 2,
+        "root:adapter-hook-script": 1,
+        "root:adapter-policy": 1,
+        "root:ai-script": 30,
         "root:capability": 13,
-        "root:copilot-policy": 1,
-        "root:copilot-schema": 1,
-        "root:copilot-script": 10,
+        "root:cli": 1,
         "root:exporter": 1,
         "root:generator": 1,
         "root:github-copilot-agent": 8,
         "root:github-copilot-instruction": 9,
-        "root:hook": 1,
+        "root:github-copilot-prompt": 8,
+        "root:opencode-agent": 6,
+        "root:opencode-command": 4,
+        "root:opencode-skill": 7,
         "root:php-reference": 3,
-        "root:root-doc": 17,
-        "root:validator": 2
+        "root:root-doc": 16,
+        "root:schema": 1,
+        "root:validator": 4,
+        "root:verifier": 2
     },
     "resources": [
         {
@@ -129,7 +137,7 @@
                 "docs/ai/project-context.md"
             ],
             "asset_counts": {
-                "agents": 2,
+                "agents": 5,
                 "instructions": 4,
                 "prompts": 3,
                 "commands": 2,
@@ -175,7 +183,7 @@
                 "docs/ai/workflow.md"
             ],
             "asset_counts": {
-                "agents": 4,
+                "agents": 8,
                 "instructions": 1,
                 "prompts": 3,
                 "commands": 2,
@@ -196,7 +204,7 @@
                 "docs/ai/project-context.md"
             ],
             "asset_counts": {
-                "agents": 0,
+                "agents": 4,
                 "instructions": 0,
                 "prompts": 0,
                 "commands": 2,
@@ -415,10 +423,10 @@
         {
             "scope": "package",
             "type": "opencode-agent-template",
-            "name": "researcher",
+            "name": "Researcher Agent",
             "path": "packages/ai-universal-rules/templates/opencode/agents/researcher.md",
             "runtime": "opencode",
-            "description": "description: Use when the task touches an unfamiliar area, ownership is unclear, or a later stage needs read-only grounding before planning or implementation in <PROJECT_NAME>"
+            "description": "description: Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review in app-configs"
         },
         {
             "scope": "package",
@@ -974,6 +982,286 @@
         },
         {
             "scope": "root",
+            "type": "adapter-doc",
+            "name": "copilot-getting-started",
+            "path": "docs/ai/copilot-getting-started.md",
+            "runtime": "github-copilot",
+            "description": "GitHub Copilot adapter onboarding, read order, and end-to-end task examples."
+        },
+        {
+            "scope": "root",
+            "type": "adapter-hook",
+            "name": "tool-guardian",
+            "path": ".github/hooks/tool-guardian.json",
+            "runtime": "github-copilot",
+            "description": "GitHub Copilot hook configuration for guarded tool execution."
+        },
+        {
+            "scope": "root",
+            "type": "adapter-hook",
+            "name": "tool-policy",
+            "path": ".github/hooks/tool-policy.json",
+            "runtime": "github-copilot",
+            "description": "GitHub Copilot hook configuration for tool policy enforcement."
+        },
+        {
+            "scope": "root",
+            "type": "adapter-hook-script",
+            "name": "tool-guardian.ps1",
+            "path": ".github/hooks/scripts/tool-guardian.ps1",
+            "runtime": "github-copilot",
+            "description": "PowerShell hook script for GitHub Copilot guarded tool execution."
+        },
+        {
+            "scope": "root",
+            "type": "adapter-policy",
+            "name": "copilot-policy",
+            "path": "policies/copilot/policy.yaml",
+            "runtime": "github-copilot",
+            "description": "Declarative allow, deny, and confirm rules for the GitHub Copilot adapter policy surface."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "ai-diff-context.sh",
+            "path": "scripts/ai/ai-diff-context.sh",
+            "runtime": "canonical",
+            "description": "Builds focused diff and change-context packs for AI review and implementation."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "ai-doc-check.sh",
+            "path": "scripts/ai/ai-doc-check.sh",
+            "runtime": "canonical",
+            "description": "Checks AI-facing documentation surfaces for required references and drift."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "ai-edit.sh",
+            "path": "scripts/ai/ai-edit.sh",
+            "runtime": "canonical",
+            "description": "Guarded edit wrapper with snapshots, dry-run behavior, visible diff, and optional verification."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "ai-rollback.sh",
+            "path": "scripts/ai/ai-rollback.sh",
+            "runtime": "canonical",
+            "description": "Rollback helper for explicit recovery work using session snapshots and refs."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "ai-search.sh",
+            "path": "scripts/ai/ai-search.sh",
+            "runtime": "canonical",
+            "description": "Unified search entrypoint for text, file, tracked, all, and structural discovery."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "ai-structured.sh",
+            "path": "scripts/ai/ai-structured.sh",
+            "runtime": "canonical",
+            "description": "Structured output helper for deterministic AI workflow data."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "ai-task.sh",
+            "path": "scripts/ai/ai-task.sh",
+            "runtime": "canonical",
+            "description": "Task-oriented AI workflow helper for routing, context, and verification steps."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "ai-test-select.sh",
+            "path": "scripts/ai/ai-test-select.sh",
+            "runtime": "canonical",
+            "description": "Selects likely relevant tests from changed files and task context."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "ai-verify.sh",
+            "path": "scripts/ai/ai-verify.sh",
+            "runtime": "canonical",
+            "description": "Project-aware verification gate for AI-driven changes across shell, PHP, JS/TS, and security checks."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "check-batch2.sh",
+            "path": "scripts/ai/check-batch2.sh",
+            "runtime": "canonical",
+            "description": "Batch verification helper for grouped AI workflow checks."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "check-batch3.sh",
+            "path": "scripts/ai/check-batch3.sh",
+            "runtime": "canonical",
+            "description": "Batch verification helper for grouped AI workflow checks."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "check-batch4a.sh",
+            "path": "scripts/ai/check-batch4a.sh",
+            "runtime": "canonical",
+            "description": "Batch verification helper for grouped AI workflow checks."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "check-batch4b.sh",
+            "path": "scripts/ai/check-batch4b.sh",
+            "runtime": "canonical",
+            "description": "Batch verification helper for grouped AI workflow checks."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "common.sh",
+            "path": "scripts/ai/common.sh",
+            "runtime": "canonical",
+            "description": "Shared helper library for AI workflow scripts, logging, snapshots, and token-budget checks."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "fd-files.sh",
+            "path": "scripts/ai/fd-files.sh",
+            "runtime": "canonical",
+            "description": "Repo-aware file discovery wrapper around fd with safer defaults."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "gh-pr-context.sh",
+            "path": "scripts/ai/gh-pr-context.sh",
+            "runtime": "canonical",
+            "description": "GitHub PR context wrapper with metadata, diff, checks, reviews, and optional PR-scoped context packing."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "git-forensics.sh",
+            "path": "scripts/ai/git-forensics.sh",
+            "runtime": "canonical",
+            "description": "Git history and blame wrapper for evidence-oriented code archaeology."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "install-mandatory-tools.sh",
+            "path": "scripts/ai/install-mandatory-tools.sh",
+            "runtime": "canonical",
+            "description": "Installs mandatory CLI tools required by the AI workflow script layer."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "pack-context.sh",
+            "path": "scripts/ai/pack-context.sh",
+            "runtime": "canonical",
+            "description": "Builds bounded repository context packs for AI task execution."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "post-tool-use.sh",
+            "path": "scripts/ai/post-tool-use.sh",
+            "runtime": "canonical",
+            "description": "Post-tool hook helper for tool usage logging and failure classification."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "pre-tool-use.sh",
+            "path": "scripts/ai/pre-tool-use.sh",
+            "runtime": "canonical",
+            "description": "Pre-tool hook helper for approval boundaries and command policy enforcement."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "preview-file.sh",
+            "path": "scripts/ai/preview-file.sh",
+            "runtime": "canonical",
+            "description": "Smart file preview wrapper with text and fallback modes."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "query-usage.sh",
+            "path": "scripts/ai/query-usage.sh",
+            "runtime": "canonical",
+            "description": "Usage and repository-size query helper for AI context planning."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "repo-tool-inventory.sh",
+            "path": "scripts/ai/repo-tool-inventory.sh",
+            "runtime": "canonical",
+            "description": "Generates the required tool inventory from scripts and workflow requirements."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "repomix-context-tree.sh",
+            "path": "scripts/ai/repomix-context-tree.sh",
+            "runtime": "canonical",
+            "description": "Builds repository tree context for Repomix-based AI context packing."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "repomix-scc-router.sh",
+            "path": "scripts/ai/repomix-scc-router.sh",
+            "runtime": "canonical",
+            "description": "Ranked context router that produces TSV and JSON bundle plans with churn-aware scoring."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "rg-code.sh",
+            "path": "scripts/ai/rg-code.sh",
+            "runtime": "canonical",
+            "description": "Mode-aware ripgrep wrapper with JSON, file-list, count, and context output modes."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "run-repomix-context.sh",
+            "path": "scripts/ai/run-repomix-context.sh",
+            "runtime": "canonical",
+            "description": "Runs Repomix context generation with repository-aware defaults."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "session-checkpoint.sh",
+            "path": "scripts/ai/session-checkpoint.sh",
+            "runtime": "canonical",
+            "description": "Creates session checkpoints for recovery and traceability."
+        },
+        {
+            "scope": "root",
+            "type": "ai-script",
+            "name": "watch-loop.sh",
+            "path": "scripts/ai/watch-loop.sh",
+            "runtime": "canonical",
+            "description": "Watch-based verification loop with debounce and repo-local session logging."
+        },
+        {
+            "scope": "root",
             "type": "capability",
             "name": "agent-observability-and-evidence",
             "path": "docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md",
@@ -1078,99 +1366,11 @@
         },
         {
             "scope": "root",
-            "type": "copilot-policy",
-            "name": "policy.yaml",
-            "path": "policies/copilot/policy.yaml",
-            "runtime": "github-copilot",
-            "description": "Declarative allow, deny, and confirm rules for the Copilot command policy surface."
-        },
-        {
-            "scope": "root",
-            "type": "copilot-schema",
-            "name": "evidence-event.schema.json",
-            "path": ".schemas/evidence-event.schema.json",
-            "runtime": "github-copilot",
-            "description": "JSON schema for durable agent evidence events emitted by supported runtime surfaces."
-        },
-        {
-            "scope": "root",
-            "type": "copilot-script",
-            "name": "ai-diff-context.sh",
-            "path": "scripts/copilot/ai-diff-context.sh",
-            "runtime": "github-copilot",
-            "description": "Incremental context packer for changed files, PR slices, recent changes, and touched areas."
-        },
-        {
-            "scope": "root",
-            "type": "copilot-script",
-            "name": "ai-edit.sh",
-            "path": "scripts/copilot/ai-edit.sh",
-            "runtime": "github-copilot",
-            "description": "Guarded broad-edit wrapper with snapshots, dry-run behavior, visible diff, and optional verification."
-        },
-        {
-            "scope": "root",
-            "type": "copilot-script",
-            "name": "ai-rollback.sh",
-            "path": "scripts/copilot/ai-rollback.sh",
-            "runtime": "github-copilot",
-            "description": "Rollback helper for explicit recovery work using session snapshots and refs."
-        },
-        {
-            "scope": "root",
-            "type": "copilot-script",
-            "name": "ai-search.sh",
-            "path": "scripts/copilot/ai-search.sh",
-            "runtime": "github-copilot",
-            "description": "Unified search entrypoint for text, file, tracked, all, and structural discovery."
-        },
-        {
-            "scope": "root",
-            "type": "copilot-script",
-            "name": "ai-verify.sh",
-            "path": "scripts/copilot/ai-verify.sh",
-            "runtime": "github-copilot",
-            "description": "Project-aware verification gate for AI-driven changes across shell, PHP, JS/TS, and security checks."
-        },
-        {
-            "scope": "root",
-            "type": "copilot-script",
-            "name": "common.sh",
-            "path": "scripts/copilot/common.sh",
-            "runtime": "github-copilot",
-            "description": "Shared helper library for Copilot wrappers, logging, snapshots, and token-budget checks."
-        },
-        {
-            "scope": "root",
-            "type": "copilot-script",
-            "name": "gh-pr-context.sh",
-            "path": "scripts/copilot/gh-pr-context.sh",
-            "runtime": "github-copilot",
-            "description": "GitHub PR context wrapper with metadata, diff, checks, reviews, and optional PR-scoped context packing."
-        },
-        {
-            "scope": "root",
-            "type": "copilot-script",
-            "name": "repomix-scc-router.sh",
-            "path": "scripts/copilot/repomix-scc-router.sh",
-            "runtime": "github-copilot",
-            "description": "Ranked context router that produces TSV and JSON bundle plans with churn-aware scoring."
-        },
-        {
-            "scope": "root",
-            "type": "copilot-script",
-            "name": "rg-code.sh",
-            "path": "scripts/copilot/rg-code.sh",
-            "runtime": "github-copilot",
-            "description": "Mode-aware ripgrep wrapper with JSON, file-list, count, and context output modes."
-        },
-        {
-            "scope": "root",
-            "type": "copilot-script",
-            "name": "watch-loop.sh",
-            "path": "scripts/copilot/watch-loop.sh",
-            "runtime": "github-copilot",
-            "description": "Watch-based verification loop with debounce and repo-local session logging."
+            "type": "cli",
+            "name": "ai",
+            "path": "tools/ai/ai.php",
+            "runtime": "php",
+            "description": "Main AI workflow CLI dispatcher."
         },
         {
             "scope": "root",
@@ -1191,66 +1391,66 @@
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "architect.agent.md",
+            "name": "architect",
             "path": ".github/agents/architect.agent.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "name: Repository Architect"
         },
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "config-maintainer.agent.md",
+            "name": "config-maintainer",
             "path": ".github/agents/config-maintainer.agent.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "name: config-maintainer"
         },
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "implementer.agent.md",
+            "name": "implementer",
             "path": ".github/agents/implementer.agent.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "name: Repository Implementer"
         },
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "refactorer.agent.md",
+            "name": "refactorer",
             "path": ".github/agents/refactorer.agent.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "name: Repository Refactorer"
         },
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "release-auditor.agent.md",
+            "name": "release-auditor",
             "path": ".github/agents/release-auditor.agent.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "name: Release Auditor"
         },
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "researcher.agent.md",
+            "name": "researcher",
             "path": ".github/agents/researcher.agent.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "name: Repository Researcher"
         },
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "reviewer.agent.md",
+            "name": "reviewer",
             "path": ".github/agents/reviewer.agent.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "name: Repository Reviewer"
         },
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "workflow-auditor.agent.md",
+            "name": "workflow-auditor",
             "path": ".github/agents/workflow-auditor.agent.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "name: workflow-auditor"
         },
         {
             "scope": "root",
@@ -1258,7 +1458,7 @@
             "name": "ai-workflow",
             "path": ".github/instructions/ai-workflow.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "applyTo: \"AGENTS.md,CLAUDE.md,README.md,docs/ai/**,.github/copilot-instructions.md,.github/agents/**,.github/instructions/**\""
         },
         {
             "scope": "root",
@@ -1266,7 +1466,7 @@
             "name": "architecture",
             "path": ".github/instructions/architecture.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "applyTo: \".ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools\""
         },
         {
             "scope": "root",
@@ -1274,7 +1474,7 @@
             "name": "ci",
             "path": ".github/instructions/ci.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "applyTo: \".github/workflows/**/*,**/*.{yml,yaml}\""
         },
         {
             "scope": "root",
@@ -1282,7 +1482,7 @@
             "name": "config",
             "path": ".github/instructions/config.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "applyTo: \"configs/vscode/**,configs/shell/**,tools/**,configs/php/**,.editorconfig,.eslintrc.json,.prettierrc.json,.stylelintrc.json\""
         },
         {
             "scope": "root",
@@ -1290,7 +1490,7 @@
             "name": "docs",
             "path": ".github/instructions/docs.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "applyTo: \"README.md,docs/**,packages/ai-universal-rules/**/*.md\""
         },
         {
             "scope": "root",
@@ -1298,7 +1498,7 @@
             "name": "frontend",
             "path": ".github/instructions/frontend.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "applyTo: \"<FRONTEND_PATH_GLOB>\""
         },
         {
             "scope": "root",
@@ -1306,7 +1506,7 @@
             "name": "php",
             "path": ".github/instructions/php.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "applyTo: \"**/*.php\""
         },
         {
             "scope": "root",
@@ -1314,7 +1514,7 @@
             "name": "targets",
             "path": ".github/instructions/targets.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "applyTo: \"**\""
         },
         {
             "scope": "root",
@@ -1322,15 +1522,207 @@
             "name": "testing",
             "path": ".github/instructions/testing.instructions.md",
             "runtime": "github-copilot",
-            "description": null
+            "description": "applyTo: \"<TEST_PATH_GLOB>\""
         },
         {
             "scope": "root",
-            "type": "hook",
-            "name": "tool-guardian",
-            "path": ".github/hooks/tool-guardian.json",
+            "type": "github-copilot-prompt",
+            "name": "bug-regression",
+            "path": ".github/prompts/bug-regression.prompt.md",
             "runtime": "github-copilot",
-            "description": "Protects the live repo with a narrow Copilot hook guard."
+            "description": "name: bug-regression"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "docs-sync",
+            "path": ".github/prompts/docs-sync.prompt.md",
+            "runtime": "github-copilot",
+            "description": "name: docs-sync"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "investigate-bug",
+            "path": ".github/prompts/investigate-bug.prompt.md",
+            "runtime": "github-copilot",
+            "description": "mode: agent"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "new-feature",
+            "path": ".github/prompts/new-feature.prompt.md",
+            "runtime": "github-copilot",
+            "description": "name: new-feature"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "regression-test",
+            "path": ".github/prompts/regression-test.prompt.md",
+            "runtime": "github-copilot",
+            "description": "name: regression-test"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "release-readiness",
+            "path": ".github/prompts/release-readiness.prompt.md",
+            "runtime": "github-copilot",
+            "description": "name: release-readiness"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "review-code",
+            "path": ".github/prompts/review-code.prompt.md",
+            "runtime": "github-copilot",
+            "description": "name: review-code"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "trace-regression",
+            "path": ".github/prompts/trace-regression.prompt.md",
+            "runtime": "github-copilot",
+            "description": "mode: agent"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "architect",
+            "path": ".opencode/agents/architect.md",
+            "runtime": "opencode",
+            "description": "description: Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in app-configs"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "implementer",
+            "path": ".opencode/agents/implementer.md",
+            "runtime": "opencode",
+            "description": "description: Use when a bounded slice is clear and implementation plus focused verification should happen in app-configs"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "refactorer",
+            "path": ".opencode/agents/refactorer.md",
+            "runtime": "opencode",
+            "description": "description: Use when behavior is already correct and the remaining problem is structure, readability, or maintainability in app-configs"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "release-auditor",
+            "path": ".opencode/agents/release-auditor.md",
+            "runtime": "opencode",
+            "description": "description: Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review in app-configs"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "researcher",
+            "path": ".opencode/agents/researcher.md",
+            "runtime": "opencode",
+            "description": "description: Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review in app-configs"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "reviewer",
+            "path": ".opencode/agents/reviewer.md",
+            "runtime": "opencode",
+            "description": "description: Use when reviewing a change set for correctness, regressions, policy fit, and missing verification in app-configs"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "bug-regression",
+            "path": ".opencode/commands/bug-regression.md",
+            "runtime": "opencode",
+            "description": "Use this command as the runtime entry point for a bounded bug-fix task."
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "plan-slice",
+            "path": ".opencode/commands/plan-slice.md",
+            "runtime": "opencode",
+            "description": "Use this command when a task is multi-step, ambiguous, or architecture-affecting."
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "review-diff",
+            "path": ".opencode/commands/review-diff.md",
+            "runtime": "opencode",
+            "description": "description: Compatibility command for diff-first review; prefer the review-diff skill for reusable guidance"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "verify",
+            "path": ".opencode/commands/verify.md",
+            "runtime": "opencode",
+            "description": "description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "bug-regression",
+            "path": ".opencode/skills/bug-regression/SKILL.md",
+            "runtime": "opencode",
+            "description": "name: bug-regression"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "dependency-upgrade",
+            "path": ".opencode/skills/dependency-upgrade/SKILL.md",
+            "runtime": "opencode",
+            "description": "name: dependency-upgrade"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "project-context",
+            "path": ".opencode/skills/project-context/SKILL.md",
+            "runtime": "opencode",
+            "description": "name: project-context"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "project-stack",
+            "path": ".opencode/skills/project-stack/SKILL.md",
+            "runtime": "opencode",
+            "description": "name: project-stack"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "release-safety",
+            "path": ".opencode/skills/release-safety/SKILL.md",
+            "runtime": "opencode",
+            "description": "name: release-safety"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "review-diff",
+            "path": ".opencode/skills/review-diff/SKILL.md",
+            "runtime": "opencode",
+            "description": "name: review-diff"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "verify-change",
+            "path": ".opencode/skills/verify-change/SKILL.md",
+            "runtime": "opencode",
+            "description": "name: verify-change"
         },
         {
             "scope": "root",
@@ -1378,7 +1770,7 @@
             "name": "agent-ops",
             "path": "docs/ai/agent-ops.md",
             "runtime": "canonical",
-            "description": "AgentOps model for observability, evaluation, optimization, IAM, and architecture routing."
+            "description": "Agent operations model for observability, evaluation, optimization, IAM, and architecture routing."
         },
         {
             "scope": "root",
@@ -1455,14 +1847,6 @@
         {
             "scope": "root",
             "type": "root-doc",
-            "name": "copilot-getting-started",
-            "path": "docs/ai/copilot-getting-started.md",
-            "runtime": "canonical",
-            "description": "Quick-start onboarding for Copilot setup, read order, and end-to-end task examples."
-        },
-        {
-            "scope": "root",
-            "type": "root-doc",
             "name": "failure-handling",
             "path": "docs/ai/failure-handling.md",
             "runtime": "canonical",
@@ -1482,7 +1866,7 @@
             "name": "project-context-doc",
             "path": "docs/ai/project-context.md",
             "runtime": "canonical",
-            "description": "Durable repository context for instructions, capabilities, and adapters."
+            "description": "Durable repository context for instructions, capabilities, and runtime adapters."
         },
         {
             "scope": "root",
@@ -1490,7 +1874,15 @@
             "name": "workflow",
             "path": "docs/ai/workflow.md",
             "runtime": "canonical",
-            "description": "Default live workflow for risk, verification, and docs sync."
+            "description": "Default live workflow for risk, verification, context, and docs sync."
+        },
+        {
+            "scope": "root",
+            "type": "schema",
+            "name": "evidence-event.schema.json",
+            "path": ".schemas/evidence-event.schema.json",
+            "runtime": "canonical",
+            "description": "JSON schema for durable agent evidence events emitted by supported runtime surfaces."
         },
         {
             "scope": "root",
@@ -1507,6 +1899,38 @@
             "path": "tools/ai/validate-ai-config.php",
             "runtime": "php",
             "description": "Validates the root live AI workflow layer."
+        },
+        {
+            "scope": "root",
+            "type": "validator",
+            "name": "validate-generated-artifacts",
+            "path": "tools/ai/validate-generated-artifacts.php",
+            "runtime": "php",
+            "description": "Validates generated artifact presence and drift."
+        },
+        {
+            "scope": "root",
+            "type": "validator",
+            "name": "validate-install-surface",
+            "path": "tools/ai/validate-install-surface.php",
+            "runtime": "php",
+            "description": "Validates install pack, profile, script, and adapter template contracts."
+        },
+        {
+            "scope": "root",
+            "type": "verifier",
+            "name": "full-install-validation",
+            "path": "tools/ai/full-install-validation.php",
+            "runtime": "php",
+            "description": "Runs broad validation across install, catalog, generated artifacts, scripts, and inventory."
+        },
+        {
+            "scope": "root",
+            "type": "verifier",
+            "name": "verify-full-install",
+            "path": "tools/ai/verify-full-install.php",
+            "runtime": "php",
+            "description": "Runs full install verification flow and writes durable evidence."
         }
     ],
     "starter_profiles": [

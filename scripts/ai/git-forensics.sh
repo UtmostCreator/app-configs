@@ -2,6 +2,7 @@
 # Repo-aware git history and blame wrapper.
 
 set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 require_bins git

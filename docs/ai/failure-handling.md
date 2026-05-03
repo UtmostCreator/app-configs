@@ -10,7 +10,7 @@ Use this file to classify command failures, decide whether to retry, and record 
 - Do not hide a failed command behind a later successful command. Record both.
 - Do not blindly rerun the same failing command without a reason.
 - If the command was wrong, write down the corrected usage and what to avoid next time.
-- For broad repository edits, prefer `scripts/copilot/ai-edit.sh` over raw mass-edit shell commands so snapshots, dry-runs, and post-edit verification are available.
+- For broad repository edits, prefer `scripts/ai/ai-edit.sh` over raw mass-edit shell commands so snapshots, dry-runs, and post-edit verification are available.
 
 ## Failure Log Contract
 

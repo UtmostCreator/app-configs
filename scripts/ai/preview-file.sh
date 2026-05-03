@@ -2,6 +2,7 @@
 # Smart preview wrapper with text and fallback modes.
 
 set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 usage() {

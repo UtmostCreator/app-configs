@@ -4,7 +4,7 @@ description: Use when auditing dependency, build, release, or compatibility risk
 mode: subagent
 hidden: false
 temperature: 0.0
-argument-hint: "Describe the dependency, build, or compatibility concern to audit"
+argument-hint: 'Describe the dependency, build, or compatibility concern to audit'
 capabilities:
   - read
 permission:

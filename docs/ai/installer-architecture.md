@@ -7,6 +7,8 @@ This document explains the full installer model, what gets installed, and how to
 - `php tools/ai/install-ai-kit.php` is the canonical installer implementation.
 - `bash tools/ai/install-ai-kit.sh` is a thin shell wrapper that forwards all args to PHP.
 - `bash tools/ai/install-copilot-kit.sh` is a compatibility wrapper for legacy Copilot-only workflows.
+- `bash tools/ai/install-opencode-kit.sh` is a compatibility wrapper for OpenCode-only workflows.
+- targets under `packages/ai-universal-rules/examples/` are reserved so install testing happens in dedicated external directories.
 
 ## V2 Compatibility And Design Lock
 
@@ -55,6 +57,12 @@ Flags:
 - `--force`: overwrite existing files/dirs.
 - `--no-base`: install runtime adapters only (do not copy `AGENTS.md`/`docs/ai/capabilities/*`).
 - `--allow-core-overwrite`: required with `--force` to replace existing base policy files and base capabilities.
+- `--with` / `--without`: add or remove optional packs from the selected profile.
+- `--all-features`: enable every registered optional pack.
+- `--run-after-install`: run a registered helper script after apply.
+- `--toolchain-check`, `--toolchain-install-plan`, `--toolchain-apply`: inspect or install safe tool prerequisites for the selected pack set.
+
+Recommended operator order is documented in `docs/ai/install-order.md`.
 
 ## Runtime Asset Map
 
@@ -79,6 +87,13 @@ OpenCode runtime:
 - `.opencode/agents/`
 - `.opencode/commands/`
 - `.opencode/skills/`
+
+Optional packs may also add:
+
+- `scripts/ai/` helper wrappers and `docs/ai/repo-required-tools.md` via `scripts-pack`
+- `tools/ai/advisor/` and project signal schemas via `advisor-pack`
+- hook and CI files via `hooks-pack` and `ci-pack`
+- extra capability folders such as preview, evaluation, service-boundary, and MCP docs via their matching packs
 
 ## Placeholder Adaptation
 
@@ -110,6 +125,7 @@ For shell hygiene (installer wrappers):
 
 - `bash -n tools/ai/install-ai-kit.sh`
 - `bash -n tools/ai/install-copilot-kit.sh`
+- `bash -n tools/ai/install-opencode-kit.sh`
 
 ## Official Runtime References
 

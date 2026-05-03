@@ -20,6 +20,7 @@ They should remain valid even if advanced agent features or prompt files are una
 - Prefer the smallest safe change.
 - For non-trivial work, classify risk as `low`, `medium`, or `high` to set review and verification depth.
 - Read existing code before proposing structural changes.
+- When the repository includes a tool map or command wrappers, load that routing first and prefer `rg`, `fd`, `ast-grep`/`sg`, and structured queries over raw `grep`, `find`, or broad file dumps.
 - Follow established repository patterns before inventing new abstractions.
 - Keep this file policy-focused and use prompt files, skills, or agents for deeper procedures.
 - Ask for approval before making: `<APPROVAL_REQUIRED_CHANGES>`

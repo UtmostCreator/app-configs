@@ -19,7 +19,7 @@ Deterministic catalog generated from installer registries.
 - `setup-docs` (0 items)
 - `capabilities-core` (0 items)
 - `base` (7 items)
-- `adapter-copilot` (4 items)
+- `adapter-copilot` (5 items)
 - `adapter-opencode` (4 items)
 - `capabilities-extended-lite` (2 items)
 - `capabilities-extended-full` (1 items)

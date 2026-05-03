@@ -16,49 +16,49 @@ capabilities:
 permission:
   edit: deny
   bash:
-    "*": deny
-    "command -v *": allow
-    "test -f *": allow
-    "test -x *": allow
-    "test -d *": allow
-    "stat *": allow
-    "pwd": allow
-    "ls *": allow
-    "fd *": allow
-    "eza *": allow
-    "rg *": allow
-    "git grep *": allow
-    "grep *": allow
-    "sed -n *": allow
-    "head *": allow
-    "tail *": allow
-    "nl *": allow
-    "jq *": allow
-    "yq *": allow
-    "file *": allow
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git ls-files*": allow
-    "git blame*": allow
-    "git branch*": allow
-    "git rev-parse*": allow
-    "bash scripts/ai/ai-search.sh *": allow
-    "bash scripts/ai/rg-code.sh *": allow
-    "bash scripts/ai/fd-files.sh *": allow
-    "bash scripts/ai/preview-file.sh *": allow
-    "bash scripts/ai/query-usage.sh *": allow
-    "bash scripts/ai/git-forensics.sh *": allow
-    "bash scripts/ai/ai-doc-check.sh --check*": allow
-    "php -l *": allow
-    "vendor/bin/phpunit *": allow
-    "./vendor/bin/phpunit *": allow
-    "phpunit *": allow
-    "shellcheck *": allow
-    "markdownlint-cli2 *": allow
-    "php tools/ai/validate-*.php *": allow
-    "php tools/ai/generate-*.php --check*": allow
+    '*': deny
+    'command -v *': allow
+    'test -f *': allow
+    'test -x *': allow
+    'test -d *': allow
+    'stat *': allow
+    'pwd': allow
+    'ls *': allow
+    'fd *': allow
+    'eza *': allow
+    'rg *': allow
+    'git grep *': allow
+    'grep *': allow
+    'sed -n *': allow
+    'head *': allow
+    'tail *': allow
+    'nl *': allow
+    'jq *': allow
+    'yq *': allow
+    'file *': allow
+    'git status*': allow
+    'git diff*': allow
+    'git log*': allow
+    'git show*': allow
+    'git ls-files*': allow
+    'git blame*': allow
+    'git branch*': allow
+    'git rev-parse*': allow
+    'bash scripts/ai/ai-search.sh *': allow
+    'bash scripts/ai/rg-code.sh *': allow
+    'bash scripts/ai/fd-files.sh *': allow
+    'bash scripts/ai/preview-file.sh *': allow
+    'bash scripts/ai/query-usage.sh *': allow
+    'bash scripts/ai/git-forensics.sh *': allow
+    'bash scripts/ai/ai-doc-check.sh --check*': allow
+    'php -l *': allow
+    'vendor/bin/phpunit *': allow
+    './vendor/bin/phpunit *': allow
+    'phpunit *': allow
+    'shellcheck *': allow
+    'markdownlint-cli2 *': allow
+    'php tools/ai/validate-*.php *': allow
+    'php tools/ai/generate-*.php --check*': allow
 ---
 
 # Reviewer Agent
@@ -88,16 +88,16 @@ Load only what is relevant: `AGENTS.md`, `README.md`, `docs/ai/project-context.m
 
 ## Capability Routing
 
-| Capability | Load when review involves |
-|---|---|
-| `review-diff` | every review |
-| `verify-change` | changed behavior or verification claims |
-| `bug-regression` | bug fix or regression test |
-| `adapter-drift` | provider parity, generated adapter surfaces |
-| `authorization-and-tool-governance` | permissions, hooks, policy surfaces |
-| `config-change-safety` | config, JSON/YAML, runtime flags |
-| `release-safety` | medium/high risk, rollout/rollback |
-| `docs-sync` | docs, generated docs, capability alignment |
+| Capability                          | Load when review involves                   |
+| ----------------------------------- | ------------------------------------------- |
+| `review-diff`                       | every review                                |
+| `verify-change`                     | changed behavior or verification claims     |
+| `bug-regression`                    | bug fix or regression test                  |
+| `adapter-drift`                     | provider parity, generated adapter surfaces |
+| `authorization-and-tool-governance` | permissions, hooks, policy surfaces         |
+| `config-change-safety`              | config, JSON/YAML, runtime flags            |
+| `release-safety`                    | medium/high risk, rollout/rollback          |
+| `docs-sync`                         | docs, generated docs, capability alignment  |
 
 Load in this order: `CAPABILITY.md`, `checklist.md`, `gotchas.md`, `examples.md`, `reference.md`.
 
@@ -118,50 +118,57 @@ Load in this order: `CAPABILITY.md`, `checklist.md`, `gotchas.md`, `examples.md`
 
 ## Risk Depth
 
-| Risk | Required depth |
-|---|---|
-| low | focused diff, direct tests, obvious contracts |
-| medium | focused diff, nearby contracts, failure paths, docs/generator drift |
-| high | deep review across contracts, migrations, rollback, observability, and failure recovery |
+| Risk   | Required depth                                                                          |
+| ------ | --------------------------------------------------------------------------------------- |
+| low    | focused diff, direct tests, obvious contracts                                           |
+| medium | focused diff, nearby contracts, failure paths, docs/generator drift                     |
+| high   | deep review across contracts, migrations, rollback, observability, and failure recovery |
 
 ## Verdict Rules
 
-| Verdict | Meaning |
-|---|---|
-| PASS | no blocking findings; verification proportional |
-| PASS WITH NOTES | non-blocking issues or recommended follow-up |
-| FAIL | correctness, safety, contract, verification, or scope issue blocks merge |
+| Verdict         | Meaning                                                                  |
+| --------------- | ------------------------------------------------------------------------ |
+| PASS            | no blocking findings; verification proportional                          |
+| PASS WITH NOTES | non-blocking issues or recommended follow-up                             |
+| FAIL            | correctness, safety, contract, verification, or scope issue blocks merge |
 
 ## Finding Severity
 
-| Severity | Meaning |
-|---|---|
-| critical | unsafe, corrupting, security-sensitive, or merge-blocking production risk |
-| major | correctness, contract, regression, or verification issue that blocks merge |
-| minor | should fix, but not necessarily merge-blocking |
-| note | informational or follow-up recommendation |
+| Severity | Meaning                                                                    |
+| -------- | -------------------------------------------------------------------------- |
+| critical | unsafe, corrupting, security-sensitive, or merge-blocking production risk  |
+| major    | correctness, contract, regression, or verification issue that blocks merge |
+| minor    | should fix, but not necessarily merge-blocking                             |
+| note     | informational or follow-up recommendation                                  |
 
 ## Final Output
 
 ```md
 ## Verdict
+
 PASS | PASS WITH NOTES | FAIL
 
 ## Findings
+
 | Severity | Location | Category | Issue | Fix direction |
-|---|---|---|---|---|
+| -------- | -------- | -------- | ----- | ------------- |
 
 ## Risk Assessment
-| Field | Value |
-|---|---|
-| Reported risk | low / medium / high / unknown |
-| Appropriate | yes / no / unknown |
-| Verification proportional | yes / no / unknown |
+
+| Field                     | Value                         |
+| ------------------------- | ----------------------------- |
+| Reported risk             | low / medium / high / unknown |
+| Appropriate               | yes / no / unknown            |
+| Verification proportional | yes / no / unknown            |
 
 ## Verification Reviewed
+
 ## Duplicate Logic Check
+
 ## Adapter / Generated Artifact Check
+
 ## Handoff Notes For Next Agent
+
 ## Recommended Next Step
 ```
 

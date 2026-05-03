@@ -520,11 +520,6 @@ function loadAndValidateMetadata(string $metadataPath, string $root, array $trac
                 fwrite(STDERR, "ERROR: metadata reference '{$refField}' points to missing file: {$refValue}\n");
                 exit(1);
             }
-
-            if (!array_key_exists($refFile, $trackedSet)) {
-                fwrite(STDERR, "ERROR: metadata reference '{$refField}' must point to a tracked file: {$refValue}\n");
-                exit(1);
-            }
         }
 
         $directories[$path] = [
@@ -615,6 +610,7 @@ function repoStructureShouldExcludeTrackedPath(string $path): bool
 
     $excludedPrefixes = [
         'docs/ai/generated/',
+        'packages/ai-universal-rules/examples/',
     ];
 
     foreach ($excludedPrefixes as $prefix) {

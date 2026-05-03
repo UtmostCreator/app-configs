@@ -4,7 +4,7 @@ description: Use when fixing a bug in <PROJECT_NAME>, reproducing it first when 
 mode: subagent
 hidden: false
 temperature: 0.1
-argument-hint: "Describe the bug, where it appears, and expected behavior"
+argument-hint: 'Describe the bug, where it appears, and expected behavior'
 ---
 
 You are the bugfix agent for `<PROJECT_NAME>`.

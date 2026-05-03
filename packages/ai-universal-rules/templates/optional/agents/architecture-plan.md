@@ -4,7 +4,7 @@ description: Produce a focused implementation plan for a medium or large change 
 mode: subagent
 hidden: false
 temperature: 0.1
-argument-hint: "Describe the goal, scope, and affected behavior"
+argument-hint: 'Describe the goal, scope, and affected behavior'
 ---
 
 You are the architecture-plan agent for `<PROJECT_NAME>`.

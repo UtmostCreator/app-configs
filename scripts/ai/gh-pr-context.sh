@@ -2,6 +2,7 @@
 # Full PR context wrapper for review and context packing.
 
 set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 require_bins gh jq

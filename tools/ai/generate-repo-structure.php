@@ -51,16 +51,9 @@ $trackedFiles = array_values(
     )
 );
 
-$generatedExclusions = [
-    'docs/ai/generated/repo-structure.json' => true,
-    'docs/ai/generated/repo-structure.csv' => true,
-    'docs/ai/generated/repo-structure.md' => true,
-    'docs/ai/generated/repo-structure.log' => true,
-];
-
 $trackedFiles = array_values(array_filter(
     $trackedFiles,
-    static fn(string $path): bool => !array_key_exists($path, $generatedExclusions)
+    static fn (string $path): bool => !repoStructureShouldExcludeTrackedPath($path)
 ));
 
 sort($trackedFiles, SORT_STRING);
@@ -595,4 +588,32 @@ function isAbsolutePath(string $path): bool
     }
 
     return preg_match('/^[A-Za-z]:[\\\\\/]/', $path) === 1;
+}
+
+function repoStructureShouldExcludeTrackedPath(string $path): bool
+{
+    $path = str_replace('\\', '/', $path);
+
+    $excludedExactPaths = [
+        'docs/ai/generated/repo-structure.json' => true,
+        'docs/ai/generated/repo-structure.csv' => true,
+        'docs/ai/generated/repo-structure.md' => true,
+        'docs/ai/generated/repo-structure.log' => true,
+    ];
+
+    if (isset($excludedExactPaths[$path])) {
+        return true;
+    }
+
+    $excludedPrefixes = [
+        'docs/ai/generated/',
+    ];
+
+    foreach ($excludedPrefixes as $prefix) {
+        if (str_starts_with($path, $prefix)) {
+            return true;
+        }
+    }
+
+    return false;
 }

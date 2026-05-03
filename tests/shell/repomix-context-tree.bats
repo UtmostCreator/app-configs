@@ -1,8 +1,8 @@
 #!/usr/bin/env bats
 
 REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
-TREE_SCRIPT="$REPO_ROOT/scripts/copilot/repomix-context-tree.sh"
-RUNNER_SCRIPT="$REPO_ROOT/scripts/copilot/run-repomix-context.sh"
+TREE_SCRIPT="$REPO_ROOT/scripts/ai/repomix-context-tree.sh"
+RUNNER_SCRIPT="$REPO_ROOT/scripts/ai/run-repomix-context.sh"
 FIXTURE_BIN="$REPO_ROOT/tests/fixtures/bin"
 
 setup() {

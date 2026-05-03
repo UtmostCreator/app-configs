@@ -1,26 +1,39 @@
 #!/usr/bin/env bash
+# Create a repository-local checkpoint using the shared snapshot system.
+
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-LOG_DIR="$ROOT_DIR/.copilot-logs"
-SNAP_DIR="$LOG_DIR/snapshots"
-SESSION_DIR="$LOG_DIR/sessions"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ai/common.sh
+source "$SCRIPT_DIR/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  session-checkpoint.sh [label]
+
+Creates a manifest-based snapshot in .copilot-logs/snapshots/.
+
+Examples:
+  scripts/ai/session-checkpoint.sh
+  scripts/ai/session-checkpoint.sh before-refactor
+EOF
+}
+
+case "${1:-}" in
+--help|-h)
+    usage
+    exit 0
+    ;;
+esac
 
 label="${1:-checkpoint}"
-session_id="session-checkpoint-$(date +%Y%m%d-%H%M%S)-$$"
 
-mkdir -p "$SNAP_DIR" "$SESSION_DIR"
+agent_session_init "session-checkpoint"
+require_bins jq git
 
-snap_file="$SNAP_DIR/${session_id}-${label}.patch"
-git -C "$ROOT_DIR" diff --binary HEAD >"$snap_file"
+snapshot="$(snapshot_create "$label")"
 
-if [[ ! -s "$snap_file" ]]; then
-    git -C "$ROOT_DIR" rev-parse HEAD >"${snap_file%.patch}.ref"
-    rm -f "$snap_file"
-    snap_file="${snap_file%.patch}.ref"
-fi
+printf 'checkpoint created: %s\n' "$snapshot"
 
-printf '{"ts":"%s","session":"%s","event":"snapshot.create","file":"%s"}\n' \
-    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$session_id" "$snap_file" >>"$LOG_DIR/tool-usage.jsonl"
-
-printf 'checkpoint created: %s\n' "$snap_file"
+log_json "checkpoint.create" "$(jq -cn --arg snapshot "$snapshot" --arg label "$label" '{snapshot:$snapshot, label:$label}')"

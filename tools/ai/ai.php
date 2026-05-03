@@ -14,6 +14,8 @@ require_once __DIR__ . '/advisor/prompt-builder.php';
 require_once __DIR__ . '/advisor/drift.php';
 require_once __DIR__ . '/advisor/submitter.php';
 
+const AI_DIR_MODE = 0755;
+
 function aiUsage(): void
 {
     $usage = <<<'TXT'
@@ -207,6 +209,11 @@ function aiRunCommand(string $root, string $command): array
     ];
 }
 
+function aiShellNullRedirect(): string
+{
+    return PHP_OS_FAMILY === 'Windows' ? ' 2>NUL' : ' 2>/dev/null';
+}
+
 function aiCliCommandExists(string $command): bool
 {
     $out = [];
@@ -294,11 +301,20 @@ function aiRunDiffSummary(string $root, array $args): int
     }
 
     $changed = [];
-    exec('git -C ' . escapeshellarg($root) . ' diff --name-only ' . escapeshellarg($base) . '...HEAD', $changed);
+    exec(
+        'git -C ' . escapeshellarg($root) . ' diff --name-only ' . escapeshellarg($base) . '...HEAD' . aiShellNullRedirect(),
+        $changed
+    );
     $staged = [];
-    exec('git -C ' . escapeshellarg($root) . ' diff --name-only --cached', $staged);
+    exec(
+        'git -C ' . escapeshellarg($root) . ' diff --name-only --cached' . aiShellNullRedirect(),
+        $staged
+    );
     $unstaged = [];
-    exec('git -C ' . escapeshellarg($root) . ' diff --name-only', $unstaged);
+    exec(
+        'git -C ' . escapeshellarg($root) . ' diff --name-only' . aiShellNullRedirect(),
+        $unstaged
+    );
 
     $classify = static function (string $path): string {
         if (str_starts_with($path, 'docs/')) {
@@ -366,12 +382,15 @@ function aiRunRisk(string $root, array $args): int
     }
 
     $changed = [];
-    exec('git -C ' . escapeshellarg($root) . ' diff --name-only ' . escapeshellarg($base) . '...HEAD', $changed);
+    exec(
+        'git -C ' . escapeshellarg($root) . ' diff --name-only ' . escapeshellarg($base) . '...HEAD' . aiShellNullRedirect(),
+        $changed
+    );
 
     $score = 0;
     $reasons = [];
     foreach ($changed as $path) {
-        if (str_starts_with($path, 'scripts/copilot/pre-tool-use.sh')) {
+        if (str_starts_with($path, 'scripts/ai/pre-tool-use.sh')) {
             $score += 30;
             $reasons[] = 'command approval policy changed';
             continue;
@@ -434,7 +453,7 @@ function aiRunVerify(string $root, array $args): int
     $jsonMode = in_array('--json', $args, true);
     $generatedDir = aiCliGeneratedDir($root);
     $logDir = $generatedDir . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'verify-' . date('Ymd-His');
-    if (!is_dir($logDir) && !mkdir($logDir, 0777, true) && !is_dir($logDir)) {
+    if (!is_dir($logDir) && !mkdir($logDir, AI_DIR_MODE, true) && !is_dir($logDir)) {
         throw new RuntimeException('Could not create verify log dir');
     }
 
@@ -1612,7 +1631,7 @@ function aiRunFileContext(string $root, array $args): int
 function aiRunOrphans(string $root): int
 {
     $candidates = [];
-    exec('git -C ' . escapeshellarg($root) . ' ls-files "scripts/*.sh" "scripts/copilot/*.sh" "tools/ai/*" "docs/ai/*.md"', $candidates);
+    exec('git -C ' . escapeshellarg($root) . ' ls-files "scripts/*.sh" "scripts/ai/*.sh" "tools/ai/*" "docs/ai/*.md"', $candidates);
 
     $possiblyOrphan = [];
     foreach ($candidates as $path) {
@@ -2260,7 +2279,7 @@ function aiRunInstallWorkflow(string $root, array $args): int
     $manifestPath = aiInstallManifestPath($root);
     $hasManifest = is_file($manifestPath);
 
-    if ($hasManifest && !$reinstall) {
+    if ($hasManifest && !$reinstall && !$dryRun) {
         $data = [
             'status' => 'blocked',
             'reason' => 'manifest already exists; use upgrade or install --reinstall',
@@ -2312,11 +2331,11 @@ function aiRunInstallWorkflow(string $root, array $args): int
 
         $backupRoot = $root . DIRECTORY_SEPARATOR . '.ai-backups';
         if (!is_dir($backupRoot)) {
-            mkdir($backupRoot, 0777, true);
+            mkdir($backupRoot, AI_DIR_MODE, true);
         }
         $backupId = 'install-' . gmdate('Ymd-His');
         $dir = $backupRoot . DIRECTORY_SEPARATOR . $backupId;
-        mkdir($dir, 0777, true);
+        mkdir($dir, AI_DIR_MODE, true);
 
         $zipPath = $dir . DIRECTORY_SEPARATOR . 'backup.zip';
         $filesDir = $dir . DIRECTORY_SEPARATOR . 'files';
@@ -2338,7 +2357,7 @@ function aiRunInstallWorkflow(string $root, array $args): int
 
         if ($zipStatus !== 'created') {
             if (!is_dir($filesDir)) {
-                mkdir($filesDir, 0777, true);
+                mkdir($filesDir, AI_DIR_MODE, true);
             }
             foreach ($targets as $rel) {
                 $abs = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, rtrim($rel, '/'));
@@ -2346,7 +2365,7 @@ function aiRunInstallWorkflow(string $root, array $args): int
                 if (is_file($abs)) {
                     $parent = dirname($snapshot);
                     if (!is_dir($parent)) {
-                        mkdir($parent, 0777, true);
+                        mkdir($parent, AI_DIR_MODE, true);
                     }
                     copy($abs, $snapshot);
                 }
@@ -2473,7 +2492,7 @@ function aiRunInstallWorkflow(string $root, array $args): int
         file_put_contents($manifestPath, $manifestJson);
         $derivedDir = dirname(aiInstallDerivedManifestPath($root));
         if (!is_dir($derivedDir)) {
-            mkdir($derivedDir, 0777, true);
+            mkdir($derivedDir, AI_DIR_MODE, true);
         }
         file_put_contents(aiInstallDerivedManifestPath($root), $manifestJson);
 
@@ -2937,13 +2956,13 @@ function aiRunRollbackWorkflow(string $root, array $args): int
             $dest = $root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
             if ($item->isDir()) {
                 if (!is_dir($dest)) {
-                    mkdir($dest, 0777, true);
+                    mkdir($dest, AI_DIR_MODE, true);
                 }
                 continue;
             }
             $parent = dirname($dest);
             if (!is_dir($parent)) {
-                mkdir($parent, 0777, true);
+                mkdir($parent, AI_DIR_MODE, true);
             }
             copy($item->getPathname(), $dest);
             $restored[] = $rel;

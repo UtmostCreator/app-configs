@@ -24,7 +24,7 @@ This document explains installer, validation, generation, and context scripts ma
   - Toolchain helper: `php tools/ai/ai.php toolchain --with repomix,scc --install-plan`.
   - Script runner: `php tools/ai/ai.php run-script --list` then `php tools/ai/ai.php run-script repomix-context --dry-run`.
   - Recommended analysis path before final verification: run Repomix context analysis, then advisor.
-  - Repomix-first: `bash scripts/ai/repomix-context-tree.sh analyze .` (or `bash scripts/copilot/repomix-context-tree.sh analyze .`).
+  - Repomix-first: `bash scripts/ai/repomix-context-tree.sh analyze .` (or `bash scripts/ai/repomix-context-tree.sh analyze .`).
   - Advisor pass: `php tools/ai/ai.php advisor --all`.
   - Advisor uses generated repository signals and context artifacts (`docs/ai/generated/project-signals.json`, `docs/ai/generated/advisor-context.md`) to provide deterministic fix suggestions.
   - Install docs generator: `php tools/ai/ai.php install-docs --write` and drift check via `php tools/ai/ai.php install-docs --check`.
@@ -61,16 +61,16 @@ This document explains installer, validation, generation, and context scripts ma
 
 ## Context Packing Scripts
 
-- Source scripts in this repository are under `scripts/copilot/`.
+- Source scripts in this repository are under `scripts/ai/`.
 - Installed scripts-pack targets are written to `scripts/ai/` by installer exports.
 
-- `bash scripts/copilot/run-repomix-context.sh <path>`
+- `bash scripts/ai/run-repomix-context.sh <path>`
   - Dependency-checking entrypoint for context packing.
   - Runs `repomix-context-tree.sh all` and validates outputs.
-- `bash scripts/copilot/repomix-context-tree.sh <analyze|plan|pack|all|clean|purge> [root]`
+- `bash scripts/ai/repomix-context-tree.sh <analyze|plan|pack|all|clean|purge> [root]`
   - Tree-based context planner and packer.
   - Requires: `repomix`, `scc`, `jq`.
-- `bash scripts/copilot/repomix-scc-router.sh ...`
+- `bash scripts/ai/repomix-scc-router.sh ...`
   - Ranked route planner used by tree-context pipeline.
 
 ## Generated Artifacts Maintained By Scripts

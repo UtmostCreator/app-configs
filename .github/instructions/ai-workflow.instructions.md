@@ -17,5 +17,5 @@ description: "Rules for AI workflow docs and runtime adapters"
 - For medium or high-risk agentic work, route through `docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md` so outputs include traceable evidence fields when supported.
 - For behavior-changing agentic work, route through `docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md` and include regression evidence in task output.
 - For medium/high-risk changes requiring temporary environment validation, route through `docs/ai/capabilities/preview-environments/CAPABILITY.md` and include lifecycle/cleanup evidence in task output.
-- Route broad edits through `scripts/copilot/ai-edit.sh` instead of raw shell replacement commands when the Copilot tool layer can handle the change.
-- Keep the Copilot hook policy aligned with `policies/copilot/policy.yaml`, `scripts/copilot/pre-tool-use.sh`, and `scripts/copilot/post-tool-use.sh`.
+- Route broad edits through `scripts/ai/ai-edit.sh` instead of raw shell replacement commands when the Copilot tool layer can handle the change.
+- Keep the Copilot hook policy aligned with `policies/copilot/policy.yaml`, `scripts/ai/pre-tool-use.sh`, and `scripts/ai/post-tool-use.sh`.

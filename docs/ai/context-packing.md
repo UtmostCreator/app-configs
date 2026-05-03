@@ -9,8 +9,8 @@ This repo uses:
 - `scc` to analyze files and folder weight
 - `repomix` to pack exact file lists into AI-friendly bundle files
 
-The primary tree planner lives at `scripts/copilot/repomix-context-tree.sh`.
-The older ranked-folder router at `scripts/copilot/repomix-scc-router.sh` is legacy compatibility only.
+The primary tree planner lives at `scripts/ai/repomix-context-tree.sh`.
+The older ranked-folder router at `scripts/ai/repomix-scc-router.sh` is legacy compatibility only.
 
 ## Why This Exists
 
@@ -50,7 +50,7 @@ The legacy router still writes to `.repomix-context/` and produces:
 This is the default rebuild command for this repository. It creates a compressed XML tree context with root and child indexes.
 
 ```bash
-scripts/copilot/repomix-context-tree.sh all . \
+scripts/ai/repomix-context-tree.sh all . \
   --compress \
   --style xml
 ```
@@ -77,22 +77,22 @@ The tree planner starts at the repo root, estimates packed token size, and keeps
 
 ```bash
 # inspect how the tree will split
-bash scripts/copilot/repomix-context-tree.sh analyze . --compress --style xml
+bash scripts/ai/repomix-context-tree.sh analyze . --compress --style xml
 
 # write the recursive plan and manifest without packing leaf artifacts yet
-bash scripts/copilot/repomix-context-tree.sh plan . --compress --style xml
+bash scripts/ai/repomix-context-tree.sh plan . --compress --style xml
 
 # pack leaf bundles and child indexes from the current tree plan
-bash scripts/copilot/repomix-context-tree.sh pack . --compress --style xml
+bash scripts/ai/repomix-context-tree.sh pack . --compress --style xml
 
 # run the full flow in one step
-bash scripts/copilot/repomix-context-tree.sh all . --compress --style xml
+bash scripts/ai/repomix-context-tree.sh all . --compress --style xml
 
 # remove bundles and indexes but keep plan files
-bash scripts/copilot/repomix-context-tree.sh clean .
+bash scripts/ai/repomix-context-tree.sh clean .
 
 # remove the full generated output directory
-bash scripts/copilot/repomix-context-tree.sh purge . --output-dir .repomix-context
+bash scripts/ai/repomix-context-tree.sh purge . --output-dir .repomix-context
 ```
 
 ### Legacy ranked-folder router
@@ -100,9 +100,9 @@ bash scripts/copilot/repomix-context-tree.sh purge . --output-dir .repomix-conte
 Use the router only when you explicitly want weighted folder ranking instead of the tree-context workflow.
 
 ```bash
-bash scripts/copilot/repomix-scc-router.sh stats . --depth 1
-bash scripts/copilot/repomix-scc-router.sh plan . --depth 1 --top 25 --min-code 300 --min-files 2
-bash scripts/copilot/repomix-scc-router.sh pack .
+bash scripts/ai/repomix-scc-router.sh stats . --depth 1
+bash scripts/ai/repomix-scc-router.sh plan . --depth 1 --top 25 --min-code 300 --min-files 2
+bash scripts/ai/repomix-scc-router.sh pack .
 ```
 
 ### For developers using `just`
@@ -167,7 +167,7 @@ The tree planner supports these packing options:
 Example:
 
 ```bash
-bash scripts/copilot/repomix-context-tree.sh all . \
+bash scripts/ai/repomix-context-tree.sh all . \
   --compress \
   --split-size 10mb \
   --include-logs \
@@ -220,8 +220,8 @@ Other install methods are listed in `docs/software-and-cli-tools.md`.
 The scripts themselves can be syntax-checked with:
 
 ```bash
-bash -n scripts/copilot/repomix-context-tree.sh
-bash -n scripts/copilot/repomix-scc-router.sh
+bash -n scripts/ai/repomix-context-tree.sh
+bash -n scripts/ai/repomix-scc-router.sh
 ```
 
 End-to-end verification requires local `scc` and `repomix` binaries.

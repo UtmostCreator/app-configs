@@ -8,7 +8,7 @@ This file tracks installer-adjacent gaps found during implementation and verific
 
 ## Evidence
 
-- command: `bash scripts/copilot/repomix-context-tree.sh analyze .`
+- command: `bash scripts/ai/repomix-context-tree.sh analyze .`
 - result: context outputs generated successfully under `.repomix-context/tree-context/`
 
 ## Fix Direction

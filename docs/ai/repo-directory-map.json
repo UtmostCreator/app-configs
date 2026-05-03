@@ -88,7 +88,7 @@
       "designed_for": "Humans and AI agents running repeatable repo workflows.",
       "install_guide": "docs/ai/copilot-tooling.md",
       "install_script": "tools/ai/install-copilot-kit.sh",
-      "ai_entrypoint": "scripts/copilot/run-repomix-context.sh",
+      "ai_entrypoint": "scripts/ai/run-repomix-context.sh",
       "notes": "Execution surface for guarded automation and evidence-oriented checks."
     },
     {

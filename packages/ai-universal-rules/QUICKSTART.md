@@ -16,6 +16,7 @@ For every repository:
 
 - `templates/core/AGENTS.template.md` -> `AGENTS.md`
 - `templates/core/project-context.template.md` -> `docs/ai/project-context.md`
+- `templates/core/workflow.template.md` -> `docs/ai/workflow.md`
 - `templates/capabilities/project-context/` -> `docs/ai/capabilities/project-context/`
 - `templates/capabilities/verify-change/` -> `docs/ai/capabilities/verify-change/`
 - `templates/capabilities/review-diff/` -> `docs/ai/capabilities/review-diff/`
@@ -31,16 +32,16 @@ Add only when the repo really needs them:
 
 For OpenCode:
 
-- `templates/opencode/agents/`
-- `templates/opencode/commands/`
-- `templates/opencode/skills/`
+- `templates/core/agents/`
+- `templates/workflows/`
+- `templates/commands/`
 
 For GitHub Copilot:
 
 - `templates/core/copilot-instructions.template.md` -> `.github/copilot-instructions.md`
-- `templates/github-copilot/instructions/`
-- `templates/github-copilot/agents/`
-- `templates/github-copilot/prompts/` when the active surface supports prompt files
+- `templates/instructions/`
+- `templates/core/agents/`
+- `templates/workflows/` when the active surface supports prompt files
 
 ## 4. Replace Placeholders
 
@@ -99,7 +100,7 @@ Only after the base flow works cleanly:
 
 ## 9. Use Generated Browse And Release Assets
 
-After changing templates, docs, or examples:
+After changing templates or docs:
 
 1. run `php tools/ai/generate-ai-catalog.php`
 2. inspect `packages/ai-universal-rules/docs/BROWSE.md`
@@ -118,4 +119,4 @@ Also generate installation instruction docs from live registries:
 - verification reports evidence instead of generic confidence
 - destructive actions are gated
 - runtime debug steps are documented for misbehavior
-- one worked example in the repo matches the actual setup
+- one canonical template layer defines each reusable workflow asset

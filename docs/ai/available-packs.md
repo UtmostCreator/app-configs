@@ -1,17 +1,10 @@
 # Available Packs
 
-Installed profile: `full-governance`
+Installed profile: `copilot`
 
 ## Installed
 
-- `capabilities-extended-full`
-- `hooks-pack`
-- `ci-pack`
-- `scripts-pack`
-- `policy-pack`
-- `evidence-pack`
-- `adapter-opencode`
-- `capabilities-extended-lite`
+- `adapter-copilot`
 - `base`
 - `setup-docs`
 - `capabilities-core`

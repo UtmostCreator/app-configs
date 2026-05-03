@@ -20,7 +20,7 @@ function aiInstallerBuildPlan(array $config, array $packRegistry, array $packs):
                 $action = 'SKIP_PROTECTED_CORE';
             }
 
-            $plan[] = [
+            $plan[] = array_merge($item, [
                 'pack' => $packId,
                 'type' => $item['type'],
                 'source' => $item['source'],
@@ -29,7 +29,7 @@ function aiInstallerBuildPlan(array $config, array $packRegistry, array $packs):
                 'required' => (bool) ($item['required'] ?? true),
                 'merge_strategy' => (string) ($item['merge_strategy'] ?? ($config['force'] ? 'replace' : 'skip-if-exists')),
                 'reason' => $exists ? 'target exists' : 'target missing',
-            ];
+            ]);
         }
     }
     return $plan;

@@ -12,6 +12,7 @@ function aiInstallerPackRegistry(): array
         'base' => [
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/AGENTS.template.md', 'target' => 'AGENTS.md', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/project-context.template.md', 'target' => 'docs/ai/project-context.md', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/workflow.template.md', 'target' => 'docs/ai/workflow.md', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/shared/guardrails/AI-GUARDRAILS.md', 'target' => 'docs/ai/AI-GUARDRAILS.md', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/capabilities/project-context', 'target' => 'docs/ai/capabilities/project-context', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/capabilities/verify-change', 'target' => 'docs/ai/capabilities/verify-change', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
@@ -19,14 +20,15 @@ function aiInstallerPackRegistry(): array
         ],
         'adapter-copilot' => [
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/copilot-instructions.template.md', 'target' => '.github/copilot-instructions.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
-            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/github-copilot/instructions', 'target' => '.github/instructions', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
-            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/github-copilot/agents', 'target' => '.github/agents', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
-            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/github-copilot/prompts', 'target' => '.github/prompts', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/instructions', 'target' => '.github/instructions', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.github/agents', 'rename_ext' => '.agent.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.github/prompts', 'rename_ext' => '.prompt.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'adapter-opencode' => [
-            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/opencode/agents', 'target' => '.opencode/agents', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
-            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/opencode/commands', 'target' => '.opencode/commands', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
-            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/opencode/skills', 'target' => '.opencode/skills', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.opencode/agents', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.opencode/skills', 'install_type' => 'skill-dirs', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.opencode/commands', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/commands', 'target' => '.opencode/commands', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'capabilities-extended-lite' => [
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/capabilities/bug-regression', 'target' => 'docs/ai/capabilities/bug-regression', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
@@ -92,11 +94,11 @@ function aiInstallerPackRegistry(): array
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/optional/delivery/README.md', 'target' => 'docs/ai/delivery/README.md', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => false],
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/optional/delivery/slice-card.template.md', 'target' => 'docs/ai/delivery/slice-card.template.md', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => false],
         ],
-        'optional-agents-pack' => [
-            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/optional/opencode/agents', 'target' => '.opencode/agents-optional', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => false],
+        'optional-agents-opencode-pack' => [
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/optional/agents', 'target' => '.opencode/agents-optional', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => false],
         ],
-        'optional-prompts-pack' => [
-            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/optional/github-copilot/prompts', 'target' => '.github/prompts-optional', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => false],
+        'optional-agents-copilot-pack' => [
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/optional/agents', 'target' => '.github/agents', 'rename_ext' => '.agent.md', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => false],
         ],
         'preview-environments-pack' => [
             ['type' => 'dir', 'source' => 'docs/ai/capabilities/preview-environments', 'target' => 'docs/ai/capabilities/preview-environments', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => false],

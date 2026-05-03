@@ -1135,7 +1135,7 @@ function aiRunFind(string $root, array $args): int
     $pathMatches = array_slice($pathMatches, 0, 80);
 
     $contentMatchesRaw = [];
-    exec('git -C ' . escapeshellarg($root) . ' grep -n -I -- ' . escapeshellarg($query) . ' -- 2>NUL', $contentMatchesRaw);
+    exec('git -C ' . escapeshellarg($root) . ' grep -n -I -- ' . escapeshellarg($query) . ' --' . aiShellNullRedirect(), $contentMatchesRaw);
     $contentMatches = [];
     foreach (array_slice($contentMatchesRaw, 0, 120) as $line) {
         $parts = explode(':', $line, 3);
@@ -1611,7 +1611,7 @@ function aiRunFileContext(string $root, array $args): int
     $bytes = strlen($content);
 
     $related = [];
-    exec('git -C ' . escapeshellarg($root) . ' grep -n ' . escapeshellarg(basename($target)) . ' -- 2>NUL', $related);
+    exec('git -C ' . escapeshellarg($root) . ' grep -n ' . escapeshellarg(basename($target)) . ' --' . aiShellNullRedirect(), $related);
     $related = array_slice($related, 0, 30);
 
     $data = [
@@ -1639,7 +1639,7 @@ function aiRunOrphans(string $root): int
             continue;
         }
         $refs = [];
-        exec('git -C ' . escapeshellarg($root) . ' grep -n ' . escapeshellarg($path) . ' -- "README.md" "justfile" "docs" "scripts" "tools" ".github" 2>NUL', $refs);
+        exec('git -C ' . escapeshellarg($root) . ' grep -n ' . escapeshellarg($path) . ' -- "README.md" "justfile" "docs" "scripts" "tools" ".github"' . aiShellNullRedirect(), $refs);
         $refs = array_values(array_filter($refs, static fn(string $line): bool => !str_contains($line, $path . ':')));
         if ($refs === []) {
             $possiblyOrphan[] = [
@@ -3536,10 +3536,25 @@ function aiRunAdvisor(string $root, array $args): int
             $secretData = aiAdvisorReadJson($secretPath);
             $secretBlocked = !empty($secretData['blocked']);
         }
-        if (!$secretBlocked) {
+
+        $promptArtifactGateReason = null;
+        $canGeneratePromptArtifacts = !$secretBlocked && aiAdvisorCanGeneratePromptArtifacts($root, $promptArtifactGateReason);
+        if ($canGeneratePromptArtifacts) {
             $required[] = $dir . DIRECTORY_SEPARATOR . 'advisor-token-budget.json';
             $required[] = $dir . DIRECTORY_SEPARATOR . 'advisor-context.md';
             $required[] = $dir . DIRECTORY_SEPARATOR . 'advisor-prompt.md';
+        } elseif ($secretBlocked) {
+            $events[] = [
+                'step' => 'check',
+                'secret_blocked' => true,
+                'note' => 'token-budget/context/prompt outputs optional while blocked',
+            ];
+        } else {
+            $events[] = [
+                'step' => 'check',
+                'prompt_artifacts_optional' => true,
+                'note' => $promptArtifactGateReason ?? 'token-budget/context/prompt outputs optional until the secret-scan gate succeeds',
+            ];
         }
 
         $missing = [];
@@ -3562,10 +3577,6 @@ function aiRunAdvisor(string $root, array $args): int
             $written = aiCliWriteArtifact($root, 'advisor', 'php tools/ai/ai.php advisor --check', $data, 'failed', null, 'Fix invalid advisor JSON shapes.');
             fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
             return 1;
-        }
-
-        if ($secretBlocked) {
-            $events[] = ['step' => 'check', 'secret_blocked' => true, 'note' => 'pack/prompt outputs optional while blocked'];
         }
     }
 

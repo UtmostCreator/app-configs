@@ -14,3 +14,14 @@ function aiAdvisorRequireCleanSecretScan(string $root): void
         throw new RuntimeException('advisor secret-scan gate blocked context/prompt generation');
     }
 }
+
+function aiAdvisorCanGeneratePromptArtifacts(string $root, ?string &$reason = null): bool
+{
+    try {
+        aiAdvisorRequireCleanSecretScan($root);
+        return true;
+    } catch (RuntimeException $exception) {
+        $reason = $exception->getMessage();
+        return false;
+    }
+}

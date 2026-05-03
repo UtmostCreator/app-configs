@@ -38,6 +38,6 @@ done
 [[ -n "$TARGET_ROOT" ]] || install_die 'runtime-copilot.sh: --target-root is required'
 
 copy_file "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/core/copilot-instructions.template.md' '.github/copilot-instructions.md'
-copy_dir "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/github-copilot/instructions' '.github/instructions'
-copy_dir "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/github-copilot/agents' '.github/agents'
-copy_dir "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/github-copilot/prompts' '.github/prompts'
+copy_dir "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/instructions' '.github/instructions'
+copy_dir_with_rename "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/core/agents' '.github/agents' '.agent.md'
+copy_dir_with_rename "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/workflows' '.github/prompts' '.prompt.md'

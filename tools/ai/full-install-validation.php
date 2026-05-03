@@ -345,9 +345,13 @@ function buildInventory(string $root, string $glob, bool $withScc, int $timeoutS
     $files = [];
     foreach (preg_split('/\R/', (string) ($filesOut['stdout'] ?? '')) ?: [] as $line) {
         $line = trim($line);
-        if ($line !== '') {
-            $files[] = $line;
+        if ($line === '') {
+            continue;
         }
+        if (!file_exists($root . '/' . str_replace('\\', '/', $line))) {
+            continue;
+        }
+        $files[] = $line;
     }
     sort($files);
 
@@ -456,10 +460,135 @@ function isJsoncLikePath(string $file): bool
 
 function stripJsonCommentsAndTrailingCommas(string $input): string
 {
-    $noBlock = preg_replace('/\/\*[\s\S]*?\*\//', '', $input);
-    $noLine = preg_replace('/(^|\s)\/\/.*$/m', '$1', (string) $noBlock);
-    $noTrailingComma = preg_replace('/,\s*([}\]])/', '$1', (string) $noLine);
-    return (string) $noTrailingComma;
+    $withoutComments = '';
+    $inString = false;
+    $escaped = false;
+    $inLineComment = false;
+    $inBlockComment = false;
+    $length = strlen($input);
+
+    for ($index = 0; $index < $length; $index++) {
+        $char = $input[$index];
+        $next = $index + 1 < $length ? $input[$index + 1] : '';
+
+        if ($inLineComment) {
+            if ($char === "\n") {
+                $inLineComment = false;
+                $withoutComments .= $char;
+            }
+            continue;
+        }
+
+        if ($inBlockComment) {
+            if ($char === '*' && $next === '/') {
+                $inBlockComment = false;
+                $index++;
+            }
+            continue;
+        }
+
+        if ($inString) {
+            $withoutComments .= $char;
+
+            if ($escaped) {
+                $escaped = false;
+                continue;
+            }
+
+            if ($char === '\\') {
+                $escaped = true;
+                continue;
+            }
+
+            if ($char === '"') {
+                $inString = false;
+            }
+
+            continue;
+        }
+
+        if ($char === '"') {
+            $inString = true;
+            $withoutComments .= $char;
+            continue;
+        }
+
+        if ($char === '/' && $next === '/') {
+            $inLineComment = true;
+            $index++;
+            continue;
+        }
+
+        if ($char === '/' && $next === '*') {
+            $inBlockComment = true;
+            $index++;
+            continue;
+        }
+
+        $withoutComments .= $char;
+    }
+
+    $normalized = '';
+    $inString = false;
+    $escaped = false;
+    $length = strlen($withoutComments);
+
+    for ($index = 0; $index < $length; $index++) {
+        $char = $withoutComments[$index];
+
+        if ($inString) {
+            $normalized .= $char;
+
+            if ($escaped) {
+                $escaped = false;
+                continue;
+            }
+
+            if ($char === '\\') {
+                $escaped = true;
+                continue;
+            }
+
+            if ($char === '"') {
+                $inString = false;
+            }
+
+            continue;
+        }
+
+        if ($char === '"') {
+            $inString = true;
+            $normalized .= $char;
+            continue;
+        }
+
+        if ($char === ',') {
+            $nextIndex = findNextNonWhitespaceIndex($withoutComments, $index + 1);
+            if ($nextIndex !== null) {
+                $nextChar = $withoutComments[$nextIndex];
+                if ($nextChar === '}' || $nextChar === ']') {
+                    continue;
+                }
+            }
+        }
+
+        $normalized .= $char;
+    }
+
+    return $normalized;
+}
+
+function findNextNonWhitespaceIndex(string $input, int $start): ?int
+{
+    $length = strlen($input);
+
+    for ($index = $start; $index < $length; $index++) {
+        if (!ctype_space($input[$index])) {
+            return $index;
+        }
+    }
+
+    return null;
 }
 
 function lintYamlFiles(array &$report, string $root, array $files, int $timeoutSec, int $idleTimeoutSec, int $heartbeatSec, string $cancelFlag, string $liveLog): void

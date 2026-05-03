@@ -48,6 +48,11 @@ function aiInstallerRun(array $argv): int
     }
 
     $plan = aiInstallerBuildPlan($config, $registry, $packs);
+    $backupInfo = null;
+    if (!$config['dryRun'] && ($config['backup'] ?? false)) {
+        $backupInfo = aiInstallerCreateBackup($config['targetRoot'], $plan);
+        aiInstallerLog('backup created: ' . $backupInfo['backup_dir']);
+    }
 
     $applied = [];
     foreach ($plan as $item) {
@@ -64,6 +69,10 @@ function aiInstallerRun(array $argv): int
         $dest = $config['targetRoot'] . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $item['target']);
         if ($item['type'] === 'file') {
             aiInstallerCopyFile($src, $dest);
+        } elseif (($item['install_type'] ?? '') === 'skill-dirs') {
+            aiInstallerCopyDirAsSkillDirs($src, $dest);
+        } elseif (isset($item['rename_ext'])) {
+            aiInstallerCopyDirWithRename($src, $dest, $item['rename_ext']);
         } else {
             aiInstallerCopyDir($src, $dest);
         }
@@ -123,6 +132,7 @@ function aiInstallerRun(array $argv): int
             'applied_actions' => count($applied),
             'missing_required_tools' => $missingRequired,
             'missing_optional_tools' => $missingOptional,
+            'backup' => $backupInfo,
             'placeholders' => $placeholderStatus,
         ];
         $json = json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
@@ -289,6 +299,62 @@ function aiInstallerCopyFile(string $src, string $dest): void
     }
 }
 
+function aiInstallerCopyDirAsSkillDirs(string $src, string $dest): void
+{
+    if (!is_dir($src)) {
+        throw new RuntimeException('missing source directory: ' . $src);
+    }
+    $srcReal = realpath($src);
+    $destReal = file_exists($dest) ? realpath($dest) : false;
+    if ($srcReal !== false && $destReal !== false && $srcReal === $destReal) {
+        return;
+    }
+    if (file_exists($dest)) {
+        aiInstallerDeleteTree($dest);
+    }
+    aiInstallerMkdir($dest);
+    foreach (glob($src . DIRECTORY_SEPARATOR . '*.md') ?: [] as $file) {
+        $skillName = pathinfo($file, PATHINFO_FILENAME);
+        $skillDir = $dest . DIRECTORY_SEPARATOR . $skillName;
+        aiInstallerMkdir($skillDir);
+        if (!copy($file, $skillDir . DIRECTORY_SEPARATOR . 'SKILL.md')) {
+            throw new RuntimeException('failed to copy skill file: ' . $file);
+        }
+    }
+}
+
+function aiInstallerCopyDirWithRename(string $src, string $dest, string $newExt): void
+{
+    if (!is_dir($src)) {
+        throw new RuntimeException('missing source directory: ' . $src);
+    }
+    $srcReal = realpath($src);
+    $destReal = file_exists($dest) ? realpath($dest) : false;
+    if ($srcReal !== false && $destReal !== false && $srcReal === $destReal) {
+        return;
+    }
+    if (file_exists($dest)) {
+        aiInstallerDeleteTree($dest);
+    }
+    aiInstallerMkdir($dest);
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($src, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST);
+    foreach ($it as $item) {
+        $subPath = $it->getSubPathName();
+        if ($item->isDir()) {
+            aiInstallerMkdir($dest . DIRECTORY_SEPARATOR . $subPath);
+            continue;
+        }
+        $baseName = pathinfo($subPath, PATHINFO_FILENAME);
+        $dirPart = dirname($subPath);
+        $renamedName = $baseName . $newExt;
+        $target = $dest . DIRECTORY_SEPARATOR . ($dirPart !== '.' ? $dirPart . DIRECTORY_SEPARATOR . $renamedName : $renamedName);
+        aiInstallerMkdir(dirname($target));
+        if (!copy($item->getPathname(), $target)) {
+            throw new RuntimeException('failed to copy file: ' . $item->getPathname());
+        }
+    }
+}
+
 function aiInstallerCopyDir(string $src, string $dest): void
 {
     if (!is_dir($src)) {
@@ -313,6 +379,111 @@ function aiInstallerCopyDir(string $src, string $dest): void
         aiInstallerMkdir(dirname($target));
         if (!copy($item->getPathname(), $target)) {
             throw new RuntimeException('failed to copy file: ' . $item->getPathname());
+        }
+    }
+}
+
+function aiInstallerCreateBackup(string $targetRoot, array $plan): array
+{
+    $targets = [];
+    $manifestPath = aiInstallerCanonicalManifestPath($targetRoot);
+    if (is_file($manifestPath)) {
+        $decoded = json_decode((string) file_get_contents($manifestPath), true);
+        if (is_array($decoded) && is_array($decoded['files'] ?? null)) {
+            foreach (array_keys($decoded['files']) as $target) {
+                if (is_string($target) && $target !== '') {
+                    $targets[$target] = true;
+                }
+            }
+        }
+    }
+
+    foreach ($plan as $item) {
+        if (($item['action'] ?? '') === 'SKIP_EXISTING_UNMANAGED' || ($item['action'] ?? '') === 'SKIP_PROTECTED_CORE') {
+            continue;
+        }
+        $target = (string) ($item['target'] ?? '');
+        if ($target === '') {
+            continue;
+        }
+        $targets[$target] = true;
+    }
+
+    foreach ([
+        '.ai-install-manifest.json',
+        'docs/ai/generated/install-manifest.json',
+        'docs/ai/SETUP.md',
+        'docs/ai/POST-INSTALL.md',
+        'docs/ai/installed-files.md',
+        'docs/ai/project-configuration.md',
+        'docs/ai/available-packs.md',
+        'docs/ai/generated/install-summary.md',
+        'docs/ai/generated/install-instructions.md',
+        'docs/ai/generated/install-instructions.json',
+    ] as $target) {
+        $targets[$target] = true;
+    }
+
+    $backupId = 'install-ai-kit-' . gmdate('Ymd-His');
+    $backupDir = $targetRoot . DIRECTORY_SEPARATOR . '.ai-backups' . DIRECTORY_SEPARATOR . $backupId;
+    $filesDir = $backupDir . DIRECTORY_SEPARATOR . 'files';
+    aiInstallerMkdir($filesDir);
+
+    $entries = [];
+    foreach (array_keys($targets) as $target) {
+        $source = $targetRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $target);
+        if (!file_exists($source)) {
+            continue;
+        }
+
+        $snapshot = $filesDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $target);
+        aiInstallerSnapshotPath($source, $snapshot);
+        $entries[] = [
+            'path' => $target,
+            'type' => is_dir($source) ? 'dir' : 'file',
+        ];
+    }
+
+    $manifest = [
+        'backup_id' => $backupId,
+        'created_at' => gmdate('c'),
+        'entry_count' => count($entries),
+        'entries' => $entries,
+    ];
+    file_put_contents($backupDir . DIRECTORY_SEPARATOR . 'manifest.json', json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+
+    return [
+        'backup_id' => $backupId,
+        'backup_dir' => '.ai-backups/' . $backupId,
+        'entry_count' => count($entries),
+    ];
+}
+
+function aiInstallerSnapshotPath(string $source, string $snapshot): void
+{
+    if (is_file($source)) {
+        aiInstallerMkdir(dirname($snapshot));
+        if (!copy($source, $snapshot)) {
+            throw new RuntimeException('failed to back up file: ' . $source);
+        }
+        return;
+    }
+
+    if (!is_dir($source)) {
+        return;
+    }
+
+    aiInstallerMkdir($snapshot);
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::SELF_FIRST);
+    foreach ($it as $item) {
+        $target = $snapshot . DIRECTORY_SEPARATOR . $it->getSubPathName();
+        if ($item->isDir()) {
+            aiInstallerMkdir($target);
+            continue;
+        }
+        aiInstallerMkdir(dirname($target));
+        if (!copy($item->getPathname(), $target)) {
+            throw new RuntimeException('failed to back up file: ' . $item->getPathname());
         }
     }
 }

@@ -27,11 +27,16 @@ function aiCliIsoNow(): string
     return (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format(DateTimeInterface::ATOM);
 }
 
+function aiCliNullDevice(): string
+{
+    return PHP_OS_FAMILY === 'Windows' ? 'NUL' : '/dev/null';
+}
+
 function aiCliGitValue(string $root, string $command): string
 {
     $output = [];
     $exit = 0;
-    exec('git -C ' . escapeshellarg($root) . ' ' . $command . ' 2>NUL', $output, $exit);
+    exec('git -C ' . escapeshellarg($root) . ' ' . $command . ' 2>' . escapeshellarg(aiCliNullDevice()), $output, $exit);
     if ($exit !== 0 || $output === []) {
         return 'unknown';
     }

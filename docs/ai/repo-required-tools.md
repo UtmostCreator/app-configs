@@ -49,10 +49,18 @@ This file lists baseline and referenced CLI tools used by the repository AI work
 
 - `reference/php/create-design-patterns-structure.sh`
 - `scripts/ai/ai-diff-context.sh`
+- `scripts/ai/ai-doc-check.sh`
 - `scripts/ai/ai-edit.sh`
 - `scripts/ai/ai-rollback.sh`
 - `scripts/ai/ai-search.sh`
+- `scripts/ai/ai-structured.sh`
+- `scripts/ai/ai-task.sh`
+- `scripts/ai/ai-test-select.sh`
 - `scripts/ai/ai-verify.sh`
+- `scripts/ai/check-batch2.sh`
+- `scripts/ai/check-batch3.sh`
+- `scripts/ai/check-batch4a.sh`
+- `scripts/ai/check-batch4b.sh`
 - `scripts/ai/common.sh`
 - `scripts/ai/fd-files.sh`
 - `scripts/ai/gh-pr-context.sh`

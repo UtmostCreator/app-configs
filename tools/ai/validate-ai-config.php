@@ -36,7 +36,10 @@ $requiredFiles = [
     'docs/ai/capabilities/preview-environments/CHECKLIST.md',
     'docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md',
     '.github/copilot-instructions.md',
-    '.github/instructions/php.instructions.md',
+    '.github/instructions/architecture.instructions.md',
+    '.github/instructions/frontend.instructions.md',
+    '.github/instructions/targets.instructions.md',
+    '.github/instructions/testing.instructions.md',
     'scripts/ai/common.sh',
     'scripts/ai/ai-diff-context.sh',
     'scripts/ai/ai-search.sh',
@@ -72,9 +75,10 @@ $liveFiles = [
     'docs/ai/catalog.md',
     'docs/ai/capabilities/README.md',
     '.github/copilot-instructions.md',
-    '.github/instructions/ai-workflow.instructions.md',
-    '.github/instructions/config.instructions.md',
-    '.github/instructions/docs.instructions.md',
+    '.github/instructions/architecture.instructions.md',
+    '.github/instructions/frontend.instructions.md',
+    '.github/instructions/targets.instructions.md',
+    '.github/instructions/testing.instructions.md',
     '.github/agents/config-maintainer.agent.md',
     '.github/agents/workflow-auditor.agent.md',
     'docs/ai/capabilities/project-context/CAPABILITY.md',
@@ -107,6 +111,11 @@ $generatedCatalogFiles = [
     'packages/ai-universal-rules/docs/BROWSE.md',
 ];
 
+$allowedLivePlaceholderFiles = [
+    '.github/instructions/frontend.instructions.md',
+    '.github/instructions/testing.instructions.md',
+];
+
 $errors = [];
 $warnings = [];
 $oks = [];
@@ -131,7 +140,11 @@ foreach ($liveFiles as $relativePath) {
         continue;
     }
 
-    if (!in_array($relativePath, $generatedCatalogFiles, true) && preg_match('/<[^>]+>/', $content) === 1) {
+    if (
+        !in_array($relativePath, $generatedCatalogFiles, true)
+        && !in_array($relativePath, $allowedLivePlaceholderFiles, true)
+        && preg_match('/<[^>]+>/', $content) === 1
+    ) {
         $errors[] = "placeholder leak found in {$relativePath}";
     }
 
@@ -187,7 +200,6 @@ $agentsContent = safeRead($root, 'AGENTS.md');
 $claudeContent = safeRead($root, 'CLAUDE.md');
 $readmeContent = safeRead($root, 'README.md');
 $copilotContent = safeRead($root, '.github/copilot-instructions.md');
-$phpInstructionsContent = safeRead($root, '.github/instructions/php.instructions.md');
 $projectContextContent = safeRead($root, 'docs/ai/project-context.md');
 $agentsReferenceContent = safeRead($root, 'docs/ai/agents.md');
 
@@ -285,14 +297,6 @@ if ($copilotContent !== null) {
     foreach (['reference/php/design-patterns/', 'reference/php/design-principles/', 'reference/php/php-built-ins/'] as $phpReferencePath) {
         if (strpos($copilotContent, $phpReferencePath) === false) {
             $warnings[] = ".github/copilot-instructions.md should reference {$phpReferencePath} for PHP guidance routing";
-        }
-    }
-}
-
-if ($phpInstructionsContent !== null) {
-    foreach (['reference/php/design-patterns/', 'reference/php/design-principles/', 'reference/php/php-built-ins/'] as $phpReferencePath) {
-        if (strpos($phpInstructionsContent, $phpReferencePath) === false) {
-            $warnings[] = ".github/instructions/php.instructions.md should reference {$phpReferencePath}";
         }
     }
 }

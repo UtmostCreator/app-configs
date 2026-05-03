@@ -12,7 +12,7 @@ Check these files:
 - `CLAUDE.md`
 - `README.md`
 - `.github/copilot-instructions.md`
-- `.github/instructions/ai-workflow.instructions.md`
+- `.github/instructions/*.instructions.md`
 
 Verify:
 

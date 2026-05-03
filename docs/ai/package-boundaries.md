@@ -35,17 +35,7 @@ Rule:
 - Root dogfood/live files are allowed to be repo-specific when needed for local operations.
 - Root runtime files are not the canonical reusable package source.
 
-## D) Educational examples
-
-- Path: `packages/ai-universal-rules/examples/`
-- Purpose: educational/example trees for adopters.
-
-Rule:
-
-- Examples may include fictional project naming and worked setup patterns.
-- Examples must not be mistaken for canonical package source or deterministic fixture contracts.
-
-## E) Generated export artifacts
+## D) Generated export artifacts
 
 - Path: `dist/`
 - Purpose: generated export bundles only.
@@ -59,4 +49,4 @@ Rule:
 
 - Do not redefine package source ownership in runtime adapter files.
 - Do not treat root `.github` or `.opencode` as canonical package authoring source.
-- Do not treat example trees as deterministic test fixtures unless explicitly promoted and documented as fixtures.
+- Do not let generated or archived artifacts become the source of truth for reusable workflow assets.

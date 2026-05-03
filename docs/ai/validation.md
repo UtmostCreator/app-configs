@@ -32,7 +32,6 @@ php tools/ai/export-ai-universal-rules.php --check
 This validator is intentionally narrow.
 
 - it checks the root live-instantiation layer first
-- it does not try to fully validate every example under `packages/ai-universal-rules/examples/`
 - it treats warnings as review signals and errors as must-fix issues
 
 ## Output
@@ -58,7 +57,7 @@ This repository keeps both Husky and Lefthook surfaces as optional hook adapters
 ## When To Run It
 
 - after editing `AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/ai/`, or `.github/`
-- after editing `packages/ai-universal-rules/manifest.json`, cataloged templates, or examples
+- after editing `packages/ai-universal-rules/manifest.json` or cataloged templates
 - before creating a baseline commit for workflow changes
 - after copying templates into a new repo instance
 - after changing agent responsibilities, failure-handling policy, or approval-free read-only rules

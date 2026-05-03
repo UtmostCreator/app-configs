@@ -11,7 +11,7 @@
 ## Starter Profiles
 
 - `minimal-starter` - core policy, shared templates, and the foundational capability set
-- `dual-runtime-starter` - the base package plus both OpenCode and GitHub Copilot adapters and worked examples
+- `dual-runtime-starter` - the base package plus both OpenCode and GitHub Copilot adapters
 - `strict-governance-starter` - the dual-runtime bundle plus stronger approval and operations material
 
 ## Validate Before Export

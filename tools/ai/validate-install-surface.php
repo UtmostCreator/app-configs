@@ -105,10 +105,13 @@ foreach ($scripts as $id => $script) {
     }
 }
 
-$opencodeAgentNames = collectAgentNames($root . '/packages/ai-universal-rules/templates/opencode/agents', '.md');
-$githubAgentNames = collectAgentNames($root . '/packages/ai-universal-rules/templates/github-copilot/agents', '.agent.md');
+$opencodeAgentNames = collectAgentNames($root . '/packages/ai-universal-rules/templates/core/agents', '.md');
+$githubAgentNames = $opencodeAgentNames;
 
-$opencodeCommands = glob($root . '/packages/ai-universal-rules/templates/opencode/commands/*.md') ?: [];
+$opencodeCommands = array_merge(
+    glob($root . '/packages/ai-universal-rules/templates/workflows/*.md') ?: [],
+    glob($root . '/packages/ai-universal-rules/templates/commands/*.md') ?: []
+);
 foreach ($opencodeCommands as $commandFile) {
     $content = (string) file_get_contents($commandFile);
     $agent = frontmatterField($content, 'agent');
@@ -119,17 +122,9 @@ foreach ($opencodeCommands as $commandFile) {
 
 $allowedNext = ['verify', 'user', 'planner', 'implement', 'refactorer'];
 
-foreach (glob($root . '/packages/ai-universal-rules/templates/opencode/agents/*.md') ?: [] as $agentFile) {
+foreach (glob($root . '/packages/ai-universal-rules/templates/core/agents/*.md') ?: [] as $agentFile) {
     foreach (extractRecommendedNextSteps((string) file_get_contents($agentFile)) as $candidate) {
         if (!in_array($candidate, $allowedNext, true) && !in_array($candidate, $opencodeAgentNames, true)) {
-            $errors[] = relativePath($root, $agentFile) . " has unknown Recommended Next Step '{$candidate}'";
-        }
-    }
-}
-
-foreach (glob($root . '/packages/ai-universal-rules/templates/github-copilot/agents/*.md') ?: [] as $agentFile) {
-    foreach (extractRecommendedNextSteps((string) file_get_contents($agentFile)) as $candidate) {
-        if (!in_array($candidate, $allowedNext, true) && !in_array($candidate, $githubAgentNames, true)) {
             $errors[] = relativePath($root, $agentFile) . " has unknown Recommended Next Step '{$candidate}'";
         }
     }

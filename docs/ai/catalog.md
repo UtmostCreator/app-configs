@@ -17,20 +17,16 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 
 ## Highlights
 
-- `package / core-template` - 4
-- `package / example-repo` - 5
+- `package / core-template` - 13
 - `package / foundation-doc` - 6
-- `package / github-copilot-agent-template` - 6
 - `package / github-copilot-instruction-template` - 4
-- `package / github-copilot-prompt-template` - 6
-- `package / opencode-agent-template` - 6
-- `package / opencode-command-template` - 4
-- `package / opencode-skill-template` - 7
+- `package / opencode-command-template` - 1
 - `package / operations-doc` - 6
-- `package / optional-template` - 11
+- `package / optional-template` - 9
 - `package / package-capability` - 31
 - `package / shared-template` - 3
 - `package / workflow-doc` - 6
+- `package / workflow-template` - 11
 - `root / adapter-doc` - 1
 - `root / adapter-hook` - 2
 - `root / adapter-hook-script` - 1
@@ -41,11 +37,10 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 - `root / exporter` - 1
 - `root / generator` - 1
 - `root / github-copilot-agent` - 8
-- `root / github-copilot-instruction` - 9
-- `root / github-copilot-prompt` - 8
-- `root / opencode-agent` - 6
+- `root / github-copilot-instruction` - 4
+- `root / github-copilot-prompt` - 11
 - `root / opencode-command` - 4
-- `root / opencode-skill` - 7
+- `root / opencode-skill` - 6
 - `root / php-reference` - 3
 - `root / root-doc` - 16
 - `root / schema` - 1
@@ -107,48 +102,39 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`cli`|ai|`tools/ai/ai.php`|Main AI workflow CLI dispatcher.|
 |`exporter`|export-ai-universal-rules|`tools/ai/export-ai-universal-rules.php`|Builds starter-profile release bundles under dist/.|
 |`generator`|generate-ai-catalog|`tools/ai/generate-ai-catalog.php`|Generates catalog docs, catalog JSON, and llms.txt.|
-|`github-copilot-agent`|architect|`.github/agents/architect.agent.md`|name: Repository Architect|
-|`github-copilot-agent`|config-maintainer|`.github/agents/config-maintainer.agent.md`|name: config-maintainer|
-|`github-copilot-agent`|implementer|`.github/agents/implementer.agent.md`|name: Repository Implementer|
-|`github-copilot-agent`|refactorer|`.github/agents/refactorer.agent.md`|name: Repository Refactorer|
-|`github-copilot-agent`|release-auditor|`.github/agents/release-auditor.agent.md`|name: Release Auditor|
-|`github-copilot-agent`|researcher|`.github/agents/researcher.agent.md`|name: Repository Researcher|
-|`github-copilot-agent`|reviewer|`.github/agents/reviewer.agent.md`|name: Repository Reviewer|
-|`github-copilot-agent`|workflow-auditor|`.github/agents/workflow-auditor.agent.md`|name: workflow-auditor|
-|`github-copilot-instruction`|ai-workflow|`.github/instructions/ai-workflow.instructions.md`|applyTo: "AGENTS.md,CLAUDE.md,README.md,docs/ai/**,.github/copilot-instructions.md,.github/agents/**,.github/instructions/**"|
-|`github-copilot-instruction`|architecture|`.github/instructions/architecture.instructions.md`|applyTo: ".ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools"|
-|`github-copilot-instruction`|ci|`.github/instructions/ci.instructions.md`|applyTo: ".github/workflows/**/*,**/*.{yml,yaml}"|
-|`github-copilot-instruction`|config|`.github/instructions/config.instructions.md`|applyTo: "configs/vscode/**,configs/shell/**,tools/**,configs/php/**,.editorconfig,.eslintrc.json,.prettierrc.json,.stylelintrc.json"|
-|`github-copilot-instruction`|docs|`.github/instructions/docs.instructions.md`|applyTo: "README.md,docs/**,packages/ai-universal-rules/**/*.md"|
-|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|applyTo: "<FRONTEND_PATH_GLOB>"|
-|`github-copilot-instruction`|php|`.github/instructions/php.instructions.md`|applyTo: "**/*.php"|
-|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|applyTo: "**"|
-|`github-copilot-instruction`|testing|`.github/instructions/testing.instructions.md`|applyTo: "<TEST_PATH_GLOB>"|
-|`github-copilot-prompt`|bug-regression|`.github/prompts/bug-regression.prompt.md`|name: bug-regression|
-|`github-copilot-prompt`|docs-sync|`.github/prompts/docs-sync.prompt.md`|name: docs-sync|
-|`github-copilot-prompt`|investigate-bug|`.github/prompts/investigate-bug.prompt.md`|mode: agent|
-|`github-copilot-prompt`|new-feature|`.github/prompts/new-feature.prompt.md`|name: new-feature|
-|`github-copilot-prompt`|regression-test|`.github/prompts/regression-test.prompt.md`|name: regression-test|
-|`github-copilot-prompt`|release-readiness|`.github/prompts/release-readiness.prompt.md`|name: release-readiness|
-|`github-copilot-prompt`|review-code|`.github/prompts/review-code.prompt.md`|name: review-code|
-|`github-copilot-prompt`|trace-regression|`.github/prompts/trace-regression.prompt.md`|mode: agent|
-|`opencode-agent`|architect|`.opencode/agents/architect.md`|description: Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in app-configs|
-|`opencode-agent`|implementer|`.opencode/agents/implementer.md`|description: Use when a bounded slice is clear and implementation plus focused verification should happen in app-configs|
-|`opencode-agent`|refactorer|`.opencode/agents/refactorer.md`|description: Use when behavior is already correct and the remaining problem is structure, readability, or maintainability in app-configs|
-|`opencode-agent`|release-auditor|`.opencode/agents/release-auditor.md`|description: Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review in app-configs|
-|`opencode-agent`|researcher|`.opencode/agents/researcher.md`|description: Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review in app-configs|
-|`opencode-agent`|reviewer|`.opencode/agents/reviewer.md`|description: Use when reviewing a change set for correctness, regressions, policy fit, and missing verification in app-configs|
+|`github-copilot-agent`|architect|`.github/agents/architect.agent.md`|Use when a change needs scoping, design, ownership decisions, contract boundaries, adapter strategy, or risk posture before implementation|
+|`github-copilot-agent`|config-maintainer|`.github/agents/config-maintainer.agent.md`|Use when changing editor, shell, runtime, or tool configuration while preserving current behavior|
+|`github-copilot-agent`|implementer|`.github/agents/implementer.agent.md`|Use when a bounded implementation slice is clear and focused verification should happen in this repository|
+|`github-copilot-agent`|refactorer|`.github/agents/refactorer.agent.md`|Use when behavior is already correct and the remaining work is structure, readability, duplication reduction, or maintainability|
+|`github-copilot-agent`|release-auditor|`.github/agents/release-auditor.agent.md`|Use when medium or high risk changes need rollout, rollback, migration, observability, preview, or install-safety review|
+|`github-copilot-agent`|researcher|`.github/agents/researcher.agent.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
+|`github-copilot-agent`|reviewer|`.github/agents/reviewer.agent.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
+|`github-copilot-agent`|workflow-auditor|`.github/agents/workflow-auditor.agent.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
+|`github-copilot-instruction`|architecture|`.github/instructions/architecture.instructions.md`|Architecture, ownership, and layering guidance|
+|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|Frontend, UI, interaction, and presentation guidance|
+|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|Target and platform adaptation guidance for multi-surface repositories|
+|`github-copilot-instruction`|testing|`.github/instructions/testing.instructions.md`|Testing rules for focused, deterministic, behavior-proving tests|
+|`github-copilot-prompt`|architecture-plan|`.github/prompts/architecture-plan.prompt.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
+|`github-copilot-prompt`|bug-regression|`.github/prompts/bug-regression.prompt.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
+|`github-copilot-prompt`|dependency-upgrade|`.github/prompts/dependency-upgrade.prompt.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|
+|`github-copilot-prompt`|docs-sync|`.github/prompts/docs-sync.prompt.md`|Use when changed behavior or workflow needs matching documentation updates without broad implementation planning|
+|`github-copilot-prompt`|new-feature|`.github/prompts/new-feature.prompt.md`|Use when implementing a bounded feature with existing repository patterns and focused verification|
+|`github-copilot-prompt`|plan-slice|`.github/prompts/plan-slice.prompt.md`|Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation|
+|`github-copilot-prompt`|project-context|`.github/prompts/project-context.prompt.md`|Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing|
+|`github-copilot-prompt`|regression-test|`.github/prompts/regression-test.prompt.md`|Use when the main task is to create a failing or proving regression test for a reported bug or edge case|
+|`github-copilot-prompt`|release-safety|`.github/prompts/release-safety.prompt.md`|Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards|
+|`github-copilot-prompt`|review-diff|`.github/prompts/review-diff.prompt.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
+|`github-copilot-prompt`|verify-change|`.github/prompts/verify-change.prompt.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
 |`opencode-command`|bug-regression|`.opencode/commands/bug-regression.md`|Use this command as the runtime entry point for a bounded bug-fix task.|
 |`opencode-command`|plan-slice|`.opencode/commands/plan-slice.md`|Use this command when a task is multi-step, ambiguous, or architecture-affecting.|
-|`opencode-command`|review-diff|`.opencode/commands/review-diff.md`|description: Compatibility command for diff-first review; prefer the review-diff skill for reusable guidance|
-|`opencode-command`|verify|`.opencode/commands/verify.md`|description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
-|`opencode-skill`|bug-regression|`.opencode/skills/bug-regression/SKILL.md`|name: bug-regression|
-|`opencode-skill`|dependency-upgrade|`.opencode/skills/dependency-upgrade/SKILL.md`|name: dependency-upgrade|
-|`opencode-skill`|project-context|`.opencode/skills/project-context/SKILL.md`|name: project-context|
-|`opencode-skill`|project-stack|`.opencode/skills/project-stack/SKILL.md`|name: project-stack|
-|`opencode-skill`|release-safety|`.opencode/skills/release-safety/SKILL.md`|name: release-safety|
-|`opencode-skill`|review-diff|`.opencode/skills/review-diff/SKILL.md`|name: review-diff|
-|`opencode-skill`|verify-change|`.opencode/skills/verify-change/SKILL.md`|name: verify-change|
+|`opencode-command`|review-diff|`.opencode/commands/review-diff.md`|Compatibility command for diff-first review; prefer the review-diff skill for reusable guidance|
+|`opencode-command`|verify|`.opencode/commands/verify.md`|Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
+|`opencode-skill`|bug-regression|`.opencode/skills/bug-regression/SKILL.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
+|`opencode-skill`|dependency-upgrade|`.opencode/skills/dependency-upgrade/SKILL.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|
+|`opencode-skill`|project-context|`.opencode/skills/project-context/SKILL.md`|Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing|
+|`opencode-skill`|release-safety|`.opencode/skills/release-safety/SKILL.md`|Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards|
+|`opencode-skill`|review-diff|`.opencode/skills/review-diff/SKILL.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
+|`opencode-skill`|verify-change|`.opencode/skills/verify-change/SKILL.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
 |`php-reference`|design-patterns|`reference/php/design-patterns`|Primary local PHP design pattern corpus for agent and human lookups.|
 |`php-reference`|design-principles|`reference/php/design-principles`|Secondary PHP principles and composition examples.|
 |`php-reference`|php-built-ins|`reference/php/php-built-ins`|Supporting PHP built-in usage examples.|
@@ -181,70 +167,44 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 | Type | Name | Path | Description |
 | --- | --- | --- | --- |
 |`core-template`|<PROJECT_NAME> - Repository Instructions|`packages/ai-universal-rules/templates/core/AGENTS.template.md`|- Project: `<PROJECT_NAME>`|
+|`core-template`|Architect Agent|`packages/ai-universal-rules/templates/core/agents/architect.md`|Use when a change needs scoping, design, ownership decisions, contract boundaries, adapter strategy, or risk posture before implementation|
+|`core-template`|Config Maintainer Agent|`packages/ai-universal-rules/templates/core/agents/config-maintainer.md`|Use when changing editor, shell, runtime, or tool configuration while preserving current behavior|
+|`core-template`|Implementer Agent|`packages/ai-universal-rules/templates/core/agents/implementer.md`|Use when a bounded implementation slice is clear and focused verification should happen in this repository|
+|`core-template`|Refactorer Agent|`packages/ai-universal-rules/templates/core/agents/refactorer.md`|Use when behavior is already correct and the remaining work is structure, readability, duplication reduction, or maintainability|
+|`core-template`|Release Auditor Agent|`packages/ai-universal-rules/templates/core/agents/release-auditor.md`|Use when medium or high risk changes need rollout, rollback, migration, observability, preview, or install-safety review|
+|`core-template`|Researcher Agent|`packages/ai-universal-rules/templates/core/agents/researcher.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
+|`core-template`|Reviewer Agent|`packages/ai-universal-rules/templates/core/agents/reviewer.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
+|`core-template`|Workflow Auditor Agent|`packages/ai-universal-rules/templates/core/agents/workflow-auditor.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
 |`core-template`|Repository Instructions For <PROJECT_NAME>|`packages/ai-universal-rules/templates/core/copilot-instructions.template.md`|Use these instructions as the repository-wide baseline for GitHub Copilot.|
 |`core-template`|<PROJECT_NAME> Project Context|`packages/ai-universal-rules/templates/core/project-context.template.md`|Use this file as durable project context for instructions, agents, prompts, and capabilities.|
 |`core-template`|<PROJECT_NAME> Project Stack|`packages/ai-universal-rules/templates/core/project-stack.template.md`|Compatibility note: `project-stack.template.md` remains for older installs.|
-|`example-repo`|Expanded Placeholder Blueprint|`packages/ai-universal-rules/examples/expanded-placeholder-repo`|This example keeps the richer structure of a filled repository-instructions file while staying placeholder-only.(runtime:`reference`;entrypoints:`AGENTS.md`)|
-|`example-repo`|Generic Placeholder Starter|`packages/ai-universal-rules/examples/generic-placeholder-repo`|This example shows folder placement only. Leave placeholders intact here so the example remains generic.(runtime:`dual-runtime`;entrypoints:`.github/copilot-instructions.md`,`AGENTS.md`,`docs/ai/project-context.md`;assets:agents 5,instructions 4,prompts 3,commands 2,skills 7,capabilities 6)|
-|`example-repo`|Acme Web Copilot Workspace|`packages/ai-universal-rules/examples/worked-copilot-repo`|This example shows a Copilot-first repository setup with policy, path instructions, staged agents, and prompt-file entry points.(runtime:`github-copilot`;entrypoints:`.github/copilot-instructions.md`,`AGENTS.md`,`README.md`,`docs/ai/project-context.md`;assets:agents 4,instructions 2,prompts 3)|
-|`example-repo`|Acme Commerce Dual-Tool Monorepo|`packages/ai-universal-rules/examples/worked-dual-tool-repo`|This example shows one shared capability layer adapted to both OpenCode and GitHub Copilot.(runtime:`dual-runtime`;entrypoints:`.github/copilot-instructions.md`,`AGENTS.md`,`CLAUDE.md`,`README.md`,`docs/ai/project-context.md`,`docs/ai/workflow.md`;assets:agents 8,instructions 1,prompts 3,commands 2,capabilities 4)|
-|`example-repo`|Acme Orders OpenCode Service|`packages/ai-universal-rules/examples/worked-opencode-repo`|This example shows a realistic OpenCode-first repository install for a fictional `Acme Orders` service.(runtime:`opencode`;entrypoints:`AGENTS.md`,`README.md`,`docs/ai/project-context.md`;assets:agents 4,commands 2,skills 3)|
+|`core-template`|Workflow|`packages/ai-universal-rules/templates/core/workflow.template.md`|1. route through `project-context` when ownership is unclear|
 |`foundation-doc`|Capability Model|`packages/ai-universal-rules/docs/foundations/CAPABILITY-MODEL.md`|Capabilities are the canonical reusable workflow layer in this kit.|
 |`foundation-doc`|Compatibility|`packages/ai-universal-rules/docs/foundations/COMPATIBILITY.md`|This package is intentionally asymmetric.|
 |`foundation-doc`|Control Model|`packages/ai-universal-rules/docs/foundations/CONTROL-MODEL.md`|This package separates advisory controls from deterministic controls.|
 |`foundation-doc`|Design Principles|`packages/ai-universal-rules/docs/foundations/DESIGN-PRINCIPLES.md`|Use these principles when extending the kit.|
 |`foundation-doc`|Precedence|`packages/ai-universal-rules/docs/foundations/PRECEDENCE.md`|This package uses layered workflow assets, so precedence and non-overlap must be explicit.|
 |`foundation-doc`|Skills|`packages/ai-universal-rules/docs/foundations/SKILLS.md`|Skills are the runtime adapter form of deeper workflow procedure.|
-|`github-copilot-agent-template`|architect.agent|`packages/ai-universal-rules/templates/github-copilot/agents/architect.agent.md`|name: Repository Architect|
-|`github-copilot-agent-template`|implementer.agent|`packages/ai-universal-rules/templates/github-copilot/agents/implementer.agent.md`|name: Repository Implementer|
-|`github-copilot-agent-template`|refactorer.agent|`packages/ai-universal-rules/templates/github-copilot/agents/refactorer.agent.md`|name: Repository Refactorer|
-|`github-copilot-agent-template`|release-auditor.agent|`packages/ai-universal-rules/templates/github-copilot/agents/release-auditor.agent.md`|name: Release Auditor|
-|`github-copilot-agent-template`|researcher.agent|`packages/ai-universal-rules/templates/github-copilot/agents/researcher.agent.md`|name: Repository Researcher|
-|`github-copilot-agent-template`|reviewer.agent|`packages/ai-universal-rules/templates/github-copilot/agents/reviewer.agent.md`|name: Repository Reviewer|
-|`github-copilot-instruction-template`|Architecture Rules|`packages/ai-universal-rules/templates/github-copilot/instructions/architecture.instructions.md`|applyTo: "<ACTIVE_PATHS>"|
-|`github-copilot-instruction-template`|Frontend Rules|`packages/ai-universal-rules/templates/github-copilot/instructions/frontend.instructions.md`|applyTo: "<FRONTEND_PATH_GLOB>"|
-|`github-copilot-instruction-template`|Target Rules|`packages/ai-universal-rules/templates/github-copilot/instructions/targets.instructions.md`|applyTo: "**"|
-|`github-copilot-instruction-template`|Testing Rules|`packages/ai-universal-rules/templates/github-copilot/instructions/testing.instructions.md`|applyTo: "<TEST_PATH_GLOB>"|
-|`github-copilot-prompt-template`|bug-regression.prompt|`packages/ai-universal-rules/templates/github-copilot/prompts/bug-regression.prompt.md`|name: bug-regression|
-|`github-copilot-prompt-template`|docs-sync.prompt|`packages/ai-universal-rules/templates/github-copilot/prompts/docs-sync.prompt.md`|name: docs-sync|
-|`github-copilot-prompt-template`|new-feature.prompt|`packages/ai-universal-rules/templates/github-copilot/prompts/new-feature.prompt.md`|name: new-feature|
-|`github-copilot-prompt-template`|regression-test.prompt|`packages/ai-universal-rules/templates/github-copilot/prompts/regression-test.prompt.md`|name: regression-test|
-|`github-copilot-prompt-template`|release-readiness.prompt|`packages/ai-universal-rules/templates/github-copilot/prompts/release-readiness.prompt.md`|name: release-readiness|
-|`github-copilot-prompt-template`|review-code.prompt|`packages/ai-universal-rules/templates/github-copilot/prompts/review-code.prompt.md`|name: review-code|
-|`opencode-agent-template`|architect|`packages/ai-universal-rules/templates/opencode/agents/architect.md`|description: Use when planning a medium or large change, scoping affected areas, or choosing risk and rollout posture before implementation in <PROJECT_NAME>|
-|`opencode-agent-template`|implementer|`packages/ai-universal-rules/templates/opencode/agents/implementer.md`|description: Use when a bounded slice is clear and implementation plus focused verification should happen in <PROJECT_NAME>|
-|`opencode-agent-template`|refactorer|`packages/ai-universal-rules/templates/opencode/agents/refactorer.md`|description: Use when behavior is already correct and the remaining problem is structure, readability, or maintainability in <PROJECT_NAME>|
-|`opencode-agent-template`|release-auditor|`packages/ai-universal-rules/templates/opencode/agents/release-auditor.md`|description: Use when a medium or high risk change needs rollout, rollback, observability, or migration-safety review in <PROJECT_NAME>|
-|`opencode-agent-template`|Researcher Agent|`packages/ai-universal-rules/templates/opencode/agents/researcher.md`|description: Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review in app-configs|
-|`opencode-agent-template`|reviewer|`packages/ai-universal-rules/templates/opencode/agents/reviewer.md`|description: Use when reviewing a change set for correctness, regressions, policy fit, and missing verification in <PROJECT_NAME>|
-|`opencode-command-template`|Bug Regression Command|`packages/ai-universal-rules/templates/opencode/commands/bug-regression.md`|Use this command as the runtime entry point for a bounded bug-fix task.|
-|`opencode-command-template`|Plan Slice Command|`packages/ai-universal-rules/templates/opencode/commands/plan-slice.md`|Use this command when a task is multi-step, ambiguous, or architecture-affecting.|
-|`opencode-command-template`|review-diff|`packages/ai-universal-rules/templates/opencode/commands/review-diff.md`|description: Compatibility command for diff-first review; prefer the review-diff skill for reusable guidance|
-|`opencode-command-template`|verify|`packages/ai-universal-rules/templates/opencode/commands/verify.md`|description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
-|`opencode-skill-template`|SKILL|`packages/ai-universal-rules/templates/opencode/skills/bug-regression/SKILL.md`|name: bug-regression|
-|`opencode-skill-template`|SKILL|`packages/ai-universal-rules/templates/opencode/skills/dependency-upgrade/SKILL.md`|name: dependency-upgrade|
-|`opencode-skill-template`|SKILL|`packages/ai-universal-rules/templates/opencode/skills/project-context/SKILL.md`|name: project-context|
-|`opencode-skill-template`|SKILL|`packages/ai-universal-rules/templates/opencode/skills/project-stack/SKILL.md`|name: project-stack|
-|`opencode-skill-template`|SKILL|`packages/ai-universal-rules/templates/opencode/skills/release-safety/SKILL.md`|name: release-safety|
-|`opencode-skill-template`|SKILL|`packages/ai-universal-rules/templates/opencode/skills/review-diff/SKILL.md`|name: review-diff|
-|`opencode-skill-template`|SKILL|`packages/ai-universal-rules/templates/opencode/skills/verify-change/SKILL.md`|name: verify-change|
+|`github-copilot-instruction-template`|Architecture Rules|`packages/ai-universal-rules/templates/instructions/architecture.instructions.md`|Architecture, ownership, and layering guidance|
+|`github-copilot-instruction-template`|Frontend Rules|`packages/ai-universal-rules/templates/instructions/frontend.instructions.md`|Frontend, UI, interaction, and presentation guidance|
+|`github-copilot-instruction-template`|Target Rules|`packages/ai-universal-rules/templates/instructions/targets.instructions.md`|Target and platform adaptation guidance for multi-surface repositories|
+|`github-copilot-instruction-template`|Testing Rules|`packages/ai-universal-rules/templates/instructions/testing.instructions.md`|Testing rules for focused, deterministic, behavior-proving tests|
+|`opencode-command-template`|verify|`packages/ai-universal-rules/templates/commands/verify.md`|Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
 |`operations-doc`|Evaluation Scenarios|`packages/ai-universal-rules/docs/operations/EVAL-SCENARIOS.md`|Use these scenarios to test workflow quality.|
 |`operations-doc`|Governance|`packages/ai-universal-rules/docs/operations/GOVERNANCE.md`|This package assumes AI instructions alone are not enough for production work.|
 |`operations-doc`|Hooks And Enforcement|`packages/ai-universal-rules/docs/operations/HOOKS-AND-ENFORCEMENT.md`|Instructions are advisory. Hooks are enforcement.|
 |`operations-doc`|Maintenance|`packages/ai-universal-rules/docs/operations/MAINTENANCE.md`|Treat this package like workflow infrastructure, not throwaway prompts.|
 |`operations-doc`|MCP Boundaries|`packages/ai-universal-rules/docs/operations/MCP-BOUNDARIES.md`|MCP extends capability, but also risk.|
 |`operations-doc`|Troubleshooting|`packages/ai-universal-rules/docs/operations/TROUBLESHOOTING.md`|- unresolved placeholders|
+|`optional-template`|architecture-plan|`packages/ai-universal-rules/templates/optional/agents/architecture-plan.md`|Produce a focused implementation plan for a medium or large change in <PROJECT_NAME>|
+|`optional-template`|bugfix|`packages/ai-universal-rules/templates/optional/agents/bugfix.md`|Use when fixing a bug in <PROJECT_NAME>, reproducing it first when practical, and keeping the fix minimal|
+|`optional-template`|build-config|`packages/ai-universal-rules/templates/optional/agents/build-config.md`|Update build, packaging, or verification configuration in <PROJECT_NAME>|
+|`optional-template`|docs|`packages/ai-universal-rules/templates/optional/agents/docs.md`|Update or align documentation after implementation changes in <PROJECT_NAME>|
+|`optional-template`|infra-auditor|`packages/ai-universal-rules/templates/optional/agents/infra-auditor.md`|Use when auditing dependency, build, release, or compatibility risk in <PROJECT_NAME>|
+|`optional-template`|ui-builder|`packages/ai-universal-rules/templates/optional/agents/ui-builder.md`|Use when implementing UI work while preserving repository interaction patterns and accessibility rules|
+|`optional-template`|upgrade|`packages/ai-universal-rules/templates/optional/agents/upgrade.md`|Plan or apply dependency and platform upgrades carefully in <PROJECT_NAME>|
 |`optional-template`|Optional Delivery Pack|`packages/ai-universal-rules/templates/optional/delivery/README.md`|Use this pack when you want a lightweight slice card for non-trivial work.|
 |`optional-template`|Slice Card|`packages/ai-universal-rules/templates/optional/delivery/slice-card.template.md`|- User outcome:|
-|`optional-template`|architecture-plan.prompt|`packages/ai-universal-rules/templates/optional/github-copilot/prompts/architecture-plan.prompt.md`|name: architecture-plan|
-|`optional-template`|dependency-upgrade.prompt|`packages/ai-universal-rules/templates/optional/github-copilot/prompts/dependency-upgrade.prompt.md`|name: dependency-upgrade|
-|`optional-template`|docs-sync.prompt|`packages/ai-universal-rules/templates/optional/github-copilot/prompts/docs-sync.prompt.md`|name: docs-sync|
-|`optional-template`|bugfix|`packages/ai-universal-rules/templates/optional/opencode/agents/bugfix.md`|description: Use when fixing a bug in <PROJECT_NAME>, reproducing it first when practical, and keeping the fix minimal|
-|`optional-template`|build-config|`packages/ai-universal-rules/templates/optional/opencode/agents/build-config.md`|description: Update build, packaging, or verification configuration in <PROJECT_NAME>|
-|`optional-template`|docs|`packages/ai-universal-rules/templates/optional/opencode/agents/docs.md`|description: Update or align documentation after implementation changes in <PROJECT_NAME>|
-|`optional-template`|infra-auditor|`packages/ai-universal-rules/templates/optional/opencode/agents/infra-auditor.md`|description: Use when auditing dependency, build, release, or compatibility risk in <PROJECT_NAME>|
-|`optional-template`|ui-builder|`packages/ai-universal-rules/templates/optional/opencode/agents/ui-builder.md`|description: Use when implementing UI work while preserving repository interaction patterns and accessibility rules|
-|`optional-template`|upgrade|`packages/ai-universal-rules/templates/optional/opencode/agents/upgrade.md`|description: Plan or apply dependency and platform upgrades carefully in <PROJECT_NAME>|
 |`package-capability`|Capability Templates|`packages/ai-universal-rules/templates/capabilities/README.md`|These folders are the canonical reusable workflow units in this kit.|
 |`package-capability`|Bug Regression Capability|`packages/ai-universal-rules/templates/capabilities/bug-regression/CAPABILITY.md`|Reproduce a bug with the smallest practical test or deterministic check, apply a minimal fix, and prove the regression is closed.|
 |`package-capability`|Bug Regression Checklist|`packages/ai-universal-rules/templates/capabilities/bug-regression/checklist.md`|1. What exact behavior is wrong?|
@@ -285,13 +245,24 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`workflow-doc`|Runtime Observability|`packages/ai-universal-rules/docs/workflows/RUNTIME-OBSERVABILITY.md`|Do not only ask whether files exist. Ask what actually loaded.|
 |`workflow-doc`|System Workflow|`packages/ai-universal-rules/docs/workflows/SYSTEM-WORKFLOW.md`|Use this document as the end-to-end operating model for the kit.|
 |`workflow-doc`|Task Entrypoints|`packages/ai-universal-rules/docs/workflows/TASK-ENTRYPOINTS.md`|This document explains when to use each mechanism.|
+|`workflow-template`|architecture-plan|`packages/ai-universal-rules/templates/workflows/architecture-plan.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
+|`workflow-template`|bug-regression|`packages/ai-universal-rules/templates/workflows/bug-regression.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
+|`workflow-template`|dependency-upgrade|`packages/ai-universal-rules/templates/workflows/dependency-upgrade.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|
+|`workflow-template`|docs-sync|`packages/ai-universal-rules/templates/workflows/docs-sync.md`|Use when changed behavior or workflow needs matching documentation updates without broad implementation planning|
+|`workflow-template`|new-feature|`packages/ai-universal-rules/templates/workflows/new-feature.md`|Use when implementing a bounded feature with existing repository patterns and focused verification|
+|`workflow-template`|plan-slice|`packages/ai-universal-rules/templates/workflows/plan-slice.md`|Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation|
+|`workflow-template`|project-context|`packages/ai-universal-rules/templates/workflows/project-context.md`|Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing|
+|`workflow-template`|regression-test|`packages/ai-universal-rules/templates/workflows/regression-test.md`|Use when the main task is to create a failing or proving regression test for a reported bug or edge case|
+|`workflow-template`|release-safety|`packages/ai-universal-rules/templates/workflows/release-safety.md`|Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards|
+|`workflow-template`|review-diff|`packages/ai-universal-rules/templates/workflows/review-diff.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
+|`workflow-template`|verify-change|`packages/ai-universal-rules/templates/workflows/verify-change.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
 
 ## Starter Profiles
 
 | Profile | Description |
 | --- | --- |
 | `minimal-starter` | Base install for one runtime with core policy, shared guardrails, and the three foundational capabilities. |
-| `dual-runtime-starter` | Base install plus both runtime adapters, worked examples, and compatibility docs for cross-tool adoption. |
+| `dual-runtime-starter` | Base install plus both runtime adapters and compatibility docs for cross-tool adoption. |
 | `strict-governance-starter` | Dual-runtime install with approval artifacts, operations docs, and higher-safety packs for teams formalizing controls. |
 
 ## Validation Commands

@@ -54,6 +54,7 @@ $trackedFiles = array_values(
 $trackedFiles = array_values(array_filter(
     $trackedFiles,
     static fn (string $path): bool => !repoStructureShouldExcludeTrackedPath($path)
+        && file_exists($root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $path))
 ));
 
 sort($trackedFiles, SORT_STRING);
@@ -163,7 +164,14 @@ foreach ($folderMap as $folder => $files) {
         }
     }
 
-    $folderMetadata = $metadataByPath[$folder];
+    $folderMetadata = $metadataByPath[$folder] ?? [
+        'purpose' => 'unknown',
+        'designed_for' => 'unknown',
+        'install_guide' => 'unknown',
+        'install_script' => 'unknown',
+        'ai_entrypoint' => 'unknown',
+        'notes' => 'unknown',
+    ];
 
     $folders[] = [
         'path' => $folder,

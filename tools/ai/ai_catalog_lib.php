@@ -141,10 +141,6 @@ function aiCollectCatalog(string $root): array
         $resources[] = $resource;
     }
 
-    foreach (aiCollectExampleResources($root) as $resource) {
-        $resources[] = $resource;
-    }
-
     usort(
         $resources,
         static fn (array $left, array $right): int => [$left['scope'], $left['type'], $left['path']] <=> [$right['scope'], $right['type'], $right['path']]
@@ -429,13 +425,10 @@ function aiCollectPackageResources(string $root): array
         'packages/ai-universal-rules/templates/shared/' => ['shared-template', 'canonical'],
         'packages/ai-universal-rules/templates/capabilities/' => ['package-capability', 'canonical'],
 
-        'packages/ai-universal-rules/templates/github-copilot/agents/' => ['github-copilot-agent-template', 'github-copilot'],
-        'packages/ai-universal-rules/templates/github-copilot/instructions/' => ['github-copilot-instruction-template', 'github-copilot'],
-        'packages/ai-universal-rules/templates/github-copilot/prompts/' => ['github-copilot-prompt-template', 'github-copilot'],
-
-        'packages/ai-universal-rules/templates/opencode/agents/' => ['opencode-agent-template', 'opencode'],
-        'packages/ai-universal-rules/templates/opencode/commands/' => ['opencode-command-template', 'opencode'],
-        'packages/ai-universal-rules/templates/opencode/skills/' => ['opencode-skill-template', 'opencode'],
+        'packages/ai-universal-rules/templates/core/agents/' => ['core-agent-template', 'canonical'],
+        'packages/ai-universal-rules/templates/instructions/' => ['github-copilot-instruction-template', 'github-copilot'],
+        'packages/ai-universal-rules/templates/workflows/' => ['workflow-template', 'dual-runtime'],
+        'packages/ai-universal-rules/templates/commands/' => ['opencode-command-template', 'opencode'],
 
         'packages/ai-universal-rules/templates/optional/' => ['optional-template', 'optional'],
         'packages/ai-universal-rules/docs/foundations/' => ['foundation-doc', 'canonical'],
@@ -676,8 +669,8 @@ function aiRenderLlms(array $catalog): string
     $lines[] = '';
     $lines[] = '## Runtime Adapters';
     $lines[] = '';
-    $lines[] = '- GitHub Copilot adapter resources live under `.github/` and `packages/ai-universal-rules/templates/github-copilot/`.';
-    $lines[] = '- OpenCode adapter resources live under `.opencode/` and `packages/ai-universal-rules/templates/opencode/`.';
+    $lines[] = '- GitHub Copilot adapter resources live under `.github/` and are generated from `packages/ai-universal-rules/templates/instructions/`, `packages/ai-universal-rules/templates/workflows/`, and `packages/ai-universal-rules/templates/core/agents/`.';
+    $lines[] = '- OpenCode adapter resources live under `.opencode/` and are generated from `packages/ai-universal-rules/templates/workflows/`, `packages/ai-universal-rules/templates/commands/`, and `packages/ai-universal-rules/templates/core/agents/`.';
     $lines[] = '- Canonical workflow resources stay runtime-neutral under `docs/ai/`, `docs/ai/capabilities/`, `scripts/ai/`, and `.schemas/`.';
     $lines[] = '';
     $lines[] = '## Reusable Kit';

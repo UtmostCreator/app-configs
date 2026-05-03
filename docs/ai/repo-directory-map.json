@@ -34,7 +34,7 @@
       "designed_for": "OpenCode users executing repo-scoped workflows.",
       "install_guide": "docs/ai/external-repo-install.md",
       "install_script": "tools/ai/install-ai-kit.php",
-      "ai_entrypoint": ".opencode/agents/architect.md",
+      "ai_entrypoint": "docs/ai/project-context.md",
       "notes": "Adapter layer for OpenCode; canonical policy remains in docs/ai and package templates."
     },
     {

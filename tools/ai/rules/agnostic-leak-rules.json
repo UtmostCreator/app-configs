@@ -10,7 +10,6 @@
     "DEV-"
   ],
   "allowed_paths": [
-    "packages/ai-universal-rules/examples/",
     "docs/ai/source-audit.md"
   ]
 }

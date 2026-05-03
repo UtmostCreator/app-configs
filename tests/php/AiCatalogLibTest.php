@@ -334,12 +334,12 @@ class AiCatalogLibTest extends TestCase
         $this->assertNull(aiFindExampleReadme(['file.md', 'AGENTS.md']));
     }
 
-    // ---- aiCollectExampleEntrypoints (string-path-only, using real repo root) ----
+    // ---- aiCollectExampleEntrypoints (string-path-only helper coverage) ----
 
     public function testCollectExampleEntrypointsFindsKnownSuffixes(): void
     {
         $root = aiRepoRoot();
-        $relDir = 'packages/ai-universal-rules/examples/generic-placeholder-repo';
+        $relDir = 'synthetic/repo';
         $prefix = $root . '/' . $relDir . '/';
         $files = [
             $prefix . 'README.md',
@@ -356,7 +356,7 @@ class AiCatalogLibTest extends TestCase
     public function testCollectExampleEntrypointsMaxSix(): void
     {
         $root = aiRepoRoot();
-        $relDir = 'packages/ai-universal-rules/examples/worked-dual-tool-repo';
+        $relDir = 'synthetic/dual-runtime-repo';
         $prefix = $root . '/' . $relDir . '/';
         // Feed more than 6 matching paths
         $files = [

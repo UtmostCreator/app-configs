@@ -37,6 +37,7 @@ done
 [[ -n "$SOURCE_ROOT" ]] || install_die 'runtime-opencode.sh: --source-root is required'
 [[ -n "$TARGET_ROOT" ]] || install_die 'runtime-opencode.sh: --target-root is required'
 
-copy_dir "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/opencode/agents' '.opencode/agents'
-copy_dir "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/opencode/commands' '.opencode/commands'
-copy_dir "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/opencode/skills' '.opencode/skills'
+copy_dir "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/core/agents' '.opencode/agents'
+copy_dir_as_skill_dirs "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/workflows' '.opencode/skills'
+copy_dir "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/workflows' '.opencode/commands'
+copy_dir "$SOURCE_ROOT" "$TARGET_ROOT" "$FORCE" "$DRY_RUN" 'packages/ai-universal-rules/templates/commands' '.opencode/commands'

@@ -33,18 +33,17 @@ starter_optional_capabilities:
   - templates/capabilities/dependency-upgrade
 runtime_entrypoints:
   opencode:
-    - templates/opencode/commands
-    - templates/opencode/agents
-    - templates/opencode/skills
+    - templates/core/agents
+    - templates/workflows
+    - templates/commands
   github-copilot:
-    - templates/github-copilot/instructions
-    - templates/github-copilot/agents
-    - templates/github-copilot/prompts
+    - templates/core/agents
+    - templates/instructions
+    - templates/workflows
 shared_templates:
   - templates/shared/approvals/APPROVAL-PACKET.template.md
   - templates/shared/verification/VERIFICATION-EVIDENCE.template.md
-preview_only_assets:
-  - templates/github-copilot/prompts
+preview_only_assets: []
 enablement_notes:
   - GitHub Copilot prompt files are surface-dependent and need a fallback path.
   - Advanced Copilot agent behavior varies between VS Code, CLI, and GitHub.com.
@@ -56,12 +55,7 @@ graceful_fallbacks:
     fallback: Use repository and path-specific instructions with manual staged prompting.
   hooks:
     fallback: Use explicit verification commands and approval packets when hooks are unavailable.
-examples:
-  - examples/generic-placeholder-repo
-  - examples/expanded-placeholder-repo
-  - examples/worked-opencode-repo
-  - examples/worked-copilot-repo
-  - examples/worked-dual-tool-repo
+examples: []
 placeholder_reference: PLACEHOLDERS.md
 generated_outputs:
   - packages/ai-universal-rules/catalog.json
@@ -72,9 +66,35 @@ starter_profiles:
   - id: minimal-starter
     description: Base install for one runtime with core policy and three foundational capabilities.
   - id: dual-runtime-starter
-    description: Base install plus both runtime adapters, compatibility docs, and worked examples.
+    description: Base install plus both runtime adapters and compatibility docs.
+    includes:
+      - README.md
+      - QUICKSTART.md
+      - PLACEHOLDERS.md
+      - docs
+      - templates/core
+      - templates/shared
+      - templates/capabilities
+      - templates/instructions
+      - templates/workflows
+      - templates/commands
   - id: strict-governance-starter
     description: Dual-runtime install plus approval artifacts, operations docs, and higher-safety packs.
+    includes:
+      - README.md
+      - QUICKSTART.md
+      - PLACEHOLDERS.md
+      - docs
+      - templates/core
+      - templates/shared
+      - templates/capabilities
+      - templates/instructions
+      - templates/workflows
+      - templates/commands
+      - templates/optional/delivery
+      - templates/optional/agents
+      - docs/operations
+      - docs/workflows/RISK-AND-APPROVALS.md
 release:
   export_root: dist/ai-universal-rules
   bundle_prefix: ai-universal-rules

@@ -35,7 +35,6 @@ The kit is intentionally asymmetric. It preserves one canonical workflow model, 
 - shared templates for guardrails, verification evidence, and approval packets
 - workflow docs for routing, handoffs, approvals, observability, and monorepos
 - operations docs for governance, hooks, MCP boundaries, maintenance, and troubleshooting
-- worked example trees for OpenCode, Copilot, and dual-tool setups
 
 ## Six-Layer Model
 
@@ -87,16 +86,17 @@ See `docs/foundations/COMPATIBILITY.md` for limits and fallbacks.
 
 ## Folder Map
 
-- `templates/core/`: baseline policy and durable context templates
+- `templates/core/`: baseline policy, workflow, and durable context templates
 - `templates/capabilities/`: canonical reusable workflow packs
 - `templates/shared/`: cross-tool guardrail, verification, and approval templates
-- `templates/opencode/`: OpenCode runtime adapters
-- `templates/github-copilot/`: GitHub Copilot runtime adapters
+- `templates/instructions/`: canonical Copilot instruction sources
+- `templates/workflows/`: shared workflow sources adapted into prompts, commands, and skills during installation
+- `templates/commands/`: explicit OpenCode command wrappers that remain separate from shared workflows
+- `templates/optional/agents/`: shared optional agent sources adapted per runtime during installation
 - `templates/optional/`: specialist add-ons
 - `docs/foundations/`: principles, precedence, compatibility, and control model
 - `docs/workflows/`: task routing, handoffs, approvals, monorepos, observability
 - `docs/operations/`: governance, enforcement, MCP boundaries, maintenance, troubleshooting, evals
-- `examples/`: placeholder and worked example trees
 
 ## Read In This Order
 

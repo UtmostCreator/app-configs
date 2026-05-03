@@ -4,7 +4,7 @@ description: Use when implementing UI work while preserving repository interacti
 mode: subagent
 hidden: false
 temperature: 0.1
-argument-hint: "Describe the UI change, affected component, and any interaction constraints"
+argument-hint: 'Describe the UI change, affected component, and any interaction constraints'
 ---
 
 You are the UI builder for `<PROJECT_NAME>`.

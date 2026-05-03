@@ -21,103 +21,103 @@ capabilities:
   - verify-change
 permission:
   edit:
-    "src/**": allow
-    "app/**": allow
-    "packages/**": allow
-    "configs/**": allow
-    "scripts/**": allow
-    "tools/**": allow
-    "tests/**": allow
-    "docs/**": allow
-    "vendor/**": deny
-    "node_modules/**": deny
-    ".git/**": deny
-    "dist/**": deny
-    "build/**": deny
-    "coverage/**": deny
-    ".cache/**": deny
-    "docs/ai/generated/**": deny
-    "docs/generated/**": deny
-    "*.generated.*": deny
-    "*.lock": deny
-    "composer.lock": deny
-    "package-lock.json": deny
-    "pnpm-lock.yaml": deny
-    "yarn.lock": deny
-    "bun.lockb": deny
-    "*.pem": deny
-    "*.key": deny
-    "*.crt": deny
-    ".env*": deny
-    "secrets.*": deny
-    "credentials.*": deny
-    "auth.json": deny
+    'src/**': allow
+    'app/**': allow
+    'packages/**': allow
+    'configs/**': allow
+    'scripts/**': allow
+    'tools/**': allow
+    'tests/**': allow
+    'docs/**': allow
+    'vendor/**': deny
+    'node_modules/**': deny
+    '.git/**': deny
+    'dist/**': deny
+    'build/**': deny
+    'coverage/**': deny
+    '.cache/**': deny
+    'docs/ai/generated/**': deny
+    'docs/generated/**': deny
+    '*.generated.*': deny
+    '*.lock': deny
+    'composer.lock': deny
+    'package-lock.json': deny
+    'pnpm-lock.yaml': deny
+    'yarn.lock': deny
+    'bun.lockb': deny
+    '*.pem': deny
+    '*.key': deny
+    '*.crt': deny
+    '.env*': deny
+    'secrets.*': deny
+    'credentials.*': deny
+    'auth.json': deny
   bash:
-    "*": deny
-    "command -v *": allow
-    "test -f *": allow
-    "test -x *": allow
-    "test -d *": allow
-    "stat *": allow
-    "date *": allow
-    "uuidgen": allow
-    "pwd": allow
-    "ls *": allow
-    "fd *": allow
-    "eza *": allow
-    "rg *": allow
-    "grep *": allow
-    "git grep *": allow
-    "sg *": allow
-    "sed -n *": allow
-    "head *": allow
-    "tail *": allow
-    "nl *": allow
-    "wc *": allow
-    "sort *": allow
-    "uniq *": allow
-    "file *": allow
-    "du -h *": allow
-    "jq *": allow
-    "yq *": allow
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git ls-files*": allow
-    "git blame*": allow
-    "git branch*": allow
-    "git rev-parse*": allow
-    "git stash list*": allow
-    "git stash show*": allow
-    "bash scripts/ai/ai-search.sh *": allow
-    "bash scripts/ai/rg-code.sh *": allow
-    "bash scripts/ai/fd-files.sh *": allow
-    "bash scripts/ai/preview-file.sh *": allow
-    "bash scripts/ai/query-usage.sh *": allow
-    "bash scripts/ai/git-forensics.sh *": allow
-    "php -l *": allow
-    "vendor/bin/phpunit *": allow
-    "./vendor/bin/phpunit *": allow
-    "phpunit *": allow
-    "composer validate*": allow
-    "npm test*": allow
-    "npm run test*": allow
-    "npm run lint*": allow
-    "npm run typecheck*": allow
-    "pnpm test*": allow
-    "pnpm run test*": allow
-    "pnpm run lint*": allow
-    "pnpm run typecheck*": allow
-    "yarn test*": allow
-    "yarn lint*": allow
-    "bun test*": allow
-    "shellcheck *": allow
-    "markdownlint-cli2 *": allow
-    "php tools/ai/validate-*.php *": allow
-    "php tools/ai/generate-*.php --check*": allow
-    "bash scripts/ai/ai-doc-check.sh --check*": allow
-    "bash scripts/ai/repo-tool-inventory.sh --check*": allow
+    '*': deny
+    'command -v *': allow
+    'test -f *': allow
+    'test -x *': allow
+    'test -d *': allow
+    'stat *': allow
+    'date *': allow
+    'uuidgen': allow
+    'pwd': allow
+    'ls *': allow
+    'fd *': allow
+    'eza *': allow
+    'rg *': allow
+    'grep *': allow
+    'git grep *': allow
+    'sg *': allow
+    'sed -n *': allow
+    'head *': allow
+    'tail *': allow
+    'nl *': allow
+    'wc *': allow
+    'sort *': allow
+    'uniq *': allow
+    'file *': allow
+    'du -h *': allow
+    'jq *': allow
+    'yq *': allow
+    'git status*': allow
+    'git diff*': allow
+    'git log*': allow
+    'git show*': allow
+    'git ls-files*': allow
+    'git blame*': allow
+    'git branch*': allow
+    'git rev-parse*': allow
+    'git stash list*': allow
+    'git stash show*': allow
+    'bash scripts/ai/ai-search.sh *': allow
+    'bash scripts/ai/rg-code.sh *': allow
+    'bash scripts/ai/fd-files.sh *': allow
+    'bash scripts/ai/preview-file.sh *': allow
+    'bash scripts/ai/query-usage.sh *': allow
+    'bash scripts/ai/git-forensics.sh *': allow
+    'php -l *': allow
+    'vendor/bin/phpunit *': allow
+    './vendor/bin/phpunit *': allow
+    'phpunit *': allow
+    'composer validate*': allow
+    'npm test*': allow
+    'npm run test*': allow
+    'npm run lint*': allow
+    'npm run typecheck*': allow
+    'pnpm test*': allow
+    'pnpm run test*': allow
+    'pnpm run lint*': allow
+    'pnpm run typecheck*': allow
+    'yarn test*': allow
+    'yarn lint*': allow
+    'bun test*': allow
+    'shellcheck *': allow
+    'markdownlint-cli2 *': allow
+    'php tools/ai/validate-*.php *': allow
+    'php tools/ai/generate-*.php --check*': allow
+    'bash scripts/ai/ai-doc-check.sh --check*': allow
+    'bash scripts/ai/repo-tool-inventory.sh --check*': allow
 ---
 
 # Implementer Agent
@@ -166,34 +166,34 @@ If handoffs disagree, trust active repository evidence and report the conflict.
 
 Score 0–100 before editing across target clarity, outcome clarity, scope boundary, contract clarity, verification clarity, and risk clarity.
 
-| Score | Action |
-|---:|---|
-| 90–100 | implement |
-| 70–89 | implement with stated assumptions |
-| 50–69 | bounded discovery, then implement only safe subset |
-| 30–49 | hand off to researcher or architect |
-| 0–29 | stop and ask user |
+|  Score | Action                                             |
+| -----: | -------------------------------------------------- |
+| 90–100 | implement                                          |
+|  70–89 | implement with stated assumptions                  |
+|  50–69 | bounded discovery, then implement only safe subset |
+|  30–49 | hand off to researcher or architect                |
+|   0–29 | stop and ask user                                  |
 
 For scores below 50/100, do not implement.
 
 ## Capability Routing
 
-| Capability | Load when implementation involves |
-|---|---|
-| `adapter-drift` | provider parity, adapter templates, instruction generation |
-| `agent-observability-and-evidence` | evidence logs, proof format, session notes |
+| Capability                          | Load when implementation involves                           |
+| ----------------------------------- | ----------------------------------------------------------- |
+| `adapter-drift`                     | provider parity, adapter templates, instruction generation  |
+| `agent-observability-and-evidence`  | evidence logs, proof format, session notes                  |
 | `authorization-and-tool-governance` | permissions, hooks, allow/deny policy, sensitive operations |
-| `bug-regression` | bug fix, reproduction, regression coverage |
-| `config-change-safety` | YAML/JSON config, policies, runtime flags |
-| `dependency-upgrade` | package versions, lockfiles, compatibility |
-| `docs-sync` | docs/capabilities/README alignment |
-| `evaluation-and-regression` | eval checks, regression scoring |
-| `preview-environments` | previews or smoke checks |
-| `project-context` | context compiler, repo map, AI context |
-| `release-safety` | rollback, disable path, rollout risk |
-| `review-diff` | reviewer feedback or review-ready handoff |
-| `service-boundary-patterns` | APIs, integrations, cross-package contracts |
-| `verify-change` | focused verification and proof |
+| `bug-regression`                    | bug fix, reproduction, regression coverage                  |
+| `config-change-safety`              | YAML/JSON config, policies, runtime flags                   |
+| `dependency-upgrade`                | package versions, lockfiles, compatibility                  |
+| `docs-sync`                         | docs/capabilities/README alignment                          |
+| `evaluation-and-regression`         | eval checks, regression scoring                             |
+| `preview-environments`              | previews or smoke checks                                    |
+| `project-context`                   | context compiler, repo map, AI context                      |
+| `release-safety`                    | rollback, disable path, rollout risk                        |
+| `review-diff`                       | reviewer feedback or review-ready handoff                   |
+| `service-boundary-patterns`         | APIs, integrations, cross-package contracts                 |
+| `verify-change`                     | focused verification and proof                              |
 
 Load in this order: `CAPABILITY.md`, `checklist.md`, `gotchas.md`, `examples.md`, `reference.md`.
 
@@ -230,16 +230,27 @@ Use only sections with evidence:
 
 ```md
 ## Instruction Specificity
+
 ## Instruction Gate
+
 ## Capabilities Used
+
 ## Pre-Implementation Grounding
+
 ## Changes Made
+
 ## Reuse / Duplication Check
+
 ## Verification Run
+
 ## Evidence
+
 ## Assumptions
+
 ## Remaining Risks Or Follow-Up
+
 ## Handoff Context For Next Agent
+
 ## Recommended Next Step
 ```
 

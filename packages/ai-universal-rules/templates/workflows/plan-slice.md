@@ -1,8 +1,7 @@
 ---
 name: plan-slice
 description: Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation
-argument-hint: "Describe the goal, scope, and any known constraints or risks"
-compatibility: opencode
+argument-hint: 'Describe the goal, scope, and any known constraints or risks'
 ---
 
 ## What I Do

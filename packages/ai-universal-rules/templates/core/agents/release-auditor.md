@@ -15,42 +15,42 @@ capabilities:
 permission:
   edit: deny
   bash:
-    "*": deny
-    "command -v *": allow
-    "test -f *": allow
-    "test -x *": allow
-    "test -d *": allow
-    "stat *": allow
-    "pwd": allow
-    "ls *": allow
-    "fd *": allow
-    "eza *": allow
-    "rg *": allow
-    "git grep *": allow
-    "grep *": allow
-    "sed -n *": allow
-    "head *": allow
-    "tail *": allow
-    "nl *": allow
-    "jq *": allow
-    "yq *": allow
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git ls-files*": allow
-    "git blame*": allow
-    "git branch*": allow
-    "git rev-parse*": allow
-    "bash scripts/ai/ai-search.sh *": allow
-    "bash scripts/ai/rg-code.sh *": allow
-    "bash scripts/ai/fd-files.sh *": allow
-    "bash scripts/ai/preview-file.sh *": allow
-    "bash scripts/ai/query-usage.sh *": allow
-    "bash scripts/ai/git-forensics.sh *": allow
-    "bash scripts/ai/ai-doc-check.sh --check*": allow
-    "php tools/ai/validate-*.php *": allow
-    "php tools/ai/generate-*.php --check*": allow
+    '*': deny
+    'command -v *': allow
+    'test -f *': allow
+    'test -x *': allow
+    'test -d *': allow
+    'stat *': allow
+    'pwd': allow
+    'ls *': allow
+    'fd *': allow
+    'eza *': allow
+    'rg *': allow
+    'git grep *': allow
+    'grep *': allow
+    'sed -n *': allow
+    'head *': allow
+    'tail *': allow
+    'nl *': allow
+    'jq *': allow
+    'yq *': allow
+    'git status*': allow
+    'git diff*': allow
+    'git log*': allow
+    'git show*': allow
+    'git ls-files*': allow
+    'git blame*': allow
+    'git branch*': allow
+    'git rev-parse*': allow
+    'bash scripts/ai/ai-search.sh *': allow
+    'bash scripts/ai/rg-code.sh *': allow
+    'bash scripts/ai/fd-files.sh *': allow
+    'bash scripts/ai/preview-file.sh *': allow
+    'bash scripts/ai/query-usage.sh *': allow
+    'bash scripts/ai/git-forensics.sh *': allow
+    'bash scripts/ai/ai-doc-check.sh --check*': allow
+    'php tools/ai/validate-*.php *': allow
+    'php tools/ai/generate-*.php --check*': allow
 ---
 
 # Release Auditor Agent
@@ -78,15 +78,15 @@ Load only what is relevant: `AGENTS.md`, `README.md`, `docs/ai/project-context.m
 
 ## Capability Routing
 
-| Capability | Load when audit involves |
-|---|---|
-| `release-safety` | rollout, rollback, disable path, production risk |
-| `preview-environments` | preview deploys, smoke checks, TTL, data isolation |
-| `config-change-safety` | config, flags, runtime policy |
-| `authorization-and-tool-governance` | permissions, hooks, tool policy |
-| `adapter-drift` | provider parity or generated adapter files |
-| `agent-observability-and-evidence` | evidence logs, traceability |
-| `verify-change` | validation depth and smoke checks |
+| Capability                          | Load when audit involves                           |
+| ----------------------------------- | -------------------------------------------------- |
+| `release-safety`                    | rollout, rollback, disable path, production risk   |
+| `preview-environments`              | preview deploys, smoke checks, TTL, data isolation |
+| `config-change-safety`              | config, flags, runtime policy                      |
+| `authorization-and-tool-governance` | permissions, hooks, tool policy                    |
+| `adapter-drift`                     | provider parity or generated adapter files         |
+| `agent-observability-and-evidence`  | evidence logs, traceability                        |
+| `verify-change`                     | validation depth and smoke checks                  |
 
 Load in this order: `CAPABILITY.md`, `checklist.md`, `gotchas.md`, `examples.md`, `reference.md`.
 
@@ -111,29 +111,39 @@ For install or AI-provider changes, verify source templates are canonical, gener
 
 ## Release Verdict Rules
 
-| Verdict | Meaning |
-|---|---|
-| READY | release posture is sufficient |
-| READY WITH NOTES | release can proceed with non-blocking follow-up |
-| NOT READY | blocking rollback, rollout, verification, migration, or safety issue exists |
+| Verdict          | Meaning                                                                     |
+| ---------------- | --------------------------------------------------------------------------- |
+| READY            | release posture is sufficient                                               |
+| READY WITH NOTES | release can proceed with non-blocking follow-up                             |
+| NOT READY        | blocking rollback, rollout, verification, migration, or safety issue exists |
 
 ## Final Output
 
 ```md
 ## Release Verdict
+
 READY | READY WITH NOTES | NOT READY
 
 ## Risk Level
+
 low / medium / high / unknown
 
 ## Rollout Posture
+
 ## Rollback / Disable Path
+
 ## Success And Failure Signals
+
 ## Data / Secret / Permission Boundaries
+
 ## Generated / Adapter Surface
+
 ## Required Verification Before Release
+
 ## Blocking Risks
+
 ## Handoff Notes
+
 ## Recommended Next Step
 ```
 

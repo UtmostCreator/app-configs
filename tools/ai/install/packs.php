@@ -23,6 +23,7 @@ function aiInstallerPackRegistry(): array
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/instructions', 'target' => '.github/instructions', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.github/agents', 'rename_ext' => '.agent.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.github/prompts', 'rename_ext' => '.prompt.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.github/skills', 'install_type' => 'skill-dirs', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'adapter-opencode' => [
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.opencode/agents', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],

@@ -1,8 +1,7 @@
 ---
 name: architecture-plan
 description: Use when producing a focused implementation plan for a medium or large change before implementation begins
-argument-hint: "Describe the goal, scope, and affected behavior"
-compatibility: opencode
+argument-hint: 'Describe the goal, scope, and affected behavior'
 ---
 
 ## What I Do

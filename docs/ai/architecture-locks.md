@@ -32,7 +32,7 @@ Changes to these rules must **strengthen** the model, not replace it.
 ## 6) Installer Ownership
 
 - Canonical installer implementation is `php tools/ai/install-ai-kit.php`.
-- Shell installers are wrappers (`tools/ai/install-ai-kit.sh`, `tools/ai/install-copilot-kit.sh`).
+- Shell installers are wrappers (`tools/ai/install-ai-kit.sh`, `tools/ai/install-copilot-kit.sh`, `tools/ai/install-opencode-kit.sh`).
 - Profile composition remains deterministic and pack-based.
 
 ## 7) Runtime Adapter Asymmetry

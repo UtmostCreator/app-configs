@@ -46,21 +46,23 @@
         "package:package-capability": 31,
         "package:shared-template": 3,
         "package:workflow-doc": 6,
-        "package:workflow-template": 11,
+        "package:workflow-template": 12,
         "root:adapter-doc": 1,
         "root:adapter-hook": 2,
         "root:adapter-hook-script": 1,
         "root:adapter-policy": 1,
-        "root:ai-script": 30,
+        "root:ai-script": 26,
         "root:capability": 13,
         "root:cli": 1,
         "root:exporter": 1,
         "root:generator": 1,
         "root:github-copilot-agent": 8,
         "root:github-copilot-instruction": 4,
-        "root:github-copilot-prompt": 11,
-        "root:opencode-command": 4,
-        "root:opencode-skill": 6,
+        "root:github-copilot-prompt": 12,
+        "root:github-copilot-skill": 12,
+        "root:opencode-agent": 8,
+        "root:opencode-command": 1,
+        "root:opencode-skill": 12,
         "root:php-reference": 3,
         "root:root-doc": 16,
         "root:schema": 1,
@@ -775,6 +777,14 @@
         {
             "scope": "package",
             "type": "workflow-template",
+            "name": "repo-investigation",
+            "path": "packages/ai-universal-rules/templates/workflows/repo-investigation.md",
+            "runtime": "dual-runtime",
+            "description": "Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence."
+        },
+        {
+            "scope": "package",
+            "type": "workflow-template",
             "name": "review-diff",
             "path": "packages/ai-universal-rules/templates/workflows/review-diff.md",
             "runtime": "dual-runtime",
@@ -899,38 +909,6 @@
             "path": "scripts/ai/ai-verify.sh",
             "runtime": "canonical",
             "description": "Project-aware verification gate for AI-driven changes across shell, PHP, JS/TS, and security checks."
-        },
-        {
-            "scope": "root",
-            "type": "ai-script",
-            "name": "check-batch2.sh",
-            "path": "scripts/ai/check-batch2.sh",
-            "runtime": "canonical",
-            "description": "Batch verification helper for grouped AI workflow checks."
-        },
-        {
-            "scope": "root",
-            "type": "ai-script",
-            "name": "check-batch3.sh",
-            "path": "scripts/ai/check-batch3.sh",
-            "runtime": "canonical",
-            "description": "Batch verification helper for grouped AI workflow checks."
-        },
-        {
-            "scope": "root",
-            "type": "ai-script",
-            "name": "check-batch4a.sh",
-            "path": "scripts/ai/check-batch4a.sh",
-            "runtime": "canonical",
-            "description": "Batch verification helper for grouped AI workflow checks."
-        },
-        {
-            "scope": "root",
-            "type": "ai-script",
-            "name": "check-batch4b.sh",
-            "path": "scripts/ai/check-batch4b.sh",
-            "runtime": "canonical",
-            "description": "Batch verification helper for grouped AI workflow checks."
         },
         {
             "scope": "root",
@@ -1367,6 +1345,14 @@
         {
             "scope": "root",
             "type": "github-copilot-prompt",
+            "name": "repo-investigation",
+            "path": ".github/prompts/repo-investigation.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
             "name": "review-diff",
             "path": ".github/prompts/review-diff.prompt.md",
             "runtime": "github-copilot",
@@ -1382,27 +1368,163 @@
         },
         {
             "scope": "root",
-            "type": "opencode-command",
+            "type": "github-copilot-skill",
+            "name": "architecture-plan",
+            "path": ".github/skills/architecture-plan/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when producing a focused implementation plan for a medium or large change before implementation begins"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
             "name": "bug-regression",
-            "path": ".opencode/commands/bug-regression.md",
-            "runtime": "opencode",
-            "description": "Use this command as the runtime entry point for a bounded bug-fix task."
+            "path": ".github/skills/bug-regression/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence"
         },
         {
             "scope": "root",
-            "type": "opencode-command",
+            "type": "github-copilot-skill",
+            "name": "dependency-upgrade",
+            "path": ".github/skills/dependency-upgrade/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "docs-sync",
+            "path": ".github/skills/docs-sync/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "new-feature",
+            "path": ".github/skills/new-feature/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when implementing a bounded feature with existing repository patterns and focused verification"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
             "name": "plan-slice",
-            "path": ".opencode/commands/plan-slice.md",
-            "runtime": "opencode",
-            "description": "Use this command when a task is multi-step, ambiguous, or architecture-affecting."
+            "path": ".github/skills/plan-slice/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation"
         },
         {
             "scope": "root",
-            "type": "opencode-command",
+            "type": "github-copilot-skill",
+            "name": "project-context",
+            "path": ".github/skills/project-context/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "regression-test",
+            "path": ".github/skills/regression-test/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when the main task is to create a failing or proving regression test for a reported bug or edge case"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "release-safety",
+            "path": ".github/skills/release-safety/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "repo-investigation",
+            "path": ".github/skills/repo-investigation/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
             "name": "review-diff",
-            "path": ".opencode/commands/review-diff.md",
+            "path": ".github/skills/review-diff/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "verify-change",
+            "path": ".github/skills/verify-change/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "architect",
+            "path": ".opencode/agents/architect.md",
             "runtime": "opencode",
-            "description": "Compatibility command for diff-first review; prefer the review-diff skill for reusable guidance"
+            "description": "Use when a change needs scoping, design, ownership decisions, contract boundaries, adapter strategy, or risk posture before implementation"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "config-maintainer",
+            "path": ".opencode/agents/config-maintainer.md",
+            "runtime": "opencode",
+            "description": "Use when changing editor, shell, runtime, or tool configuration while preserving current behavior"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "implementer",
+            "path": ".opencode/agents/implementer.md",
+            "runtime": "opencode",
+            "description": "Use when a bounded implementation slice is clear and focused verification should happen in this repository"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "refactorer",
+            "path": ".opencode/agents/refactorer.md",
+            "runtime": "opencode",
+            "description": "Use when behavior is already correct and the remaining work is structure, readability, duplication reduction, or maintainability"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "release-auditor",
+            "path": ".opencode/agents/release-auditor.md",
+            "runtime": "opencode",
+            "description": "Use when medium or high risk changes need rollout, rollback, migration, observability, preview, or install-safety review"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "researcher",
+            "path": ".opencode/agents/researcher.md",
+            "runtime": "opencode",
+            "description": "Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "reviewer",
+            "path": ".opencode/agents/reviewer.md",
+            "runtime": "opencode",
+            "description": "Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "workflow-auditor",
+            "path": ".opencode/agents/workflow-auditor.md",
+            "runtime": "opencode",
+            "description": "Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims"
         },
         {
             "scope": "root",
@@ -1411,6 +1533,14 @@
             "path": ".opencode/commands/verify.md",
             "runtime": "opencode",
             "description": "Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "architecture-plan",
+            "path": ".opencode/skills/architecture-plan/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when producing a focused implementation plan for a medium or large change before implementation begins"
         },
         {
             "scope": "root",
@@ -1431,6 +1561,30 @@
         {
             "scope": "root",
             "type": "opencode-skill",
+            "name": "docs-sync",
+            "path": ".opencode/skills/docs-sync/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "new-feature",
+            "path": ".opencode/skills/new-feature/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when implementing a bounded feature with existing repository patterns and focused verification"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "plan-slice",
+            "path": ".opencode/skills/plan-slice/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
             "name": "project-context",
             "path": ".opencode/skills/project-context/SKILL.md",
             "runtime": "opencode",
@@ -1439,10 +1593,26 @@
         {
             "scope": "root",
             "type": "opencode-skill",
+            "name": "regression-test",
+            "path": ".opencode/skills/regression-test/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when the main task is to create a failing or proving regression test for a reported bug or edge case"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
             "name": "release-safety",
             "path": ".opencode/skills/release-safety/SKILL.md",
             "runtime": "opencode",
             "description": "Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "repo-investigation",
+            "path": ".opencode/skills/repo-investigation/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence."
         },
         {
             "scope": "root",

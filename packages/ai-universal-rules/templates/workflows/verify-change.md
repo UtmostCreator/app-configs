@@ -1,8 +1,7 @@
 ---
 name: verify-change
 description: Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly
-argument-hint: "Describe the change and what needs to be verified"
-compatibility: opencode
+argument-hint: 'Describe the change and what needs to be verified'
 ---
 
 ## What I Do

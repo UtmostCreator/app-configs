@@ -42,5 +42,6 @@ Use this file as durable project context for instructions, agents, prompts, and 
 ## Workflow Notes
 
 - Capability composition hints: `<CAPABILITY_COMPOSITION_NOTES>`
+- Tool selection: `when the repository provides a tool map or command wrappers, follow that routing first; prefer rg, fd, ast-grep/sg, and structured queries over grep, find, or broad file dumps`
 - Release safety notes: `<RELEASE_SAFETY_NOTES>`
 - Known gotcha themes: `<KNOWN_GOTCHA_THEMES>`

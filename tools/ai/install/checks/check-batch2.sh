@@ -45,7 +45,7 @@ bad=0
     echo
     echo "== shellcheck $f =="
     if ! shellcheck -x "$f"; then
-    bad=1
+      bad=1
     fi
   done
 
@@ -60,8 +60,6 @@ bad=0
   echo "Log: $LOG_FILE"
 } 2>&1 | tee "$LOG_FILE"
 
-# Never force-close an interactive Git Bash window.
-# Use STRICT=1 only in CI if non-zero exit is needed.
 if [ "${STRICT:-0}" = "1" ]; then
   exit "$bad"
 fi

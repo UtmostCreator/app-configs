@@ -1,8 +1,7 @@
 ---
 name: new-feature
 description: Use when implementing a bounded feature with existing repository patterns and focused verification
-argument-hint: "Describe the feature, expected behavior, and any constraints"
-compatibility: opencode
+argument-hint: 'Describe the feature, expected behavior, and any constraints'
 ---
 
 ## What I Do

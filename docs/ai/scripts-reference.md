@@ -6,13 +6,18 @@ This document explains installer, validation, generation, and context scripts ma
 
 - `php tools/ai/install-ai-kit.php`
   - Canonical installer implementation.
-  - Profiles: `minimal|copilot|opencode|dual|guarded`.
-  - Flags: `--target`, `--runtime`, `--project-name`, `--dry-run`, `--force`, `--no-base`, `--allow-core-overwrite`.
+  - Profiles: `minimal|copilot|opencode|dual|guarded|accelerated|full-governance|docs-reference|custom`.
+  - Selective flags: `--with`, `--without`, `--all-features`, `--run-after-install`, `--toolchain-check`, `--toolchain-install-plan`, `--toolchain-apply`, `--verify-after`.
+  - Core flags: `--target`, `--runtime`, `--project-name`, `--dry-run`, `--force`, `--no-base`, `--allow-core-overwrite`, `--mode`, `--dependency-mode`, `--hook-driver`.
   - Safety: core base policy files are protected from accidental overwrite unless `--allow-core-overwrite` is explicitly passed.
 - `bash tools/ai/install-ai-kit.sh`
   - Thin wrapper that forwards args to `install-ai-kit.php`.
 - `bash tools/ai/install-copilot-kit.sh`
   - Legacy compatibility wrapper mapping old Copilot profile names to unified installer profiles.
+- `bash tools/ai/install-opencode-kit.sh`
+  - Compatibility wrapper mapping OpenCode-only installs to unified installer profiles.
+
+For ordered installation recipes and selective pack examples, use `docs/ai/install-order.md`.
 
 ## Unified AI CLI
 
@@ -28,6 +33,7 @@ This document explains installer, validation, generation, and context scripts ma
   - Advisor pass: `php tools/ai/ai.php advisor --all`.
   - Advisor uses generated repository signals and context artifacts (`docs/ai/generated/project-signals.json`, `docs/ai/generated/advisor-context.md`) to provide deterministic fix suggestions.
   - Install docs generator: `php tools/ai/ai.php install-docs --write` and drift check via `php tools/ai/ai.php install-docs --check`.
+  - Install-over-existing-repo flow: `php tools/ai/ai.php install --profile full-governance --reinstall --dry-run`, then `--apply` once the plan is correct.
   - Compatibility contract: existing command names remain supported while successor aliases are introduced.
 
 ## Validation And Generation

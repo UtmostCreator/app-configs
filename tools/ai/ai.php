@@ -395,7 +395,7 @@ function aiRunRisk(string $root, array $args): int
             $reasons[] = 'command approval policy changed';
             continue;
         }
-        if (str_starts_with($path, 'tools/ai/install-ai-kit.php') || str_starts_with($path, 'tools/ai/install-copilot-kit.sh')) {
+        if (str_starts_with($path, 'tools/ai/install-ai-kit.php') || str_starts_with($path, 'tools/ai/install-copilot-kit.sh') || str_starts_with($path, 'tools/ai/install-opencode-kit.sh')) {
             $score += 25;
             $reasons[] = 'installer behavior changed';
             continue;
@@ -2445,6 +2445,9 @@ function aiRunInstallWorkflow(string $root, array $args): int
     }
     if (!empty($installConfig['withoutPacks'])) {
         $cmd .= ' --without ' . escapeshellarg(implode(',', $installConfig['withoutPacks']));
+    }
+    if (!empty($installConfig['allowPlaceholders'])) {
+        $cmd .= ' --allow-placeholders';
     }
 
     $run = aiRunCommand($root, $cmd);

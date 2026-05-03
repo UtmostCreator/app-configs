@@ -14,68 +14,68 @@ capabilities:
 permission:
   edit: deny
   bash:
-    "*": deny
-    "mkdir -p .opencode/research-sessions": allow
-    "mkdir -p docs/tickets": allow
-    "printf * >> .opencode/research-sessions/*.md": allow
-    "printf * >> docs/tickets/*.md": allow
-    "cat >> .opencode/research-sessions/*.md": allow
-    "cat >> docs/tickets/*.md": allow
-    "command -v *": allow
-    "test -f *": allow
-    "test -x *": allow
-    "test -d *": allow
-    "stat *": allow
-    "date *": allow
-    "uuidgen": allow
-    "pwd": allow
-    "ls *": allow
-    "fd *": allow
-    "eza *": allow
-    "bash scripts/ai/ai-search.sh *": allow
-    "bash scripts/ai/rg-code.sh *": allow
-    "bash scripts/ai/fd-files.sh *": allow
-    "bash scripts/ai/preview-file.sh *": allow
-    "bash scripts/ai/query-usage.sh *": allow
-    "bash scripts/ai/git-forensics.sh *": allow
-    "bash scripts/ai/ai-doc-check.sh --check*": allow
-    "bash scripts/ai/repo-tool-inventory.sh --check*": allow
-    "rg *": allow
-    "git grep *": allow
-    "grep *": allow
-    "sed -n *": allow
-    "head *": allow
-    "tail *": allow
-    "nl *": allow
-    "wc *": allow
-    "sort *": allow
-    "uniq *": allow
-    "file *": allow
-    "du -h *": allow
-    "jq *": allow
-    "yq *": allow
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git ls-files*": allow
-    "git blame*": allow
-    "git branch*": allow
-    "git rev-parse*": allow
-    "git remote*": allow
-    "git merge-base*": allow
-    "git rev-list*": allow
-    "git cherry*": allow
-    "git for-each-ref*": allow
-    "gh pr status*": allow
-    "gh pr list*": allow
-    "gh pr view*": allow
-    "gh search prs*": allow
-    "gh search commits*": allow
-    "gh issue list*": allow
-    "gh issue view*": allow
-    "gh repo view*": allow
-    "scc *": allow
+    '*': deny
+    'mkdir -p .opencode/research-sessions': allow
+    'mkdir -p docs/tickets': allow
+    'printf * >> .opencode/research-sessions/*.md': allow
+    'printf * >> docs/tickets/*.md': allow
+    'cat >> .opencode/research-sessions/*.md': allow
+    'cat >> docs/tickets/*.md': allow
+    'command -v *': allow
+    'test -f *': allow
+    'test -x *': allow
+    'test -d *': allow
+    'stat *': allow
+    'date *': allow
+    'uuidgen': allow
+    'pwd': allow
+    'ls *': allow
+    'fd *': allow
+    'eza *': allow
+    'bash scripts/ai/ai-search.sh *': allow
+    'bash scripts/ai/rg-code.sh *': allow
+    'bash scripts/ai/fd-files.sh *': allow
+    'bash scripts/ai/preview-file.sh *': allow
+    'bash scripts/ai/query-usage.sh *': allow
+    'bash scripts/ai/git-forensics.sh *': allow
+    'bash scripts/ai/ai-doc-check.sh --check*': allow
+    'bash scripts/ai/repo-tool-inventory.sh --check*': allow
+    'rg *': allow
+    'git grep *': allow
+    'grep *': allow
+    'sed -n *': allow
+    'head *': allow
+    'tail *': allow
+    'nl *': allow
+    'wc *': allow
+    'sort *': allow
+    'uniq *': allow
+    'file *': allow
+    'du -h *': allow
+    'jq *': allow
+    'yq *': allow
+    'git status*': allow
+    'git diff*': allow
+    'git log*': allow
+    'git show*': allow
+    'git ls-files*': allow
+    'git blame*': allow
+    'git branch*': allow
+    'git rev-parse*': allow
+    'git remote*': allow
+    'git merge-base*': allow
+    'git rev-list*': allow
+    'git cherry*': allow
+    'git for-each-ref*': allow
+    'gh pr status*': allow
+    'gh pr list*': allow
+    'gh pr view*': allow
+    'gh search prs*': allow
+    'gh search commits*': allow
+    'gh issue list*': allow
+    'gh issue view*': allow
+    'gh repo view*': allow
+    'scc *': allow
 ---
 
 # Researcher Agent
@@ -118,24 +118,24 @@ Load only what is relevant: `AGENTS.md`, `README.md`, `docs/ai/project-context.m
 
 ## Capability Loading
 
-| Capability | Trigger |
-|---|---|
-| `project-context` | repo map, source of truth, context compiler, AI context output |
-| `adapter-drift` | Copilot/OpenCode/provider parity or adapter templates |
-| `agent-observability-and-evidence` | evidence logs, session notes, traceability |
-| `authorization-and-tool-governance` | permissions, hooks, allow/deny policy, sensitive operations |
-| `review-diff` | review surface, changed files, regression risk |
-| `verify-change` | verification surface or test selection |
+| Capability                          | Trigger                                                        |
+| ----------------------------------- | -------------------------------------------------------------- |
+| `project-context`                   | repo map, source of truth, context compiler, AI context output |
+| `adapter-drift`                     | Copilot/OpenCode/provider parity or adapter templates          |
+| `agent-observability-and-evidence`  | evidence logs, session notes, traceability                     |
+| `authorization-and-tool-governance` | permissions, hooks, allow/deny policy, sensitive operations    |
+| `review-diff`                       | review surface, changed files, regression risk                 |
+| `verify-change`                     | verification surface or test selection                         |
 
 Load in this order: `CAPABILITY.md`, `checklist.md`, `gotchas.md`, `examples.md`, `reference.md`.
 
 ## Research Modes
 
-| Mode | Use when | Maximum scope |
-|---|---|---|
-| Narrow | one file, function, command, schema, hook, test, or generated artifact | target + usage + nearby tests |
-| Standard | related files or one workflow | relevant paths only |
-| Full | architecture, permissions, adapter parity, install, generated artifacts, CI, release risk | whole affected surface |
+| Mode     | Use when                                                                                  | Maximum scope                 |
+| -------- | ----------------------------------------------------------------------------------------- | ----------------------------- |
+| Narrow   | one file, function, command, schema, hook, test, or generated artifact                    | target + usage + nearby tests |
+| Standard | related files or one workflow                                                             | relevant paths only           |
+| Full     | architecture, permissions, adapter parity, install, generated artifacts, CI, release risk | whole affected surface        |
 
 ## Required Flow
 
@@ -171,17 +171,29 @@ Use only sections with evidence:
 
 ```md
 ## Research Session
+
 ## Instruction Gate
+
 ## Current Branch And Changes
+
 ## Relevant Paths
+
 ## Artifact Usage
+
 ## Entry Points
+
 ## Execution Path
+
 ## Contracts And Boundaries
+
 ## Tests Read
+
 ## Verification Surface
+
 ## Risks Or Unknowns
+
 ## Handoff Notes For Next Agent
+
 ## Recommended Next Step
 ```
 

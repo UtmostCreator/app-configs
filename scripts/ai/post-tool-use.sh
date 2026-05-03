@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
+# shellcheck source=scripts/ai/common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 mkdir -p "$COPILOT_LOG_DIR"

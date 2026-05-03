@@ -114,7 +114,7 @@ php tools/ai/generate-ai-catalog.php
 Repomix context bundles are generated with:
 
 ```powershell
-bash scripts/copilot/repomix-scc-router.sh all .
+bash scripts/ai/repomix-scc-router.sh all .
 ```
 
 ## Pull Requests

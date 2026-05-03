@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 set -euo pipefail
 
 COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./common.sh
+# shellcheck source=scripts/ai/common.sh
 source "$COMMON_DIR/common.sh"
 
 usage() {
     cat <<'EOF'
 Usage:
-  scripts/copilot/repomix-context-tree.sh <analyze|plan|pack|all|clean|purge> [root] [options]
+  scripts/ai/repomix-context-tree.sh <analyze|plan|pack|all|clean|purge> [root] [options]
 
 Commands:
   analyze   Generate planner and human/machine index outputs.
@@ -49,6 +50,25 @@ die() {
 
 log() {
     printf '[repomix-tree] %s\n' "$1"
+}
+
+confirm_context_delete() {
+    local action="$1"
+    local target="$2"
+
+    log "requested destructive context action: $action -> $target"
+
+    if [[ "${APPROVE_CONTEXT_DELETE:-0}" == "1" ]]; then
+        return 0
+    fi
+
+    if [[ -t 0 ]] && [[ "${CI:-}" != "true" ]]; then
+        printf 'Continue with %s on %s? [y/N] ' "$action" "$target" >&2
+        read -r confirm
+        [[ "$confirm" =~ ^[Yy]$ ]] && return 0
+    fi
+
+    die "context deletion requires APPROVE_CONTEXT_DELETE=1 or interactive confirmation"
 }
 
 add_winget_paths() {
@@ -193,7 +213,7 @@ done
 ROOT="$(abs_path "$ROOT_INPUT")"
 [[ -d "$ROOT" ]] || die "root directory '$ROOT' does not exist"
 
-(cd "$ROOT" && require_clean_secret_scan "$@")
+require_clean_secret_scan "$ROOT"
 
 add_winget_paths
 
@@ -244,7 +264,7 @@ generate_child_index() {
         printf 'Reason: `%s`\n\n' "$reason"
         printf 'This route exceeds budget. Create deeper bundles by rerunning with a larger `--depth` or a smaller scope.\n\n'
         printf '## Suggested Next Actions\n\n'
-        printf '1. Re-run `scripts/copilot/repomix-context-tree.sh plan . --depth %s` to split this route further.\n' "$((DEPTH + 1))"
+        printf '1. Re-run `scripts/ai/repomix-context-tree.sh plan . --depth %s` to split this route further.\n' "$((DEPTH + 1))"
         printf '2. Open the resulting child route with decision `pack`.\n'
         printf '3. Keep sibling routes closed unless the task crosses boundaries.\n'
     } >"$output_abs"
@@ -404,7 +424,7 @@ build_human_index() {
         printf '%s\n' '- `tree-manifest.json`'
         printf '%s\n\n' '- `index.json`'
         printf '## Regeneration Command\n\n'
-        printf '`scripts/copilot/repomix-context-tree.sh all . --compress --style %s`\n' "$STYLE"
+        printf '`scripts/ai/repomix-context-tree.sh all . --compress --style %s`\n' "$STYLE"
     } >"$INDEX_MD"
 
     tail -n +2 "$TREE_PLAN_TSV" | while IFS=$'\t' read -r route _type decision _estimated_tokens _budget output reason; do
@@ -475,6 +495,7 @@ run_all() {
 }
 
 run_clean() {
+    confirm_context_delete "clean" "$TREE_DIR"
     rm -rf "$BUNDLES_DIR" "$INDEXES_DIR" "$INDEX_MD" "$INDEX_JSON"
     log "removed generated bundles and indexes from $TREE_DIR"
 }
@@ -484,6 +505,11 @@ run_purge() {
         log "no tree-context directory at $TREE_DIR"
         return 0
     }
+
+    [[ "$TREE_DIR" != "/" ]] || die "refusing to delete root directory"
+    [[ "$TREE_DIR" != "$ROOT" ]] || die "refusing to delete repository root"
+
+    confirm_context_delete "purge" "$TREE_DIR"
     rm -rf "$TREE_DIR"
     log "removed tree-context directory $TREE_DIR"
 }

@@ -43,7 +43,7 @@ function aiAdvisorScore(string $root, array $signals): array
     aiAdvisorWriteMarkdown($dir . DIRECTORY_SEPARATOR . 'project-scorecard.md', $md);
 
     $focus = "# Repo Focus Map\n\n";
-    $focus .= "1. tools/ai/**\n2. tools/ai/install/**\n3. scripts/ai/**\n4. scripts/copilot/**\n5. docs/ai/installer-architecture.md\n6. tests/**\n";
+    $focus .= "1. tools/ai/**\n2. tools/ai/install/**\n3. scripts/ai/**\n4. scripts/ai/**\n5. docs/ai/installer-architecture.md\n6. tests/**\n";
     aiAdvisorWriteMarkdown($dir . DIRECTORY_SEPARATOR . 'repo-focus-map.md', $focus);
 
     return $scorecard;

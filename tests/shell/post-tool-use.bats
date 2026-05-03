@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# Tests for scripts/copilot/post-tool-use.sh
+# Tests for scripts/ai/post-tool-use.sh
 #
 # Input: full tool event JSON on stdin with toolName, toolArgs, toolResult, durationMs.
 # Output: appends a JSONL line to $COPILOT_LOG_DIR/tool-usage.jsonl
@@ -13,7 +13,7 @@
 # Requires: jq (used internally by post-tool-use.sh).
 
 REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
-SCRIPT="$REPO_ROOT/scripts/copilot/post-tool-use.sh"
+SCRIPT="$REPO_ROOT/scripts/ai/post-tool-use.sh"
 
 _has_jq() {
     command -v jq >/dev/null 2>&1

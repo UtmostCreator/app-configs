@@ -12,15 +12,15 @@ This prompt file is an optional workflow asset. Use it for history-driven invest
 Workflow:
 
 1. Identify affected file, function, or literal.
-2. Use `scripts/copilot/git-forensics.sh S ...` and `scripts/copilot/git-forensics.sh G ...` first.
-3. Use `scripts/copilot/git-forensics.sh L ...` for function or line evolution.
-4. Use `scripts/copilot/git-forensics.sh blame ...` for current line ownership.
+2. Use `scripts/ai/git-forensics.sh S ...` and `scripts/ai/git-forensics.sh G ...` first.
+3. Use `scripts/ai/git-forensics.sh L ...` for function or line evolution.
+4. Use `scripts/ai/git-forensics.sh blame ...` for current line ownership.
 5. Use `git range-diff` when branch comparison is needed.
 6. Summarize first likely bad change, evidence, and follow-up checks.
 
 Fallback:
 
-If prompt files are unavailable on the active Copilot surface, follow the same process manually with `.github/skills/repo-investigation/SKILL.md` and `scripts/copilot/git-forensics.sh`.
+If prompt files are unavailable on the active Copilot surface, follow the same process manually with `.github/skills/repo-investigation/SKILL.md` and `scripts/ai/git-forensics.sh`.
 
 Inputs:
 

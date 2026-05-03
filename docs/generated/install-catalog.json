@@ -1,0 +1,332 @@
+{
+    "profiles": {
+        "minimal": [
+            "base",
+            "setup-docs",
+            "capabilities-core"
+        ],
+        "copilot": [
+            "minimal",
+            "adapter-copilot"
+        ],
+        "opencode": [
+            "minimal",
+            "adapter-opencode"
+        ],
+        "dual": [
+            "minimal",
+            "adapter-copilot",
+            "adapter-opencode",
+            "capabilities-extended-lite"
+        ],
+        "guarded": [
+            "dual",
+            "policy-pack",
+            "hooks-pack",
+            "evidence-pack"
+        ],
+        "accelerated": [
+            "dual",
+            "scripts-pack",
+            "policy-pack",
+            "evidence-pack"
+        ],
+        "full-governance": [
+            "accelerated",
+            "capabilities-extended-full",
+            "hooks-pack",
+            "ci-pack"
+        ],
+        "docs-reference": [
+            "docs-reference-pack"
+        ],
+        "custom": []
+    },
+    "packs": [
+        {
+            "id": "setup-docs",
+            "item_count": 0
+        },
+        {
+            "id": "capabilities-core",
+            "item_count": 0
+        },
+        {
+            "id": "base",
+            "item_count": 6
+        },
+        {
+            "id": "adapter-copilot",
+            "item_count": 4
+        },
+        {
+            "id": "adapter-opencode",
+            "item_count": 3
+        },
+        {
+            "id": "capabilities-extended-lite",
+            "item_count": 2
+        },
+        {
+            "id": "capabilities-extended-full",
+            "item_count": 1
+        },
+        {
+            "id": "policy-pack",
+            "item_count": 3
+        },
+        {
+            "id": "scripts-pack",
+            "item_count": 23
+        },
+        {
+            "id": "hooks-pack",
+            "item_count": 3
+        },
+        {
+            "id": "ci-pack",
+            "item_count": 2
+        },
+        {
+            "id": "evidence-pack",
+            "item_count": 2
+        },
+        {
+            "id": "docs-reference-pack",
+            "item_count": 8
+        },
+        {
+            "id": "delivery-pack",
+            "item_count": 2
+        },
+        {
+            "id": "optional-agents-pack",
+            "item_count": 1
+        },
+        {
+            "id": "optional-prompts-pack",
+            "item_count": 1
+        },
+        {
+            "id": "preview-environments-pack",
+            "item_count": 1
+        },
+        {
+            "id": "evaluation-pack",
+            "item_count": 1
+        },
+        {
+            "id": "service-boundary-pack",
+            "item_count": 1
+        },
+        {
+            "id": "mcp-boundaries-pack",
+            "item_count": 1
+        },
+        {
+            "id": "advisor-pack",
+            "item_count": 4
+        }
+    ],
+    "scripts": {
+        "repomix-context": {
+            "label": "Generate Repomix context bundle",
+            "source_path": "scripts/ai/run-repomix-context.sh",
+            "installed_path": "scripts/ai/run-repomix-context.sh",
+            "pack": "scripts-pack",
+            "required_tools": [
+                "bash",
+                "git",
+                "repomix"
+            ],
+            "risk": "read-only",
+            "supports_dry_run": true,
+            "default_args": []
+        },
+        "repomix-tree": {
+            "label": "Generate Repomix context tree",
+            "source_path": "scripts/ai/repomix-context-tree.sh",
+            "installed_path": "scripts/ai/repomix-context-tree.sh",
+            "pack": "scripts-pack",
+            "required_tools": [
+                "bash",
+                "git",
+                "repomix"
+            ],
+            "risk": "read-only",
+            "supports_dry_run": true,
+            "default_args": []
+        },
+        "repomix-scc-router": {
+            "label": "Generate SCC-ranked Repomix context",
+            "source_path": "scripts/ai/repomix-scc-router.sh",
+            "installed_path": "scripts/ai/repomix-scc-router.sh",
+            "pack": "scripts-pack",
+            "required_tools": [
+                "bash",
+                "git",
+                "jq",
+                "rg",
+                "repomix",
+                "scc"
+            ],
+            "risk": "read-only",
+            "supports_dry_run": true,
+            "default_args": []
+        },
+        "pack-context": {
+            "label": "Pack AI context bundle",
+            "source_path": "scripts/ai/pack-context.sh",
+            "installed_path": "scripts/ai/pack-context.sh",
+            "pack": "scripts-pack",
+            "required_tools": [
+                "bash",
+                "git",
+                "jq",
+                "rg"
+            ],
+            "risk": "read-only",
+            "supports_dry_run": true,
+            "default_args": []
+        },
+        "repo-tool-inventory": {
+            "label": "Generate/check required tools inventory doc",
+            "source_path": "scripts/ai/repo-tool-inventory.sh",
+            "installed_path": "scripts/ai/repo-tool-inventory.sh",
+            "pack": "scripts-pack",
+            "required_tools": [
+                "bash",
+                "git"
+            ],
+            "risk": "read-only",
+            "supports_dry_run": false,
+            "default_args": []
+        },
+        "install-mandatory-tools": {
+            "label": "Install mandatory CLI tools by OS",
+            "source_path": "scripts/ai/install-mandatory-tools.sh",
+            "installed_path": "scripts/ai/install-mandatory-tools.sh",
+            "pack": "scripts-pack",
+            "required_tools": [
+                "bash"
+            ],
+            "risk": "mutating",
+            "supports_dry_run": true,
+            "default_args": [
+                "--dry-run"
+            ]
+        }
+    },
+    "toolchain": {
+        "bash": {
+            "label": "Bash",
+            "check": [
+                "bash",
+                "--version"
+            ],
+            "safe_auto_install": false,
+            "install_hints": []
+        },
+        "git": {
+            "label": "Git",
+            "check": [
+                "git",
+                "--version"
+            ],
+            "safe_auto_install": false,
+            "install_hints": {
+                "macos": "brew install git",
+                "linux": "sudo apt install git",
+                "windows": "winget install Git.Git"
+            }
+        },
+        "jq": {
+            "label": "jq",
+            "check": [
+                "jq",
+                "--version"
+            ],
+            "safe_auto_install": false,
+            "install_hints": {
+                "macos": "brew install jq",
+                "linux": "sudo apt install jq",
+                "windows": "winget install jqlang.jq"
+            }
+        },
+        "rg": {
+            "label": "ripgrep",
+            "check": [
+                "rg",
+                "--version"
+            ],
+            "safe_auto_install": false,
+            "install_hints": {
+                "macos": "brew install ripgrep",
+                "linux": "sudo apt install ripgrep",
+                "windows": "winget install BurntSushi.ripgrep.MSVC"
+            }
+        },
+        "node": {
+            "label": "Node.js",
+            "check": [
+                "node",
+                "--version"
+            ],
+            "safe_auto_install": false,
+            "install_hints": {
+                "macos": "brew install node",
+                "linux": "Install Node.js from your package manager or nodejs.org",
+                "windows": "winget install OpenJS.NodeJS.LTS"
+            }
+        },
+        "npm": {
+            "label": "npm",
+            "check": [
+                "npm",
+                "--version"
+            ],
+            "safe_auto_install": false,
+            "install_hints": {
+                "macos": "Installed with Node.js",
+                "linux": "Installed with Node.js/npm package",
+                "windows": "Installed with Node.js"
+            }
+        },
+        "repomix": {
+            "label": "Repomix",
+            "check": [
+                "repomix",
+                "--version"
+            ],
+            "requires_before_install": [
+                "node",
+                "npm"
+            ],
+            "safe_auto_install": true,
+            "install_commands": {
+                "npm": [
+                    "npm",
+                    "install",
+                    "-g",
+                    "repomix"
+                ]
+            },
+            "install_hints": {
+                "npm": "npm install -g repomix"
+            }
+        },
+        "scc": {
+            "label": "SCC",
+            "check": [
+                "scc",
+                "--version"
+            ],
+            "safe_auto_install": false,
+            "install_hints": {
+                "macos": "brew install scc",
+                "linux": "Install scc from your package manager or release binary",
+                "windows": "Install scc via package manager or release binary"
+            }
+        }
+    }
+}

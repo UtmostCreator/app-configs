@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 set -euo pipefail
 
 usage() {
     cat <<'EOF'
 Usage:
-  scripts/copilot/query-usage.sh [path] [--multiplier <n>] [--multiplier-label <label>] [--reserved-output <n>]
+  scripts/ai/query-usage.sh [path] [--multiplier <n>] [--multiplier-label <label>] [--reserved-output <n>]
 
 Print a read-only usage closeout summary for inspected content.
 EOF

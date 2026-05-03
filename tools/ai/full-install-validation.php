@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 $root = realpath(__DIR__ . '/..' . '/..');
+
+const AI_DIR_MODE = 0755;
+
 if ($root === false) {
     fwrite(STDERR, "ERROR: unable to resolve repository root\n");
     exit(1);
@@ -29,7 +32,7 @@ if (in_array('--clear-cancel', $argv, true) && is_file($cancelFlag)) {
 }
 
 if (!is_dir(dirname($liveLog))) {
-    mkdir(dirname($liveLog), 0777, true);
+    mkdir(dirname($liveLog), AI_DIR_MODE, true);
 }
 file_put_contents($liveLog, '[' . gmdate('c') . "] start full-install-validation\n");
 
@@ -538,7 +541,7 @@ function writeReports(string $root, array $report): void
 {
     $dir = $root . '/docs/ai/generated';
     if (!is_dir($dir)) {
-        mkdir($dir, 0777, true);
+        mkdir($dir, AI_DIR_MODE, true);
     }
 
     $jsonPath = $dir . '/full-install-validation.json';

@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use FilesystemIterator;
 use PHPUnit\Framework\TestCase;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use RuntimeException;
 
 class GenerateRepoStructureTest extends TestCase
 {
@@ -16,18 +20,21 @@ class GenerateRepoStructureTest extends TestCase
     {
         $root = realpath(dirname(__DIR__, 2));
         if ($root === false) {
-            throw new \RuntimeException('Could not resolve repo root');
+            throw new RuntimeException('Could not resolve repo root');
         }
 
         $this->repoRoot = $root;
         $this->phpBin = (string) PHP_BINARY;
-        $this->tmpDir = sys_get_temp_dir() . '/repo_structure_test_' . uniqid('', true);
-        mkdir($this->tmpDir, 0700, true);
+        $this->tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'repo_structure_test_' . uniqid('', true);
+
+        if (!mkdir($this->tmpDir, 0700, true) && !is_dir($this->tmpDir)) {
+            throw new RuntimeException("Could not create temp directory: {$this->tmpDir}");
+        }
     }
 
     protected function tearDown(): void
     {
-        $this->removeDir($this->tmpDir);
+        $this->removeTree($this->tmpDir);
     }
 
     public function testValidMetadataPasses(): void
@@ -112,7 +119,11 @@ class GenerateRepoStructureTest extends TestCase
     public function testMissingTopLevelMetadataFails(): void
     {
         $fixture = $this->createFixtureRepo();
-        mkdir($fixture . '/scripts', 0777, true);
+
+        if (!mkdir($fixture . '/scripts', 0700, true) && !is_dir($fixture . '/scripts')) {
+            throw new RuntimeException('Could not create scripts fixture directory');
+        }
+
         file_put_contents($fixture . '/scripts/run.sh', "#!/usr/bin/env bash\n");
         $this->git($fixture, 'git add scripts/run.sh');
 
@@ -125,13 +136,21 @@ class GenerateRepoStructureTest extends TestCase
 
     private function createFixtureRepo(): string
     {
-        $fixture = $this->tmpDir . '/fixture';
-        mkdir($fixture, 0777, true);
+        $fixture = $this->tmpDir . DIRECTORY_SEPARATOR . 'fixture';
+
+        if (!mkdir($fixture, 0700, true) && !is_dir($fixture)) {
+            throw new RuntimeException("Could not create fixture directory: {$fixture}");
+        }
 
         $this->git($fixture, 'git init');
 
-        mkdir($fixture . '/docs/ai', 0777, true);
-        mkdir($fixture . '/tools/ai', 0777, true);
+        if (!mkdir($fixture . '/docs/ai', 0700, true) && !is_dir($fixture . '/docs/ai')) {
+            throw new RuntimeException('Could not create docs/ai fixture directory');
+        }
+
+        if (!mkdir($fixture . '/tools/ai', 0700, true) && !is_dir($fixture . '/tools/ai')) {
+            throw new RuntimeException('Could not create tools/ai fixture directory');
+        }
 
         file_put_contents($fixture . '/README.md', "# Fixture\n");
         file_put_contents($fixture . '/docs/ai/external-repo-install.md', "# Install\n");
@@ -232,33 +251,98 @@ class GenerateRepoStructureTest extends TestCase
             'PATH' => (string) getenv('PATH'),
         ]);
 
-        $this->assertIsResource($process, "proc_open failed for: $command");
+        $this->assertIsResource($process, "proc_open failed for: {$command}");
 
         fclose($pipes[0]);
+
         $stdout = (string) stream_get_contents($pipes[1]);
         $stderr = (string) stream_get_contents($pipes[2]);
+
         fclose($pipes[1]);
         fclose($pipes[2]);
+
         $exit = proc_close($process);
 
         return ['stdout' => $stdout, 'stderr' => $stderr, 'exit' => $exit];
     }
 
-    private function removeDir(string $dir): void
+    private function removeTree(string $path): void
     {
-        if (!is_dir($dir)) {
+        if ($path === '' || !file_exists($path)) {
             return;
         }
 
-        foreach (scandir($dir) ?: [] as $entry) {
-            if ($entry === '.' || $entry === '..') {
+        if (is_file($path) || is_link($path)) {
+            $this->removeFileWithRetry($path);
+            return;
+        }
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS),
+            RecursiveIteratorIterator::CHILD_FIRST
+        );
+
+        foreach ($iterator as $item) {
+            $itemPath = $item->getPathname();
+
+            if ($item->isDir() && !$item->isLink()) {
+                $this->removeDirectoryWithRetry($itemPath);
                 continue;
             }
 
-            $path = $dir . DIRECTORY_SEPARATOR . $entry;
-            is_dir($path) ? $this->removeDir($path) : unlink($path);
+            $this->removeFileWithRetry($itemPath);
         }
 
-        rmdir($dir);
+        $this->removeDirectoryWithRetry($path);
+    }
+
+    private function removeFileWithRetry(string $path): void
+    {
+        if (!file_exists($path) && !is_link($path)) {
+            return;
+        }
+
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            @chmod($path, 0600);
+
+            if (@unlink($path)) {
+                return;
+            }
+
+            clearstatcache(true, $path);
+
+            if (!file_exists($path) && !is_link($path)) {
+                return;
+            }
+
+            usleep(50_000 * $attempt);
+        }
+
+        throw new RuntimeException("Unable to delete file: {$path}");
+    }
+
+    private function removeDirectoryWithRetry(string $path): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        for ($attempt = 1; $attempt <= 10; $attempt++) {
+            @chmod($path, 0700);
+
+            if (@rmdir($path)) {
+                return;
+            }
+
+            clearstatcache(true, $path);
+
+            if (!is_dir($path)) {
+                return;
+            }
+
+            usleep(50_000 * $attempt);
+        }
+
+        throw new RuntimeException("Unable to delete directory: {$path}");
     }
 }

@@ -13,7 +13,7 @@ function aiAdvisorDefaultIncludePrefixes(): array
         'llms.txt',
         'tools/ai/',
         'scripts/ai/',
-        'scripts/copilot/',
+        'scripts/ai/',
         'tests/',
         '.github/workflows/',
         'packages/ai-universal-rules/manifest.',

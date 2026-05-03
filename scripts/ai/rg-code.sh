@@ -2,6 +2,7 @@
 # Production-grade code search wrapper with repo-aware defaults.
 
 set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 require_bins rg jq

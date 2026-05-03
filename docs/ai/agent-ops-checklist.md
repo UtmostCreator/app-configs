@@ -67,10 +67,10 @@ Check these files:
 - `.github/hooks/tool-policy.json`
 - `.github/hooks/tool-guardian.json`
 - `.github/hooks/scripts/tool-guardian.ps1`
-- `scripts/copilot/pre-tool-use.sh`
-- `scripts/copilot/post-tool-use.sh`
-- `scripts/copilot/common.sh`
-- `scripts/copilot/ai-diff-context.sh`
+- `scripts/ai/pre-tool-use.sh`
+- `scripts/ai/post-tool-use.sh`
+- `scripts/ai/common.sh`
+- `scripts/ai/ai-diff-context.sh`
 - `docs/ai/copilot-tooling.md`
 
 Verify:

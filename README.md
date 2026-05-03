@@ -61,7 +61,7 @@ The repo also contains a reusable AI workflow layer for repo-scoped guidance acr
 - `docs/ai/integration-matrix.md` - concept-to-file coverage map for the live AI workflow layer
 - `tools/ai/` - validation and catalog generation scripts
 - `.github/` - GitHub Copilot adapter files for this repository
-- `scripts/copilot/` - stronger local AI tooling wrappers for search, PR context, context packing, hooks, and telemetry
+- `scripts/ai/` - stronger local AI tooling wrappers for search, PR context, context packing, hooks, and telemetry
 
 The goal is to keep canonical workflow knowledge in one place and keep runtime-specific adapter files thin.
 
@@ -99,7 +99,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 |-- justfile
 |-- llms.txt
 |-- scripts/
-|   |-- copilot/
+|   |-- ai/
 |   |-- doctor.sh
 |   `-- hooks/
 |-- SECURITY.md
@@ -153,15 +153,15 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - For package prerequisites and dependency setup, follow `docs/ai/toolchain-requirements.md`
 - For generated repository-wide tool discovery from shell scripts, use `docs/ai/repo-required-tools.md` and `bash scripts/ai/repo-tool-inventory.sh`
 - For maintained script usage and generated-output ownership, follow `docs/ai/scripts-reference.md`
-- Use `scripts/copilot/ai-diff-context.sh` when you need narrow context for changed files, PR files, recent edits, or touched areas
-- Use `scripts/copilot/ai-search.sh` when the agent should route all search through one stable entrypoint
+- Use `scripts/ai/ai-diff-context.sh` when you need narrow context for changed files, PR files, recent edits, or touched areas
+- Use `scripts/ai/ai-search.sh` when the agent should route all search through one stable entrypoint
 - For PHP guidance, search local examples in this order: `reference/php/design-patterns/` -> `reference/php/design-principles/` -> `reference/php/php-built-ins/`
 - Use `just php-examples-map` to print the preferred PHP example lookup order
 - Use `just php-patterns-search`, `just php-principles-search`, and `just php-builtins-search` for direct corpus search
-- Use `scripts/copilot/ai-edit.sh` as the only approved path for broad repository edits
-- Use `scripts/copilot/ai-verify.sh` after changes to run the project-aware verification stack
-- Use `scripts/copilot/gh-pr-context.sh` for richer PR metadata, checks, reviews, and diff summaries
-- Use `scripts/copilot/rg-code.sh` for mode-based search across PHP, JS, config, tracked files, or JSON output
+- Use `scripts/ai/ai-edit.sh` as the only approved path for broad repository edits
+- Use `scripts/ai/ai-verify.sh` after changes to run the project-aware verification stack
+- Use `scripts/ai/gh-pr-context.sh` for richer PR metadata, checks, reviews, and diff summaries
+- Use `scripts/ai/rg-code.sh` for mode-based search across PHP, JS, config, tracked files, or JSON output
 - Run `php tools/ai/validate-ai-config.php` after changing root workflow files
 - Run `php tools/ai/validate-ai-catalog.php` after changing package metadata or generated docs
 - Run `php tools/ai/generate-ai-catalog.php` after changing cataloged assets or package metadata
@@ -171,8 +171,8 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 
 ### GitHub Copilot install and read order
 
-- Minimum folders and files to copy into another repo: `.github/copilot-instructions.md`, `.github/hooks/tool-policy.json`, `docs/ai/project-context.md`, `docs/ai/workflow.md`, `docs/ai/agents.md`, `docs/ai/failure-handling.md`, `docs/ai/copilot-cli-repo-integration.md`, `docs/ai/capabilities/project-context/`, `docs/ai/capabilities/verify-change/`, `docs/ai/capabilities/review-diff/`, `scripts/copilot/`
-- Optional Copilot add-ons after baseline works: `.github/instructions/`, `.github/agents/`, `.github/prompts/`, `.github/skills/`, `.github/hooks/`, `scripts/copilot/`, `docs/ai/copilot-tooling.md`
+- Minimum folders and files to copy into another repo: `.github/copilot-instructions.md`, `.github/hooks/tool-policy.json`, `docs/ai/project-context.md`, `docs/ai/workflow.md`, `docs/ai/agents.md`, `docs/ai/failure-handling.md`, `docs/ai/copilot-cli-repo-integration.md`, `docs/ai/capabilities/project-context/`, `docs/ai/capabilities/verify-change/`, `docs/ai/capabilities/review-diff/`, `scripts/ai/`
+- Optional Copilot add-ons after baseline works: `.github/instructions/`, `.github/agents/`, `.github/prompts/`, `.github/skills/`, `.github/hooks/`, `scripts/ai/`, `docs/ai/copilot-tooling.md`
 - Recommended read order in this repo: `README.md` -> `.github/copilot-instructions.md` -> `docs/ai/project-context.md` -> `docs/ai/workflow.md` -> `docs/ai/agents.md` -> `docs/ai/failure-handling.md` -> relevant `docs/ai/capabilities/*`
 - Use `docs/ai/catalog.md` as the live generated inventory when you need the full list of agents, instructions, hooks, prompts, scripts, and canonical docs
 
@@ -193,9 +193,9 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - `just context-pack-all` - run the full default tree-context build in one step
 - `just context-tree-run` - run the guided context build wrapper with dependency checks and post-run wiring instructions
 - `just context-plan-json` - print the current `tree-plan.json` for agent-friendly inspection
-- `scripts/copilot/repomix-context-tree.sh` writes the default root index, child indexes, and leaf bundles under `.repomix-context/tree-context/`
-- `scripts/copilot/run-repomix-context.sh` is the easiest entrypoint for humans and agents; it validates dependencies, runs generation, and prints what to open plus where to wire it
-- `scripts/copilot/repomix-scc-router.sh` remains available when you explicitly want ranked-folder router output under `.repomix-context/`
+- `scripts/ai/repomix-context-tree.sh` writes the default root index, child indexes, and leaf bundles under `.repomix-context/tree-context/`
+- `scripts/ai/run-repomix-context.sh` is the easiest entrypoint for humans and agents; it validates dependencies, runs generation, and prints what to open plus where to wire it
+- `scripts/ai/repomix-scc-router.sh` remains available when you explicitly want ranked-folder router output under `.repomix-context/`
 
 ## Important Notes
 

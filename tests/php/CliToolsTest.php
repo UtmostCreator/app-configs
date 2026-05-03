@@ -180,24 +180,30 @@ class CliToolsTest extends TestCase
     }
 
     // ---- generate-repo-structure.php --check --with-scc ----
-
     public function testGenerateRepoStructureCheckModeExitsZero(): void
     {
+        $this->refreshRepoStructureBaseline();
+
         $result = $this->runTool('php tools/ai/generate-repo-structure.php --check --with-scc');
+
         $this->assertSame(
             0,
             $result['exit'],
-            "generate-repo-structure.php --check --with-scc exited non-zero:\n" . $result['stderr']
+            "generate-repo-structure.php --check --with-scc exited non-zero:\n"
+            . $result['stdout']
+            . $result['stderr']
         );
     }
 
     public function testGenerateRepoStructureCheckModeOutputsUpToDateLines(): void
     {
+        $this->refreshRepoStructureBaseline();
+
         $result = $this->runTool('php tools/ai/generate-repo-structure.php --check --with-scc');
         $combined = $result['stdout'] . $result['stderr'];
+
         $this->assertStringContainsString('is up to date', $combined);
     }
-
     // ---- ai.php foundational workflow commands ----
 
     public function testAiCliListExitsZero(): void
@@ -362,5 +368,18 @@ class CliToolsTest extends TestCase
     {
         $result = $this->runTool('php tools/ai/ai.php adapter-validate');
         $this->assertSame(0, $result['exit'], "ai.php adapter-validate exited non-zero:\n" . $result['stderr']);
+    }
+
+    private function refreshRepoStructureBaseline(): void
+    {
+        $result = $this->runTool('php tools/ai/generate-repo-structure.php --with-scc');
+
+        $this->assertSame(
+            0,
+            $result['exit'],
+            "generate-repo-structure.php --with-scc failed:\n"
+            . $result['stdout']
+            . $result['stderr']
+        );
     }
 }

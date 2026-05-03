@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+const AI_DIR_MODE = 0755;
+
 function aiRepoRoot(): string
 {
     $root = realpath(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..');
@@ -107,8 +109,15 @@ function aiSummarizeMarkdown(string $content): ?string
     return null;
 }
 
-function aiResource(string $scope, string $type, string $name, string $path, ?string $description = null, ?string $runtime = null, array $extra = []): array
-{
+function aiResource(
+    string $scope,
+    string $type,
+    string $name,
+    string $path,
+    ?string $description = null,
+    ?string $runtime = null,
+    array $extra = []
+): array {
     return array_merge([
         'scope' => $scope,
         'type' => $type,
@@ -181,10 +190,9 @@ function aiCollectRootResources(string $root): array
     $resources = [];
 
     $rootDocMap = [
-        'docs/ai/copilot-getting-started.md' => ['root-doc', 'copilot-getting-started', 'Quick-start onboarding for Copilot setup, read order, and end-to-end task examples.'],
-        'docs/ai/project-context.md' => ['root-doc', 'project-context-doc', 'Durable repository context for instructions, capabilities, and adapters.'],
-        'docs/ai/workflow.md' => ['root-doc', 'workflow', 'Default live workflow for risk, verification, and docs sync.'],
-        'docs/ai/agent-ops.md' => ['root-doc', 'agent-ops', 'AgentOps model for observability, evaluation, optimization, IAM, and architecture routing.'],
+        'docs/ai/project-context.md' => ['root-doc', 'project-context-doc', 'Durable repository context for instructions, capabilities, and runtime adapters.'],
+        'docs/ai/workflow.md' => ['root-doc', 'workflow', 'Default live workflow for risk, verification, context, and docs sync.'],
+        'docs/ai/agent-ops.md' => ['root-doc', 'agent-ops', 'Agent operations model for observability, evaluation, optimization, IAM, and architecture routing.'],
         'docs/ai/agents.md' => ['root-doc', 'agents', 'Durable live-agent reference plus package-agent index for later lookup.'],
         'docs/ai/failure-handling.md' => ['root-doc', 'failure-handling', 'Failure taxonomy, retry policy, corrected usage guidance, and logging contract.'],
         'docs/ai/agent-ops-checklist.md' => ['root-doc', 'agent-ops-checklist', 'Phased verification checklist for auditing AI workflow integration in the live repo.'],
@@ -208,19 +216,50 @@ function aiCollectRootResources(string $root): array
         $resources[] = aiResource('root', $type, $name, $relativePath, $description, 'canonical');
     }
 
+    $adapterDocMap = [
+        'docs/ai/copilot-getting-started.md' => ['adapter-doc', 'copilot-getting-started', 'GitHub Copilot adapter onboarding, read order, and end-to-end task examples.', 'github-copilot'],
+        'docs/ai/opencode-getting-started.md' => ['adapter-doc', 'opencode-getting-started', 'OpenCode adapter onboarding, read order, and end-to-end task examples.', 'opencode'],
+    ];
+
+    foreach ($adapterDocMap as $relativePath => [$type, $name, $description, $runtime]) {
+        if (!is_file(aiAbsolutePath($root, $relativePath))) {
+            continue;
+        }
+
+        $resources[] = aiResource('root', $type, $name, $relativePath, $description, $runtime);
+    }
+
     $rootScriptMap = [
-        'scripts/copilot/common.sh' => ['copilot-script', 'common.sh', 'Shared helper library for Copilot wrappers, logging, snapshots, and token-budget checks.'],
-        'scripts/copilot/ai-search.sh' => ['copilot-script', 'ai-search.sh', 'Unified search entrypoint for text, file, tracked, all, and structural discovery.'],
-        'scripts/copilot/ai-edit.sh' => ['copilot-script', 'ai-edit.sh', 'Guarded broad-edit wrapper with snapshots, dry-run behavior, visible diff, and optional verification.'],
-        'scripts/copilot/ai-verify.sh' => ['copilot-script', 'ai-verify.sh', 'Project-aware verification gate for AI-driven changes across shell, PHP, JS/TS, and security checks.'],
-        'scripts/copilot/ai-diff-context.sh' => ['copilot-script', 'ai-diff-context.sh', 'Incremental context packer for changed files, PR slices, recent changes, and touched areas.'],
-        'scripts/copilot/ai-rollback.sh' => ['copilot-script', 'ai-rollback.sh', 'Rollback helper for explicit recovery work using session snapshots and refs.'],
-        'scripts/copilot/rg-code.sh' => ['copilot-script', 'rg-code.sh', 'Mode-aware ripgrep wrapper with JSON, file-list, count, and context output modes.'],
-        'scripts/copilot/gh-pr-context.sh' => ['copilot-script', 'gh-pr-context.sh', 'GitHub PR context wrapper with metadata, diff, checks, reviews, and optional PR-scoped context packing.'],
-        'scripts/copilot/repomix-scc-router.sh' => ['copilot-script', 'repomix-scc-router.sh', 'Ranked context router that produces TSV and JSON bundle plans with churn-aware scoring.'],
-        'scripts/copilot/watch-loop.sh' => ['copilot-script', 'watch-loop.sh', 'Watch-based verification loop with debounce and repo-local session logging.'],
-        'policies/copilot/policy.yaml' => ['copilot-policy', 'policy.yaml', 'Declarative allow, deny, and confirm rules for the Copilot command policy surface.'],
-        '.schemas/evidence-event.schema.json' => ['copilot-schema', 'evidence-event.schema.json', 'JSON schema for durable agent evidence events emitted by supported runtime surfaces.'],
+        'scripts/ai/ai-diff-context.sh' => ['ai-script', 'ai-diff-context.sh', 'Builds focused diff and change-context packs for AI review and implementation.'],
+        'scripts/ai/ai-doc-check.sh' => ['ai-script', 'ai-doc-check.sh', 'Checks AI-facing documentation surfaces for required references and drift.'],
+        'scripts/ai/ai-edit.sh' => ['ai-script', 'ai-edit.sh', 'Guarded edit wrapper with snapshots, dry-run behavior, visible diff, and optional verification.'],
+        'scripts/ai/ai-rollback.sh' => ['ai-script', 'ai-rollback.sh', 'Rollback helper for explicit recovery work using session snapshots and refs.'],
+        'scripts/ai/ai-search.sh' => ['ai-script', 'ai-search.sh', 'Unified search entrypoint for text, file, tracked, all, and structural discovery.'],
+        'scripts/ai/ai-structured.sh' => ['ai-script', 'ai-structured.sh', 'Structured output helper for deterministic AI workflow data.'],
+        'scripts/ai/ai-task.sh' => ['ai-script', 'ai-task.sh', 'Task-oriented AI workflow helper for routing, context, and verification steps.'],
+        'scripts/ai/ai-test-select.sh' => ['ai-script', 'ai-test-select.sh', 'Selects likely relevant tests from changed files and task context.'],
+        'scripts/ai/ai-verify.sh' => ['ai-script', 'ai-verify.sh', 'Project-aware verification gate for AI-driven changes across shell, PHP, JS/TS, and security checks.'],
+        'scripts/ai/check-batch2.sh' => ['ai-script', 'check-batch2.sh', 'Batch verification helper for grouped AI workflow checks.'],
+        'scripts/ai/check-batch3.sh' => ['ai-script', 'check-batch3.sh', 'Batch verification helper for grouped AI workflow checks.'],
+        'scripts/ai/check-batch4a.sh' => ['ai-script', 'check-batch4a.sh', 'Batch verification helper for grouped AI workflow checks.'],
+        'scripts/ai/check-batch4b.sh' => ['ai-script', 'check-batch4b.sh', 'Batch verification helper for grouped AI workflow checks.'],
+        'scripts/ai/common.sh' => ['ai-script', 'common.sh', 'Shared helper library for AI workflow scripts, logging, snapshots, and token-budget checks.'],
+        'scripts/ai/fd-files.sh' => ['ai-script', 'fd-files.sh', 'Repo-aware file discovery wrapper around fd with safer defaults.'],
+        'scripts/ai/gh-pr-context.sh' => ['ai-script', 'gh-pr-context.sh', 'GitHub PR context wrapper with metadata, diff, checks, reviews, and optional PR-scoped context packing.'],
+        'scripts/ai/git-forensics.sh' => ['ai-script', 'git-forensics.sh', 'Git history and blame wrapper for evidence-oriented code archaeology.'],
+        'scripts/ai/install-mandatory-tools.sh' => ['ai-script', 'install-mandatory-tools.sh', 'Installs mandatory CLI tools required by the AI workflow script layer.'],
+        'scripts/ai/pack-context.sh' => ['ai-script', 'pack-context.sh', 'Builds bounded repository context packs for AI task execution.'],
+        'scripts/ai/post-tool-use.sh' => ['ai-script', 'post-tool-use.sh', 'Post-tool hook helper for tool usage logging and failure classification.'],
+        'scripts/ai/pre-tool-use.sh' => ['ai-script', 'pre-tool-use.sh', 'Pre-tool hook helper for approval boundaries and command policy enforcement.'],
+        'scripts/ai/preview-file.sh' => ['ai-script', 'preview-file.sh', 'Smart file preview wrapper with text and fallback modes.'],
+        'scripts/ai/query-usage.sh' => ['ai-script', 'query-usage.sh', 'Usage and repository-size query helper for AI context planning.'],
+        'scripts/ai/repo-tool-inventory.sh' => ['ai-script', 'repo-tool-inventory.sh', 'Generates the required tool inventory from scripts and workflow requirements.'],
+        'scripts/ai/repomix-context-tree.sh' => ['ai-script', 'repomix-context-tree.sh', 'Builds repository tree context for Repomix-based AI context packing.'],
+        'scripts/ai/repomix-scc-router.sh' => ['ai-script', 'repomix-scc-router.sh', 'Ranked context router that produces TSV and JSON bundle plans with churn-aware scoring.'],
+        'scripts/ai/rg-code.sh' => ['ai-script', 'rg-code.sh', 'Mode-aware ripgrep wrapper with JSON, file-list, count, and context output modes.'],
+        'scripts/ai/run-repomix-context.sh' => ['ai-script', 'run-repomix-context.sh', 'Runs Repomix context generation with repository-aware defaults.'],
+        'scripts/ai/session-checkpoint.sh' => ['ai-script', 'session-checkpoint.sh', 'Creates session checkpoints for recovery and traceability.'],
+        'scripts/ai/watch-loop.sh' => ['ai-script', 'watch-loop.sh', 'Watch-based verification loop with debounce and repo-local session logging.'],
     ];
 
     foreach ($rootScriptMap as $relativePath => [$type, $name, $description]) {
@@ -228,7 +267,23 @@ function aiCollectRootResources(string $root): array
             continue;
         }
 
-        $resources[] = aiResource('root', $type, $name, $relativePath, $description, 'github-copilot');
+        $resources[] = aiResource('root', $type, $name, $relativePath, $description, 'canonical');
+    }
+
+    $adapterSurfaceMap = [
+        'policies/copilot/policy.yaml' => ['adapter-policy', 'copilot-policy', 'Declarative allow, deny, and confirm rules for the GitHub Copilot adapter policy surface.', 'github-copilot'],
+        '.github/hooks/tool-policy.json' => ['adapter-hook', 'tool-policy', 'GitHub Copilot hook configuration for tool policy enforcement.', 'github-copilot'],
+        '.github/hooks/tool-guardian.json' => ['adapter-hook', 'tool-guardian', 'GitHub Copilot hook configuration for guarded tool execution.', 'github-copilot'],
+        '.github/hooks/scripts/tool-guardian.ps1' => ['adapter-hook-script', 'tool-guardian.ps1', 'PowerShell hook script for GitHub Copilot guarded tool execution.', 'github-copilot'],
+        '.schemas/evidence-event.schema.json' => ['schema', 'evidence-event.schema.json', 'JSON schema for durable agent evidence events emitted by supported runtime surfaces.', 'canonical'],
+    ];
+
+    foreach ($adapterSurfaceMap as $relativePath => [$type, $name, $description, $runtime]) {
+        if (!file_exists(aiAbsolutePath($root, $relativePath))) {
+            continue;
+        }
+
+        $resources[] = aiResource('root', $type, $name, $relativePath, $description, $runtime);
     }
 
     $phpReferenceMap = [
@@ -252,6 +307,7 @@ function aiCollectRootResources(string $root): array
         $relativePath = substr(aiNormalizePath($path), strlen(aiNormalizePath($root)) + 1);
         $name = basename(dirname($path));
         $content = file_get_contents($path) ?: '';
+
         $resources[] = aiResource('root', 'capability', $name, $relativePath, aiSummarizeMarkdown($content), 'canonical');
     }
 
@@ -262,7 +318,15 @@ function aiCollectRootResources(string $root): array
         $relativePath = substr(aiNormalizePath($path), strlen(aiNormalizePath($root)) + 1);
         $content = file_get_contents($path) ?: '';
         $frontMatter = aiParseFrontMatter($content);
-        $resources[] = aiResource('root', 'github-copilot-agent', $frontMatter['name'] ?? basename($path), $relativePath, $frontMatter['description'] ?? null, 'github-copilot');
+
+        $resources[] = aiResource(
+            'root',
+            'github-copilot-agent',
+            $frontMatter['name'] ?? basename($path, '.agent.md'),
+            $relativePath,
+            $frontMatter['description'] ?? aiSummarizeMarkdown($content),
+            'github-copilot'
+        );
     }
 
     $instructionPaths = glob(aiAbsolutePath($root, '.github/instructions/*.instructions.md')) ?: [];
@@ -272,17 +336,86 @@ function aiCollectRootResources(string $root): array
         $relativePath = substr(aiNormalizePath($path), strlen(aiNormalizePath($root)) + 1);
         $content = file_get_contents($path) ?: '';
         $frontMatter = aiParseFrontMatter($content);
-        $resources[] = aiResource('root', 'github-copilot-instruction', basename($path, '.instructions.md'), $relativePath, $frontMatter['description'] ?? null, 'github-copilot');
+
+        $resources[] = aiResource(
+            'root',
+            'github-copilot-instruction',
+            basename($path, '.instructions.md'),
+            $relativePath,
+            $frontMatter['description'] ?? aiSummarizeMarkdown($content),
+            'github-copilot'
+        );
     }
 
-    if (is_file(aiAbsolutePath($root, '.github/hooks/tool-guardian.json'))) {
-        $resources[] = aiResource('root', 'hook', 'tool-guardian', '.github/hooks/tool-guardian.json', 'Protects the live repo with a narrow Copilot hook guard.', 'github-copilot');
+    $promptPaths = glob(aiAbsolutePath($root, '.github/prompts/*.prompt.md')) ?: [];
+    sort($promptPaths);
+
+    foreach ($promptPaths as $path) {
+        $relativePath = substr(aiNormalizePath($path), strlen(aiNormalizePath($root)) + 1);
+        $content = file_get_contents($path) ?: '';
+        $frontMatter = aiParseFrontMatter($content);
+
+        $resources[] = aiResource(
+            'root',
+            'github-copilot-prompt',
+            basename($path, '.prompt.md'),
+            $relativePath,
+            $frontMatter['description'] ?? aiSummarizeMarkdown($content),
+            'github-copilot'
+        );
     }
 
-    $resources[] = aiResource('root', 'validator', 'validate-ai-config', 'tools/ai/validate-ai-config.php', 'Validates the root live AI workflow layer.', 'php');
-    $resources[] = aiResource('root', 'validator', 'validate-ai-catalog', 'tools/ai/validate-ai-catalog.php', 'Validates manifest, catalog, and starter profile metadata.', 'php');
-    $resources[] = aiResource('root', 'generator', 'generate-ai-catalog', 'tools/ai/generate-ai-catalog.php', 'Generates catalog docs, catalog JSON, and llms.txt.', 'php');
-    $resources[] = aiResource('root', 'exporter', 'export-ai-universal-rules', 'tools/ai/export-ai-universal-rules.php', 'Builds starter-profile release bundles under dist/.', 'php');
+    $opencodeResourcePatterns = [
+        '.opencode/agents/*.md' => ['opencode-agent', 'opencode'],
+        '.opencode/commands/*.md' => ['opencode-command', 'opencode'],
+        '.opencode/skills/*/SKILL.md' => ['opencode-skill', 'opencode'],
+    ];
+
+    foreach ($opencodeResourcePatterns as $pattern => [$type, $runtime]) {
+        $paths = glob(aiAbsolutePath($root, $pattern)) ?: [];
+        sort($paths);
+
+        foreach ($paths as $path) {
+            $relativePath = substr(aiNormalizePath($path), strlen(aiNormalizePath($root)) + 1);
+            $content = file_get_contents($path) ?: '';
+            $frontMatter = aiParseFrontMatter($content);
+
+            $name = $frontMatter['name'] ?? pathinfo($path, PATHINFO_FILENAME);
+
+            if ($type === 'opencode-skill') {
+                $name = basename(dirname($path));
+            }
+
+            $resources[] = aiResource(
+                'root',
+                $type,
+                $name,
+                $relativePath,
+                $frontMatter['description'] ?? aiSummarizeMarkdown($content),
+                $runtime
+            );
+        }
+    }
+
+    $toolMap = [
+        'tools/ai/ai.php' => ['cli', 'ai', 'Main AI workflow CLI dispatcher.'],
+        'tools/ai/validate-ai-config.php' => ['validator', 'validate-ai-config', 'Validates the root live AI workflow layer.'],
+        'tools/ai/validate-ai-catalog.php' => ['validator', 'validate-ai-catalog', 'Validates manifest, catalog, and starter profile metadata.'],
+        'tools/ai/validate-generated-artifacts.php' => ['validator', 'validate-generated-artifacts', 'Validates generated artifact presence and drift.'],
+        'tools/ai/validate-install-surface.php' => ['validator', 'validate-install-surface', 'Validates install pack, profile, script, and adapter template contracts.'],
+        'tools/ai/generate-ai-catalog.php' => ['generator', 'generate-ai-catalog', 'Generates catalog docs, catalog JSON, and llms.txt.'],
+        'tools/ai/export-ai-universal-rules.php' => ['exporter', 'export-ai-universal-rules', 'Builds starter-profile release bundles under dist/.'],
+        'tools/ai/verify-full-install.php' => ['verifier', 'verify-full-install', 'Runs full install verification flow and writes durable evidence.'],
+        'tools/ai/full-install-validation.php' => ['verifier', 'full-install-validation', 'Runs broad validation across install, catalog, generated artifacts, scripts, and inventory.'],
+    ];
+
+    foreach ($toolMap as $relativePath => [$type, $name, $description]) {
+        if (!is_file(aiAbsolutePath($root, $relativePath))) {
+            continue;
+        }
+
+        $resources[] = aiResource('root', $type, $name, $relativePath, $description, 'php');
+    }
 
     return $resources;
 }
@@ -290,24 +423,34 @@ function aiCollectRootResources(string $root): array
 function aiCollectPackageResources(string $root): array
 {
     $resources = [];
+
     $prefixMap = [
         'packages/ai-universal-rules/templates/core/' => ['core-template', 'canonical'],
         'packages/ai-universal-rules/templates/shared/' => ['shared-template', 'canonical'],
         'packages/ai-universal-rules/templates/capabilities/' => ['package-capability', 'canonical'],
-        'packages/ai-universal-rules/templates/opencode/agents/' => ['opencode-agent-template', 'opencode'],
-        'packages/ai-universal-rules/templates/opencode/commands/' => ['opencode-command-template', 'opencode'],
-        'packages/ai-universal-rules/templates/opencode/skills/' => ['opencode-skill-template', 'opencode'],
+
         'packages/ai-universal-rules/templates/github-copilot/agents/' => ['github-copilot-agent-template', 'github-copilot'],
         'packages/ai-universal-rules/templates/github-copilot/instructions/' => ['github-copilot-instruction-template', 'github-copilot'],
         'packages/ai-universal-rules/templates/github-copilot/prompts/' => ['github-copilot-prompt-template', 'github-copilot'],
+
+        'packages/ai-universal-rules/templates/opencode/agents/' => ['opencode-agent-template', 'opencode'],
+        'packages/ai-universal-rules/templates/opencode/commands/' => ['opencode-command-template', 'opencode'],
+        'packages/ai-universal-rules/templates/opencode/skills/' => ['opencode-skill-template', 'opencode'],
+
         'packages/ai-universal-rules/templates/optional/' => ['optional-template', 'optional'],
         'packages/ai-universal-rules/docs/foundations/' => ['foundation-doc', 'canonical'],
         'packages/ai-universal-rules/docs/workflows/' => ['workflow-doc', 'canonical'],
         'packages/ai-universal-rules/docs/operations/' => ['operations-doc', 'canonical'],
     ];
 
+    $base = aiAbsolutePath($root, 'packages/ai-universal-rules');
+
+    if (!is_dir($base)) {
+        return $resources;
+    }
+
     $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator(aiAbsolutePath($root, 'packages/ai-universal-rules'), FilesystemIterator::SKIP_DOTS)
+        new RecursiveDirectoryIterator($base, FilesystemIterator::SKIP_DOTS)
     );
 
     foreach ($iterator as $file) {
@@ -317,7 +460,13 @@ function aiCollectPackageResources(string $root): array
 
         $relativePath = substr(aiNormalizePath($file->getPathname()), strlen(aiNormalizePath($root)) + 1);
 
-        if (in_array($relativePath, ['packages/ai-universal-rules/catalog.json', 'packages/ai-universal-rules/docs/BROWSE.md', 'packages/ai-universal-rules/manifest.json', 'packages/ai-universal-rules/manifest.yml'], true)) {
+        if (in_array($relativePath, [
+            'packages/ai-universal-rules/catalog.json',
+            'packages/ai-universal-rules/docs/BROWSE.md',
+            'packages/ai-universal-rules/manifest.json',
+            'packages/ai-universal-rules/manifest.yml',
+            'packages/ai-universal-rules/package-lock.ai.json',
+        ], true)) {
             continue;
         }
 
@@ -331,6 +480,7 @@ function aiCollectPackageResources(string $root): array
             $defaultName = pathinfo($file->getFilename(), PATHINFO_FILENAME);
             $name = $frontMatter['name'] ?? aiExtractTitle($content, $defaultName);
             $description = $frontMatter['description'] ?? aiSummarizeMarkdown($content);
+
             $resources[] = aiResource('package', $type, $name, $relativePath, $description, $runtime);
             break;
         }
@@ -387,14 +537,33 @@ function aiRenderRootCatalogMarkdown(array $catalog): string
     $lines[] = '';
     $lines[] = 'This generated file is the live inventory for AI workflow assets in this repository and the reusable `packages/ai-universal-rules/` package.';
     $lines[] = '';
-    $lines[] = 'Use `docs/ai/copilot-getting-started.md` for quick onboarding, then use this catalog when you need the full indexed list of agents, instructions, hooks, prompts, scripts, capabilities, and docs.';
+    $lines[] = 'Use the relevant adapter onboarding document first, then use this catalog when you need the full indexed list of agents, instructions, hooks, prompts, scripts, capabilities, and docs.';
+    $lines[] = '';
+
+    if (aiCatalogResourcePathExists($catalog, 'docs/ai/copilot-getting-started.md')) {
+        $lines[] = '- GitHub Copilot adapter: `docs/ai/copilot-getting-started.md`';
+    }
+
+    if (aiCatalogResourcePathExists($catalog, 'docs/ai/opencode-getting-started.md')) {
+        $lines[] = '- OpenCode adapter: `docs/ai/opencode-getting-started.md`';
+    }
+
+    $lines[] = '';
+    $lines[] = '## Runtime Model';
+    $lines[] = '';
+    $lines[] = '- `canonical` resources are shared across all AI runtimes.';
+    $lines[] = '- `github-copilot` resources belong to the `.github/` adapter surface.';
+    $lines[] = '- `opencode` resources belong to the `.opencode/` adapter surface.';
+    $lines[] = '- `dual-runtime` examples intentionally show both adapter surfaces together.';
     $lines[] = '';
     $lines[] = '## Highlights';
     $lines[] = '';
+
     foreach ($catalog['counts'] as $key => $count) {
         [$scope, $type] = explode(':', $key, 2);
         $lines[] = '- `' . $scope . ' / ' . $type . '` - ' . $count;
     }
+
     $lines[] = '';
     $lines[] = '## Live Repo Resources';
     $lines[] = '';
@@ -408,9 +577,11 @@ function aiRenderRootCatalogMarkdown(array $catalog): string
     $lines[] = '';
     $lines[] = '| Profile | Description |';
     $lines[] = '| --- | --- |';
+
     foreach ($catalog['starter_profiles'] as $profile) {
-        $lines[] = '| `' . $profile['id'] . '` | ' . $profile['description'] . ' |';
+        $lines[] = '| `' . $profile['id'] . '` | ' . aiEscapeTable((string) $profile['description']) . ' |';
     }
+
     $lines[] = '';
     $lines[] = '## Validation Commands';
     $lines[] = '';
@@ -432,11 +603,20 @@ function aiRenderBrowseMarkdown(array $catalog): string
     $lines[] = '';
     $lines[] = '`' . $package['name'] . '` v`' . $package['version'] . '` packages the reusable workflow model behind this repository.';
     $lines[] = '';
+    $lines[] = '## Runtime Model';
+    $lines[] = '';
+    $lines[] = '- `canonical`: shared runtime-neutral docs, capabilities, scripts, and schemas.';
+    $lines[] = '- `github-copilot`: GitHub Copilot adapter templates and `.github/` surfaces.';
+    $lines[] = '- `opencode`: OpenCode adapter templates and `.opencode/` surfaces.';
+    $lines[] = '- `dual-runtime`: examples or profiles that intentionally include both adapter surfaces.';
+    $lines[] = '';
     $lines[] = '## Package Outputs';
     $lines[] = '';
+
     foreach ($package['generated_outputs'] as $output) {
         $lines[] = '- `' . $output . '`';
     }
+
     $lines[] = '';
     $lines[] = '## Package Resources';
     $lines[] = '';
@@ -444,16 +624,20 @@ function aiRenderBrowseMarkdown(array $catalog): string
     $lines[] = '';
     $lines[] = '## Starter Profiles';
     $lines[] = '';
+
     $starterProfiles = $catalog['starter_profiles'];
     $starterCount = count($starterProfiles);
+
     foreach ($starterProfiles as $index => $profile) {
         $lines[] = '### `' . $profile['id'] . '`';
         $lines[] = '';
-        $lines[] = $profile['description'];
+        $lines[] = (string) $profile['description'];
         $lines[] = '';
+
         foreach ($profile['includes'] as $include) {
             $lines[] = '- `' . $include . '`';
         }
+
         if ($index < $starterCount - 1) {
             $lines[] = '';
         }
@@ -473,7 +657,15 @@ function aiRenderLlms(array $catalog): string
     $lines[] = '';
     $lines[] = '- [README.md](README.md): root overview, quick start, and repo layout';
     $lines[] = '- [AGENTS.md](AGENTS.md): durable repository instructions';
-    $lines[] = '- [docs/ai/copilot-getting-started.md](docs/ai/copilot-getting-started.md): minimal Copilot install map and read order';
+
+    if (aiCatalogResourcePathExists($catalog, 'docs/ai/copilot-getting-started.md')) {
+        $lines[] = '- [docs/ai/copilot-getting-started.md](docs/ai/copilot-getting-started.md): GitHub Copilot adapter install map and read order';
+    }
+
+    if (aiCatalogResourcePathExists($catalog, 'docs/ai/opencode-getting-started.md')) {
+        $lines[] = '- [docs/ai/opencode-getting-started.md](docs/ai/opencode-getting-started.md): OpenCode adapter install map and read order';
+    }
+
     $lines[] = '- [docs/ai/project-context.md](docs/ai/project-context.md): live repository context';
     $lines[] = '- [docs/ai/workflow.md](docs/ai/workflow.md): live task flow';
     $lines[] = '- [docs/ai/agents.md](docs/ai/agents.md): live agent reference and package agent index';
@@ -481,6 +673,12 @@ function aiRenderLlms(array $catalog): string
     $lines[] = '- [docs/ai/agent-ops-checklist.md](docs/ai/agent-ops-checklist.md): phased verification checklist for integration audits';
     $lines[] = '- [docs/ai/integration-matrix.md](docs/ai/integration-matrix.md): concept coverage map for the live workflow layer';
     $lines[] = '- [docs/ai/catalog.md](docs/ai/catalog.md): generated browse index for live and package assets';
+    $lines[] = '';
+    $lines[] = '## Runtime Adapters';
+    $lines[] = '';
+    $lines[] = '- GitHub Copilot adapter resources live under `.github/` and `packages/ai-universal-rules/templates/github-copilot/`.';
+    $lines[] = '- OpenCode adapter resources live under `.opencode/` and `packages/ai-universal-rules/templates/opencode/`.';
+    $lines[] = '- Canonical workflow resources stay runtime-neutral under `docs/ai/`, `docs/ai/capabilities/`, `scripts/ai/`, and `.schemas/`.';
     $lines[] = '';
     $lines[] = '## Reusable Kit';
     $lines[] = '';
@@ -522,11 +720,14 @@ function aiRenderTableRows(array $resources, string $scope): array
             $details = [];
 
             if (!empty($resource['runtime'])) {
-                $details[] = 'runtime: `' . $resource['runtime'] . '`';
+                $details[] = 'runtime:`' . $resource['runtime'] . '`';
             }
 
             if (!empty($resource['entrypoints']) && is_array($resource['entrypoints'])) {
-                $details[] = 'entrypoints: ' . implode(', ', array_map(static fn (string $entrypoint): string => '`' . $entrypoint . '`', $resource['entrypoints']));
+                $details[] = 'entrypoints:' . implode(',', array_map(
+                    static fn (string $entrypoint): string => '`' . $entrypoint . '`',
+                    $resource['entrypoints']
+                ));
             }
 
             if (!empty($resource['asset_counts']) && is_array($resource['asset_counts'])) {
@@ -541,16 +742,24 @@ function aiRenderTableRows(array $resources, string $scope): array
                 }
 
                 if ($countParts !== []) {
-                    $details[] = 'assets: ' . implode(', ', $countParts);
+                    $details[] = 'assets:' . implode(',', $countParts);
                 }
             }
 
             if ($details !== []) {
-                $description .= ' (' . implode('; ', $details) . ')';
+                $description .= '(' . implode(';', $details) . ')';
             }
         }
 
-        $lines[] = '| `' . $resource['type'] . '` | ' . aiEscapeTable($resource['name']) . ' | `' . $resource['path'] . '` | ' . aiEscapeTable($description) . ' |';
+        $lines[] = '|`'
+            . $resource['type']
+            . '`|'
+            . aiEscapeTable((string) $resource['name'])
+            . '|`'
+            . $resource['path']
+            . '`|'
+            . aiEscapeTable((string) $description)
+            . '|';
     }
 
     return $lines;
@@ -611,15 +820,21 @@ function aiCollectExampleEntrypoints(array $files, string $relativeDirectory): a
         '/AGENTS.md',
         '/CLAUDE.md',
         '/.github/copilot-instructions.md',
+        '/.github/instructions/ai-workflow.instructions.md',
+        '/.opencode/AGENTS.md',
         '/docs/ai/project-context.md',
         '/docs/ai/workflow.md',
     ];
+
     $entrypoints = [];
 
     foreach ($files as $file) {
         foreach ($entrypointSuffixes as $suffix) {
             if (str_ends_with($file, $suffix)) {
-                $entrypoints[] = ltrim(substr($file, strlen(aiNormalizePath(aiRepoRoot())) + 1 + strlen($relativeDirectory)), '/');
+                $entrypoints[] = ltrim(
+                    substr($file, strlen(aiNormalizePath(aiRepoRoot())) + 1 + strlen($relativeDirectory)),
+                    '/'
+                );
                 break;
             }
         }
@@ -627,7 +842,7 @@ function aiCollectExampleEntrypoints(array $files, string $relativeDirectory): a
 
     sort($entrypoints);
 
-    return array_slice(array_values(array_unique($entrypoints)), 0, 6);
+    return array_slice(array_values(array_unique($entrypoints)), 0, 8);
 }
 
 function aiCountExampleAssets(array $files): array
@@ -642,7 +857,7 @@ function aiCountExampleAssets(array $files): array
     ];
 
     foreach ($files as $file) {
-        if (str_ends_with($file, '.agent.md')) {
+        if (str_ends_with($file, '.agent.md') || str_contains($file, '/.opencode/agents/')) {
             $counts['agents']++;
         }
 
@@ -684,6 +899,7 @@ function aiFindExampleReadme(array $files): ?string
 function aiExampleTitle(string $root, string $relativeDirectory, ?string $readmePath, array $files): string
 {
     $slug = basename($relativeDirectory);
+
     $preferredTitles = [
         'generic-placeholder-repo' => 'Generic Placeholder Starter',
         'expanded-placeholder-repo' => 'Expanded Placeholder Blueprint',
@@ -721,8 +937,14 @@ function aiExampleTitle(string $root, string $relativeDirectory, ?string $readme
     return aiPrettifyExampleSlug($slug);
 }
 
-function aiDescribeExample(string $root, string $relativeDirectory, string $runtime, ?string $readmePath, array $files, array $assetCounts): string
-{
+function aiDescribeExample(
+    string $root,
+    string $relativeDirectory,
+    string $runtime,
+    ?string $readmePath,
+    array $files,
+    array $assetCounts
+): string {
     $slug = basename($relativeDirectory);
 
     if ($readmePath !== null) {
@@ -768,15 +990,21 @@ function aiDescribeExample(string $root, string $relativeDirectory, string $runt
     }
 
     if ($runtime === 'dual-runtime') {
-        return 'Worked dual-runtime example with both Copilot and OpenCode adapters' . ($assetBits !== [] ? ' across ' . implode(', ', $assetBits) : '') . '.';
+        return 'Worked dual-runtime example with both GitHub Copilot and OpenCode adapters'
+            . ($assetBits !== [] ? ' across ' . implode(', ', $assetBits) : '')
+            . '.';
     }
 
     if ($runtime === 'github-copilot') {
-        return 'Worked GitHub Copilot example for the reusable workflow kit' . ($assetBits !== [] ? ' across ' . implode(', ', $assetBits) : '') . '.';
+        return 'Worked GitHub Copilot example for the reusable workflow kit'
+            . ($assetBits !== [] ? ' across ' . implode(', ', $assetBits) : '')
+            . '.';
     }
 
     if ($runtime === 'opencode') {
-        return 'Worked OpenCode example for the reusable workflow kit' . ($assetBits !== [] ? ' across ' . implode(', ', $assetBits) : '') . '.';
+        return 'Worked OpenCode example for the reusable workflow kit'
+            . ($assetBits !== [] ? ' across ' . implode(', ', $assetBits) : '')
+            . '.';
     }
 
     return 'Reference example `' . $slug . '` for package structure and placeholder layout.';
@@ -806,6 +1034,17 @@ function aiEscapeTable(string $value): string
     return str_replace('|', '\\|', $value);
 }
 
+function aiEnsureDirectory(string $directory): void
+{
+    if (is_dir($directory)) {
+        return;
+    }
+
+    if (!mkdir($directory, AI_DIR_MODE, true) && !is_dir($directory)) {
+        throw new RuntimeException("Unable to create {$directory}.");
+    }
+}
+
 function aiWriteIfChanged(string $absolutePath, string $content): bool
 {
     $existing = is_file($absolutePath) ? file_get_contents($absolutePath) : false;
@@ -814,12 +1053,7 @@ function aiWriteIfChanged(string $absolutePath, string $content): bool
         return false;
     }
 
-    $directory = dirname($absolutePath);
-
-    if (!is_dir($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
-        throw new RuntimeException("Unable to create {$directory}.");
-    }
-
+    aiEnsureDirectory(dirname($absolutePath));
     file_put_contents($absolutePath, $content);
 
     return true;
@@ -851,14 +1085,26 @@ function aiValidateManifest(array $manifest, string $root): array
 {
     $errors = [];
 
-    foreach (['name', 'version', 'description', 'supported_tools', 'supported_surfaces', 'workflow_layers', 'required_templates', 'runtime_entrypoints', 'generated_outputs', 'starter_profiles', 'release'] as $key) {
+    foreach ([
+        'name',
+        'version',
+        'description',
+        'supported_tools',
+        'supported_surfaces',
+        'workflow_layers',
+        'required_templates',
+        'runtime_entrypoints',
+        'generated_outputs',
+        'starter_profiles',
+        'release',
+    ] as $key) {
         if (!array_key_exists($key, $manifest)) {
             $errors[] = "manifest.json missing {$key}";
         }
     }
 
     foreach ($manifest['required_templates'] ?? [] as $path) {
-        if (!file_exists(aiAbsolutePath($root, 'packages/ai-universal-rules/' . ltrim($path, '/')))) {
+        if (!file_exists(aiAbsolutePath($root, 'packages/ai-universal-rules/' . ltrim((string) $path, '/')))) {
             $errors[] = "manifest.json references missing template {$path}";
         }
     }
@@ -876,7 +1122,7 @@ function aiValidateManifest(array $manifest, string $root): array
         }
 
         foreach ($profile['includes'] as $include) {
-            if (!file_exists(aiAbsolutePath($root, 'packages/ai-universal-rules/' . ltrim($include, '/')))) {
+            if (!file_exists(aiAbsolutePath($root, 'packages/ai-universal-rules/' . ltrim((string) $include, '/')))) {
                 $errors[] = "starter profile {$profile['id']} references missing path {$include}";
             }
         }
@@ -904,12 +1150,7 @@ function aiReadManifestYamlSummary(string $root): array
 function aiCopyPath(string $source, string $destination): void
 {
     if (is_file($source)) {
-        $parent = dirname($destination);
-
-        if (!is_dir($parent) && !mkdir($parent, 0777, true) && !is_dir($parent)) {
-            throw new RuntimeException("Unable to create {$parent}.");
-        }
-
+        aiEnsureDirectory(dirname($destination));
         copy($source, $destination);
         return;
     }
@@ -918,9 +1159,7 @@ function aiCopyPath(string $source, string $destination): void
         throw new RuntimeException("Missing export source {$source}.");
     }
 
-    if (!is_dir($destination) && !mkdir($destination, 0777, true) && !is_dir($destination)) {
-        throw new RuntimeException("Unable to create {$destination}.");
-    }
+    aiEnsureDirectory($destination);
 
     $iterator = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
@@ -931,19 +1170,22 @@ function aiCopyPath(string $source, string $destination): void
         $target = $destination . DIRECTORY_SEPARATOR . $iterator->getSubPathName();
 
         if ($item->isDir()) {
-            if (!is_dir($target)) {
-                mkdir($target, 0777, true);
-            }
-
+            aiEnsureDirectory($target);
             continue;
         }
 
-        $parent = dirname($target);
-
-        if (!is_dir($parent)) {
-            mkdir($parent, 0777, true);
-        }
-
+        aiEnsureDirectory(dirname($target));
         copy($item->getPathname(), $target);
     }
+}
+
+function aiCatalogResourcePathExists(array $catalog, string $path): bool
+{
+    foreach ($catalog['resources'] ?? [] as $resource) {
+        if (is_array($resource) && ($resource['path'] ?? null) === $path) {
+            return true;
+        }
+    }
+
+    return false;
 }

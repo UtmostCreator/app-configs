@@ -1,0 +1,28 @@
+# Conflicts
+
+- Status: `ok`
+- Generated at: `2026-05-03T16:30:47+00:00`
+- Commit: `92683f9`
+- Branch: `main`
+- Recommended next action: `No merge conflicts detected.`
+
+```json
+{
+    "schema_version": 1,
+    "artifact": "conflicts.json",
+    "generated_at": "2026-05-03T16:30:47+00:00",
+    "command": "php tools/ai/ai.php conflicts",
+    "based_on_commit": "92683f9",
+    "based_on_branch": "main",
+    "input_hashes": {},
+    "status": "ok",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "No merge conflicts detected.",
+    "data": {
+        "status": "ok",
+        "conflict_count": 0,
+        "files": []
+    }
+}
+```

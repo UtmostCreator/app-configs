@@ -1,7 +1,7 @@
 ---
 name: verify-change
 description: Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly
-compatibility: opencode
+argument-hint: 'Describe the change and what needs to be verified'
 ---
 
 ## What I Do
@@ -36,3 +36,8 @@ I select and run the most relevant verification path for a change and separate e
 - commands run
 - results
 - remaining verification not run
+
+## Gotchas
+
+- do not claim success without running at least one direct check
+- do not report a build success as proof of behavior correctness unless the project says otherwise

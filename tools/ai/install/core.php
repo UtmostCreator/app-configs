@@ -23,6 +23,8 @@ function aiInstallerRun(array $argv): int
     aiInstallerLog('profile: ' . $config['profile']);
     aiInstallerLog('runtime: ' . $config['runtime']);
 
+    aiInstallerAssertAllowedTarget($config);
+
     $registry = aiInstallerPackRegistry();
     $registryErrors = aiInstallerValidatePackRegistry($registry);
     if ($registryErrors !== []) {
@@ -140,6 +142,22 @@ function aiInstallerRun(array $argv): int
     }
 
     return 0;
+}
+
+function aiInstallerAssertAllowedTarget(array $config): void
+{
+    $sourceRoot = str_replace('\\', '/', (string) ($config['sourceRoot'] ?? ''));
+    $targetRoot = str_replace('\\', '/', (string) ($config['targetRoot'] ?? ''));
+
+    if ($sourceRoot === '' || $targetRoot === '') {
+        return;
+    }
+
+    $reservedExampleRoot = rtrim($sourceRoot, '/') . '/packages/ai-universal-rules/examples';
+
+    if ($targetRoot === $reservedExampleRoot || str_starts_with($targetRoot . '/', $reservedExampleRoot . '/')) {
+        throw new RuntimeException('installer target under packages/ai-universal-rules/examples is reserved; install into a dedicated external project directory instead');
+    }
 }
 
 function aiInstallerCollectPlaceholderStatus(string $targetRoot): array

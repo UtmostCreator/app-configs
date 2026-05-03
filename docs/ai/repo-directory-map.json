@@ -33,7 +33,7 @@
       "purpose": "OpenCode runtime adapter surfaces including agents, commands, and skills.",
       "designed_for": "OpenCode users executing repo-scoped workflows.",
       "install_guide": "docs/ai/external-repo-install.md",
-      "install_script": "tools/ai/install-ai-kit.php",
+      "install_script": "tools/ai/install-opencode-kit.sh",
       "ai_entrypoint": "docs/ai/project-context.md",
       "notes": "Adapter layer for OpenCode; canonical policy remains in docs/ai and package templates."
     },
@@ -60,16 +60,16 @@
       "purpose": "Reusable cross-runtime AI workflow package source and assets.",
       "designed_for": "Teams bootstrapping AI workflows in external repositories.",
       "install_guide": "packages/ai-universal-rules/QUICKSTART.md",
-      "install_script": "tools/ai/install-copilot-kit.sh",
+      "install_script": "tools/ai/install-ai-kit.php",
       "ai_entrypoint": "packages/ai-universal-rules/README.md",
-      "notes": "Portable package benchmark; examples are references, not root repo runtime defaults."
+      "notes": "Portable package benchmark; in-package examples are not installer targets and are excluded from maintained repo-structure outputs."
     },
     {
       "path": "docs",
       "purpose": "Repository documentation for setup, AI workflow, and operating guidance.",
       "designed_for": "Humans and AI agents reading durable project instructions.",
       "install_guide": "docs/ai/external-repo-install.md",
-      "install_script": "tools/ai/install-copilot-kit.sh",
+      "install_script": "tools/ai/install-ai-kit.php",
       "ai_entrypoint": "docs/ai/project-context.md",
       "notes": "Canonical guidance surface for repo-specific behavior and procedures."
     },
@@ -87,7 +87,7 @@
       "purpose": "Operational scripts for Copilot workflows, verification, search, context packing, and hooks.",
       "designed_for": "Humans and AI agents running repeatable repo workflows.",
       "install_guide": "docs/ai/copilot-tooling.md",
-      "install_script": "tools/ai/install-copilot-kit.sh",
+      "install_script": "tools/ai/install-ai-kit.php",
       "ai_entrypoint": "scripts/ai/run-repomix-context.sh",
       "notes": "Execution surface for guarded automation and evidence-oriented checks."
     },
@@ -123,7 +123,7 @@
       "purpose": "Utility scripts and reference corpora including AI tooling and PHP examples.",
       "designed_for": "Maintainers and agents generating catalogs, exports, and docs artifacts.",
       "install_guide": "docs/ai/external-repo-install.md",
-      "install_script": "tools/ai/install-copilot-kit.sh",
+      "install_script": "tools/ai/install-ai-kit.php",
       "ai_entrypoint": "tools/ai/generate-ai-catalog.php",
       "notes": "Contains generators/validators plus non-runtime reference material."
     }

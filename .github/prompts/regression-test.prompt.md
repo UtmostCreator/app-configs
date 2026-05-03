@@ -1,8 +1,7 @@
 ---
 name: regression-test
 description: Use when the main task is to create a failing or proving regression test for a reported bug or edge case
-argument-hint: "Describe the behavior, failure mode, and expected result"
-compatibility: opencode
+argument-hint: 'Describe the behavior, failure mode, and expected result'
 ---
 
 ## What I Do

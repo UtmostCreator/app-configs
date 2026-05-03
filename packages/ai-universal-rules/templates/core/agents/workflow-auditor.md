@@ -11,30 +11,30 @@ capabilities:
 permission:
   edit: deny
   bash:
-    "*": deny
-    "command -v *": allow
-    "test -f *": allow
-    "test -d *": allow
-    "stat *": allow
-    "pwd": allow
-    "ls *": allow
-    "fd *": allow
-    "eza *": allow
-    "rg *": allow
-    "git grep *": allow
-    "grep *": allow
-    "head *": allow
-    "tail *": allow
-    "jq *": allow
-    "yq *": allow
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git ls-files*": allow
-    "bash scripts/ai/ai-search.sh *": allow
-    "bash scripts/ai/ai-doc-check.sh --check*": allow
-    "php tools/ai/validate-*.php *": allow
+    '*': deny
+    'command -v *': allow
+    'test -f *': allow
+    'test -d *': allow
+    'stat *': allow
+    'pwd': allow
+    'ls *': allow
+    'fd *': allow
+    'eza *': allow
+    'rg *': allow
+    'git grep *': allow
+    'grep *': allow
+    'head *': allow
+    'tail *': allow
+    'jq *': allow
+    'yq *': allow
+    'git status*': allow
+    'git diff*': allow
+    'git log*': allow
+    'git show*': allow
+    'git ls-files*': allow
+    'bash scripts/ai/ai-search.sh *': allow
+    'bash scripts/ai/ai-doc-check.sh --check*': allow
+    'php tools/ai/validate-*.php *': allow
 ---
 
 # Workflow Auditor Agent
@@ -59,11 +59,11 @@ Load only what is relevant: `docs/ai/project-context.md`, `docs/ai/workflow.md`,
 
 ## Capability Routing
 
-| Capability | Load when audit involves |
-|---|---|
-| `adapter-drift` | Copilot/OpenCode parity, adapter template drift |
-| `project-context` | repo context file correctness |
-| `agent-observability-and-evidence` | evidence logs, session notes |
+| Capability                         | Load when audit involves                        |
+| ---------------------------------- | ----------------------------------------------- |
+| `adapter-drift`                    | Copilot/OpenCode parity, adapter template drift |
+| `project-context`                  | repo context file correctness                   |
+| `agent-observability-and-evidence` | evidence logs, session notes                    |
 
 ## Audit Checklist
 
@@ -78,12 +78,15 @@ Load only what is relevant: `docs/ai/project-context.md`, `docs/ai/workflow.md`,
 
 ```md
 ## Verdict
+
 CLEAN | DRIFT FOUND | ERRORS FOUND
 
 ## Findings
+
 | Severity | File | Issue | Fix Direction |
-|---|---|---|---|
+| -------- | ---- | ----- | ------------- |
 
 ## Drift Summary
+
 ## Recommended Next Step
 ```

@@ -9,7 +9,7 @@ Use this file as durable project context for instructions, agents, prompts, and 
 - Primary language: `unknown`
 - Primary runtime: `unknown`
 - Supported targets: `unknown`
-- Active paths: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
+- Active paths: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.gitattributes,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
 - Inactive paths: `unknown`
 
 ## Architecture
@@ -42,5 +42,6 @@ Use this file as durable project context for instructions, agents, prompts, and 
 ## Workflow Notes
 
 - Capability composition hints: `start with project-context, then verify-change, then review-diff`
+- Tool selection: `when the repository provides a tool map or command wrappers, follow that routing first; prefer rg, fd, ast-grep/sg, and structured queries over grep, find, or broad file dumps`
 - Release safety notes: `define rollback posture for medium/high risk changes`
 - Known gotcha themes: `stale paths, broad edits without evidence, guessed behavior`

@@ -1,7 +1,7 @@
 ---
 name: project-context
 description: Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing
-compatibility: opencode
+argument-hint: 'Describe what you are planning or reviewing in this repository'
 ---
 
 ## What I Do
@@ -13,7 +13,7 @@ I provide durable repository context for `app-configs` and point to the support 
 - before architecture decisions in unfamiliar areas
 - before implementation when multiple active paths could own the change
 - before review or verification when risk or ownership is unclear
-- when another skill needs repository facts first
+- when another workflow needs repository facts first
 
 ## Do Not Use Me For
 
@@ -32,7 +32,7 @@ I provide durable repository context for `app-configs` and point to the support 
 - Summary: `AI workflow starter for app-configs`
 - Primary language: `unknown`
 - Primary runtime: `unknown`
-- Active paths: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
+- Active paths: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.gitattributes,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
 - Inactive paths: `unknown`
 - Targets: `unknown`
 

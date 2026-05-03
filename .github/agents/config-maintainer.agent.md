@@ -10,51 +10,51 @@ capabilities:
   - docs-sync
 permission:
   edit:
-    "configs/**": allow
-    ".editorconfig": allow
-    ".eslintrc.json": allow
-    ".prettierrc.json": allow
-    ".stylelintrc.json": allow
-    ".markdownlint-cli2.yaml": allow
-    ".shellcheckrc": allow
-    "configs/php/**": allow
-    "configs/shell/**": allow
-    "configs/vscode/**": allow
-    "configs/nvim/**": allow
-    "configs/ghostty/**": allow
-    "configs/karabiner/**": allow
-    "packages/**": deny
-    "vendor/**": deny
-    ".git/**": deny
-    "docs/ai/generated/**": deny
-    "*.lock": deny
-    ".env*": deny
-    "secrets.*": deny
-    "credentials.*": deny
+    'configs/**': allow
+    '.editorconfig': allow
+    '.eslintrc.json': allow
+    '.prettierrc.json': allow
+    '.stylelintrc.json': allow
+    '.markdownlint-cli2.yaml': allow
+    '.shellcheckrc': allow
+    'configs/php/**': allow
+    'configs/shell/**': allow
+    'configs/vscode/**': allow
+    'configs/nvim/**': allow
+    'configs/ghostty/**': allow
+    'configs/karabiner/**': allow
+    'packages/**': deny
+    'vendor/**': deny
+    '.git/**': deny
+    'docs/ai/generated/**': deny
+    '*.lock': deny
+    '.env*': deny
+    'secrets.*': deny
+    'credentials.*': deny
   bash:
-    "*": deny
-    "command -v *": allow
-    "test -f *": allow
-    "test -x *": allow
-    "test -d *": allow
-    "stat *": allow
-    "pwd": allow
-    "ls *": allow
-    "fd *": allow
-    "eza *": allow
-    "rg *": allow
-    "git grep *": allow
-    "grep *": allow
-    "head *": allow
-    "tail *": allow
-    "jq *": allow
-    "yq *": allow
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "shellcheck *": allow
-    "php -l *": allow
-    "php tools/ai/validate-*.php *": allow
+    '*': deny
+    'command -v *': allow
+    'test -f *': allow
+    'test -x *': allow
+    'test -d *': allow
+    'stat *': allow
+    'pwd': allow
+    'ls *': allow
+    'fd *': allow
+    'eza *': allow
+    'rg *': allow
+    'git grep *': allow
+    'grep *': allow
+    'head *': allow
+    'tail *': allow
+    'jq *': allow
+    'yq *': allow
+    'git status*': allow
+    'git diff*': allow
+    'git log*': allow
+    'shellcheck *': allow
+    'php -l *': allow
+    'php tools/ai/validate-*.php *': allow
 ---
 
 # Config Maintainer Agent
@@ -80,11 +80,11 @@ Load only what is relevant: `docs/ai/project-context.md`, `docs/ai/capabilities/
 
 ## Capability Routing
 
-| Capability | Load when change involves |
-|---|---|
+| Capability             | Load when change involves                  |
+| ---------------------- | ------------------------------------------ |
 | `config-change-safety` | any config file, policy file, runtime flag |
-| `verify-change` | focused sanity check or lint after change |
-| `docs-sync` | docs reference changed config |
+| `verify-change`        | focused sanity check or lint after change  |
+| `docs-sync`            | docs reference changed config              |
 
 ## Required Flow
 
@@ -99,9 +99,14 @@ Load only what is relevant: `docs/ai/project-context.md`, `docs/ai/capabilities/
 
 ```md
 ## Change Made
+
 ## Affected Surface
+
 ## Compatibility Notes
+
 ## Verification Run
+
 ## Rollback Note
+
 ## Recommended Next Step
 ```

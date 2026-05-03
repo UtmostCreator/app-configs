@@ -23,16 +23,55 @@ php tools/ai/ai.php install-docs --check
 
 ## Profiles
 
-- `minimal`: core policy + project context + guardrails + three base capabilities
-- `copilot`: `minimal` plus Copilot instructions, agents, and prompts from templates
-- `opencode`: `minimal` plus OpenCode agents, commands, and skills from templates
-- `dual`: `minimal` plus both Copilot and OpenCode runtime adapters
-- `guarded`: same assets as `dual`, with an explicit prompt to apply local guard/hook policies manually
+- `minimal`: base policy, project context, workflow, guardrails, and the three core capabilities
+- `copilot`: `minimal` plus GitHub Copilot instructions, instructions, agents, and prompts
+- `opencode`: `minimal` plus OpenCode agents, commands, and skills
+- `dual`: `minimal` plus both runtime adapters and the lite extended capabilities
+- `guarded`: `dual` plus policy, hooks, and evidence packs
+- `accelerated`: `dual` plus `scripts-pack`, `policy-pack`, and `evidence-pack`
+- `full-governance`: `accelerated` plus `capabilities-extended-full`, `hooks-pack`, and `ci-pack`
+- `docs-reference`: docs-only add-on profile for reference material
+- `custom`: start from no profile expansion and opt into packs with `--with`
+
+For the exact ordered recipes, selective packs, and reinstall flow, read `docs/ai/install-order.md`.
 
 Legacy wrapper still works:
 
 - `tools/ai/install-copilot-kit.sh --profile minimal|copilot|copilot-guarded`
+- `tools/ai/install-opencode-kit.sh --profile minimal|opencode`
 - `tools/ai/install-ai-kit.sh` (shell wrapper around PHP installer)
+
+## Selective Pack Installs
+
+Examples:
+
+```bash
+# Copilot plus scripts and advisor
+php tools/ai/install-ai-kit.php \
+	--target /path/to/target-repo \
+	--profile copilot \
+	--with scripts-pack,advisor-pack
+
+# OpenCode runtime only, without refreshing base policy files
+php tools/ai/install-ai-kit.php \
+	--target /path/to/target-repo \
+	--profile opencode \
+	--no-base
+
+# Custom docs-only install with selected optional packs
+php tools/ai/install-ai-kit.php \
+	--target /path/to/target-repo \
+	--profile custom \
+	--with base,docs-reference-pack,advisor-pack
+```
+
+Useful flags:
+
+- `--with <packs>` adds optional packs such as `scripts-pack`, `advisor-pack`, `docs-reference-pack`, `delivery-pack`, `preview-environments-pack`, `evaluation-pack`, `service-boundary-pack`, and `mcp-boundaries-pack`
+- `--without <packs>` removes packs from the chosen profile
+- `--all-features` enables every registered optional pack
+- `--run-after-install <id>` runs a registered helper such as `repomix-tree` or `repo-tool-inventory`
+- `--toolchain-check` and `--toolchain-install-plan` show required tool state before apply
 
 ## Overwrite Behavior
 
@@ -59,6 +98,27 @@ Current installer runtime support:
 - `github-copilot`
 - `opencode`
 - `both` (via `--runtime both` or `--profile dual`)
+
+OpenCode-only example:
+
+```bash
+bash tools/ai/install-opencode-kit.sh --target /path/to/target-repo --profile opencode
+```
+
+Installer target guard:
+
+- installs into `packages/ai-universal-rules/examples/` are intentionally blocked
+- use a dedicated external repository or a separate scratch project directory for install testing
+
+## Reinstall On Top Of An Existing Repo
+
+For a dry-run refresh on an already-installed repository:
+
+```bash
+php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile full-governance --dry-run
+```
+
+If you intentionally want to refresh existing files in place, use `--force`, and add `--allow-core-overwrite` only when you also want the protected base policy files replaced.
 
 ## Compatibility Guarantees During V2 Migration
 

@@ -12,85 +12,85 @@ capabilities:
   - config-change-safety
 permission:
   edit:
-    "src/**": allow
-    "app/**": allow
-    "packages/**": allow
-    "configs/**": allow
-    "scripts/**": allow
-    "tools/**": allow
-    "tests/**": allow
-    "docs/**": allow
-    "vendor/**": deny
-    "node_modules/**": deny
-    ".git/**": deny
-    "dist/**": deny
-    "build/**": deny
-    "coverage/**": deny
-    ".cache/**": deny
-    "docs/ai/generated/**": deny
-    "docs/generated/**": deny
-    "*.generated.*": deny
-    "*.lock": deny
-    "composer.lock": deny
-    "package-lock.json": deny
-    "pnpm-lock.yaml": deny
-    "yarn.lock": deny
-    "*.pem": deny
-    "*.key": deny
-    "*.crt": deny
-    ".env*": deny
-    "secrets.*": deny
-    "credentials.*": deny
-    "auth.json": deny
+    'src/**': allow
+    'app/**': allow
+    'packages/**': allow
+    'configs/**': allow
+    'scripts/**': allow
+    'tools/**': allow
+    'tests/**': allow
+    'docs/**': allow
+    'vendor/**': deny
+    'node_modules/**': deny
+    '.git/**': deny
+    'dist/**': deny
+    'build/**': deny
+    'coverage/**': deny
+    '.cache/**': deny
+    'docs/ai/generated/**': deny
+    'docs/generated/**': deny
+    '*.generated.*': deny
+    '*.lock': deny
+    'composer.lock': deny
+    'package-lock.json': deny
+    'pnpm-lock.yaml': deny
+    'yarn.lock': deny
+    '*.pem': deny
+    '*.key': deny
+    '*.crt': deny
+    '.env*': deny
+    'secrets.*': deny
+    'credentials.*': deny
+    'auth.json': deny
   bash:
-    "*": deny
-    "command -v *": allow
-    "test -f *": allow
-    "test -x *": allow
-    "test -d *": allow
-    "stat *": allow
-    "pwd": allow
-    "ls *": allow
-    "fd *": allow
-    "eza *": allow
-    "rg *": allow
-    "git grep *": allow
-    "grep *": allow
-    "sed -n *": allow
-    "head *": allow
-    "tail *": allow
-    "nl *": allow
-    "jq *": allow
-    "yq *": allow
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git ls-files*": allow
-    "git blame*": allow
-    "git branch*": allow
-    "git rev-parse*": allow
-    "bash scripts/ai/ai-search.sh *": allow
-    "bash scripts/ai/rg-code.sh *": allow
-    "bash scripts/ai/fd-files.sh *": allow
-    "bash scripts/ai/preview-file.sh *": allow
-    "bash scripts/ai/query-usage.sh *": allow
-    "php -l *": allow
-    "vendor/bin/phpunit *": allow
-    "./vendor/bin/phpunit *": allow
-    "phpunit *": allow
-    "npm test*": allow
-    "npm run test*": allow
-    "npm run lint*": allow
-    "npm run typecheck*": allow
-    "pnpm test*": allow
-    "pnpm run test*": allow
-    "pnpm run lint*": allow
-    "pnpm run typecheck*": allow
-    "shellcheck *": allow
-    "markdownlint-cli2 *": allow
-    "php tools/ai/validate-*.php *": allow
-    "php tools/ai/generate-*.php --check*": allow
+    '*': deny
+    'command -v *': allow
+    'test -f *': allow
+    'test -x *': allow
+    'test -d *': allow
+    'stat *': allow
+    'pwd': allow
+    'ls *': allow
+    'fd *': allow
+    'eza *': allow
+    'rg *': allow
+    'git grep *': allow
+    'grep *': allow
+    'sed -n *': allow
+    'head *': allow
+    'tail *': allow
+    'nl *': allow
+    'jq *': allow
+    'yq *': allow
+    'git status*': allow
+    'git diff*': allow
+    'git log*': allow
+    'git show*': allow
+    'git ls-files*': allow
+    'git blame*': allow
+    'git branch*': allow
+    'git rev-parse*': allow
+    'bash scripts/ai/ai-search.sh *': allow
+    'bash scripts/ai/rg-code.sh *': allow
+    'bash scripts/ai/fd-files.sh *': allow
+    'bash scripts/ai/preview-file.sh *': allow
+    'bash scripts/ai/query-usage.sh *': allow
+    'php -l *': allow
+    'vendor/bin/phpunit *': allow
+    './vendor/bin/phpunit *': allow
+    'phpunit *': allow
+    'npm test*': allow
+    'npm run test*': allow
+    'npm run lint*': allow
+    'npm run typecheck*': allow
+    'pnpm test*': allow
+    'pnpm run test*': allow
+    'pnpm run lint*': allow
+    'pnpm run typecheck*': allow
+    'shellcheck *': allow
+    'markdownlint-cli2 *': allow
+    'php tools/ai/validate-*.php *': allow
+    'php tools/ai/generate-*.php --check*': allow
 ---
 
 # Refactorer Agent
@@ -120,13 +120,13 @@ Load only what is relevant: `AGENTS.md`, `README.md`, `docs/ai/project-context.m
 
 ## Capability Routing
 
-| Capability | Load when refactor involves |
-|---|---|
-| `review-diff` | preparing change for review |
-| `verify-change` | proving behavior preservation |
-| `docs-sync` | docs need alignment after structural movement |
-| `service-boundary-patterns` | boundaries, ownership, public/private split |
-| `config-change-safety` | config or policy structure |
+| Capability                  | Load when refactor involves                   |
+| --------------------------- | --------------------------------------------- |
+| `review-diff`               | preparing change for review                   |
+| `verify-change`             | proving behavior preservation                 |
+| `docs-sync`                 | docs need alignment after structural movement |
+| `service-boundary-patterns` | boundaries, ownership, public/private split   |
+| `config-change-safety`      | config or policy structure                    |
 
 Load in this order: `CAPABILITY.md`, `checklist.md`, `gotchas.md`, `examples.md`, `reference.md`.
 
@@ -156,13 +156,21 @@ Stop when behavior is not yet correct, refactor requires architecture decision, 
 
 ```md
 ## Refactor Goal
+
 ## Behavior Preservation Boundary
+
 ## Changes Made
+
 ## Duplication / Pattern Check
+
 ## Verification Run
+
 ## Evidence
+
 ## Risks Or Unknowns
+
 ## Handoff Notes For Reviewer
+
 ## Recommended Next Step
 ```
 

@@ -148,6 +148,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - For the default tree-context workflow and legacy ranked-folder compatibility, follow `docs/ai/context-packing.md`
 - For deterministic folder/file inventory generation, follow `docs/ai/repo-documentation-generation.md`
 - For bootstrap install into another repository, follow `docs/ai/external-repo-install.md`
+- For the ordered selective install matrix across Copilot, OpenCode, scripts, docs, advisor, hooks, and Repomix helpers, follow `docs/ai/install-order.md`
 - For installer internals, runtime asset map, and verification flow, follow `docs/ai/installer-architecture.md`
 - For package prerequisites and dependency setup, follow `docs/ai/toolchain-requirements.md`
 - For generated repository-wide tool discovery from shell scripts, use `docs/ai/repo-required-tools.md` and `bash scripts/ai/repo-tool-inventory.sh`
@@ -172,6 +173,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 
 - Minimum folders and files to copy into another repo: `.github/copilot-instructions.md`, `.github/hooks/tool-policy.json`, `docs/ai/project-context.md`, `docs/ai/workflow.md`, `docs/ai/agents.md`, `docs/ai/failure-handling.md`, `docs/ai/copilot-cli-repo-integration.md`, `docs/ai/capabilities/project-context/`, `docs/ai/capabilities/verify-change/`, `docs/ai/capabilities/review-diff/`, `scripts/ai/`
 - Optional Copilot add-ons after baseline works: `.github/instructions/`, `.github/agents/`, `.github/prompts/`, `.github/skills/`, `.github/hooks/`, `scripts/ai/`, `docs/ai/copilot-tooling.md`
+- For real installer commands instead of manual copying, use `docs/ai/install-order.md` first and `docs/ai/external-repo-install.md` second.
 - Recommended read order in this repo: `README.md` -> `.github/copilot-instructions.md` -> `docs/ai/project-context.md` -> `docs/ai/workflow.md` -> `docs/ai/agents.md` -> `docs/ai/failure-handling.md` -> relevant `docs/ai/capabilities/*`
 - Use `docs/ai/catalog.md` as the live generated inventory when you need the full list of agents, instructions, hooks, prompts, scripts, and canonical docs
 

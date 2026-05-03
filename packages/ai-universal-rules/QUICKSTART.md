@@ -2,6 +2,26 @@
 
 Use this flow when adapting the kit to a real repository.
 
+Installer-first flow is the supported default in this repository. Manual copy steps are still described below as the structural equivalent.
+
+## 0. Use The Installer First
+
+Dry-run the base shape you want before copying anything manually:
+
+```bash
+php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile copilot --dry-run
+```
+
+Common starting points:
+
+- Copilot only: `php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile copilot`
+- OpenCode only: `php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile opencode`
+- Dual runtime: `php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile dual`
+- Runtime-only refresh without re-copying base policy: `php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile copilot --no-base`
+- Add scripts and stronger automation: `php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile dual --with scripts-pack,advisor-pack`
+
+For the full ordered command flow and selective pack recipes, use `../../docs/ai/install-order.md`.
+
 ## 1. Choose A Runtime Strategy
 
 - OpenCode only
@@ -111,6 +131,15 @@ Also generate installation instruction docs from live registries:
 
 1. run `php tools/ai/ai.php install-docs --write`
 2. verify drift with `php tools/ai/ai.php install-docs --check`
+
+If you want installer-managed post-install helpers, use `--run-after-install` with one of these ids:
+
+- `repomix-context`
+- `repomix-tree`
+- `repomix-scc-router`
+- `pack-context`
+- `repo-tool-inventory`
+- `install-mandatory-tools`
 
 ## What Good Looks Like
 

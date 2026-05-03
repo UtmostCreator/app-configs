@@ -140,6 +140,28 @@ if (in_array('reviewer', $opencodeAgentNames, true) && !$hasReviewerCommand) {
     $warnings[] = 'opencode reviewer agent exists but review-diff command is missing';
 }
 
+// Verify workflow template parity: every template must produce a Copilot prompt, Copilot skill, and OpenCode skill
+$workflowTemplates = glob($root . '/packages/ai-universal-rules/templates/workflows/*.md') ?: [];
+foreach ($workflowTemplates as $tpl) {
+    $name = pathinfo($tpl, PATHINFO_FILENAME);
+    $promptFile = $root . '/.github/prompts/' . $name . '.prompt.md';
+    $copilotSkillDir = $root . '/.github/skills/' . $name . '/SKILL.md';
+    $opencodeSkillDir = $root . '/.opencode/skills/' . $name . '/SKILL.md';
+    if (!is_file($promptFile)) {
+        $errors[] = "workflow template '{$name}' missing installed Copilot prompt: .github/prompts/{$name}.prompt.md";
+    }
+    if (!is_file($copilotSkillDir)) {
+        $errors[] = "workflow template '{$name}' missing installed Copilot skill: .github/skills/{$name}/SKILL.md";
+    }
+    if (!is_file($opencodeSkillDir)) {
+        $errors[] = "workflow template '{$name}' missing installed OpenCode skill: .opencode/skills/{$name}/SKILL.md";
+    }
+    $tplContent = (string) file_get_contents($tpl);
+    if (str_contains($tplContent, 'compatibility: opencode')) {
+        $errors[] = "workflow template '{$name}' has runtime-specific 'compatibility: opencode' which limits Copilot use — remove it";
+    }
+}
+
 foreach ($warnings as $warning) {
     fwrite(STDOUT, "WARN: {$warning}\n");
 }

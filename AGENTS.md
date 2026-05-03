@@ -7,7 +7,7 @@
 - Summary: `AI workflow starter for app-configs`
 - Primary language: `unknown`
 - Primary runtime: `unknown`
-- Active paths: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
+- Active paths: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.gitattributes,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
 - Inactive or legacy paths: `unknown`
 - Primary entrypoints: `README.md, docs/ai/project-context.md`
 
@@ -23,6 +23,7 @@ Workflow rules:
 - Before changing code, config, docs, or workflow logic, search for similar existing patterns in the touched area and nearby owners and report the closest overlap as a percentage.
 - If overlap is roughly `>=75%`, flag reuse or replacement immediately and recommend updating the existing pattern instead of adding a duplicate.
 - After completing the change, run a touched-scope stale sweep on edited files and nearby references for stale methods, stale data assumptions, stale commands/paths, outdated docs, unresolved placeholders, and generated-output drift.
+- When the repository includes a tool map or command wrappers, load that routing first and prefer `rg`, `fd`, `ast-grep`/`sg`, and structured queries over raw `grep`, `find`, or broad file dumps.
 - Keep stable policy here and move procedural depth into capabilities, prompts, commands, or staged agents.
 - For non-trivial work, classify risk as `low`, `medium`, or `high` to choose review and verification depth.
 - Ground decisions in active code and configuration, not aspiration.
@@ -123,7 +124,7 @@ Inspect the current implementation before making architectural or behavioral cha
 ## Common Gotchas
 
 - `stale paths, broad edits without evidence, guessed behavior`
-- Capture recurring failure modes in capability gotchas files instead of bloating global policy.
+- Capture recurring failure modes in capability-specific `docs/ai/capabilities/*/gotchas.md` files instead of bloating global policy.
 
 ## Documentation Rules
 

@@ -1,7 +1,7 @@
 ---
 name: dependency-upgrade
 description: Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance
-compatibility: opencode
+argument-hint: 'Describe the dependency, version change, and reason for the upgrade'
 ---
 
 ## What I Do
@@ -21,9 +21,22 @@ I scope dependency upgrade risk, identify the real usage surface, and drive prop
 - `docs/ai/capabilities/dependency-upgrade/gotchas.md`
 - `docs/ai/capabilities/dependency-upgrade/examples.md`
 
+## Workflow
+
+1. inspect current version and usage surface
+2. review likely migration impact
+3. change the minimum required surface
+4. run focused verification
+5. summarize compatibility risks and follow-up work
+
 ## Output
 
 - upgrade scope
 - compatibility risk
 - verification evidence
 - follow-up work or rollout notes
+
+## Gotchas
+
+- do not treat a build success as full compatibility proof
+- do not skip runtime behavior checks for major version changes

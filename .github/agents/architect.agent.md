@@ -15,39 +15,39 @@ capabilities:
 permission:
   edit: deny
   bash:
-    "*": deny
-    "command -v *": allow
-    "test -f *": allow
-    "test -x *": allow
-    "test -d *": allow
-    "stat *": allow
-    "pwd": allow
-    "ls *": allow
-    "fd *": allow
-    "eza *": allow
-    "rg *": allow
-    "git grep *": allow
-    "grep *": allow
-    "sed -n *": allow
-    "head *": allow
-    "tail *": allow
-    "nl *": allow
-    "jq *": allow
-    "yq *": allow
-    "git status*": allow
-    "git diff*": allow
-    "git log*": allow
-    "git show*": allow
-    "git ls-files*": allow
-    "git blame*": allow
-    "git branch*": allow
-    "git rev-parse*": allow
-    "bash scripts/ai/ai-search.sh *": allow
-    "bash scripts/ai/rg-code.sh *": allow
-    "bash scripts/ai/fd-files.sh *": allow
-    "bash scripts/ai/preview-file.sh *": allow
-    "bash scripts/ai/query-usage.sh *": allow
-    "bash scripts/ai/git-forensics.sh *": allow
+    '*': deny
+    'command -v *': allow
+    'test -f *': allow
+    'test -x *': allow
+    'test -d *': allow
+    'stat *': allow
+    'pwd': allow
+    'ls *': allow
+    'fd *': allow
+    'eza *': allow
+    'rg *': allow
+    'git grep *': allow
+    'grep *': allow
+    'sed -n *': allow
+    'head *': allow
+    'tail *': allow
+    'nl *': allow
+    'jq *': allow
+    'yq *': allow
+    'git status*': allow
+    'git diff*': allow
+    'git log*': allow
+    'git show*': allow
+    'git ls-files*': allow
+    'git blame*': allow
+    'git branch*': allow
+    'git rev-parse*': allow
+    'bash scripts/ai/ai-search.sh *': allow
+    'bash scripts/ai/rg-code.sh *': allow
+    'bash scripts/ai/fd-files.sh *': allow
+    'bash scripts/ai/preview-file.sh *': allow
+    'bash scripts/ai/query-usage.sh *': allow
+    'bash scripts/ai/git-forensics.sh *': allow
 ---
 
 # Architect Agent
@@ -78,15 +78,15 @@ Load only what is relevant: `AGENTS.md`, `README.md`, `docs/ai/project-context.m
 
 ## Capability Routing
 
-| Capability | Load when design involves |
-|---|---|
-| `project-context` | source-of-truth, repo context, generated AI context |
-| `service-boundary-patterns` | cross-package/service/API ownership boundaries |
-| `config-change-safety` | JSON/YAML/runtime config, policy files, flags |
-| `adapter-drift` | provider-specific templates, Copilot/OpenCode parity |
-| `release-safety` | rollout, rollback, production-impacting behavior |
-| `docs-sync` | docs must change with code or generated output |
-| `verify-change` | acceptance criteria and verification plan |
+| Capability                  | Load when design involves                            |
+| --------------------------- | ---------------------------------------------------- |
+| `project-context`           | source-of-truth, repo context, generated AI context  |
+| `service-boundary-patterns` | cross-package/service/API ownership boundaries       |
+| `config-change-safety`      | JSON/YAML/runtime config, policy files, flags        |
+| `adapter-drift`             | provider-specific templates, Copilot/OpenCode parity |
+| `release-safety`            | rollout, rollback, production-impacting behavior     |
+| `docs-sync`                 | docs must change with code or generated output       |
+| `verify-change`             | acceptance criteria and verification plan            |
 
 Load in this order: `CAPABILITY.md`, `checklist.md`, `gotchas.md`, `examples.md`, `reference.md`.
 
@@ -137,14 +137,24 @@ Stop and hand off to researcher or user when repository evidence is insufficient
 
 ```md
 ## Instruction Specificity
+
 ## Relevant Evidence
+
 ## Proposed Design
+
 ## Non-Goals
+
 ## Contracts And Boundaries
+
 ## Capability Guidance
+
 ## Acceptance Criteria
+
 ## Verification Plan
+
 ## Risks Or Unknowns
+
 ## Handoff Notes For Implementer
+
 ## Recommended Next Step
 ```

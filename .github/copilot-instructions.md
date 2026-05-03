@@ -9,7 +9,7 @@ They should remain valid even if advanced agent features or prompt files are una
 - Project: `app-configs`
 - Type: `php project`
 - Summary: `AI workflow starter for app-configs`
-- Active paths: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.gitattributes,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,agents,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
+- Active paths: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.gitattributes,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
 - Avoid by default: `unknown`
 - Primary entrypoints: `README.md, docs/ai/project-context.md`
 - Project context file: `docs/ai/project-context.md`
@@ -20,6 +20,7 @@ They should remain valid even if advanced agent features or prompt files are una
 - Prefer the smallest safe change.
 - For non-trivial work, classify risk as `low`, `medium`, or `high` to set review and verification depth.
 - Read existing code before proposing structural changes.
+- When the repository includes a tool map or command wrappers, load that routing first and prefer `rg`, `fd`, `ast-grep`/`sg`, and structured queries over raw `grep`, `find`, or broad file dumps.
 - Follow established repository patterns before inventing new abstractions.
 - Keep this file policy-focused and use prompt files, skills, or agents for deeper procedures.
 - Ask for approval before making: `secrets, destructive changes, auth or billing changes`

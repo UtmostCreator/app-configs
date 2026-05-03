@@ -1,8 +1,7 @@
 ---
 name: dependency-upgrade
 description: Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance
-argument-hint: "Describe the dependency, version change, and reason for the upgrade"
-compatibility: opencode
+argument-hint: 'Describe the dependency, version change, and reason for the upgrade'
 ---
 
 ## What I Do

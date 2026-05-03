@@ -1,7 +1,7 @@
 ---
 name: review-diff
 description: Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff
-compatibility: opencode
+argument-hint: 'Describe the goal of the change or the diff under review'
 ---
 
 ## What I Do
@@ -11,9 +11,15 @@ I require duplicate-logic screening evidence before a pass verdict and flag roug
 
 ## When To Use Me
 
-- before merge
+- before merge or handoff
 - after implementation
 - when a risky slice needs focused review
+
+## Do Not Use Me For
+
+- implementation planning or feature design
+- broad repository summarization
+- restating the diff without findings
 
 ## Read Alongside
 
@@ -24,7 +30,12 @@ I require duplicate-logic screening evidence before a pass verdict and flag roug
 
 ## Review Priorities
 
-- `correctness, regressions, configuration drift`
+1. correctness
+2. regressions
+3. security and privacy issues
+4. contract drift
+5. missing tests
+6. duplicate-logic screening (flag `>=75%` overlap as reuse or replacement candidate)
 
 ## Output
 
@@ -32,3 +43,9 @@ I require duplicate-logic screening evidence before a pass verdict and flag roug
 - findings with severity and location
 - risk assessment
 - recommended next step
+
+## Gotchas
+
+- do not spend the review restating the diff
+- do not treat stylistic preferences as the main finding category
+- present findings before general summary

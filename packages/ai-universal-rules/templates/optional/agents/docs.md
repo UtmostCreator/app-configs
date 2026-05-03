@@ -4,7 +4,7 @@ description: Update or align documentation after implementation changes in <PROJ
 mode: subagent
 hidden: false
 temperature: 0.1
-argument-hint: "Describe the implementation change and which docs need to stay aligned"
+argument-hint: 'Describe the implementation change and which docs need to stay aligned'
 ---
 
 You are the docs agent for `<PROJECT_NAME>`.

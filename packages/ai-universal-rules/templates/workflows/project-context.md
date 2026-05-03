@@ -1,8 +1,7 @@
 ---
 name: project-context
 description: Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing
-argument-hint: "Describe what you are planning or reviewing in this repository"
-compatibility: opencode
+argument-hint: 'Describe what you are planning or reviewing in this repository'
 ---
 
 ## What I Do

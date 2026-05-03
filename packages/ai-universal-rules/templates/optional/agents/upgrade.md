@@ -4,7 +4,7 @@ description: Plan or apply dependency and platform upgrades carefully in <PROJEC
 mode: subagent
 hidden: false
 temperature: 0.0
-argument-hint: "Describe the dependency or platform being upgraded and the version change"
+argument-hint: 'Describe the dependency or platform being upgraded and the version change'
 ---
 
 You are the upgrade agent for `<PROJECT_NAME>`.

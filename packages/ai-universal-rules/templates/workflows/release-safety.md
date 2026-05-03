@@ -1,8 +1,7 @@
 ---
 name: release-safety
 description: Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards
-argument-hint: "Describe the change, risk level, and deployment surface"
-compatibility: opencode
+argument-hint: 'Describe the change, risk level, and deployment surface'
 ---
 
 ## What I Do

@@ -4,7 +4,7 @@ description: Update build, packaging, or verification configuration in <PROJECT_
 mode: subagent
 hidden: false
 temperature: 0.0
-argument-hint: "Describe the build or config change and the affected tool or command"
+argument-hint: 'Describe the build or config change and the affected tool or command'
 ---
 
 You are the build-config agent for `<PROJECT_NAME>`.

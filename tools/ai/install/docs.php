@@ -91,6 +91,14 @@ function aiInstallerRenderInstalledInstructionsMarkdown(array $data): string
     $md .= "- Backup: `" . ($commands['install_backup'] ?? ('php tools/ai/ai.php install --backup-only --apply --profile ' . ($data['profile'] ?? 'dual'))) . "`\n";
     $md .= "- Apply: `" . ($commands['install_apply'] ?? ('php tools/ai/ai.php install --apply --profile ' . ($data['profile'] ?? 'dual') . ' --backup <backup-id>')) . "`\n\n";
 
+    $profile = (string) ($data['profile'] ?? 'dual');
+    $md .= "## Selective Updates\n\n";
+    $md .= "- Runtime-only refresh: `php tools/ai/ai.php install --profile {$profile} --no-base --reinstall --dry-run`\n";
+    $md .= "- Add scripts pack: `php tools/ai/ai.php install --profile {$profile} --with scripts-pack --reinstall --dry-run`\n";
+    $md .= "- Add advisor pack: `php tools/ai/ai.php install --profile {$profile} --with advisor-pack --reinstall --dry-run`\n";
+    $md .= "- Remove an included pack for comparison: `php tools/ai/ai.php install --profile {$profile} --without <pack-id> --reinstall --dry-run`\n";
+    $md .= "- Run a helper after apply: `php tools/ai/ai.php install --profile {$profile} --reinstall --apply --run-after-install repomix-tree`\n\n";
+
     $md .= "## After Install\n\n";
     $md .= "- Verify: `" . ($commands['verify'] ?? 'php tools/ai/ai.php verify --json') . "`\n";
     $md .= "- Resolve placeholders: `" . ($commands['placeholders'] ?? 'php tools/ai/ai.php placeholders --fail') . "`\n";
@@ -109,6 +117,8 @@ function aiInstallerRenderInstalledInstructionsMarkdown(array $data): string
     $md .= "- Run `" . ($commands['full_install_verify'] ?? 'php tools/ai/verify-full-install.php') . "` after the sequence above.\n";
     $md .= "- Completion is `full` only when install, validation, repomix analysis, and advisor checks all pass in order.\n";
     $md .= "- If status is not `full`, follow the script output for ordered remediation steps.\n\n";
+
+    $md .= "For broader operator recipes across Copilot, OpenCode, docs, scripts, hooks, advisor, and Repomix helpers, read `docs/ai/install-order.md`.\n\n";
 
     $md .= "## Installed Scripts\n\n";
     if (($data['scripts'] ?? []) === []) {

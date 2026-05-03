@@ -171,37 +171,6 @@ class AiCatalogLibTest extends TestCase
         $this->assertSame(42, $result['num']);
     }
 
-    // ---- aiDetectExampleRuntime ----
-
-    public function testDetectExampleRuntimeGitHubCopilot(): void
-    {
-        $files = ['repo/.github/copilot-instructions.md', 'repo/README.md'];
-        $this->assertSame('github-copilot', aiDetectExampleRuntime($files));
-    }
-
-    public function testDetectExampleRuntimeOpenCode(): void
-    {
-        $files = ['repo/.opencode/config.toml', 'repo/README.md'];
-        $this->assertSame('opencode', aiDetectExampleRuntime($files));
-    }
-
-    public function testDetectExampleRuntimeDual(): void
-    {
-        $files = ['repo/.github/copilot-instructions.md', 'repo/.opencode/config.toml'];
-        $this->assertSame('dual-runtime', aiDetectExampleRuntime($files));
-    }
-
-    public function testDetectExampleRuntimeReference(): void
-    {
-        $files = ['repo/README.md', 'repo/AGENTS.md'];
-        $this->assertSame('reference', aiDetectExampleRuntime($files));
-    }
-
-    public function testDetectExampleRuntimeEmptyFiles(): void
-    {
-        $this->assertSame('reference', aiDetectExampleRuntime([]));
-    }
-
     // ---- aiEscapeTable ----
 
     public function testEscapeTableReplacesBar(): void
@@ -217,79 +186,6 @@ class AiCatalogLibTest extends TestCase
     public function testEscapeTableMultipleBars(): void
     {
         $this->assertSame('a\\|b\\|c', aiEscapeTable('a|b|c'));
-    }
-
-    // ---- aiNormalizeExampleTitle ----
-
-    public function testNormalizeExampleTitleStripsRepositoryInstructions(): void
-    {
-        $this->assertSame('My Project', aiNormalizeExampleTitle('My Project - Repository Instructions'));
-    }
-
-    public function testNormalizeExampleTitleStripsSharedAgentGuidance(): void
-    {
-        $this->assertSame('My Project', aiNormalizeExampleTitle('My Project - Shared Agent Guidance'));
-    }
-
-    public function testNormalizeExampleTitleLeavesOtherTitlesUnchanged(): void
-    {
-        $this->assertSame('My Project', aiNormalizeExampleTitle('My Project'));
-    }
-
-    public function testNormalizeExampleTitleTrims(): void
-    {
-        $this->assertSame('My Project', aiNormalizeExampleTitle('  My Project  '));
-    }
-
-    // ---- aiPrettifyExampleSlug ----
-
-    public function testPrettifyExampleSlugCapitalizesWords(): void
-    {
-        $this->assertSame('My Example Repo', aiPrettifyExampleSlug('my-example-repo'));
-    }
-
-    public function testPrettifyExampleSlugSingleWord(): void
-    {
-        $this->assertSame('Example', aiPrettifyExampleSlug('example'));
-    }
-
-    // ---- aiCountExampleAssets ----
-
-    public function testCountExampleAssetsCountsAgents(): void
-    {
-        $files = ['foo.agent.md', 'bar.agent.md', 'README.md'];
-        $counts = aiCountExampleAssets($files);
-        $this->assertSame(2, $counts['agents']);
-        $this->assertSame(0, $counts['instructions']);
-    }
-
-    public function testCountExampleAssetsCountsInstructions(): void
-    {
-        $files = ['path.instructions.md', 'other.instructions.md'];
-        $counts = aiCountExampleAssets($files);
-        $this->assertSame(2, $counts['instructions']);
-    }
-
-    public function testCountExampleAssetsCountsSkills(): void
-    {
-        $files = ['/some/path/SKILL.md'];
-        $counts = aiCountExampleAssets($files);
-        $this->assertSame(1, $counts['skills']);
-    }
-
-    public function testCountExampleAssetsCountsCapabilities(): void
-    {
-        $files = ['/docs/ai/capabilities/foo/CAPABILITY.md'];
-        $counts = aiCountExampleAssets($files);
-        $this->assertSame(1, $counts['capabilities']);
-    }
-
-    public function testCountExampleAssetsReturnsZeroesForEmpty(): void
-    {
-        $counts = aiCountExampleAssets([]);
-        foreach (['agents', 'instructions', 'prompts', 'commands', 'skills', 'capabilities'] as $key) {
-            $this->assertSame(0, $counts[$key], "Expected 0 for key '$key'");
-        }
     }
 
     // ---- aiRenderTableRows ----
@@ -321,54 +217,4 @@ class AiCatalogLibTest extends TestCase
         $this->assertStringContainsString('Cap description', $lines[2]);
     }
 
-    // ---- aiFindExampleReadme ----
-
-    public function testFindExampleReadmeFindsFirstReadme(): void
-    {
-        $files = ['repo/src/file.php', 'repo/README.md', 'repo/docs/OTHER.md'];
-        $this->assertSame('repo/README.md', aiFindExampleReadme($files));
-    }
-
-    public function testFindExampleReadmeReturnsNullWhenAbsent(): void
-    {
-        $this->assertNull(aiFindExampleReadme(['file.md', 'AGENTS.md']));
-    }
-
-    // ---- aiCollectExampleEntrypoints (string-path-only helper coverage) ----
-
-    public function testCollectExampleEntrypointsFindsKnownSuffixes(): void
-    {
-        $root = aiRepoRoot();
-        $relDir = 'synthetic/repo';
-        $prefix = $root . '/' . $relDir . '/';
-        $files = [
-            $prefix . 'README.md',
-            $prefix . 'AGENTS.md',
-            $prefix . 'docs/ai/workflow.md',
-            $prefix . 'unrelated.txt',
-        ];
-        $entrypoints = aiCollectExampleEntrypoints($files, $relDir);
-        $this->assertContains('README.md', $entrypoints);
-        $this->assertContains('AGENTS.md', $entrypoints);
-        $this->assertNotContains('unrelated.txt', $entrypoints);
-    }
-
-    public function testCollectExampleEntrypointsMaxSix(): void
-    {
-        $root = aiRepoRoot();
-        $relDir = 'synthetic/dual-runtime-repo';
-        $prefix = $root . '/' . $relDir . '/';
-        // Feed more than 6 matching paths
-        $files = [
-            $prefix . 'README.md',
-            $prefix . 'AGENTS.md',
-            $prefix . 'CLAUDE.md',
-            $prefix . '.github/copilot-instructions.md',
-            $prefix . 'docs/ai/project-context.md',
-            $prefix . 'docs/ai/workflow.md',
-            // 7th would exceed limit but there's no 7th suffix
-        ];
-        $entrypoints = aiCollectExampleEntrypoints($files, $relDir);
-        $this->assertLessThanOrEqual(6, count($entrypoints));
-    }
 }

@@ -1,8 +1,7 @@
 ---
 name: review-diff
 description: Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff
-argument-hint: "Describe the goal of the change or the diff under review"
-compatibility: opencode
+argument-hint: 'Describe the goal of the change or the diff under review'
 ---
 
 ## What I Do

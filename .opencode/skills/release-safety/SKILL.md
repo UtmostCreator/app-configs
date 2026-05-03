@@ -1,7 +1,7 @@
 ---
 name: release-safety
 description: Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards
-compatibility: opencode
+argument-hint: 'Describe the change, risk level, and deployment surface'
 ---
 
 ## What I Do
@@ -14,6 +14,11 @@ I assess rollout posture, rollback options, observability, and unresolved releas
 - when contracts, migrations, or deployment behavior changed
 - when review or planning needs explicit release safeguards
 
+## Do Not Use Me For
+
+- low-risk trivial changes
+- local test success as a complete release-safety answer
+
 ## Read Alongside
 
 - `docs/ai/capabilities/release-safety/CAPABILITY.md`
@@ -23,7 +28,12 @@ I assess rollout posture, rollback options, observability, and unresolved releas
 
 ## Output
 
-- rollout considerations
-- rollback posture
+- rollout posture
+- rollback or disable path
 - observability or smoke-check signal
 - unresolved release risks
+
+## Gotchas
+
+- do not present local test success as a release-safety verdict
+- do not use this for low-risk or trivial changes

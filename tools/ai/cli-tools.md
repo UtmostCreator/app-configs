@@ -5,17 +5,17 @@ Thin mandatory entrypoint for AI agents.
 Goal: use deterministic, fast, structured CLI tools instead of slow, noisy, manual, or high-risk commands.
 
 This file defines policy and routing only.  
-Use `tools/tool-map.md` for tool replacement lookup.
+Use `tools/ai/tools/tool-map.md` for tool replacement lookup.
 
 ---
 
 ## Load Order
 
 1. Read this file first.
-2. Read `tools/tool-map.md` when choosing tools.
-3. Read the relevant `tools/actions/*.md` before executing that action.
-4. Read `tools/examples/good-bad-*.md` only when behaviour is unclear.
-5. Read `tools/approval-required.md` before risky mutation.
+2. Read `tools/ai/tools/tool-map.md` when choosing tools.
+3. Read the relevant `tools/ai/tools/actions/*.md` before executing that action.
+4. Read `tools/ai/tools/examples/good-bad-*.md` only when behaviour is unclear.
+5. Read `tools/ai/tools/approval-required.md` before risky mutation.
 
 ---
 
@@ -43,7 +43,7 @@ git ls-files | head -200
 rg -n "KEYWORD|ClassName|functionName"
 ```
 
-Full guide: [`tools/research-sequence.md`](tools/research-sequence.md)
+Full guide: [`tools/ai/tools/research-sequence.md`](tools/ai/tools/research-sequence.md)
 
 ---
 
@@ -61,7 +61,7 @@ git diff --stat
 git diff
 ```
 
-Full guide: [`tools/edit-sequence.md`](tools/edit-sequence.md)
+Full guide: [`tools/ai/tools/edit-sequence.md`](tools/ai/tools/edit-sequence.md)
 
 ---
 
@@ -84,13 +84,13 @@ php tools/ai/compile-task-context.php
 php tools/ai/impact.php
 ```
 
-Context guide: [`tools/actions/ai-context-packing.md`](tools/actions/ai-context-packing.md)
+Context guide: [`tools/ai/tools/actions/ai-context-packing.md`](tools/ai/tools/actions/ai-context-packing.md)
 
 ---
 
 ## Tool Routing
 
-Use [`tools/tool-map.md`](tools/tool-map.md) for replacements such as:
+Use [`tools/ai/tools/tool-map.md`](tools/ai/tools/tool-map.md) for replacements such as:
 
 ```text
 find -> fd / rg --files
@@ -108,9 +108,9 @@ AI context -> repomix / files-to-prompt / code2prompt / scc
 
 ## Action Guides
 
-Use [`tools/actions/`](tools/actions/) only for the active task.
-Use [`tools/examples/`](tools/examples/) only when the action guide is not enough.
-Use [`tools/approval-required.md`](tools/approval-required.md) before destructive, install, publish, service, infrastructure, network-exec, Git-history, environment-hook, or database mutation commands.
+Use [`tools/ai/tools/actions/`](tools/ai/tools/actions/) only for the active task.
+Use [`tools/ai/tools/examples/`](tools/ai/tools/examples/) only when the action guide is not enough.
+Use [`tools/ai/tools/approval-required.md`](tools/ai/tools/approval-required.md) before destructive, install, publish, service, infrastructure, network-exec, Git-history, environment-hook, or database mutation commands.
 
 ---
 

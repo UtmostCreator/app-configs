@@ -1,8 +1,7 @@
 ---
 name: bug-regression
 description: Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence
-argument-hint: "Describe the bug, expected behavior, and where it appears"
-compatibility: opencode
+argument-hint: 'Describe the bug, expected behavior, and where it appears'
 ---
 
 ## What I Do

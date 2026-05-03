@@ -235,10 +235,6 @@ function aiCollectRootResources(string $root): array
         'scripts/ai/ai-task.sh' => ['ai-script', 'ai-task.sh', 'Task-oriented AI workflow helper for routing, context, and verification steps.'],
         'scripts/ai/ai-test-select.sh' => ['ai-script', 'ai-test-select.sh', 'Selects likely relevant tests from changed files and task context.'],
         'scripts/ai/ai-verify.sh' => ['ai-script', 'ai-verify.sh', 'Project-aware verification gate for AI-driven changes across shell, PHP, JS/TS, and security checks.'],
-        'scripts/ai/check-batch2.sh' => ['ai-script', 'check-batch2.sh', 'Batch verification helper for grouped AI workflow checks.'],
-        'scripts/ai/check-batch3.sh' => ['ai-script', 'check-batch3.sh', 'Batch verification helper for grouped AI workflow checks.'],
-        'scripts/ai/check-batch4a.sh' => ['ai-script', 'check-batch4a.sh', 'Batch verification helper for grouped AI workflow checks.'],
-        'scripts/ai/check-batch4b.sh' => ['ai-script', 'check-batch4b.sh', 'Batch verification helper for grouped AI workflow checks.'],
         'scripts/ai/common.sh' => ['ai-script', 'common.sh', 'Shared helper library for AI workflow scripts, logging, snapshots, and token-budget checks.'],
         'scripts/ai/fd-files.sh' => ['ai-script', 'fd-files.sh', 'Repo-aware file discovery wrapper around fd with safer defaults.'],
         'scripts/ai/gh-pr-context.sh' => ['ai-script', 'gh-pr-context.sh', 'GitHub PR context wrapper with metadata, diff, checks, reviews, and optional PR-scoped context packing.'],
@@ -361,6 +357,25 @@ function aiCollectRootResources(string $root): array
         );
     }
 
+    $copilotSkillPaths = glob(aiAbsolutePath($root, '.github/skills/*/SKILL.md')) ?: [];
+    sort($copilotSkillPaths);
+
+    foreach ($copilotSkillPaths as $path) {
+        $relativePath = substr(aiNormalizePath($path), strlen(aiNormalizePath($root)) + 1);
+        $content = file_get_contents($path) ?: '';
+        $frontMatter = aiParseFrontMatter($content);
+        $name = $frontMatter['name'] ?? basename(dirname($path));
+
+        $resources[] = aiResource(
+            'root',
+            'github-copilot-skill',
+            $name,
+            $relativePath,
+            $frontMatter['description'] ?? aiSummarizeMarkdown($content),
+            'github-copilot'
+        );
+    }
+
     $opencodeResourcePatterns = [
         '.opencode/agents/*.md' => ['opencode-agent', 'opencode'],
         '.opencode/commands/*.md' => ['opencode-command', 'opencode'],
@@ -477,45 +492,6 @@ function aiCollectPackageResources(string $root): array
             $resources[] = aiResource('package', $type, $name, $relativePath, $description, $runtime);
             break;
         }
-    }
-
-    return $resources;
-}
-
-function aiCollectExampleResources(string $root): array
-{
-    $resources = [];
-
-    $exampleDirectories = glob(aiAbsolutePath($root, 'packages/ai-universal-rules/examples/*'), GLOB_ONLYDIR) ?: [];
-    sort($exampleDirectories);
-
-    foreach ($exampleDirectories as $directory) {
-        $relativePath = substr(aiNormalizePath($directory), strlen(aiNormalizePath($root)) + 1);
-        $files = aiListFilesInDirectory($directory);
-
-        if ($files === []) {
-            continue;
-        }
-
-        $runtime = aiDetectExampleRuntime($files);
-        $entrypoints = aiCollectExampleEntrypoints($files, $relativePath);
-        $assetCounts = aiCountExampleAssets($files);
-        $readmePath = aiFindExampleReadme($files);
-        $title = aiExampleTitle($root, $relativePath, $readmePath, $files);
-        $description = aiDescribeExample($root, $relativePath, $runtime, $readmePath, $files, $assetCounts);
-
-        $resources[] = aiResource(
-            'package',
-            'example-repo',
-            $title,
-            $relativePath,
-            $description,
-            $runtime,
-            [
-                'entrypoints' => $entrypoints,
-                'asset_counts' => $assetCounts,
-            ]
-        );
     }
 
     return $resources;
@@ -709,41 +685,6 @@ function aiRenderTableRows(array $resources, string $scope): array
 
         $description = $resource['description'] ?? '';
 
-        if ($resource['type'] === 'example-repo') {
-            $details = [];
-
-            if (!empty($resource['runtime'])) {
-                $details[] = 'runtime:`' . $resource['runtime'] . '`';
-            }
-
-            if (!empty($resource['entrypoints']) && is_array($resource['entrypoints'])) {
-                $details[] = 'entrypoints:' . implode(',', array_map(
-                    static fn (string $entrypoint): string => '`' . $entrypoint . '`',
-                    $resource['entrypoints']
-                ));
-            }
-
-            if (!empty($resource['asset_counts']) && is_array($resource['asset_counts'])) {
-                $countParts = [];
-
-                foreach ($resource['asset_counts'] as $key => $count) {
-                    if ($count === 0) {
-                        continue;
-                    }
-
-                    $countParts[] = $key . ' ' . $count;
-                }
-
-                if ($countParts !== []) {
-                    $details[] = 'assets:' . implode(',', $countParts);
-                }
-            }
-
-            if ($details !== []) {
-                $description .= '(' . implode(';', $details) . ')';
-            }
-        }
-
         $lines[] = '|`'
             . $resource['type']
             . '`|'
@@ -756,270 +697,6 @@ function aiRenderTableRows(array $resources, string $scope): array
     }
 
     return $lines;
-}
-
-function aiListFilesInDirectory(string $directory): array
-{
-    $files = [];
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
-    );
-
-    foreach ($iterator as $file) {
-        if ($file->isFile()) {
-            $files[] = aiNormalizePath($file->getPathname());
-        }
-    }
-
-    sort($files);
-
-    return $files;
-}
-
-function aiDetectExampleRuntime(array $files): string
-{
-    $hasCopilot = false;
-    $hasOpenCode = false;
-
-    foreach ($files as $file) {
-        if (str_contains($file, '/.github/')) {
-            $hasCopilot = true;
-        }
-
-        if (str_contains($file, '/.opencode/')) {
-            $hasOpenCode = true;
-        }
-    }
-
-    if ($hasCopilot && $hasOpenCode) {
-        return 'dual-runtime';
-    }
-
-    if ($hasCopilot) {
-        return 'github-copilot';
-    }
-
-    if ($hasOpenCode) {
-        return 'opencode';
-    }
-
-    return 'reference';
-}
-
-function aiCollectExampleEntrypoints(array $files, string $relativeDirectory): array
-{
-    $entrypointSuffixes = [
-        '/README.md',
-        '/AGENTS.md',
-        '/CLAUDE.md',
-        '/.github/copilot-instructions.md',
-        '/.github/instructions/ai-workflow.instructions.md',
-        '/.opencode/AGENTS.md',
-        '/docs/ai/project-context.md',
-        '/docs/ai/workflow.md',
-    ];
-
-    $entrypoints = [];
-
-    foreach ($files as $file) {
-        foreach ($entrypointSuffixes as $suffix) {
-            if (str_ends_with($file, $suffix)) {
-                $entrypoints[] = ltrim(
-                    substr($file, strlen(aiNormalizePath(aiRepoRoot())) + 1 + strlen($relativeDirectory)),
-                    '/'
-                );
-                break;
-            }
-        }
-    }
-
-    sort($entrypoints);
-
-    return array_slice(array_values(array_unique($entrypoints)), 0, 8);
-}
-
-function aiCountExampleAssets(array $files): array
-{
-    $counts = [
-        'agents' => 0,
-        'instructions' => 0,
-        'prompts' => 0,
-        'commands' => 0,
-        'skills' => 0,
-        'capabilities' => 0,
-    ];
-
-    foreach ($files as $file) {
-        if (str_ends_with($file, '.agent.md') || str_contains($file, '/.opencode/agents/')) {
-            $counts['agents']++;
-        }
-
-        if (str_ends_with($file, '.instructions.md')) {
-            $counts['instructions']++;
-        }
-
-        if (str_ends_with($file, '.prompt.md')) {
-            $counts['prompts']++;
-        }
-
-        if (str_contains($file, '/.opencode/commands/') && str_ends_with($file, '.md')) {
-            $counts['commands']++;
-        }
-
-        if (str_ends_with($file, '/SKILL.md')) {
-            $counts['skills']++;
-        }
-
-        if (str_ends_with($file, '/CAPABILITY.md')) {
-            $counts['capabilities']++;
-        }
-    }
-
-    return $counts;
-}
-
-function aiFindExampleReadme(array $files): ?string
-{
-    foreach ($files as $file) {
-        if (str_ends_with($file, '/README.md')) {
-            return $file;
-        }
-    }
-
-    return null;
-}
-
-function aiExampleTitle(string $root, string $relativeDirectory, ?string $readmePath, array $files): string
-{
-    $slug = basename($relativeDirectory);
-
-    $preferredTitles = [
-        'generic-placeholder-repo' => 'Generic Placeholder Starter',
-        'expanded-placeholder-repo' => 'Expanded Placeholder Blueprint',
-        'worked-opencode-repo' => 'Acme Orders OpenCode Service',
-        'worked-copilot-repo' => 'Acme Web Copilot Workspace',
-        'worked-dual-tool-repo' => 'Acme Commerce Dual-Tool Monorepo',
-    ];
-
-    if (isset($preferredTitles[$slug])) {
-        return $preferredTitles[$slug];
-    }
-
-    if ($readmePath !== null) {
-        $content = file_get_contents($readmePath) ?: '';
-        $title = aiExtractTitle($content, '');
-
-        if ($title !== '' && preg_match('/<[^>]+>/', $title) !== 1) {
-            return aiNormalizeExampleTitle($title);
-        }
-    }
-
-    foreach ($files as $file) {
-        if (!str_ends_with($file, '/AGENTS.md')) {
-            continue;
-        }
-
-        $content = file_get_contents($file) ?: '';
-        $title = aiExtractTitle($content, '');
-
-        if ($title !== '' && preg_match('/<[^>]+>/', $title) !== 1) {
-            return aiNormalizeExampleTitle($title);
-        }
-    }
-
-    return aiPrettifyExampleSlug($slug);
-}
-
-function aiDescribeExample(
-    string $root,
-    string $relativeDirectory,
-    string $runtime,
-    ?string $readmePath,
-    array $files,
-    array $assetCounts
-): string {
-    $slug = basename($relativeDirectory);
-
-    if ($readmePath !== null) {
-        $content = file_get_contents($readmePath) ?: '';
-        $summary = aiSummarizeMarkdown($content);
-
-        if ($summary !== null && preg_match('/<[^>]+>/', $summary) !== 1) {
-            return $summary;
-        }
-    }
-
-    foreach ($files as $file) {
-        if (!str_ends_with($file, '/AGENTS.md')) {
-            continue;
-        }
-
-        $content = file_get_contents($file) ?: '';
-        $summary = aiSummarizeMarkdown($content);
-
-        if ($summary !== null && preg_match('/<[^>]+>/', $summary) !== 1) {
-            return $summary;
-        }
-    }
-
-    $fallbacks = [
-        'generic-placeholder-repo' => 'Minimal placeholder example that shows folder placement for a shared dual-runtime starter.',
-        'expanded-placeholder-repo' => 'Expanded placeholder example that shows the richer filled-out structure without becoming project-specific.',
-        'worked-opencode-repo' => 'Worked OpenCode-first service example with staged agents, commands, and capability-driven verification.',
-        'worked-copilot-repo' => 'Worked GitHub Copilot example with repo instructions, path guidance, staged agents, and prompt entry points.',
-        'worked-dual-tool-repo' => 'Worked dual-runtime monorepo example with one shared capability layer adapted to OpenCode and GitHub Copilot.',
-    ];
-
-    if (isset($fallbacks[$slug])) {
-        return $fallbacks[$slug];
-    }
-
-    $assetBits = [];
-
-    foreach ($assetCounts as $key => $count) {
-        if ($count > 0) {
-            $assetBits[] = $count . ' ' . $key;
-        }
-    }
-
-    if ($runtime === 'dual-runtime') {
-        return 'Worked dual-runtime example with both GitHub Copilot and OpenCode adapters'
-            . ($assetBits !== [] ? ' across ' . implode(', ', $assetBits) : '')
-            . '.';
-    }
-
-    if ($runtime === 'github-copilot') {
-        return 'Worked GitHub Copilot example for the reusable workflow kit'
-            . ($assetBits !== [] ? ' across ' . implode(', ', $assetBits) : '')
-            . '.';
-    }
-
-    if ($runtime === 'opencode') {
-        return 'Worked OpenCode example for the reusable workflow kit'
-            . ($assetBits !== [] ? ' across ' . implode(', ', $assetBits) : '')
-            . '.';
-    }
-
-    return 'Reference example `' . $slug . '` for package structure and placeholder layout.';
-}
-
-function aiNormalizeExampleTitle(string $title): string
-{
-    $normalized = trim($title);
-    $normalized = preg_replace('/\s*-\s*Repository Instructions$/', '', $normalized) ?? $normalized;
-    $normalized = preg_replace('/\s*-\s*Shared Agent Guidance$/', '', $normalized) ?? $normalized;
-
-    return $normalized;
-}
-
-function aiPrettifyExampleSlug(string $slug): string
-{
-    $words = array_map(
-        static fn (string $part): string => ucfirst($part),
-        preg_split('/-+/', $slug) ?: []
-    );
-
-    return implode(' ', $words);
 }
 
 function aiEscapeTable(string $value): string

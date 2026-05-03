@@ -1,11 +1,15 @@
 # Post Install
 
-- Profile: `copilot`
-- Packs: `adapter-copilot, base, setup-docs, capabilities-core`
+- Profile: `full-governance`
+- Packs: `capabilities-extended-full, hooks-pack, ci-pack, scripts-pack, policy-pack, evidence-pack, adapter-copilot, adapter-opencode, capabilities-extended-lite, base, setup-docs, capabilities-core`
 
 ## How To Use Installed Assets
 
 - Copilot assets: `.github/copilot-instructions.md`, `.github/instructions/`, `.github/agents/`, `.github/prompts/`.
+- OpenCode assets: `.opencode/agents/`, `.opencode/commands/`, `.opencode/skills/`.
+- Scripts installed under `scripts/ai/` for search, context packing, verify, rollback, and investigation flows.
+- Required tools: `bash`, `git`, `jq`, `rg`, `repomix`, `scc`.
+- Optional tools: `fd`, `gh`, `fzf`, `bat`, `delta`, `yq`, `shellcheck`, `semgrep`, `ast-grep`.
 
 ## Commands
 

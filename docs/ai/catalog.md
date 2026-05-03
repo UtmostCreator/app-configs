@@ -26,21 +26,23 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 - `package / package-capability` - 31
 - `package / shared-template` - 3
 - `package / workflow-doc` - 6
-- `package / workflow-template` - 11
+- `package / workflow-template` - 12
 - `root / adapter-doc` - 1
 - `root / adapter-hook` - 2
 - `root / adapter-hook-script` - 1
 - `root / adapter-policy` - 1
-- `root / ai-script` - 30
+- `root / ai-script` - 26
 - `root / capability` - 13
 - `root / cli` - 1
 - `root / exporter` - 1
 - `root / generator` - 1
 - `root / github-copilot-agent` - 8
 - `root / github-copilot-instruction` - 4
-- `root / github-copilot-prompt` - 11
-- `root / opencode-command` - 4
-- `root / opencode-skill` - 6
+- `root / github-copilot-prompt` - 12
+- `root / github-copilot-skill` - 12
+- `root / opencode-agent` - 8
+- `root / opencode-command` - 1
+- `root / opencode-skill` - 12
 - `root / php-reference` - 3
 - `root / root-doc` - 16
 - `root / schema` - 1
@@ -65,10 +67,6 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`ai-script`|ai-task.sh|`scripts/ai/ai-task.sh`|Task-oriented AI workflow helper for routing, context, and verification steps.|
 |`ai-script`|ai-test-select.sh|`scripts/ai/ai-test-select.sh`|Selects likely relevant tests from changed files and task context.|
 |`ai-script`|ai-verify.sh|`scripts/ai/ai-verify.sh`|Project-aware verification gate for AI-driven changes across shell, PHP, JS/TS, and security checks.|
-|`ai-script`|check-batch2.sh|`scripts/ai/check-batch2.sh`|Batch verification helper for grouped AI workflow checks.|
-|`ai-script`|check-batch3.sh|`scripts/ai/check-batch3.sh`|Batch verification helper for grouped AI workflow checks.|
-|`ai-script`|check-batch4a.sh|`scripts/ai/check-batch4a.sh`|Batch verification helper for grouped AI workflow checks.|
-|`ai-script`|check-batch4b.sh|`scripts/ai/check-batch4b.sh`|Batch verification helper for grouped AI workflow checks.|
 |`ai-script`|common.sh|`scripts/ai/common.sh`|Shared helper library for AI workflow scripts, logging, snapshots, and token-budget checks.|
 |`ai-script`|fd-files.sh|`scripts/ai/fd-files.sh`|Repo-aware file discovery wrapper around fd with safer defaults.|
 |`ai-script`|gh-pr-context.sh|`scripts/ai/gh-pr-context.sh`|GitHub PR context wrapper with metadata, diff, checks, reviews, and optional PR-scoped context packing.|
@@ -123,16 +121,40 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-prompt`|project-context|`.github/prompts/project-context.prompt.md`|Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing|
 |`github-copilot-prompt`|regression-test|`.github/prompts/regression-test.prompt.md`|Use when the main task is to create a failing or proving regression test for a reported bug or edge case|
 |`github-copilot-prompt`|release-safety|`.github/prompts/release-safety.prompt.md`|Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards|
+|`github-copilot-prompt`|repo-investigation|`.github/prompts/repo-investigation.prompt.md`|Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence.|
 |`github-copilot-prompt`|review-diff|`.github/prompts/review-diff.prompt.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
 |`github-copilot-prompt`|verify-change|`.github/prompts/verify-change.prompt.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
-|`opencode-command`|bug-regression|`.opencode/commands/bug-regression.md`|Use this command as the runtime entry point for a bounded bug-fix task.|
-|`opencode-command`|plan-slice|`.opencode/commands/plan-slice.md`|Use this command when a task is multi-step, ambiguous, or architecture-affecting.|
-|`opencode-command`|review-diff|`.opencode/commands/review-diff.md`|Compatibility command for diff-first review; prefer the review-diff skill for reusable guidance|
+|`github-copilot-skill`|architecture-plan|`.github/skills/architecture-plan/SKILL.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
+|`github-copilot-skill`|bug-regression|`.github/skills/bug-regression/SKILL.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
+|`github-copilot-skill`|dependency-upgrade|`.github/skills/dependency-upgrade/SKILL.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|
+|`github-copilot-skill`|docs-sync|`.github/skills/docs-sync/SKILL.md`|Use when changed behavior or workflow needs matching documentation updates without broad implementation planning|
+|`github-copilot-skill`|new-feature|`.github/skills/new-feature/SKILL.md`|Use when implementing a bounded feature with existing repository patterns and focused verification|
+|`github-copilot-skill`|plan-slice|`.github/skills/plan-slice/SKILL.md`|Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation|
+|`github-copilot-skill`|project-context|`.github/skills/project-context/SKILL.md`|Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing|
+|`github-copilot-skill`|regression-test|`.github/skills/regression-test/SKILL.md`|Use when the main task is to create a failing or proving regression test for a reported bug or edge case|
+|`github-copilot-skill`|release-safety|`.github/skills/release-safety/SKILL.md`|Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards|
+|`github-copilot-skill`|repo-investigation|`.github/skills/repo-investigation/SKILL.md`|Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence.|
+|`github-copilot-skill`|review-diff|`.github/skills/review-diff/SKILL.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
+|`github-copilot-skill`|verify-change|`.github/skills/verify-change/SKILL.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
+|`opencode-agent`|architect|`.opencode/agents/architect.md`|Use when a change needs scoping, design, ownership decisions, contract boundaries, adapter strategy, or risk posture before implementation|
+|`opencode-agent`|config-maintainer|`.opencode/agents/config-maintainer.md`|Use when changing editor, shell, runtime, or tool configuration while preserving current behavior|
+|`opencode-agent`|implementer|`.opencode/agents/implementer.md`|Use when a bounded implementation slice is clear and focused verification should happen in this repository|
+|`opencode-agent`|refactorer|`.opencode/agents/refactorer.md`|Use when behavior is already correct and the remaining work is structure, readability, duplication reduction, or maintainability|
+|`opencode-agent`|release-auditor|`.opencode/agents/release-auditor.md`|Use when medium or high risk changes need rollout, rollback, migration, observability, preview, or install-safety review|
+|`opencode-agent`|researcher|`.opencode/agents/researcher.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
+|`opencode-agent`|reviewer|`.opencode/agents/reviewer.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
+|`opencode-agent`|workflow-auditor|`.opencode/agents/workflow-auditor.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
 |`opencode-command`|verify|`.opencode/commands/verify.md`|Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
+|`opencode-skill`|architecture-plan|`.opencode/skills/architecture-plan/SKILL.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
 |`opencode-skill`|bug-regression|`.opencode/skills/bug-regression/SKILL.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
 |`opencode-skill`|dependency-upgrade|`.opencode/skills/dependency-upgrade/SKILL.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|
+|`opencode-skill`|docs-sync|`.opencode/skills/docs-sync/SKILL.md`|Use when changed behavior or workflow needs matching documentation updates without broad implementation planning|
+|`opencode-skill`|new-feature|`.opencode/skills/new-feature/SKILL.md`|Use when implementing a bounded feature with existing repository patterns and focused verification|
+|`opencode-skill`|plan-slice|`.opencode/skills/plan-slice/SKILL.md`|Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation|
 |`opencode-skill`|project-context|`.opencode/skills/project-context/SKILL.md`|Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing|
+|`opencode-skill`|regression-test|`.opencode/skills/regression-test/SKILL.md`|Use when the main task is to create a failing or proving regression test for a reported bug or edge case|
 |`opencode-skill`|release-safety|`.opencode/skills/release-safety/SKILL.md`|Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards|
+|`opencode-skill`|repo-investigation|`.opencode/skills/repo-investigation/SKILL.md`|Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence.|
 |`opencode-skill`|review-diff|`.opencode/skills/review-diff/SKILL.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
 |`opencode-skill`|verify-change|`.opencode/skills/verify-change/SKILL.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
 |`php-reference`|design-patterns|`reference/php/design-patterns`|Primary local PHP design pattern corpus for agent and human lookups.|
@@ -254,6 +276,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`workflow-template`|project-context|`packages/ai-universal-rules/templates/workflows/project-context.md`|Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing|
 |`workflow-template`|regression-test|`packages/ai-universal-rules/templates/workflows/regression-test.md`|Use when the main task is to create a failing or proving regression test for a reported bug or edge case|
 |`workflow-template`|release-safety|`packages/ai-universal-rules/templates/workflows/release-safety.md`|Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards|
+|`workflow-template`|repo-investigation|`packages/ai-universal-rules/templates/workflows/repo-investigation.md`|Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence.|
 |`workflow-template`|review-diff|`packages/ai-universal-rules/templates/workflows/review-diff.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
 |`workflow-template`|verify-change|`packages/ai-universal-rules/templates/workflows/verify-change.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
 

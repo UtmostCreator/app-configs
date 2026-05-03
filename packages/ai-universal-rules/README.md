@@ -57,6 +57,12 @@ Minimum base install for most repositories:
 
 Add `bug-regression`, `release-safety`, and `dependency-upgrade` only when the repository actually needs them.
 
+Installer-first adoption is the supported path in this source repository:
+
+- use `../../docs/ai/install-order.md` for the real command order and selective pack recipes
+- use `../../docs/ai/external-repo-install.md` for external target examples and overwrite rules
+- use `docs/INSTALL-CATALOG.md` for the generated profile and pack index
+
 For non-trivial changes, use the trimmed risk model:
 
 - `low`

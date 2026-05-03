@@ -23,43 +23,43 @@ Copy these files into your target repository:
 
 Start with only these four agents:
 
-- `templates/opencode/agents/researcher.md`
-- `templates/opencode/agents/architect.md`
-- `templates/opencode/agents/implementer.md`
-- `templates/opencode/agents/reviewer.md`
+- `templates/core/agents/researcher.md`
+- `templates/core/agents/architect.md`
+- `templates/core/agents/implementer.md`
+- `templates/core/agents/reviewer.md`
 
 Recommended optional agents:
 
-- `templates/opencode/agents/release-auditor.md` for `medium` or `high` risk work
-- `templates/opencode/agents/refactorer.md` when behavior is already correct and the remaining work is structural cleanup
+- `templates/core/agents/release-auditor.md` for `medium` or `high` risk work
+- `templates/core/agents/refactorer.md` when behavior is already correct and the remaining work is structural cleanup
 
 Do not start with specialist agents beyond this set.
 
 ## Core Entry Points
 
-Start with only these commands:
+Start with only these entry points:
 
-- `templates/opencode/commands/plan-slice.md`
-- `templates/opencode/commands/bug-regression.md`
+- `templates/workflows/plan-slice.md`
+- `templates/workflows/bug-regression.md`
 
 Optional legacy helpers if you want direct command wrappers for narrower tasks:
 
-- `templates/opencode/commands/review-diff.md`
-- `templates/opencode/commands/verify.md`
+- `templates/workflows/review-diff.md`
+- `templates/commands/verify.md`
 
 ## Core Skills
 
-Start with only these skills:
+Start with only these skill sources:
 
-- `templates/opencode/skills/project-context/SKILL.md`
-- `templates/opencode/skills/verify-change/SKILL.md`
-- `templates/opencode/skills/review-diff/SKILL.md`
+- `templates/workflows/project-context.md`
+- `templates/workflows/verify-change.md`
+- `templates/workflows/review-diff.md`
 
 Add when the repo really needs them:
 
-- `templates/opencode/skills/bug-regression/SKILL.md`
-- `templates/opencode/skills/release-safety/SKILL.md`
-- `templates/opencode/skills/dependency-upgrade/SKILL.md`
+- `templates/workflows/bug-regression.md`
+- `templates/workflows/release-safety.md`
+- `templates/workflows/dependency-upgrade.md`
 
 ## Setup Steps
 

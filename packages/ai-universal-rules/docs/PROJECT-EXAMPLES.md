@@ -1,12 +1,8 @@
-# Project Examples
+# Project Patterns
 
-These examples show how the capability-first model can be used in very different repositories without rewriting the whole instruction system.
+These patterns show how the capability-first model can be used in very different repositories without rewriting the whole instruction system.
 
-For worked repository trees, see:
-
-- `examples/worked-opencode-repo/`
-- `examples/worked-copilot-repo/`
-- `examples/worked-dual-tool-repo/`
+Use them as scenario guides when adapting the canonical templates in `templates/core/`, `templates/capabilities/`, and the runtime adapters.
 
 ## Project N: Laravel + Vue Product App
 

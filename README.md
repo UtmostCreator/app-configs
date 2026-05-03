@@ -83,7 +83,6 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 |-- packages/ai-universal-rules/
 |   |-- catalog.json
 |   |-- docs/
-|   |-- examples/
 |   |-- manifest.json
 |   |-- manifest.yml
 |   `-- templates/
@@ -200,7 +199,6 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 ## Important Notes
 
 - Some settings are intentionally machine-specific; shared docs should call those out instead of hiding them
-- Example repos under `packages/ai-universal-rules/examples/` are references, not root-repo behavior
 - This repo prefers a practical production-grade workflow model over a large catalog of agents, skills, or plugins
 - Safe repo-local read-only commands are approval-free by default unless they touch privileged access, secrets, or external side effects
 

@@ -18,8 +18,8 @@ Start with the most stable primitives first:
 - `templates/capabilities/project-context/` -> `docs/ai/capabilities/project-context/`
 - `templates/capabilities/verify-change/` -> `docs/ai/capabilities/verify-change/`
 - `templates/capabilities/review-diff/` -> `docs/ai/capabilities/review-diff/`
-- `templates/github-copilot/instructions/architecture.instructions.md`
-- `templates/github-copilot/instructions/testing.instructions.md`
+- `templates/instructions/architecture.instructions.md`
+- `templates/instructions/testing.instructions.md`
 
 Add other path instructions only when the repo truly needs them.
 
@@ -27,15 +27,15 @@ Add other path instructions only when the repo truly needs them.
 
 If your Copilot surface supports custom agents reliably, start with only these four:
 
-- `templates/github-copilot/agents/researcher.agent.md`
-- `templates/github-copilot/agents/architect.agent.md`
-- `templates/github-copilot/agents/implementer.agent.md`
-- `templates/github-copilot/agents/reviewer.agent.md`
+- `templates/core/agents/researcher.md`
+- `templates/core/agents/architect.md`
+- `templates/core/agents/implementer.md`
+- `templates/core/agents/reviewer.md`
 
 Recommended optional agents:
 
-- `templates/github-copilot/agents/release-auditor.agent.md` for `medium` or `high` risk work
-- `templates/github-copilot/agents/refactorer.agent.md` when behavior is already correct and only structure should change
+- `templates/core/agents/release-auditor.md` for `medium` or `high` risk work
+- `templates/core/agents/refactorer.md` when behavior is already correct and only structure should change
 
 Do not start with more agents than this.
 
@@ -43,12 +43,12 @@ Do not start with more agents than this.
 
 If your surface supports prompt files, start with only:
 
-- `templates/github-copilot/prompts/regression-test.prompt.md`
-- `templates/github-copilot/prompts/release-readiness.prompt.md`
+- `templates/workflows/regression-test.md`
+- `templates/workflows/release-safety.md`
 
 Recommended optional prompt:
 
-- `templates/github-copilot/prompts/docs-sync.prompt.md`
+- `templates/workflows/docs-sync.md`
 
 Do not make prompt files the required base install.
 

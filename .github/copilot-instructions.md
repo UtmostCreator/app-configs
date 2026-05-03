@@ -9,7 +9,7 @@ They should remain valid even if advanced agent features or prompt files are una
 - Project: `app-configs`
 - Type: `php project`
 - Summary: `AI workflow starter for app-configs`
-- Active paths: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
+- Active paths: `.ai-install-manifest.json,.copilot-logs,.editorconfig,.eslintrc.json,.gitattributes,.github,.gitignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,agents,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
 - Avoid by default: `unknown`
 - Primary entrypoints: `README.md, docs/ai/project-context.md`
 - Project context file: `docs/ai/project-context.md`

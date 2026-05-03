@@ -2,28 +2,39 @@
 name: bug-regression
 description: Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence
 argument-hint: "Describe the bug, expected behavior, and where it appears"
+compatibility: opencode
 ---
 
-This prompt file is an optional workflow asset. Keep a fallback path that uses repository instructions and direct chat prompts if preview support or prompt-file enablement is unavailable.
+## What I Do
 
-Use this prompt for bug-fix work that should start from a focused reproduction.
+I drive a minimal bug-fix workflow: reproduce, localize, fix narrowly, verify, and report evidence.
 
-Do not use this prompt for feature planning, broad refactors, or release-only review.
+## When To Use Me
 
-Reproduce the reported bug with the smallest practical automated test first when appropriate.
+- when a user reports broken behavior
+- when a fix should start with a regression test or deterministic reproduction
+- when the safest path is to keep the change tightly bounded
 
-Then:
+## Do Not Use Me For
 
-1. confirm the test fails when practical
-2. apply the smallest safe fix
-3. follow the verification ladder: focused proof first, affected layer tests second, broader repository verification third, build as a smoke check when relevant, and release-safety review only when risk warrants it
-4. summarize root cause, fix, and evidence
+- feature planning, broad refactors, or release-only review
 
-Defer to project context for repository facts and to `verify-change` or `review-diff` when those narrower workflows fit better.
+## Read Alongside
 
-Do not perform unrelated refactors.
+- `docs/ai/capabilities/bug-regression/CAPABILITY.md`
+- `docs/ai/capabilities/bug-regression/checklist.md`
+- `docs/ai/capabilities/bug-regression/gotchas.md`
+- `docs/ai/capabilities/bug-regression/examples.md`
 
-Gotchas:
+## Workflow
+
+1. identify the owning layer
+2. add the smallest practical failing reproduction
+3. apply the smallest safe fix
+4. follow the verification ladder: focused proof first, affected layer tests second, broader repository verification third, build as a smoke check when relevant, release-safety review only when risk warrants it
+5. report reproduction, root cause, fix, and evidence
+
+## Gotchas
 
 - do not weaken assertions to force a pass
 - do not skip the reproduction step when a focused check is practical

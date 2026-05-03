@@ -1,19 +1,12 @@
 # AI Setup
 
-- Installed at: `2026-05-01T00:03:26+00:00`
-- Profile: `full-governance`
+- Installed at: `2026-05-03T21:14:43+00:00`
+- Profile: `copilot`
 - Package: `ai-universal-rules`
 
 ## Installed Packs
 
-- `capabilities-extended-full`
-- `hooks-pack`
-- `ci-pack`
-- `scripts-pack`
-- `policy-pack`
-- `evidence-pack`
-- `adapter-opencode`
-- `capabilities-extended-lite`
+- `adapter-copilot`
 - `base`
 - `setup-docs`
 - `capabilities-core`

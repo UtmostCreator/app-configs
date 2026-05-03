@@ -2,7 +2,7 @@
 set -euo pipefail
 
 COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=./common.sh
+# shellcheck source=scripts/ai/common.sh
 source "$COMMON_DIR/common.sh"
 
 shopt -s extglob
@@ -13,7 +13,7 @@ fi
 usage() {
     cat <<'EOF'
 Usage:
-  scripts/copilot/repomix-scc-router.sh <stats|plan|pack|all|clean|purge> [root] [options]
+  scripts/ai/repomix-scc-router.sh <stats|plan|pack|all|clean|purge> [root] [options]
 
 Commands:
   stats   Run scc analysis and write file/folder metrics.
@@ -43,11 +43,11 @@ Options:
   --help                      Show this help
 
 Examples:
-  scripts/copilot/repomix-scc-router.sh stats . --depth 1
-  scripts/copilot/repomix-scc-router.sh plan . --depth 2 --top 20
-  scripts/copilot/repomix-scc-router.sh all . --depth 1 --compress --split-size 10mb
-  scripts/copilot/repomix-scc-router.sh clean .
-  scripts/copilot/repomix-scc-router.sh purge .
+  scripts/ai/repomix-scc-router.sh stats . --depth 1
+  scripts/ai/repomix-scc-router.sh plan . --depth 2 --top 20
+  scripts/ai/repomix-scc-router.sh all . --depth 1 --compress --split-size 10mb
+  scripts/ai/repomix-scc-router.sh clean .
+  scripts/ai/repomix-scc-router.sh purge .
 EOF
 }
 
@@ -58,6 +58,25 @@ die() {
 
 log() {
     printf '[repomix-router] %s\n' "$1"
+}
+
+confirm_context_delete() {
+    local action="$1"
+    local target="$2"
+
+    log "requested destructive context action: $action -> $target"
+
+    if [[ "${APPROVE_CONTEXT_DELETE:-0}" == "1" ]]; then
+        return 0
+    fi
+
+    if [[ -t 0 ]] && [[ "${CI:-}" != "true" ]]; then
+        printf 'Continue with %s on %s? [y/N] ' "$action" "$target" >&2
+        read -r confirm
+        [[ "$confirm" =~ ^[Yy]$ ]] && return 0
+    fi
+
+    die "context deletion requires APPROVE_CONTEXT_DELETE=1 or interactive confirmation"
 }
 
 need_bin() {
@@ -585,6 +604,7 @@ run_clean() {
         return 0
     fi
 
+    confirm_context_delete "clean" "$bundles_dir"
     rm -rf "$bundles_dir"
     log "removed generated bundles from $bundles_dir"
 }
@@ -598,6 +618,7 @@ run_purge() {
     [[ "$OUTPUT_DIR_ABS" != "/" ]] || die "refusing to delete root directory"
     [[ "$OUTPUT_DIR_ABS" != "$ROOT" ]] || die "refusing to delete repository root"
 
+    confirm_context_delete "purge" "$OUTPUT_DIR_ABS"
     rm -rf "$OUTPUT_DIR_ABS"
     log "removed output directory $OUTPUT_DIR_ABS"
 }
@@ -759,7 +780,7 @@ done
 ROOT="$(abs_path "$ROOT_INPUT")"
 [[ -d "$ROOT" ]] || die "root directory '$ROOT' does not exist"
 
-(cd "$ROOT" && require_clean_secret_scan "$@")
+require_clean_secret_scan "$ROOT"
 
 if [[ "$OUTPUT_DIR" = /* ]]; then
     OUTPUT_DIR_ABS="$OUTPUT_DIR"

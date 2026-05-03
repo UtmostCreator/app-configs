@@ -37,12 +37,12 @@ $requiredFiles = [
     'docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md',
     '.github/copilot-instructions.md',
     '.github/instructions/php.instructions.md',
-    'scripts/copilot/common.sh',
-    'scripts/copilot/ai-diff-context.sh',
-    'scripts/copilot/ai-search.sh',
-    'scripts/copilot/ai-edit.sh',
-    'scripts/copilot/ai-verify.sh',
-    'scripts/copilot/ai-rollback.sh',
+    'scripts/ai/common.sh',
+    'scripts/ai/ai-diff-context.sh',
+    'scripts/ai/ai-search.sh',
+    'scripts/ai/ai-edit.sh',
+    'scripts/ai/ai-verify.sh',
+    'scripts/ai/ai-rollback.sh',
     'policies/copilot/policy.yaml',
     '.schemas/evidence-event.schema.json',
     '.copilot-logs/README.md',
@@ -209,8 +209,8 @@ foreach ($requiredDirectories as $relativePath) {
 
 $hookTargets = [
     '.github/hooks/tool-policy.json' => [
-        'scripts/copilot/pre-tool-use.sh',
-        'scripts/copilot/post-tool-use.sh',
+        'scripts/ai/pre-tool-use.sh',
+        'scripts/ai/post-tool-use.sh',
     ],
     '.github/hooks/tool-guardian.json' => [
         '.github/hooks/scripts/tool-guardian.ps1',
@@ -308,7 +308,7 @@ if ($projectContextContent !== null) {
 $copilotToolingContent = safeRead($root, 'docs/ai/copilot-tooling.md');
 
 if ($copilotToolingContent !== null) {
-    foreach (['scripts/copilot/common.sh', 'scripts/copilot/ai-search.sh', 'scripts/copilot/ai-edit.sh', 'scripts/copilot/ai-verify.sh', 'scripts/copilot/ai-diff-context.sh', 'scripts/copilot/ai-rollback.sh', 'scripts/copilot/rg-code.sh', 'scripts/copilot/gh-pr-context.sh'] as $scriptReference) {
+    foreach (['scripts/ai/common.sh', 'scripts/ai/ai-search.sh', 'scripts/ai/ai-edit.sh', 'scripts/ai/ai-verify.sh', 'scripts/ai/ai-diff-context.sh', 'scripts/ai/ai-rollback.sh', 'scripts/ai/rg-code.sh', 'scripts/ai/gh-pr-context.sh'] as $scriptReference) {
         if (strpos($copilotToolingContent, $scriptReference) === false) {
             $warnings[] = "docs/ai/copilot-tooling.md should reference {$scriptReference}";
         }
@@ -324,7 +324,7 @@ if ($copilotToolingContent !== null) {
 $justfileContent = safeRead($root, 'justfile');
 
 if ($justfileContent !== null) {
-    foreach (['scripts/copilot/ai-search.sh', 'scripts/copilot/ai-edit.sh', 'scripts/copilot/ai-verify.sh', 'scripts/copilot/ai-diff-context.sh', 'scripts/copilot/ai-rollback.sh', 'scripts/copilot/gh-pr-context.sh', 'scripts/copilot/rg-code.sh', 'scripts/copilot/repomix-scc-router.sh'] as $scriptReference) {
+    foreach (['scripts/ai/ai-search.sh', 'scripts/ai/ai-edit.sh', 'scripts/ai/ai-verify.sh', 'scripts/ai/ai-diff-context.sh', 'scripts/ai/ai-rollback.sh', 'scripts/ai/gh-pr-context.sh', 'scripts/ai/rg-code.sh', 'scripts/ai/repomix-scc-router.sh'] as $scriptReference) {
         if (strpos($justfileContent, $scriptReference) === false) {
             $warnings[] = "justfile should expose {$scriptReference} when the script is part of the supported tool layer";
         }
@@ -375,8 +375,10 @@ if ($claudeContent !== null && strpos($claudeContent, 'docs/ai/integration-matri
     $warnings[] = 'CLAUDE.md should reference docs/ai/integration-matrix.md';
 }
 
-if ($errors === [] && $warnings === []) {
-    $oks[] = 'root AI workflow validation passed';
+if ($errors === []) {
+    $oks[] = $warnings === []
+        ? 'rootAIworkflowvalidationpassed'
+        : 'rootAIworkflowvalidationpassedwithwarnings';
 }
 
 foreach ($oks as $message) {

@@ -2,6 +2,7 @@
 # Unified search wrapper so agents do not guess which discovery tool to call.
 
 set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 usage() {

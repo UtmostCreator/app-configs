@@ -41,7 +41,7 @@ function aiAdvisorScan(string $root): array
         if (str_starts_with($f, 'tests/shell/') && str_ends_with($f, '.bats')) {
             $counts['tests_shell']++;
         }
-        if (str_starts_with($f, 'scripts/copilot/') && str_ends_with($f, '.sh')) {
+        if (str_starts_with($f, 'scripts/ai/') && str_ends_with($f, '.sh')) {
             $counts['scripts_copilot']++;
         }
         if (str_starts_with($f, 'scripts/ai/') && str_ends_with($f, '.sh')) {

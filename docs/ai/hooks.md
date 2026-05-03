@@ -7,8 +7,8 @@ Hooks are optional adapter-level enforcement, not the canonical workflow source.
 - `.github/hooks/tool-guardian.json`
 - `.github/hooks/tool-policy.json`
 - `.github/hooks/scripts/tool-guardian.ps1`
-- `scripts/copilot/pre-tool-use.sh`
-- `scripts/copilot/post-tool-use.sh`
+- `scripts/ai/pre-tool-use.sh`
+- `scripts/ai/post-tool-use.sh`
 - `.husky/pre-commit`
 - `.husky/commit-msg`
 - `.lefthook.yml`
@@ -20,13 +20,13 @@ The repo also includes optional git commit hooks that both Husky and Lefthook ca
 
 ## Current Guard Scope
 
-The bash hook (`scripts/copilot/pre-tool-use.sh`) enforces the three-tier command risk taxonomy from `docs/ai/command-risk-taxonomy.md`:
+The bash hook (`scripts/ai/pre-tool-use.sh`) enforces the three-tier command risk taxonomy from `docs/ai/command-risk-taxonomy.md`:
 
 - **Tier 1 (read-only)** — auto-approved: pure read CLI tools, git history/diff/blame, scan-only security tools, read-only copilot wrapper scripts, and read-only-adjacent generated-output wrappers
 - **Tier 2 (modification)** — confirmation required: `git commit`, `git stash push/pop/drop`, `ai-edit` apply mode
 - **Tier 3 (deletion/recovery)** — denied or explicit approval required: `rm`, destructive git (`git reset --hard`, `git push --force`), `ai-rollback apply`, `repomix-scc-router clean/purge`, `just context-clean/purge`
 
-When `COPILOT_STRICT_ALLOWLIST=1` is set in the shell that launches Copilot CLI, the hook also denies commands outside the explicit read-only and approved-wrapper list. In practice this forces raw `grep`, `find`, and `cat`-style AI tool use toward the repo wrappers such as `scripts/copilot/rg-code.sh`, `scripts/copilot/fd-files.sh`, and `scripts/copilot/preview-file.sh`.
+When `COPILOT_STRICT_ALLOWLIST=1` is set in the shell that launches Copilot CLI, the hook also denies commands outside the explicit read-only and approved-wrapper list. In practice this forces raw `grep`, `find`, and `cat`-style AI tool use toward the repo wrappers such as `scripts/ai/rg-code.sh`, `scripts/ai/fd-files.sh`, and `scripts/ai/preview-file.sh`.
 
 Additionally blocked regardless of tier:
 

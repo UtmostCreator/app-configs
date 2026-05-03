@@ -107,7 +107,7 @@ function aiInstallerRun(array $argv): int
     aiInstallerLog('1) review AGENTS.md and docs/ai/project-context.md');
     aiInstallerLog('2) run php tools/ai/validate-ai-config.php');
     aiInstallerLog('3) run php tools/ai/validate-ai-catalog.php (if catalog files changed)');
-    aiInstallerLog('4) run bash scripts/ai/repomix-context-tree.sh analyze . (or scripts/copilot/...)');
+    aiInstallerLog('4) run bash scripts/ai/repomix-context-tree.sh analyze . (or scripts/ai/...)');
     aiInstallerLog('5) run php tools/ai/ai.php advisor --all');
 
     if (($config['outputJson'] ?? '') !== '') {

@@ -36,16 +36,24 @@ agent_session_init() {
 log_json() {
     local event="${1:-event}"
     local payload="${2:-{}}"
+    local payload_json
     local entry
+
+    if ! payload_json="$(jq -c . <<<"$payload" 2>/dev/null)"; then
+        payload_json="$(jq -cn --arg raw "$payload" '{raw:$raw}')"
+    fi
+
     entry="$(jq -cn \
         --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
         --arg session "${SESSION_ID:-unknown}" \
         --arg script "$(basename "${BASH_SOURCE[1]:-unknown}")" \
         --arg event "$event" \
-        --argjson data "$payload" \
+        --argjson data "$payload_json" \
         '{ts:$ts, session:$session, script:$script, event:$event, data:$data}')"
+
     mkdir -p "$COPILOT_LOG_DIR"
     printf '%s\n' "$entry" >>"${COPILOT_LOG_DIR}/tool-usage.jsonl"
+
     if [[ -n "${SESSION_LOG:-}" ]]; then
         printf '%s\n' "$entry" >>"$SESSION_LOG"
     fi
@@ -105,11 +113,43 @@ run_with_timeout() {
     fi
 }
 
-estimate_tokens() {
+require_clean_secret_scan() {
+    local target="${1:-.}"
+
+    if [[ "${SECRETS_SCAN:-1}" != "1" ]]; then
+        log_warn "SECRETS_SCAN disabled"
+        return 0
+    fi
+
+    if ! secrets_scan "$target"; then
+        die "secrets detected; refusing to continue"
+    fi
+}
+
+estimate_file_tokens_fallback() {
     local file="${1:?file required}"
     local bytes
     bytes="$(wc -c <"$file" | tr -d ' ')"
-    echo $((bytes / 4))
+    echo $(((bytes + 3) / 4))
+}
+
+estimate_tokens() {
+    local file="${1:?file required}"
+
+    if [[ -n "${TOKEN_ESTIMATOR_CMD:-}" ]]; then
+        local estimated=""
+
+        estimated="$($TOKEN_ESTIMATOR_CMD "$file" 2>/dev/null || true)"
+
+        if [[ "$estimated" =~ ^[0-9]+$ ]]; then
+            printf '%s\n' "$estimated"
+            return 0
+        fi
+
+        log_warn "TOKEN_ESTIMATOR_CMD failed or returned non-integer output; falling back to bytes/4"
+    fi
+
+    estimate_file_tokens_fallback "$file"
 }
 
 within_token_budget() {
@@ -133,28 +173,221 @@ secrets_scan() {
 snapshot_create() {
     local label="${1:-snap}"
     local session="${SESSION_ID:-manual}"
-    local snap_file
-    snap_file="${COPILOT_SNAPSHOT_DIR}/${session}-${label}-$(date +%H%M%S).patch"
+    local timestamp
+    local snap_base
+    local patch_file
+    local manifest_file
+    local manifest_tmp
+    local untracked_list
+    local untracked_archive
+    local base_ref
+    local root
+    local has_untracked_archive_json=false
+
+    git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
+
+    root="$(git_root)"
+    timestamp="$(date +%H%M%S)"
+    base_ref="$(git -C "$root" rev-parse HEAD)"
+
     mkdir -p "$COPILOT_SNAPSHOT_DIR"
-    git diff --binary HEAD >"$snap_file"
-    if [[ ! -s "$snap_file" ]]; then
-        git rev-parse HEAD >"${snap_file%.patch}.ref"
-        rm -f "$snap_file"
-        snap_file="${snap_file%.patch}.ref"
+
+    snap_base="${COPILOT_SNAPSHOT_DIR}/${session}-${label}-${timestamp}"
+    patch_file="${snap_base}.patch"
+    manifest_file="${snap_base}.manifest.json"
+    manifest_tmp="${manifest_file}.tmp"
+    untracked_list="${snap_base}.untracked.txt"
+    untracked_archive="${snap_base}.untracked.tar.gz"
+
+    pushd "$root" >/dev/null
+
+    git diff --binary HEAD >"$patch_file"
+    git ls-files --others --exclude-standard >"$untracked_list"
+
+    if [[ -s "$untracked_list" ]]; then
+        if command -v tar >/dev/null 2>&1; then
+            if tar -czf "$untracked_archive" -T "$untracked_list" 2>/dev/null; then
+                has_untracked_archive_json=true
+            else
+                rm -f "$untracked_archive"
+                log_warn "failed to archive untracked files for snapshot"
+            fi
+        else
+            log_warn "tar not installed; untracked file contents will not be archived"
+        fi
     fi
-    log_json "snapshot.create" "$(jq -cn --arg file "$snap_file" '{file:$file}')" || true
-    printf '%s\n' "$snap_file"
+
+    popd >/dev/null
+
+    jq -n \
+        --arg version "2" \
+        --arg session "$session" \
+        --arg label "$label" \
+        --arg base_ref "$base_ref" \
+        --arg root "$root" \
+        --arg patch_file "$patch_file" \
+        --arg manifest_file "$manifest_file" \
+        --arg untracked_list "$untracked_list" \
+        --arg untracked_archive "$untracked_archive" \
+        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --argjson has_untracked_archive "$has_untracked_archive_json" \
+        '{
+          version: ($version | tonumber),
+          session: $session,
+          label: $label,
+          base_ref: $base_ref,
+          root: $root,
+          patch_file: $patch_file,
+          manifest_file: $manifest_file,
+          untracked_list: $untracked_list,
+          untracked_archive: (if $has_untracked_archive then $untracked_archive else null end),
+          has_untracked_archive: $has_untracked_archive,
+          ts: $ts
+        }' >"$manifest_tmp"
+
+    mv "$manifest_tmp" "$manifest_file"
+
+    log_json "snapshot.create" "$(cat "$manifest_file")" || true
+    printf '%s\n' "$manifest_file"
+}
+
+_snapshot_manifest_value() {
+    local manifest="${1:?manifest required}"
+    local key="${2:?key required}"
+    jq -r --arg key "$key" '.[$key] // empty' "$manifest"
+}
+
+_snapshot_path_from_manifest() {
+    local manifest="${1:?manifest required}"
+    local key="${2:?key required}"
+    local value
+    local dir
+
+    value="$(_snapshot_manifest_value "$manifest" "$key")"
+    [[ -n "$value" && "$value" != "null" ]] || return 1
+
+    if [[ "$value" = /* || "$value" =~ ^[A-Za-z]: ]]; then
+        printf '%s\n' "$value"
+        return 0
+    fi
+
+    dir="$(dirname "$manifest")"
+    printf '%s/%s\n' "$dir" "$value"
+}
+
+_snapshot_protected_untracked_path() {
+    local path="${1:?path required}"
+
+    case "$path" in
+    .git | .git/*)
+        return 0
+        ;;
+    "$COPILOT_LOG_DIR" | "$COPILOT_LOG_DIR"/*)
+        return 0
+        ;;
+    "$COPILOT_CONTEXT_DIR" | "$COPILOT_CONTEXT_DIR"/*)
+        return 0
+        ;;
+    .copilot-logs | .copilot-logs/*)
+        return 0
+        ;;
+    .repomix-context | .repomix-context/*)
+        return 0
+        ;;
+    esac
+
+    return 1
+}
+
+_snapshot_untracked_existed() {
+    local file="${1:?file required}"
+    local list="${2:?list required}"
+
+    [[ -f "$list" ]] || return 1
+    grep -Fxq "$file" "$list"
+}
+
+snapshot_apply_manifest() {
+    local manifest="${1:?manifest file required}"
+    local root
+    local base_ref
+    local patch_file
+    local untracked_list
+    local untracked_archive
+    local current_untracked=()
+    local path
+
+    [[ -f "$manifest" ]] || die "snapshot manifest not found: $manifest"
+
+    require_bins jq git
+
+    root="$(_snapshot_manifest_value "$manifest" root)"
+    base_ref="$(_snapshot_manifest_value "$manifest" base_ref)"
+    patch_file="$(_snapshot_path_from_manifest "$manifest" patch_file || true)"
+    untracked_list="$(_snapshot_path_from_manifest "$manifest" untracked_list || true)"
+    untracked_archive="$(_snapshot_path_from_manifest "$manifest" untracked_archive || true)"
+
+    [[ -n "$root" && -d "$root" ]] || root="$(git_root)"
+    [[ -n "$base_ref" ]] || die "snapshot manifest missing base_ref"
+
+    (
+        cd "$root"
+
+        log_warn "Applying rollback snapshot. This will reset tracked files to snapshot state."
+
+        mapfile -t current_untracked < <(git ls-files --others --exclude-standard)
+
+        git reset --hard "$base_ref" >/dev/null
+
+        if [[ -n "$patch_file" && -f "$patch_file" && -s "$patch_file" ]]; then
+            git apply --whitespace=fix "$patch_file"
+        fi
+
+        if [[ "${ROLLBACK_REMOVE_CREATED_UNTRACKED:-1}" == "1" ]]; then
+            for path in "${current_untracked[@]+${current_untracked[@]}}"; do
+                [[ -n "$path" ]] || continue
+
+                if _snapshot_protected_untracked_path "$path"; then
+                    continue
+                fi
+
+                if ! _snapshot_untracked_existed "$path" "$untracked_list"; then
+                    rm -f -- "$path"
+                fi
+            done
+        else
+            log_warn "ROLLBACK_REMOVE_CREATED_UNTRACKED=0; created untracked files were not removed"
+        fi
+
+        if [[ -n "$untracked_archive" && -f "$untracked_archive" ]]; then
+            tar -xzf "$untracked_archive"
+        fi
+    )
+
+    log_json "snapshot.apply" "$(cat "$manifest")" || true
 }
 
 snapshot_apply() {
     local snap_file="${1:?snapshot file required}"
+
     [[ -f "$snap_file" ]] || die "snapshot not found: $snap_file"
-    if [[ "$snap_file" == *.ref ]]; then
+
+    case "$snap_file" in
+    *.manifest.json)
+        snapshot_apply_manifest "$snap_file"
+        ;;
+    *.ref)
         local ref
         ref="$(<"$snap_file")"
-        git checkout "$ref" -- .
-    else
+        git reset --hard "$ref"
+        log_json "snapshot.apply.legacy_ref" "$(jq -cn --arg file "$snap_file" --arg ref "$ref" '{file:$file, ref:$ref}')" || true
+        ;;
+    *.patch)
         git apply --whitespace=fix "$snap_file"
-    fi
-    log_json "snapshot.apply" "$(jq -cn --arg file "$snap_file" '{file:$file}')" || true
+        log_json "snapshot.apply.legacy_patch" "$(jq -cn --arg file "$snap_file" '{file:$file}')" || true
+        ;;
+    *)
+        die "unsupported snapshot type: $snap_file"
+        ;;
+    esac
 }

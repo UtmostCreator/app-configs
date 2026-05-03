@@ -7,7 +7,7 @@ Use this guide for a small, practical GitHub Copilot setup in this repository or
 - Canonical workflow policy under `docs/ai/`.
 - Thin runtime adapter at `.github/copilot-instructions.md`.
 - Optional runtime extras in `.github/instructions/`, `.github/agents/`, `.github/prompts/`, `.github/skills/`, and `.github/hooks/`.
-- Wrapper scripts in `scripts/copilot/` for search, edit safety, verification, and context packing.
+- Wrapper scripts in `scripts/ai/` for search, edit safety, verification, and context packing.
 
 ## Minimum install for another repo
 
@@ -30,7 +30,7 @@ Then update project-specific facts in `docs/ai/project-context.md`.
 - `.github/agents/` for staged role workflows.
 - `.github/prompts/` for repeatable task entrypoints.
 - `.github/skills/` for reusable workflow packs.
-- `.github/hooks/` and `scripts/copilot/` for stronger guardrails and telemetry.
+- `.github/hooks/` and `scripts/ai/` for stronger guardrails and telemetry.
 - `docs/ai/copilot-tooling.md` for wrapper-first routing details.
 
 ## Read order

@@ -2,6 +2,7 @@
 # Repo-aware file discovery wrapper.
 
 set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 require_bins fd jq

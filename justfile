@@ -190,6 +190,14 @@ secret-scan-trufflehog:
 health-check mode='full':
   @bash scripts/repo-health-check.sh {{mode}}
 
+# List files not referenced anywhere in the repository (surfaces orphaned docs and unused assets).
+check-refs path='.' opts='':
+  @bash scripts/ai/check-file-refs.sh {{opts}} {{path}}
+
+# Same as check-refs but emit JSON output for downstream processing.
+check-refs-json path='.':
+  @bash scripts/ai/check-file-refs.sh --format json {{path}}
+
 lint:
   @shellcheck -x $(git ls-files '*.sh')
   @shfmt -d $(git ls-files '*.sh')

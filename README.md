@@ -162,12 +162,49 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - Use `scripts/ai/ai-verify.sh` after changes to run the project-aware verification stack
 - Use `scripts/ai/gh-pr-context.sh` for richer PR metadata, checks, reviews, and diff summaries
 - Use `scripts/ai/rg-code.sh` for mode-based search across PHP, JS, config, tracked files, or JSON output
+- Use `scripts/ai/check-file-refs.sh` to find files not referenced anywhere in the repo (surfaces orphaned docs and unused assets)
+- Use `just check-refs` for a quick local invocation, or `just check-refs-json` for machine-readable output
 - Run `php tools/ai/validate-ai-config.php` after changing root workflow files
 - Run `php tools/ai/validate-ai-catalog.php` after changing package metadata or generated docs
 - Run `php tools/ai/generate-ai-catalog.php` after changing cataloged assets or package metadata
 - Run `just ai-check` if you want one local command that wraps the three AI workflow checks above
 - Use `just verify` for the guarded post-edit verification path
 - Use `just edit-ast`, `just edit-text`, and their `-apply` variants instead of raw mass-edit shell commands
+
+### Regenerate And Verify
+
+Use this sequence when you want to refresh the generated AI workflow surfaces in this repository and know exactly what each command updates.
+
+1. `php tools/ai/generate-ai-catalog.php`
+    Updates `docs/ai/catalog.md`, `packages/ai-universal-rules/catalog.json`, `packages/ai-universal-rules/docs/BROWSE.md`, and `llms.txt`.
+2. `php tools/ai/generate-repo-structure.php --with-scc`
+    Updates `docs/ai/generated/repo-structure.json`, `docs/ai/generated/repo-structure.csv`, `docs/ai/generated/repo-structure.md`, and `docs/ai/generated/repo-structure.log`.
+3. `php tools/ai/ai.php install-docs --target . --write`
+    Updates `docs/ai/generated/install-instructions.json`, `docs/ai/generated/install-instructions.md`, `docs/ai/generated/install-catalog.json`, `docs/ai/generated/install-catalog.md`, `docs/ai/generated/install-docs.json`, `docs/ai/generated/install-docs.md`, and `packages/ai-universal-rules/docs/INSTALL-CATALOG.md`.
+4. `bash scripts/ai/repomix-context-tree.sh all .`
+    Updates `.repomix-context/tree-context/index.md`, `.repomix-context/tree-context/index.json`, `.repomix-context/tree-context/tree-plan.tsv`, `.repomix-context/tree-context/tree-plan.json`, `.repomix-context/tree-context/tree-manifest.json`, file metrics, folder metrics, and route bundles under `.repomix-context/tree-context/bundles/`.
+5. `bash scripts/ai/repo-tool-inventory.sh`
+    Regenerates `docs/ai/repo-required-tools.md` from the tracked scripts and workflow requirements.
+6. `php tools/ai/ai.php install --target . --profile full-governance --reinstall --dry-run`
+    Refreshes `docs/ai/generated/install.json` and `docs/ai/generated/install.md` with the current install plan only; no managed files are changed.
+7. `php tools/ai/ai.php install --target . --profile full-governance --reinstall --backup-only --apply`
+    Creates the explicit backup under `.ai-backups/install-TIMESTAMP/` and writes the backup id into `docs/ai/generated/install.json`.
+8. `php tools/ai/ai.php install --target . --profile full-governance --reinstall --apply --backup BACKUP_ID --allow-placeholders`
+    Applies the managed Copilot/OpenCode refresh for the current repository and rewrites `docs/ai/generated/install.json` and `docs/ai/generated/install.md` with the transaction result.
+9. `php tools/ai/ai.php placeholders`
+    Writes `docs/ai/generated/placeholders.json` and `docs/ai/generated/placeholders.md` so you can see which intentionally templated files still contain placeholders.
+10. `php tools/ai/validate-ai-config.php`
+     Validation only. Generates no repo files; checks root workflow surfaces and references.
+11. `php tools/ai/validate-ai-catalog.php`
+     Validation only. Generates no repo files; checks package/catalog metadata integrity.
+12. `php tools/ai/generate-ai-catalog.php --check`
+     Check mode only. Generates no files; confirms the catalog outputs are already current.
+13. `php tools/ai/ai.php verify --json`
+     Writes `docs/ai/generated/verify.json` and `docs/ai/generated/verify.md` with the unified verification result.
+14. `bash scripts/ai/check-file-refs.sh --format json`
+     Emits JSON to stdout only. It does not write repo files and is used to find unreferenced docs, scripts, and assets.
+
+For the broader script catalog, including read-only helpers such as `ai-search.sh`, `gh-pr-context.sh`, `preview-file.sh`, and `query-usage.sh`, use `docs/ai/scripts-reference.md`.
 
 ### GitHub Copilot install and read order
 

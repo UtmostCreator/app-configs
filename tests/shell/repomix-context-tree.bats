@@ -80,7 +80,7 @@ teardown() {
     run bash "$TREE_SCRIPT" plan "$TMP_REPO" --style xml --context-window 20000 --reserved-output 4000 --instruction-overhead 4000 --safety-factor 0.5
     [ "$status" -eq 0 ]
 
-    run awk -F'\t' 'NR>1 && $3=="split" {print $6; exit 0} END{exit 1}' "$TMP_REPO/.repomix-context/tree-context/tree-plan.tsv"
+    run awk -F'\t' 'NR>1 && $3=="split" {print $6; found=1} END{exit(found?0:1)}' "$TMP_REPO/.repomix-context/tree-context/tree-plan.tsv"
     [ "$status" -eq 0 ]
     child_rel="$output"
     [ -f "$TMP_REPO/.repomix-context/tree-context/$child_rel" ]

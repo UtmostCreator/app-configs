@@ -81,6 +81,17 @@ For ordered installation recipes and selective pack examples, use `docs/ai/insta
 - `bash scripts/ai/repomix-scc-router.sh ...`
   - Ranked route planner used by tree-context pipeline.
 
+## File Reference Audit Script
+
+- `bash scripts/ai/check-file-refs.sh [--show-referenced] [--format json] [path]`
+  - Scans all tracked files (via `git ls-files`) and reports which ones are not referenced by any other file in the repository.
+  - Surfaces orphaned docs, unused scripts, and dead assets.
+  - Excludes common config-only dotfiles (`.editorconfig`, `.gitignore`, etc.), generated output directories (`docs/generated/`, `docs/ai/generated/`), and non-authored directories (`vendor/`, `.ai-logs/`).
+  - Options: `--show-referenced` to also list referenced files; `--format json` for machine-readable output.
+  - Exit code `0` when all scanned files are referenced; `1` when unreferenced files are found.
+  - Just aliases: `just check-refs` (plain text) and `just check-refs-json` (JSON output).
+  - Registered in `docs/ai/script-registry.md` and `docs/ai/script-registry.json` under `check-file-refs`.
+
 ## Generated Artifacts Maintained By Scripts
 
 - `docs/ai/catalog.md`

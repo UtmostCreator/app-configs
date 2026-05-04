@@ -57,10 +57,6 @@ This file lists baseline and referenced CLI tools used by the repository AI work
 - `scripts/ai/ai-task.sh`
 - `scripts/ai/ai-test-select.sh`
 - `scripts/ai/ai-verify.sh`
-- `scripts/ai/check-batch2.sh`
-- `scripts/ai/check-batch3.sh`
-- `scripts/ai/check-batch4a.sh`
-- `scripts/ai/check-batch4b.sh`
 - `scripts/ai/common.sh`
 - `scripts/ai/fd-files.sh`
 - `scripts/ai/gh-pr-context.sh`
@@ -87,7 +83,11 @@ This file lists baseline and referenced CLI tools used by the repository AI work
 - `tests/fixtures/repos/minimal/setup.sh`
 - `tools/ai/install-ai-kit.sh`
 - `tools/ai/install-copilot-kit.sh`
+- `tools/ai/install-opencode-kit.sh`
 - `tools/ai/install/base.sh`
+- `tools/ai/install/checks/check-batch2.sh`
+- `tools/ai/install/checks/check-batch3.sh`
+- `tools/ai/install/checks/check-batch4.sh`
 - `tools/ai/install/lib.sh`
 - `tools/ai/install/runtime-copilot.sh`
 - `tools/ai/install/runtime-opencode.sh`

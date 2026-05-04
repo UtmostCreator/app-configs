@@ -176,33 +176,33 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 Use this sequence when you want to refresh the generated AI workflow surfaces in this repository and know exactly what each command updates.
 
 1. `php tools/ai/generate-ai-catalog.php`
-    Updates `docs/ai/catalog.md`, `packages/ai-universal-rules/catalog.json`, `packages/ai-universal-rules/docs/BROWSE.md`, and `llms.txt`.
+   Updates `docs/ai/catalog.md`, `packages/ai-universal-rules/catalog.json`, `packages/ai-universal-rules/docs/BROWSE.md`, and `llms.txt`.
 2. `php tools/ai/generate-repo-structure.php --with-scc`
-    Updates `docs/ai/generated/repo-structure.json`, `docs/ai/generated/repo-structure.csv`, `docs/ai/generated/repo-structure.md`, and `docs/ai/generated/repo-structure.log`.
+   Updates `docs/ai/generated/repo-structure.json`, `docs/ai/generated/repo-structure.csv`, `docs/ai/generated/repo-structure.md`, and `docs/ai/generated/repo-structure.log`.
 3. `php tools/ai/ai.php install-docs --target . --write`
-    Updates `docs/ai/generated/install-instructions.json`, `docs/ai/generated/install-instructions.md`, `docs/ai/generated/install-catalog.json`, `docs/ai/generated/install-catalog.md`, `docs/ai/generated/install-docs.json`, `docs/ai/generated/install-docs.md`, and `packages/ai-universal-rules/docs/INSTALL-CATALOG.md`.
+   Updates `docs/ai/generated/install-instructions.json`, `docs/ai/generated/install-instructions.md`, `docs/ai/generated/install-catalog.json`, `docs/ai/generated/install-catalog.md`, `docs/ai/generated/install-docs.json`, `docs/ai/generated/install-docs.md`, and `packages/ai-universal-rules/docs/INSTALL-CATALOG.md`.
 4. `bash scripts/ai/repomix-context-tree.sh all .`
-    Updates `.repomix-context/tree-context/index.md`, `.repomix-context/tree-context/index.json`, `.repomix-context/tree-context/tree-plan.tsv`, `.repomix-context/tree-context/tree-plan.json`, `.repomix-context/tree-context/tree-manifest.json`, file metrics, folder metrics, and route bundles under `.repomix-context/tree-context/bundles/`.
+   Updates `.repomix-context/tree-context/index.md`, `.repomix-context/tree-context/index.json`, `.repomix-context/tree-context/tree-plan.tsv`, `.repomix-context/tree-context/tree-plan.json`, `.repomix-context/tree-context/tree-manifest.json`, file metrics, folder metrics, and route bundles under `.repomix-context/tree-context/bundles/`.
 5. `bash scripts/ai/repo-tool-inventory.sh`
-    Regenerates `docs/ai/repo-required-tools.md` from the tracked scripts and workflow requirements.
+   Regenerates `docs/ai/repo-required-tools.md` from the tracked scripts and workflow requirements.
 6. `php tools/ai/ai.php install --target . --profile full-governance --reinstall --dry-run`
-    Refreshes `docs/ai/generated/install.json` and `docs/ai/generated/install.md` with the current install plan only; no managed files are changed.
+   Refreshes `docs/ai/generated/install.json` and `docs/ai/generated/install.md` with the current install plan only; no managed files are changed.
 7. `php tools/ai/ai.php install --target . --profile full-governance --reinstall --backup-only --apply`
-    Creates the explicit backup under `.ai-backups/install-TIMESTAMP/` and writes the backup id into `docs/ai/generated/install.json`.
+   Creates the explicit backup under `.ai-backups/install-TIMESTAMP/` and writes the backup id into `docs/ai/generated/install.json`.
 8. `php tools/ai/ai.php install --target . --profile full-governance --reinstall --apply --backup BACKUP_ID --allow-placeholders`
-    Applies the managed Copilot/OpenCode refresh for the current repository and rewrites `docs/ai/generated/install.json` and `docs/ai/generated/install.md` with the transaction result.
+   Applies the managed Copilot/OpenCode refresh for the current repository and rewrites `docs/ai/generated/install.json` and `docs/ai/generated/install.md` with the transaction result.
 9. `php tools/ai/ai.php placeholders`
-    Writes `docs/ai/generated/placeholders.json` and `docs/ai/generated/placeholders.md` so you can see which intentionally templated files still contain placeholders.
+   Writes `docs/ai/generated/placeholders.json` and `docs/ai/generated/placeholders.md` so you can see which intentionally templated files still contain placeholders.
 10. `php tools/ai/validate-ai-config.php`
-     Validation only. Generates no repo files; checks root workflow surfaces and references.
+    Validation only. Generates no repo files; checks root workflow surfaces and references.
 11. `php tools/ai/validate-ai-catalog.php`
-     Validation only. Generates no repo files; checks package/catalog metadata integrity.
+    Validation only. Generates no repo files; checks package/catalog metadata integrity.
 12. `php tools/ai/generate-ai-catalog.php --check`
-     Check mode only. Generates no files; confirms the catalog outputs are already current.
+    Check mode only. Generates no files; confirms the catalog outputs are already current.
 13. `php tools/ai/ai.php verify --json`
-     Writes `docs/ai/generated/verify.json` and `docs/ai/generated/verify.md` with the unified verification result.
+    Writes `docs/ai/generated/verify.json` and `docs/ai/generated/verify.md` with the unified verification result.
 14. `bash scripts/ai/check-file-refs.sh --format json`
-     Emits JSON to stdout only. It does not write repo files and is used to find unreferenced docs, scripts, and assets.
+    Emits JSON to stdout only. It does not write repo files and is used to find unreferenced docs, scripts, and assets.
 
 For the broader script catalog, including read-only helpers such as `ai-search.sh`, `gh-pr-context.sh`, `preview-file.sh`, and `query-usage.sh`, use `docs/ai/scripts-reference.md`.
 
@@ -211,6 +211,8 @@ For the broader script catalog, including read-only helpers such as `ai-search.s
 - Minimum folders and files to copy into another repo: `.github/copilot-instructions.md`, `.github/hooks/tool-policy.json`, `docs/ai/project-context.md`, `docs/ai/workflow.md`, `docs/ai/agents.md`, `docs/ai/failure-handling.md`, `docs/ai/copilot-cli-repo-integration.md`, `docs/ai/capabilities/project-context/`, `docs/ai/capabilities/verify-change/`, `docs/ai/capabilities/review-diff/`, `scripts/ai/`
 - Optional Copilot add-ons after baseline works: `.github/instructions/`, `.github/agents/`, `.github/prompts/`, `.github/skills/`, `.github/hooks/`, `scripts/ai/`, `docs/ai/copilot-tooling.md`
 - For real installer commands instead of manual copying, use `docs/ai/install-order.md` first and `docs/ai/external-repo-install.md` second.
+- For a merge-safe refresh into an existing repo, use `php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile full-governance --runtime github-copilot --with docs-reference-pack --upgrade-suffix=-upgrade`; identical files are skipped, while changed collisions are written as `-upgrade` copies for manual merge.
+- After installing `scripts-pack` into a target repo, run `cd /path/to/target-repo && bash scripts/ai/repo-tool-inventory.sh && bash scripts/ai/repomix-context-tree.sh all .` to regenerate the tool inventory and the default Repomix tree context in that target.
 - Recommended read order in this repo: `README.md` -> `.github/copilot-instructions.md` -> `docs/ai/project-context.md` -> `docs/ai/workflow.md` -> `docs/ai/agents.md` -> `docs/ai/failure-handling.md` -> relevant `docs/ai/capabilities/*`
 - Use `docs/ai/catalog.md` as the live generated inventory when you need the full list of agents, instructions, hooks, prompts, scripts, and canonical docs
 

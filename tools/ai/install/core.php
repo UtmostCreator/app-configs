@@ -59,7 +59,7 @@ function aiInstallerRun(array $argv): int
 
     $applied = [];
     foreach ($plan as $item) {
-        if ($item['action'] === 'SKIP_EXISTING_UNMANAGED' || $item['action'] === 'SKIP_PROTECTED_CORE') {
+        if ($item['action'] === 'SKIP_EXISTING_UNMANAGED' || $item['action'] === 'SKIP_PROTECTED_CORE' || $item['action'] === 'SKIP_IDENTICAL_EXISTING') {
             aiInstallerLog('skip ' . $item['target'] . ' (' . strtolower($item['action']) . ')');
             continue;
         }
@@ -423,7 +423,7 @@ function aiInstallerCreateBackup(string $targetRoot, array $plan): array
     }
 
     foreach ($plan as $item) {
-        if (($item['action'] ?? '') === 'SKIP_EXISTING_UNMANAGED' || ($item['action'] ?? '') === 'SKIP_PROTECTED_CORE') {
+        if (($item['action'] ?? '') === 'SKIP_EXISTING_UNMANAGED' || ($item['action'] ?? '') === 'SKIP_PROTECTED_CORE' || ($item['action'] ?? '') === 'SKIP_IDENTICAL_EXISTING') {
             continue;
         }
         $target = (string) ($item['target'] ?? '');

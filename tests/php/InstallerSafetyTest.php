@@ -262,4 +262,73 @@ class InstallerSafetyTest extends TestCase
             $this->removeTree($target);
         }
     }
+
+    public function testDirectInstallerCanWriteUpgradeCopiesForExistingTargets(): void
+    {
+        $target = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'install_ai_upgrade_' . uniqid('', true);
+        $docsDir = $target . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'ai';
+
+        mkdir($docsDir, 0700, true);
+        file_put_contents($docsDir . DIRECTORY_SEPARATOR . 'failure-handling.md', "# local copy\n");
+
+        try {
+            $command = implode(' ', [
+                escapeshellarg((string) PHP_BINARY),
+                'tools/ai/install-ai-kit.php',
+                '--target',
+                escapeshellarg($target),
+                '--runtime',
+                'github-copilot',
+                '--profile',
+                'custom',
+                '--with',
+                'docs-reference-pack',
+                '--upgrade-suffix',
+                '-upgrade',
+            ]);
+
+            $result = $this->runTool($command);
+            $this->assertSame(0, $result['exit'], $result['stderr']);
+            $this->assertFileExists($docsDir . DIRECTORY_SEPARATOR . 'failure-handling.md');
+            $this->assertSame("# local copy\n", (string) file_get_contents($docsDir . DIRECTORY_SEPARATOR . 'failure-handling.md'));
+            $this->assertFileExists($docsDir . DIRECTORY_SEPARATOR . 'failure-handling-upgrade.md');
+            $this->assertFileExists($docsDir . DIRECTORY_SEPARATOR . 'scripts-reference.md');
+        } finally {
+            $this->removeTree($target);
+        }
+    }
+
+    public function testDirectInstallerSkipsUpgradeCopyWhenTargetIsIdentical(): void
+    {
+        $target = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'install_ai_upgrade_identical_' . uniqid('', true);
+        $docsDir = $target . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'ai';
+        $sourceFile = self::$repoRoot . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'failure-handling.md';
+
+        mkdir($docsDir, 0700, true);
+        copy($sourceFile, $docsDir . DIRECTORY_SEPARATOR . 'failure-handling.md');
+
+        try {
+            $command = implode(' ', [
+                escapeshellarg((string) PHP_BINARY),
+                'tools/ai/install-ai-kit.php',
+                '--target',
+                escapeshellarg($target),
+                '--runtime',
+                'github-copilot',
+                '--profile',
+                'custom',
+                '--with',
+                'docs-reference-pack',
+                '--upgrade-suffix',
+                '-upgrade',
+            ]);
+
+            $result = $this->runTool($command);
+            $this->assertSame(0, $result['exit'], $result['stderr']);
+            $this->assertFileDoesNotExist($docsDir . DIRECTORY_SEPARATOR . 'failure-handling-upgrade.md');
+            $this->assertStringContainsString('skip_identical_existing', $result['stdout']);
+        } finally {
+            $this->removeTree($target);
+        }
+    }
 }

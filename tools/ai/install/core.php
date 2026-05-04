@@ -9,6 +9,7 @@ require_once __DIR__ . '/manifest.php';
 require_once __DIR__ . '/docs.php';
 require_once __DIR__ . '/toolchain.php';
 require_once __DIR__ . '/script-runner.php';
+require_once __DIR__ . '/copilot-agent-renderer.php';
 
 function aiInstallerRun(array $argv): int
 {
@@ -71,6 +72,9 @@ function aiInstallerRun(array $argv): int
         $dest = $config['targetRoot'] . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $item['target']);
         if ($item['type'] === 'file') {
             aiInstallerCopyFile($src, $dest);
+        } elseif (($item['install_type'] ?? '') === 'copilot-agents') {
+            $scriptsRoot = $config['targetRoot'] . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'ai';
+            aiInstallerCopyDirAsCopilotAgents($src, $dest, $scriptsRoot);
         } elseif (($item['install_type'] ?? '') === 'skill-dirs') {
             aiInstallerCopyDirAsSkillDirs($src, $dest);
         } elseif (isset($item['rename_ext'])) {
@@ -167,6 +171,7 @@ function aiInstallerCollectPlaceholderStatus(string $targetRoot): array
         '<SOURCE_DIRS>', '<TEST_DIRS>', '<TEST_COMMAND>', '<BUILD_COMMAND>',
         '<LINT_COMMAND>', '<PACKAGE_MANAGER>', '<CI_COMMANDS>', '<PROTECTED_PATHS>',
     ];
+    // Note: <SCRIPTS_ROOT> is resolved at install time and is intentionally not in the required list
     $hits = [];
     $scanRoots = ['AGENTS.md', 'docs/ai', '.github', '.opencode'];
     foreach ($scanRoots as $path) {
@@ -245,6 +250,7 @@ function aiInstallerApplyPlaceholders(string $targetRoot, string $projectName, a
         '<CONFLICT_AVOIDANCE_NOTES>' => 'Keep repo-wide and path-specific guidance complementary.',
         '<GLOBAL_OR_SHARED_RULE_SOURCES>' => 'organization instructions, user-level instructions',
         '<OPTIONAL_VERIFY_COMMAND>' => 'unknown',
+        '<SCRIPTS_ROOT>' => 'scripts/ai',
     ];
 
     foreach ($applied as $item) {

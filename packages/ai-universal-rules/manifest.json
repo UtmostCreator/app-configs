@@ -55,7 +55,8 @@
   "shared_templates": [
     "templates/shared/approvals/APPROVAL-PACKET.template.md",
     "templates/shared/verification/VERIFICATION-EVIDENCE.template.md",
-    "templates/shared/guardrails/AI-GUARDRAILS.md"
+    "templates/shared/guardrails/AI-GUARDRAILS.md",
+    "templates/shared/project-interaction.md"
   ],
   "preview_only_assets": [],
   "enablement_notes": [

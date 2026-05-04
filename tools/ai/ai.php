@@ -452,9 +452,25 @@ function aiRunVerify(string $root, array $args): int
     $strict = in_array('--strict', $args, true);
     $jsonMode = in_array('--json', $args, true);
     $generatedDir = aiCliGeneratedDir($root);
-    $logDir = $generatedDir . DIRECTORY_SEPARATOR . 'logs' . DIRECTORY_SEPARATOR . 'verify-' . date('Ymd-His');
+    $logDirName = 'verify-' . date('Ymd-His');
+    $logBaseDir = $generatedDir . DIRECTORY_SEPARATOR . 'logs';
+    $logDir = $logBaseDir . DIRECTORY_SEPARATOR . $logDirName;
+    $logDirLabel = 'docs/ai/generated/logs/' . $logDirName;
+    $logFilePrefix = '';
     if (!is_dir($logDir) && !mkdir($logDir, AI_DIR_MODE, true) && !is_dir($logDir)) {
-        throw new RuntimeException('Could not create verify log dir');
+        if (is_dir($logBaseDir)) {
+            $logDir = $logBaseDir;
+            $logDirLabel = 'docs/ai/generated/logs';
+            $logFilePrefix = $logDirName . '-';
+        } else {
+            $fallbackBase = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . 'app-configs-ai-logs';
+            $fallbackDir = $fallbackBase . DIRECTORY_SEPARATOR . $logDirName;
+            if (!is_dir($fallbackDir) && !mkdir($fallbackDir, AI_DIR_MODE, true) && !is_dir($fallbackDir)) {
+                throw new RuntimeException('Could not create verify log dir');
+            }
+            $logDir = $fallbackDir;
+            $logDirLabel = str_replace('\\', '/', $fallbackDir);
+        }
     }
 
     $checks = [
@@ -494,9 +510,9 @@ function aiRunVerify(string $root, array $args): int
             'exit' => $run['exit'],
             'passed' => $run['exit'] === 0,
             'auto_fix_applied' => $autoFixApplied,
-            'log' => 'docs/ai/generated/logs/' . basename($logDir) . '/' . $name . '.log',
+            'log' => $logDirLabel . '/' . $logFilePrefix . $name . '.log',
         ];
-        file_put_contents($logDir . DIRECTORY_SEPARATOR . $name . '.log', "STDOUT:\n" . $run['stdout'] . "\nSTDERR:\n" . $run['stderr']);
+        file_put_contents($logDir . DIRECTORY_SEPARATOR . $logFilePrefix . $name . '.log', "STDOUT:\n" . $run['stdout'] . "\nSTDERR:\n" . $run['stderr']);
         if ($run['exit'] !== 0) {
             $failed[] = $name;
         }
@@ -749,7 +765,7 @@ function aiRunVerify(string $root, array $args): int
         'failed_checks' => $failed,
         'results' => $results,
         'findings' => $findings,
-        'log_dir' => 'docs/ai/generated/logs/' . basename($logDir),
+        'log_dir' => $logDirLabel,
     ];
 
     $written = aiCliWriteArtifact($root, 'verify', 'php tools/ai/ai.php verify --changed', $data, $verifyStatus, null, $recommended);

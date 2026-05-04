@@ -1,4 +1,4 @@
-# Copilot Logs
+# AI Logs
 
 This directory is the repo-local runtime log surface for the stronger `scripts/ai/` tool layer.
 
@@ -8,7 +8,7 @@ Committed file:
 
 Runtime-generated files are ignored by git and may include:
 
-- `tool-usage.jsonl` for post-tool telemetry
+- `tool-usage.jsonl` for evidence-oriented tool telemetry
 - `watch-loop.jsonl` for watch-session events
 - `sessions/` for per-session JSONL traces
 - `snapshots/` for rollback patches and refs created by guarded edit flows

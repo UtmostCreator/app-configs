@@ -25,6 +25,14 @@ Use this file as durable project context for instructions, agents, prompts, and 
 - Main test command: `<PRIMARY_TEST_COMMAND>`
 - Preferred narrow-first verification pattern: `<NARROW_VERIFY_GUIDANCE>`
 
+## Task Context Sources
+
+- `docs/ai/generated/task-context/latest.md`
+- `php tools/ai/compile-task-context.php`
+- `php tools/ai/impact.php`
+
+If task context is missing, use read-only research to establish ownership, affected paths, and verification surface before editing.
+
 ## Review Focus
 
 - `<REVIEW_PRIORITIES>`

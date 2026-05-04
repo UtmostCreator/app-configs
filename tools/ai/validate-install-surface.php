@@ -162,6 +162,86 @@ foreach ($workflowTemplates as $tpl) {
     }
 }
 
+// Verify Copilot agent surface: every .github/agents/*.agent.md must use VS Code-native format
+$copilotAgentFiles = glob($root . '/.github/agents/*.agent.md') ?: [];
+foreach ($copilotAgentFiles as $agentFile) {
+    $content = (string) file_get_contents($agentFile);
+    $agentName = basename($agentFile);
+    // Extract frontmatter block between first --- markers
+    $fmBlock = '';
+    if (preg_match('/^---\n([\s\S]*?)\n---/', $content, $fmMatch)) {
+        $fmBlock = $fmMatch[1];
+    }
+    if (!preg_match('/^name:\s+\S/m', $fmBlock)) {
+        $errors[] = "Copilot agent '{$agentName}' is missing 'name:' frontmatter field — must use VS Code-native format, not OpenCode format";
+    }
+    if (!preg_match('/^tools:\s*\[/m', $fmBlock)) {
+        $errors[] = "Copilot agent '{$agentName}' is missing 'tools:' frontmatter field — add a Copilot tools list";
+    }
+    if (preg_match('/^tools:\s*\[[^\]]*(?:^|,\s*)["\'](read|search|edit|execute)["\'](?:\s*,|\s*$)/m', $fmBlock)) {
+        $errors[] = "Copilot agent '{$agentName}' still uses broad tool aliases — switch to fine-grained VS Code tool names";
+    }
+    if (preg_match('/^id:\s+\S/m', $fmBlock)) {
+        $errors[] = "Copilot agent '{$agentName}' has 'id:' frontmatter — this is OpenCode format; Copilot agents use 'name:'";
+    }
+    if (preg_match('/^permission:/m', $fmBlock)) {
+        $errors[] = "Copilot agent '{$agentName}' has 'permission:' block — this is OpenCode format; remove it from Copilot agents";
+    }
+    // Check for unresolved SCRIPTS_ROOT placeholder
+    if (str_contains($content, '<SCRIPTS_ROOT>')) {
+        $errors[] = "Copilot agent '{$agentName}' still has unresolved '<SCRIPTS_ROOT>' placeholder — run install with placeholder resolution";
+    }
+}
+
+// Verify stronger Copilot enforcement files are present when Copilot agents are installed.
+if ($copilotAgentFiles !== []) {
+    $scriptRegistryMd = $root . '/docs/ai/script-registry.md';
+    $scriptRegistryJson = $root . '/docs/ai/script-registry.json';
+    $toolPolicyFile = $root . '/.github/hooks/tool-policy.json';
+    $workspaceSettingsFile = $root . '/.vscode/settings.json';
+
+    if (!is_file($scriptRegistryMd)) {
+        $errors[] = 'docs/ai/script-registry.md is missing — Copilot script allowlisting docs are required for the stronger enforcement surface';
+    }
+    if (!is_file($scriptRegistryJson)) {
+        $errors[] = 'docs/ai/script-registry.json is missing — Copilot script allowlisting data is required for the stronger enforcement surface';
+    }
+    if (!is_file($toolPolicyFile)) {
+        $errors[] = '.github/hooks/tool-policy.json is missing — Copilot hook policy is required for stronger terminal enforcement';
+    }
+    if (!is_file($workspaceSettingsFile)) {
+        $warnings[] = '.vscode/settings.json is missing — VS Code sandbox and terminal auto-approval defaults are not installed';
+    } else {
+        $workspaceSettings = (string) file_get_contents($workspaceSettingsFile);
+        foreach ([
+            'chat.tools.terminal.ignoreDefaultAutoApproveRules',
+            'chat.tools.terminal.blockDetectedFileWrites',
+            'chat.agent.sandbox.enabled',
+            'chat.agent.networkFilter',
+        ] as $settingKey) {
+            if (!str_contains($workspaceSettings, $settingKey)) {
+                $warnings[] = ".vscode/settings.json should set {$settingKey} for a stronger Copilot enforcement posture";
+            }
+        }
+    }
+}
+
+// Prompt files should not widen tool grants beyond the selected agent.
+$copilotPromptFiles = glob($root . '/.github/prompts/*.prompt.md') ?: [];
+foreach ($copilotPromptFiles as $promptFile) {
+    $promptContent = (string) file_get_contents($promptFile);
+    $promptName = basename($promptFile);
+    if (preg_match('/^tools:\s*\[[^\]]*(?:^|,\s*)["\'](\*|read|search|edit|execute|agent|web|todo)["\'](?:\s*,|\s*$)/m', $promptContent)) {
+        $errors[] = "Copilot prompt '{$promptName}' declares broad tools — prompt files must not widen the target agent tool surface";
+    }
+}
+
+// Verify tools.instructions.md is present for Copilot
+$toolsInstructionsFile = $root . '/.github/instructions/tools.instructions.md';
+if (!is_file($toolsInstructionsFile) && is_dir($root . '/.github/instructions')) {
+    $warnings[] = 'tools.instructions.md is missing from .github/instructions/ — tool enforcement may not be active';
+}
+
 foreach ($warnings as $warning) {
     fwrite(STDOUT, "WARN: {$warning}\n");
 }

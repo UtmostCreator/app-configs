@@ -8,7 +8,6 @@
   "files.eol": "\n",
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
-
   // =========================
   // Formatting strategy (single source of truth)
   // =========================
@@ -17,37 +16,77 @@
   "editor.formatOnSaveMode": "file",
   "editor.formatOnPaste": false,
   "editor.formatOnType": false,
-
   // Avoid double-format from built-in JS/TS formatters
   "javascript.format.enable": false,
   "typescript.format.enable": false,
-
   // Lint fixes only when explicitly triggered (stable + predictable)
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "explicit"
   },
-
+  // =========================
+  // Copilot enforcement posture
+  // =========================
+  "chat.tools.terminal.ignoreDefaultAutoApproveRules": true,
+  "chat.tools.terminal.blockDetectedFileWrites": true,
+  "chat.tools.terminal.autoApprove": {
+    "/^bash scripts\\/ai\\/(ai-search|ai-verify|preview-file|fd-files|rg-code|git-forensics|query-usage|ai-diff-context|pack-context|gh-pr-context|repomix-context-tree|repomix-scc-router)\\.sh(\\s|$)/": true,
+    "/\\brm\\b|\\bdel\\b|\\brmdir\\b|\\bgit\\s+push\\b|\\bgit\\s+reset\\b|\\bsudo\\b|curl\\s+.*\\|\\s*(sh|bash|zsh|python|python3|php|node|ruby)|wget\\s+.*\\|\\s*(sh|bash|zsh|python|python3|php|node|ruby)/": false
+  },
+  "chat.agent.sandbox.enabled": true,
+  "chat.agent.networkFilter": true,
+  "chat.agent.allowedNetworkDomains": [],
+  "chat.agent.sandbox.FileSystem.mac": {
+    "allowWrite": [
+      "."
+    ],
+    "denyWrite": [
+      "./.git/",
+      "./vendor/",
+      "./node_modules/",
+      "./.env",
+      "./.github/workflows/"
+    ]
+  },
+  "chat.agent.sandbox.FileSystem.linux": {
+    "allowWrite": [
+      "."
+    ],
+    "denyWrite": [
+      "./.git/",
+      "./vendor/",
+      "./node_modules/",
+      "./.env",
+      "./.github/workflows/"
+    ]
+  },
   // =========================
   // Prettier (repo-independent behavior, matches your setup)
   // =========================
   "prettier.requireConfig": false,
   "prettier.useEditorConfig": false,
-
   // =========================
   // ESLint / Stylelint integration (validation scope)
   // =========================
   "eslint.enable": true,
   "eslint.format.enable": false,
-  "eslint.validate": ["javascript", "typescript", "javascriptreact", "typescriptreact", "vue"],
-  "stylelint.validate": ["css", "scss", "vue"],
-
+  "eslint.validate": [
+    "javascript",
+    "typescript",
+    "javascriptreact",
+    "typescriptreact",
+    "vue"
+  ],
+  "stylelint.validate": [
+    "css",
+    "scss",
+    "vue"
+  ],
   // =========================
   // Blade / PHP formatting (project tools)
   // =========================
   "laravel-pint.enable": true,
   "laravel-pint.executablePath": "./vendor/bin/pint",
   "php.validate.enable": false,
-
   "bladeFormatter.format.enabled": true,
   "bladeFormatter.format.endWithNewline": true,
   "bladeFormatter.format.indentSize": 4,
@@ -55,7 +94,6 @@
   "bladeFormatter.format.sortTailwindcssClasses": false,
   "bladeFormatter.format.wrapAttributes": "preserve",
   "bladeFormatter.format.wrapLineLength": 9999,
-
   // =========================
   // Language-specific style rules (tabs + formatters + fixers)
   // =========================
@@ -71,7 +109,6 @@
     "editor.codeActionsOnSave": {},
     "editor.tabSize": 4
   },
-
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
@@ -111,7 +148,6 @@
       "source.fixAll.eslint": "explicit"
     }
   },
-
   "[css]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2,
@@ -126,7 +162,6 @@
       "source.fixAll.stylelint": "explicit"
     }
   },
-
   "[json]": {
     "editor.defaultFormatter": "vscode.json-language-features",
     "editor.formatOnSave": true
@@ -148,7 +183,6 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 4
   },
-
   // =========================
   // YAML specifics (as in your config)
   // =========================
@@ -159,7 +193,6 @@
       "content/blueprints/**/*.yaml"
     ]
   },
-
   // =========================
   // File type mapping used by formatter/linter toolchain
   // =========================
@@ -170,7 +203,6 @@
     "*.stub": "php",
     ".env*": "dotenv"
   },
-
   // =========================
   // Emmet/Tailwind language inclusion (affects class suggestions; not cosmetic)
   // =========================
@@ -183,7 +215,6 @@
     "php": "html",
     "vue": "html"
   },
-
   // =========================
   // Optional (non-style)
   // =========================

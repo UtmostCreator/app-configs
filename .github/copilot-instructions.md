@@ -14,6 +14,9 @@ They should remain valid even if advanced agent features or prompt files are una
 - Primary entrypoints: `README.md, docs/ai/project-context.md`
 - Project context file: `docs/ai/project-context.md`
 - Capability folders available: `project-context, verify-change, review-diff`
+- Core workflow references: `docs/ai/failure-handling.md, docs/ai/agent-ops-checklist.md, docs/ai/integration-matrix.md`
+- Extended capability references: `docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md, docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md, docs/ai/capabilities/preview-environments/CAPABILITY.md`
+- PHP guidance references: `reference/php/design-patterns/, reference/php/design-principles/, reference/php/php-built-ins/`
 
 ## Working Style
 

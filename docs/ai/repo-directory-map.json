@@ -11,8 +11,8 @@
       "notes": "Contains root configuration, README, justfile, and project-level metadata."
     },
     {
-      "path": ".copilot-logs",
-      "purpose": "Stores local Copilot log handling notes and examples.",
+      "path": ".ai-logs",
+      "purpose": "Stores local AI log handling notes and examples.",
       "designed_for": "Maintainers documenting local logging expectations.",
       "install_guide": "docs/ai/copilot-tooling.md",
       "install_script": "none",

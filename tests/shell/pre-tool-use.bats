@@ -130,8 +130,18 @@ teardown() {
 }
 
 @test "allows ai-search.sh read-only script" {
-    output=$(_hook '{"toolName":"bash","toolArgs":{"command":"scripts/ai/ai-search.sh text foo ."}}')
+    output=$(_hook '{"toolName":"bash","toolArgs":{"command":"bash scripts/ai/ai-search.sh text foo ."}}')
     [ "$(_decision "$output")" = "allow" ]
+}
+
+@test "allows VS Code terminal tool shape for registered script" {
+    output=$(_hook '{"tool_name":"execute/runInTerminal","tool_input":{"command":"bash scripts/ai/rg-code.sh foo"}}')
+    [ "$(_decision "$output")" = "allow" ]
+}
+
+@test "denies unregistered scripts ai command" {
+    output=$(_hook '{"toolName":"bash","toolArgs":{"command":"bash scripts/ai/watch-loop.sh echo ok php"}}')
+    [ "$(_decision "$output")" = "deny" ]
 }
 
 # ---- confirm tests ----

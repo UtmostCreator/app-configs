@@ -17,8 +17,9 @@ Thumbs.db
 .claude/tmp/
 .gemini/
 .aider*
+.ai-logs/*
+!.ai-logs/README.md
 .copilot-logs/*
-!.copilot-logs/README.md
 .repomix-context/
 .ai-backups/
 .ai-tmp/

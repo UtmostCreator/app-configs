@@ -8,10 +8,12 @@ This file defines how the repository wires Copilot tooling without moving canoni
 2. Apply repository defaults from `.github/copilot-instructions.md`.
 3. Add path-level refinements from `.github/instructions/*.instructions.md`.
 4. Install wrapper scripts in `scripts/ai/` and keep them executable.
-5. Enable hooks with `.github/hooks/tool-policy.json` for guardrails and audit logging.
-6. Export `COPILOT_STRICT_ALLOWLIST=1` in the shell that launches Copilot CLI so raw search and preview commands are forced through the repo wrappers.
-7. Add task workflows through `.github/skills/` and `.github/prompts/`.
-8. Use GitHub MCP or `gh` for PR, issue, and workflow context.
+5. Publish the approved-script subset in `docs/ai/script-registry.md` and `docs/ai/script-registry.json`.
+6. Enable hooks with `.github/hooks/tool-policy.json` for guardrails and audit logging.
+7. Export `COPILOT_STRICT_ALLOWLIST=1` in the shell that launches Copilot CLI so raw search and preview commands are forced through the repo wrappers.
+8. Apply `.vscode/settings.json` or the matching `configs/vscode` examples so terminal auto-approval, file-write blocking, sandbox, and network filters reinforce the same boundary in VS Code.
+9. Add task workflows through `.github/skills/` and `.github/prompts/`.
+10. Use GitHub MCP or `gh` for PR, issue, and workflow context.
 
 For a repo-copy checklist, shell setup, and the minimum files to bring into another project, use `docs/ai/copilot-cli-repo-integration.md`.
 
@@ -21,6 +23,7 @@ For a repo-copy checklist, shell setup, and the minimum files to bring into anot
 - `docs/ai/agent-ops.md`: agentic architecture, risk, IAM, and evaluation defaults.
 - Path instructions: language or surface-specific refinements.
 - Hooks: allow/deny guardrails and post-tool usage logs.
+- Script registry: the approved terminal-script subset for Copilot and hook enforcement.
 - Wrapper scripts: deterministic command entrypoints.
 - `scripts/ai/common.sh`: shared dependency, logging, token-budget, and secrets-scan helpers for the stronger wrapper layer.
 - Skills: reusable multi-step investigation workflow.
@@ -42,6 +45,8 @@ Use these tools in this preferred order for read-first investigation:
 9. `ast-grep` for syntax-aware discovery and the approved structural rewrite path through `scripts/ai/ai-edit.sh`.
 10. `semgrep` for rule-based bug or security sweeps.
 11. `delta` for diff rendering.
+
+When an agent needs the terminal, prefer the approved wrapper subset from `docs/ai/script-registry.md` before raw commands.
 
 Use this AI-native workflow stack when the task needs packaging, looped verification, or deterministic runtime setup:
 
@@ -134,7 +139,7 @@ Wrapper scripts in `scripts/ai/` are classified by the three-tier command risk t
 3. Re-run with `APPLY=1` only after the candidate set looks correct.
 4. Use `VERIFY=1`, `scripts/ai/ai-verify.sh`, or `just verify` after applying changes.
 5. Use `scripts/ai/ai-rollback.sh` only for explicit recovery work because it modifies the working tree.
-6. Review the per-session manifest in `.copilot-logs/sessions/` when you need a compact record of a guarded edit run.
+6. Review the per-session manifest in `.ai-logs/sessions/` when you need a compact record of a guarded edit run.
 
 ## Guardrail Notes
 
@@ -145,5 +150,6 @@ Wrapper scripts in `scripts/ai/` are classified by the three-tier command risk t
 - Keep destructive commands denied by default unless explicitly requested.
 - Prefer the stronger wrapper scripts over ad hoc shell pipelines when the wrapper already captures search modes, token budgets, or structured output.
 - For CLI sessions, the repo hook file plus `COPILOT_STRICT_ALLOWLIST=1` are what force raw `grep`, `find`, and `cat` toward the repo wrappers.
+- For VS Code sessions, `.vscode/settings.json` should keep `chat.tools.terminal.ignoreDefaultAutoApproveRules`, `chat.tools.terminal.blockDetectedFileWrites`, `chat.agent.sandbox.enabled`, and `chat.agent.networkFilter` enabled so the IDE surface stays closer to the hook policy.
 - For broad modifications, do not use raw `sed`, `perl`, or shell replacement loops when `scripts/ai/ai-edit.sh` can perform the operation with a snapshot, dry-run, diff, and verification path.
 - Post-tool telemetry now records a best-effort `failureCategory` so logs align more closely with `docs/ai/failure-handling.md`.

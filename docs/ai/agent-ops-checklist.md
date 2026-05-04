@@ -159,7 +159,7 @@ Then review:
 
 - `docs/ai/catalog.md`
 - `docs/ai/integration-matrix.md`
-- `.copilot-logs/README.md` for the committed runtime-log contract and local telemetry expectations
+- `.ai-logs/README.md` for the committed runtime-log contract and local telemetry expectations
 
 Accept when:
 

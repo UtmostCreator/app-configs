@@ -20,10 +20,12 @@ function aiInstallerPackRegistry(): array
         ],
         'adapter-copilot' => [
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/copilot-instructions.template.md', 'target' => '.github/copilot-instructions.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/copilot-vscode-settings.template.json', 'target' => '.vscode/settings.json', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => false],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/instructions', 'target' => '.github/instructions', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
-            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.github/agents', 'rename_ext' => '.agent.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.github/agents', 'install_type' => 'copilot-agents', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.github/prompts', 'rename_ext' => '.prompt.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.github/skills', 'install_type' => 'skill-dirs', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/instructions/tools.instructions.md', 'target' => '.github/instructions/tools.instructions.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'adapter-opencode' => [
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.opencode/agents', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
@@ -67,8 +69,13 @@ function aiInstallerPackRegistry(): array
             ['type' => 'file', 'source' => 'scripts/ai/install-mandatory-tools.sh', 'target' => 'scripts/ai/install-mandatory-tools.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
             ['type' => 'file', 'source' => 'docs/ai/repo-required-tools.md', 'target' => 'docs/ai/repo-required-tools.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
             ['type' => 'file', 'source' => 'docs/ai/mandatory-tools-install.md', 'target' => 'docs/ai/mandatory-tools-install.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
+            ['type' => 'file', 'source' => 'docs/ai/script-registry.md', 'target' => 'docs/ai/script-registry.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'docs/ai/script-registry.json', 'target' => 'docs/ai/script-registry.json', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'hooks-pack' => [
+            ['type' => 'file', 'source' => '.github/hooks/tool-policy.json', 'target' => '.github/hooks/tool-policy.json', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => '.github/hooks/tool-guardian.json', 'target' => '.github/hooks/tool-guardian.json', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
+            ['type' => 'file', 'source' => '.github/hooks/scripts/tool-guardian.ps1', 'target' => '.github/hooks/scripts/tool-guardian.ps1', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
             ['type' => 'file', 'source' => 'scripts/hooks/pre-commit.sh', 'target' => 'scripts/hooks/pre-commit.sh', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/hooks/commit-msg.sh', 'target' => 'scripts/hooks/commit-msg.sh', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],
             ['type' => 'file', 'source' => 'docs/ai/hooks.md', 'target' => 'docs/ai/hooks.md', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],

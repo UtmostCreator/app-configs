@@ -6,7 +6,7 @@ Use this process to reduce lost AI work during long tasks.
 
 1. Re-read `docs/ai/project-context.md` and current task scope.
 2. Check branch and working tree status.
-3. Review latest AI session log entries under `.copilot-logs/`.
+3. Review latest AI session log entries under `.ai-logs/`.
 4. Restore or inspect the latest snapshot artifact if needed.
 5. Continue with one bounded slice only.
 
@@ -23,4 +23,4 @@ bash scripts/ai/session-checkpoint.sh before-edit
 bash scripts/ai/session-checkpoint.sh handoff
 ```
 
-Snapshots are stored in `.copilot-logs/snapshots/` and session logs in `.copilot-logs/tool-usage.jsonl`.
+Snapshots are stored in `.ai-logs/snapshots/` and session logs in `.ai-logs/tool-usage.jsonl`.

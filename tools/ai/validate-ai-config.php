@@ -19,6 +19,8 @@ $requiredFiles = [
     'docs/ai/failure-handling.md',
     'docs/ai/agent-ops-checklist.md',
     'docs/ai/integration-matrix.md',
+    'docs/ai/script-registry.md',
+    'docs/ai/script-registry.json',
     'docs/ai/AI-GUARDRAILS.md',
     'docs/ai/catalog.md',
     'docs/ai/capabilities/README.md',
@@ -36,6 +38,7 @@ $requiredFiles = [
     'docs/ai/capabilities/preview-environments/CHECKLIST.md',
     'docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md',
     '.github/copilot-instructions.md',
+    '.github/instructions/ai-workflow.instructions.md',
     '.github/instructions/architecture.instructions.md',
     '.github/instructions/frontend.instructions.md',
     '.github/instructions/targets.instructions.md',
@@ -48,7 +51,7 @@ $requiredFiles = [
     'scripts/ai/ai-rollback.sh',
     'policies/copilot/policy.yaml',
     '.schemas/evidence-event.schema.json',
-    '.copilot-logs/README.md',
+    '.ai-logs/README.md',
     'packages/ai-universal-rules/manifest.json',
     'packages/ai-universal-rules/catalog.json',
     'packages/ai-universal-rules/docs/BROWSE.md',
@@ -73,8 +76,11 @@ $liveFiles = [
     'docs/ai/integration-matrix.md',
     'docs/ai/AI-GUARDRAILS.md',
     'docs/ai/catalog.md',
+    'docs/ai/script-registry.md',
+    'docs/ai/script-registry.json',
     'docs/ai/capabilities/README.md',
     '.github/copilot-instructions.md',
+    '.github/instructions/ai-workflow.instructions.md',
     '.github/instructions/architecture.instructions.md',
     '.github/instructions/frontend.instructions.md',
     '.github/instructions/targets.instructions.md',
@@ -273,6 +279,14 @@ if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/failure-handlin
     $warnings[] = '.github/copilot-instructions.md should reference docs/ai/failure-handling.md';
 }
 
+if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/script-registry.md') === false) {
+    $warnings[] = '.github/copilot-instructions.md should reference docs/ai/script-registry.md';
+}
+
+if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/script-registry.json') === false) {
+    $warnings[] = '.github/copilot-instructions.md should reference docs/ai/script-registry.json';
+}
+
 if ($copilotContent !== null && strpos($copilotContent, 'docs/ai/agent-ops-checklist.md') === false) {
     $warnings[] = '.github/copilot-instructions.md should reference docs/ai/agent-ops-checklist.md';
 }
@@ -438,6 +452,14 @@ function extractBacktickPaths(string $content): array
 function shouldSkipPathCheck(string $path): bool
 {
     if ($path === '' || preg_match('/\s/', $path) === 1) {
+        return true;
+    }
+
+    if (preg_match('#^(search|read|edit|execute|vscode|agent|web|todo)/#', $path) === 1) {
+        return true;
+    }
+
+    if (in_array($path, ['.agent.md', '.prompt.md', 'tools:'], true)) {
         return true;
     }
 

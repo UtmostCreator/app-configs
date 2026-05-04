@@ -7,6 +7,7 @@ Canonical schema file: `.schemas/evidence-event.schema.json`
 ## Required Fields
 
 - `event_version`
+- `event_type`
 - `trace_id`
 - `session_id`
 - `task_id`
@@ -24,8 +25,11 @@ Canonical schema file: `.schemas/evidence-event.schema.json`
 - `tool.args_hash`
 - `authorization.approval_required`
 - `authorization.approved_by`
+- `authorization.reason`
 - `execution.latency_ms`
 - `execution.retry_count`
+- `execution.exit_code`
+- `execution.output_truncated`
 - `cost.model`
 - `cost.input_tokens`
 - `cost.output_tokens`
@@ -33,12 +37,18 @@ Canonical schema file: `.schemas/evidence-event.schema.json`
 - `failure.category`
 - `failure.message`
 - `failure.resolution`
+- `repository.root`
+- `repository.git_branch`
+- `repository.git_commit`
+- `output.preview`
+- `details`
 
 ## Minimal Example
 
 ```json
 {
   "event_version": "1.0",
+  "event_type": "tool.result",
   "trace_id": "trc_example_001",
   "session_id": "ses_example_001",
   "task_id": "tsk_example_001",
@@ -58,12 +68,15 @@ Canonical schema file: `.schemas/evidence-event.schema.json`
     "policy_version": "1",
     "decision": "allowed",
     "approval_required": false,
-    "approved_by": null
+    "approved_by": null,
+    "reason": null
   },
   "execution": {
     "status": "success",
     "latency_ms": 320,
-    "retry_count": 0
+    "retry_count": 0,
+    "exit_code": 0,
+    "output_truncated": false
   },
   "cost": {
     "model": null,
@@ -75,6 +88,19 @@ Canonical schema file: `.schemas/evidence-event.schema.json`
     "category": null,
     "message": null,
     "resolution": null
+  },
+  "repository": {
+    "root": "/workspace/app-configs",
+    "git_branch": "main",
+    "git_commit": "abc123"
+  },
+  "output": {
+    "preview": "ok"
+  },
+  "details": {
+    "tool_args": {
+      "command": "bash scripts/ai/ai-search.sh hooks"
+    }
   }
 }
 ```

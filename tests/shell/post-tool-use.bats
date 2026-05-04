@@ -2,13 +2,15 @@
 # Tests for scripts/ai/post-tool-use.sh
 #
 # Input: full tool event JSON on stdin with toolName, toolArgs, toolResult, durationMs.
-# Output: appends a JSONL line to $COPILOT_LOG_DIR/tool-usage.jsonl
+# Output: appends a JSONL evidence event to $COPILOT_LOG_DIR/tool-usage.jsonl
 #
-# Exact log path: $COPILOT_LOG_DIR/tool-usage.jsonl (COPILOT_LOG_DIR default = .copilot-logs)
-# JSONL fields: ts, tool, args, result, isError, durationMs, error, failureCategory
-# Exact failure category strings:
-#   transient-runtime | environment-missing | policy-blocked | usage-error
-#   network-remote | verification-failed | unknown
+# Exact log path: $COPILOT_LOG_DIR/tool-usage.jsonl (COPILOT_LOG_DIR default = .ai-logs)
+# JSONL fields: event_version, event_type, trace_id, session_id, task_id,
+#   actor, tool, authorization, execution, failure, repository, output, details
+# Exact normalized failure categories used here:
+#   tool_timeout | approval_missing | tool_unavailable | authorization_denied
+#   unsafe_mutation_blocked | invalid_tool_input | external_dependency_failure
+#   test_failure | lint_failure | schema_validation_failure | unknown
 #
 # Requires: jq (used internally by post-tool-use.sh).
 
@@ -80,67 +82,69 @@ _log_file() {
 
 @test "success event JSONL contains ts field" {
     _run_hook "$(_success_event)"
-    jq -e '.ts' "$(_log_file)" >/dev/null
+    jq -e '.timestamp' "$(_log_file)" >/dev/null
 }
 
 @test "success event JSONL contains tool field" {
     _run_hook "$(_success_event)"
-    jq -e '.tool' "$(_log_file)" >/dev/null
+    jq -e '.tool.name == "bash"' "$(_log_file)" >/dev/null
 }
 
-@test "success event JSONL contains isError field" {
+@test "success event JSONL contains event identity fields" {
     _run_hook "$(_success_event)"
-    jq -e 'has("isError")' "$(_log_file)" >/dev/null
+    jq -e '.event_version and .event_type and .trace_id and .session_id and .task_id' "$(_log_file)" >/dev/null
 }
 
-@test "success event JSONL contains durationMs field" {
+@test "success event JSONL contains normalized authorization and execution fields" {
     _run_hook "$(_success_event)"
-    jq -e '.durationMs' "$(_log_file)" >/dev/null
+    jq -e '.authorization.decision == "allowed" and .execution.status == "success" and .execution.latency_ms == 42' "$(_log_file)" >/dev/null
 }
 
 # ---- error path — failure categories ----
 
-@test "error with 'not found' maps to environment-missing category" {
+@test "error with 'not found' maps to tool_unavailable category" {
     _run_hook "$(_error_event "binary not found")"
-    category=$(jq -r '.failureCategory' "$(_log_file)")
-    [ "$category" = "environment-missing" ]
+    category=$(jq -r '.failure.category' "$(_log_file)")
+    [ "$category" = "tool_unavailable" ]
 }
 
-@test "error with 'missing' maps to environment-missing category" {
+@test "error with 'missing' maps to tool_unavailable category" {
     _run_hook "$(_error_event "tool missing from PATH")"
-    category=$(jq -r '.failureCategory' "$(_log_file)")
-    [ "$category" = "environment-missing" ]
+    category=$(jq -r '.failure.category' "$(_log_file)")
+    [ "$category" = "tool_unavailable" ]
 }
 
-@test "error with 'denied' maps to policy-blocked category" {
+@test "error with 'denied' maps to authorization_denied category" {
     _run_hook "$(_error_event "command denied by policy")"
-    category=$(jq -r '.failureCategory' "$(_log_file)")
-    [ "$category" = "policy-blocked" ]
+    category=$(jq -r '.failure.category' "$(_log_file)")
+    [ "$category" = "authorization_denied" ]
 }
 
-@test "error with 'permission' maps to policy-blocked category" {
+@test "error with 'permission' maps to authorization_denied category" {
     _run_hook "$(_error_event "permission denied")"
-    category=$(jq -r '.failureCategory' "$(_log_file)")
-    [ "$category" = "policy-blocked" ]
+    category=$(jq -r '.failure.category' "$(_log_file)")
+    [ "$category" = "authorization_denied" ]
 }
 
-@test "error with 'unknown option' maps to usage-error category" {
+@test "error with 'unknown option' maps to invalid_tool_input category" {
     _run_hook "$(_error_event "unknown option --foo")"
-    category=$(jq -r '.failureCategory' "$(_log_file)")
-    [ "$category" = "usage-error" ]
+    category=$(jq -r '.failure.category' "$(_log_file)")
+    [ "$category" = "invalid_tool_input" ]
 }
 
-@test "error with 'network' maps to network-remote category" {
+@test "error with 'network' maps to external_dependency_failure category" {
     _run_hook "$(_error_event "network connection refused")"
-    category=$(jq -r '.failureCategory' "$(_log_file)")
-    [ "$category" = "network-remote" ]
+    category=$(jq -r '.failure.category' "$(_log_file)")
+    [ "$category" = "external_dependency_failure" ]
 }
 
-@test "error with 'timeout' in resultType maps to transient-runtime category" {
+@test "error with 'timeout' in resultType maps to tool_timeout category" {
     local timeout_event='{"toolName":"bash","toolArgs":{"command":"sleep 999"},"toolResult":{"resultType":"timeout","isError":true,"error":"timed out"},"durationMs":30000}'
     _run_hook "$timeout_event"
-    category=$(jq -r '.failureCategory' "$(_log_file)")
-    [ "$category" = "transient-runtime" ]
+    category=$(jq -r '.failure.category' "$(_log_file)")
+    status=$(jq -r '.execution.status' "$(_log_file)")
+    [ "$category" = "tool_timeout" ]
+    [ "$status" = "timeout" ]
 }
 
 # ---- idempotency ----

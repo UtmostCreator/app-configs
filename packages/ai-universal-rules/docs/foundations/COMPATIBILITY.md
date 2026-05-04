@@ -45,3 +45,10 @@ If portability matters more than maximum customization:
 2. add project context and capability folders
 3. add only one runtime adapter first
 4. add prompt files, specialist agents, hooks, and MCP only after documenting fallbacks
+
+## See Also
+
+- `../INSTALL-GITHUB-COPILOT.md` — Copilot surface install guide
+- `../INSTALL-OPENCODE.md` — OpenCode surface install guide
+- `CONTROL-MODEL.md` — advisory vs deterministic controls per runtime
+- `../workflows/RUNTIME-OBSERVABILITY.md` — inspecting what actually loaded on a surface

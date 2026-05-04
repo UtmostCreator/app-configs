@@ -58,6 +58,13 @@ This keeps larger skill libraries practical and reduces context pollution.
 
 The `description` field is not filler text. It is the trigger contract.
 
+## See Also
+
+- `CAPABILITY-MODEL.md` — capabilities as the canonical source; skills as runtime adapters
+- `../workflows/TASK-ENTRYPOINTS.md` — when to use skills vs prompts, commands, or capabilities
+- `../workflows/SYSTEM-WORKFLOW.md` — where skill loading fits in the lifecycle
+- `COMPATIBILITY.md` — surface differences that affect skill availability
+
 A good description should say:
 
 - what the skill does

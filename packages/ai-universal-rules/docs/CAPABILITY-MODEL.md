@@ -155,3 +155,10 @@ This repository keeps the capability content tool-agnostic first.
 - OpenCode skills should adapt from capability folders when possible.
 - GitHub Copilot agents and prompts should reference the same capability concepts.
 - Commands and prompts are compatibility surfaces, not the canonical source of workflow knowledge.
+
+## See Also
+
+- `foundations/CAPABILITY-MODEL.md` — canonical maintained copy with full contract
+- `COMPOSITION-RECIPES.md` — task-to-capability routing recipes
+- `workflows/TASK-ENTRYPOINTS.md` — when capabilities are the right choice
+- `templates/capabilities/README.md` — canonical capability template set

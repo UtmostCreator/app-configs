@@ -48,21 +48,21 @@ Examples:
 ```bash
 # Copilot plus scripts and advisor
 php tools/ai/install-ai-kit.php \
-	--target /path/to/target-repo \
-	--profile copilot \
-	--with scripts-pack,advisor-pack
+  --target /path/to/target-repo \
+  --profile copilot \
+  --with scripts-pack,advisor-pack
 
 # OpenCode runtime only, without refreshing base policy files
 php tools/ai/install-ai-kit.php \
-	--target /path/to/target-repo \
-	--profile opencode \
-	--no-base
+  --target /path/to/target-repo \
+  --profile opencode \
+  --no-base
 
 # Custom docs-only install with selected optional packs
 php tools/ai/install-ai-kit.php \
-	--target /path/to/target-repo \
-	--profile custom \
-	--with base,docs-reference-pack,advisor-pack
+  --target /path/to/target-repo \
+  --profile custom \
+  --with base,docs-reference-pack,advisor-pack
 ```
 
 Useful flags:
@@ -70,8 +70,26 @@ Useful flags:
 - `--with <packs>` adds optional packs such as `scripts-pack`, `advisor-pack`, `docs-reference-pack`, `delivery-pack`, `preview-environments-pack`, `evaluation-pack`, `service-boundary-pack`, and `mcp-boundaries-pack`
 - `--without <packs>` removes packs from the chosen profile
 - `--all-features` enables every registered optional pack
+- `--upgrade-suffix <suffix>` writes colliding targets to suffixed copies instead of skipping them, but only when the existing target differs from the source
 - `--run-after-install <id>` runs a registered helper such as `repomix-tree` or `repo-tool-inventory`
 - `--toolchain-check` and `--toolchain-install-plan` show required tool state before apply
+
+Example merge-safe docs refresh:
+
+```bash
+php tools/ai/install-ai-kit.php \
+  --target /path/to/target-repo \
+  --profile full-governance \
+  --runtime github-copilot \
+  --with docs-reference-pack \
+  --upgrade-suffix=-upgrade
+
+cd /path/to/target-repo
+bash scripts/ai/repo-tool-inventory.sh
+bash scripts/ai/repomix-context-tree.sh all .
+```
+
+If a destination file already matches the installer source exactly, the installer now skips it instead of producing a redundant `-upgrade` copy.
 
 ## Overwrite Behavior
 

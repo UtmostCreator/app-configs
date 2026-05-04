@@ -57,3 +57,12 @@ Deterministic catalog generated from installer registries.
 - `npm`
 - `repomix` (safe auto-install)
 - `scc`
+
+## See Also
+
+- `../QUICKSTART.md` — step-by-step install flow
+- `INSTALL-GITHUB-COPILOT.md` — GitHub Copilot base install guide
+- `INSTALL-OPENCODE.md` — OpenCode base install guide
+- `../../docs/ai/install-order.md` — full ordered command flow and selective pack recipes
+- `../../docs/ai/external-repo-install.md` — external repository install examples and overwrite rules
+- `../../docs/ai/POST-INSTALL.md` — post-install checklist and commands

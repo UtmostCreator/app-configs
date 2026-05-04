@@ -39,3 +39,10 @@ If two files compete for the same responsibility, narrow or remove one of them.
 - use prompt files for recurring one-off tasks where supported
 - use custom agents for stage-specific work, not giant global procedure blocks
 - do not assume identical behavior across VS Code, CLI, and GitHub.com
+
+## See Also
+
+- `../workflows/TASK-ENTRYPOINTS.md` — practical guidance on which mechanism owns which responsibility
+- `../workflows/SYSTEM-WORKFLOW.md` — lifecycle ordering that reflects this precedence
+- `COMPATIBILITY.md` — surface differences that affect which layers are available
+- `DESIGN-PRINCIPLES.md` — principles behind the layering model

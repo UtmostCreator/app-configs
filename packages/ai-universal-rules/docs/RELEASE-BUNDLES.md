@@ -35,3 +35,10 @@ This writes a directory bundle to `dist/ai-universal-rules/<version>/<profile>/`
 - regenerate the catalog before exporting
 - keep `manifest.json` and `manifest.yml` aligned on name, version, and description
 - treat starter profiles as curated adoption shapes, not separate sources of truth
+
+## See Also
+
+- `INSTALL-CATALOG.md` — full profile and pack index from the installer registries
+- `../QUICKSTART.md` — step-by-step install flow for adopters
+- `operations/MAINTENANCE.md` — versioning rules and update order
+- `../../docs/ai/external-repo-install.md` — external repository install examples

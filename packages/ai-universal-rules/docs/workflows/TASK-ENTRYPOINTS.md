@@ -65,3 +65,11 @@ Use `docs/foundations/SKILLS.md` when defining a skill so activation scope, port
 - using a single giant agent for research, implementation, review, and release
 - using prompt files as the canonical source of workflow knowledge
 - assuming hooks exist when no runtime can enforce them
+
+## See Also
+
+- `SYSTEM-WORKFLOW.md` — end-to-end lifecycle and entry point selection rule
+- `AGENT-HANDOFFS.md` — staged agent handoff contract
+- `../foundations/CAPABILITY-MODEL.md` — capability folders as the reusable workflow layer
+- `../foundations/SKILLS.md` — skill definition and activation scope
+- `../foundations/PRECEDENCE.md` — layering and non-overlap rules

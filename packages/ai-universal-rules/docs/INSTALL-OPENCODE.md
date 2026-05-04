@@ -90,3 +90,19 @@ Add when the repo really needs them:
 ## Anti-Pattern To Avoid
 
 Do not install many specialist agents before the core four-agent flow works cleanly.
+
+## After Install
+
+- `ONBOARDING.md` — what to customize and in what order
+- `../PLACEHOLDERS.md` — placeholder reference for all copied templates
+- `../../docs/ai/POST-INSTALL.md` — post-install checklist and commands
+
+## See Also
+
+- `INSTALL-CATALOG.md` — full profile and pack index
+- `INSTALL-GITHUB-COPILOT.md` — GitHub Copilot runtime install guide
+- `../../docs/ai/install-order.md` — full ordered command flow and selective pack recipes
+- `../../docs/ai/external-repo-install.md` — external repository install examples
+- `workflows/SYSTEM-WORKFLOW.md` — end-to-end operating model
+- `workflows/AGENT-HANDOFFS.md` — staged agent handoff contract
+- `operations/GOVERNANCE.md` — governance rules and required controls

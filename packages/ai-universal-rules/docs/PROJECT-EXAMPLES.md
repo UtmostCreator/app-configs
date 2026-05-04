@@ -93,3 +93,10 @@ High-value repo-specific gotchas:
 ## Why This Matters
 
 The same global instruction model can stay stable across both projects because the reusable detail lives in capability folders, not in one giant repo-wide instruction file.
+
+## See Also
+
+- `COMPOSITION-RECIPES.md` — request-to-capability routing recipes these examples follow
+- `workflows/SYSTEM-WORKFLOW.md` — end-to-end lifecycle each example exercises
+- `foundations/CAPABILITY-MODEL.md` — capability contract these examples rely on
+- `ONBOARDING.md` — how to adapt these patterns to a real repository

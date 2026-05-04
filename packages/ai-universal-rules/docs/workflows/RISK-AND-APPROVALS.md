@@ -32,3 +32,10 @@ Before implementation or merge, state:
 ## Approval Packet
 
 Use `templates/shared/approvals/APPROVAL-PACKET.template.md` to standardize human signoff.
+
+## See Also
+
+- `AGENT-HANDOFFS.md` — which stages handle approvals and review
+- `SYSTEM-WORKFLOW.md` — how risk classification fits into the lifecycle
+- `../operations/GOVERNANCE.md` — governance goals and required controls
+- `../../templates/shared/verification/VERIFICATION-EVIDENCE.template.md` — evidence template

@@ -72,12 +72,34 @@ Watch for these failure modes continuously:
 - over-exploration on narrow tasks
 - loss of persistent repo memory
 
+## Drift Resistance
+
+Watch for these failure modes continuously:
+
+- hidden assumptions filling gaps in the spec
+- plausible code with no proof
+- long-session context pollution
+- environment errors mistaken for reasoning errors
+- hallucinated repo facts or APIs
+- unsafe high-impact actions without gating
+- over-exploration on narrow tasks
+- loss of persistent repo memory
+
 ## Runtime Debug Step
 
 If the model behaves strangely:
 
 1. inspect what instructions, prompts, agents, skills, hooks, and tools actually loaded
 2. confirm the active working directory and repo root
+
+## See Also
+
+- `TASK-ENTRYPOINTS.md` — when to use each mechanism
+- `AGENT-HANDOFFS.md` — staged agent handoff contract
+- `RISK-AND-APPROVALS.md` — risk levels and approval gates
+- `RUNTIME-OBSERVABILITY.md` — runtime inspection as a workflow step
+- `../foundations/CAPABILITY-MODEL.md` — capability-first reusable workflow layer
+
 3. confirm the task entry point matches the request type
 4. confirm no conflicting instruction layers are active
 5. restart with a narrower fresh context if the session has drifted

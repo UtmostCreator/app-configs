@@ -41,3 +41,10 @@ When behavior seems inconsistent, inspect:
 - nearest instruction owner
 - loaded path-specific rules
 - whether the runtime supports nested behavior on the current surface
+
+## See Also
+
+- `../foundations/PRECEDENCE.md` — layering and non-overlap rules
+- `../foundations/CAPABILITY-MODEL.md` — where to place shared vs local capability docs
+- `TASK-ENTRYPOINTS.md` — which mechanism to use at which scope
+- `RUNTIME-OBSERVABILITY.md` — how to debug nested instruction loading

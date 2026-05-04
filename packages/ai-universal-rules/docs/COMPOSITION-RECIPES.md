@@ -64,3 +64,11 @@ Optional agents:
 - `refactorer`
 
 Do not add specialist agents until the core choice model is already obvious to the team.
+
+## See Also
+
+- `workflows/SYSTEM-WORKFLOW.md` — end-to-end lifecycle and task classification table
+- `workflows/TASK-ENTRYPOINTS.md` — when to use each mechanism
+- `workflows/AGENT-HANDOFFS.md` — staged agent handoff contract
+- `foundations/CAPABILITY-MODEL.md` — capability-first reusable workflow model
+- `PROJECT-EXAMPLES.md` — scenario-based examples using these recipes

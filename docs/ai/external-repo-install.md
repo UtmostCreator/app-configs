@@ -78,6 +78,14 @@ Useful flags:
 - existing files are skipped by default
 - use `--force` to overwrite existing paths
 - use `--no-base` when you only want runtime adapters (`.github` and/or `.opencode`) without replacing base policy files
+
+## See Also
+
+- `install-order.md` — full ordered command flow, reinstall flow, and selective pack recipes
+- `POST-INSTALL.md` — post-install checklist and commands
+- `packages/ai-universal-rules/docs/INSTALL-CATALOG.md` — full profile and pack index
+- `packages/ai-universal-rules/docs/INSTALL-GITHUB-COPILOT.md` — GitHub Copilot base install guide
+- `packages/ai-universal-rules/docs/INSTALL-OPENCODE.md` — OpenCode base install guide
 - core base policy paths remain protected even with `--force`; pass `--allow-core-overwrite` only when intentional
 
 ## Adaptation Behavior

@@ -89,3 +89,19 @@ Do not make prompt files the required base install.
 ## Anti-Pattern To Avoid
 
 Do not solve every workflow problem by adding more prompt files or more agents.
+
+## After Install
+
+- `ONBOARDING.md` — what to customize and in what order
+- `../PLACEHOLDERS.md` — placeholder reference for all copied templates
+- `../../docs/ai/POST-INSTALL.md` — post-install checklist and commands
+
+## See Also
+
+- `INSTALL-CATALOG.md` — full profile and pack index
+- `INSTALL-OPENCODE.md` — OpenCode runtime install guide
+- `../../docs/ai/install-order.md` — full ordered command flow and selective pack recipes
+- `../../docs/ai/external-repo-install.md` — external repository install examples
+- `workflows/SYSTEM-WORKFLOW.md` — end-to-end operating model
+- `workflows/TASK-ENTRYPOINTS.md` — when to use each mechanism
+- `foundations/COMPATIBILITY.md` — surface limits and fallbacks

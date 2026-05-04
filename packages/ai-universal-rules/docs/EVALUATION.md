@@ -62,3 +62,10 @@ For every high-value capability, review these regularly:
 - Keep when the capability triggers cleanly and reduces repeated prompting.
 - Improve when it is useful but misses edge cases, lacks gotchas, or has weak examples.
 - Remove or merge when it duplicates another capability or fires too broadly.
+
+## See Also
+
+- `operations/EVAL-SCENARIOS.md` — scenario set for hands-on workflow testing
+- `operations/MAINTENANCE.md` — update triggers and update order
+- `foundations/CAPABILITY-MODEL.md` — capability contract requirements being evaluated
+- `workflows/SYSTEM-WORKFLOW.md` — end-to-end lifecycle this rubric grades

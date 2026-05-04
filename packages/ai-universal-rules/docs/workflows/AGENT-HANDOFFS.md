@@ -39,3 +39,10 @@ Do not dump full session history into every handoff.
 - existing diff review: skip planner and start with reviewer
 - architecture-only question: stop at researcher or planner
 - local low-risk refactor: implementer then reviewer if needed
+
+## See Also
+
+- `SYSTEM-WORKFLOW.md` — end-to-end lifecycle and task classification
+- `RISK-AND-APPROVALS.md` — risk levels and approval gates
+- `TASK-ENTRYPOINTS.md` — when to use each mechanism
+- `../foundations/COMPATIBILITY.md` — surface differences between runtimes

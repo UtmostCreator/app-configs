@@ -35,3 +35,10 @@ Completion claims should point to proof.
 ## 8. Tool Contracts Matter
 
 Tool names, descriptions, boundaries, and expected outputs are part of the workflow design, not an implementation detail.
+
+## See Also
+
+- `CAPABILITY-MODEL.md` — capability-first reusable workflow principle
+- `CONTROL-MODEL.md` — advisory vs deterministic distinction
+- `PRECEDENCE.md` — non-overlap and layering rules
+- `../workflows/SYSTEM-WORKFLOW.md` — where these principles play out in the lifecycle

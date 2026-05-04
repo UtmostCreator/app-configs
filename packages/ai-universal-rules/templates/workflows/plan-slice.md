@@ -21,17 +21,28 @@ I produce a bounded implementation plan with risk posture, acceptance criteria, 
 
 ## Workflow
 
-1. use researcher or project-context if ownership is unclear
-2. define the bounded slice and acceptance criteria
-3. call out risk level and affected areas
-4. propose the smallest sound approach
-5. list verification implications and recommended next stage
+1. load task context or use `project-context` if ownership is unclear
+2. confirm approval boundaries before planning mutation-heavy work
+3. define the bounded slice and acceptance criteria
+4. call out risk level, targets, and affected areas
+5. propose the smallest sound approach
+6. list verification implications, generated-artifact impact, and recommended next stage
+
+## Read Alongside
+
+- `.github/instructions/context-gate.instructions.md`
+- `.github/instructions/approval-boundaries.instructions.md`
+- `.github/instructions/generated-artifacts.instructions.md`
+- `.github/instructions/testing.instructions.md`
+- `docs/ai/workflow.md`
 
 ## Output
 
 - bounded plan with acceptance criteria
 - risk level
 - affected paths and owners
+- approval gates
+- verification ladder
 - recommended next stage (implement, research, architect)
 
 ## Gotchas

@@ -20,10 +20,12 @@ Use this default workflow unless the task is clearly trivial:
 Workflow rules:
 
 - Prefer the smallest safe change.
+- Before planning, editing, or reviewing, load task context from `docs/ai/generated/task-context/latest.md`, `php tools/ai/compile-task-context.php`, or `php tools/ai/impact.php` when available. If no task context exists, stay read-only until ownership and verification surface are clear.
 - Before changing code, config, docs, or workflow logic, search for similar existing patterns in the touched area and nearby owners and report the closest overlap as a percentage.
 - If overlap is roughly `>=75%`, flag reuse or replacement immediately and recommend updating the existing pattern instead of adding a duplicate.
 - After completing the change, run a touched-scope stale sweep on edited files and nearby references for stale methods, stale data assumptions, stale commands/paths, outdated docs, unresolved placeholders, and generated-output drift.
 - When the repository includes a tool map or command wrappers, load that routing first and prefer `rg`, `fd`, `ast-grep`/`sg`, and structured queries over raw `grep`, `find`, or broad file dumps.
+- Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer; when a surface cannot auto-load repository hooks, preserve the same boundary manually and use `.ai-logs/` as the canonical local evidence root.
 - Keep stable policy here and move procedural depth into capabilities, prompts, commands, or staged agents.
 - For non-trivial work, classify risk as `low`, `medium`, or `high` to choose review and verification depth.
 - Ground decisions in active code and configuration, not aspiration.

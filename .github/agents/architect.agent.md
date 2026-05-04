@@ -1,54 +1,23 @@
 ---
-id: architect
-description: Use when a change needs scoping, design, ownership decisions, contract boundaries, adapter strategy, or risk posture before implementation
-mode: subagent
-hidden: false
-temperature: 0.1
-capabilities:
-  - project-context
-  - service-boundary-patterns
-  - config-change-safety
-  - adapter-drift
-  - release-safety
-  - docs-sync
-  - verify-change
-permission:
-  edit: deny
-  bash:
-    '*': deny
-    'command -v *': allow
-    'test -f *': allow
-    'test -x *': allow
-    'test -d *': allow
-    'stat *': allow
-    'pwd': allow
-    'ls *': allow
-    'fd *': allow
-    'eza *': allow
-    'rg *': allow
-    'git grep *': allow
-    'grep *': allow
-    'sed -n *': allow
-    'head *': allow
-    'tail *': allow
-    'nl *': allow
-    'jq *': allow
-    'yq *': allow
-    'git status*': allow
-    'git diff*': allow
-    'git log*': allow
-    'git show*': allow
-    'git ls-files*': allow
-    'git blame*': allow
-    'git branch*': allow
-    'git rev-parse*': allow
-    'bash scripts/ai/ai-search.sh *': allow
-    'bash scripts/ai/rg-code.sh *': allow
-    'bash scripts/ai/fd-files.sh *': allow
-    'bash scripts/ai/preview-file.sh *': allow
-    'bash scripts/ai/query-usage.sh *': allow
-    'bash scripts/ai/git-forensics.sh *': allow
+name: Architect
+description: 'Use when a change needs scoping, design, ownership decisions, contract boundaries, adapter strategy, or risk posture before implementation'
+tools: ['search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/textSearch', 'search/usages', 'read/readFile', 'read/problems', 'vscode/askQuestions']
+user-invocable: true
+disable-model-invocation: false
 ---
+
+## Enforcement Boundary
+
+This agent is configured for the GitHub Copilot VS Code surface.
+
+Available tools: `search/changes`, `search/codebase`, `search/fileSearch`, `search/listDirectory`, `search/textSearch`, `search/usages`, `read/readFile`, `read/problems`, `vscode/askQuestions`
+
+- **Edit:** not available — this agent is read-only
+- **Execute:** not available — this agent is read-only
+
+This agent is strictly read-only. It must not edit files, run shell commands, execute scripts, create commits, or claim that verification was executed.
+
+If the task requires file edits, command execution, or repository mutation, produce a handoff plan instead of performing the action.
 
 # Architect Agent
 

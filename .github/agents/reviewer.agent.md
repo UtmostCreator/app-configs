@@ -1,65 +1,23 @@
 ---
-id: reviewer
-description: Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification
-mode: subagent
-hidden: false
-temperature: 0.0
-capabilities:
-  - review-diff
-  - verify-change
-  - bug-regression
-  - adapter-drift
-  - authorization-and-tool-governance
-  - config-change-safety
-  - release-safety
-  - docs-sync
-permission:
-  edit: deny
-  bash:
-    '*': deny
-    'command -v *': allow
-    'test -f *': allow
-    'test -x *': allow
-    'test -d *': allow
-    'stat *': allow
-    'pwd': allow
-    'ls *': allow
-    'fd *': allow
-    'eza *': allow
-    'rg *': allow
-    'git grep *': allow
-    'grep *': allow
-    'sed -n *': allow
-    'head *': allow
-    'tail *': allow
-    'nl *': allow
-    'jq *': allow
-    'yq *': allow
-    'file *': allow
-    'git status*': allow
-    'git diff*': allow
-    'git log*': allow
-    'git show*': allow
-    'git ls-files*': allow
-    'git blame*': allow
-    'git branch*': allow
-    'git rev-parse*': allow
-    'bash scripts/ai/ai-search.sh *': allow
-    'bash scripts/ai/rg-code.sh *': allow
-    'bash scripts/ai/fd-files.sh *': allow
-    'bash scripts/ai/preview-file.sh *': allow
-    'bash scripts/ai/query-usage.sh *': allow
-    'bash scripts/ai/git-forensics.sh *': allow
-    'bash scripts/ai/ai-doc-check.sh --check*': allow
-    'php -l *': allow
-    'vendor/bin/phpunit *': allow
-    './vendor/bin/phpunit *': allow
-    'phpunit *': allow
-    'shellcheck *': allow
-    'markdownlint-cli2 *': allow
-    'php tools/ai/validate-*.php *': allow
-    'php tools/ai/generate-*.php --check*': allow
+name: Reviewer
+description: 'Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification'
+tools: ['search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/textSearch', 'search/usages', 'read/readFile', 'read/problems']
+user-invocable: true
+disable-model-invocation: false
 ---
+
+## Enforcement Boundary
+
+This agent is configured for the GitHub Copilot VS Code surface.
+
+Available tools: `search/changes`, `search/codebase`, `search/fileSearch`, `search/listDirectory`, `search/textSearch`, `search/usages`, `read/readFile`, `read/problems`
+
+- **Edit:** not available — this agent is read-only
+- **Execute:** not available — this agent is read-only
+
+This agent is strictly read-only. It must not edit files, run shell commands, execute scripts, create commits, or claim that verification was executed.
+
+If the task requires file edits, command execution, or repository mutation, produce a handoff plan instead of performing the action.
 
 # Reviewer Agent
 

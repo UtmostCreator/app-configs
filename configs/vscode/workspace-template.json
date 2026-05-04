@@ -5,13 +5,47 @@
   // =========================
   "prettier.requireConfig": true,
   "editor.formatOnSave": false,
-
+  // =========================
+  // Copilot enforcement posture
+  // =========================
+  "chat.tools.terminal.ignoreDefaultAutoApproveRules": true,
+  "chat.tools.terminal.blockDetectedFileWrites": true,
+  "chat.tools.terminal.autoApprove": {
+    "/^bash scripts\\/ai\\/(ai-search|ai-verify|preview-file|fd-files|rg-code|git-forensics|query-usage|ai-diff-context|pack-context|gh-pr-context|repomix-context-tree|repomix-scc-router)\\.sh(\\s|$)/": true,
+    "/\\brm\\b|\\bdel\\b|\\brmdir\\b|\\bgit\\s+push\\b|\\bgit\\s+reset\\b|\\bsudo\\b|curl\\s+.*\\|\\s*(sh|bash|zsh|python|python3|php|node|ruby)|wget\\s+.*\\|\\s*(sh|bash|zsh|python|python3|php|node|ruby)/": false
+  },
+  "chat.agent.sandbox.enabled": true,
+  "chat.agent.networkFilter": true,
+  "chat.agent.allowedNetworkDomains": [],
+  "chat.agent.sandbox.FileSystem.mac": {
+    "allowWrite": [
+      "."
+    ],
+    "denyWrite": [
+      "./.git/",
+      "./vendor/",
+      "./node_modules/",
+      "./.env",
+      "./.github/workflows/"
+    ]
+  },
+  "chat.agent.sandbox.FileSystem.linux": {
+    "allowWrite": [
+      "."
+    ],
+    "denyWrite": [
+      "./.git/",
+      "./vendor/",
+      "./node_modules/",
+      "./.env",
+      "./.github/workflows/"
+    ]
+  },
   // =========================
   // Project formatters (PHP / Blade)
   // =========================
   "laravel-pint.enable": true,
   "laravel-pint.executablePath": "./vendor/bin/pint",
-
   // =========================
   // Language associations (drives formatter/linter selection)
   // =========================
@@ -23,7 +57,6 @@
     ".env*": "dotenv",
     "*.stub": "php"
   },
-
   // =========================
   // Emmet / Tailwind language inclusion (markup authoring consistency)
   // =========================
@@ -36,7 +69,6 @@
     "vue": "html",
     "php": "html"
   },
-
   // =========================
   // YAML schema (content structure validation consistency)
   // =========================
@@ -46,7 +78,6 @@
       "content/blueprints/**/*.yaml"
     ]
   },
-
   // =========================
   // JSON/JSONC formatter choice
   // =========================

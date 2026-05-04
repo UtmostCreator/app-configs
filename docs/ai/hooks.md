@@ -17,6 +17,8 @@ Hooks are optional adapter-level enforcement, not the canonical workflow source.
 
 This example uses a `preToolUse` hook to block obviously dangerous tool invocations before they execute.
 The repo also includes optional git commit hooks that both Husky and Lefthook can point at.
+The stronger Copilot stack pairs this hook with `docs/ai/script-registry.md`, `docs/ai/script-registry.json`, and VS Code workspace settings for sandbox and terminal auto-approval defaults.
+The post-tool hook writes evidence-oriented local telemetry under `.ai-logs/`, with `.ai-logs/tool-usage.jsonl` as the canonical shell-hook event log.
 
 ## Current Guard Scope
 
@@ -27,6 +29,7 @@ The bash hook (`scripts/ai/pre-tool-use.sh`) enforces the three-tier command ris
 - **Tier 3 (deletion/recovery)** — denied or explicit approval required: `rm`, destructive git (`git reset --hard`, `git push --force`), `ai-rollback apply`, `repomix-scc-router clean/purge`, `just context-clean/purge`
 
 When `COPILOT_STRICT_ALLOWLIST=1` is set in the shell that launches Copilot CLI, the hook also denies commands outside the explicit read-only and approved-wrapper list. In practice this forces raw `grep`, `find`, and `cat`-style AI tool use toward the repo wrappers such as `scripts/ai/rg-code.sh`, `scripts/ai/fd-files.sh`, and `scripts/ai/preview-file.sh`.
+Commands that target `scripts/ai/*.sh` now also have to match the explicit registry-driven allowlist in `docs/ai/script-registry.json` or one of the tiered hook rules.
 
 Additionally blocked regardless of tier:
 
@@ -47,6 +50,7 @@ Additionally blocked regardless of tier:
 - the bash hook (`pre-tool-use.sh`) is the primary enforcement path on macOS/Linux; the PowerShell guard (`tool-guardian.ps1`) is an optional complementary surface
 - some runtimes or surfaces may not load repo hooks automatically
 - VS Code IDE agent mode does not load repository hooks; strict allowlist enforcement is a Copilot CLI or cloud-agent concern, not an IDE-agent concern
+- VS Code workspace settings can still narrow the IDE surface through fine-grained agent tools, terminal auto-approval rules, and sandbox/network restrictions, but that remains best-effort compared with the shell hook
 - the hook is pattern-based and should be treated as a safety net, not a complete security system
 - secret scanning remains best-effort locally; CI or broader audits should still exist for higher assurance
 

@@ -1,0 +1,683 @@
+## Verdict
+
+Current instruction quality: **45/100**
+
+Main issue: the files contain reasonable generic rules, but they are **too thin to reliably steer Copilot**. They miss concrete routing to canonical docs, task-context generation, risk/approval boundaries, verification commands, ownership rules, generated-artifact policy, and adapter-specific behaviour.
+
+VS Code supports one always-on `.github/copilot-instructions.md`, targeted `*.instructions.md` files under `.github/instructions`, and custom agents under `.github/agents`; targeted instruction files apply through `applyTo` globs or task matching, but multiple instruction files have **no guaranteed order**, so critical rules must be repeated or routed explicitly. ([Visual Studio Code][1])
+
+---
+
+## Critical missing pieces
+
+| Missing item                                                           | Must live in                                                           |                                                      Must be referenced by | Score impact |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------: | -----------: |
+| **Context Gate**: agent must load task context before planning/editing | `.github/instructions/context-gate.instructions.md`                    | all agents, `.github/copilot-instructions.md`, `AGENTS.md`, `.opencode/**` |  **100/100** |
+| **Approval boundaries**: destructive/high-risk changes                 | `.github/instructions/approval-boundaries.instructions.md`             |                          architect, implementer, reviewer, release-auditor |   **98/100** |
+| **Verification ladder**: focused → affected → full → smoke/release     | `.github/instructions/testing.instructions.md` + `docs/ai/workflow.md` |                                     implementer, reviewer, release-auditor |   **96/100** |
+| **Generated artifacts policy**                                         | `.github/instructions/generated-artifacts.instructions.md`             |                         implementer, refactorer, reviewer, release-auditor |   **94/100** |
+| **Ownership and source-of-truth routing**                              | `architecture.instructions.md`                                         |                                            architect, researcher, reviewer |   **93/100** |
+| **Frontend framework-specific rules**                                  | `frontend.instructions.md`                                             |                                          implementer, reviewer, refactorer |   **88/100** |
+| **Target/platform matrix**                                             | `targets.instructions.md`                                              |                          architect, implementer, reviewer, release-auditor |   **86/100** |
+| **Test selection policy**                                              | `testing.instructions.md`                                              |                                                      implementer, reviewer |   **92/100** |
+| **Security/config/secrets rule**                                       | `security.instructions.md`                                             |                                                                 all agents |   **95/100** |
+| **Agent handoff rules**                                                | each `.github/agents/*.agent.md`                                       |                                                                 all agents |   **90/100** |
+
+---
+
+## Minimum correct file graph
+
+```text
+.github/
+  copilot-instructions.md
+  instructions/
+    context-gate.instructions.md
+    architecture.instructions.md
+    frontend.instructions.md
+    targets.instructions.md
+    testing.instructions.md
+    approval-boundaries.instructions.md
+    generated-artifacts.instructions.md
+    security.instructions.md
+    ai-tooling.instructions.md
+  agents/
+    architect.agent.md
+    implementer.agent.md
+    refactorer.agent.md
+    release-auditor.agent.md
+    researcher.agent.md
+    reviewer.agent.md
+
+docs/ai/
+  project-context.md
+  workflow.md
+  AI-GUARDRAILS.md
+  approval-boundaries.md
+  source-of-truth.md
+  generated-artifacts.md
+  adapter-contract.md
+  capabilities/
+```
+
+Do **not** rely only on Markdown links being auto-loaded. VS Code has a setting for automatically adding referenced instruction files, but its default is `false`; matching `applyTo` instructions are enabled separately. ([Visual Studio Code][2])
+
+---
+
+## What each file must point to
+
+| File                                  | Must point to                                                                                            | Why                                 |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `.github/copilot-instructions.md`     | all critical `.github/instructions/*.instructions.md`, `docs/ai/workflow.md`, `docs/ai/AI-GUARDRAILS.md` | Always-on router                    |
+| `architecture.instructions.md`        | `docs/ai/source-of-truth.md`, `docs/ai/ownership.md`, `docs/ai/approval-boundaries.md`                   | Prevent wrong-layer edits           |
+| `frontend.instructions.md`            | UI primitives docs, accessibility rules, frontend test commands, target rules                            | Prevent random UI rewrites          |
+| `targets.instructions.md`             | platform matrix, build matrix, deployment/adapter docs                                                   | Prevent cross-target breakage       |
+| `testing.instructions.md`             | verification ladder, test selection script, CI commands                                                  | Prevent shallow verification        |
+| `context-gate.instructions.md`        | `docs/ai/generated/task-context/latest.md`, `tools/ai/compile-task-context.php`, `tools/ai/impact.php`   | Forces task-specific context        |
+| `approval-boundaries.instructions.md` | `docs/ai/approval-boundaries.md`, `docs/ai/AI-GUARDRAILS.md`                                             | Blocks unsafe automation            |
+| `generated-artifacts.instructions.md` | `docs/ai/generated-artifacts.md`, validators                                                             | Prevent generated drift             |
+| `security.instructions.md`            | secret/config/auth policy                                                                                | Prevent unsafe edits                |
+| custom agents                         | relevant `.instructions.md` files + canonical docs                                                       | Keeps agent files thin but grounded |
+
+---
+
+## Agent-to-instruction routing
+
+| Agent                      | Must reference                                                                                      |
+| -------------------------- | --------------------------------------------------------------------------------------------------- |
+| `researcher.agent.md`      | context gate, architecture, targets, ai-tooling, source-of-truth                                    |
+| `architect.agent.md`       | context gate, architecture, targets, approval boundaries, generated artifacts                       |
+| `implementer.agent.md`     | context gate, architecture, frontend/backend-specific rules, testing, security, generated artifacts |
+| `reviewer.agent.md`        | context gate, architecture, testing, approval boundaries, security, generated artifacts             |
+| `refactorer.agent.md`      | architecture, testing, generated artifacts, approval boundaries                                     |
+| `release-auditor.agent.md` | targets, testing, approval boundaries, generated artifacts, release/smoke checks                    |
+
+Custom agents are configured in `.agent.md` files with YAML frontmatter and body instructions; VS Code looks for workspace custom agents under `.github/agents` by default. ([Visual Studio Code][3])
+
+---
+
+# Correct fuller versions
+
+## `architecture.instructions.md`
+
+```md
+---
+applyTo: "<ACTIVE_PATHS>"
+description: "Architecture, ownership, layering, source-of-truth, and high-risk structural change guidance"
+---
+
+# Architecture Rules
+
+Apply these rules before proposing or editing architecture-sensitive code.
+
+## Required context
+
+- Read the current implementation before proposing structural changes.
+- Load task context first when available:
+  - `docs/ai/generated/task-context/latest.md`
+  - output from `php tools/ai/compile-task-context.php`
+  - output from `php tools/ai/impact.php`
+- If task context is missing, perform read-only research before planning implementation.
+
+## Source of truth
+
+- Prefer canonical repository docs over adapter files.
+- Canonical architecture/policy docs:
+  - `docs/ai/project-context.md`
+  - `docs/ai/workflow.md`
+  - `docs/ai/source-of-truth.md`
+  - `docs/ai/AI-GUARDRAILS.md`
+  - `docs/ai/approval-boundaries.md`
+  - `docs/ai/generated-artifacts.md`
+  - `docs/ai/adapter-contract.md`
+- Adapter files such as `.github/**`, `.opencode/**`, `AGENTS.md`, and `CLAUDE.md` must stay thin and point back to canonical docs.
+
+## Ownership and layering
+
+- Keep logic with its existing owner unless current code proves the boundary is wrong.
+- Prefer extending existing patterns before introducing parallel abstractions.
+- Do not create a new abstraction when an existing abstraction has at least 75% overlap.
+- Do not move responsibilities across layers without naming:
+  - old owner
+  - new owner
+  - reason for transfer
+  - affected callers
+  - verification path
+- Respect `CODEOWNERS`, module ownership docs, and local conventions before editing.
+
+## Architectural change rules
+
+- Treat these as high-risk:
+  - public API contract changes
+  - database schema changes
+  - authentication/authorization changes
+  - generated artifact changes
+  - installer/upgrade/rollback changes
+  - CI/release workflow changes
+  - cross-target behaviour changes
+  - adapter instruction changes
+- Ask for approval before making `<APPROVAL_REQUIRED_CHANGES>`.
+- Approval means a human approver can explain each changed section well enough to own the merge.
+
+## Data and migration rules
+
+- For migrations that drop, rename, restructure, or backfill existing data, use expand-contract.
+- Do not combine destructive schema changes with application behaviour changes unless explicitly approved.
+- Every migration must have:
+  - rollback or forward-fix posture
+  - affected table/entity list
+  - compatibility notes
+  - test or smoke proof
+
+## Output requirement
+
+When proposing architecture work, include:
+
+- affected paths
+- current owner
+- proposed owner
+- risk level: low / medium / high
+- required approval gates
+- verification ladder
+- rollback or mitigation path
+```
+
+---
+
+## `frontend.instructions.md`
+
+```md
+---
+applyTo: "<FRONTEND_PATH_GLOB>"
+description: "Frontend, UI, accessibility, state, interaction, and presentation guidance"
+---
+
+# Frontend Rules
+
+Apply these rules to UI components, pages, routes, composables/hooks, styles, frontend tests, and client-side API integrations.
+
+## Required context
+
+- Inspect existing UI primitives before adding new components.
+- Inspect nearby components before creating new patterns.
+- Load applicable architecture, target, and testing instructions.
+- For Vue/Nuxt projects, check existing conventions for:
+  - components
+  - composables
+  - layouts
+  - middleware
+  - plugins
+  - stores
+  - GraphQL/API clients
+  - test utilities
+
+## Separation of concerns
+
+- Keep presentation code focused on rendering and user interaction.
+- Do not move heavy business logic into UI components if the repository already separates it.
+- Put reusable stateful logic into the project’s existing abstraction:
+  - composable / hook
+  - store
+  - service
+  - query/mutation wrapper
+  - domain module
+- Avoid duplicating transformation logic between component and API layer.
+
+## UI consistency
+
+- Reuse existing UI primitives before adding new ones.
+- Preserve existing design tokens, spacing, typography, variants, and theme conventions.
+- Do not introduce a second component library without explicit approval.
+- Keep component APIs narrow and predictable.
+
+## Accessibility
+
+- Preserve keyboard navigation.
+- Preserve focus management.
+- Use semantic HTML where possible.
+- Keep labels, ARIA attributes, and error states accurate.
+- Do not remove loading, empty, disabled, or error states.
+
+## State and data loading
+
+- Preserve existing caching and invalidation patterns.
+- Do not bypass GraphQL/API client conventions.
+- Do not introduce duplicate network calls when existing query state can be reused.
+- Keep optimistic updates, pagination, filtering, and sorting behaviour explicit.
+
+## Target awareness
+
+- Do not assume browser-only APIs are safe in SSR, server routes, workers, CLI, or build-time code.
+- For Nuxt-like SSR targets, guard client-only behaviour behind existing project patterns.
+- If a change is intentionally target-specific, state the target and why.
+
+## Frontend tests
+
+- Prefer the lowest test level that proves behaviour:
+  - unit for pure logic
+  - component test for rendering/interaction
+  - integration test for routing/data flow
+  - E2E only for critical user flows
+- Add regression coverage for bug fixes.
+- Do not weaken assertions to pass.
+- Preserve accessibility-relevant assertions where present.
+
+## Output requirement
+
+For frontend changes, report:
+
+- changed UI path
+- reused primitive/pattern
+- affected user flow
+- accessibility impact
+- target impact
+- test command used
+```
+
+---
+
+## `targets.instructions.md`
+
+```md
+---
+applyTo: "**"
+description: "Target, runtime, platform, adapter, and deployment-surface adaptation guidance"
+---
+
+# Target Rules
+
+Use these rules when a repository supports multiple runtimes, platforms, apps, packages, adapters, or generated surfaces.
+
+## Supported targets
+
+Supported targets: `<TARGET_PLATFORMS>`
+
+Examples of targets may include:
+
+- browser
+- SSR/server
+- CLI
+- worker
+- mobile/webview
+- admin UI
+- API
+- package/library
+- installer
+- CI workflow
+- Copilot adapter
+- OpenCode adapter
+- generated docs/catalogue
+
+## Scope control
+
+- Do not assume every task affects every target.
+- Identify the affected target before planning edits.
+- Keep target-specific behaviour isolated when the repository already draws that boundary.
+- If a change is intentionally target-specific, say so clearly.
+- If behaviour must stay consistent across targets, name the compatibility requirement.
+
+## Cross-target safety
+
+Before editing shared code, check:
+
+- which targets import it
+- whether it runs at build time or runtime
+- whether it runs client-side, server-side, or both
+- whether target-specific environment variables are required
+- whether generated outputs depend on it
+- whether CI or release scripts depend on it
+
+## Adapter surfaces
+
+For AI-adapter files:
+
+- `.github/**`
+- `.opencode/**`
+- `AGENTS.md`
+- `CLAUDE.md`
+- `.claude/**`
+
+Rules:
+
+- Keep adapters thin.
+- Do not duplicate long canonical procedures.
+- Point adapters to `docs/ai/**` canonical docs.
+- Preserve adapter-specific syntax and capability limits.
+- If an adapter cannot support a feature, define fallback behaviour.
+
+## Generated target surfaces
+
+For generated outputs:
+
+- Do not manually edit generated files unless the generated-artifacts policy allows it.
+- Update the generator or source file first.
+- Run the relevant generator check after changing generation input.
+- Record drift if generated output intentionally differs.
+
+## Output requirement
+
+For target-sensitive changes, report:
+
+- affected targets
+- unaffected targets
+- shared files touched
+- target-specific behaviour
+- compatibility risk
+- verification command per affected target
+```
+
+---
+
+## `testing.instructions.md`
+
+```md
+---
+applyTo: "<TEST_PATH_GLOB>"
+description: "Testing, verification ladder, regression coverage, and deterministic proof rules"
+---
+
+# Testing Rules
+
+Apply these rules to test files, test fixtures, test utilities, CI checks, and implementation tasks that require verification.
+
+## Required verification ladder
+
+Use the smallest sufficient proof first, then widen only when risk requires it.
+
+1. Focused proof  
+   - one test file
+   - one targeted command
+   - one failing/passing reproduction
+2. Affected-layer proof  
+   - related package/module tests
+   - relevant frontend/backend/API layer
+3. Broader repository proof  
+   - full test suite or major affected suite
+4. Build/smoke proof  
+   - build, lint, typecheck, route smoke, installer dry-run
+5. Release-safety proof  
+   - only for medium/high-risk changes
+
+## Baseline command
+
+- Use `<PRIMARY_TEST_COMMAND>` as the baseline test command unless a narrower command is more appropriate.
+- Prefer deterministic local commands over broad slow commands when proving a small change.
+- If no reliable command exists, state that clearly and provide the closest available proof.
+
+## Regression rules
+
+- Add regression coverage when fixing bugs.
+- Reproduce the bug first when practical.
+- The regression test must fail before the fix when feasible.
+- Do not weaken assertions to make a change pass.
+- Do not delete coverage unless the behaviour is intentionally removed and approved.
+
+## Test design
+
+- Prefer the lowest test level that proves the behaviour.
+- Test behaviour, contract, and edge cases before implementation details.
+- Keep tests deterministic where practical.
+- Avoid time, network, random, filesystem, and environment dependency unless isolated.
+- Use existing fixtures/factories/helpers before creating new ones.
+- Do not duplicate large fixtures when a minimal fixture proves the case.
+
+## AI-specific verification
+
+For AI tooling, agents, instructions, generated docs, or installers, verify:
+
+- schema validity
+- generated-output drift
+- dry-run/install transaction safety
+- rollback/backup behaviour
+- adapter parity where relevant
+- evidence log output
+
+Likely commands:
+
+- `php tools/ai/validate-ai-config.php`
+- `php tools/ai/validate-ai-catalog.php`
+- `php tools/ai/generate-ai-catalog.php --check`
+- `php tools/ai/verify-full-install.php`
+- `php tools/ai/ai.php install --profile <profile> --dry-run`
+
+## Failure handling
+
+- If tests fail unexpectedly, stop and report:
+  - command
+  - failure summary
+  - suspected cause
+  - whether failure is related to the change
+- Do not continue broad edits after unexplained failures.
+- Do not claim verification passed without command output or clear evidence.
+
+## Output requirement
+
+For every implementation or review, include:
+
+- commands run
+- result: pass / fail / not run
+- reason for selected test level
+- remaining verification gaps
+```
+
+---
+
+## Add this new file: `context-gate.instructions.md`
+
+```md
+---
+applyTo: "**"
+description: "Mandatory task-context loading before planning, editing, or reviewing"
+---
+
+# Context Gate
+
+Before any agent answers, plans, edits, or reviews, it must load one of:
+
+- `docs/ai/generated/task-context/latest.md`
+- output from `php tools/ai/compile-task-context.php`
+- output from `php tools/ai/impact.php`
+
+If no task context exists, the agent may only perform read-only research.
+
+## Minimum task context must contain
+
+- user task
+- affected files
+- affected symbols
+- entrypoints
+- owners
+- tests
+- risk level
+- generated artifacts
+- approval boundaries
+- target/platform impact
+- verification commands
+
+## Forbidden behaviour
+
+- Do not implement from memory.
+- Do not scan the whole repository when a task context compiler exists.
+- Do not edit before affected paths and verification surface are known.
+- Do not ignore generated-output drift.
+```
+
+---
+
+## Add this new file: `approval-boundaries.instructions.md`
+
+```md
+---
+applyTo: "**"
+description: "Approval boundaries for destructive, risky, privileged, or broad changes"
+---
+
+# Approval Boundaries
+
+Ask for explicit approval before:
+
+- deleting files
+- overwriting existing instructions
+- changing installer or rollback behaviour
+- changing CI/release workflows
+- changing authentication or authorization
+- changing secrets, environment files, keys, tokens, or credentials
+- changing database schema destructively
+- modifying generated artifacts directly
+- touching more than 6 files or more than 300-500 LOC
+- running destructive commands
+- changing adapter policy in `.github/**`, `.opencode/**`, `AGENTS.md`, or `CLAUDE.md`
+
+## Safe default
+
+When approval is missing:
+
+- research
+- plan
+- produce a patch proposal
+- run read-only commands
+- avoid writes
+```
+
+---
+
+## Add this new file: `generated-artifacts.instructions.md`
+
+```md
+---
+applyTo: "docs/ai/generated/**,.schemas/**,tools/ai/**,scripts/ai/**"
+description: "Generated artifact, schema, catalogue, and drift-control rules"
+---
+
+# Generated Artifact Rules
+
+- Do not manually edit generated artifacts unless the policy explicitly allows it.
+- Change the source, schema, or generator first.
+- Run generator checks after changing generator input.
+- Keep generated outputs deterministic.
+- Record evidence logs for generator, installer, and validation changes.
+- Treat generated-output drift as a verification failure unless intentionally approved.
+
+## Required checks
+
+Use relevant commands:
+
+- `php tools/ai/validate-ai-config.php`
+- `php tools/ai/validate-ai-catalog.php`
+- `php tools/ai/generate-ai-catalog.php --check`
+- `php tools/ai/verify-full-install.php`
+- `php tools/ai/ai.php install --profile <profile> --dry-run`
+```
+
+---
+
+## Add this new file: `security.instructions.md`
+
+```md
+---
+applyTo: "**"
+description: "Security, secrets, auth, config, and privileged-operation rules"
+---
+
+# Security Rules
+
+- Never create, expose, print, commit, or modify secrets.
+- Do not edit `.env`, key, certificate, token, credential, or production config files without explicit approval.
+- Treat auth, authorization, permissions, tenancy, billing, and data export as high-risk.
+- Prefer deny-by-default behaviour for permissions.
+- Preserve audit logging and error handling.
+- Do not bypass validation to make tests pass.
+- Do not weaken access checks unless explicitly approved and documented.
+```
+
+---
+
+## Required `.github/copilot-instructions.md` router
+
+```md
+# Repository AI Instructions
+
+Use this file as the always-on routing layer. Keep detailed rules in `.github/instructions/**` and canonical policy in `docs/ai/**`.
+
+## Mandatory first step
+
+Before planning, editing, or reviewing, apply:
+
+- `.github/instructions/context-gate.instructions.md`
+
+If task context is missing, perform read-only research only.
+
+## Canonical docs
+
+Use these as source of truth:
+
+- `docs/ai/project-context.md`
+- `docs/ai/workflow.md`
+- `docs/ai/AI-GUARDRAILS.md`
+- `docs/ai/approval-boundaries.md`
+- `docs/ai/source-of-truth.md`
+- `docs/ai/generated-artifacts.md`
+- `docs/ai/adapter-contract.md`
+
+## Targeted instructions
+
+Apply relevant targeted files:
+
+- `.github/instructions/architecture.instructions.md`
+- `.github/instructions/frontend.instructions.md`
+- `.github/instructions/targets.instructions.md`
+- `.github/instructions/testing.instructions.md`
+- `.github/instructions/approval-boundaries.instructions.md`
+- `.github/instructions/generated-artifacts.instructions.md`
+- `.github/instructions/security.instructions.md`
+- `.github/instructions/ai-tooling.instructions.md`
+
+## Core workflow
+
+Default workflow:
+
+1. load task context
+2. identify affected files and targets
+3. classify risk
+4. check approval boundaries
+5. plan smallest safe change
+6. implement
+7. verify
+8. report evidence
+
+## Hard stops
+
+Stop and ask or report blocker when:
+
+- ownership is unclear
+- test failures are unexplained
+- task context is missing for implementation
+- diff exceeds approved scope
+- destructive action is needed
+- generated artifacts drift unexpectedly
+```
+
+---
+
+## Most important correction
+
+Replace placeholder globs before committing:
+
+```md
+applyTo: "<ACTIVE_PATHS>"
+applyTo: "<FRONTEND_PATH_GLOB>"
+applyTo: "<TEST_PATH_GLOB>"
+```
+
+With real patterns, for example:
+
+```md
+applyTo: "app/**,src/**,packages/**,tools/**,scripts/**"
+applyTo: "resources/js/**,src/**/*.vue,src/**/*.tsx,app/**/*.vue,components/**,pages/**,layouts/**,composables/**"
+applyTo: "tests/**,**/*.test.*,**/*.spec.*,cypress/**,playwright/**"
+```
+
+If `applyTo` is missing or does not match the working file, the instruction file is not automatically applied. VS Code’s own troubleshooting guidance specifically says to verify that `*.instructions.md` files are in the configured instructions folder and that their `applyTo` glob matches the file being worked on. ([Visual Studio Code][1])
+
+[1]: https://code.visualstudio.com/docs/copilot/customization/custom-instructions "Use custom instructions in VS Code"
+[2]: https://code.visualstudio.com/docs/copilot/reference/copilot-settings "GitHub Copilot in VS Code settings reference"
+[3]: https://code.visualstudio.com/docs/copilot/customization/custom-agents "Custom agents in VS Code"

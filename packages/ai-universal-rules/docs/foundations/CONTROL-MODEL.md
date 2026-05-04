@@ -42,3 +42,10 @@ Use these when the repo needs guaranteed checks or boundaries:
 Do not confuse the existence of an instruction with enforcement.
 
 If a repo must guarantee secrets scanning, destructive-action blocking, or required validation, use hooks or other deterministic controls where the runtime supports them.
+
+## See Also
+
+- `COMPATIBILITY.md` — surface differences that affect what controls are available
+- `../operations/HOOKS-AND-ENFORCEMENT.md` — deterministic controls and minimum enforcement posture
+- `../operations/GOVERNANCE.md` — required controls and governance goals
+- `../operations/MCP-BOUNDARIES.md` — deterministic boundaries for external system access

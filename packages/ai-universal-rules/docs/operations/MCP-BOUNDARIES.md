@@ -20,3 +20,10 @@ For each MCP integration, record:
 - read-only or mutating posture
 - approval requirements
 - fallback behavior if unavailable
+
+## See Also
+
+- `../foundations/CONTROL-MODEL.md` — advisory vs deterministic controls and MCP boundary model
+- `../foundations/COMPATIBILITY.md` — surface-dependent MCP availability
+- `GOVERNANCE.md` — approval requirements for external system access
+- `HOOKS-AND-ENFORCEMENT.md` — deterministic enforcement alongside MCP boundaries

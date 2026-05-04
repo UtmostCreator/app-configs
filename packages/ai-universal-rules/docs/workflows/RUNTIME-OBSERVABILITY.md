@@ -32,3 +32,10 @@ Do not only ask whether files exist. Ask what actually loaded.
 ## Operational Rule
 
 Runtime inspection is a first-class workflow step, not an afterthought.
+
+## See Also
+
+- `SYSTEM-WORKFLOW.md` — lifecycle step that includes runtime inspection
+- `../operations/TROUBLESHOOTING.md` — common failure modes and first checks
+- `../foundations/COMPATIBILITY.md` — surface limits that affect what loads
+- `../foundations/CONTROL-MODEL.md` — advisory vs deterministic controls

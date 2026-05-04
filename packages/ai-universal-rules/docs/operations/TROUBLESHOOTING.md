@@ -17,3 +17,10 @@
 3. inspect what actually loaded
 4. check placeholder leaks
 5. rerun the task in a fresh narrow session if drift is obvious
+
+## See Also
+
+- `../workflows/RUNTIME-OBSERVABILITY.md` — runtime inspection as a first-class workflow step
+- `../../PLACEHOLDERS.md` — placeholder reference to check for leaks
+- `../foundations/COMPATIBILITY.md` — surface differences that cause unexpected behavior
+- `EVAL-SCENARIOS.md` — scenarios for testing after fixing failure modes

@@ -22,3 +22,10 @@ Treat this package like workflow infrastructure, not throwaway prompts.
 - patch: wording or non-breaking support-file improvements
 - minor: new workflow layers, capabilities, prompts, or agents
 - major: compatibility-breaking structural changes or removed assets
+
+## See Also
+
+- `../RELEASE-BUNDLES.md` — export bundles and release workflow
+- `../../PLACEHOLDERS.md` — placeholder reference when updating templates
+- `EVAL-SCENARIOS.md` — scenarios to test after maintenance updates
+- `TROUBLESHOOTING.md` — common failure modes introduced after updates

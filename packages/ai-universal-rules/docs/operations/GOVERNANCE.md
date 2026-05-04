@@ -26,3 +26,10 @@ A human approver must be able to explain each changed section well enough to own
 ## Unknown Is Allowed
 
 The workflow should prefer `unknown`, `not verified`, or `needs repo confirmation` over invented certainty.
+
+## See Also
+
+- `HOOKS-AND-ENFORCEMENT.md` — deterministic controls and minimum enforcement posture
+- `../workflows/RISK-AND-APPROVALS.md` — risk levels, approval gates, and approval packet
+- `../workflows/AGENT-HANDOFFS.md` — staged roles and handoff boundaries
+- `../../templates/shared/verification/VERIFICATION-EVIDENCE.template.md` — evidence template

@@ -21,3 +21,10 @@ Use these scenarios to test workflow quality.
 - drift resistance
 - approval compliance
 - surface-awareness and fallback behavior
+
+## See Also
+
+- `../EVALUATION.md` — evaluation rubric and keep/improve/remove criteria
+- `../workflows/SYSTEM-WORKFLOW.md` — lifecycle being tested by these scenarios
+- `TROUBLESHOOTING.md` — common failure modes that surface during evaluation
+- `GOVERNANCE.md` — governance goals the scenarios should validate

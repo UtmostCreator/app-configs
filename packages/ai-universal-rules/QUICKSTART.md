@@ -118,6 +118,16 @@ Only after the base flow works cleanly:
 - MCP integrations
 - delivery artifacts such as slice cards
 
+## See Also
+
+- `docs/ONBOARDING.md` — what to customize and in what order after install
+- `docs/INSTALL-GITHUB-COPILOT.md` — GitHub Copilot runtime install guide
+- `docs/INSTALL-OPENCODE.md` — OpenCode runtime install guide
+- `docs/INSTALL-CATALOG.md` — full profile and pack index
+- `PLACEHOLDERS.md` — placeholder reference for all copied templates
+- `docs/RELEASE-BUNDLES.md` — export bundles for adoption and release previews
+- `../../docs/ai/install-order.md` — full ordered command flow and selective pack recipes
+
 ## 9. Use Generated Browse And Release Assets
 
 After changing templates or docs:

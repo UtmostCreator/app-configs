@@ -80,3 +80,12 @@ Use this as the default starting point for most repos:
 - add `release-safety` when rollout, rollback, or compatibility risk matters
 - add `dependency-upgrade` when upgrades are frequent or risky
 - add optional prompts and agents only after the base install works cleanly
+
+## See Also
+
+- `INSTALL-GITHUB-COPILOT.md` — GitHub Copilot base install guide
+- `INSTALL-OPENCODE.md` — OpenCode base install guide
+- `INSTALL-CATALOG.md` — full profile and pack index
+- `../PLACEHOLDERS.md` — placeholder reference for all copied templates
+- `workflows/SYSTEM-WORKFLOW.md` — end-to-end operating model
+- `../../docs/ai/POST-INSTALL.md` — post-install checklist and commands

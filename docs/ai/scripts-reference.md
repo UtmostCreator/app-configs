@@ -2,6 +2,8 @@
 
 This document explains installer, validation, generation, and context scripts maintained in this repository.
 
+For the Copilot-approved terminal subset, use `docs/ai/script-registry.md` and `docs/ai/script-registry.json` as the tighter allowlist on top of this broader reference.
+
 ## Installer Entrypoints
 
 - `php tools/ai/install-ai-kit.php`

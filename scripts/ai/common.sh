@@ -3,10 +3,11 @@
 
 set -euo pipefail
 
-COPILOT_LOG_DIR="${COPILOT_LOG_DIR:-.copilot-logs}"
+COPILOT_LOG_DIR="${COPILOT_LOG_DIR:-${AI_LOG_DIR:-.ai-logs}}"
 COPILOT_CONTEXT_DIR="${COPILOT_CONTEXT_DIR:-.repomix-context}"
 COPILOT_SESSION_DIR="${COPILOT_SESSION_DIR:-${COPILOT_LOG_DIR}/sessions}"
 COPILOT_SNAPSHOT_DIR="${COPILOT_SNAPSHOT_DIR:-${COPILOT_LOG_DIR}/snapshots}"
+COPILOT_EVENT_LOG="${COPILOT_EVENT_LOG:-${COPILOT_LOG_DIR}/tool-usage.jsonl}"
 
 if [[ -z "${NO_COLOR:-}" ]] && [[ -t 2 ]]; then
     _C_RESET=$'\033[0m'
@@ -27,10 +28,23 @@ fi
 agent_session_init() {
     local name="${1:-$(basename "$0" .sh)}"
     SESSION_ID="${SESSION_ID:-${name}-$(date +%Y%m%d-%H%M%S)-$$}"
+    TRACE_ID="${TRACE_ID:-trc-${SESSION_ID}}"
+    TASK_ID="${TASK_ID:-tsk-${SESSION_ID}}"
     SESSION_DIR="${COPILOT_SESSION_DIR}/${SESSION_ID}"
     SESSION_LOG="${SESSION_DIR}/session.jsonl"
     mkdir -p "$SESSION_DIR" "$COPILOT_LOG_DIR" "$COPILOT_SNAPSHOT_DIR"
     log_json "session.start" '{}' || true
+}
+
+append_log_entry() {
+    local entry="${1:?entry required}"
+
+    mkdir -p "$COPILOT_LOG_DIR"
+    printf '%s\n' "$entry" >>"$COPILOT_EVENT_LOG"
+
+    if [[ -n "${SESSION_LOG:-}" ]]; then
+        printf '%s\n' "$entry" >>"$SESSION_LOG"
+    fi
 }
 
 log_json() {
@@ -43,20 +57,75 @@ log_json() {
         payload_json="$(jq -cn --arg raw "$payload" '{raw:$raw}')"
     fi
 
-    entry="$(jq -cn \
-        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        --arg session "${SESSION_ID:-unknown}" \
-        --arg script "$(basename "${BASH_SOURCE[1]:-unknown}")" \
-        --arg event "$event" \
-        --argjson data "$payload_json" \
-        '{ts:$ts, session:$session, script:$script, event:$event, data:$data}')"
+        entry="$(jq -cn \
+                --arg event_version "1.1" \
+                --arg event_type "$event" \
+                --arg trace_id "${TRACE_ID:-unknown}" \
+                --arg session_id "${SESSION_ID:-unknown}" \
+                --arg task_id "${TASK_ID:-unknown}" \
+                --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+                --arg actor_id "${ACTOR_ID:-$(basename "${BASH_SOURCE[1]:-unknown}" .sh)}" \
+                --arg delegated_by "${DELEGATED_BY:-}" \
+                --arg tool_name "$(basename "${BASH_SOURCE[1]:-unknown}")" \
+                --arg repo_root "$(git_root 2>/dev/null || pwd)" \
+                --arg git_branch "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || printf 'unknown')" \
+                --arg git_commit "$(git rev-parse HEAD 2>/dev/null || printf 'unknown')" \
+                --argjson data "$payload_json" \
+                '{
+                    event_version: $event_version,
+                    event_type: $event_type,
+                    trace_id: $trace_id,
+                    session_id: $session_id,
+                    task_id: $task_id,
+                    timestamp: $timestamp,
+                    actor: {
+                        type: "agent",
+                        id: $actor_id,
+                        delegated_by: (if $delegated_by == "" then null else $delegated_by end)
+                    },
+                    tool: {
+                        name: $tool_name,
+                        category: null,
+                        args_hash: null,
+                        mutates_state: false
+                    },
+                    authorization: {
+                        policy_version: null,
+                        decision: "unknown",
+                        approval_required: null,
+                        approved_by: null,
+                        reason: null
+                    },
+                    execution: {
+                        status: "unknown",
+                        latency_ms: null,
+                        retry_count: 0,
+                        exit_code: null,
+                        output_truncated: null
+                    },
+                    cost: {
+                        model: null,
+                        input_tokens: null,
+                        output_tokens: null,
+                        estimated_cost_usd: null
+                    },
+                    failure: {
+                        category: null,
+                        message: null,
+                        resolution: null
+                    },
+                    repository: {
+                        root: $repo_root,
+                        git_branch: (if $git_branch == "" or $git_branch == "unknown" then null else $git_branch end),
+                        git_commit: (if $git_commit == "" or $git_commit == "unknown" then null else $git_commit end)
+                    },
+                    output: {
+                        preview: null
+                    },
+                    details: (if ($data | type) == "object" then $data else {raw: $data} end)
+                }')"
 
-    mkdir -p "$COPILOT_LOG_DIR"
-    printf '%s\n' "$entry" >>"${COPILOT_LOG_DIR}/tool-usage.jsonl"
-
-    if [[ -n "${SESSION_LOG:-}" ]]; then
-        printf '%s\n' "$entry" >>"$SESSION_LOG"
-    fi
+        append_log_entry "$entry"
 }
 
 log_info() { printf '%b[INFO]%b  %s\n' "$_C_CYAN" "$_C_RESET" "$*" >&2; }
@@ -288,7 +357,7 @@ _snapshot_protected_untracked_path() {
     "$COPILOT_CONTEXT_DIR" | "$COPILOT_CONTEXT_DIR"/*)
         return 0
         ;;
-    .copilot-logs | .copilot-logs/*)
+    .ai-logs | .ai-logs/*)
         return 0
         ;;
     .repomix-context | .repomix-context/*)

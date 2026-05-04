@@ -4,7 +4,7 @@ Thin mandatory entrypoint for AI agents.
 
 Goal: use deterministic, fast, structured CLI tools instead of slow, noisy, manual, or high-risk commands.
 
-This file defines policy and routing only.  
+This file defines policy and routing only.
 Use `tools/ai/tools/tool-map.md` for tool replacement lookup.
 
 ---

@@ -1,6 +1,9 @@
 # Installed Files
 
 - `docs/ai/capabilities/dependency-upgrade`
+- `.github/hooks/tool-policy.json`
+- `.github/hooks/tool-guardian.json`
+- `.github/hooks/scripts/tool-guardian.ps1`
 - `scripts/hooks/pre-commit.sh`
 - `scripts/hooks/commit-msg.sh`
 - `docs/ai/hooks.md`
@@ -29,16 +32,20 @@
 - `scripts/ai/install-mandatory-tools.sh`
 - `docs/ai/repo-required-tools.md`
 - `docs/ai/mandatory-tools-install.md`
+- `docs/ai/script-registry.md`
+- `docs/ai/script-registry.json`
 - `docs/ai/command-risk-taxonomy.md`
 - `docs/ai/failure-handling.md`
 - `.schemas/evidence-event.schema.json`
 - `docs/ai/capabilities/agent-observability-and-evidence/EVENT_SCHEMA.md`
 - `docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md`
 - `.github/copilot-instructions.md`
+- `.vscode/settings.json`
 - `.github/instructions`
 - `.github/agents`
 - `.github/prompts`
 - `.github/skills`
+- `.github/instructions/tools.instructions.md`
 - `.opencode/agents`
 - `.opencode/skills`
 - `.opencode/commands`

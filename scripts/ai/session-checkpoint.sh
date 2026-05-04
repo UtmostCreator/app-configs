@@ -12,7 +12,7 @@ usage() {
 Usage:
   session-checkpoint.sh [label]
 
-Creates a manifest-based snapshot in .copilot-logs/snapshots/.
+Creates a manifest-based snapshot in .ai-logs/snapshots/.
 
 Examples:
   scripts/ai/session-checkpoint.sh

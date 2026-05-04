@@ -1,124 +1,118 @@
 ---
-id: implementer
-description: Use when a bounded implementation slice is clear and focused verification should happen in this repository
-mode: subagent
-hidden: false
-temperature: 0.1
-capabilities:
-  - adapter-drift
-  - agent-observability-and-evidence
-  - authorization-and-tool-governance
-  - bug-regression
-  - config-change-safety
-  - dependency-upgrade
-  - docs-sync
-  - evaluation-and-regression
-  - preview-environments
-  - project-context
-  - release-safety
-  - review-diff
-  - service-boundary-patterns
-  - verify-change
-permission:
-  edit:
-    'src/**': allow
-    'app/**': allow
-    'packages/**': allow
-    'configs/**': allow
-    'scripts/**': allow
-    'tools/**': allow
-    'tests/**': allow
-    'docs/**': allow
-    'vendor/**': deny
-    'node_modules/**': deny
-    '.git/**': deny
-    'dist/**': deny
-    'build/**': deny
-    'coverage/**': deny
-    '.cache/**': deny
-    'docs/ai/generated/**': deny
-    'docs/generated/**': deny
-    '*.generated.*': deny
-    '*.lock': deny
-    'composer.lock': deny
-    'package-lock.json': deny
-    'pnpm-lock.yaml': deny
-    'yarn.lock': deny
-    'bun.lockb': deny
-    '*.pem': deny
-    '*.key': deny
-    '*.crt': deny
-    '.env*': deny
-    'secrets.*': deny
-    'credentials.*': deny
-    'auth.json': deny
-  bash:
-    '*': deny
-    'command -v *': allow
-    'test -f *': allow
-    'test -x *': allow
-    'test -d *': allow
-    'stat *': allow
-    'date *': allow
-    'uuidgen': allow
-    'pwd': allow
-    'ls *': allow
-    'fd *': allow
-    'eza *': allow
-    'rg *': allow
-    'grep *': allow
-    'git grep *': allow
-    'sg *': allow
-    'sed -n *': allow
-    'head *': allow
-    'tail *': allow
-    'nl *': allow
-    'wc *': allow
-    'sort *': allow
-    'uniq *': allow
-    'file *': allow
-    'du -h *': allow
-    'jq *': allow
-    'yq *': allow
-    'git status*': allow
-    'git diff*': allow
-    'git log*': allow
-    'git show*': allow
-    'git ls-files*': allow
-    'git blame*': allow
-    'git branch*': allow
-    'git rev-parse*': allow
-    'git stash list*': allow
-    'git stash show*': allow
-    'bash scripts/ai/ai-search.sh *': allow
-    'bash scripts/ai/rg-code.sh *': allow
-    'bash scripts/ai/fd-files.sh *': allow
-    'bash scripts/ai/preview-file.sh *': allow
-    'bash scripts/ai/query-usage.sh *': allow
-    'bash scripts/ai/git-forensics.sh *': allow
-    'php -l *': allow
-    'vendor/bin/phpunit *': allow
-    './vendor/bin/phpunit *': allow
-    'phpunit *': allow
-    'composer validate*': allow
-    'npm test*': allow
-    'npm run test*': allow
-    'npm run lint*': allow
-    'npm run typecheck*': allow
-    'pnpm test*': allow
-    'pnpm run test*': allow
-    'pnpm run lint*': allow
-    'pnpm run typecheck*': allow
-    'yarn test*': allow
-    'yarn lint*': allow
-    'bun test*': allow
-    'shellcheck *': allow
-    'markdownlint-cli2 *': allow
-    'php tools/ai/validate-*.php *': allow
-    'php tools/ai/generate-*.php --check*': allow
-    'bash scripts/ai/ai-doc-check.sh --check*': allow
-    'bash scripts/ai/repo-tool-inventory.sh --check*': allow
+name: Implementer
+description: 'Use when a bounded implementation slice is clear and focused verification should happen in this repository'
+tools:
+  [
+    'search/changes',
+    'search/codebase',
+    'search/fileSearch',
+    'search/listDirectory',
+    'search/textSearch',
+    'search/usages',
+    'read/readFile',
+    'read/problems',
+    'edit/editFiles',
+    'edit/createFile',
+    'edit/createDirectory',
+    'execute/runInTerminal',
+    'execute/testFailure',
+    'vscode/askQuestions',
+  ]
+user-invocable: true
+disable-model-invocation: false
 ---
+
+## Enforcement Boundary
+
+This agent is configured for the GitHub Copilot VS Code surface.
+
+Available tools: `search/changes`, `search/codebase`, `search/fileSearch`, `search/listDirectory`, `search/textSearch`, `search/usages`, `read/readFile`, `read/problems`, `edit/editFiles`, `edit/createFile`, `edit/createDirectory`, `execute/runInTerminal`, `execute/testFailure`, `vscode/askQuestions`
+
+- **Edit:** available
+- **Execute:** available — constrained by the Shell Boundary below
+
+## Shell Boundary
+
+You may use shell execution only for approved scripts from the repository registry. Before running any script:
+
+1. Confirm the script exists in the repository.
+2. Confirm it is listed in `docs/ai/script-registry.md` and `docs/ai/script-registry.json`.
+3. Confirm it is also documented in `docs/ai/scripts-reference.md`.
+4. Run it from the repository root using the repository-root path shown below.
+5. If any condition fails, stop and report `unknown`.
+
+Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
+When the active runtime supports repository hooks, these scripts must remain wired through `.github/hooks/tool-policy.json` and write local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.
+When the runtime does not auto-load repository hooks, preserve the same boundary manually and do not claim automatic enforcement.
+
+Approved scripts (run from the repository root using `scripts/ai`):
+
+- `command -v *`
+- `test -f *`
+- `test -x *`
+- `test -d *`
+- `stat *`
+- `date *`
+- `uuidgen`
+- `pwd`
+- `ls *`
+- `fd *`
+- `eza *`
+- `rg *`
+- `grep *`
+- `git grep *`
+- `sg *`
+- `sed -n *`
+- `head *`
+- `tail *`
+- `nl *`
+- `wc *`
+- `sort *`
+- `uniq *`
+- `file *`
+- `du -h *`
+- `jq *`
+- `yq *`
+- `git status*`
+- `git diff*`
+- `git log*`
+- `git show*`
+- `git ls-files*`
+- `git blame*`
+- `git branch*`
+- `git rev-parse*`
+- `git stash list*`
+- `git stash show*`
+- `bash scripts/ai/ai-search.sh *`
+- `bash scripts/ai/rg-code.sh *`
+- `bash scripts/ai/fd-files.sh *`
+- `bash scripts/ai/preview-file.sh *`
+- `bash scripts/ai/query-usage.sh *`
+- `bash scripts/ai/git-forensics.sh *`
+- `php -l *`
+- `vendor/bin/phpunit *`
+- `./vendor/bin/phpunit *`
+- `phpunit *`
+- `composer validate*`
+- `npm test*`
+- `npm run test*`
+- `npm run lint*`
+- `npm run typecheck*`
+- `pnpm test*`
+- `pnpm run test*`
+- `pnpm run lint*`
+- `pnpm run typecheck*`
+- `yarn test*`
+- `yarn lint*`
+- `bun test*`
+- `shellcheck *`
+- `markdownlint-cli2 *`
+- `php tools/ai/validate-*.php *`
+- `php tools/ai/generate-*.php --check*`
+- `bash scripts/ai/ai-doc-check.sh --check*`
+
+Do not run arbitrary shell commands. Do not run commands not in this list.
+Do not run: `rm`, `mv`, `cp`, `chmod`, `curl | sh`, install commands, unregistered `scripts/ai/*.sh`, `git push`, `git reset`, deploy commands.
 
 # Implementer Agent
 

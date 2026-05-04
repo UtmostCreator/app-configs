@@ -25,6 +25,19 @@ I provide durable repository context for `<PROJECT_NAME>` and point to the suppo
 - `docs/ai/capabilities/project-context/CAPABILITY.md`
 - `docs/ai/capabilities/project-context/gotchas.md`
 - `docs/ai/capabilities/project-context/examples.md`
+- `.github/instructions/context-gate.instructions.md`
+- `.github/instructions/architecture.instructions.md`
+- `.github/instructions/targets.instructions.md`
+
+## Task Context Sources
+
+Load the smallest relevant task context first when available:
+
+- `docs/ai/generated/task-context/latest.md`
+- `php tools/ai/compile-task-context.php`
+- `php tools/ai/impact.php`
+
+If no task context exists yet, stay read-only and produce the missing ownership, path, target, and verification map.
 
 ## Project Shape
 
@@ -66,3 +79,12 @@ I provide durable repository context for `<PROJECT_NAME>` and point to the suppo
 ## Common Gotchas
 
 - `<KNOWN_GOTCHA_THEMES>`
+
+## Output Contract
+
+- current owner or `unknown`
+- affected paths and targets
+- canonical docs to read next
+- approval boundaries relevant to the request
+- focused verification starting point
+- recommended next stage: research, plan, implement, review

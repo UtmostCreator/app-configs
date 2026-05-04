@@ -1,61 +1,76 @@
 ---
-id: config-maintainer
-description: Use when changing editor, shell, runtime, or tool configuration while preserving current behavior
-mode: subagent
-hidden: false
-temperature: 0.1
-capabilities:
-  - config-change-safety
-  - verify-change
-  - docs-sync
-permission:
-  edit:
-    'configs/**': allow
-    '.editorconfig': allow
-    '.eslintrc.json': allow
-    '.prettierrc.json': allow
-    '.stylelintrc.json': allow
-    '.markdownlint-cli2.yaml': allow
-    '.shellcheckrc': allow
-    'configs/php/**': allow
-    'configs/shell/**': allow
-    'configs/vscode/**': allow
-    'configs/nvim/**': allow
-    'configs/ghostty/**': allow
-    'configs/karabiner/**': allow
-    'packages/**': deny
-    'vendor/**': deny
-    '.git/**': deny
-    'docs/ai/generated/**': deny
-    '*.lock': deny
-    '.env*': deny
-    'secrets.*': deny
-    'credentials.*': deny
-  bash:
-    '*': deny
-    'command -v *': allow
-    'test -f *': allow
-    'test -x *': allow
-    'test -d *': allow
-    'stat *': allow
-    'pwd': allow
-    'ls *': allow
-    'fd *': allow
-    'eza *': allow
-    'rg *': allow
-    'git grep *': allow
-    'grep *': allow
-    'head *': allow
-    'tail *': allow
-    'jq *': allow
-    'yq *': allow
-    'git status*': allow
-    'git diff*': allow
-    'git log*': allow
-    'shellcheck *': allow
-    'php -l *': allow
-    'php tools/ai/validate-*.php *': allow
+name: Config Maintainer
+description: 'Use when changing editor, shell, runtime, or tool configuration while preserving current behavior'
+tools:
+  [
+    'search/changes',
+    'search/codebase',
+    'search/fileSearch',
+    'search/listDirectory',
+    'search/textSearch',
+    'search/usages',
+    'read/readFile',
+    'read/problems',
+    'edit/editFiles',
+    'edit/createFile',
+    'edit/createDirectory',
+    'execute/runInTerminal',
+    'execute/testFailure',
+    'vscode/askQuestions',
+  ]
+user-invocable: true
+disable-model-invocation: false
 ---
+
+## Enforcement Boundary
+
+This agent is configured for the GitHub Copilot VS Code surface.
+
+Available tools: `search/changes`, `search/codebase`, `search/fileSearch`, `search/listDirectory`, `search/textSearch`, `search/usages`, `read/readFile`, `read/problems`, `edit/editFiles`, `edit/createFile`, `edit/createDirectory`, `execute/runInTerminal`, `execute/testFailure`, `vscode/askQuestions`
+
+- **Edit:** available
+- **Execute:** available — constrained by the Shell Boundary below
+
+## Shell Boundary
+
+You may use shell execution only for approved scripts from the repository registry. Before running any script:
+
+1. Confirm the script exists in the repository.
+2. Confirm it is listed in `docs/ai/script-registry.md` and `docs/ai/script-registry.json`.
+3. Confirm it is also documented in `docs/ai/scripts-reference.md`.
+4. Run it from the repository root using the repository-root path shown below.
+5. If any condition fails, stop and report `unknown`.
+
+Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
+When the active runtime supports repository hooks, these scripts must remain wired through `.github/hooks/tool-policy.json` and write local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.
+When the runtime does not auto-load repository hooks, preserve the same boundary manually and do not claim automatic enforcement.
+
+Approved scripts (run from the repository root using `scripts/ai`):
+
+- `command -v *`
+- `test -f *`
+- `test -x *`
+- `test -d *`
+- `stat *`
+- `pwd`
+- `ls *`
+- `fd *`
+- `eza *`
+- `rg *`
+- `git grep *`
+- `grep *`
+- `head *`
+- `tail *`
+- `jq *`
+- `yq *`
+- `git status*`
+- `git diff*`
+- `git log*`
+- `shellcheck *`
+- `php -l *`
+
+Do not run arbitrary shell commands. Do not run commands not in this list.
+Do not run: `rm`, `mv`, `cp`, `chmod`, `curl | sh`, install commands, unregistered `scripts/ai/*.sh`, `git push`, `git reset`, deploy commands.
 
 # Config Maintainer Agent
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2030,SC2031
 set +e
 
-LOG_DIR=".copilot-logs/checks"
+LOG_DIR=".ai-logs/checks"
 mkdir -p "$LOG_DIR"
 
 LOG_FILE="$LOG_DIR/batch2-shellcheck-$(date +%Y%m%d-%H%M%S).log"

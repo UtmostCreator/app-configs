@@ -128,6 +128,12 @@ Execute one clearly bounded slice with the smallest safe change. Do not redesign
 
 Implement the agreed change, prove it with focused verification, and hand off a review-ready diff.
 
+## Shell Governance
+
+Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
+When the active runtime supports repository hooks, these scripts must remain authoritative through `.github/hooks/tool-policy.json` and emit local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.
+When the runtime does not auto-load repository hooks, preserve the same boundary manually: stay inside the bash allowlist, prefer approved registry scripts, and do not claim automatic hook enforcement.
+
 ## Hard Rules
 
 - Implement only one bounded slice.

@@ -107,12 +107,19 @@ See `docs/foundations/COMPATIBILITY.md` for limits and fallbacks.
 ## Read In This Order
 
 1. `QUICKSTART.md`
-2. `docs/workflows/SYSTEM-WORKFLOW.md`
-3. `docs/workflows/TASK-ENTRYPOINTS.md`
-4. `docs/foundations/CAPABILITY-MODEL.md`
-5. `docs/operations/GOVERNANCE.md`
-6. `docs/foundations/SKILLS.md`
-7. `docs/RELEASE-BUNDLES.md`
+2. `docs/ONBOARDING.md`
+3. `docs/workflows/SYSTEM-WORKFLOW.md`
+4. `docs/workflows/TASK-ENTRYPOINTS.md`
+5. `docs/foundations/CAPABILITY-MODEL.md`
+6. `docs/operations/GOVERNANCE.md`
+7. `docs/foundations/SKILLS.md`
+8. `docs/RELEASE-BUNDLES.md`
+
+## Runtime-Specific Install Guides
+
+- `docs/INSTALL-GITHUB-COPILOT.md` — GitHub Copilot setup
+- `docs/INSTALL-OPENCODE.md` — OpenCode setup
+- `docs/INSTALL-CATALOG.md` — full profile and pack index
 
 ## Important Design Rules
 

@@ -59,6 +59,13 @@ Every capability should define:
 - `gotchas.md`
 - at least one of `examples.md` or `checklist.md`
 
+## See Also
+
+- `../CAPABILITY-MODEL.md` — root summary version
+- `../workflows/TASK-ENTRYPOINTS.md` — when to use capabilities vs other mechanisms
+- `../workflows/SYSTEM-WORKFLOW.md` — where capability loading fits in the lifecycle
+- `../../templates/capabilities/README.md` — canonical capability template set
+
 Recommended for mature capabilities:
 
 - `reference.md`

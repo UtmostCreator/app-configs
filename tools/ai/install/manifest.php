@@ -29,7 +29,8 @@ function aiInstallerWriteManifest(string $targetRoot, array $manifest): void
 
 function aiInstallerBuildManifest(array $config, array $packs, array $applied): array
 {
-    $files = [];
+    $existingManifest = aiInstallerReadExistingManifest($config['targetRoot']);
+    $files = is_array($existingManifest['files'] ?? null) ? $existingManifest['files'] : [];
     foreach ($applied as $item) {
         $rel = $item['target'];
         $abs = $config['targetRoot'] . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $rel);
@@ -47,28 +48,49 @@ function aiInstallerBuildManifest(array $config, array $packs, array $applied): 
         ];
     }
 
+    $existingPacks = is_array($existingManifest['packs'] ?? null) ? $existingManifest['packs'] : [];
+    $mergedPacks = array_values(array_unique(array_merge($existingPacks, $packs)));
+
+    $pendingConfiguration = [
+        'Fill docs/ai/project-context.md',
+        'Run placeholder check via php tools/ai/ai.php placeholders',
+    ];
+    if (is_array($existingManifest['pending_configuration'] ?? null)) {
+        $pendingConfiguration = array_values(array_unique(array_merge($existingManifest['pending_configuration'], $pendingConfiguration)));
+    }
+
+    $package = is_array($existingManifest['package'] ?? null) ? $existingManifest['package'] : [
+        'name' => 'ai-universal-rules',
+        'distribution' => 'git-tag',
+        'source_repository' => 'UtmostCreator/app-configs',
+        'source_remote' => 'origin',
+        'source_ref' => 'unknown',
+        'source_commit' => 'unknown',
+        'installed_version' => 'unknown',
+    ];
+
     return [
         'schema_version' => 1,
         'installer_version' => '0.2.0',
-        'installed_at' => gmdate('c'),
+        'installed_at' => (string) ($existingManifest['installed_at'] ?? gmdate('c')),
         'updated_at' => gmdate('c'),
         'profile' => $config['profile'],
-        'package' => [
-            'name' => 'ai-universal-rules',
-            'distribution' => 'git-tag',
-            'source_repository' => 'UtmostCreator/app-configs',
-            'source_remote' => 'origin',
-            'source_ref' => 'unknown',
-            'source_commit' => 'unknown',
-            'installed_version' => 'unknown',
-        ],
-        'packs' => array_values(array_unique($packs)),
+        'package' => $package,
+        'packs' => $mergedPacks,
         'files' => $files,
-        'pending_configuration' => [
-            'Fill docs/ai/project-context.md',
-            'Run placeholder check via php tools/ai/ai.php placeholders',
-        ],
+        'pending_configuration' => $pendingConfiguration,
     ];
+}
+
+function aiInstallerReadExistingManifest(string $targetRoot): array
+{
+    $path = aiInstallerCanonicalManifestPath($targetRoot);
+    if (!is_file($path)) {
+        return [];
+    }
+
+    $decoded = json_decode((string) file_get_contents($path), true);
+    return is_array($decoded) ? $decoded : [];
 }
 
 function aiInstallerHashPath(string $path): string

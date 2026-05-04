@@ -32,6 +32,7 @@ function aiInstallerParseArgs(array $argv): array
     $allowPlaceholders = false;
     $nonInteractive = false;
     $outputJson = '';
+    $upgradeSuffix = '';
 
     for ($i = 1; $i < count($argv); $i++) {
         $arg = $argv[$i];
@@ -69,6 +70,14 @@ function aiInstallerParseArgs(array $argv): array
         }
         if ($arg === '--output-json') {
             $outputJson = $argv[++$i] ?? '';
+            continue;
+        }
+        if (str_starts_with($arg, '--upgrade-suffix=')) {
+            $upgradeSuffix = substr($arg, 17);
+            continue;
+        }
+        if ($arg === '--upgrade-suffix') {
+            $upgradeSuffix = $argv[++$i] ?? '';
             continue;
         }
         if ($arg === '--backup') {
@@ -283,6 +292,7 @@ function aiInstallerParseArgs(array $argv): array
         'allowPlaceholders' => $allowPlaceholders,
         'nonInteractive' => $nonInteractive,
         'outputJson' => $outputJson,
+        'upgradeSuffix' => $upgradeSuffix,
     ];
 }
 
@@ -319,6 +329,7 @@ Options:
   --wizard            Interactive wizard mode
   --non-interactive   Disable interactive prompts and rely on flags/defaults
   --allow-placeholders Allow unresolved placeholders in strict profiles
+    --upgrade-suffix <s> Write colliding targets to suffixed copies instead of skipping them
   --output-json <file> Write install summary JSON
   --toolchain-check   Check toolchain for selected packs
   --toolchain-install-plan Print install guidance for missing tools

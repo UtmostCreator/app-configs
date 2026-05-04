@@ -270,6 +270,64 @@ generate_child_index() {
     } >"$output_abs"
 }
 
+ensure_actionable_route() {
+    local usable="$1"
+    local fallback_row=''
+    local fallback_group=''
+    local fallback_files=''
+    local fallback_code=''
+    local fallback_complexity=''
+    local fallback_bytes=''
+    local fallback_score=''
+    local fallback_tokens=''
+    local fallback_decision=''
+    local fallback_type=''
+    local fallback_output=''
+    local fallback_reason=''
+    local temp_plan=''
+
+    if awk -F'\t' 'NR > 1 && ($3 == "pack" || $3 == "split") { found = 1 } END { exit found ? 0 : 1 }' "$TREE_PLAN_TSV"; then
+        return 0
+    fi
+
+    fallback_row="$(tail -n +2 "$ROUTER_FOLDER_METRICS" | awk -F'\t' '$1 != "" && $4 + 0 > 0 { print; exit }')"
+    [[ -n "$fallback_row" ]] || return 0
+
+    IFS=$'\t' read -r fallback_group fallback_files _fallback_lines fallback_code _fallback_comments _fallback_blanks fallback_complexity fallback_bytes _fallback_churn _fallback_code_share _fallback_complexity_share _fallback_file_share _fallback_byte_share _fallback_churn_share fallback_score <<<"$fallback_row"
+
+    fallback_tokens="$(estimate_tokens "$fallback_bytes")"
+    if ((fallback_tokens <= usable)); then
+        fallback_decision='pack'
+        fallback_type='bundle'
+        fallback_output="bundles/$(safe_name "$fallback_group").$STYLE_EXT"
+        fallback_reason='fallback route because no route met thresholds; estimated tokens fit route budget'
+    else
+        fallback_decision='split'
+        fallback_type='index'
+        fallback_output="indexes/$(safe_name "$fallback_group").md"
+        fallback_reason='fallback route because no route met thresholds; estimated tokens exceed route budget'
+    fi
+
+    temp_plan="$TREE_DIR/.tree-plan.tsv.tmp"
+    awk -F'\t' -v OFS='\t' \
+        -v target_group="$fallback_group" \
+        -v target_type="$fallback_type" \
+        -v target_decision="$fallback_decision" \
+        -v target_tokens="$fallback_tokens" \
+        -v target_budget="$usable" \
+        -v target_output="$fallback_output" \
+        -v target_reason="$fallback_reason" \
+        'NR == 1 { print; next }
+         $1 == target_group && replaced == 0 {
+             print $1, target_type, target_decision, target_tokens, target_budget, target_output, target_reason
+             replaced = 1
+             next
+         }
+         { print }
+        ' "$TREE_PLAN_TSV" >"$temp_plan"
+    mv "$temp_plan" "$TREE_PLAN_TSV"
+}
+
 build_plan() {
     local usable
     local selected=0
@@ -354,6 +412,8 @@ build_plan() {
     if [[ $(wc -l <"$TREE_PLAN_TSV") -le 1 ]]; then
         die "no routes generated"
     fi
+
+    ensure_actionable_route "$usable"
 
     jq -R -s '
       split("\n") | map(select(length > 0) | split("\t")) as $rows

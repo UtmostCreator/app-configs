@@ -188,6 +188,8 @@ safe_group_name() {
 }
 
 IGNORE_PATTERNS=()
+COLLECTED_FILES=()
+COLLECTED_CHANGED_FILES=()
 
 load_ignore_patterns() {
     local ignore_file="$ROOT/.repomixignore"
@@ -222,16 +224,13 @@ path_is_ignored() {
 
 collect_files() {
     local path
-    # shellcheck disable=SC2178
-    local -n out_ref=$1
-
-    out_ref=()
+    COLLECTED_FILES=()
     if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         while IFS= read -r path; do
             [[ -n "$path" ]] || continue
             [[ -f "$ROOT/$path" ]] || continue
             if ! path_is_ignored "$path"; then
-                out_ref+=("$path")
+                COLLECTED_FILES+=("$path")
             fi
         done < <(git -C "$ROOT" ls-files -co --exclude-standard)
     else
@@ -239,18 +238,17 @@ collect_files() {
             [[ -n "$path" ]] || continue
             [[ -f "$ROOT/$path" ]] || continue
             if ! path_is_ignored "$path"; then
-                out_ref+=("$path")
+                COLLECTED_FILES+=("$path")
             fi
         done < <(rg --files --hidden "$ROOT")
     fi
 
-    ((${#out_ref[@]} > 0)) || die "no files available after applying ignore rules"
+    ((${#COLLECTED_FILES[@]} > 0)) || die "no files available after applying ignore rules"
 }
 
 collect_changed_files() {
-    # shellcheck disable=SC2178
-    local -n out_ref=$1
-    out_ref=()
+    local path
+    COLLECTED_CHANGED_FILES=()
 
     [[ -n "$CHANGED_SINCE" ]] || return 0
 
@@ -259,7 +257,7 @@ collect_changed_files() {
             [[ -n "$path" ]] || continue
             [[ -f "$ROOT/$path" ]] || continue
             if ! path_is_ignored "$path"; then
-                out_ref+=("$path")
+                COLLECTED_CHANGED_FILES+=("$path")
             fi
         done < <((git -C "$ROOT" diff --name-only "$CHANGED_SINCE"...HEAD 2>/dev/null || git -C "$ROOT" diff --name-only "$CHANGED_SINCE") | sort -u)
     fi
@@ -275,8 +273,18 @@ run_scc_analysis() {
 
     scc_bin="$(resolve_scc_bin)" || die "required binary 'scc' not found"
     load_ignore_patterns
-    collect_files files
-    collect_changed_files changed_files
+    collect_files
+    if [[ -n "${COLLECTED_FILES[*]-}" ]]; then
+        files=("${COLLECTED_FILES[@]}")
+    else
+        files=()
+    fi
+    collect_changed_files
+    if [[ -n "${COLLECTED_CHANGED_FILES[*]-}" ]]; then
+        changed_files=("${COLLECTED_CHANGED_FILES[@]}")
+    else
+        changed_files=()
+    fi
 
     if [[ -n "$CHANGED_SINCE" ]]; then
         log "limiting stats input to ${#changed_files[@]} changed files since $CHANGED_SINCE"

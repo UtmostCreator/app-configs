@@ -9,7 +9,6 @@ function aiAdvisorDefaultIncludePrefixes(): array
 {
     return [
         'AGENTS.md',
-        'CLAUDE.md',
         'llms.txt',
         'tools/ai/',
         'scripts/ai/',

@@ -1,5 +1,5 @@
 ---
-applyTo: 'AGENTS.md,CLAUDE.md,README.md,docs/ai/**,.github/copilot-instructions.md,.github/agents/**,.github/instructions/**,.github/prompts/**,.github/skills/**,.opencode/**,scripts/ai/**,tools/ai/**'
+applyTo: 'AGENTS.md,README.md,docs/ai/**,.github/copilot-instructions.md,.github/agents/**,.github/instructions/**,.github/prompts/**,.github/skills/**,.opencode/**,scripts/ai/**,tools/ai/**'
 description: 'AI workflow file roles, line budgets, duplication rules, and adapter boundaries'
 ---
 

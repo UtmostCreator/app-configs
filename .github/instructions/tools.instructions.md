@@ -15,14 +15,16 @@ When searching code or files, always prefer repository-aware tools:
 
 When the repository provides wrapper scripts, use those in preference to direct tool invocation:
 
-- `bash <SCRIPTS_ROOT>/ai-search.sh "<query>"` — safe repository text search
-- `bash <SCRIPTS_ROOT>/rg-code.sh "<pattern>"` — code-specific rg wrapper
-- `bash <SCRIPTS_ROOT>/fd-files.sh "<pattern>"` — file discovery wrapper
-- `bash <SCRIPTS_ROOT>/preview-file.sh "<path>"` — safe file preview
-- `bash <SCRIPTS_ROOT>/query-usage.sh "<symbol>"` — symbol usage search
-- `bash <SCRIPTS_ROOT>/git-forensics.sh "<symbol-or-path>"` — git history tracing
+- `bash scripts/ai/ai-search.sh "<query>"` — safe repository text search
+- `bash scripts/ai/rg-code.sh "<pattern>"` — code-specific rg wrapper
+- `bash scripts/ai/fd-files.sh "<pattern>"` — file discovery wrapper
+- `bash scripts/ai/preview-file.sh "<path>"` — safe file preview
+- `bash scripts/ai/query-usage.sh "<symbol>"` — symbol usage search
+- `bash scripts/ai/git-forensics.sh "<symbol-or-path>"` — git history tracing
 
 Only use scripts that are listed in both `docs/ai/script-registry.md` and `docs/ai/script-registry.json`.
+
+Direct git state/history commands and minimal local introspection are narrow exceptions when they are explicitly allowed by the active tool policy. Search, discovery, usage lookup, and file preview should still go through registered `scripts/ai` wrappers.
 
 ## Prohibited
 
@@ -53,7 +55,7 @@ Do not run destructive commands: `rm -rf`, `git push --force`, `git reset --hard
 Scripts should be run from the repository root. When the script location is unclear, use the repository-root script path:
 
 ```
-bash <SCRIPTS_ROOT>/ai-search.sh "query"
+bash scripts/ai/ai-search.sh "query"
 ```
 
-`<SCRIPTS_ROOT>` resolves to the `scripts/ai/` directory at the root of the installed repository.
+`scripts/ai` is the script directory at the root of the installed repository.

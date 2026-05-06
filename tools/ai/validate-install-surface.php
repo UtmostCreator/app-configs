@@ -215,6 +215,14 @@ foreach ($copilotAgentFiles as $agentFile) {
     }
 }
 
+foreach (glob($root . '/.github/instructions/*.md') ?: [] as $instructionFile) {
+    $content = (string) file_get_contents($instructionFile);
+    if (str_contains($content, '<SCRIPTS_ROOT>')) {
+        $instructionName = basename($instructionFile);
+        $errors[] = "Copilot instruction '{$instructionName}' still has unresolved '<SCRIPTS_ROOT>' placeholder — run install with placeholder resolution";
+    }
+}
+
 // Verify stronger Copilot enforcement files are present when Copilot agents are installed.
 if ($copilotAgentFiles !== []) {
     $scriptRegistryMd = $root . '/docs/ai/script-registry.md';

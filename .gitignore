@@ -12,9 +12,6 @@ Thumbs.db
 *.temp
 
 # Local AI/runtime settings
-.claude/settings.local.json
-.claude/projects/
-.claude/tmp/
 .gemini/
 .aider*
 .ai-logs/*

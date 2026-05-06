@@ -9,7 +9,6 @@ Goal: confirm that a user or runtime entering through the common top-level files
 Check these files:
 
 - `AGENTS.md`
-- `CLAUDE.md`
 - `README.md`
 - `.github/copilot-instructions.md`
 - `.github/instructions/*.instructions.md`

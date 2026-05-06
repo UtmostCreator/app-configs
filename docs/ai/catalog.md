@@ -19,7 +19,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 
 - `package / core-template` - 16
 - `package / foundation-doc` - 6
-- `package / github-copilot-instruction-template` - 21
+- `package / github-copilot-instruction-template` - 20
 - `package / opencode-command-template` - 1
 - `package / operations-doc` - 6
 - `package / optional-template` - 9
@@ -229,7 +229,6 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`foundation-doc`|Design Principles|`packages/ai-universal-rules/docs/foundations/DESIGN-PRINCIPLES.md`|Use these principles when extending the kit.|
 |`foundation-doc`|Precedence|`packages/ai-universal-rules/docs/foundations/PRECEDENCE.md`|This package uses layered workflow assets, so precedence and non-overlap must be explicit.|
 |`foundation-doc`|Skills|`packages/ai-universal-rules/docs/foundations/SKILLS.md`|Skills are the runtime adapter form of deeper workflow procedure.|
-|`github-copilot-instruction-template`|AI File Standards|`packages/ai-universal-rules/templates/instructions/ALL_IN_ONE.txt`|ai-file-standards.instructions.md|
 |`github-copilot-instruction-template`|AI File Standards|`packages/ai-universal-rules/templates/instructions/ai-file-standards.instructions.md`|AI workflow file roles, line budgets, duplication rules, and adapter boundaries|
 |`github-copilot-instruction-template`|AI Tooling Rules|`packages/ai-universal-rules/templates/instructions/ai-tooling.instructions.md`|AI tooling contract, registry alignment, and hook-policy consistency|
 |`github-copilot-instruction-template`|AI Workflow Rules|`packages/ai-universal-rules/templates/instructions/ai-workflow.instructions.md`|Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement|

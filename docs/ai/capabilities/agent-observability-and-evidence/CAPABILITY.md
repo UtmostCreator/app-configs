@@ -20,6 +20,11 @@ Make agent runs traceable, reviewable, and auditable before relying on optimizat
 5. classify failures using `docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md`
 6. link runtime evidence to task summaries and follow-up verification
 
+## Read Next
+
+- `EVENT_SCHEMA.md` for structured evidence event fields
+- `FAILURE_TAXONOMY.md` for failure classification
+
 ## Output Contract
 
 - trace identifiers for the run

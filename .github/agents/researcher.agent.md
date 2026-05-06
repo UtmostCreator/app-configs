@@ -43,23 +43,6 @@ When the runtime does not auto-load repository hooks, preserve the same boundary
 
 Approved scripts (run from the repository root using `scripts/ai`):
 
-- `mkdir -p .opencode/research-sessions`
-- `mkdir -p docs/tickets`
-- `printf * >> .opencode/research-sessions/*.md`
-- `printf * >> docs/tickets/*.md`
-- `cat >> .opencode/research-sessions/*.md`
-- `cat >> docs/tickets/*.md`
-- `command -v *`
-- `test -f *`
-- `test -x *`
-- `test -d *`
-- `stat *`
-- `date *`
-- `uuidgen`
-- `pwd`
-- `ls *`
-- `fd *`
-- `eza *`
 - `bash scripts/ai/ai-search.sh *`
 - `bash scripts/ai/rg-code.sh *`
 - `bash scripts/ai/fd-files.sh *`
@@ -68,41 +51,6 @@ Approved scripts (run from the repository root using `scripts/ai`):
 - `bash scripts/ai/git-forensics.sh *`
 - `bash scripts/ai/ai-doc-check.sh --check*`
 - `bash scripts/ai/repo-tool-inventory.sh --check*`
-- `rg *`
-- `git grep *`
-- `grep *`
-- `sed -n *`
-- `head *`
-- `tail *`
-- `nl *`
-- `wc *`
-- `sort *`
-- `uniq *`
-- `file *`
-- `du -h *`
-- `jq *`
-- `yq *`
-- `git status*`
-- `git diff*`
-- `git log*`
-- `git show*`
-- `git ls-files*`
-- `git blame*`
-- `git branch*`
-- `git rev-parse*`
-- `git remote*`
-- `git merge-base*`
-- `git rev-list*`
-- `git cherry*`
-- `git for-each-ref*`
-- `gh pr status*`
-- `gh pr list*`
-- `gh pr view*`
-- `gh search prs*`
-- `gh search commits*`
-- `gh issue list*`
-- `gh issue view*`
-- `gh repo view*`
 
 Do not run arbitrary shell commands. Do not run commands not in this list.
 Do not run: `rm`, `mv`, `cp`, `chmod`, `curl | sh`, install commands, unregistered `scripts/ai/*.sh`, `git push`, `git reset`, deploy commands.

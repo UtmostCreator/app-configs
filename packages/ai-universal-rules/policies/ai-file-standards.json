@@ -1,6 +1,44 @@
 {
   "$schema": "../../.schemas/ai-file-standards.schema.json",
   "version": "1.0.0",
+  "execution_protocol": {
+    "canonical_doc": "docs/ai/execution-protocol.md",
+    "capability": "docs/ai/capabilities/evidence-first-execution/CAPABILITY.md",
+    "task_modes": [
+      "research",
+      "plan",
+      "test-only",
+      "source-fix",
+      "refactor",
+      "docs-only",
+      "config-infra",
+      "migration-data"
+    ],
+    "minimum_understanding_for_edits": 70,
+    "default_diff_budget": {
+      "files": 6,
+      "changed_loc": 300
+    },
+    "verification_statuses": [
+      "verified",
+      "partially-verified",
+      "not-verified",
+      "failed-verification"
+    ],
+    "protected_actions": [
+      "destructive-command",
+      "dependency-change",
+      "lockfile-change",
+      "migration",
+      "data-rewrite",
+      "auth-security-change",
+      "ci-deploy-change",
+      "network-access",
+      "generated-artifact-rewrite",
+      "public-contract-change",
+      "protected-path-edit"
+    ]
+  },
   "line_limits": [
     {
       "id": "root-instructions",

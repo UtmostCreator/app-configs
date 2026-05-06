@@ -3,6 +3,7 @@
 | Area                       | Source of truth                   | Role                                          |
 | -------------------------- | --------------------------------- | --------------------------------------------- |
 | Repo AI workflow           | `docs/ai/workflow.md`             | Canonical repo workflow guidance              |
+| Execution protocol         | `docs/ai/execution-protocol.md`   | Canonical evidence-first task execution       |
 | Project context            | `docs/ai/project-context.md`      | Canonical project context                     |
 | Guardrails                 | `docs/ai/AI-GUARDRAILS.md`        | Canonical guardrail guidance                  |
 | Adapter contract           | `docs/ai/adapter-contract.md`     | Canonical adapter thinness and drift rules    |

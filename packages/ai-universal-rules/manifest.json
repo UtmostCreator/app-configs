@@ -30,10 +30,13 @@
     "templates/core/AGENTS.template.md",
     "templates/core/copilot-instructions.template.md",
     "templates/core/project-context.template.md",
+    "templates/core/execution-protocol.template.md",
     "templates/core/ai-file-standards.template.md",
     "templates/capabilities/project-context/CAPABILITY.md",
     "templates/capabilities/verify-change/CAPABILITY.md",
     "templates/capabilities/review-diff/CAPABILITY.md",
+    "templates/capabilities/evidence-first-execution/CAPABILITY.md",
+    "templates/instructions/execution-protocol.instructions.md",
     "templates/shared/guardrails/AI-GUARDRAILS.md"
   ],
   "starter_optional_capabilities": [

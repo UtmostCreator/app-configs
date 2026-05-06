@@ -17,32 +17,32 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 
 ## Highlights
 
-- `package / core-template` - 15
+- `package / core-template` - 16
 - `package / foundation-doc` - 6
-- `package / github-copilot-instruction-template` - 11
+- `package / github-copilot-instruction-template` - 21
 - `package / opencode-command-template` - 1
 - `package / operations-doc` - 6
 - `package / optional-template` - 9
-- `package / package-capability` - 31
+- `package / package-capability` - 36
 - `package / shared-template` - 4
 - `package / workflow-doc` - 6
-- `package / workflow-template` - 12
+- `package / workflow-template` - 13
 - `root / adapter-doc` - 1
 - `root / adapter-hook` - 2
 - `root / adapter-hook-script` - 1
 - `root / adapter-policy` - 1
 - `root / ai-script` - 26
-- `root / capability` - 13
+- `root / capability` - 14
 - `root / cli` - 1
 - `root / exporter` - 1
 - `root / generator` - 1
 - `root / github-copilot-agent` - 8
-- `root / github-copilot-instruction` - 7
-- `root / github-copilot-prompt` - 12
-- `root / github-copilot-skill` - 12
+- `root / github-copilot-instruction` - 18
+- `root / github-copilot-prompt` - 13
+- `root / github-copilot-skill` - 13
 - `root / opencode-agent` - 8
-- `root / opencode-command` - 1
-- `root / opencode-skill` - 12
+- `root / opencode-command` - 2
+- `root / opencode-skill` - 13
 - `root / php-reference` - 3
 - `root / root-doc` - 16
 - `root / schema` - 1
@@ -91,6 +91,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`capability`|dependency-upgrade|`docs/ai/capabilities/dependency-upgrade/CAPABILITY.md`|Evaluate and implement a dependency upgrade with attention to compatibility, verification depth, and release risk.|
 |`capability`|docs-sync|`docs/ai/capabilities/docs-sync/CAPABILITY.md`|Keep setup and workflow documentation aligned with the actual repository after behavior, file, or path changes.|
 |`capability`|evaluation-and-regression|`docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md`|Make agent behavior testable so quality does not depend only on ad hoc review.|
+|`capability`|evidence-first-execution|`docs/ai/capabilities/evidence-first-execution/CAPABILITY.md`|Run non-trivial changes with explicit scope control, dirty-worktree protection, and evidence-backed verification.|
 |`capability`|preview-environments|`docs/ai/capabilities/preview-environments/CAPABILITY.md`|Define a vendor-neutral operating model for temporary end-to-end environments used during review and verification.|
 |`capability`|project-context|`docs/ai/capabilities/project-context/CAPABILITY.md`|Provide durable repository context that other capabilities, agents, and prompts can rely on before planning, implementing, reviewing, or verifying changes.|
 |`capability`|release-safety|`docs/ai/capabilities/release-safety/CAPABILITY.md`|Assess rollout, rollback, observability, and compatibility posture for changes whose risk extends beyond local correctness.|
@@ -109,16 +110,28 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-agent`|Reviewer|`.github/agents/reviewer.agent.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
 |`github-copilot-agent`|Workflow Auditor|`.github/agents/workflow-auditor.agent.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
 |`github-copilot-instruction`|ai-file-standards|`.github/instructions/ai-file-standards.instructions.md`|AI workflow file roles, line budgets, duplication rules, and adapter boundaries|
+|`github-copilot-instruction`|ai-tooling|`.github/instructions/ai-tooling.instructions.md`|AI tooling contract, registry alignment, and hook-policy consistency|
 |`github-copilot-instruction`|ai-workflow|`.github/instructions/ai-workflow.instructions.md`|Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement|
+|`github-copilot-instruction`|approval-boundaries|`.github/instructions/approval-boundaries.instructions.md`|Approval boundaries for destructive, privileged, broad, or policy-sensitive changes|
 |`github-copilot-instruction`|architecture|`.github/instructions/architecture.instructions.md`|Architecture, ownership, and layering guidance|
+|`github-copilot-instruction`|base|`.github/instructions/base.instructions.md`|Minimal repository-wide fallback rules for Copilot path-specific instruction routing|
+|`github-copilot-instruction`|ci-workflows|`.github/instructions/ci-workflows.instructions.md`|CI workflow safety, permissions, and trigger-scope rules|
+|`github-copilot-instruction`|composer|`.github/instructions/composer.instructions.md`|Composer manifest and lockfile safety rules|
+|`github-copilot-instruction`|config-infra|`.github/instructions/config-infra.instructions.md`|Dependency, runner, and build-config safety rules|
+|`github-copilot-instruction`|execution-protocol|`.github/instructions/execution-protocol.instructions.md`|Evidence-first task execution, dirty-worktree protection, scope control, and final verification reporting.|
 |`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|applyTo: "<FRONTEND_PATH_GLOB>"|
+|`github-copilot-instruction`|generated-artifacts|`.github/instructions/generated-artifacts.instructions.md`|Generated artifact drift routing and source-first regeneration policy|
+|`github-copilot-instruction`|php|`.github/instructions/php.instructions.md`|PHP backend, Composer, test-runner, and PHP CLI tooling safety rules|
+|`github-copilot-instruction`|security|`.github/instructions/security.instructions.md`|Security, secrets, auth boundaries, and prompt-injection safeguards|
+|`github-copilot-instruction`|shell|`.github/instructions/shell.instructions.md`|Shell safety, portability, and verification rules|
 |`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|applyTo: "**"|
-|`github-copilot-instruction`|testing|`.github/instructions/testing.instructions.md`|applyTo: "<TEST_PATH_GLOB>"|
+|`github-copilot-instruction`|testing|`.github/instructions/testing.instructions.md`|Testing rules, baseline proof, regression-first bug fixes, and verification ladder|
 |`github-copilot-instruction`|tools|`.github/instructions/tools.instructions.md`|Tool selection and script enforcement — use rg/fd/approved scripts; never use bare grep/find|
 |`github-copilot-prompt`|architecture-plan|`.github/prompts/architecture-plan.prompt.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
 |`github-copilot-prompt`|bug-regression|`.github/prompts/bug-regression.prompt.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
 |`github-copilot-prompt`|dependency-upgrade|`.github/prompts/dependency-upgrade.prompt.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|
 |`github-copilot-prompt`|docs-sync|`.github/prompts/docs-sync.prompt.md`|Use when changed behavior or workflow needs matching documentation updates without broad implementation planning|
+|`github-copilot-prompt`|evidence-first-execution|`.github/prompts/evidence-first-execution.prompt.md`|Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output.|
 |`github-copilot-prompt`|new-feature|`.github/prompts/new-feature.prompt.md`|Use when implementing a bounded feature with existing repository patterns and focused verification|
 |`github-copilot-prompt`|plan-slice|`.github/prompts/plan-slice.prompt.md`|Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation|
 |`github-copilot-prompt`|project-context|`.github/prompts/project-context.prompt.md`|Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing|
@@ -131,6 +144,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-skill`|bug-regression|`.github/skills/bug-regression/SKILL.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
 |`github-copilot-skill`|dependency-upgrade|`.github/skills/dependency-upgrade/SKILL.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|
 |`github-copilot-skill`|docs-sync|`.github/skills/docs-sync/SKILL.md`|Use when changed behavior or workflow needs matching documentation updates without broad implementation planning|
+|`github-copilot-skill`|evidence-first-execution|`.github/skills/evidence-first-execution/SKILL.md`|Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output.|
 |`github-copilot-skill`|new-feature|`.github/skills/new-feature/SKILL.md`|Use when implementing a bounded feature with existing repository patterns and focused verification|
 |`github-copilot-skill`|plan-slice|`.github/skills/plan-slice/SKILL.md`|Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation|
 |`github-copilot-skill`|project-context|`.github/skills/project-context/SKILL.md`|Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing|
@@ -147,11 +161,13 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`opencode-agent`|researcher|`.opencode/agents/researcher.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
 |`opencode-agent`|reviewer|`.opencode/agents/reviewer.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
 |`opencode-agent`|workflow-auditor|`.opencode/agents/workflow-auditor.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
+|`opencode-command`|evidence-first-execution|`.opencode/commands/evidence-first-execution.md`|Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output.|
 |`opencode-command`|verify|`.opencode/commands/verify.md`|description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
 |`opencode-skill`|architecture-plan|`.opencode/skills/architecture-plan/SKILL.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
 |`opencode-skill`|bug-regression|`.opencode/skills/bug-regression/SKILL.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
 |`opencode-skill`|dependency-upgrade|`.opencode/skills/dependency-upgrade/SKILL.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|
 |`opencode-skill`|docs-sync|`.opencode/skills/docs-sync/SKILL.md`|Use when changed behavior or workflow needs matching documentation updates without broad implementation planning|
+|`opencode-skill`|evidence-first-execution|`.opencode/skills/evidence-first-execution/SKILL.md`|Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output.|
 |`opencode-skill`|new-feature|`.opencode/skills/new-feature/SKILL.md`|Use when implementing a bounded feature with existing repository patterns and focused verification|
 |`opencode-skill`|plan-slice|`.opencode/skills/plan-slice/SKILL.md`|Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation|
 |`opencode-skill`|project-context|`.opencode/skills/project-context/SKILL.md`|Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing|
@@ -203,23 +219,34 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`core-template`|<PROJECT_NAME> AI File Standards|`packages/ai-universal-rules/templates/core/ai-file-standards.template.md`|Use this file as the installed repository's canonical content and size contract for AI workflow files.|
 |`core-template`|Repository Instructions For <PROJECT_NAME>|`packages/ai-universal-rules/templates/core/copilot-instructions.template.md`|Use these instructions as the repository-wide baseline for GitHub Copilot.|
 |`core-template`|copilot-vscode-settings.template|`packages/ai-universal-rules/templates/core/copilot-vscode-settings.template.json`|{|
+|`core-template`|Execution Protocol|`packages/ai-universal-rules/templates/core/execution-protocol.template.md`|Use this as the canonical operating contract for non-trivial AI-assisted planning, editing, review, and verification.|
 |`core-template`|<PROJECT_NAME> Project Context|`packages/ai-universal-rules/templates/core/project-context.template.md`|Use this file as durable project context for instructions, agents, prompts, and capabilities.|
 |`core-template`|<PROJECT_NAME> Project Stack|`packages/ai-universal-rules/templates/core/project-stack.template.md`|Compatibility note: `project-stack.template.md` remains for older installs.|
-|`core-template`|Workflow|`packages/ai-universal-rules/templates/core/workflow.template.md`|1. load task context or perform read-only grounding when ownership is unclear|
+|`core-template`|Workflow|`packages/ai-universal-rules/templates/core/workflow.template.md`|For non-trivial work, follow `docs/ai/execution-protocol.md`.|
 |`foundation-doc`|Capability Model|`packages/ai-universal-rules/docs/foundations/CAPABILITY-MODEL.md`|Capabilities are the canonical reusable workflow layer in this kit.|
 |`foundation-doc`|Compatibility|`packages/ai-universal-rules/docs/foundations/COMPATIBILITY.md`|This package is intentionally asymmetric.|
 |`foundation-doc`|Control Model|`packages/ai-universal-rules/docs/foundations/CONTROL-MODEL.md`|This package separates advisory controls from deterministic controls.|
 |`foundation-doc`|Design Principles|`packages/ai-universal-rules/docs/foundations/DESIGN-PRINCIPLES.md`|Use these principles when extending the kit.|
 |`foundation-doc`|Precedence|`packages/ai-universal-rules/docs/foundations/PRECEDENCE.md`|This package uses layered workflow assets, so precedence and non-overlap must be explicit.|
 |`foundation-doc`|Skills|`packages/ai-universal-rules/docs/foundations/SKILLS.md`|Skills are the runtime adapter form of deeper workflow procedure.|
+|`github-copilot-instruction-template`|AI File Standards|`packages/ai-universal-rules/templates/instructions/ALL_IN_ONE.txt`|ai-file-standards.instructions.md|
 |`github-copilot-instruction-template`|AI File Standards|`packages/ai-universal-rules/templates/instructions/ai-file-standards.instructions.md`|AI workflow file roles, line budgets, duplication rules, and adapter boundaries|
+|`github-copilot-instruction-template`|AI Tooling Rules|`packages/ai-universal-rules/templates/instructions/ai-tooling.instructions.md`|AI tooling contract, registry alignment, and hook-policy consistency|
 |`github-copilot-instruction-template`|AI Workflow Rules|`packages/ai-universal-rules/templates/instructions/ai-workflow.instructions.md`|Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement|
-|`github-copilot-instruction-template`|Approval Boundaries|`packages/ai-universal-rules/templates/instructions/approval-boundaries.instructions.md`|Approval boundaries for destructive, risky, privileged, or broad changes|
+|`github-copilot-instruction-template`|all_into_one|`packages/ai-universal-rules/templates/instructions/all_into_one.bat`|@echo off|
+|`github-copilot-instruction-template`|Approval Boundaries|`packages/ai-universal-rules/templates/instructions/approval-boundaries.instructions.md`|Approval boundaries for destructive, privileged, broad, or policy-sensitive changes|
 |`github-copilot-instruction-template`|Architecture Rules|`packages/ai-universal-rules/templates/instructions/architecture.instructions.md`|Architecture, ownership, layering, source-of-truth, and high-risk structural change guidance|
+|`github-copilot-instruction-template`|Base Instructions|`packages/ai-universal-rules/templates/instructions/base.instructions.md`|Minimal repository-wide fallback rules for Copilot path-specific instruction routing|
+|`github-copilot-instruction-template`|CI Workflow Rules|`packages/ai-universal-rules/templates/instructions/ci-workflows.instructions.md`|CI workflow safety, permissions, and trigger-scope rules|
+|`github-copilot-instruction-template`|Composer Rules|`packages/ai-universal-rules/templates/instructions/composer.instructions.md`|Composer manifest and lockfile safety rules|
+|`github-copilot-instruction-template`|Config and Build/Test Runner Rules|`packages/ai-universal-rules/templates/instructions/config-infra.instructions.md`|Dependency, runner, and build-config safety rules|
 |`github-copilot-instruction-template`|Context Gate|`packages/ai-universal-rules/templates/instructions/context-gate.instructions.md`|Mandatory task-context loading before planning, editing, or reviewing|
+|`github-copilot-instruction-template`|Execution Protocol Instructions|`packages/ai-universal-rules/templates/instructions/execution-protocol.instructions.md`|Evidence-first task execution, dirty-worktree protection, scope control, and final verification reporting.|
 |`github-copilot-instruction-template`|Frontend Rules|`packages/ai-universal-rules/templates/instructions/frontend.instructions.md`|Frontend, UI, accessibility, state, interaction, and presentation guidance|
-|`github-copilot-instruction-template`|Generated Artifact Rules|`packages/ai-universal-rules/templates/instructions/generated-artifacts.instructions.md`|Generated artifact, schema, catalog, and drift-control rules|
-|`github-copilot-instruction-template`|Security Rules|`packages/ai-universal-rules/templates/instructions/security.instructions.md`|Security, secrets, auth, config, and privileged-operation rules|
+|`github-copilot-instruction-template`|Generated Artifacts|`packages/ai-universal-rules/templates/instructions/generated-artifacts.instructions.md`|Generated artifact drift routing and source-first regeneration policy|
+|`github-copilot-instruction-template`|PHP Instructions|`packages/ai-universal-rules/templates/instructions/php.instructions.md`|PHP backend, Composer, test-runner, and PHP CLI tooling safety rules|
+|`github-copilot-instruction-template`|Security Rules|`packages/ai-universal-rules/templates/instructions/security.instructions.md`|Security, secrets, auth boundaries, and prompt-injection safeguards|
+|`github-copilot-instruction-template`|Shell Rules|`packages/ai-universal-rules/templates/instructions/shell.instructions.md`|Shell safety, portability, and verification rules|
 |`github-copilot-instruction-template`|Target Rules|`packages/ai-universal-rules/templates/instructions/targets.instructions.md`|Target, runtime, platform, adapter, and deployment-surface adaptation guidance|
 |`github-copilot-instruction-template`|Testing Rules|`packages/ai-universal-rules/templates/instructions/testing.instructions.md`|Testing, verification ladder, regression coverage, and deterministic proof rules|
 |`github-copilot-instruction-template`|Tool Selection Rules|`packages/ai-universal-rules/templates/instructions/tools.instructions.md`|Tool selection and script enforcement — use rg/fd/approved scripts; never use bare grep/find|
@@ -251,6 +278,11 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`package-capability`|Dependency Upgrade Examples|`packages/ai-universal-rules/templates/capabilities/dependency-upgrade/examples.md`|- Scope: web app framework from one minor version to the next|
 |`package-capability`|Dependency Upgrade Gotchas|`packages/ai-universal-rules/templates/capabilities/dependency-upgrade/gotchas.md`|- Do not treat a version bump as low risk without checking actual usage surface.|
 |`package-capability`|Dependency Upgrade Reference|`packages/ai-universal-rules/templates/capabilities/dependency-upgrade/reference.md`|Use this file for stable upgrade facts:|
+|`package-capability`|Evidence-First Execution Capability|`packages/ai-universal-rules/templates/capabilities/evidence-first-execution/CAPABILITY.md`|Run non-trivial changes with explicit scope control, dirty-worktree protection, and evidence-backed verification.|
+|`package-capability`|checklist|`packages/ai-universal-rules/templates/capabilities/evidence-first-execution/checklist.md`|- [ ] Read user request and restate bounded outcome.|
+|`package-capability`|examples|`packages/ai-universal-rules/templates/capabilities/evidence-first-execution/examples.md`|Good: source-fix with focused test and explicit verification status.|
+|`package-capability`|gotchas|`packages/ai-universal-rules/templates/capabilities/evidence-first-execution/gotchas.md`|- Do not treat generated files as canonical source unless policy says so.|
+|`package-capability`|reference|`packages/ai-universal-rules/templates/capabilities/evidence-first-execution/reference.md`|- `docs/ai/source-of-truth.md`|
 |`package-capability`|Project Context Capability|`packages/ai-universal-rules/templates/capabilities/project-context/CAPABILITY.md`|Provide durable repository context that other capabilities, agents, and prompts can rely on before planning, implementing, reviewing, or verifying changes.|
 |`package-capability`|Project Context Examples|`packages/ai-universal-rules/templates/capabilities/project-context/examples.md`|If a request touches checkout behavior:|
 |`package-capability`|Project Context Gotchas|`packages/ai-universal-rules/templates/capabilities/project-context/gotchas.md`|- Do not treat legacy or inactive paths as the default implementation target.|
@@ -284,6 +316,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`workflow-template`|bug-regression|`packages/ai-universal-rules/templates/workflows/bug-regression.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
 |`workflow-template`|dependency-upgrade|`packages/ai-universal-rules/templates/workflows/dependency-upgrade.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|
 |`workflow-template`|docs-sync|`packages/ai-universal-rules/templates/workflows/docs-sync.md`|Use when changed behavior or workflow needs matching documentation updates without broad implementation planning|
+|`workflow-template`|evidence-first-execution|`packages/ai-universal-rules/templates/workflows/evidence-first-execution.md`|Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output.|
 |`workflow-template`|new-feature|`packages/ai-universal-rules/templates/workflows/new-feature.md`|Use when implementing a bounded feature with existing repository patterns and focused verification|
 |`workflow-template`|plan-slice|`packages/ai-universal-rules/templates/workflows/plan-slice.md`|Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation|
 |`workflow-template`|project-context|`packages/ai-universal-rules/templates/workflows/project-context.md`|Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing|

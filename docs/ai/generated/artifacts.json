@@ -1,11 +1,11 @@
 {
     "schema_version": 1,
-    "updated_at": "2026-05-06T16:27:41+00:00",
-    "current_commit": "unknown",
+    "updated_at": "2026-05-06T17:58:58+00:00",
+    "current_commit": "f0e8a6e",
     "artifacts": {
         "preflight.json": {
-            "generated_at": "2026-05-06T16:27:39+00:00",
-            "based_on_commit": "6ede0a4",
+            "generated_at": "2026-05-06T17:58:57+00:00",
+            "based_on_commit": "f0e8a6e",
             "command": "php tools/ai/ai.php preflight",
             "estimated_tokens": 346,
             "stale": false,
@@ -13,28 +13,28 @@
             "md_path": "docs/ai/generated/preflight.md"
         },
         "package-verify.json": {
-            "generated_at": "2026-05-06T01:51:41+00:00",
-            "based_on_commit": "6ede0a4",
+            "generated_at": "2026-05-06T17:58:56+00:00",
+            "based_on_commit": "f0e8a6e",
             "command": "php tools/ai/ai.php package-verify",
-            "estimated_tokens": 4320,
+            "estimated_tokens": 5761,
             "stale": false,
             "json_path": "docs/ai/generated/package-verify.json",
             "md_path": "docs/ai/generated/package-verify.md"
         },
         "adapter-plan.json": {
-            "generated_at": "2026-05-06T01:51:41+00:00",
-            "based_on_commit": "6ede0a4",
+            "generated_at": "2026-05-06T17:58:56+00:00",
+            "based_on_commit": "f0e8a6e",
             "command": "php tools/ai/ai.php adapter-plan",
-            "estimated_tokens": 7982,
+            "estimated_tokens": 8520,
             "stale": false,
             "json_path": "docs/ai/generated/adapter-plan.json",
             "md_path": "docs/ai/generated/adapter-plan.md"
         },
         "install.json": {
-            "generated_at": "2026-05-06T16:27:39+00:00",
-            "based_on_commit": "6ede0a4",
+            "generated_at": "2026-05-06T17:58:57+00:00",
+            "based_on_commit": "f0e8a6e",
             "command": "php tools/ai/ai.php install --dry-run",
-            "estimated_tokens": 282,
+            "estimated_tokens": 309,
             "stale": false,
             "json_path": "docs/ai/generated/install.json",
             "md_path": "docs/ai/generated/install.md"
@@ -67,7 +67,7 @@
             "md_path": "docs/ai/generated/verify.md"
         },
         "scripts.json": {
-            "generated_at": "2026-05-06T16:27:40+00:00",
+            "generated_at": "2026-05-06T16:39:00+00:00",
             "based_on_commit": "unknown",
             "command": "php tools/ai/ai.php run-script repomix-context",
             "estimated_tokens": 150,
@@ -76,7 +76,7 @@
             "md_path": "docs/ai/generated/scripts.md"
         },
         "toolchain.json": {
-            "generated_at": "2026-05-06T16:27:40+00:00",
+            "generated_at": "2026-05-06T16:39:01+00:00",
             "based_on_commit": "unknown",
             "command": "php tools/ai/ai.php toolchain",
             "estimated_tokens": 1581,

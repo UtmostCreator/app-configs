@@ -1,9 +1,9 @@
 {
     "schema_version": 1,
     "artifact": "package-verify.json",
-    "generated_at": "2026-05-06T01:51:41+00:00",
+    "generated_at": "2026-05-06T17:58:56+00:00",
     "command": "php tools/ai/ai.php package-verify",
-    "based_on_commit": "6ede0a4",
+    "based_on_commit": "f0e8a6e",
     "based_on_branch": "main",
     "input_hashes": {},
     "status": "failed",
@@ -12,7 +12,7 @@
     "recommended_next_action": "Refresh lock or revert unintended template drift.",
     "data": {
         "path": "packages/ai-universal-rules/package-lock.ai.json",
-        "mismatch_count": 48,
+        "mismatch_count": 69,
         "mismatches": [
             {
                 "path": "templates/all_into_one.bat",
@@ -90,6 +90,31 @@
                 "reason": "checksum_mismatch",
                 "expected": "sha256:bb618935a58c58acff831274e86fd2db52f3282d4fc2bbfce653b985c5459f03",
                 "current": "sha256:ab8b1e7381f4dbf78850b109c36af31e31b149d6fec622ef50fd99337dc77d1c"
+            },
+            {
+                "path": "templates/capabilities/evidence-first-execution/CAPABILITY.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:e955ea10bf4dc29e4f45bd49ff81f6e3ead161d7a8058a0782516573d8cc5f9a"
+            },
+            {
+                "path": "templates/capabilities/evidence-first-execution/checklist.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:c51c0d4afc5de7df2bfcc52fae552770b96a3e634608ee4cd46bb993a890c016"
+            },
+            {
+                "path": "templates/capabilities/evidence-first-execution/examples.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:ed706531663407884cb8b01c60eec4e3bce53fad7ce31b5b13f892dadfaa1609"
+            },
+            {
+                "path": "templates/capabilities/evidence-first-execution/gotchas.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:481740b010ad68f1c7f11588ee84c7c729daf0aa344c5f290e0caa374d13755e"
+            },
+            {
+                "path": "templates/capabilities/evidence-first-execution/reference.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:67d59094cec966a76957b3b1ab60a5101afa6b9bf01101397a3d0819923fdbb8"
             },
             {
                 "path": "templates/capabilities/project-context/CAPABILITY.md",
@@ -209,7 +234,7 @@
                 "path": "templates/core/AGENTS.template.md",
                 "reason": "checksum_mismatch",
                 "expected": "sha256:50195d531092f310fc6c356017ebea24d72910ce556b4485dc61cb1e8726c6a8",
-                "current": "sha256:790c3d45e6cc49ff85765609ad3d0e37dcd2334521cd7314a8bdf25c8d5b42f9"
+                "current": "sha256:9f87feefb69da9b9bc786bf1a4996c6da47160dd9a4de2c1b2b9741789687684"
             },
             {
                 "path": "templates/core/agents/architect.md",
@@ -238,7 +263,12 @@
                 "path": "templates/core/copilot-instructions.template.md",
                 "reason": "checksum_mismatch",
                 "expected": "sha256:8dad01e564d810eba9121de204a5de9c50d7d0316a569ed7674bfc6bda816352",
-                "current": "sha256:a954f3a387c88b4eb05bc1d9348cf8fcef4fe158a0f56873a0808e6fff9ffbe9"
+                "current": "sha256:28097c7baa630daf826d8bad14b7e8cc4d0eb1f87ffdbcad6ec044343f85f8db"
+            },
+            {
+                "path": "templates/core/execution-protocol.template.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:64aa95d9d704afec150f82e9a6eaf8acaed7e552f4a8b6816d9691adf33f7c3e"
             },
             {
                 "path": "templates/core/project-stack.template.md",
@@ -247,9 +277,83 @@
                 "current": "sha256:9fd1e0f2a0e4c9ebd4c174bec6295aad6f4c2360a42f42e8169058555a7a7263"
             },
             {
+                "path": "templates/core/workflow.template.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:a93a7ce58c226f5cc609e4445dac0180b5076941aed185d0f02d7adb2098bb5d",
+                "current": "sha256:da9e5e7c32ceb06f986f7119e85296df6b41c016f0a43b4fc1765a96dec57fce"
+            },
+            {
+                "path": "templates/instructions/ALL_IN_ONE.txt",
+                "reason": "missing_from_lock",
+                "current": "sha256:336b89e1e44ff84923f7747ab0e9d64e9f46552dd818134834711e1cb71b4f70"
+            },
+            {
                 "path": "templates/instructions/ai-file-standards.instructions.md",
                 "reason": "missing_from_lock",
                 "current": "sha256:8eea13c4f6763cccc97f225d8d4c2a16c6b95302ec25b22c44d581a6f6ad84c9"
+            },
+            {
+                "path": "templates/instructions/ai-tooling.instructions.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:6c4430fe595ca5a530bfd60b082c4efb4db5d459908beb1a359d9e022538605c"
+            },
+            {
+                "path": "templates/instructions/all_into_one.bat",
+                "reason": "missing_from_lock",
+                "current": "sha256:c75c73b695acf6ed616fe24b658f672664cbcdc36ee859f32c7c2104fcb1d2b7"
+            },
+            {
+                "path": "templates/instructions/approval-boundaries.instructions.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:7c7edcfbe828cadae7d947d1d6d191ebbf6859d85087ad9e4d1a2ce8139809e7",
+                "current": "sha256:7fc230b64fbc2f8a8fdf379afd37224a17ee4bfb71e50fa295beb2539c594c75"
+            },
+            {
+                "path": "templates/instructions/base.instructions.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:b51ad4ea224a3c9da014cd63454f5c7ce363b3fc9a7e017089ec0daacb2be8a2"
+            },
+            {
+                "path": "templates/instructions/ci-workflows.instructions.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:b8bfad551811311df0ce3375f73cd00989a27b26dd42ef94afe0e19c688f0e10"
+            },
+            {
+                "path": "templates/instructions/composer.instructions.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:7f0bf0fee33763b40e958fbc8acebc21387c0399e552d427e2ee72e9a563f609"
+            },
+            {
+                "path": "templates/instructions/config-infra.instructions.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:e846fa06e071665c0de184c849511f36621458acf10c968980a17bed0e3eb462"
+            },
+            {
+                "path": "templates/instructions/execution-protocol.instructions.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:1563dd73faaba5feceed7abe449a9ef20f20e40e559f71e2fa7f760cde898fa7"
+            },
+            {
+                "path": "templates/instructions/generated-artifacts.instructions.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:afc4aedab347a98bd6375db7213644d04fe701a2dfd96726a83d5dcb86632974",
+                "current": "sha256:2b0ff13836b5b4e5806de053e28ec096997df758ea9d2432711ab1584e79cf57"
+            },
+            {
+                "path": "templates/instructions/php.instructions.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:35bf0edab9ee873a7a90d4ed6abd7600c6d1e19ebadebf70a68c1ee8ec78ba6f"
+            },
+            {
+                "path": "templates/instructions/security.instructions.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:8e8e116dab202843d0f94ee4ae8bc27c0676f2790920b7eff7e28e3636e56905",
+                "current": "sha256:916e6be35a3b8f8e9df62dd999f64b70540972f97e72d0ab03a06fff45aa616e"
+            },
+            {
+                "path": "templates/instructions/shell.instructions.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:364783597c2999a7271c16eb6e48dc20f3040436200d3870131ce5e3090f6f80"
             },
             {
                 "path": "templates/optional/delivery/README.md",
@@ -298,6 +402,11 @@
                 "reason": "checksum_mismatch",
                 "expected": "sha256:c96f247e4ab13e56d217a50e8171cd1143a66a27411a0d28a5251066898b3a3d",
                 "current": "sha256:7162103f162a531f28b09bfbd07b9c3b7223a98991e2a720ed34ddaf268be4ec"
+            },
+            {
+                "path": "templates/workflows/evidence-first-execution.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:021511d52df552ce7f9104b8682a0e0eab65b30d2783c4dffdf0b6ee09bdf707"
             }
         ]
     }

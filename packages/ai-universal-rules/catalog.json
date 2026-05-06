@@ -39,7 +39,7 @@
     "counts": {
         "package:core-template": 16,
         "package:foundation-doc": 6,
-        "package:github-copilot-instruction-template": 21,
+        "package:github-copilot-instruction-template": 20,
         "package:opencode-command-template": 1,
         "package:operations-doc": 6,
         "package:optional-template": 9,
@@ -245,14 +245,6 @@
             "path": "packages/ai-universal-rules/docs/foundations/SKILLS.md",
             "runtime": "canonical",
             "description": "Skills are the runtime adapter form of deeper workflow procedure."
-        },
-        {
-            "scope": "package",
-            "type": "github-copilot-instruction-template",
-            "name": "AI File Standards",
-            "path": "packages/ai-universal-rules/templates/instructions/ALL_IN_ONE.txt",
-            "runtime": "github-copilot",
-            "description": "ai-file-standards.instructions.md"
         },
         {
             "scope": "package",

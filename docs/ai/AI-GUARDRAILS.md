@@ -11,7 +11,7 @@ Use this file as the cross-tool control layer for common failure modes.
 - Gate destructive or high-impact actions behind explicit approval.
 - Treat environment and setup issues as first-class debugging targets.
 - Prefer direct quotes, file references, or command output over invented certainty.
-- Keep durable repo memory in `AGENTS.md`, `CLAUDE.md`, or project-context files, not in session-only summaries.
+- Keep durable repo memory in `AGENTS.md` or project-context files, not in session-only summaries.
 
 ## High-Risk Actions
 

@@ -27,6 +27,7 @@ Reproduce a bug with the smallest practical test or deterministic check, apply a
 - `gotchas.md` for common bug-fix mistakes
 - `examples.md` for regression workflow examples
 - `checklist.md` for minimal-fix sequence
+- `reference.md` for related debugging and verification policy
 
 ## Workflow
 

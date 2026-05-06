@@ -1,12 +1,12 @@
 ---
-applyTo: 'AGENTS.md,CLAUDE.md,README.md,docs/ai/**,.github/copilot-instructions.md,.github/agents/**,.github/instructions/**,.github/prompts/**,.github/skills/**'
+applyTo: 'AGENTS.md,README.md,docs/ai/**,.github/copilot-instructions.md,.github/agents/**,.github/instructions/**,.github/prompts/**,.github/skills/**'
 description: 'Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement'
 ---
 
 # AI Workflow Rules
 
 - Keep canonical workflow guidance in `docs/ai/` and adapter-specific guidance in runtime files.
-- Do not let `.github/` disagree with `AGENTS.md`, `CLAUDE.md`, `docs/ai/project-context.md`, or `docs/ai/workflow.md`.
+- Do not let runtime adapters disagree with `AGENTS.md`, `docs/ai/project-context.md`, or `docs/ai/workflow.md`.
 - Prefer portable concepts first: policy, project context, capabilities, verification, approval boundaries.
 - Do not rely on Markdown links being auto-loaded; repeat critical routing in always-on instructions, agent files, and task entrypoints.
 - Mention runtime limitations explicitly instead of implying feature parity.

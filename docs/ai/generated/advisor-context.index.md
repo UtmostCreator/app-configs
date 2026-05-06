@@ -85,6 +85,7 @@
 - `tools/ai/export-ai-universal-rules.php`
 - `tools/ai/full-install-validation.php`
 - `tools/ai/generate-ai-catalog.php`
+- `tools/ai/generate-ai-file-standards.php`
 - `tools/ai/generate-repo-structure.php`
 - `tools/ai/install-ai-kit.php`
 - `tools/ai/install-ai-kit.sh`

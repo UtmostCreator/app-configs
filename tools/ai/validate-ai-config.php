@@ -12,7 +12,6 @@ if ($root === false) {
 $requiredFiles = [
     'README.md',
     'AGENTS.md',
-    'CLAUDE.md',
     'docs/ai/project-context.md',
     'docs/ai/workflow.md',
     'docs/ai/execution-protocol.md',
@@ -81,7 +80,6 @@ $requiredDirectories = [
 $liveFiles = [
     'README.md',
     'AGENTS.md',
-    'CLAUDE.md',
     'docs/ai/project-context.md',
     'docs/ai/workflow.md',
     'docs/ai/execution-protocol.md',
@@ -231,7 +229,6 @@ foreach ($liveFiles as $relativePath) {
 }
 
 $agentsContent = safeRead($root, 'AGENTS.md');
-$claudeContent = safeRead($root, 'CLAUDE.md');
 $readmeContent = safeRead($root, 'README.md');
 $copilotContent = safeRead($root, '.github/copilot-instructions.md');
 $projectContextContent = safeRead($root, 'docs/ai/project-context.md');
@@ -403,22 +400,6 @@ if ($readmeContent !== null) {
             $warnings[] = "README.md should reference {$phpReferencePath} in AI workflow and tooling guidance";
         }
     }
-}
-
-if ($claudeContent !== null && strpos($claudeContent, 'docs/ai/') === false) {
-    $warnings[] = 'CLAUDE.md should point back to canonical docs/ai guidance';
-}
-
-if ($claudeContent !== null && strpos($claudeContent, 'docs/ai/failure-handling.md') === false) {
-    $warnings[] = 'CLAUDE.md should reference docs/ai/failure-handling.md';
-}
-
-if ($claudeContent !== null && strpos($claudeContent, 'docs/ai/agent-ops-checklist.md') === false) {
-    $warnings[] = 'CLAUDE.md should reference docs/ai/agent-ops-checklist.md';
-}
-
-if ($claudeContent !== null && strpos($claudeContent, 'docs/ai/integration-matrix.md') === false) {
-    $warnings[] = 'CLAUDE.md should reference docs/ai/integration-matrix.md';
 }
 
 if ($errors === []) {

@@ -27,7 +27,7 @@ Apply these rules before proposing or editing architecture-sensitive code.
   - `docs/ai/approval-boundaries.md`
   - `docs/ai/generated-artifacts.md`
   - `docs/ai/adapter-contract.md`
-- Adapter files such as `.github/**`, `.opencode/**`, `AGENTS.md`, and `CLAUDE.md` must stay thin and point back to canonical docs.
+- Adapter files such as `.github/**`, `.opencode/**`, and `AGENTS.md` must stay thin and point back to canonical docs.
 
 ## Ownership And Layering
 

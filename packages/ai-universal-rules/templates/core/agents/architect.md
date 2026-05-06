@@ -23,14 +23,7 @@ permission:
     'stat *': allow
     'pwd': allow
     'ls *': allow
-    'fd *': allow
     'eza *': allow
-    'rg *': allow
-    'git grep *': allow
-    'grep *': allow
-    'sed -n *': allow
-    'head *': allow
-    'tail *': allow
     'nl *': allow
     'jq *': allow
     'yq *': allow
@@ -59,6 +52,10 @@ Design the solution boundary. Do not implement.
 Turn a request, research handoff, or broad problem into a bounded design that an implementer can execute safely.
 
 Define exact scope, non-goals, affected paths, source-of-truth files, contracts and boundaries, risk posture, acceptance criteria, verification plan, and handoff instructions.
+
+## Shell Governance
+
+Direct allowlisted commands are narrow exceptions for local introspection, structured parsing, and git state/history; search, discovery, usage lookup, and file preview must use registered `scripts/ai` wrappers.
 
 ## Hard Rules
 

@@ -30,7 +30,6 @@ permission:
     'uuidgen': allow
     'pwd': allow
     'ls *': allow
-    'fd *': allow
     'eza *': allow
     'bash scripts/ai/ai-search.sh *': allow
     'bash scripts/ai/rg-code.sh *': allow
@@ -40,12 +39,6 @@ permission:
     'bash scripts/ai/git-forensics.sh *': allow
     'bash scripts/ai/ai-doc-check.sh --check*': allow
     'bash scripts/ai/repo-tool-inventory.sh --check*': allow
-    'rg *': allow
-    'git grep *': allow
-    'grep *': allow
-    'sed -n *': allow
-    'head *': allow
-    'tail *': allow
     'nl *': allow
     'wc *': allow
     'sort *': allow
@@ -91,6 +84,7 @@ Find the smallest accurate map of the affected project area so that a planner, i
 Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
 When the active runtime supports repository hooks, these scripts must remain authoritative through `.github/hooks/tool-policy.json` and emit local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.
 When the runtime does not auto-load repository hooks, preserve the same boundary manually: stay inside the bash allowlist, prefer approved registry scripts, and do not claim automatic hook enforcement.
+Direct allowlisted commands are narrow exceptions for local introspection, structured parsing, and git state/history; search, discovery, usage lookup, and file preview must use registered `scripts/ai` wrappers.
 
 Focus on unclear instructions, active paths, current working tree changes, usage, entrypoints, contracts, schemas, generated files, runtime surfaces, tests, edge cases, rollout risks, and unknowns.
 

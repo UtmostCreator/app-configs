@@ -20,6 +20,12 @@ Make agent behavior testable so quality does not depend only on ad hoc review.
 5. apply human-review triggers for medium/high-risk outcomes
 6. record pass/fail evidence and replay notes
 
+## Read Next
+
+- `GOLDEN_TASKS.md` for reusable regression scenarios
+- `REPLAY_RULES.md` for rerun and replay expectations
+- `HUMAN_REVIEW_RULES.md` for escalation triggers
+
 ## Output Contract
 
 - selected golden tasks and outcomes

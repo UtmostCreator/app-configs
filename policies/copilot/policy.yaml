@@ -24,12 +24,12 @@ deny:
     pattern: '(^|[[:space:]])(cat|bat|less|head|tail)([[:space:]]|$).*\.env([^[:space:]]*)?([[:space:]]|$)'
 
 allow:
-  - id: read-only-tools
-    reason: Safe read-only CLI tools
-    pattern: '^(rg|fd|fzf|bat|jq|yq|mlr|fx|delta|eza|ls|pwd|cat|head|tail|wc|sort|uniq|cut|date|env|which|type|file|stat|du|df)\b'
+  - id: shell-introspection
+    reason: Minimal shell introspection only; prefer scripts/ai wrappers for repository reads
+    pattern: '^(pwd|date|which|type|command\s+-v)\b'
   - id: git-read
-    reason: Safe git read operations
-    pattern: '^git\s+(log|show|diff|status|grep|blame|ls-files|branch|tag|describe|shortlog|rev-parse|cat-file|check-ignore|stash list)\b'
+    reason: State/history exception for git read operations; not a replacement for scripts/ai search or file preview wrappers
+    pattern: '^git\s+(log|show|diff|status|blame|ls-files|branch|tag|describe|shortlog|rev-parse|cat-file|check-ignore|stash list)\b'
   - id: gh-read
     reason: Safe GitHub CLI read operations
     pattern: '^gh\s+(pr\s+(view|list|checks|diff)|issue\s+(view|list)|repo\s+view|run\s+(list|view))\b'
@@ -80,6 +80,12 @@ allow:
     pattern: '^(bash\s+)?(\./)?scripts/ai/repomix-scc-router\.sh\s+(stats|plan|run|bundle)\b'
 
 confirm:
+  - id: direct-read-only-tools
+    reason: "Direct read/search tools bypass scripts/ai wrappers — prefer registered scripts/ai wrappers and confirm only when a wrapper cannot serve the task"
+    pattern: '^(rg|fd|fzf|bat|jq|yq|mlr|fx|delta|eza|ls|cat|head|tail|wc|sort|uniq|cut|env|file|stat|du|df)\b'
+  - id: direct-git-grep
+    reason: "Direct git grep bypasses scripts/ai wrappers — prefer registered scripts/ai search wrappers and confirm only when a wrapper cannot serve the task"
+    pattern: '^git\s+grep\b'
   # Tier 2 — modification (confirm before execution)
   # See docs/ai/command-risk-taxonomy.md for the full invocation matrix.
   - id: git-commit

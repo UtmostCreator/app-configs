@@ -97,7 +97,6 @@ Installable line budgets and hard limits live in `docs/ai/ai-file-standards.md` 
 |   |-- manifest.json
 |   |-- manifest.yml
 |   `-- templates/
-|-- CLAUDE.md
 |-- CONTRIBUTING.md
 |-- docs/
 |   |-- ai/

@@ -18,6 +18,12 @@ Define public, internal, tool, and data boundaries so agent-enabled workflows do
 4. call out shared-state blast radius and isolation posture
 5. record fallback behavior when runtime surfaces differ
 
+## Read Next
+
+- `SERVICE_BOUNDARIES.md` for public and internal service boundaries
+- `INTERNAL_TOOL_SURFACES.md` for internal tool controls
+- `DATA_BOUNDARIES.md` for shared data and isolation risks
+
 ## Output Contract
 
 - boundary map by surface type

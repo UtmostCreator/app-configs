@@ -28,6 +28,7 @@ Choose and run the smallest relevant verification flow for a change, then report
 - `checklist.md` for verification order
 - `gotchas.md` for weak-evidence traps
 - `examples.md` for reporting format
+- `reference.md` for related verification policy
 
 ## Workflow
 

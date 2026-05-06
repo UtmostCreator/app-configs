@@ -112,7 +112,7 @@ function aiInstallerRenderInstalledInstructionsMarkdown(array $data): string
     $md .= "- Advisor analyze/fixes: `" . ($commands['advisor_all'] ?? 'php tools/ai/ai.php advisor --all') . "`\n";
     $md .= "- Full-install verifier: `" . ($commands['full_install_verify'] ?? 'php tools/ai/verify-full-install.php') . "`\n\n";
     $md .= "Advisor recommendations are strongest after a full OpenCode install and fresh Repomix analysis, because advisor consumes generated repository signals/context artifacts under `docs/ai/generated/`.\n\n";
-    $md .= "OpenCode agent visibility note: agents in `.opencode/agents/` must not be marked `hidden: true` in frontmatter if you expect them in normal agent listings.\n\n";
+    $md .= "OpenCode agent visibility note: agents in `.opencode/agents/` must not be marked `hidden: true`; use `mode: all` for agents you want in Tab rotation and `mode: subagent` for specialist agents that should appear via `@` mentions.\n\n";
 
     $md .= "## Completion Criteria\n\n";
     $md .= "- Run `" . ($commands['full_install_verify'] ?? 'php tools/ai/verify-full-install.php') . "` after the sequence above.\n";

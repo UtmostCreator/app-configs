@@ -32,6 +32,7 @@ Use these as source of truth:
 - `docs/ai/AI-GUARDRAILS.md`
 - `docs/ai/approval-boundaries.md`
 - `docs/ai/source-of-truth.md`
+- `docs/ai/ai-file-standards.md`
 - `docs/ai/generated-artifacts.md`
 - `docs/ai/adapter-contract.md`
 
@@ -47,6 +48,7 @@ Apply relevant targeted files:
 - `.github/instructions/generated-artifacts.instructions.md`
 - `.github/instructions/security.instructions.md`
 - `.github/instructions/ai-workflow.instructions.md`
+- `.github/instructions/ai-file-standards.instructions.md`
 - `.github/instructions/tools.instructions.md`
 
 ## Working Style

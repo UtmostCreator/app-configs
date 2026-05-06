@@ -6,9 +6,9 @@ function aiInstallerProfileDefinitions(): array
 {
     return [
         'minimal' => ['base', 'setup-docs', 'capabilities-core'],
-        'copilot' => ['minimal', 'adapter-copilot'],
-        'opencode' => ['minimal', 'adapter-opencode'],
-        'dual' => ['minimal', 'adapter-copilot', 'adapter-opencode', 'capabilities-extended-lite'],
+        'copilot' => ['minimal', 'adapter-copilot', 'scripts-pack', 'policy-pack', 'hooks-pack'],
+        'opencode' => ['minimal', 'adapter-opencode', 'scripts-pack', 'policy-pack', 'hooks-pack'],
+        'dual' => ['minimal', 'adapter-copilot', 'adapter-opencode', 'capabilities-extended-lite', 'scripts-pack', 'policy-pack', 'hooks-pack'],
         'guarded' => ['dual', 'policy-pack', 'hooks-pack', 'evidence-pack'],
         'accelerated' => ['dual', 'scripts-pack', 'policy-pack', 'evidence-pack'],
         'full-governance' => ['accelerated', 'capabilities-extended-full', 'hooks-pack', 'ci-pack'],

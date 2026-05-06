@@ -1,7 +1,7 @@
 ---
 id: architect
 description: Use when a change needs scoping, design, ownership decisions, contract boundaries, adapter strategy, or risk posture before implementation
-mode: subagent
+mode: all
 hidden: false
 temperature: 0.1
 capabilities:
@@ -63,6 +63,7 @@ Define exact scope, non-goals, affected paths, source-of-truth files, contracts 
 ## Hard Rules
 
 - Do not edit files.
+- For repository shell exploration, prefer approved scripts from `docs/ai/script-registry.md`, `docs/ai/script-registry.json`, and `docs/ai/scripts-reference.md` before ad hoc commands.
 - Do not invent architecture not supported by repository evidence.
 - Do not plan broad rewrites when a bounded additive change is enough.
 - Do not move implementation into generated files unless the source-of-truth policy allows it.

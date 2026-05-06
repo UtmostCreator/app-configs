@@ -34,6 +34,7 @@ Rule:
 
 - Root dogfood/live files are allowed to be repo-specific when needed for local operations.
 - Root runtime files are not the canonical reusable package source.
+- Root dogfood files should follow `docs/ai/ai-file-standards.md` so installed targets inherit the same primitive roles and size budgets.
 
 ## D) Generated export artifacts
 

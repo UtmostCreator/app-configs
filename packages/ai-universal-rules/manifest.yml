@@ -23,6 +23,7 @@ required_templates:
   - templates/core/AGENTS.template.md
   - templates/core/copilot-instructions.template.md
   - templates/core/project-context.template.md
+  - templates/core/ai-file-standards.template.md
   - templates/capabilities/project-context/CAPABILITY.md
   - templates/capabilities/verify-change/CAPABILITY.md
   - templates/capabilities/review-diff/CAPABILITY.md

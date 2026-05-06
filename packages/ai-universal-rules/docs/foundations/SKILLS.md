@@ -107,7 +107,7 @@ The portable part is the core skill structure and operating model, not every adv
 - invocation controls, tool approvals, subagent behavior, and dependency metadata may be runtime-specific
 - do not imply identical behavior across OpenCode, Copilot, Claude-style runtimes, or future adapters
 
-If portability matters, keep the workflow logic in capabilities and treat skills as thin runtime adapters.
+If portability matters, keep the workflow logic in capabilities and treat skills as thin runtime adapters. In the current installer, workflow entrypoint templates are also used to render prompt, command, and skill surfaces; those workflow templates must therefore stay short and point back to canonical capabilities instead of duplicating the full capability body.
 
 ## Trust And Safety
 
@@ -125,7 +125,8 @@ If a skill can run commands or widen tool access, its trust posture matters as m
 Use this package layering consistently:
 
 1. keep reusable workflow logic in `templates/capabilities/` and adopted copies under `docs/ai/capabilities/`
-2. keep skills as runtime adapters that point back to that canonical workflow
-3. keep always-on instructions short, policy-focused, and free of deep procedure blocks
+2. keep workflow entrypoint templates thin because they are installed as prompts, commands, and skills
+3. keep skills as runtime adapters that point back to canonical capability workflows
+4. keep always-on instructions short, policy-focused, and free of deep procedure blocks
 
 This prevents drift between the portable workflow model and runtime-specific behavior.

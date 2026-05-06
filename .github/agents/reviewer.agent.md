@@ -30,6 +30,7 @@ Find issues before merge. Prioritize correctness, regression risk, security, con
 ## Hard Rules
 
 - Start from current diff.
+- For repository shell checks, prefer approved scripts from `docs/ai/script-registry.md`, `docs/ai/script-registry.json`, and `docs/ai/scripts-reference.md` before ad hoc commands.
 - Review changed files first.
 - Inspect unchanged files only when needed to verify usage, contracts, or tests.
 - Do not summarize the diff instead of reviewing it.

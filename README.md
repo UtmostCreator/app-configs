@@ -1,11 +1,8 @@
 # app-configs
 
-macOS-first developer configuration repository plus a reusable cross-tool AI workflow kit.
+Install-and-go AI workflow kit for adding ready-to-use GitHub Copilot and OpenCode guidance, agents, skills, prompts, commands, scripts, validation, and next-step documentation to other repositories.
 
-This repository has two related jobs:
-
-1. document and version daily workstation setup across shell, terminal, Neovim, PHP, keyboard ergonomics, and editor workflow
-2. provide a reusable cross-tool AI workflow kit for repo-scoped guidance, validation, and generated catalog surfaces
+This repository's main job is to ship a reusable AI setup that another project can install, verify, and use immediately. The remaining workstation configuration files are supporting dogfood/reference material, not the primary package boundary.
 
 ## Ghostty Full Disk Access Popup
 
@@ -51,7 +48,7 @@ This repository has two related jobs:
 
 ## AI Workflow Kit
 
-The repo also contains a reusable AI workflow layer for repo-scoped guidance across multiple tools.
+The reusable AI workflow kit is the primary package surface for repo-scoped guidance across multiple tools.
 
 - `packages/ai-universal-rules/` - canonical reusable package
 - `docs/ai/` - live repo-specific AI workflow docs and capability catalog
@@ -59,11 +56,25 @@ The repo also contains a reusable AI workflow layer for repo-scoped guidance acr
 - `docs/ai/failure-handling.md` - failure taxonomy, retry rules, and logging contract
 - `docs/ai/agent-ops-checklist.md` - phased verification checklist for AI workflow integration
 - `docs/ai/integration-matrix.md` - concept-to-file coverage map for the live AI workflow layer
+- `docs/ai/ai-file-standards.md` - primitive roles, line budgets, split rules, and duplication boundaries
 - `tools/ai/` - validation and catalog generation scripts
 - `.github/` - GitHub Copilot adapter files for this repository
 - `scripts/ai/` - stronger local AI tooling wrappers for search, PR context, context packing, hooks, and telemetry
 
 The goal is to keep canonical workflow knowledge in one place and keep runtime-specific adapter files thin.
+
+### AI primitive boundaries
+
+| Primitive | Use it for | Do not use it for |
+| --- | --- | --- |
+| Instructions | stable repo/path rules | full task workflows |
+| Agents | persistent role, tools/permissions, handoff | capability examples or long checklists |
+| Prompts | one-shot Copilot tasks | durable policy |
+| OpenCode commands | short slash-command wrappers | long procedures |
+| Skills | runtime-loaded capability adapters | global project rules |
+| Capabilities | canonical reusable procedure with checklist/gotchas/reference/examples | provider-specific syntax |
+
+Installable line budgets and hard limits live in `docs/ai/ai-file-standards.md` and package template `packages/ai-universal-rules/templates/core/ai-file-standards.template.md`.
 
 ## Repository Layout
 
@@ -150,6 +161,7 @@ The goal is to keep canonical workflow knowledge in one place and keep runtime-s
 - For bootstrap install into another repository, follow `docs/ai/external-repo-install.md`
 - For the ordered selective install matrix across Copilot, OpenCode, scripts, docs, advisor, hooks, and Repomix helpers, follow `docs/ai/install-order.md`
 - For installer internals, runtime asset map, and verification flow, follow `docs/ai/installer-architecture.md`
+- For the role of agents, instructions, skills, prompts, commands, and capability support files, follow `docs/ai/ai-file-standards.md`
 - For package prerequisites and dependency setup, follow `docs/ai/toolchain-requirements.md`
 - For generated repository-wide tool discovery from shell scripts, use `docs/ai/repo-required-tools.md` and `bash scripts/ai/repo-tool-inventory.sh`
 - For maintained script usage and generated-output ownership, follow `docs/ai/scripts-reference.md`
@@ -205,6 +217,29 @@ Use this sequence when you want to refresh the generated AI workflow surfaces in
     Emits JSON to stdout only. It does not write repo files and is used to find unreferenced docs, scripts, and assets.
 
 For the broader script catalog, including read-only helpers such as `ai-search.sh`, `gh-pr-context.sh`, `preview-file.sh`, and `query-usage.sh`, use `docs/ai/scripts-reference.md`.
+
+### Install and tooling entrypoints
+
+Use the PHP entrypoints for deterministic install, validation, generation, export, and verification:
+
+- `tools/ai/install-ai-kit.php` - canonical external-repo installer.
+- `tools/ai/ai.php` - unified CLI dispatcher for install, docs, placeholders, advisor, and verification workflows.
+- `tools/ai/verify-full-install.php` and `tools/ai/full-install-validation.php` - full install verification paths.
+- `tools/ai/validate-install-surface.php`, `validate-ai-config.php`, `validate-ai-catalog.php`, `validate-adapter-drift.php`, `validate-generated-artifacts.php`, and `validate-placeholders.php` - focused validators.
+- `tools/ai/generate-ai-catalog.php`, `generate-repo-structure.php`, `repo-tool-inventory.php`, and `build-context-pack.php` - generated catalog, structure, tool, and context outputs.
+- `tools/ai/export-ai-universal-rules.php` - package export bundles.
+- `tools/ai/secret-scan.php` and `suggest-verification.php` - safety and verification helpers.
+
+Shell wrappers and repo-local scripts provide low-friction operation where Bash is available:
+
+- `tools/ai/install-ai-kit.sh`, `install-copilot-kit.sh`, and `install-opencode-kit.sh` - thin installer wrappers.
+- `scripts/ai/pre-tool-use.sh` and `post-tool-use.sh` - policy gate and evidence writer.
+- `scripts/ai/ai-search.sh`, `fd-files.sh`, `rg-code.sh`, `preview-file.sh`, and `query-usage.sh` - approved discovery helpers.
+- `scripts/ai/ai-diff-context.sh`, `pack-context.sh`, `run-repomix-context.sh`, `repomix-context-tree.sh`, and `repomix-scc-router.sh` - context packaging helpers.
+- `scripts/ai/ai-verify.sh`, `ai-test-select.sh`, `ai-doc-check.sh`, and `repo-tool-inventory.sh` - verification and documentation checks.
+- `scripts/ai/ai-edit.sh`, `ai-rollback.sh`, `session-checkpoint.sh`, `watch-loop.sh`, `ai-task.sh`, and `ai-structured.sh` - guarded edit/session helpers.
+- `scripts/ai/git-forensics.sh` and `gh-pr-context.sh` - read-only history and PR context helpers.
+- `scripts/ai/install-mandatory-tools.sh` - optional prerequisite installer; review before use.
 
 ### GitHub Copilot install and read order
 

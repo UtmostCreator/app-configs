@@ -19,6 +19,7 @@ Every layer should have a distinct responsibility.
 - path-specific instructions: narrow local conventions
 - project context: durable facts
 - capability folders: reusable procedures
+- skills: runtime-loaded capability adapters
 - prompt files or commands: recurring one-off jobs
 - agents: role posture and stage boundaries
 - hooks: enforcement
@@ -37,6 +38,7 @@ If two files compete for the same responsibility, narrow or remove one of them.
 - keep `.github/copilot-instructions.md` short and broad
 - keep `.github/instructions/*.instructions.md` path-focused
 - use prompt files for recurring one-off tasks where supported
+- use `.github/skills/` as project skill adapters on Copilot surfaces that support skills
 - use custom agents for stage-specific work, not giant global procedure blocks
 - do not assume identical behavior across VS Code, CLI, and GitHub.com
 

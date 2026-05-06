@@ -27,6 +27,7 @@ Review a change set from the diff first, then expand only as needed to assess co
 - `gotchas.md` for review anti-patterns
 - `checklist.md` for ordered review depth
 - `examples.md` for output shape
+- `reference.md` for related review policy
 
 ## Workflow
 

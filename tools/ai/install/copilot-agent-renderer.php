@@ -40,7 +40,7 @@ function aiInstallerRenderCopilotAgent(string $srcContent, string $agentId, stri
             foreach (explode("\n", $bashMatch[1]) as $bashLine) {
                 if (preg_match("/^\\s+'([^']+)':\\s*allow/", $bashLine, $bm)) {
                     $cmd = $bm[1];
-                    if ($cmd !== '*') {
+                    if (preg_match('#^bash\s+scripts/ai/[A-Za-z0-9._-]+\.sh(?:\s|$)#', $cmd) === 1) {
                         $allowedBash[] = $cmd;
                     }
                 }

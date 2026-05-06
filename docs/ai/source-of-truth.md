@@ -18,7 +18,6 @@
 | Handoff contract           | `docs/ai/handoff-contract.md`     | Multi-agent/session handoff requirements      |
 | GitHub Copilot adapter     | `.github/copilot-instructions.md` | GitHub-specific adapter                       |
 | Generic agent adapter      | `AGENTS.md`                       | Portable agent adapter                        |
-| Claude adapter             | `CLAUDE.md`                       | Claude-specific adapter                       |
 | AI-readable index          | `llms.txt`                        | Root AI navigation and index file             |
 | Reusable package           | `packages/ai-universal-rules/`    | Canonical reusable AI workflow package source |
 | Runtime scripts            | `scripts/`                        | Executable operations                         |
@@ -37,4 +36,4 @@
 
 Long-form workflow and policy guidance should live under `docs/ai/`.
 
-Adapter surfaces (`AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`) should stay thin and point to canonical docs.
+Adapter surfaces (`AGENTS.md`, `.github/copilot-instructions.md`, `.github/instructions/**`, and `.opencode/**`) should stay thin and point to canonical docs.

@@ -12,6 +12,7 @@ This file is a thin Copilot adapter. Do not duplicate full workflows, policies, 
 - Use `.github/prompts/*.prompt.md` as task launchers.
 - Use `.github/skills/*/SKILL.md` as reusable capability wrappers.
 - Use `docs/ai/**` for canonical long-form workflow guidance.
+- Use `docs/ai/execution-protocol.md` for evidence-first execution and verification flow.
 
 ## Safety Summary
 
@@ -27,6 +28,9 @@ This file is a thin Copilot adapter. Do not duplicate full workflows, policies, 
 
 - Treat selected custom-agent tool lists as upper bounds.
 - Prompt files must not widen the selected agent tool surface.
+- For repository shell work, prefer approved wrappers from `docs/ai/script-registry.md`, `docs/ai/script-registry.json`, and `docs/ai/scripts-reference.md` over ad hoc terminal commands.
+- Direct git state/history commands and minimal local introspection are exceptions only when allowed by policy; search, discovery, usage lookup, and file preview should use registered `scripts/ai` wrappers.
+- Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer; when the runtime supports repository hooks, keep them wired through `.github/hooks/tool-policy.json`, and when it does not, preserve the same boundary without claiming automatic enforcement.
 - Do not claim hook, sandbox, MCP, skill, or prompt-file enforcement unless the active runtime supports it.
 
 If this file conflicts with `AGENTS.md`, follow `AGENTS.md` and fix this adapter.

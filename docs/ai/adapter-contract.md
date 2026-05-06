@@ -2,7 +2,7 @@
 
 Canonical docs under `docs/ai/` define workflow and policy.
 
-Adapter files (`.github/**`, `.opencode/**`, `AGENTS.md`, `CLAUDE.md`) must stay thin and must:
+Adapter files (`.github/**`, `.opencode/**`, `AGENTS.md`) must stay thin and must:
 
 - link back to canonical docs
 - avoid duplicating long procedures

@@ -10,7 +10,6 @@ if ($root === false) {
 
 $adapterFiles = [
     'AGENTS.md',
-    'CLAUDE.md',
     '.github/copilot-instructions.md',
 ];
 

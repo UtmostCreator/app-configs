@@ -47,68 +47,13 @@ When the runtime does not auto-load repository hooks, preserve the same boundary
 
 Approved scripts (run from the repository root using `scripts/ai`):
 
-- `command -v *`
-- `test -f *`
-- `test -x *`
-- `test -d *`
-- `stat *`
-- `date *`
-- `uuidgen`
-- `pwd`
-- `ls *`
-- `fd *`
-- `eza *`
-- `rg *`
-- `grep *`
-- `git grep *`
-- `sg *`
-- `sed -n *`
-- `head *`
-- `tail *`
-- `nl *`
-- `wc *`
-- `sort *`
-- `uniq *`
-- `file *`
-- `du -h *`
-- `jq *`
-- `yq *`
-- `git status*`
-- `git diff*`
-- `git log*`
-- `git show*`
-- `git ls-files*`
-- `git blame*`
-- `git branch*`
-- `git rev-parse*`
-- `git stash list*`
-- `git stash show*`
 - `bash scripts/ai/ai-search.sh *`
 - `bash scripts/ai/rg-code.sh *`
 - `bash scripts/ai/fd-files.sh *`
 - `bash scripts/ai/preview-file.sh *`
 - `bash scripts/ai/query-usage.sh *`
 - `bash scripts/ai/git-forensics.sh *`
-- `php -l *`
-- `vendor/bin/phpunit *`
-- `./vendor/bin/phpunit *`
-- `phpunit *`
-- `composer validate*`
-- `npm test*`
-- `npm run test*`
-- `npm run lint*`
-- `npm run typecheck*`
-- `pnpm test*`
-- `pnpm run test*`
-- `pnpm run lint*`
-- `pnpm run typecheck*`
-- `yarn test*`
-- `yarn lint*`
-- `bun test*`
-- `shellcheck *`
-- `markdownlint-cli2 *`
-- `php tools/ai/validate-*.php *`
-- `php tools/ai/generate-*.php --check*`
+- `bash scripts/ai/ai-verify.sh *`
 - `bash scripts/ai/ai-doc-check.sh --check*`
 
 Do not run arbitrary shell commands. Do not run commands not in this list.

@@ -2111,7 +2111,6 @@ function aiRunAuditInstructions(string $root): int
     $surfaces = [
         '.github/copilot-instructions.md',
         'AGENTS.md',
-        'CLAUDE.md',
         'GEMINI.md',
         'AI.md',
     ];

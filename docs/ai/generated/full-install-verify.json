@@ -1,6 +1,6 @@
 {
     "status": "partial",
-    "generated_at": "2026-05-06T01:53:02+00:00",
+    "generated_at": "2026-05-06T18:00:03+00:00",
     "root": "C:\\xampp\\htdocs\\app-configs",
     "steps": [
         {
@@ -68,10 +68,10 @@
             "id": "catalog-check",
             "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/generate-ai-catalog.php --check",
             "goal": "Catalog outputs are up to date.",
-            "exit": 1,
+            "exit": 0,
             "artifact": "",
             "artifact_status": "not-applicable",
-            "ok": false
+            "ok": true
         },
         {
             "order": 8,
@@ -106,7 +106,6 @@
     ],
     "failed_steps": [
         "package-verify",
-        "catalog-check",
         "verify-changed"
     ],
     "recommended_next_steps": [

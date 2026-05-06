@@ -19,6 +19,12 @@ Define a vendor-neutral operating model for temporary end-to-end environments us
 5. record environment identifier in evidence output
 6. enforce cleanup and expiry after review
 
+## Read Next
+
+- `LIFECYCLE.md` for environment lifecycle and TTL rules
+- `DATA_AND_SECRET_RULES.md` for isolation expectations
+- `CHECKLIST.md` for preview readiness checks
+
 ## Output Contract
 
 - preview requirement decision and rationale

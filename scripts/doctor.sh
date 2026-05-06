@@ -68,7 +68,6 @@ echo "-- Core files --"
 for file in \
     README.md \
     AGENTS.md \
-    CLAUDE.md \
     docs/ai/project-context.md \
     docs/ai/workflow.md \
     docs/software-and-cli-tools.md \

@@ -17,9 +17,9 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 
 ## Highlights
 
-- `package / core-template` - 14
+- `package / core-template` - 15
 - `package / foundation-doc` - 6
-- `package / github-copilot-instruction-template` - 10
+- `package / github-copilot-instruction-template` - 11
 - `package / opencode-command-template` - 1
 - `package / operations-doc` - 6
 - `package / optional-template` - 9
@@ -37,7 +37,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 - `root / exporter` - 1
 - `root / generator` - 1
 - `root / github-copilot-agent` - 8
-- `root / github-copilot-instruction` - 6
+- `root / github-copilot-instruction` - 7
 - `root / github-copilot-prompt` - 12
 - `root / github-copilot-skill` - 12
 - `root / opencode-agent` - 8
@@ -108,11 +108,12 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-agent`|Researcher|`.github/agents/researcher.agent.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
 |`github-copilot-agent`|Reviewer|`.github/agents/reviewer.agent.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
 |`github-copilot-agent`|Workflow Auditor|`.github/agents/workflow-auditor.agent.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
+|`github-copilot-instruction`|ai-file-standards|`.github/instructions/ai-file-standards.instructions.md`|AI workflow file roles, line budgets, duplication rules, and adapter boundaries|
 |`github-copilot-instruction`|ai-workflow|`.github/instructions/ai-workflow.instructions.md`|Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement|
 |`github-copilot-instruction`|architecture|`.github/instructions/architecture.instructions.md`|Architecture, ownership, and layering guidance|
-|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|Frontend, UI, interaction, and presentation guidance|
-|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|Target and platform adaptation guidance for multi-surface repositories|
-|`github-copilot-instruction`|testing|`.github/instructions/testing.instructions.md`|Testing rules for focused, deterministic, behavior-proving tests|
+|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|applyTo: "<FRONTEND_PATH_GLOB>"|
+|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|applyTo: "**"|
+|`github-copilot-instruction`|testing|`.github/instructions/testing.instructions.md`|applyTo: "<TEST_PATH_GLOB>"|
 |`github-copilot-instruction`|tools|`.github/instructions/tools.instructions.md`|Tool selection and script enforcement — use rg/fd/approved scripts; never use bare grep/find|
 |`github-copilot-prompt`|architecture-plan|`.github/prompts/architecture-plan.prompt.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
 |`github-copilot-prompt`|bug-regression|`.github/prompts/bug-regression.prompt.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
@@ -146,7 +147,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`opencode-agent`|researcher|`.opencode/agents/researcher.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
 |`opencode-agent`|reviewer|`.opencode/agents/reviewer.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
 |`opencode-agent`|workflow-auditor|`.opencode/agents/workflow-auditor.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
-|`opencode-command`|verify|`.opencode/commands/verify.md`|Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
+|`opencode-command`|verify|`.opencode/commands/verify.md`|description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
 |`opencode-skill`|architecture-plan|`.opencode/skills/architecture-plan/SKILL.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
 |`opencode-skill`|bug-regression|`.opencode/skills/bug-regression/SKILL.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
 |`opencode-skill`|dependency-upgrade|`.opencode/skills/dependency-upgrade/SKILL.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|
@@ -199,6 +200,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`core-template`|Researcher Agent|`packages/ai-universal-rules/templates/core/agents/researcher.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
 |`core-template`|Reviewer Agent|`packages/ai-universal-rules/templates/core/agents/reviewer.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
 |`core-template`|Workflow Auditor Agent|`packages/ai-universal-rules/templates/core/agents/workflow-auditor.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
+|`core-template`|<PROJECT_NAME> AI File Standards|`packages/ai-universal-rules/templates/core/ai-file-standards.template.md`|Use this file as the installed repository's canonical content and size contract for AI workflow files.|
 |`core-template`|Repository Instructions For <PROJECT_NAME>|`packages/ai-universal-rules/templates/core/copilot-instructions.template.md`|Use these instructions as the repository-wide baseline for GitHub Copilot.|
 |`core-template`|copilot-vscode-settings.template|`packages/ai-universal-rules/templates/core/copilot-vscode-settings.template.json`|{|
 |`core-template`|<PROJECT_NAME> Project Context|`packages/ai-universal-rules/templates/core/project-context.template.md`|Use this file as durable project context for instructions, agents, prompts, and capabilities.|
@@ -210,6 +212,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`foundation-doc`|Design Principles|`packages/ai-universal-rules/docs/foundations/DESIGN-PRINCIPLES.md`|Use these principles when extending the kit.|
 |`foundation-doc`|Precedence|`packages/ai-universal-rules/docs/foundations/PRECEDENCE.md`|This package uses layered workflow assets, so precedence and non-overlap must be explicit.|
 |`foundation-doc`|Skills|`packages/ai-universal-rules/docs/foundations/SKILLS.md`|Skills are the runtime adapter form of deeper workflow procedure.|
+|`github-copilot-instruction-template`|AI File Standards|`packages/ai-universal-rules/templates/instructions/ai-file-standards.instructions.md`|AI workflow file roles, line budgets, duplication rules, and adapter boundaries|
 |`github-copilot-instruction-template`|AI Workflow Rules|`packages/ai-universal-rules/templates/instructions/ai-workflow.instructions.md`|Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement|
 |`github-copilot-instruction-template`|Approval Boundaries|`packages/ai-universal-rules/templates/instructions/approval-boundaries.instructions.md`|Approval boundaries for destructive, risky, privileged, or broad changes|
 |`github-copilot-instruction-template`|Architecture Rules|`packages/ai-universal-rules/templates/instructions/architecture.instructions.md`|Architecture, ownership, layering, source-of-truth, and high-risk structural change guidance|

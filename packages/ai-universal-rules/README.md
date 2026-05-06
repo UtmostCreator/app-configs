@@ -1,6 +1,6 @@
 # AI Universal Rules
 
-Portable AI workflow infrastructure for OpenCode and GitHub Copilot.
+Install-and-go AI workflow infrastructure for OpenCode and GitHub Copilot.
 
 Machine-readable and generated package outputs:
 
@@ -31,7 +31,7 @@ The kit is intentionally asymmetric. It preserves one canonical workflow model, 
 - durable project-context templates
 - capability folders as the canonical workflow layer
 - OpenCode adapters for agents, commands, and skills
-- GitHub Copilot adapters for instructions, agents, and prompt files
+- GitHub Copilot adapters for instructions, agents, prompt files, and project skills where supported
 - shared templates for guardrails, verification evidence, and approval packets
 - workflow docs for routing, handoffs, approvals, observability, and monorepos
 - operations docs for governance, hooks, MCP boundaries, maintenance, and troubleshooting
@@ -131,6 +131,20 @@ See `docs/foundations/COMPATIBILITY.md` for limits and fallbacks.
 - Treat skills as runtime adapters over canonical capability workflows.
 - Treat hooks as enforcement and instructions as advisory.
 - Document surface mismatch explicitly instead of implying parity.
+- Follow `docs/ai/ai-file-standards.md` in installed repositories and `templates/core/ai-file-standards.template.md` in this package when adding agents, instructions, prompts, commands, skills, or capabilities.
+
+## Primitive Boundaries
+
+| File family | Best use | Keep out |
+| --- | --- | --- |
+| Instructions | stable repo or path rules | task workflows and role personas |
+| Agents | persistent role, tool or permission boundary, handoff | full capability examples |
+| Prompts | one-shot Copilot task launchers | durable policy and permission models |
+| Commands | short OpenCode slash-command wrappers | long procedures |
+| Skills | runtime-loaded capability adapters | project-wide rules |
+| Capabilities | canonical reusable procedure | provider-specific syntax |
+
+Line budgets and hard limits are installed through `docs/ai/ai-file-standards.md`; validation should fail hard-limit violations unless a file is generated or allowlisted.
 
 ## Important Note About Copilot Prompts
 

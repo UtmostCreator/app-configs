@@ -54,6 +54,7 @@ Ask for approval before making:
 Inspect the current implementation before making architectural or behavioral changes:
 
 - `README.md, docs/ai/project-context.md`
+- `docs/ai/ai-file-standards.md` before adding or expanding AI workflow files
 - `docs/ai/agents.md, docs/ai/failure-handling.md, docs/ai/agent-ops-checklist.md, docs/ai/integration-matrix.md`
 
 ## Architecture Notes

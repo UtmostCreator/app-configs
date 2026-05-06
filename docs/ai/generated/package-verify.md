@@ -1,0 +1,314 @@
+# Package verify
+
+- Status: `failed`
+- Generated at: `2026-05-06T01:51:41+00:00`
+- Commit: `6ede0a4`
+- Branch: `main`
+- Recommended next action: `Refresh lock or revert unintended template drift.`
+
+```json
+{
+    "schema_version": 1,
+    "artifact": "package-verify.json",
+    "generated_at": "2026-05-06T01:51:41+00:00",
+    "command": "php tools/ai/ai.php package-verify",
+    "based_on_commit": "6ede0a4",
+    "based_on_branch": "main",
+    "input_hashes": {},
+    "status": "failed",
+    "score": null,
+    "stale": false,
+    "recommended_next_action": "Refresh lock or revert unintended template drift.",
+    "data": {
+        "path": "packages/ai-universal-rules/package-lock.ai.json",
+        "mismatch_count": 48,
+        "mismatches": [
+            {
+                "path": "templates/all_into_one.bat",
+                "reason": "missing_from_lock",
+                "current": "sha256:c75c73b695acf6ed616fe24b658f672664cbcdc36ee859f32c7c2104fcb1d2b7"
+            },
+            {
+                "path": "templates/capabilities/README.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:7bf541be81cc1f0cb92868b089ff0f94c891175b67dac82220954081564f8919",
+                "current": "sha256:af095a83602f45b79003a86911d13867cc704315c024f57350d09042a4650be6"
+            },
+            {
+                "path": "templates/capabilities/bug-regression/CAPABILITY.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:193f72b1e01f7b687725884a253793204473360553ef44a480eb6ded6cdaae6c",
+                "current": "sha256:5f0ce1e3d7605acfa00a73c481fd7c33944f2aacc9f1dc99521be6cb62b49e8e"
+            },
+            {
+                "path": "templates/capabilities/bug-regression/checklist.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:c7a0d73e57137448939ffba4e36e03e39e353cf0d7dfe041cf7e42468b09005c",
+                "current": "sha256:8801fa62bf5959c7b54b09497ce989443ce6e082c50520f62531c4e04022ac73"
+            },
+            {
+                "path": "templates/capabilities/bug-regression/config.example.json",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:c78a19f96f70f93b95e32afaa84ad0d9b582da30f382af16278f2e896ce74642",
+                "current": "sha256:750d453b0f63981f1c725925b38e7b31515617aab680abcc437fbe19ca7a182b"
+            },
+            {
+                "path": "templates/capabilities/bug-regression/examples.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:8a1a081fb9c9dac6f3b4380132f718fcf989a279448f90ff2dc5c0b677b1ea59",
+                "current": "sha256:cbcc7988293e43aae3463d3461d5dd303318acdd0e925336a3ae9aab444b49d3"
+            },
+            {
+                "path": "templates/capabilities/bug-regression/gotchas.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:1ef3c87b019975a13544bcac8bae8685cdf946e4d416384138b802a953d6da65",
+                "current": "sha256:0e34ea82bd3f2f08b9fbd17cd5742cfc6331a964d1fa1bb7a3b2c54fe9458249"
+            },
+            {
+                "path": "templates/capabilities/bug-regression/reference.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:966be588b9736f6b44a8ea7c76c6849cb8c7d6ece87dbf5a0afffc19fe6cd374",
+                "current": "sha256:34eddea65611144521775c0386ab841c247f8133b1f868dce499472856e69028"
+            },
+            {
+                "path": "templates/capabilities/dependency-upgrade/CAPABILITY.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:4ada287950678e688df09123558679dd815d041cd05bb233fd86e4e69a5a02ce",
+                "current": "sha256:7e5b85f56234cb442b219450e71096d90a5fecd48458fb0252b6f9eb3657b38f"
+            },
+            {
+                "path": "templates/capabilities/dependency-upgrade/checklist.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:aaecef1d0e53546c6fe2d6d238aca1b02008aa89f1466de8c4599ae9fbb8b657",
+                "current": "sha256:6cb91c23904d2d5a065b407e8e10be8bcd71be0d3761d5d0924d26777964e612"
+            },
+            {
+                "path": "templates/capabilities/dependency-upgrade/examples.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:b9c1ddc010da73040ddf7062e2dc6fa40e0c2db172368aa393056a78a749ca10",
+                "current": "sha256:5908ea7bec4359f63c089f8049c8e664fb747c9d5566763ba5052eb13c9d8bcb"
+            },
+            {
+                "path": "templates/capabilities/dependency-upgrade/gotchas.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:7cc4dfbae2f448a794bd5982bd01d84ebfaa70f831e912073d365e9b091c0233",
+                "current": "sha256:f16dadb90caf0fc764abbc87a35fcc47564c674d9984e4adcac3471fb0dd9292"
+            },
+            {
+                "path": "templates/capabilities/dependency-upgrade/reference.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:bb618935a58c58acff831274e86fd2db52f3282d4fc2bbfce653b985c5459f03",
+                "current": "sha256:ab8b1e7381f4dbf78850b109c36af31e31b149d6fec622ef50fd99337dc77d1c"
+            },
+            {
+                "path": "templates/capabilities/project-context/CAPABILITY.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:f00c067b68dc3141725e3266634546379756720fb0958687d3606797b9695a6e",
+                "current": "sha256:e62dc7334a6a0e64d44c29e35d39338ab102dcb7ade80aa42f129024532b46f3"
+            },
+            {
+                "path": "templates/capabilities/project-context/examples.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:d02cbc4930f4ee4655a243d2bbd6d5819b9964d845abfab5c08f3a677f4158b3",
+                "current": "sha256:a8b67224c2c43f0e3a2568a4c1017603b52c4bc2415a2eff06a98a9ad6ca1241"
+            },
+            {
+                "path": "templates/capabilities/project-context/gotchas.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:64dfa273a78a42eeda8b6d86a7cfe7ab77ec3282b6a4e55a750e3566f539dfe8",
+                "current": "sha256:9471a3c4982160b642a8b5403f1cdf5ae03a68307e311a88b51e31c5dbc0272a"
+            },
+            {
+                "path": "templates/capabilities/project-context/reference.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:0b1bb6c37e0e32a686fea1bc54720bd58138d787a0bca8d4212e5e34404655a9",
+                "current": "sha256:70f6574d08d5731e2b075cb197b2a104e00595ec7f88657ba00d0d3d34b1d279"
+            },
+            {
+                "path": "templates/capabilities/release-safety/CAPABILITY.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:60d3e5919702f1a985c17bb9f6c83c45dc8cb5553afa85027e3e807f6a05ee21",
+                "current": "sha256:cde53cbcf2d595f074bf09bb2622c0d6d09c1e27fcbaab1f6c9183a722251f4e"
+            },
+            {
+                "path": "templates/capabilities/release-safety/checklist.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:d353c8616157621a32a006df57e887248ec4d3566e8d088000b5bb6aec20a8df",
+                "current": "sha256:b03fe0c59c6c8ab1b150f9af9258910230238414feb5810be6c7ac6f0d10c391"
+            },
+            {
+                "path": "templates/capabilities/release-safety/examples.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:ff0aac01bdd83272682c080e704b4e0204977cc9e08a779206013140ff091c40",
+                "current": "sha256:f61d6b8452331fb6e8fb6bebc03fdddba5edaeb43e74c60a7d8d7f86d124c593"
+            },
+            {
+                "path": "templates/capabilities/release-safety/gotchas.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:1bf0e1ba6772f6a2e83136ed277ef27770bbeb30c558ca90fcd0d47e53123fa4",
+                "current": "sha256:6790cd3616a09a8f3133a73897d9e3fba757f4dbe64b4c247342f21cd7581381"
+            },
+            {
+                "path": "templates/capabilities/release-safety/reference.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:c19b553473a445832865bbcc4fd1f6b0ae3819e0175e839cfe2484b138db49a7",
+                "current": "sha256:e5e19d07fef4d2c7f4962122f7f7551ca28a684dd1c75a21e189bda4260e5269"
+            },
+            {
+                "path": "templates/capabilities/review-diff/CAPABILITY.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:33c6aab401382cede6ca71262f6f8949fa07bea7ae47961fe20ee6046bdcfb85",
+                "current": "sha256:2a61fbf3e298122aa1785e054b60e6d2a00505a0bf20f8d7d6b966fe669971ff"
+            },
+            {
+                "path": "templates/capabilities/review-diff/checklist.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:1b42478be939a6eb82ddc34d2c540364bea8cb24f6dd8a13c5f5014dab1884bc",
+                "current": "sha256:6cda68c78068b2ef924f871e2f38e5d527c9821900c2f5679048488702aa6675"
+            },
+            {
+                "path": "templates/capabilities/review-diff/examples.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:a05c23a3a9a577b49ddd1abb98d04e32fa4eda79f6f54f57d0bac7d4ff2cf72e",
+                "current": "sha256:d7a5c5ad153d731a0f75a93bbc695780d273736f03230249b9f1e4c216efa04c"
+            },
+            {
+                "path": "templates/capabilities/review-diff/gotchas.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:66fee90942726ca1dc9d96f8022c4244f3e50200e622a8de0ea6e0411515c200",
+                "current": "sha256:358fc515413a520f4df51f7a7ec11c29c36637efc9d3709e5970b70348a7bf50"
+            },
+            {
+                "path": "templates/capabilities/review-diff/reference.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:0848debba82a70bb627d6a5d456722bb42a51f9a9e3a51f8fc8ba0c3f8f58d71",
+                "current": "sha256:e128240d362df8ebb7f52408b03af166551c1a30bd54fe896f278b0278b19724"
+            },
+            {
+                "path": "templates/capabilities/verify-change/CAPABILITY.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:90f78ebbf36bae2062d6a31d58726c9592200330012d0d4f90da02809f18c4de",
+                "current": "sha256:f6f62fd97dc590a2b41a7da0ea0a86b2b84817ebab60ecb40e05c0f4066d6ef8"
+            },
+            {
+                "path": "templates/capabilities/verify-change/checklist.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:c66c7ec6ee61bb6f0735613f0199d4700326f4901e85bb3f12ba1de524050ed8",
+                "current": "sha256:160996728df4d604946fce396e39e7f900bfb0f62fec2aad5d12bb57528e200c"
+            },
+            {
+                "path": "templates/capabilities/verify-change/examples.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:91a0fc23ccdd9d815ee4081d9b5166b15dca2d7c1c17767f4ae78313bf4d3037",
+                "current": "sha256:07629bdfe4ffbea9e421d1f7c12dbe1589d30b43f4eff4a64fbaf15226542d05"
+            },
+            {
+                "path": "templates/capabilities/verify-change/gotchas.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:b48d76a394c0856d9365a174528e7578890ffffc12bef96f0fb0791e9f4f2257",
+                "current": "sha256:55e9405b4b2d4855d68f56bb4700bccd3b2413f3e3bbdbfc49b72d4ffa73b06d"
+            },
+            {
+                "path": "templates/capabilities/verify-change/reference.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:8f56c94b997632da3efa72093bb22d33c40d6bce60528f1a8960b7a5f3f438a2",
+                "current": "sha256:6a2bffa6316d0d68397d986fe955240a9a6d955a999748a1f79b54f494702c73"
+            },
+            {
+                "path": "templates/core/AGENTS.template.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:50195d531092f310fc6c356017ebea24d72910ce556b4485dc61cb1e8726c6a8",
+                "current": "sha256:790c3d45e6cc49ff85765609ad3d0e37dcd2334521cd7314a8bdf25c8d5b42f9"
+            },
+            {
+                "path": "templates/core/agents/architect.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:9fbfdd205ae0af38675dc6ec988e9fa300151a6f4029d5c39b12de2c9fa20b7d",
+                "current": "sha256:e3430b673fa15648dac1508dd095ce13c6b115cedd2ac52ac3920c541523a9aa"
+            },
+            {
+                "path": "templates/core/agents/implementer.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:c52f15deed38994be00cffd4ae4bdd3dc7a3f0bf95f794d852bfe325e94c3e07",
+                "current": "sha256:a5474ae0d23bb36d693b09f7712dcbc814eda2ba1394eb68bd7e2312f88ae6fb"
+            },
+            {
+                "path": "templates/core/agents/reviewer.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:944a1e40a4e4ab50e135225a282e57fd5e0216916a4540f0968fae37753a2336",
+                "current": "sha256:e58b2a1897da21d614891d452d5dc62ea14e7bc99c3f774866c7c52f8e571266"
+            },
+            {
+                "path": "templates/core/ai-file-standards.template.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:9b734a13faad34825a20bdaa791ead01440fc3e0cdfc137e7c976839ae4dc6e4"
+            },
+            {
+                "path": "templates/core/copilot-instructions.template.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:8dad01e564d810eba9121de204a5de9c50d7d0316a569ed7674bfc6bda816352",
+                "current": "sha256:a954f3a387c88b4eb05bc1d9348cf8fcef4fe158a0f56873a0808e6fff9ffbe9"
+            },
+            {
+                "path": "templates/core/project-stack.template.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:b3f8c3d19d9b07257f242d10290adf7ce3b4f48ee5b45d4c5044cc5ba308ba0c",
+                "current": "sha256:9fd1e0f2a0e4c9ebd4c174bec6295aad6f4c2360a42f42e8169058555a7a7263"
+            },
+            {
+                "path": "templates/instructions/ai-file-standards.instructions.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:8eea13c4f6763cccc97f225d8d4c2a16c6b95302ec25b22c44d581a6f6ad84c9"
+            },
+            {
+                "path": "templates/optional/delivery/README.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:1c167735dd80af27b7961ae6ed46ae9f8f45d8ef64238423fab6b979a3c6b48a",
+                "current": "sha256:77a075656341540aa97ad9e6e07b540e0c49e49526043b20130a4828f4629926"
+            },
+            {
+                "path": "templates/optional/delivery/slice-card.template.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:84bdc304b082c9d383aef991130165631f09e1d2aa3f510f47d293a00ab46d7e",
+                "current": "sha256:dad9110f3689eb32ad1305292700b5479da60e44855efec226ff1996625746f7"
+            },
+            {
+                "path": "templates/shared/approvals/APPROVAL-PACKET.template.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:b027b103a5874a2c4821a855df89057af2e2ca6b45d6e43ed9d46ce94b96cf81",
+                "current": "sha256:76d01acf8a628a5f49025796bdfc08286cda0837ee208d21cb18f7883d55e228"
+            },
+            {
+                "path": "templates/shared/guardrails/AI-GUARDRAILS.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:8e19dd76dc69d8b75808c9e1e76e24d5691ed063241df07bb1dab787d7281754",
+                "current": "sha256:16d6d04f33e0dab7bc769e52323ee085275ec85b38d36a2ac1d2316476afcec7"
+            },
+            {
+                "path": "templates/shared/verification/VERIFICATION-EVIDENCE.template.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:43a3496d6abf3e3e4ad1fc804ccd91ff255fa034c4d54f7c9914feb84a2eab8b",
+                "current": "sha256:6b3d82a161cdd4b92c4cf96c70a8ee3d971b676554d71e6bbcd0d70ce2c2f4fc"
+            },
+            {
+                "path": "templates/snippets/approvals.snippet.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:81b6f877013a55db9d04f23fbf113fd08a193daf920883061933d3e554ff375e",
+                "current": "sha256:dcf3242f36ec43d7940e23bb94f80d126c0690434c1a70c8c5336333d2bee340"
+            },
+            {
+                "path": "templates/snippets/verification.snippet.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:411dde56f27380875a05c1d466cda7262e359e01ef1f69e75ff574d42cc08ab8",
+                "current": "sha256:4a43cca30d8db27ead76f1cda8316ff4d0e39a28237849894d131a0e1aecfa2c"
+            },
+            {
+                "path": "templates/snippets/workflow.snippet.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:c96f247e4ab13e56d217a50e8171cd1143a66a27411a0d28a5251066898b3a3d",
+                "current": "sha256:7162103f162a531f28b09bfbd07b9c3b7223a98991e2a720ed34ddaf268be4ec"
+            }
+        ]
+    }
+}
+```

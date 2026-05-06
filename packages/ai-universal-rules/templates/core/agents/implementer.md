@@ -1,7 +1,7 @@
 ---
 id: implementer
 description: Use when a bounded implementation slice is clear and focused verification should happen in this repository
-mode: subagent
+mode: all
 hidden: false
 temperature: 0.1
 capabilities:

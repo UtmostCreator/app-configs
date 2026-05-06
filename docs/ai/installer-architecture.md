@@ -70,6 +70,7 @@ Base layer:
 
 - `AGENTS.md`
 - `docs/ai/project-context.md`
+- `docs/ai/ai-file-standards.md`
 - `docs/ai/AI-GUARDRAILS.md`
 - `docs/ai/capabilities/project-context/`
 - `docs/ai/capabilities/verify-change/`
@@ -81,6 +82,7 @@ GitHub Copilot runtime:
 - `.github/instructions/`
 - `.github/agents/`
 - `.github/prompts/`
+- `.github/skills/` when the selected Copilot surface supports project skills
 
 OpenCode runtime:
 
@@ -133,6 +135,7 @@ GitHub Copilot:
 
 - repository custom instructions: `.github/copilot-instructions.md`
 - path instructions: `.github/instructions/*.instructions.md` with `applyTo` frontmatter
+- project skills: `.github/skills/<name>/SKILL.md` on supported Copilot agent surfaces
 
 OpenCode:
 

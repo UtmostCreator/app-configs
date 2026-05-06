@@ -6,6 +6,7 @@
 | Project context            | `docs/ai/project-context.md`      | Canonical project context                     |
 | Guardrails                 | `docs/ai/AI-GUARDRAILS.md`        | Canonical guardrail guidance                  |
 | Adapter contract           | `docs/ai/adapter-contract.md`     | Canonical adapter thinness and drift rules    |
+| AI file standards          | `docs/ai/ai-file-standards.md`    | Canonical primitive roles and line budgets    |
 | Session re-entry           | `docs/ai/session-reentry.md`      | Canonical resume and checkpoint workflow      |
 | Risk taxonomy              | `docs/ai/risk-taxonomy.md`        | Canonical risk classification model           |
 | Approval boundaries        | `docs/ai/approval-boundaries.md`  | Canonical approval gates                      |

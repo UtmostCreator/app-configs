@@ -55,6 +55,7 @@ Ask for approval before making:
 Inspect the current implementation before making architectural or behavioral changes:
 
 - `<PRIMARY_ENTRYPOINTS>`
+- `docs/ai/ai-file-standards.md` before adding or expanding AI workflow files
 
 ## Architecture Notes
 

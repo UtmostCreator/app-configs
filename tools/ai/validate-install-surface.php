@@ -71,6 +71,16 @@ foreach ($profiles as $profileId => $items) {
     }
 }
 
+$scriptEnforcedProfiles = ['copilot', 'opencode', 'dual'];
+foreach ($scriptEnforcedProfiles as $profileId) {
+    $expanded = aiInstallerExpandProfilePacks((array) ($profiles[$profileId] ?? []), $profiles, $packs);
+    foreach (['scripts-pack', 'policy-pack', 'hooks-pack'] as $requiredPack) {
+        if (!in_array($requiredPack, $expanded, true)) {
+            $errors[] = "profile {$profileId} must include {$requiredPack} for script-governed runtime enforcement";
+        }
+    }
+}
+
 $packSources = [];
 $packTargets = [];
 foreach ($packs as $items) {
@@ -123,7 +133,15 @@ foreach ($opencodeCommands as $commandFile) {
 $allowedNext = ['verify', 'user', 'planner', 'implement', 'refactorer'];
 
 foreach (glob($root . '/packages/ai-universal-rules/templates/core/agents/*.md') ?: [] as $agentFile) {
-    foreach (extractRecommendedNextSteps((string) file_get_contents($agentFile)) as $candidate) {
+    $agentContent = (string) file_get_contents($agentFile);
+    $mode = frontmatterField($agentContent, 'mode');
+    $agentName = pathinfo($agentFile, PATHINFO_FILENAME);
+    $expectedMode = in_array($agentName, ['architect', 'implementer', 'reviewer'], true) ? 'all' : 'subagent';
+    if ($mode !== $expectedMode) {
+        $errors[] = relativePath($root, $agentFile) . " must set frontmatter mode: {$expectedMode}";
+    }
+
+    foreach (extractRecommendedNextSteps($agentContent) as $candidate) {
         if (!in_array($candidate, $allowedNext, true) && !in_array($candidate, $opencodeAgentNames, true)) {
             $errors[] = relativePath($root, $agentFile) . " has unknown Recommended Next Step '{$candidate}'";
         }
@@ -236,6 +254,22 @@ foreach ($copilotPromptFiles as $promptFile) {
     }
 }
 
+// Enforce installable AI surface hard line limits. Generated outputs are intentionally excluded.
+foreach (aiFileLineLimitRules($root, $errors) as $rule) {
+    foreach (glob((string) $rule['pattern']) ?: [] as $path) {
+        if (!is_file($path)) {
+            continue;
+        }
+        $lines = count(preg_split('/\R/', rtrim((string) file_get_contents($path), "\r\n")) ?: []);
+        $relative = relativePath($root, $path);
+        if ($lines > (int) $rule['hard']) {
+            $errors[] = "{$relative} has {$lines} lines, above hard max {$rule['hard']} for {$rule['label']}";
+        } elseif ($lines > (int) $rule['soft']) {
+            $warnings[] = "{$relative} has {$lines} lines, above soft max {$rule['soft']} for {$rule['label']}";
+        }
+    }
+}
+
 // Verify tools.instructions.md is present for Copilot
 $toolsInstructionsFile = $root . '/.github/instructions/tools.instructions.md';
 if (!is_file($toolsInstructionsFile) && is_dir($root . '/.github/instructions')) {
@@ -319,4 +353,57 @@ function extractRecommendedNextSteps(string $content): array
 function relativePath(string $root, string $absolute): string
 {
     return str_replace('\\', '/', substr($absolute, strlen($root) + 1));
+}
+
+function aiFileLineLimitRules(string $root, array &$errors): array
+{
+    $policyPath = $root . '/packages/ai-universal-rules/policies/ai-file-standards.json';
+    if (!is_file($policyPath)) {
+        $errors[] = 'missing ai-file-standards policy: packages/ai-universal-rules/policies/ai-file-standards.json';
+        return [];
+    }
+
+    $decoded = json_decode((string) file_get_contents($policyPath), true);
+    if (!is_array($decoded)) {
+        $errors[] = 'invalid ai-file-standards policy JSON';
+        return [];
+    }
+
+    $lineLimits = $decoded['line_limits'] ?? null;
+    if (!is_array($lineLimits) || $lineLimits === []) {
+        $errors[] = 'ai-file-standards policy has no line_limits';
+        return [];
+    }
+
+    $rules = [];
+    foreach ($lineLimits as $rule) {
+        if (!is_array($rule)) {
+            continue;
+        }
+        $patterns = $rule['patterns'] ?? null;
+        if (!is_array($patterns) || $patterns === []) {
+            continue;
+        }
+        $label = (string) ($rule['label'] ?? $rule['id'] ?? 'line-limit rule');
+        $soft = (int) ($rule['warn_above'] ?? 0);
+        $hard = (int) ($rule['fail_above'] ?? 0);
+        foreach ($patterns as $pattern) {
+            $pattern = (string) $pattern;
+            if ($pattern === '') {
+                continue;
+            }
+            $rules[] = [
+                'label' => $label,
+                'pattern' => $root . '/' . ltrim(str_replace('\\', '/', $pattern), '/'),
+                'soft' => $soft,
+                'hard' => $hard,
+            ];
+        }
+    }
+
+    if ($rules === []) {
+        $errors[] = 'ai-file-standards policy produced no usable line-limit rules';
+    }
+
+    return $rules;
 }

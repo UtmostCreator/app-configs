@@ -41,7 +41,16 @@ allow_registered_script() {
         if grep -Eq "^(bash[[:space:]]+)?(\./)?${escaped}([[:space:]]|$)" <<<"$compact"; then
             return 0
         fi
-    done < <(jq -r '.scripts[]? | select(.approval == "allow") | .path' "$registry_file" 2>/dev/null)
+    done < <(jq -r '
+        [
+          (.scripts // {} | to_entries[]?.value.installed_path),
+          (.scripts // {} | to_entries[]?.value.source_path),
+          (.scripts[]? | select(.approval == "allow") | .path)
+        ]
+        | flatten
+        | map(select(type == "string" and . != ""))
+        | unique[]
+    ' "$registry_file" 2>/dev/null)
 
     return 1
 }

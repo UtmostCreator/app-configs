@@ -2,6 +2,8 @@
 
 ## Default Task Flow
 
+For non-trivial work, follow `docs/ai/execution-protocol.md`.
+
 1. load task context or perform read-only grounding when ownership is unclear
 2. route through `project-context` when multiple active paths could own the change
 3. use `plan-slice` or a planning agent for multi-step or risky work

@@ -1,5 +1,155 @@
 {
   "scripts": {
+    "common": {
+      "label": "Shared helper library for AI shell scripts",
+      "source_path": "scripts/ai/common.sh",
+      "installed_path": "scripts/ai/common.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "ai-search": {
+      "label": "Safe repository text search wrapper",
+      "source_path": "scripts/ai/ai-search.sh",
+      "installed_path": "scripts/ai/ai-search.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "git", "rg"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "rg-code": {
+      "label": "Code-focused ripgrep wrapper",
+      "source_path": "scripts/ai/rg-code.sh",
+      "installed_path": "scripts/ai/rg-code.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "rg"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "fd-files": {
+      "label": "File discovery wrapper",
+      "source_path": "scripts/ai/fd-files.sh",
+      "installed_path": "scripts/ai/fd-files.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "fd"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "preview-file": {
+      "label": "Safe file preview wrapper",
+      "source_path": "scripts/ai/preview-file.sh",
+      "installed_path": "scripts/ai/preview-file.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "query-usage": {
+      "label": "Symbol usage query wrapper",
+      "source_path": "scripts/ai/query-usage.sh",
+      "installed_path": "scripts/ai/query-usage.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "rg"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "git-forensics": {
+      "label": "Read-only git history tracing wrapper",
+      "source_path": "scripts/ai/git-forensics.sh",
+      "installed_path": "scripts/ai/git-forensics.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "git"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "gh-pr-context": {
+      "label": "GitHub PR context wrapper",
+      "source_path": "scripts/ai/gh-pr-context.sh",
+      "installed_path": "scripts/ai/gh-pr-context.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "gh", "git"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "ai-doc-check": {
+      "label": "AI docs consistency checker wrapper",
+      "source_path": "scripts/ai/ai-doc-check.sh",
+      "installed_path": "scripts/ai/ai-doc-check.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "git", "rg"],
+      "risk": "read-only",
+      "supports_dry_run": true,
+      "default_args": ["--check"]
+    },
+    "ai-diff-context": {
+      "label": "Diff-aware context extraction wrapper",
+      "source_path": "scripts/ai/ai-diff-context.sh",
+      "installed_path": "scripts/ai/ai-diff-context.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "git"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "ai-verify": {
+      "label": "Verification workflow wrapper",
+      "source_path": "scripts/ai/ai-verify.sh",
+      "installed_path": "scripts/ai/ai-verify.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "git"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "ai-rollback": {
+      "label": "Rollback snapshot helper",
+      "source_path": "scripts/ai/ai-rollback.sh",
+      "installed_path": "scripts/ai/ai-rollback.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "git"],
+      "risk": "mutating",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "ai-edit": {
+      "label": "Scoped repository edit wrapper",
+      "source_path": "scripts/ai/ai-edit.sh",
+      "installed_path": "scripts/ai/ai-edit.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "git", "python3"],
+      "risk": "mutating",
+      "supports_dry_run": true,
+      "default_args": []
+    },
+    "pre-tool-use": {
+      "label": "Pre-tool policy decision hook",
+      "source_path": "scripts/ai/pre-tool-use.sh",
+      "installed_path": "scripts/ai/pre-tool-use.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "jq"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
+    "post-tool-use": {
+      "label": "Post-tool evidence writer hook",
+      "source_path": "scripts/ai/post-tool-use.sh",
+      "installed_path": "scripts/ai/post-tool-use.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "jq", "date"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
     "repomix-context": {
       "label": "Generate Repomix context bundle",
       "source_path": "scripts/ai/run-repomix-context.sh",
@@ -59,6 +209,16 @@
       "risk": "mutating",
       "supports_dry_run": true,
       "default_args": ["--dry-run"]
+    },
+    "watch-loop": {
+      "label": "Watched command retry wrapper",
+      "source_path": "scripts/ai/watch-loop.sh",
+      "installed_path": "scripts/ai/watch-loop.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
     }
   }
 }

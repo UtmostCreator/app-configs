@@ -33,6 +33,7 @@ Use these as source of truth:
 - `docs/ai/approval-boundaries.md`
 - `docs/ai/source-of-truth.md`
 - `docs/ai/ai-file-standards.md`
+- `docs/ai/execution-protocol.md`
 - `docs/ai/generated-artifacts.md`
 - `docs/ai/adapter-contract.md`
 
@@ -70,6 +71,20 @@ Apply relevant targeted files:
 - Say `unknown` instead of guessing when repository evidence is missing.
 - If a slice grows beyond roughly 6 files or 300-500 changed lines, pause and confirm it is still one bounded outcome.
 - Prefer reusable capability folders for workflow-specific guidance when the repository provides them.
+
+## Evidence-First Execution
+
+Follow `docs/ai/execution-protocol.md` for non-trivial planning, editing, review, and verification.
+
+Before edits:
+
+- classify task mode
+- check `git status --short`
+- inspect relevant diffs
+- avoid overwriting pre-existing user changes
+- keep edits inside declared scope
+
+Final responses for code changes must include changed files, verification status, rollback path for medium/high risk, and remaining risks.
 
 ## Core Workflow
 

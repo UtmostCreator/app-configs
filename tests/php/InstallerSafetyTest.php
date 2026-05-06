@@ -105,14 +105,16 @@ class InstallerSafetyTest extends TestCase
         $this->assertFalse((bool) ($artifact['data']['apply_requested'] ?? true));
     }
 
-    public function testInstallDualWithoutScriptsPackDryRun(): void
+    public function testInstallDualDryRunIncludesScriptGovernancePacks(): void
     {
         $result = $this->runTool($this->aiCommand('install --profile dual --dry-run'));
         $this->assertSame(0, $result['exit']);
         $decoded = $this->readGeneratedArtifact('install.json');
         $packs = $decoded['data']['packs'] ?? [];
         $this->assertIsArray($packs);
-        $this->assertNotContains('scripts-pack', $packs);
+        $this->assertContains('scripts-pack', $packs);
+        $this->assertContains('policy-pack', $packs);
+        $this->assertContains('hooks-pack', $packs);
     }
 
     public function testInstallDualWithScriptsPackDryRunIncludesScriptsPack(): void
@@ -125,12 +127,12 @@ class InstallerSafetyTest extends TestCase
         $this->assertContains('scripts-pack', $packs);
     }
 
-    public function testInstallRunAfterInstallRequiresScriptsPack(): void
+    public function testInstallRunAfterInstallWorksWithDualDefaultScriptsPack(): void
     {
         $result = $this->runTool($this->aiCommand('install --profile dual --run-after-install=repomix-context --dry-run'));
-        $this->assertSame(1, $result['exit']);
+        $this->assertSame(0, $result['exit']);
         $decoded = $this->readGeneratedArtifact('install.json');
-        $this->assertSame('blocked', $decoded['status'] ?? null);
+        $this->assertSame('ok', $decoded['status'] ?? null);
     }
 
     public function testRunScriptApplyBlockedWhenRequiredToolsMissing(): void
@@ -189,7 +191,8 @@ class InstallerSafetyTest extends TestCase
 
         foreach ($files as $file) {
             $content = (string) file_get_contents($file);
-            $this->assertStringContainsString('mode:', $content, 'agent must declare mode: ' . basename($file));
+            $this->assertStringContainsString('name:', $content, 'agent must declare Copilot name frontmatter: ' . basename($file));
+            $this->assertStringContainsString('tools:', $content, 'agent must declare Copilot tools frontmatter: ' . basename($file));
         }
     }
 

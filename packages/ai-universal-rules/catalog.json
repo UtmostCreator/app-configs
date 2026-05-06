@@ -37,9 +37,9 @@
         ]
     },
     "counts": {
-        "package:core-template": 14,
+        "package:core-template": 15,
         "package:foundation-doc": 6,
-        "package:github-copilot-instruction-template": 10,
+        "package:github-copilot-instruction-template": 11,
         "package:opencode-command-template": 1,
         "package:operations-doc": 6,
         "package:optional-template": 9,
@@ -57,7 +57,7 @@
         "root:exporter": 1,
         "root:generator": 1,
         "root:github-copilot-agent": 8,
-        "root:github-copilot-instruction": 6,
+        "root:github-copilot-instruction": 7,
         "root:github-copilot-prompt": 12,
         "root:github-copilot-skill": 12,
         "root:opencode-agent": 8,
@@ -141,6 +141,14 @@
             "path": "packages/ai-universal-rules/templates/core/agents/workflow-auditor.md",
             "runtime": "canonical",
             "description": "Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims"
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "<PROJECT_NAME> AI File Standards",
+            "path": "packages/ai-universal-rules/templates/core/ai-file-standards.template.md",
+            "runtime": "canonical",
+            "description": "Use this file as the installed repository's canonical content and size contract for AI workflow files."
         },
         {
             "scope": "package",
@@ -229,6 +237,14 @@
             "path": "packages/ai-universal-rules/docs/foundations/SKILLS.md",
             "runtime": "canonical",
             "description": "Skills are the runtime adapter form of deeper workflow procedure."
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "AI File Standards",
+            "path": "packages/ai-universal-rules/templates/instructions/ai-file-standards.instructions.md",
+            "runtime": "github-copilot",
+            "description": "AI workflow file roles, line budgets, duplication rules, and adapter boundaries"
         },
         {
             "scope": "package",
@@ -1305,6 +1321,14 @@
         {
             "scope": "root",
             "type": "github-copilot-instruction",
+            "name": "ai-file-standards",
+            "path": ".github/instructions/ai-file-standards.instructions.md",
+            "runtime": "github-copilot",
+            "description": "AI workflow file roles, line budgets, duplication rules, and adapter boundaries"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
             "name": "ai-workflow",
             "path": ".github/instructions/ai-workflow.instructions.md",
             "runtime": "github-copilot",
@@ -1324,7 +1348,7 @@
             "name": "frontend",
             "path": ".github/instructions/frontend.instructions.md",
             "runtime": "github-copilot",
-            "description": "Frontend, UI, interaction, and presentation guidance"
+            "description": "applyTo: \"<FRONTEND_PATH_GLOB>\""
         },
         {
             "scope": "root",
@@ -1332,7 +1356,7 @@
             "name": "targets",
             "path": ".github/instructions/targets.instructions.md",
             "runtime": "github-copilot",
-            "description": "Target and platform adaptation guidance for multi-surface repositories"
+            "description": "applyTo: \"**\""
         },
         {
             "scope": "root",
@@ -1340,7 +1364,7 @@
             "name": "testing",
             "path": ".github/instructions/testing.instructions.md",
             "runtime": "github-copilot",
-            "description": "Testing rules for focused, deterministic, behavior-proving tests"
+            "description": "applyTo: \"<TEST_PATH_GLOB>\""
         },
         {
             "scope": "root",
@@ -1612,7 +1636,7 @@
             "name": "verify",
             "path": ".opencode/commands/verify.md",
             "runtime": "opencode",
-            "description": "Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+            "description": "description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
         },
         {
             "scope": "root",

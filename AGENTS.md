@@ -54,6 +54,7 @@ Ask for approval before making:
 Inspect the current implementation before making architectural or behavioral changes:
 
 - `README.md, docs/ai/project-context.md`
+- `docs/ai/execution-protocol.md` for non-trivial execution and verification flow
 - `docs/ai/ai-file-standards.md` before adding or expanding AI workflow files
 - `docs/ai/agents.md, docs/ai/failure-handling.md, docs/ai/agent-ops-checklist.md, docs/ai/integration-matrix.md`
 
@@ -78,6 +79,19 @@ Inspect the current implementation before making architectural or behavioral cha
 - Use staged agents when fresh context, tool boundaries, or handoffs improve safety.
 - Use capability folders or skills for deeper optional procedures.
 - Do not turn this file into the only bug-fix, release, or migration workflow definition.
+
+## Execution Protocol
+
+For non-trivial work, follow `docs/ai/execution-protocol.md`.
+
+Minimum flow:
+
+1. classify task mode
+2. check worktree/diff state before edits
+3. protect pre-existing user changes
+4. apply the smallest patch
+5. verify with relevant evidence
+6. report verification status honestly
 
 ## Release and Migration Safety
 

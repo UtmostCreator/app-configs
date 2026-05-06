@@ -1,8 +1,8 @@
 # Adapter plan
 
 - Status: `ok`
-- Generated at: `2026-05-06T01:51:41+00:00`
-- Commit: `6ede0a4`
+- Generated at: `2026-05-06T17:58:56+00:00`
+- Commit: `f0e8a6e`
 - Branch: `main`
 - Recommended next action: `Run install --dry-run then install --backup-only before apply.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "adapter-plan.json",
-    "generated_at": "2026-05-06T01:51:41+00:00",
+    "generated_at": "2026-05-06T17:58:56+00:00",
     "command": "php tools/ai/ai.php adapter-plan",
-    "based_on_commit": "6ede0a4",
+    "based_on_commit": "f0e8a6e",
     "based_on_branch": "main",
     "input_hashes": {},
     "status": "ok",
@@ -372,6 +372,18 @@
             },
             {
                 "type": "file",
+                "source": "scripts/ai/ai-doc-check.sh",
+                "target": "scripts/ai/ai-doc-check.sh",
+                "core": false,
+                "merge_strategy": "replace",
+                "required": false,
+                "pack": "scripts-pack",
+                "action": "OVERWRITE_MANAGED",
+                "reason": "target exists",
+                "requested_target": "scripts/ai/ai-doc-check.sh"
+            },
+            {
+                "type": "file",
                 "source": "scripts/ai/watch-loop.sh",
                 "target": "scripts/ai/watch-loop.sh",
                 "core": false,
@@ -614,6 +626,18 @@
                 "requested_target": ".github/instructions/tools.instructions.md"
             },
             {
+                "type": "file",
+                "source": "packages/ai-universal-rules/templates/instructions/execution-protocol.instructions.md",
+                "target": ".github/instructions/execution-protocol.instructions.md",
+                "core": false,
+                "merge_strategy": "replace",
+                "required": true,
+                "pack": "adapter-copilot",
+                "action": "OVERWRITE_MANAGED",
+                "reason": "target exists",
+                "requested_target": ".github/instructions/execution-protocol.instructions.md"
+            },
+            {
                 "type": "dir",
                 "source": "packages/ai-universal-rules/templates/core/agents",
                 "target": ".opencode/agents",
@@ -724,6 +748,18 @@
             },
             {
                 "type": "file",
+                "source": "packages/ai-universal-rules/templates/core/execution-protocol.template.md",
+                "target": "docs/ai/execution-protocol.md",
+                "core": true,
+                "merge_strategy": "replace",
+                "required": true,
+                "pack": "base",
+                "action": "OVERWRITE_MANAGED",
+                "reason": "target exists",
+                "requested_target": "docs/ai/execution-protocol.md"
+            },
+            {
+                "type": "file",
                 "source": "packages/ai-universal-rules/templates/core/ai-file-standards.template.md",
                 "target": "docs/ai/ai-file-standards.md",
                 "core": true,
@@ -781,6 +817,18 @@
                 "action": "OVERWRITE_MANAGED",
                 "reason": "target exists",
                 "requested_target": "docs/ai/capabilities/review-diff"
+            },
+            {
+                "type": "dir",
+                "source": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution",
+                "target": "docs/ai/capabilities/evidence-first-execution",
+                "core": true,
+                "merge_strategy": "replace",
+                "required": true,
+                "pack": "base",
+                "action": "OVERWRITE_MANAGED",
+                "reason": "target exists",
+                "requested_target": "docs/ai/capabilities/evidence-first-execution"
             }
         ],
         "backup_required": true,

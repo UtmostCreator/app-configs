@@ -2,6 +2,8 @@
 
 ## Default Task Flow
 
+For non-trivial work, follow `docs/ai/execution-protocol.md`.
+
 1. route through `project-context` when ownership is unclear
 2. use `plan-slice` or a planning agent for multi-step work
 3. implement the bounded slice

@@ -1,8 +1,8 @@
 # Install
 
 - Status: `ok`
-- Generated at: `2026-05-06T16:27:39+00:00`
-- Commit: `6ede0a4`
+- Generated at: `2026-05-06T17:58:57+00:00`
+- Commit: `f0e8a6e`
 - Branch: `main`
 - Recommended next action: `Run install --backup-only before install --apply.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "install.json",
-    "generated_at": "2026-05-06T16:27:39+00:00",
+    "generated_at": "2026-05-06T17:58:57+00:00",
     "command": "php tools/ai/ai.php install --dry-run",
-    "based_on_commit": "6ede0a4",
+    "based_on_commit": "f0e8a6e",
     "based_on_branch": "main",
     "input_hashes": {},
     "status": "ok",
@@ -21,16 +21,19 @@
     "recommended_next_action": "Run install --backup-only before install --apply.",
     "data": {
         "status": "planned",
-        "mode": "sidecar-only",
-        "runtime_mode": "CI",
-        "profile": "dual",
+        "mode": "safe-merge",
+        "runtime_mode": "HUMAN_TTY",
+        "profile": "full-governance",
         "packs": [
+            "capabilities-extended-full",
+            "hooks-pack",
+            "ci-pack",
+            "scripts-pack",
+            "policy-pack",
+            "evidence-pack",
             "adapter-copilot",
             "adapter-opencode",
             "capabilities-extended-lite",
-            "scripts-pack",
-            "policy-pack",
-            "hooks-pack",
             "base",
             "setup-docs",
             "capabilities-core"
@@ -38,7 +41,7 @@
         "apply": false,
         "summary": {
             "create": 1,
-            "skip": 12
+            "skip": 0
         },
         "install_kind": "reinstall",
         "required_first": [

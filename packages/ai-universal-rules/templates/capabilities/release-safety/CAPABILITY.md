@@ -27,6 +27,7 @@ Assess rollout, rollback, observability, and compatibility posture for changes w
 - `checklist.md` for release questions
 - `gotchas.md` for rollout anti-patterns
 - `examples.md` for reporting format
+- `reference.md` for rollout and risk references
 
 ## Workflow
 

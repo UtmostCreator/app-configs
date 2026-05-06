@@ -23,14 +23,7 @@ permission:
     'stat *': allow
     'pwd': allow
     'ls *': allow
-    'fd *': allow
     'eza *': allow
-    'rg *': allow
-    'git grep *': allow
-    'grep *': allow
-    'sed -n *': allow
-    'head *': allow
-    'tail *': allow
     'nl *': allow
     'jq *': allow
     'yq *': allow
@@ -60,6 +53,10 @@ Audit rollout safety, rollback posture, observability, migration risk, preview s
 ## Core Mission
 
 Determine whether a medium/high risk change is safe to release and what must be true before rollout.
+
+## Shell Governance
+
+Direct allowlisted commands are narrow exceptions for local introspection, structured parsing, and git state/history; search, discovery, usage lookup, and file preview must use registered `scripts/ai` wrappers.
 
 ## Hard Rules
 

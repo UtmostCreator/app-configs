@@ -1,5 +1,5 @@
 ---
-applyTo: 'AGENTS.md,CLAUDE.md,README.md,docs/ai/**,.github/copilot-instructions.md,.github/agents/**,.github/instructions/**,.github/prompts/**,.github/skills/**'
+applyTo: 'AGENTS.md,README.md,docs/ai/**,.github/copilot-instructions.md,.github/agents/**,.github/instructions/**,.github/prompts/**,.github/skills/**'
 description: 'Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement'
 ---
 

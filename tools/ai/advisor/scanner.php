@@ -17,7 +17,6 @@ function aiAdvisorScan(string $root): array
 
     $aiSurface = [
         'AGENTS.md',
-        'CLAUDE.md',
         'llms.txt',
         '.github/copilot-instructions.md',
     ];

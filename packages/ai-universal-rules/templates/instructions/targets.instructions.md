@@ -53,8 +53,6 @@ For AI-adapter files:
 - `.github/**`
 - `.opencode/**`
 - `AGENTS.md`
-- `CLAUDE.md`
-- `.claude/**`
 
 Rules:
 

@@ -27,6 +27,7 @@ Evaluate and implement a dependency upgrade with attention to compatibility, ver
 - `checklist.md` for upgrade review order
 - `gotchas.md` for compatibility traps
 - `examples.md` for expected reporting
+- `reference.md` for dependency and release-safety references
 
 ## Workflow
 

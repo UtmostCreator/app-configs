@@ -21,7 +21,7 @@ php tools/ai/export-ai-universal-rules.php --check
 - unresolved placeholder leaks like `app-configs`
 - broken backtick path references in the live root AI docs and adapters
 - obvious stack leakage from old mismatched instructions
-- a few key drift rules between `AGENTS.md`, `CLAUDE.md`, `README.md`, and `.github/copilot-instructions.md`
+- a few key drift rules between `AGENTS.md`, `README.md`, and `.github/copilot-instructions.md`
 - package manifest and generated catalog structure
 - generated docs and `llms.txt` drift against source metadata
 - generated repo-structure outputs drift against source metadata and tracked files
@@ -56,7 +56,7 @@ This repository keeps both Husky and Lefthook surfaces as optional hook adapters
 
 ## When To Run It
 
-- after editing `AGENTS.md`, `CLAUDE.md`, `README.md`, `docs/ai/`, or `.github/`
+- after editing `AGENTS.md`, `README.md`, `docs/ai/`, or `.github/`
 - after editing `packages/ai-universal-rules/manifest.json` or cataloged templates
 - before creating a baseline commit for workflow changes
 - after copying templates into a new repo instance

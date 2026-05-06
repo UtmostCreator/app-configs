@@ -51,14 +51,7 @@ permission:
     'stat *': allow
     'pwd': allow
     'ls *': allow
-    'fd *': allow
     'eza *': allow
-    'rg *': allow
-    'git grep *': allow
-    'grep *': allow
-    'sed -n *': allow
-    'head *': allow
-    'tail *': allow
     'nl *': allow
     'jq *': allow
     'yq *': allow
@@ -75,6 +68,7 @@ permission:
     'bash scripts/ai/fd-files.sh *': allow
     'bash scripts/ai/preview-file.sh *': allow
     'bash scripts/ai/query-usage.sh *': allow
+    'bash scripts/ai/ai-verify.sh *': allow
     'php -l *': allow
     'vendor/bin/phpunit *': allow
     './vendor/bin/phpunit *': allow
@@ -106,6 +100,7 @@ Reduce duplication, simplify structure, improve naming, or increase maintainabil
 Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
 When the active runtime supports repository hooks, these scripts must remain authoritative through `.github/hooks/tool-policy.json` and emit local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.
 When the runtime does not auto-load repository hooks, preserve the same boundary manually: stay inside the bash allowlist, prefer approved registry scripts, and do not claim automatic hook enforcement.
+Direct allowlisted commands are narrow exceptions for local introspection, structured parsing, and git state/history; search, discovery, usage lookup, and file preview must use registered `scripts/ai` wrappers.
 
 ## Hard Rules
 

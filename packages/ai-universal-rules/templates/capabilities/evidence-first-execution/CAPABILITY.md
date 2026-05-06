@@ -27,6 +27,13 @@ Run non-trivial changes with explicit scope control, dirty-worktree protection, 
 6. inspect final diff
 7. run focused verification and report evidence
 
+## Read Next
+
+- `checklist.md` for execution order
+- `gotchas.md` for evidence and scope-control traps
+- `examples.md` for evidence-backed handoff shape
+- `reference.md` for canonical execution docs
+
 ## Stop Conditions
 
 - ownership or contract unclear

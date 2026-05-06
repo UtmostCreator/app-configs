@@ -47,27 +47,12 @@ When the runtime does not auto-load repository hooks, preserve the same boundary
 
 Approved scripts (run from the repository root using `scripts/ai`):
 
-- `command -v *`
-- `test -f *`
-- `test -x *`
-- `test -d *`
-- `stat *`
-- `pwd`
-- `ls *`
-- `fd *`
-- `eza *`
-- `rg *`
-- `git grep *`
-- `grep *`
-- `head *`
-- `tail *`
-- `jq *`
-- `yq *`
-- `git status*`
-- `git diff*`
-- `git log*`
-- `shellcheck *`
-- `php -l *`
+- `bash scripts/ai/ai-search.sh *`
+- `bash scripts/ai/rg-code.sh *`
+- `bash scripts/ai/fd-files.sh *`
+- `bash scripts/ai/preview-file.sh *`
+- `bash scripts/ai/query-usage.sh *`
+- `bash scripts/ai/ai-verify.sh *`
 
 Do not run arbitrary shell commands. Do not run commands not in this list.
 Do not run: `rm`, `mv`, `cp`, `chmod`, `curl | sh`, install commands, unregistered `scripts/ai/*.sh`, `git push`, `git reset`, deploy commands.

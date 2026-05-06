@@ -37,32 +37,32 @@
         ]
     },
     "counts": {
-        "package:core-template": 15,
+        "package:core-template": 16,
         "package:foundation-doc": 6,
-        "package:github-copilot-instruction-template": 11,
+        "package:github-copilot-instruction-template": 21,
         "package:opencode-command-template": 1,
         "package:operations-doc": 6,
         "package:optional-template": 9,
-        "package:package-capability": 31,
+        "package:package-capability": 36,
         "package:shared-template": 4,
         "package:workflow-doc": 6,
-        "package:workflow-template": 12,
+        "package:workflow-template": 13,
         "root:adapter-doc": 1,
         "root:adapter-hook": 2,
         "root:adapter-hook-script": 1,
         "root:adapter-policy": 1,
         "root:ai-script": 26,
-        "root:capability": 13,
+        "root:capability": 14,
         "root:cli": 1,
         "root:exporter": 1,
         "root:generator": 1,
         "root:github-copilot-agent": 8,
-        "root:github-copilot-instruction": 7,
-        "root:github-copilot-prompt": 12,
-        "root:github-copilot-skill": 12,
+        "root:github-copilot-instruction": 18,
+        "root:github-copilot-prompt": 13,
+        "root:github-copilot-skill": 13,
         "root:opencode-agent": 8,
-        "root:opencode-command": 1,
-        "root:opencode-skill": 12,
+        "root:opencode-command": 2,
+        "root:opencode-skill": 13,
         "root:php-reference": 3,
         "root:root-doc": 16,
         "root:schema": 1,
@@ -169,6 +169,14 @@
         {
             "scope": "package",
             "type": "core-template",
+            "name": "Execution Protocol",
+            "path": "packages/ai-universal-rules/templates/core/execution-protocol.template.md",
+            "runtime": "canonical",
+            "description": "Use this as the canonical operating contract for non-trivial AI-assisted planning, editing, review, and verification."
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
             "name": "<PROJECT_NAME> Project Context",
             "path": "packages/ai-universal-rules/templates/core/project-context.template.md",
             "runtime": "canonical",
@@ -188,7 +196,7 @@
             "name": "Workflow",
             "path": "packages/ai-universal-rules/templates/core/workflow.template.md",
             "runtime": "canonical",
-            "description": "1. load task context or perform read-only grounding when ownership is unclear"
+            "description": "For non-trivial work, follow `docs/ai/execution-protocol.md`."
         },
         {
             "scope": "package",
@@ -242,9 +250,25 @@
             "scope": "package",
             "type": "github-copilot-instruction-template",
             "name": "AI File Standards",
+            "path": "packages/ai-universal-rules/templates/instructions/ALL_IN_ONE.txt",
+            "runtime": "github-copilot",
+            "description": "ai-file-standards.instructions.md"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "AI File Standards",
             "path": "packages/ai-universal-rules/templates/instructions/ai-file-standards.instructions.md",
             "runtime": "github-copilot",
             "description": "AI workflow file roles, line budgets, duplication rules, and adapter boundaries"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "AI Tooling Rules",
+            "path": "packages/ai-universal-rules/templates/instructions/ai-tooling.instructions.md",
+            "runtime": "github-copilot",
+            "description": "AI tooling contract, registry alignment, and hook-policy consistency"
         },
         {
             "scope": "package",
@@ -257,10 +281,18 @@
         {
             "scope": "package",
             "type": "github-copilot-instruction-template",
+            "name": "all_into_one",
+            "path": "packages/ai-universal-rules/templates/instructions/all_into_one.bat",
+            "runtime": "github-copilot",
+            "description": "@echo off"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
             "name": "Approval Boundaries",
             "path": "packages/ai-universal-rules/templates/instructions/approval-boundaries.instructions.md",
             "runtime": "github-copilot",
-            "description": "Approval boundaries for destructive, risky, privileged, or broad changes"
+            "description": "Approval boundaries for destructive, privileged, broad, or policy-sensitive changes"
         },
         {
             "scope": "package",
@@ -273,10 +305,50 @@
         {
             "scope": "package",
             "type": "github-copilot-instruction-template",
+            "name": "Base Instructions",
+            "path": "packages/ai-universal-rules/templates/instructions/base.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Minimal repository-wide fallback rules for Copilot path-specific instruction routing"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "CI Workflow Rules",
+            "path": "packages/ai-universal-rules/templates/instructions/ci-workflows.instructions.md",
+            "runtime": "github-copilot",
+            "description": "CI workflow safety, permissions, and trigger-scope rules"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Composer Rules",
+            "path": "packages/ai-universal-rules/templates/instructions/composer.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Composer manifest and lockfile safety rules"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Config and Build/Test Runner Rules",
+            "path": "packages/ai-universal-rules/templates/instructions/config-infra.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Dependency, runner, and build-config safety rules"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
             "name": "Context Gate",
             "path": "packages/ai-universal-rules/templates/instructions/context-gate.instructions.md",
             "runtime": "github-copilot",
             "description": "Mandatory task-context loading before planning, editing, or reviewing"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Execution Protocol Instructions",
+            "path": "packages/ai-universal-rules/templates/instructions/execution-protocol.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Evidence-first task execution, dirty-worktree protection, scope control, and final verification reporting."
         },
         {
             "scope": "package",
@@ -289,10 +361,18 @@
         {
             "scope": "package",
             "type": "github-copilot-instruction-template",
-            "name": "Generated Artifact Rules",
+            "name": "Generated Artifacts",
             "path": "packages/ai-universal-rules/templates/instructions/generated-artifacts.instructions.md",
             "runtime": "github-copilot",
-            "description": "Generated artifact, schema, catalog, and drift-control rules"
+            "description": "Generated artifact drift routing and source-first regeneration policy"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "PHP Instructions",
+            "path": "packages/ai-universal-rules/templates/instructions/php.instructions.md",
+            "runtime": "github-copilot",
+            "description": "PHP backend, Composer, test-runner, and PHP CLI tooling safety rules"
         },
         {
             "scope": "package",
@@ -300,7 +380,15 @@
             "name": "Security Rules",
             "path": "packages/ai-universal-rules/templates/instructions/security.instructions.md",
             "runtime": "github-copilot",
-            "description": "Security, secrets, auth, config, and privileged-operation rules"
+            "description": "Security, secrets, auth boundaries, and prompt-injection safeguards"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Shell Rules",
+            "path": "packages/ai-universal-rules/templates/instructions/shell.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Shell safety, portability, and verification rules"
         },
         {
             "scope": "package",
@@ -549,6 +637,46 @@
             "path": "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/reference.md",
             "runtime": "canonical",
             "description": "Use this file for stable upgrade facts:"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Evidence-First Execution Capability",
+            "path": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Run non-trivial changes with explicit scope control, dirty-worktree protection, and evidence-backed verification."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "checklist",
+            "path": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution/checklist.md",
+            "runtime": "canonical",
+            "description": "- [ ] Read user request and restate bounded outcome."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "examples",
+            "path": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution/examples.md",
+            "runtime": "canonical",
+            "description": "Good: source-fix with focused test and explicit verification status."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "gotchas",
+            "path": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution/gotchas.md",
+            "runtime": "canonical",
+            "description": "- Do not treat generated files as canonical source unless policy says so."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "reference",
+            "path": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution/reference.md",
+            "runtime": "canonical",
+            "description": "- `docs/ai/source-of-truth.md`"
         },
         {
             "scope": "package",
@@ -813,6 +941,14 @@
             "path": "packages/ai-universal-rules/templates/workflows/docs-sync.md",
             "runtime": "dual-runtime",
             "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "package",
+            "type": "workflow-template",
+            "name": "evidence-first-execution",
+            "path": "packages/ai-universal-rules/templates/workflows/evidence-first-execution.md",
+            "runtime": "dual-runtime",
+            "description": "Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output."
         },
         {
             "scope": "package",
@@ -1185,6 +1321,14 @@
         {
             "scope": "root",
             "type": "capability",
+            "name": "evidence-first-execution",
+            "path": "docs/ai/capabilities/evidence-first-execution/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Run non-trivial changes with explicit scope control, dirty-worktree protection, and evidence-backed verification."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
             "name": "preview-environments",
             "path": "docs/ai/capabilities/preview-environments/CAPABILITY.md",
             "runtime": "canonical",
@@ -1329,10 +1473,26 @@
         {
             "scope": "root",
             "type": "github-copilot-instruction",
+            "name": "ai-tooling",
+            "path": ".github/instructions/ai-tooling.instructions.md",
+            "runtime": "github-copilot",
+            "description": "AI tooling contract, registry alignment, and hook-policy consistency"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
             "name": "ai-workflow",
             "path": ".github/instructions/ai-workflow.instructions.md",
             "runtime": "github-copilot",
             "description": "Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "approval-boundaries",
+            "path": ".github/instructions/approval-boundaries.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Approval boundaries for destructive, privileged, broad, or policy-sensitive changes"
         },
         {
             "scope": "root",
@@ -1345,10 +1505,82 @@
         {
             "scope": "root",
             "type": "github-copilot-instruction",
+            "name": "base",
+            "path": ".github/instructions/base.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Minimal repository-wide fallback rules for Copilot path-specific instruction routing"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "ci-workflows",
+            "path": ".github/instructions/ci-workflows.instructions.md",
+            "runtime": "github-copilot",
+            "description": "CI workflow safety, permissions, and trigger-scope rules"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "composer",
+            "path": ".github/instructions/composer.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Composer manifest and lockfile safety rules"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "config-infra",
+            "path": ".github/instructions/config-infra.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Dependency, runner, and build-config safety rules"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "execution-protocol",
+            "path": ".github/instructions/execution-protocol.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Evidence-first task execution, dirty-worktree protection, scope control, and final verification reporting."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
             "name": "frontend",
             "path": ".github/instructions/frontend.instructions.md",
             "runtime": "github-copilot",
             "description": "applyTo: \"<FRONTEND_PATH_GLOB>\""
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "generated-artifacts",
+            "path": ".github/instructions/generated-artifacts.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Generated artifact drift routing and source-first regeneration policy"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "php",
+            "path": ".github/instructions/php.instructions.md",
+            "runtime": "github-copilot",
+            "description": "PHP backend, Composer, test-runner, and PHP CLI tooling safety rules"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "security",
+            "path": ".github/instructions/security.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Security, secrets, auth boundaries, and prompt-injection safeguards"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "shell",
+            "path": ".github/instructions/shell.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Shell safety, portability, and verification rules"
         },
         {
             "scope": "root",
@@ -1364,7 +1596,7 @@
             "name": "testing",
             "path": ".github/instructions/testing.instructions.md",
             "runtime": "github-copilot",
-            "description": "applyTo: \"<TEST_PATH_GLOB>\""
+            "description": "Testing rules, baseline proof, regression-first bug fixes, and verification ladder"
         },
         {
             "scope": "root",
@@ -1405,6 +1637,14 @@
             "path": ".github/prompts/docs-sync.prompt.md",
             "runtime": "github-copilot",
             "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "evidence-first-execution",
+            "path": ".github/prompts/evidence-first-execution.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output."
         },
         {
             "scope": "root",
@@ -1501,6 +1741,14 @@
             "path": ".github/skills/docs-sync/SKILL.md",
             "runtime": "github-copilot",
             "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "evidence-first-execution",
+            "path": ".github/skills/evidence-first-execution/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output."
         },
         {
             "scope": "root",
@@ -1633,6 +1881,14 @@
         {
             "scope": "root",
             "type": "opencode-command",
+            "name": "evidence-first-execution",
+            "path": ".opencode/commands/evidence-first-execution.md",
+            "runtime": "opencode",
+            "description": "Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output."
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
             "name": "verify",
             "path": ".opencode/commands/verify.md",
             "runtime": "opencode",
@@ -1669,6 +1925,14 @@
             "path": ".opencode/skills/docs-sync/SKILL.md",
             "runtime": "opencode",
             "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "evidence-first-execution",
+            "path": ".opencode/skills/evidence-first-execution/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output."
         },
         {
             "scope": "root",

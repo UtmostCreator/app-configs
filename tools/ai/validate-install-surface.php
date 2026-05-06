@@ -115,6 +115,10 @@ foreach ($scripts as $id => $script) {
     }
 }
 
+validateScriptRegistryJsonParity($root, $scripts, $errors);
+validateAdapterScriptReferences($root, $scripts, $errors);
+validateScriptsPackCoverage($packs, $scripts, $errors);
+
 $opencodeAgentNames = collectAgentNames($root . '/packages/ai-universal-rules/templates/core/agents', '.md');
 $githubAgentNames = $opencodeAgentNames;
 
@@ -241,6 +245,51 @@ if ($copilotAgentFiles !== []) {
                 $warnings[] = ".vscode/settings.json should set {$settingKey} for a stronger Copilot enforcement posture";
             }
         }
+    }
+}
+
+// Execution protocol baseline checks.
+$executionProtocolDoc = $root . '/docs/ai/execution-protocol.md';
+$executionProtocolTemplate = $root . '/packages/ai-universal-rules/templates/core/execution-protocol.template.md';
+$executionCapabilityDoc = $root . '/docs/ai/capabilities/evidence-first-execution/CAPABILITY.md';
+$executionCapabilityTemplate = $root . '/packages/ai-universal-rules/templates/capabilities/evidence-first-execution/CAPABILITY.md';
+$executionInstruction = $root . '/.github/instructions/execution-protocol.instructions.md';
+$executionInstructionTemplate = $root . '/packages/ai-universal-rules/templates/instructions/execution-protocol.instructions.md';
+$executionWorkflowTemplate = $root . '/packages/ai-universal-rules/templates/workflows/evidence-first-execution.md';
+
+foreach ([
+    'docs/ai/execution-protocol.md' => $executionProtocolDoc,
+    'packages/ai-universal-rules/templates/core/execution-protocol.template.md' => $executionProtocolTemplate,
+    'docs/ai/capabilities/evidence-first-execution/CAPABILITY.md' => $executionCapabilityDoc,
+    'packages/ai-universal-rules/templates/capabilities/evidence-first-execution/CAPABILITY.md' => $executionCapabilityTemplate,
+    '.github/instructions/execution-protocol.instructions.md' => $executionInstruction,
+    'packages/ai-universal-rules/templates/instructions/execution-protocol.instructions.md' => $executionInstructionTemplate,
+    'packages/ai-universal-rules/templates/workflows/evidence-first-execution.md' => $executionWorkflowTemplate,
+] as $label => $path) {
+    if (!is_file($path)) {
+        $errors[] = "missing required execution protocol file: {$label}";
+    }
+}
+
+foreach ([
+    'AGENTS.md' => $root . '/AGENTS.md',
+    '.github/copilot-instructions.md' => $root . '/.github/copilot-instructions.md',
+] as $label => $path) {
+    if (is_file($path)) {
+        $content = (string) file_get_contents($path);
+        if (!str_contains($content, 'docs/ai/execution-protocol.md')) {
+            $errors[] = "{$label} must reference docs/ai/execution-protocol.md";
+        }
+    }
+}
+
+foreach ([
+    '.github/prompts/evidence-first-execution.prompt.md',
+    '.github/skills/evidence-first-execution/SKILL.md',
+    '.opencode/skills/evidence-first-execution/SKILL.md',
+] as $relative) {
+    if (!is_file($root . '/' . $relative)) {
+        $errors[] = "missing execution protocol runtime surface: {$relative}";
     }
 }
 
@@ -406,4 +455,145 @@ function aiFileLineLimitRules(string $root, array &$errors): array
     }
 
     return $rules;
+}
+
+function validateScriptRegistryJsonParity(string $root, array $scripts, array &$errors): void
+{
+    $registryPath = $root . '/docs/ai/script-registry.json';
+    if (!is_file($registryPath)) {
+        $errors[] = 'missing script registry JSON: docs/ai/script-registry.json';
+        return;
+    }
+
+    $decoded = json_decode((string) file_get_contents($registryPath), true);
+    if (!is_array($decoded) || !isset($decoded['scripts']) || !is_array($decoded['scripts'])) {
+        $errors[] = 'invalid script registry JSON structure in docs/ai/script-registry.json';
+        return;
+    }
+
+    /** @var array<string,array<string,mixed>> $jsonScripts */
+    $jsonScripts = $decoded['scripts'];
+
+    foreach ($scripts as $id => $entry) {
+        if (!isset($jsonScripts[$id]) || !is_array($jsonScripts[$id])) {
+            $errors[] = "script registry JSON missing script id {$id}";
+            continue;
+        }
+        $json = $jsonScripts[$id];
+        foreach (['source_path', 'installed_path', 'pack', 'risk'] as $field) {
+            $expected = (string) ($entry[$field] ?? '');
+            $actual = (string) ($json[$field] ?? '');
+            if ($expected !== $actual) {
+                $errors[] = "script registry JSON mismatch for {$id}.{$field}: expected '{$expected}', got '{$actual}'";
+            }
+        }
+    }
+
+    foreach (array_keys($jsonScripts) as $id) {
+        if (!array_key_exists((string) $id, $scripts)) {
+            $errors[] = "script registry JSON has unknown script id {$id}";
+        }
+    }
+}
+
+function validateAdapterScriptReferences(string $root, array $scripts, array &$errors): void
+{
+    $registeredPaths = [];
+    foreach ($scripts as $entry) {
+        $installed = (string) ($entry['installed_path'] ?? '');
+        $source = (string) ($entry['source_path'] ?? '');
+        if ($installed !== '') {
+            $registeredPaths[$installed] = true;
+        }
+        if ($source !== '') {
+            $registeredPaths[$source] = true;
+        }
+    }
+
+    $targets = array_merge(
+        listMarkdownFilesUnder($root . '/packages/ai-universal-rules/templates/core'),
+        listMarkdownFilesUnder($root . '/packages/ai-universal-rules/templates/instructions'),
+        listMarkdownFilesUnder($root . '/packages/ai-universal-rules/templates/workflows'),
+        listMarkdownFilesUnder($root . '/.github'),
+        listMarkdownFilesUnder($root . '/.opencode')
+    );
+
+    $targets = array_values(array_unique($targets));
+
+    foreach ($targets as $path) {
+        $content = (string) file_get_contents($path);
+        if (preg_match_all('#(?:<SCRIPTS_ROOT>|scripts/ai)/([A-Za-z0-9._-]+\.sh)#', $content, $matches) !== 1) {
+            continue;
+        }
+        foreach ($matches[1] as $scriptFile) {
+            $scriptPath = 'scripts/ai/' . $scriptFile;
+            if (!isset($registeredPaths[$scriptPath])) {
+                $errors[] = relativePath($root, $path) . " references unregistered script {$scriptPath} — add it to tools/ai/install/script-registry.php and docs/ai/script-registry.json";
+            }
+        }
+    }
+}
+
+function listMarkdownFilesUnder(string $directory): array
+{
+    if (!is_dir($directory)) {
+        return [];
+    }
+
+    $paths = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($iterator as $item) {
+        if ($item instanceof SplFileInfo && $item->isFile() && str_ends_with($item->getFilename(), '.md')) {
+            $paths[] = str_replace('\\', '/', $item->getPathname());
+        }
+    }
+
+    return $paths;
+}
+
+function validateScriptsPackCoverage(array $packs, array $scripts, array &$errors): void
+{
+    $scriptsPack = $packs['scripts-pack'] ?? null;
+    if (!is_array($scriptsPack)) {
+        $errors[] = 'scripts-pack is missing from pack registry';
+        return;
+    }
+
+    $packScriptPaths = [];
+    foreach ($scriptsPack as $item) {
+        $source = (string) ($item['source'] ?? '');
+        $target = (string) ($item['target'] ?? '');
+        if (str_starts_with($source, 'scripts/ai/') && str_ends_with($source, '.sh')) {
+            $packScriptPaths[$source] = true;
+        }
+        if (str_starts_with($target, 'scripts/ai/') && str_ends_with($target, '.sh')) {
+            $packScriptPaths[$target] = true;
+        }
+    }
+
+    $registryScriptPaths = [];
+    foreach ($scripts as $entry) {
+        $source = (string) ($entry['source_path'] ?? '');
+        $target = (string) ($entry['installed_path'] ?? '');
+        if ($source !== '') {
+            $registryScriptPaths[$source] = true;
+        }
+        if ($target !== '') {
+            $registryScriptPaths[$target] = true;
+        }
+    }
+
+    foreach (array_keys($registryScriptPaths) as $path) {
+        if (!isset($packScriptPaths[$path])) {
+            $errors[] = "script registry path {$path} is not installed by scripts-pack";
+        }
+    }
+
+    foreach (array_keys($packScriptPaths) as $path) {
+        if (!isset($registryScriptPaths[$path])) {
+            $errors[] = "scripts-pack path {$path} is not registered in tools/ai/install/script-registry.php";
+        }
+    }
 }

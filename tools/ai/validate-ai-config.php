@@ -421,6 +421,38 @@ if ($claudeContent !== null && strpos($claudeContent, 'docs/ai/integration-matri
     $warnings[] = 'CLAUDE.md should reference docs/ai/integration-matrix.md';
 }
 
+$aiWiringRequiredFiles = [
+    'docs/ai/tools/ai-search.md',
+    'docs/ai/tools/tool-map.md',
+    'docs/ai/tools/actions/search-evidence.md',
+    '.github/instructions/ai-search.instructions.md',
+    '.github/instructions/ai-tools.instructions.md',
+    '.github/prompts/search-evidence.prompt.md',
+    '.github/agents/repository-researcher.agent.md',
+    '.opencode/opencode.json',
+    '.opencode/commands/search-evidence.md',
+    '.opencode/agents/repository-researcher.md',
+    '.opencode/skills/ai-search/SKILL.md',
+];
+
+foreach ($aiWiringRequiredFiles as $relativePath) {
+    if (!is_file($root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath))) {
+        $errors[] = "missing required AI wiring file: {$relativePath}";
+    }
+}
+
+$requiredSnippets = ['AI_OUTPUT=json bash scripts/ai/ai-search.sh', 'changed', 'staged', 'tracked', 'schema', 'unsafe-all', 'AI_ALLOW_UNLIMITED=1', 'unsafe_blocked', 'dry_run'];
+$wiringSources = ['AGENTS.md', 'docs/ai/tools/ai-search.md', '.github/copilot-instructions.md', '.opencode/skills/ai-search/SKILL.md'];
+$combined = '';
+foreach ($wiringSources as $src) {
+    $combined .= "\n" . (safeRead($root, $src) ?? '');
+}
+foreach ($requiredSnippets as $snippet) {
+    if (strpos($combined, $snippet) === false) {
+        $errors[] = "missing required AI wiring content snippet: {$snippet}";
+    }
+}
+
 if ($errors === []) {
     $oks[] = $warnings === []
         ? 'rootAIworkflowvalidationpassed'

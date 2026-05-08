@@ -1,7 +1,7 @@
 # Toolchain
 
 - Status: `ok`
-- Generated at: `2026-05-06T16:39:01+00:00`
+- Generated at: `2026-05-06T18:00:49+00:00`
 - Commit: `unknown`
 - Branch: `unknown`
 - Recommended next action: `Review missing tools and rerun with --toolchain-apply only when needed.`
@@ -10,7 +10,7 @@
 {
     "schema_version": 1,
     "artifact": "toolchain.json",
-    "generated_at": "2026-05-06T16:39:01+00:00",
+    "generated_at": "2026-05-06T18:00:49+00:00",
     "command": "php tools/ai/ai.php toolchain",
     "based_on_commit": "unknown",
     "based_on_branch": "unknown",

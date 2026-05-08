@@ -1,8 +1,8 @@
 # Verify
 
 - Status: `failed`
-- Generated at: `2026-05-06T01:53:01+00:00`
-- Commit: `6ede0a4`
+- Generated at: `2026-05-06T18:00:03+00:00`
+- Commit: `9313d57`
 - Branch: `main`
 - Recommended next action: `Open verify logs and fix the first failing check before proceeding.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "verify.json",
-    "generated_at": "2026-05-06T01:53:01+00:00",
+    "generated_at": "2026-05-06T18:00:03+00:00",
     "command": "php tools/ai/ai.php verify --changed",
-    "based_on_commit": "6ede0a4",
+    "based_on_commit": "9313d57",
     "based_on_branch": "main",
     "input_hashes": {},
     "status": "failed",
@@ -38,7 +38,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260506-035250/validate-ai-config.log"
+                "log": "docs/ai/generated/logs/verify-20260506-195955/validate-ai-config.log"
             },
             {
                 "name": "validate-ai-catalog",
@@ -46,15 +46,15 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260506-035250/validate-ai-catalog.log"
+                "log": "docs/ai/generated/logs/verify-20260506-195955/validate-ai-catalog.log"
             },
             {
                 "name": "generate-ai-catalog-check",
                 "command": "php tools/ai/generate-ai-catalog.php --check",
                 "exit": 0,
                 "passed": true,
-                "auto_fix_applied": true,
-                "log": "docs/ai/generated/logs/verify-20260506-035250/generate-ai-catalog-check.log"
+                "auto_fix_applied": false,
+                "log": "docs/ai/generated/logs/verify-20260506-195955/generate-ai-catalog-check.log"
             },
             {
                 "name": "generate-repo-structure-check",
@@ -62,7 +62,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": true,
-                "log": "docs/ai/generated/logs/verify-20260506-035250/generate-repo-structure-check.log"
+                "log": "docs/ai/generated/logs/verify-20260506-195955/generate-repo-structure-check.log"
             },
             {
                 "name": "install-docs-check",
@@ -70,7 +70,7 @@
                 "exit": 1,
                 "passed": false,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260506-035250/install-docs-check.log"
+                "log": "docs/ai/generated/logs/verify-20260506-195955/install-docs-check.log"
             },
             {
                 "name": "advisor-check",
@@ -78,7 +78,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260506-035250/advisor-check.log"
+                "log": "docs/ai/generated/logs/verify-20260506-195955/advisor-check.log"
             }
         ],
         "findings": [
@@ -125,7 +125,7 @@
                 "suggested_fix": "Verify hook execution manually on Windows."
             }
         ],
-        "log_dir": "docs/ai/generated/logs/verify-20260506-035250"
+        "log_dir": "docs/ai/generated/logs/verify-20260506-195955"
     }
 }
 ```

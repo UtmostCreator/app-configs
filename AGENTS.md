@@ -17,6 +17,10 @@ Use this default workflow unless the task is clearly trivial:
 
 - `research when the owner is unclear -> plan for multi-step or risky work -> implement the bounded slice -> review in fresh context -> verify with evidence -> add release audit for medium or high risk`
 
+Default evidence command:
+
+`AI_OUTPUT=json bash scripts/ai/ai-search.sh MODE QUERY . --fixed`
+
 Workflow rules:
 
 - Prefer the smallest safe change.

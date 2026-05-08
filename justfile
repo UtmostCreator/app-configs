@@ -35,6 +35,15 @@ ai-check:
   @php tools/ai/validate-ai-catalog.php
   @php tools/ai/generate-ai-catalog.php --check
 
+ai-doctor:
+  @bash scripts/ai/ai-search.sh doctor
+
+ai-search-test:
+  @bash tests/scripts/ai/test-ai-search.sh
+
+ai-validate:
+  @php tools/ai/validate-ai-config.php
+
 context-analyze path='.' opts='':
   @bash -lc 'path="{{path}}"; opts="{{opts}}"; if [[ "$path" == opts=* ]] && [[ -z "$opts" ]]; then opts="${path#opts=}"; path="."; fi; bash scripts/ai/repomix-context-tree.sh analyze "$path" $opts'
 

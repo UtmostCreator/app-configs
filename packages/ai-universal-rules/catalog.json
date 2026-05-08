@@ -56,13 +56,13 @@
         "root:cli": 1,
         "root:exporter": 1,
         "root:generator": 1,
-        "root:github-copilot-agent": 8,
-        "root:github-copilot-instruction": 18,
-        "root:github-copilot-prompt": 13,
+        "root:github-copilot-agent": 10,
+        "root:github-copilot-instruction": 20,
+        "root:github-copilot-prompt": 15,
         "root:github-copilot-skill": 13,
-        "root:opencode-agent": 8,
-        "root:opencode-command": 2,
-        "root:opencode-skill": 13,
+        "root:opencode-agent": 10,
+        "root:opencode-command": 4,
+        "root:opencode-skill": 14,
         "root:php-reference": 3,
         "root:root-doc": 16,
         "root:schema": 1,
@@ -1441,6 +1441,22 @@
         {
             "scope": "root",
             "type": "github-copilot-agent",
+            "name": "repository-researcher",
+            "path": ".github/agents/repository-researcher.agent.md",
+            "runtime": "github-copilot",
+            "description": "Read-only repository researcher that collects evidence."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
+            "name": "repository-reviewer",
+            "path": ".github/agents/repository-reviewer.agent.md",
+            "runtime": "github-copilot",
+            "description": "Diff-first reviewer that verifies changes with ai-search."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
             "name": "Researcher",
             "path": ".github/agents/researcher.agent.md",
             "runtime": "github-copilot",
@@ -1473,10 +1489,26 @@
         {
             "scope": "root",
             "type": "github-copilot-instruction",
+            "name": "ai-search",
+            "path": ".github/instructions/ai-search.instructions.md",
+            "runtime": "github-copilot",
+            "description": "applyTo: \"scripts/ai/**,tests/scripts/ai/**,docs/ai/tools/**\""
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
             "name": "ai-tooling",
             "path": ".github/instructions/ai-tooling.instructions.md",
             "runtime": "github-copilot",
             "description": "AI tooling contract, registry alignment, and hook-policy consistency"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "ai-tools",
+            "path": ".github/instructions/ai-tools.instructions.md",
+            "runtime": "github-copilot",
+            "description": "applyTo: \"scripts/ai/**,tools/ai/**,docs/ai/tools/**\""
         },
         {
             "scope": "root",
@@ -1548,7 +1580,7 @@
             "name": "frontend",
             "path": ".github/instructions/frontend.instructions.md",
             "runtime": "github-copilot",
-            "description": "applyTo: \"<FRONTEND_PATH_GLOB>\""
+            "description": "Frontend, UI, interaction, and presentation guidance"
         },
         {
             "scope": "root",
@@ -1588,7 +1620,7 @@
             "name": "targets",
             "path": ".github/instructions/targets.instructions.md",
             "runtime": "github-copilot",
-            "description": "applyTo: \"**\""
+            "description": "Target and platform adaptation guidance for multi-surface repositories"
         },
         {
             "scope": "root",
@@ -1701,6 +1733,22 @@
             "path": ".github/prompts/review-diff.prompt.md",
             "runtime": "github-copilot",
             "description": "Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "review-search-tool",
+            "path": ".github/prompts/review-search-tool.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "search-evidence",
+            "path": ".github/prompts/search-evidence.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Collect repository evidence using ai-search"
         },
         {
             "scope": "root",
@@ -1857,6 +1905,22 @@
         {
             "scope": "root",
             "type": "opencode-agent",
+            "name": "repository-researcher",
+            "path": ".opencode/agents/repository-researcher.md",
+            "runtime": "opencode",
+            "description": "Read-only repository researcher using ai-search first"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "repository-reviewer",
+            "path": ".opencode/agents/repository-reviewer.md",
+            "runtime": "opencode",
+            "description": "Diff-first reviewer that verifies changes against repository evidence"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
             "name": "researcher",
             "path": ".opencode/agents/researcher.md",
             "runtime": "opencode",
@@ -1889,10 +1953,34 @@
         {
             "scope": "root",
             "type": "opencode-command",
+            "name": "review-search-tool",
+            "path": ".opencode/commands/review-search-tool.md",
+            "runtime": "opencode",
+            "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "search-evidence",
+            "path": ".opencode/commands/search-evidence.md",
+            "runtime": "opencode",
+            "description": "Search repository evidence using ai-search"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
             "name": "verify",
             "path": ".opencode/commands/verify.md",
             "runtime": "opencode",
-            "description": "description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+            "description": "Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "ai-search",
+            "path": ".opencode/skills/ai-search/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use ai-search to collect bounded repository evidence."
         },
         {
             "scope": "root",

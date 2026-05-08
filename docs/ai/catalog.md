@@ -36,13 +36,13 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 - `root / cli` - 1
 - `root / exporter` - 1
 - `root / generator` - 1
-- `root / github-copilot-agent` - 8
-- `root / github-copilot-instruction` - 18
-- `root / github-copilot-prompt` - 13
+- `root / github-copilot-agent` - 10
+- `root / github-copilot-instruction` - 20
+- `root / github-copilot-prompt` - 15
 - `root / github-copilot-skill` - 13
-- `root / opencode-agent` - 8
-- `root / opencode-command` - 2
-- `root / opencode-skill` - 13
+- `root / opencode-agent` - 10
+- `root / opencode-command` - 4
+- `root / opencode-skill` - 14
 - `root / php-reference` - 3
 - `root / root-doc` - 16
 - `root / schema` - 1
@@ -106,11 +106,15 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-agent`|Implementer|`.github/agents/implementer.agent.md`|Use when a bounded implementation slice is clear and focused verification should happen in this repository|
 |`github-copilot-agent`|Refactorer|`.github/agents/refactorer.agent.md`|Use when behavior is already correct and the remaining work is structure, readability, duplication reduction, or maintainability|
 |`github-copilot-agent`|Release Auditor|`.github/agents/release-auditor.agent.md`|Use when medium or high risk changes need rollout, rollback, migration, observability, preview, or install-safety review|
+|`github-copilot-agent`|repository-researcher|`.github/agents/repository-researcher.agent.md`|Read-only repository researcher that collects evidence.|
+|`github-copilot-agent`|repository-reviewer|`.github/agents/repository-reviewer.agent.md`|Diff-first reviewer that verifies changes with ai-search.|
 |`github-copilot-agent`|Researcher|`.github/agents/researcher.agent.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
 |`github-copilot-agent`|Reviewer|`.github/agents/reviewer.agent.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
 |`github-copilot-agent`|Workflow Auditor|`.github/agents/workflow-auditor.agent.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
 |`github-copilot-instruction`|ai-file-standards|`.github/instructions/ai-file-standards.instructions.md`|AI workflow file roles, line budgets, duplication rules, and adapter boundaries|
+|`github-copilot-instruction`|ai-search|`.github/instructions/ai-search.instructions.md`|applyTo: "scripts/ai/**,tests/scripts/ai/**,docs/ai/tools/**"|
 |`github-copilot-instruction`|ai-tooling|`.github/instructions/ai-tooling.instructions.md`|AI tooling contract, registry alignment, and hook-policy consistency|
+|`github-copilot-instruction`|ai-tools|`.github/instructions/ai-tools.instructions.md`|applyTo: "scripts/ai/**,tools/ai/**,docs/ai/tools/**"|
 |`github-copilot-instruction`|ai-workflow|`.github/instructions/ai-workflow.instructions.md`|Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement|
 |`github-copilot-instruction`|approval-boundaries|`.github/instructions/approval-boundaries.instructions.md`|Approval boundaries for destructive, privileged, broad, or policy-sensitive changes|
 |`github-copilot-instruction`|architecture|`.github/instructions/architecture.instructions.md`|Architecture, ownership, and layering guidance|
@@ -119,12 +123,12 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-instruction`|composer|`.github/instructions/composer.instructions.md`|Composer manifest and lockfile safety rules|
 |`github-copilot-instruction`|config-infra|`.github/instructions/config-infra.instructions.md`|Dependency, runner, and build-config safety rules|
 |`github-copilot-instruction`|execution-protocol|`.github/instructions/execution-protocol.instructions.md`|Evidence-first task execution, dirty-worktree protection, scope control, and final verification reporting.|
-|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|applyTo: "<FRONTEND_PATH_GLOB>"|
+|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|Frontend, UI, interaction, and presentation guidance|
 |`github-copilot-instruction`|generated-artifacts|`.github/instructions/generated-artifacts.instructions.md`|Generated artifact drift routing and source-first regeneration policy|
 |`github-copilot-instruction`|php|`.github/instructions/php.instructions.md`|PHP backend, Composer, test-runner, and PHP CLI tooling safety rules|
 |`github-copilot-instruction`|security|`.github/instructions/security.instructions.md`|Security, secrets, auth boundaries, and prompt-injection safeguards|
 |`github-copilot-instruction`|shell|`.github/instructions/shell.instructions.md`|Shell safety, portability, and verification rules|
-|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|applyTo: "**"|
+|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|Target and platform adaptation guidance for multi-surface repositories|
 |`github-copilot-instruction`|testing|`.github/instructions/testing.instructions.md`|Testing rules, baseline proof, regression-first bug fixes, and verification ladder|
 |`github-copilot-instruction`|tools|`.github/instructions/tools.instructions.md`|Tool selection and script enforcement — use rg/fd/approved scripts; never use bare grep/find|
 |`github-copilot-prompt`|architecture-plan|`.github/prompts/architecture-plan.prompt.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
@@ -139,6 +143,8 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-prompt`|release-safety|`.github/prompts/release-safety.prompt.md`|Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards|
 |`github-copilot-prompt`|repo-investigation|`.github/prompts/repo-investigation.prompt.md`|Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence.|
 |`github-copilot-prompt`|review-diff|`.github/prompts/review-diff.prompt.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
+|`github-copilot-prompt`|review-search-tool|`.github/prompts/review-search-tool.prompt.md`|Review ai-search implementation and contract safety|
+|`github-copilot-prompt`|search-evidence|`.github/prompts/search-evidence.prompt.md`|Collect repository evidence using ai-search|
 |`github-copilot-prompt`|verify-change|`.github/prompts/verify-change.prompt.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
 |`github-copilot-skill`|architecture-plan|`.github/skills/architecture-plan/SKILL.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
 |`github-copilot-skill`|bug-regression|`.github/skills/bug-regression/SKILL.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
@@ -158,11 +164,16 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`opencode-agent`|implementer|`.opencode/agents/implementer.md`|Use when a bounded implementation slice is clear and focused verification should happen in this repository|
 |`opencode-agent`|refactorer|`.opencode/agents/refactorer.md`|Use when behavior is already correct and the remaining work is structure, readability, duplication reduction, or maintainability|
 |`opencode-agent`|release-auditor|`.opencode/agents/release-auditor.md`|Use when medium or high risk changes need rollout, rollback, migration, observability, preview, or install-safety review|
+|`opencode-agent`|repository-researcher|`.opencode/agents/repository-researcher.md`|Read-only repository researcher using ai-search first|
+|`opencode-agent`|repository-reviewer|`.opencode/agents/repository-reviewer.md`|Diff-first reviewer that verifies changes against repository evidence|
 |`opencode-agent`|researcher|`.opencode/agents/researcher.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
 |`opencode-agent`|reviewer|`.opencode/agents/reviewer.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
 |`opencode-agent`|workflow-auditor|`.opencode/agents/workflow-auditor.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
 |`opencode-command`|evidence-first-execution|`.opencode/commands/evidence-first-execution.md`|Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output.|
-|`opencode-command`|verify|`.opencode/commands/verify.md`|description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
+|`opencode-command`|review-search-tool|`.opencode/commands/review-search-tool.md`|Review ai-search implementation and contract safety|
+|`opencode-command`|search-evidence|`.opencode/commands/search-evidence.md`|Search repository evidence using ai-search|
+|`opencode-command`|verify|`.opencode/commands/verify.md`|Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
+|`opencode-skill`|ai-search|`.opencode/skills/ai-search/SKILL.md`|Use ai-search to collect bounded repository evidence.|
 |`opencode-skill`|architecture-plan|`.opencode/skills/architecture-plan/SKILL.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
 |`opencode-skill`|bug-regression|`.opencode/skills/bug-regression/SKILL.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
 |`opencode-skill`|dependency-upgrade|`.opencode/skills/dependency-upgrade/SKILL.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|

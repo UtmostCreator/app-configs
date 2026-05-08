@@ -1,7 +1,7 @@
 # Full Install Verify
 
 - Status: `partial`
-- Generated at: `2026-05-06T01:53:02+00:00`
+- Generated at: `2026-05-06T18:00:03+00:00`
 
 ## Executed Steps
 
@@ -17,7 +17,7 @@
   - Goal: AI config references and workflow checks are valid.
 - Step 6 (`validate-catalog`): `"C:\xampp\php\php.exe" tools/ai/validate-ai-catalog.php` -> exit `0`, artifact status `not-applicable`
   - Goal: Catalog metadata is consistent.
-- Step 7 (`catalog-check`): `"C:\xampp\php\php.exe" tools/ai/generate-ai-catalog.php --check` -> exit `1`, artifact status `not-applicable`
+- Step 7 (`catalog-check`): `"C:\xampp\php\php.exe" tools/ai/generate-ai-catalog.php --check` -> exit `0`, artifact status `not-applicable`
   - Goal: Catalog outputs are up to date.
 - Step 8 (`repomix-analyze`): `bash scripts/ai/repomix-context-tree.sh analyze .` -> exit `0`, artifact status `unknown`
   - Goal: Repository structure/context signals are generated.

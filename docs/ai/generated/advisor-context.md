@@ -383,6 +383,7 @@ Ask for approval before making:
 Inspect the current implementation before making architectural or behavioral changes:
 
 - `README.md, docs/ai/project-context.md`
+- `docs/ai/execution-protocol.md` for non-trivial execution and verification flow
 - `docs/ai/ai-file-standards.md` before adding or expanding AI workflow files
 - `docs/ai/agents.md, docs/ai/failure-handling.md, docs/ai/agent-ops-checklist.md, docs/ai/integration-matrix.md`
 
@@ -407,6 +408,19 @@ Inspect the current implementation before making architectural or behavioral cha
 - Use staged agents when fresh context, tool boundaries, or handoffs improve safety.
 - Use capability folders or skills for deeper optional procedures.
 - Do not turn this file into the only bug-fix, release, or migration workflow definition.
+
+## Execution Protocol
+
+For non-trivial work, follow `docs/ai/execution-protocol.md`.
+
+Minimum flow:
+
+1. classify task mode
+2. check worktree/diff state before edits
+3. protect pre-existing user changes
+4. apply the smallest patch
+5. verify with relevant evidence
+6. report verification status honestly
 
 ## Release and Migration Safety
 
@@ -1001,32 +1015,32 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         ]
     },
     "counts": {
-        "package:core-template": 15,
+        "package:core-template": 16,
         "package:foundation-doc": 6,
-        "package:github-copilot-instruction-template": 11,
+        "package:github-copilot-instruction-template": 21,
         "package:opencode-command-template": 1,
         "package:operations-doc": 6,
         "package:optional-template": 9,
-        "package:package-capability": 31,
+        "package:package-capability": 36,
         "package:shared-template": 4,
         "package:workflow-doc": 6,
-        "package:workflow-template": 12,
+        "package:workflow-template": 13,
         "root:adapter-doc": 1,
         "root:adapter-hook": 2,
         "root:adapter-hook-script": 1,
         "root:adapter-policy": 1,
         "root:ai-script": 26,
-        "root:capability": 13,
+        "root:capability": 14,
         "root:cli": 1,
         "root:exporter": 1,
         "root:generator": 1,
         "root:github-copilot-agent": 8,
-        "root:github-copilot-instruction": 5,
-        "root:github-copilot-prompt": 4,
-        "root:github-copilot-skill": 1,
+        "root:github-copilot-instruction": 18,
+        "root:github-copilot-prompt": 13,
+        "root:github-copilot-skill": 13,
         "root:opencode-agent": 8,
-        "root:opencode-command": 1,
-        "root:opencode-skill": 12,
+        "root:opencode-command": 2,
+        "root:opencode-skill": 13,
         "root:php-reference": 3,
         "root:root-doc": 16,
         "root:schema": 1,
@@ -1133,6 +1147,14 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "package",
             "type": "core-template",
+            "name": "Execution Protocol",
+            "path": "packages/ai-universal-rules/templates/core/execution-protocol.template.md",
+            "runtime": "canonical",
+            "description": "Use this as the canonical operating contract for non-trivial AI-assisted planning, editing, review, and verification."
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
             "name": "<PROJECT_NAME> Project Context",
             "path": "packages/ai-universal-rules/templates/core/project-context.template.md",
             "runtime": "canonical",
@@ -1152,7 +1174,7 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "name": "Workflow",
             "path": "packages/ai-universal-rules/templates/core/workflow.template.md",
             "runtime": "canonical",
-            "description": "1. load task context or perform read-only grounding when ownership is unclear"
+            "description": "For non-trivial work, follow `docs/ai/execution-protocol.md`."
         },
         {
             "scope": "package",
@@ -1206,9 +1228,25 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "scope": "package",
             "type": "github-copilot-instruction-template",
             "name": "AI File Standards",
+            "path": "packages/ai-universal-rules/templates/instructions/ALL_IN_ONE.txt",
+            "runtime": "github-copilot",
+            "description": "ai-file-standards.instructions.md"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "AI File Standards",
             "path": "packages/ai-universal-rules/templates/instructions/ai-file-standards.instructions.md",
             "runtime": "github-copilot",
             "description": "AI workflow file roles, line budgets, duplication rules, and adapter boundaries"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "AI Tooling Rules",
+            "path": "packages/ai-universal-rules/templates/instructions/ai-tooling.instructions.md",
+            "runtime": "github-copilot",
+            "description": "AI tooling contract, registry alignment, and hook-policy consistency"
         },
         {
             "scope": "package",
@@ -1221,10 +1259,18 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "package",
             "type": "github-copilot-instruction-template",
+            "name": "all_into_one",
+            "path": "packages/ai-universal-rules/templates/instructions/all_into_one.bat",
+            "runtime": "github-copilot",
+            "description": "@echo off"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
             "name": "Approval Boundaries",
             "path": "packages/ai-universal-rules/templates/instructions/approval-boundaries.instructions.md",
             "runtime": "github-copilot",
-            "description": "Approval boundaries for destructive, risky, privileged, or broad changes"
+            "description": "Approval boundaries for destructive, privileged, broad, or policy-sensitive changes"
         },
         {
             "scope": "package",
@@ -1237,10 +1283,50 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "package",
             "type": "github-copilot-instruction-template",
+            "name": "Base Instructions",
+            "path": "packages/ai-universal-rules/templates/instructions/base.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Minimal repository-wide fallback rules for Copilot path-specific instruction routing"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "CI Workflow Rules",
+            "path": "packages/ai-universal-rules/templates/instructions/ci-workflows.instructions.md",
+            "runtime": "github-copilot",
+            "description": "CI workflow safety, permissions, and trigger-scope rules"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Composer Rules",
+            "path": "packages/ai-universal-rules/templates/instructions/composer.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Composer manifest and lockfile safety rules"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Config and Build/Test Runner Rules",
+            "path": "packages/ai-universal-rules/templates/instructions/config-infra.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Dependency, runner, and build-config safety rules"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
             "name": "Context Gate",
             "path": "packages/ai-universal-rules/templates/instructions/context-gate.instructions.md",
             "runtime": "github-copilot",
             "description": "Mandatory task-context loading before planning, editing, or reviewing"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Execution Protocol Instructions",
+            "path": "packages/ai-universal-rules/templates/instructions/execution-protocol.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Evidence-first task execution, dirty-worktree protection, scope control, and final verification reporting."
         },
         {
             "scope": "package",
@@ -1253,10 +1339,18 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "package",
             "type": "github-copilot-instruction-template",
-            "name": "Generated Artifact Rules",
+            "name": "Generated Artifacts",
             "path": "packages/ai-universal-rules/templates/instructions/generated-artifacts.instructions.md",
             "runtime": "github-copilot",
-            "description": "Generated artifact, schema, catalog, and drift-control rules"
+            "description": "Generated artifact drift routing and source-first regeneration policy"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "PHP Instructions",
+            "path": "packages/ai-universal-rules/templates/instructions/php.instructions.md",
+            "runtime": "github-copilot",
+            "description": "PHP backend, Composer, test-runner, and PHP CLI tooling safety rules"
         },
         {
             "scope": "package",
@@ -1264,7 +1358,15 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "name": "Security Rules",
             "path": "packages/ai-universal-rules/templates/instructions/security.instructions.md",
             "runtime": "github-copilot",
-            "description": "Security, secrets, auth, config, and privileged-operation rules"
+            "description": "Security, secrets, auth boundaries, and prompt-injection safeguards"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "Shell Rules",
+            "path": "packages/ai-universal-rules/templates/instructions/shell.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Shell safety, portability, and verification rules"
         },
         {
             "scope": "package",
@@ -1513,6 +1615,46 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "path": "packages/ai-universal-rules/templates/capabilities/dependency-upgrade/reference.md",
             "runtime": "canonical",
             "description": "Use this file for stable upgrade facts:"
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "Evidence-First Execution Capability",
+            "path": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Run non-trivial changes with explicit scope control, dirty-worktree protection, and evidence-backed verification."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "checklist",
+            "path": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution/checklist.md",
+            "runtime": "canonical",
+            "description": "- [ ] Read user request and restate bounded outcome."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "examples",
+            "path": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution/examples.md",
+            "runtime": "canonical",
+            "description": "Good: source-fix with focused test and explicit verification status."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "gotchas",
+            "path": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution/gotchas.md",
+            "runtime": "canonical",
+            "description": "- Do not treat generated files as canonical source unless policy says so."
+        },
+        {
+            "scope": "package",
+            "type": "package-capability",
+            "name": "reference",
+            "path": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution/reference.md",
+            "runtime": "canonical",
+            "description": "- `docs/ai/source-of-truth.md`"
         },
         {
             "scope": "package",
@@ -1777,6 +1919,14 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "path": "packages/ai-universal-rules/templates/workflows/docs-sync.md",
             "runtime": "dual-runtime",
             "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "package",
+            "type": "workflow-template",
+            "name": "evidence-first-execution",
+            "path": "packages/ai-universal-rules/templates/workflows/evidence-first-execution.md",
+            "runtime": "dual-runtime",
+            "description": "Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output."
         },
         {
             "scope": "package",
@@ -2149,6 +2299,14 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "capability",
+            "name": "evidence-first-execution",
+            "path": "docs/ai/capabilities/evidence-first-execution/CAPABILITY.md",
+            "runtime": "canonical",
+            "description": "Run non-trivial changes with explicit scope control, dirty-worktree protection, and evidence-backed verification."
+        },
+        {
+            "scope": "root",
+            "type": "capability",
             "name": "preview-environments",
             "path": "docs/ai/capabilities/preview-environments/CAPABILITY.md",
             "runtime": "canonical",
@@ -2293,6 +2451,30 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "github-copilot-instruction",
+            "name": "ai-tooling",
+            "path": ".github/instructions/ai-tooling.instructions.md",
+            "runtime": "github-copilot",
+            "description": "AI tooling contract, registry alignment, and hook-policy consistency"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "ai-workflow",
+            "path": ".github/instructions/ai-workflow.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "approval-boundaries",
+            "path": ".github/instructions/approval-boundaries.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Approval boundaries for destructive, privileged, broad, or policy-sensitive changes"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
             "name": "architecture",
             "path": ".github/instructions/architecture.instructions.md",
             "runtime": "github-copilot",
@@ -2301,10 +2483,82 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "github-copilot-instruction",
+            "name": "base",
+            "path": ".github/instructions/base.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Minimal repository-wide fallback rules for Copilot path-specific instruction routing"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "ci-workflows",
+            "path": ".github/instructions/ci-workflows.instructions.md",
+            "runtime": "github-copilot",
+            "description": "CI workflow safety, permissions, and trigger-scope rules"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "composer",
+            "path": ".github/instructions/composer.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Composer manifest and lockfile safety rules"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "config-infra",
+            "path": ".github/instructions/config-infra.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Dependency, runner, and build-config safety rules"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "execution-protocol",
+            "path": ".github/instructions/execution-protocol.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Evidence-first task execution, dirty-worktree protection, scope control, and final verification reporting."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
             "name": "frontend",
             "path": ".github/instructions/frontend.instructions.md",
             "runtime": "github-copilot",
             "description": "applyTo: \"<FRONTEND_PATH_GLOB>\""
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "generated-artifacts",
+            "path": ".github/instructions/generated-artifacts.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Generated artifact drift routing and source-first regeneration policy"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "php",
+            "path": ".github/instructions/php.instructions.md",
+            "runtime": "github-copilot",
+            "description": "PHP backend, Composer, test-runner, and PHP CLI tooling safety rules"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "security",
+            "path": ".github/instructions/security.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Security, secrets, auth boundaries, and prompt-injection safeguards"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "shell",
+            "path": ".github/instructions/shell.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Shell safety, portability, and verification rules"
         },
         {
             "scope": "root",
@@ -2320,7 +2574,23 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "name": "testing",
             "path": ".github/instructions/testing.instructions.md",
             "runtime": "github-copilot",
-            "description": "applyTo: \"<TEST_PATH_GLOB>\""
+            "description": "Testing rules, baseline proof, regression-first bug fixes, and verification ladder"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "tools",
+            "path": ".github/instructions/tools.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Tool selection and script enforcement \u2014 use rg/fd/approved scripts; never use bare grep/find"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "architecture-plan",
+            "path": ".github/prompts/architecture-plan.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when producing a focused implementation plan for a medium or large change before implementation begins"
         },
         {
             "scope": "root",
@@ -2333,10 +2603,26 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "github-copilot-prompt",
+            "name": "dependency-upgrade",
+            "path": ".github/prompts/dependency-upgrade.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
             "name": "docs-sync",
             "path": ".github/prompts/docs-sync.prompt.md",
             "runtime": "github-copilot",
             "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "evidence-first-execution",
+            "path": ".github/prompts/evidence-first-execution.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output."
         },
         {
             "scope": "root",
@@ -2349,10 +2635,138 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "github-copilot-prompt",
+            "name": "plan-slice",
+            "path": ".github/prompts/plan-slice.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "project-context",
+            "path": ".github/prompts/project-context.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
             "name": "regression-test",
             "path": ".github/prompts/regression-test.prompt.md",
             "runtime": "github-copilot",
             "description": "Use when the main task is to create a failing or proving regression test for a reported bug or edge case"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "release-safety",
+            "path": ".github/prompts/release-safety.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "repo-investigation",
+            "path": ".github/prompts/repo-investigation.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "review-diff",
+            "path": ".github/prompts/review-diff.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "verify-change",
+            "path": ".github/prompts/verify-change.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "architecture-plan",
+            "path": ".github/skills/architecture-plan/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when producing a focused implementation plan for a medium or large change before implementation begins"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "bug-regression",
+            "path": ".github/skills/bug-regression/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "dependency-upgrade",
+            "path": ".github/skills/dependency-upgrade/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "docs-sync",
+            "path": ".github/skills/docs-sync/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "evidence-first-execution",
+            "path": ".github/skills/evidence-first-execution/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "new-feature",
+            "path": ".github/skills/new-feature/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when implementing a bounded feature with existing repository patterns and focused verification"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "plan-slice",
+            "path": ".github/skills/plan-slice/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "project-context",
+            "path": ".github/skills/project-context/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "regression-test",
+            "path": ".github/skills/regression-test/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when the main task is to create a failing or proving regression test for a reported bug or edge case"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "release-safety",
+            "path": ".github/skills/release-safety/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards"
         },
         {
             "scope": "root",
@@ -2361,6 +2775,22 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "path": ".github/skills/repo-investigation/SKILL.md",
             "runtime": "github-copilot",
             "description": "Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "review-diff",
+            "path": ".github/skills/review-diff/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "verify-change",
+            "path": ".github/skills/verify-change/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly"
         },
         {
             "scope": "root",
@@ -2429,6 +2859,14 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "opencode-command",
+            "name": "evidence-first-execution",
+            "path": ".opencode/commands/evidence-first-execution.md",
+            "runtime": "opencode",
+            "description": "Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output."
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
             "name": "verify",
             "path": ".opencode/commands/verify.md",
             "runtime": "opencode",
@@ -2465,6 +2903,14 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "path": ".opencode/skills/docs-sync/SKILL.md",
             "runtime": "opencode",
             "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "evidence-first-execution",
+            "path": ".opencode/skills/evidence-first-execution/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output."
         },
         {
             "scope": "root",
@@ -2833,10 +3279,13 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
     "templates/core/AGENTS.template.md",
     "templates/core/copilot-instructions.template.md",
     "templates/core/project-context.template.md",
+    "templates/core/execution-protocol.template.md",
     "templates/core/ai-file-standards.template.md",
     "templates/capabilities/project-context/CAPABILITY.md",
     "templates/capabilities/verify-change/CAPABILITY.md",
     "templates/capabilities/review-diff/CAPABILITY.md",
+    "templates/capabilities/evidence-first-execution/CAPABILITY.md",
+    "templates/instructions/execution-protocol.instructions.md",
     "templates/shared/guardrails/AI-GUARDRAILS.md"
   ],
   "starter_optional_capabilities": [
@@ -2983,10 +3432,13 @@ required_templates:
   - templates/core/AGENTS.template.md
   - templates/core/copilot-instructions.template.md
   - templates/core/project-context.template.md
+  - templates/core/execution-protocol.template.md
   - templates/core/ai-file-standards.template.md
   - templates/capabilities/project-context/CAPABILITY.md
   - templates/capabilities/verify-change/CAPABILITY.md
   - templates/capabilities/review-diff/CAPABILITY.md
+  - templates/capabilities/evidence-first-execution/CAPABILITY.md
+  - templates/instructions/execution-protocol.instructions.md
   - templates/shared/guardrails/AI-GUARDRAILS.md
 starter_optional_capabilities:
   - templates/capabilities/bug-regression
@@ -6450,7 +6902,16 @@ allow_registered_script() {
         if grep -Eq "^(bash[[:space:]]+)?(\./)?${escaped}([[:space:]]|$)" <<<"$compact"; then
             return 0
         fi
-    done < <(jq -r '.scripts[]? | select(.approval == "allow") | .path' "$registry_file" 2>/dev/null)
+    done < <(jq -r '
+        [
+          (.scripts // {} | to_entries[]?.value.installed_path),
+          (.scripts // {} | to_entries[]?.value.source_path),
+          (.scripts[]? | select(.approval == "allow") | .path)
+        ]
+        | flatten
+        | map(select(type == "string" and . != ""))
+        | unique[]
+    ' "$registry_file" 2>/dev/null)
 
     return 1
 }
@@ -10738,7 +11199,7 @@ class InstallerSafetyTest extends TestCase
         $result = $this->runTool($this->aiCommand('install --profile dual --run-after-install=repomix-context --dry-run'));
         $this->assertSame(0, $result['exit']);
         $decoded = $this->readGeneratedArtifact('install.json');
-        $this->assertSame('success', $decoded['status'] ?? null);
+        $this->assertSame('ok', $decoded['status'] ?? null);
     }
 
     public function testRunScriptApplyBlockedWhenRequiredToolsMissing(): void
@@ -10797,7 +11258,8 @@ class InstallerSafetyTest extends TestCase
 
         foreach ($files as $file) {
             $content = (string) file_get_contents($file);
-            $this->assertStringContainsString('mode:', $content, 'agent must declare mode: ' . basename($file));
+            $this->assertStringContainsString('name:', $content, 'agent must declare Copilot name frontmatter: ' . basename($file));
+            $this->assertStringContainsString('tools:', $content, 'agent must declare Copilot tools frontmatter: ' . basename($file));
         }
     }
 
@@ -18050,6 +18512,210 @@ exit($ok ? 0 : 1);
 
 ```
 
+## FILE: tools/ai/generate-ai-file-standards.php
+
+```text
+<?php
+
+declare(strict_types=1);
+
+$root = realpath(__DIR__ . '/..' . '/..');
+if ($root === false) {
+    fwrite(STDERR, "ERROR: repository root not found\n");
+    exit(1);
+}
+
+$checkOnly = in_array('--check', $argv, true);
+$policyPath = $root . '/packages/ai-universal-rules/policies/ai-file-standards.json';
+
+$policy = loadAiFileStandardsPolicy($policyPath);
+if ($policy === null) {
+    exit(1);
+}
+
+$lineLimits = (array) ($policy['line_limits'] ?? []);
+if ($lineLimits === []) {
+    fwrite(STDERR, "ERROR: ai-file-standards policy contains no line_limits\n");
+    exit(1);
+}
+
+$targets = [
+    'docs/ai/ai-file-standards.md' => renderAiFileStandardsMarkdown($lineLimits, false),
+    'packages/ai-universal-rules/templates/core/ai-file-standards.template.md' => renderAiFileStandardsMarkdown($lineLimits, true),
+];
+
+$ok = true;
+foreach ($targets as $relativePath => $content) {
+    $ok = compareOrWrite($root, $relativePath, $content, $checkOnly) && $ok;
+}
+
+exit($ok ? 0 : 1);
+
+function loadAiFileStandardsPolicy(string $path): ?array
+{
+    if (!is_file($path)) {
+        fwrite(STDERR, "ERROR: missing ai-file-standards policy at {$path}\n");
+        return null;
+    }
+
+    $decoded = json_decode((string) file_get_contents($path), true);
+    if (!is_array($decoded)) {
+        fwrite(STDERR, "ERROR: invalid ai-file-standards policy JSON\n");
+        return null;
+    }
+
+    return $decoded;
+}
+
+function compareOrWrite(string $root, string $relativePath, string $content, bool $checkOnly): bool
+{
+    $fullPath = $root . '/' . $relativePath;
+    $existing = is_file($fullPath) ? (string) file_get_contents($fullPath) : null;
+
+    if ($existing !== null && normalizeNewlines($existing) === normalizeNewlines($content)) {
+        fwrite(STDOUT, "OK: {$relativePath} is up to date\n");
+        return true;
+    }
+
+    if ($checkOnly) {
+        fwrite(STDERR, "ERROR: {$relativePath} is stale; run php tools/ai/generate-ai-file-standards.php\n");
+        return false;
+    }
+
+    $dir = dirname($fullPath);
+    if (!is_dir($dir) && !mkdir($dir, 0777, true) && !is_dir($dir)) {
+        fwrite(STDERR, "ERROR: failed to create directory {$dir}\n");
+        return false;
+    }
+
+    if (file_put_contents($fullPath, $content) === false) {
+        fwrite(STDERR, "ERROR: failed to write {$relativePath}\n");
+        return false;
+    }
+
+    fwrite(STDOUT, "WROTE: {$relativePath}\n");
+    return true;
+}
+
+function normalizeNewlines(string $value): string
+{
+    return str_replace(["\r\n", "\r"], "\n", $value);
+}
+
+function renderAiFileStandardsMarkdown(array $lineLimits, bool $isTemplate): string
+{
+    $title = $isTemplate ? '# <PROJECT_NAME> AI File Standards' : '# AI File Standards';
+    $intro = $isTemplate
+        ? "Use this file as the installed repository's canonical content and size contract for AI workflow files."
+        : 'Use this file as the canonical content and size contract for AI workflow files in this repository and in installed target repositories.';
+
+    $md = $title . "\n\n";
+    $md .= $intro . "\n\n";
+    $md .= "## Purpose\n\n";
+    $md .= "Keep AI workflow files small, single-purpose, reference-driven, and generated from one source where practical.\n\n";
+
+    $md .= "## Primitive Roles\n\n";
+    $md .= "| Primitive | Owns | Must not own |\n";
+    $md .= "| --- | --- | --- |\n";
+    $md .= "| `AGENTS.md` | global rules, source-of-truth routing, safety defaults | full workflows, role bodies, long test matrices |\n";
+    $md .= "| `.github/copilot-instructions.md` | Copilot entry routing and repo summary | canonical policy duplicated from `docs/ai/` |\n";
+    $md .= "| `.github/instructions/*.instructions.md` | path or topic rules with deterministic `applyTo` | task workflows or agent personas |\n";
+    $md .= "| `.github/agents/*.agent.md` | persistent Copilot role, tool boundary, handoff contract | capability examples or long checklists |\n";
+    $md .= "| `.github/prompts/*.prompt.md` | one-shot task launchers | durable policy, tool permissions, full procedures |\n";
+    $md .= "| `.github/skills/*/SKILL.md` | Copilot-loadable capability adapter | project-wide rules or unrelated workflows |\n";
+    $md .= "| `.opencode/agents/*.md` | OpenCode role, mode, permission, handoff contract | duplicated capability procedure |\n";
+    $md .= "| `.opencode/commands/*.md` | short slash-command wrapper | long procedures or permission policy |\n";
+    $md .= "| `.opencode/skills/*/SKILL.md` | OpenCode-loadable capability adapter | global instructions or agent persona |\n";
+    $md .= "| `docs/ai/capabilities/*/CAPABILITY.md` | canonical reusable behavior | adapter-specific syntax |\n";
+    $md .= "| `checklist.md` | pass/fail execution steps | examples or reference essays |\n";
+    $md .= "| `gotchas.md` | recurring traps and safe response | generic warnings without detection |\n";
+    $md .= "| `reference.md` or `references.md` | ranked links to source docs, scripts, schemas | copied external content |\n";
+    $md .= "| `examples.md` | 2-4 high-signal examples | exhaustive transcripts |\n\n";
+
+    $md .= "## Source Hierarchy\n\n";
+    $md .= "When files disagree, resolve conflicts in this order:\n\n";
+    $md .= "1. user request\n";
+    $md .= "2. current git diff and working tree\n";
+    $md .= "3. source code\n";
+    $md .= "4. tests\n";
+    $md .= "5. schemas and contracts\n";
+    $md .= "6. runtime and config files\n";
+    $md .= "7. canonical docs under `docs/ai/`\n";
+    $md .= "8. adapter files under `.github/` and `.opencode/`\n";
+    $md .= "9. generated files\n";
+    $md .= "10. historical notes\n\n";
+    $md .= "Generated files are context unless their generator contract explicitly marks them as committed canonical artifacts.\n\n";
+
+    $md .= "## Line Budgets\n\n";
+    $md .= "Generated outputs are excluded from line limits, but must not be manually edited.\n\n";
+    $md .= "| File type | Ideal | Soft max | Hard max |\n";
+    $md .= "| --- | ---: | ---: | ---: |\n";
+    foreach ($lineLimits as $rule) {
+        $label = markdownLabelForRule((string) ($rule['id'] ?? ''), (string) ($rule['label'] ?? ''));
+        $ideal = (int) ($rule['target_min'] ?? 0) . '-' . (int) ($rule['target_max'] ?? 0);
+        $soft = (string) ((int) ($rule['warn_above'] ?? 0));
+        $hard = (string) ((int) ($rule['fail_above'] ?? 0));
+        $md .= "| {$label} | {$ideal} | {$soft} | {$hard} |\n";
+    }
+    $md .= "\n";
+
+    $md .= "## Split Rules\n\n";
+    $md .= "Split a file before adding more when any of these are true:\n\n";
+    $md .= "- it has more than three responsibilities\n";
+    $md .= "- it has more than five top-level modes or subcommands\n";
+    $md .= "- repeated blocks exceed 25 lines\n";
+    $md .= "- a script mixes parsing, validation, rendering, and filesystem writes\n";
+    $md .= "- a prompt, command, skill, or agent repeats a full capability body\n\n";
+
+    $md .= "## Adapter Rules\n\n";
+    $md .= "- Capabilities are canonical procedure.\n";
+    $md .= "- Skills adapt capabilities for runtime loading.\n";
+    $md .= "- Prompts and commands launch one task and point to capabilities or skills.\n";
+    $md .= "- Agents define role posture, tool or permission boundaries, and handoff outputs.\n";
+    $md .= "- Instructions define stable defaults and path-specific rules.\n";
+    $md .= "- Runtime adapters may repeat short critical routing, but must not duplicate long procedure.\n\n";
+
+    $md .= "## Enforcement Expectations\n\n";
+    $md .= "- Hard max violations should fail validation unless the path is generated or explicitly allowlisted.\n";
+    $md .= "- Soft max violations should warn and include a split recommendation.\n";
+    $md .= "- Adapter drift checks should fail when rendered surfaces disagree with their source.\n";
+    $md .= "- Broken references should fail for installable docs, instructions, agents, skills, prompts, and commands.\n";
+    $md .= "- OpenCode agents should use `permission`, not deprecated `tools`.\n";
+    $md .= "- Copilot instruction files should use `applyTo` when deterministic application matters.\n";
+
+    return $md;
+}
+
+function markdownLabelForRule(string $id, string $fallback): string
+{
+    $map = [
+        'root-instructions' => 'Root `AGENTS.md`',
+        'copilot-instructions' => '`.github/copilot-instructions.md`',
+        'copilot-path-instructions' => '`.github/instructions/*.instructions.md`',
+        'copilot-agents' => '`.github/agents/*.agent.md`',
+        'copilot-prompts' => '`.github/prompts/*.prompt.md`',
+        'copilot-skills' => '`.github/skills/*/SKILL.md`',
+        'opencode-agents' => '`.opencode/agents/*.md`',
+        'opencode-commands' => '`.opencode/commands/*.md`',
+        'opencode-skills' => '`.opencode/skills/*/SKILL.md`',
+        'package-root-instructions-template' => 'Root `AGENTS.md` template',
+        'package-copilot-instructions-template' => '`.github/copilot-instructions.md` template',
+        'package-instruction-templates' => 'Instruction templates',
+        'package-agent-templates' => 'Agent templates',
+        'package-workflow-templates' => 'Workflow templates',
+        'package-command-templates' => 'Command templates',
+        'package-capability-docs' => '`CAPABILITY.md`',
+        'package-capability-checklists' => '`checklist.md`',
+        'package-capability-gotchas' => '`gotchas.md`',
+        'package-capability-references' => '`reference.md` / `references.md`',
+        'package-capability-examples' => '`examples.md`'
+    ];
+
+    return $map[$id] ?? $fallback;
+}
+
+```
+
 ## FILE: tools/ai/generate-repo-structure.php
 
 ```text
@@ -20941,11 +21607,13 @@ function aiInstallerPackRegistry(): array
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/AGENTS.template.md', 'target' => 'AGENTS.md', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/project-context.template.md', 'target' => 'docs/ai/project-context.md', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/workflow.template.md', 'target' => 'docs/ai/workflow.md', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/execution-protocol.template.md', 'target' => 'docs/ai/execution-protocol.md', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/ai-file-standards.template.md', 'target' => 'docs/ai/ai-file-standards.md', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/shared/guardrails/AI-GUARDRAILS.md', 'target' => 'docs/ai/AI-GUARDRAILS.md', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/capabilities/project-context', 'target' => 'docs/ai/capabilities/project-context', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/capabilities/verify-change', 'target' => 'docs/ai/capabilities/verify-change', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/capabilities/review-diff', 'target' => 'docs/ai/capabilities/review-diff', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/capabilities/evidence-first-execution', 'target' => 'docs/ai/capabilities/evidence-first-execution', 'core' => true, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'adapter-copilot' => [
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/copilot-instructions.template.md', 'target' => '.github/copilot-instructions.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
@@ -20955,6 +21623,7 @@ function aiInstallerPackRegistry(): array
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.github/prompts', 'rename_ext' => '.prompt.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.github/skills', 'install_type' => 'skill-dirs', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/instructions/tools.instructions.md', 'target' => '.github/instructions/tools.instructions.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/instructions/execution-protocol.instructions.md', 'target' => '.github/instructions/execution-protocol.instructions.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'adapter-opencode' => [
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.opencode/agents', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
@@ -20993,6 +21662,7 @@ function aiInstallerPackRegistry(): array
             ['type' => 'file', 'source' => 'scripts/ai/query-usage.sh', 'target' => 'scripts/ai/query-usage.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/fd-files.sh', 'target' => 'scripts/ai/fd-files.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/rg-code.sh', 'target' => 'scripts/ai/rg-code.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'scripts/ai/ai-doc-check.sh', 'target' => 'scripts/ai/ai-doc-check.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
             ['type' => 'file', 'source' => 'scripts/ai/watch-loop.sh', 'target' => 'scripts/ai/watch-loop.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/repo-tool-inventory.sh', 'target' => 'scripts/ai/repo-tool-inventory.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
             ['type' => 'file', 'source' => 'tools/ai/repo-tool-inventory.php', 'target' => 'tools/ai/repo-tool-inventory.php', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
@@ -21453,6 +22123,156 @@ declare(strict_types=1);
 function aiInstallerScriptRegistry(): array
 {
     return [
+        'common' => [
+            'label' => 'Shared helper library for AI shell scripts',
+            'source_path' => 'scripts/ai/common.sh',
+            'installed_path' => 'scripts/ai/common.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'ai-search' => [
+            'label' => 'Safe repository text search wrapper',
+            'source_path' => 'scripts/ai/ai-search.sh',
+            'installed_path' => 'scripts/ai/ai-search.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'git', 'rg'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'rg-code' => [
+            'label' => 'Code-focused ripgrep wrapper',
+            'source_path' => 'scripts/ai/rg-code.sh',
+            'installed_path' => 'scripts/ai/rg-code.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'rg'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'fd-files' => [
+            'label' => 'File discovery wrapper',
+            'source_path' => 'scripts/ai/fd-files.sh',
+            'installed_path' => 'scripts/ai/fd-files.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'fd'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'preview-file' => [
+            'label' => 'Safe file preview wrapper',
+            'source_path' => 'scripts/ai/preview-file.sh',
+            'installed_path' => 'scripts/ai/preview-file.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'query-usage' => [
+            'label' => 'Symbol usage query wrapper',
+            'source_path' => 'scripts/ai/query-usage.sh',
+            'installed_path' => 'scripts/ai/query-usage.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'rg'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'git-forensics' => [
+            'label' => 'Read-only git history tracing wrapper',
+            'source_path' => 'scripts/ai/git-forensics.sh',
+            'installed_path' => 'scripts/ai/git-forensics.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'git'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'gh-pr-context' => [
+            'label' => 'GitHub PR context wrapper',
+            'source_path' => 'scripts/ai/gh-pr-context.sh',
+            'installed_path' => 'scripts/ai/gh-pr-context.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'gh', 'git'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'ai-doc-check' => [
+            'label' => 'AI docs consistency checker wrapper',
+            'source_path' => 'scripts/ai/ai-doc-check.sh',
+            'installed_path' => 'scripts/ai/ai-doc-check.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'git', 'rg'],
+            'risk' => 'read-only',
+            'supports_dry_run' => true,
+            'default_args' => ['--check'],
+        ],
+        'ai-diff-context' => [
+            'label' => 'Diff-aware context extraction wrapper',
+            'source_path' => 'scripts/ai/ai-diff-context.sh',
+            'installed_path' => 'scripts/ai/ai-diff-context.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'git'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'ai-verify' => [
+            'label' => 'Verification workflow wrapper',
+            'source_path' => 'scripts/ai/ai-verify.sh',
+            'installed_path' => 'scripts/ai/ai-verify.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'git'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'ai-rollback' => [
+            'label' => 'Rollback snapshot helper',
+            'source_path' => 'scripts/ai/ai-rollback.sh',
+            'installed_path' => 'scripts/ai/ai-rollback.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'git'],
+            'risk' => 'mutating',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'ai-edit' => [
+            'label' => 'Scoped repository edit wrapper',
+            'source_path' => 'scripts/ai/ai-edit.sh',
+            'installed_path' => 'scripts/ai/ai-edit.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'git', 'python3'],
+            'risk' => 'mutating',
+            'supports_dry_run' => true,
+            'default_args' => [],
+        ],
+        'pre-tool-use' => [
+            'label' => 'Pre-tool policy decision hook',
+            'source_path' => 'scripts/ai/pre-tool-use.sh',
+            'installed_path' => 'scripts/ai/pre-tool-use.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'jq'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
+        'post-tool-use' => [
+            'label' => 'Post-tool evidence writer hook',
+            'source_path' => 'scripts/ai/post-tool-use.sh',
+            'installed_path' => 'scripts/ai/post-tool-use.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash', 'jq', 'date'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
+        ],
         'repomix-context' => [
             'label' => 'Generate Repomix context bundle',
             'source_path' => 'scripts/ai/run-repomix-context.sh',
@@ -21512,6 +22332,16 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'mutating',
             'supports_dry_run' => true,
             'default_args' => ['--dry-run'],
+        ],
+        'watch-loop' => [
+            'label' => 'Watched command retry wrapper',
+            'source_path' => 'scripts/ai/watch-loop.sh',
+            'installed_path' => 'scripts/ai/watch-loop.sh',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['bash'],
+            'risk' => 'read-only',
+            'supports_dry_run' => false,
+            'default_args' => [],
         ],
     ];
 }
@@ -24446,6 +25276,7 @@ $requiredFiles = [
     'CLAUDE.md',
     'docs/ai/project-context.md',
     'docs/ai/workflow.md',
+    'docs/ai/execution-protocol.md',
     'docs/ai/agents.md',
     'docs/ai/failure-handling.md',
     'docs/ai/agent-ops-checklist.md',
@@ -24468,12 +25299,24 @@ $requiredFiles = [
     'docs/ai/capabilities/preview-environments/DATA_AND_SECRET_RULES.md',
     'docs/ai/capabilities/preview-environments/CHECKLIST.md',
     'docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md',
+    'docs/ai/capabilities/evidence-first-execution/CAPABILITY.md',
     '.github/copilot-instructions.md',
     '.github/instructions/ai-workflow.instructions.md',
     '.github/instructions/architecture.instructions.md',
+    '.github/instructions/base.instructions.md',
+    '.github/instructions/security.instructions.md',
+    '.github/instructions/approval-boundaries.instructions.md',
+    '.github/instructions/generated-artifacts.instructions.md',
+    '.github/instructions/ai-tooling.instructions.md',
+    '.github/instructions/php.instructions.md',
+    '.github/instructions/shell.instructions.md',
+    '.github/instructions/composer.instructions.md',
+    '.github/instructions/config-infra.instructions.md',
+    '.github/instructions/ci-workflows.instructions.md',
     '.github/instructions/frontend.instructions.md',
     '.github/instructions/targets.instructions.md',
     '.github/instructions/testing.instructions.md',
+    '.github/instructions/execution-protocol.instructions.md',
     'scripts/ai/common.sh',
     'scripts/ai/ai-diff-context.sh',
     'scripts/ai/ai-search.sh',
@@ -24487,6 +25330,7 @@ $requiredFiles = [
     'packages/ai-universal-rules/catalog.json',
     'packages/ai-universal-rules/docs/BROWSE.md',
     'llms.txt',
+    'opencode.jsonc',
 ];
 
 $requiredDirectories = [
@@ -24501,6 +25345,7 @@ $liveFiles = [
     'CLAUDE.md',
     'docs/ai/project-context.md',
     'docs/ai/workflow.md',
+    'docs/ai/execution-protocol.md',
     'docs/ai/agents.md',
     'docs/ai/failure-handling.md',
     'docs/ai/agent-ops-checklist.md',
@@ -24513,9 +25358,20 @@ $liveFiles = [
     '.github/copilot-instructions.md',
     '.github/instructions/ai-workflow.instructions.md',
     '.github/instructions/architecture.instructions.md',
+    '.github/instructions/base.instructions.md',
+    '.github/instructions/security.instructions.md',
+    '.github/instructions/approval-boundaries.instructions.md',
+    '.github/instructions/generated-artifacts.instructions.md',
+    '.github/instructions/ai-tooling.instructions.md',
+    '.github/instructions/php.instructions.md',
+    '.github/instructions/shell.instructions.md',
+    '.github/instructions/composer.instructions.md',
+    '.github/instructions/config-infra.instructions.md',
+    '.github/instructions/ci-workflows.instructions.md',
     '.github/instructions/frontend.instructions.md',
     '.github/instructions/targets.instructions.md',
     '.github/instructions/testing.instructions.md',
+    '.github/instructions/execution-protocol.instructions.md',
     '.github/agents/config-maintainer.agent.md',
     '.github/agents/workflow-auditor.agent.md',
     'docs/ai/capabilities/project-context/CAPABILITY.md',
@@ -24529,6 +25385,7 @@ $liveFiles = [
     'docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md',
     'docs/ai/capabilities/preview-environments/CAPABILITY.md',
     'docs/ai/capabilities/service-boundary-patterns/CAPABILITY.md',
+    'docs/ai/capabilities/evidence-first-execution/CAPABILITY.md',
     'packages/ai-universal-rules/manifest.json',
     'packages/ai-universal-rules/catalog.json',
     'packages/ai-universal-rules/docs/BROWSE.md',
@@ -24536,6 +25393,7 @@ $liveFiles = [
     'SECURITY.md',
     'SUPPORT.md',
     'llms.txt',
+    'opencode.jsonc',
 ];
 
 $agnosticRules = loadAgnosticLeakRules($root);
@@ -25198,6 +26056,10 @@ foreach ($scripts as $id => $script) {
     }
 }
 
+validateScriptRegistryJsonParity($root, $scripts, $errors);
+validateAdapterScriptReferences($root, $scripts, $errors);
+validateScriptsPackCoverage($packs, $scripts, $errors);
+
 $opencodeAgentNames = collectAgentNames($root . '/packages/ai-universal-rules/templates/core/agents', '.md');
 $githubAgentNames = $opencodeAgentNames;
 
@@ -25324,6 +26186,51 @@ if ($copilotAgentFiles !== []) {
                 $warnings[] = ".vscode/settings.json should set {$settingKey} for a stronger Copilot enforcement posture";
             }
         }
+    }
+}
+
+// Execution protocol baseline checks.
+$executionProtocolDoc = $root . '/docs/ai/execution-protocol.md';
+$executionProtocolTemplate = $root . '/packages/ai-universal-rules/templates/core/execution-protocol.template.md';
+$executionCapabilityDoc = $root . '/docs/ai/capabilities/evidence-first-execution/CAPABILITY.md';
+$executionCapabilityTemplate = $root . '/packages/ai-universal-rules/templates/capabilities/evidence-first-execution/CAPABILITY.md';
+$executionInstruction = $root . '/.github/instructions/execution-protocol.instructions.md';
+$executionInstructionTemplate = $root . '/packages/ai-universal-rules/templates/instructions/execution-protocol.instructions.md';
+$executionWorkflowTemplate = $root . '/packages/ai-universal-rules/templates/workflows/evidence-first-execution.md';
+
+foreach ([
+    'docs/ai/execution-protocol.md' => $executionProtocolDoc,
+    'packages/ai-universal-rules/templates/core/execution-protocol.template.md' => $executionProtocolTemplate,
+    'docs/ai/capabilities/evidence-first-execution/CAPABILITY.md' => $executionCapabilityDoc,
+    'packages/ai-universal-rules/templates/capabilities/evidence-first-execution/CAPABILITY.md' => $executionCapabilityTemplate,
+    '.github/instructions/execution-protocol.instructions.md' => $executionInstruction,
+    'packages/ai-universal-rules/templates/instructions/execution-protocol.instructions.md' => $executionInstructionTemplate,
+    'packages/ai-universal-rules/templates/workflows/evidence-first-execution.md' => $executionWorkflowTemplate,
+] as $label => $path) {
+    if (!is_file($path)) {
+        $errors[] = "missing required execution protocol file: {$label}";
+    }
+}
+
+foreach ([
+    'AGENTS.md' => $root . '/AGENTS.md',
+    '.github/copilot-instructions.md' => $root . '/.github/copilot-instructions.md',
+] as $label => $path) {
+    if (is_file($path)) {
+        $content = (string) file_get_contents($path);
+        if (!str_contains($content, 'docs/ai/execution-protocol.md')) {
+            $errors[] = "{$label} must reference docs/ai/execution-protocol.md";
+        }
+    }
+}
+
+foreach ([
+    '.github/prompts/evidence-first-execution.prompt.md',
+    '.github/skills/evidence-first-execution/SKILL.md',
+    '.opencode/skills/evidence-first-execution/SKILL.md',
+] as $relative) {
+    if (!is_file($root . '/' . $relative)) {
+        $errors[] = "missing execution protocol runtime surface: {$relative}";
     }
 }
 
@@ -25489,6 +26396,147 @@ function aiFileLineLimitRules(string $root, array &$errors): array
     }
 
     return $rules;
+}
+
+function validateScriptRegistryJsonParity(string $root, array $scripts, array &$errors): void
+{
+    $registryPath = $root . '/docs/ai/script-registry.json';
+    if (!is_file($registryPath)) {
+        $errors[] = 'missing script registry JSON: docs/ai/script-registry.json';
+        return;
+    }
+
+    $decoded = json_decode((string) file_get_contents($registryPath), true);
+    if (!is_array($decoded) || !isset($decoded['scripts']) || !is_array($decoded['scripts'])) {
+        $errors[] = 'invalid script registry JSON structure in docs/ai/script-registry.json';
+        return;
+    }
+
+    /** @var array<string,array<string,mixed>> $jsonScripts */
+    $jsonScripts = $decoded['scripts'];
+
+    foreach ($scripts as $id => $entry) {
+        if (!isset($jsonScripts[$id]) || !is_array($jsonScripts[$id])) {
+            $errors[] = "script registry JSON missing script id {$id}";
+            continue;
+        }
+        $json = $jsonScripts[$id];
+        foreach (['source_path', 'installed_path', 'pack', 'risk'] as $field) {
+            $expected = (string) ($entry[$field] ?? '');
+            $actual = (string) ($json[$field] ?? '');
+            if ($expected !== $actual) {
+                $errors[] = "script registry JSON mismatch for {$id}.{$field}: expected '{$expected}', got '{$actual}'";
+            }
+        }
+    }
+
+    foreach (array_keys($jsonScripts) as $id) {
+        if (!array_key_exists((string) $id, $scripts)) {
+            $errors[] = "script registry JSON has unknown script id {$id}";
+        }
+    }
+}
+
+function validateAdapterScriptReferences(string $root, array $scripts, array &$errors): void
+{
+    $registeredPaths = [];
+    foreach ($scripts as $entry) {
+        $installed = (string) ($entry['installed_path'] ?? '');
+        $source = (string) ($entry['source_path'] ?? '');
+        if ($installed !== '') {
+            $registeredPaths[$installed] = true;
+        }
+        if ($source !== '') {
+            $registeredPaths[$source] = true;
+        }
+    }
+
+    $targets = array_merge(
+        listMarkdownFilesUnder($root . '/packages/ai-universal-rules/templates/core'),
+        listMarkdownFilesUnder($root . '/packages/ai-universal-rules/templates/instructions'),
+        listMarkdownFilesUnder($root . '/packages/ai-universal-rules/templates/workflows'),
+        listMarkdownFilesUnder($root . '/.github'),
+        listMarkdownFilesUnder($root . '/.opencode')
+    );
+
+    $targets = array_values(array_unique($targets));
+
+    foreach ($targets as $path) {
+        $content = (string) file_get_contents($path);
+        if (preg_match_all('#(?:<SCRIPTS_ROOT>|scripts/ai)/([A-Za-z0-9._-]+\.sh)#', $content, $matches) !== 1) {
+            continue;
+        }
+        foreach ($matches[1] as $scriptFile) {
+            $scriptPath = 'scripts/ai/' . $scriptFile;
+            if (!isset($registeredPaths[$scriptPath])) {
+                $errors[] = relativePath($root, $path) . " references unregistered script {$scriptPath} — add it to tools/ai/install/script-registry.php and docs/ai/script-registry.json";
+            }
+        }
+    }
+}
+
+function listMarkdownFilesUnder(string $directory): array
+{
+    if (!is_dir($directory)) {
+        return [];
+    }
+
+    $paths = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS)
+    );
+    foreach ($iterator as $item) {
+        if ($item instanceof SplFileInfo && $item->isFile() && str_ends_with($item->getFilename(), '.md')) {
+            $paths[] = str_replace('\\', '/', $item->getPathname());
+        }
+    }
+
+    return $paths;
+}
+
+function validateScriptsPackCoverage(array $packs, array $scripts, array &$errors): void
+{
+    $scriptsPack = $packs['scripts-pack'] ?? null;
+    if (!is_array($scriptsPack)) {
+        $errors[] = 'scripts-pack is missing from pack registry';
+        return;
+    }
+
+    $packScriptPaths = [];
+    foreach ($scriptsPack as $item) {
+        $source = (string) ($item['source'] ?? '');
+        $target = (string) ($item['target'] ?? '');
+        if (str_starts_with($source, 'scripts/ai/') && str_ends_with($source, '.sh')) {
+            $packScriptPaths[$source] = true;
+        }
+        if (str_starts_with($target, 'scripts/ai/') && str_ends_with($target, '.sh')) {
+            $packScriptPaths[$target] = true;
+        }
+    }
+
+    $registryScriptPaths = [];
+    foreach ($scripts as $entry) {
+        $source = (string) ($entry['source_path'] ?? '');
+        $target = (string) ($entry['installed_path'] ?? '');
+        if ($source !== '') {
+            $registryScriptPaths[$source] = true;
+        }
+        if ($target !== '') {
+            $registryScriptPaths[$target] = true;
+        }
+    }
+
+    foreach (array_keys($registryScriptPaths) as $path) {
+        if (!isset($packScriptPaths[$path])) {
+            $errors[] = "script registry path {$path} is not installed by scripts-pack";
+        }
+    }
+
+    foreach (array_keys($packScriptPaths) as $path) {
+        if (!isset($registryScriptPaths[$path])) {
+            $errors[] = "scripts-pack path {$path} is not registered in tools/ai/install/script-registry.php";
+        }
+    }
 }
 
 ```

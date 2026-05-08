@@ -6,7 +6,7 @@
 | test_readiness | 100 |
 | script_safety | 100 |
 | toolchain_readiness | 100 |
-| complexity_risk | 8 |
+| complexity_risk | 6 |
 | generated_doc_hygiene | 85 |
 
 - Overall: `82`

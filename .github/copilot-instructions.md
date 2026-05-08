@@ -29,4 +29,12 @@ This file is a thin Copilot adapter. Do not duplicate full workflows, policies, 
 - Prompt files must not widen the selected agent tool surface.
 - Do not claim hook, sandbox, MCP, skill, or prompt-file enforcement unless the active runtime supports it.
 
+## Evidence API
+
+Use `scripts/ai/ai-search.sh` as the default evidence retrieval API:
+
+```bash
+AI_OUTPUT=json bash scripts/ai/ai-search.sh MODE QUERY . --fixed
+```
+
 If this file conflicts with `AGENTS.md`, follow `AGENTS.md` and fix this adapter.

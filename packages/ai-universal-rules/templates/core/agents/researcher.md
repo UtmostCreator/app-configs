@@ -16,10 +16,13 @@ permission:
   bash:
     '*': deny
     'mkdir -p .opencode/research-sessions': allow
+    'mkdir -p tmp/research-sessions': allow
     'mkdir -p docs/tickets': allow
     'printf * >> .opencode/research-sessions/*.md': allow
+    'printf * >> tmp/research-sessions/*.md': allow
     'printf * >> docs/tickets/*.md': allow
     'cat >> .opencode/research-sessions/*.md': allow
+    'cat >> tmp/research-sessions/*.md': allow
     'cat >> docs/tickets/*.md': allow
     'command -v *': allow
     'test -f *': allow
@@ -91,6 +94,7 @@ Focus on unclear instructions, active paths, current working tree changes, usage
 ## Hard Rules
 
 - Read-only by default.
+- Write research notes only in `.opencode/research-sessions/*.md`, `tmp/research-sessions/*.md`, or `docs/tickets/*.md`; never change project source/runtime/generated/test files.
 - Never inspect, quote, summarize, or copy secrets.
 - Never run installers, edit scripts, rollback scripts, watch loops, broad context packers, package managers, or broad CI.
 - Always inspect current diff before historical research.

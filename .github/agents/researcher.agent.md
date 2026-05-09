@@ -29,7 +29,7 @@ Available tools: `search/changes`, `search/codebase`, `search/fileSearch`, `sear
 
 ## Shell Boundary
 
-You may use shell execution only for approved scripts from the repository registry. Before running any script:
+You may use shell execution only for approved scripts from the repository registry and approved research note writes. Before running any script:
 
 1. Confirm the script exists in the repository.
 2. Confirm it is listed in `docs/ai/script-registry.md` and `docs/ai/script-registry.json`.
@@ -41,8 +41,17 @@ Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate an
 When the active runtime supports repository hooks, these scripts must remain wired through `.github/hooks/tool-policy.json` and write local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.
 When the runtime does not auto-load repository hooks, preserve the same boundary manually and do not claim automatic enforcement.
 
-Approved scripts (run from the repository root using `scripts/ai`):
+Approved scripts and research note commands (run from the repository root using `scripts/ai`):
 
+- `mkdir -p .opencode/research-sessions`
+- `mkdir -p tmp/research-sessions`
+- `mkdir -p docs/tickets`
+- `printf * >> .opencode/research-sessions/*.md`
+- `printf * >> tmp/research-sessions/*.md`
+- `printf * >> docs/tickets/*.md`
+- `cat >> .opencode/research-sessions/*.md`
+- `cat >> tmp/research-sessions/*.md`
+- `cat >> docs/tickets/*.md`
 - `bash scripts/ai/ai-search.sh *`
 - `bash scripts/ai/rg-code.sh *`
 - `bash scripts/ai/fd-files.sh *`
@@ -68,6 +77,7 @@ Focus on unclear instructions, active paths, current working tree changes, usage
 ## Hard Rules
 
 - Read-only by default.
+- Write research notes only in `.opencode/research-sessions/*.md`, `tmp/research-sessions/*.md`, or `docs/tickets/*.md`; never change project source/runtime/generated/test files.
 - Never inspect, quote, summarize, or copy secrets.
 - Never run installers, edit scripts, rollback scripts, watch loops, broad context packers, package managers, or broad CI.
 - Always inspect current diff before historical research.

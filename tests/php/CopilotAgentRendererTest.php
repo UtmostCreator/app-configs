@@ -131,7 +131,7 @@ class CopilotAgentRendererTest extends TestCase
         $this->assertStringContainsString('## Shell Boundary', $out);
     }
 
-    // ----- Researcher (execute, no edit) -----
+    // ----- Researcher (execute for note files, no edit) -----
 
     public function testResearcherOutputHasExecuteButNotEdit(): void
     {
@@ -142,6 +142,21 @@ class CopilotAgentRendererTest extends TestCase
         } else {
             $this->fail('tools: line not found in output');
         }
+    }
+
+    public function testResearcherOutputHasShellBoundarySection(): void
+    {
+        $out = aiInstallerRenderCopilotAgent($this->researcherTemplate(), 'researcher', '/project/scripts/ai');
+        $this->assertStringContainsString('## Shell Boundary', $out);
+    }
+
+    public function testResearcherOutputAllowsOnlyApprovedNotePaths(): void
+    {
+        $out = aiInstallerRenderCopilotAgent($this->researcherTemplate(), 'researcher', '/project/scripts/ai');
+        $this->assertStringContainsString('`.opencode/research-sessions/*.md`', $out);
+        $this->assertStringContainsString('`tmp/research-sessions/*.md`', $out);
+        $this->assertStringContainsString('`docs/tickets/*.md`', $out);
+        $this->assertStringContainsString('never change project source/runtime/generated/test files', $out);
     }
 
     // ----- SCRIPTS_ROOT placeholder -----

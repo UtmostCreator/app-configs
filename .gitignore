@@ -42,6 +42,8 @@ coverage/
 
 # Timestamped generated verification logs
 /docs/ai/generated/logs/
+/docs/ai/generated/sessions/*
+!/docs/ai/generated/sessions/.gitkeep
 
 # Optional installed packs; source lives under packages/ai-universal-rules/templates/optional/
 .github/prompts-optional/

@@ -40,7 +40,9 @@ function aiInstallerRenderCopilotAgent(string $srcContent, string $agentId, stri
             foreach (explode("\n", $bashMatch[1]) as $bashLine) {
                 if (preg_match("/^\\s+'([^']+)':\\s*allow/", $bashLine, $bm)) {
                     $cmd = $bm[1];
-                    if (preg_match('#^bash\s+scripts/ai/[A-Za-z0-9._-]+\.sh(?:\s|$)#', $cmd) === 1) {
+                    if (preg_match('#^bash\s+scripts/ai/[A-Za-z0-9._-]+\.sh(?:\s|$)#', $cmd) === 1
+                        || preg_match('#^(mkdir -p|printf \* >>|cat >>) (\.opencode/research-sessions|tmp/research-sessions|docs/tickets)(?:/\*\.md)?$#', $cmd) === 1
+                    ) {
                         $allowedBash[] = $cmd;
                     }
                 }
@@ -98,7 +100,7 @@ function aiInstallerRenderCopilotAgent(string $srcContent, string $agentId, stri
     $shellBoundary = '';
     if ($hasExecute && $allowedBash !== []) {
         $shellBoundary  = "\n## Shell Boundary\n\n";
-        $shellBoundary .= "You may use shell execution only for approved scripts from the repository registry. ";
+        $shellBoundary .= "You may use shell execution only for approved scripts from the repository registry and approved research note writes. ";
         $shellBoundary .= "Before running any script:\n\n";
         $shellBoundary .= "1. Confirm the script exists in the repository.\n";
         $shellBoundary .= "2. Confirm it is listed in `docs/ai/script-registry.md` and `docs/ai/script-registry.json`.\n";
@@ -108,7 +110,7 @@ function aiInstallerRenderCopilotAgent(string $srcContent, string $agentId, stri
         $shellBoundary .= "Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer.\n";
         $shellBoundary .= "When the active runtime supports repository hooks, these scripts must remain wired through `.github/hooks/tool-policy.json` and write local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.\n";
         $shellBoundary .= "When the runtime does not auto-load repository hooks, preserve the same boundary manually and do not claim automatic enforcement.\n\n";
-        $shellBoundary .= "Approved scripts (run from the repository root using `<SCRIPTS_ROOT>`):\n\n";
+        $shellBoundary .= "Approved scripts and research note commands (run from the repository root using `<SCRIPTS_ROOT>`):\n\n";
         foreach ($allowedBash as $cmd) {
             // Substitute scripts/ai/ with the repository-root scripts path placeholder.
             $displayCmd = preg_replace('/\bscripts\/ai\//', '<SCRIPTS_ROOT>/', $cmd);
@@ -125,6 +127,10 @@ function aiInstallerRenderCopilotAgent(string $srcContent, string $agentId, stri
 
     // --- Combine: Copilot frontmatter + enforcement + original body + shell boundary ---
     $body = ltrim($body);
+    if (!$hasExecute) {
+        $body = (string) preg_replace('/\n?## Shell Governance\n\n.*?(?=\n## |\z)/s', '', $body);
+        $body = ltrim($body);
+    }
     return $copilotFm . $enforcement . $shellBoundary . "\n" . $body;
 }
 

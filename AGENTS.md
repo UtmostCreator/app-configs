@@ -133,6 +133,13 @@ Minimum flow:
 - For `medium` and `high` risk work, state rollback path and success signal alongside verification.
 - Do not report recommendations, assumptions, or unrun checks as completed work.
 
+## AI Session Documentation
+
+- For non-trivial work, create or reuse a session directory under `docs/ai/generated/sessions/`.
+- Append material actions to the session events JSONL file and keep the session summary Markdown ready for handoff.
+- Use `php tools/ai/session-start.php`, `php tools/ai/agent-log.php`, `php tools/ai/session-end.php`, and `php tools/ai/validate-session-log.php` when the runtime cannot auto-log.
+- Never log secrets, credentials, `.env` contents, private tokens, raw private prompts, or full sensitive command output.
+
 ## Review Priorities
 
 - `correctness, regressions, configuration drift`

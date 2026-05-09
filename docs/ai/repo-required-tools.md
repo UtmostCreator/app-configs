@@ -47,6 +47,7 @@ This file lists baseline and referenced CLI tools used by the repository AI work
 
 ## Source Scripts
 
+- `docs/install-dev-tools.sh`
 - `reference/php/create-design-patterns-structure.sh`
 - `scripts/ai/ai-diff-context.sh`
 - `scripts/ai/ai-doc-check.sh`

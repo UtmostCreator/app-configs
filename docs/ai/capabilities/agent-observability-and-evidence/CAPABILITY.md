@@ -19,11 +19,13 @@ Make agent runs traceable, reviewable, and auditable before relying on optimizat
 4. record authorization decision for mutating or high-risk actions
 5. classify failures using `docs/ai/capabilities/agent-observability-and-evidence/FAILURE_TAXONOMY.md`
 6. link runtime evidence to task summaries and follow-up verification
+7. persist durable handoff evidence under `docs/ai/generated/sessions/`
 
 ## Read Next
 
 - `EVENT_SCHEMA.md` for structured evidence event fields
 - `FAILURE_TAXONOMY.md` for failure classification
+- `docs/ai/observability.md` for session log layout and redaction rules
 
 ## Output Contract
 
@@ -31,6 +33,7 @@ Make agent runs traceable, reviewable, and auditable before relying on optimizat
 - tool-call evidence records
 - authorization decisions for mutating actions
 - categorized failures and resolution status
+- append-only events JSONL and human summary Markdown inside a directory under `docs/ai/generated/sessions/` for non-trivial sessions
 
 ## Acceptance Criteria
 

@@ -13,9 +13,9 @@
 
 ## OpenCode Script-First Rule
 
-- Start every non-trivial OpenCode session with `git status --short`, then collect evidence in this order: `AI_OUTPUT=json bash scripts/ai/ai-search.sh changed <query> . --fixed`, `staged`, then `tracked` before broad modes.
-- Read files through `AI_OUTPUT=json bash scripts/ai/preview-file.sh <path> --around <line> --context 30` or `--range A:B`; do not use raw `cat`, `sed`, `awk`, `grep`, `rg`, `find`, `fd`, glob, or list before the approved wrappers unless explicitly approved.
-- Discover usage with `bash scripts/ai/query-usage.sh <symbol-or-path>` before adding parallel logic or changing contracts.
+- Start every non-trivial OpenCode session with `git status --short`, then collect evidence in this order: `AI_OUTPUT=json bash scripts/ai/ai-search.sh changed QUERY . --fixed`, `staged`, then `tracked` before broad modes.
+- Read files through `AI_OUTPUT=json bash scripts/ai/preview-file.sh PATH --around LINE --context 30` or `--range A:B`; do not use raw `cat`, `sed`, `awk`, `grep`, `rg`, `find`, `fd`, glob, or list before the approved wrappers unless explicitly approved.
+- Discover usage with `bash scripts/ai/query-usage.sh SYMBOL_OR_PATH` before adding parallel logic or changing contracts.
 - Verify with `bash scripts/ai/ai-verify.sh .` when behavior or wiring changes; for `ai-search` changes also run `AI_OUTPUT=json bash scripts/ai/ai-search.sh doctor` and the focused ai-search tests when available.
 - Escalate to `bash scripts/ai/pack-context.sh` or repomix context scripts only when bounded evidence is insufficient and the human approves the larger context pack.
 - Approval is required for `unsafe-all`, reading or editing secrets, `AI_ALLOW_UNLIMITED=1`, `ai-edit`, `ai-rollback`, `install-mandatory-tools`, destructive git, generated artifact edits, or any command that can delete, overwrite, install, deploy, or expose credentials.
@@ -32,7 +32,7 @@ Default evidence command:
 
 File preview rule:
 
-`AI_OUTPUT=json bash scripts/ai/preview-file.sh <path> --around <line> --context 30`
+`AI_OUTPUT=json bash scripts/ai/preview-file.sh PATH --around LINE --context 30`
 
 After `ai-search.sh` finds a relevant file or line, inspect it with `preview-file.sh`. Do not use raw `cat` for large, unknown, generated, binary-looking, or vendored files. Prefer `--around` when a line number is known, `--range` when a block range is known, and JSON mode for evidence pipelines.
 

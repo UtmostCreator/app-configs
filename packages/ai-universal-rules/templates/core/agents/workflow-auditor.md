@@ -22,7 +22,7 @@ permission:
     'eza *': allow
     'rg *': allow
     'git grep *': allow
-    'grep *': allow
+    'grep *': deny
     'head *': allow
     'tail *': allow
     'jq *': allow

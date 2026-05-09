@@ -37,16 +37,16 @@
         ]
     },
     "counts": {
-        "package:core-template": 16,
+        "package:core-template": 20,
         "package:foundation-doc": 6,
-        "package:github-copilot-instruction-template": 21,
-        "package:opencode-command-template": 1,
+        "package:github-copilot-instruction-template": 23,
+        "package:opencode-command-template": 3,
         "package:operations-doc": 6,
         "package:optional-template": 9,
         "package:package-capability": 36,
         "package:shared-template": 4,
         "package:workflow-doc": 6,
-        "package:workflow-template": 13,
+        "package:workflow-template": 15,
         "root:adapter-doc": 1,
         "root:adapter-hook": 2,
         "root:adapter-hook-script": 1,
@@ -57,12 +57,12 @@
         "root:exporter": 1,
         "root:generator": 1,
         "root:github-copilot-agent": 10,
-        "root:github-copilot-instruction": 20,
-        "root:github-copilot-prompt": 15,
+        "root:github-copilot-instruction": 21,
+        "root:github-copilot-prompt": 16,
         "root:github-copilot-skill": 13,
         "root:opencode-agent": 10,
-        "root:opencode-command": 4,
-        "root:opencode-skill": 14,
+        "root:opencode-command": 6,
+        "root:opencode-skill": 15,
         "root:php-reference": 3,
         "root:root-doc": 16,
         "root:schema": 1,
@@ -77,6 +77,14 @@
             "path": "packages/ai-universal-rules/templates/core/AGENTS.template.md",
             "runtime": "canonical",
             "description": "- Project: `<PROJECT_NAME>`"
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "all_into_one",
+            "path": "packages/ai-universal-rules/templates/core/agents/all_into_one.bat",
+            "runtime": "canonical",
+            "description": "@echo off"
         },
         {
             "scope": "package",
@@ -117,6 +125,22 @@
             "path": "packages/ai-universal-rules/templates/core/agents/release-auditor.md",
             "runtime": "canonical",
             "description": "Use when medium or high risk changes need rollout, rollback, migration, observability, preview, or install-safety review"
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "Repository Researcher",
+            "path": "packages/ai-universal-rules/templates/core/agents/repository-researcher.md",
+            "runtime": "canonical",
+            "description": "Strict script-first repository researcher using ai-search before raw search"
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "Repository Reviewer",
+            "path": "packages/ai-universal-rules/templates/core/agents/repository-reviewer.md",
+            "runtime": "canonical",
+            "description": "Strict script-first diff reviewer using ai-search and validator evidence"
         },
         {
             "scope": "package",
@@ -173,6 +197,14 @@
             "path": "packages/ai-universal-rules/templates/core/execution-protocol.template.md",
             "runtime": "canonical",
             "description": "Use this as the canonical operating contract for non-trivial AI-assisted planning, editing, review, and verification."
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "opencode",
+            "path": "packages/ai-universal-rules/templates/core/opencode.json",
+            "runtime": "canonical",
+            "description": "{"
         },
         {
             "scope": "package",
@@ -265,10 +297,26 @@
         {
             "scope": "package",
             "type": "github-copilot-instruction-template",
+            "name": "AI Search Tool Instructions",
+            "path": "packages/ai-universal-rules/templates/instructions/ai-search.instructions.md",
+            "runtime": "github-copilot",
+            "description": "applyTo: \"scripts/ai/**,tests/scripts/ai/**,docs/ai/tools/**\""
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
             "name": "AI Tooling Rules",
             "path": "packages/ai-universal-rules/templates/instructions/ai-tooling.instructions.md",
             "runtime": "github-copilot",
             "description": "AI tooling contract, registry alignment, and hook-policy consistency"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "AI Tooling Instructions",
+            "path": "packages/ai-universal-rules/templates/instructions/ai-tools.instructions.md",
+            "runtime": "github-copilot",
+            "description": "applyTo: \"scripts/ai/**,tools/ai/**,docs/ai/tools/**\""
         },
         {
             "scope": "package",
@@ -413,6 +461,22 @@
             "path": "packages/ai-universal-rules/templates/instructions/tools.instructions.md",
             "runtime": "github-copilot",
             "description": "Tool selection and script enforcement \u2014 use rg/fd/approved scripts; never use bare grep/find"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-command-template",
+            "name": "search-evidence",
+            "path": "packages/ai-universal-rules/templates/commands/search-evidence.md",
+            "runtime": "opencode",
+            "description": "Collect script-first repository evidence using ai-search"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-command-template",
+            "name": "verify-ai-wiring",
+            "path": "packages/ai-universal-rules/templates/commands/verify-ai-wiring.md",
+            "runtime": "opencode",
+            "description": "Verify OpenCode script-first AI wiring"
         },
         {
             "scope": "package",
@@ -1009,6 +1073,22 @@
         {
             "scope": "package",
             "type": "workflow-template",
+            "name": "review-search-tool",
+            "path": "packages/ai-universal-rules/templates/workflows/review-search-tool.md",
+            "runtime": "dual-runtime",
+            "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "package",
+            "type": "workflow-template",
+            "name": "search-evidence",
+            "path": "packages/ai-universal-rules/templates/workflows/search-evidence.md",
+            "runtime": "dual-runtime",
+            "description": "Collect repository evidence using ai-search"
+        },
+        {
+            "scope": "package",
+            "type": "workflow-template",
             "name": "verify-change",
             "path": "packages/ai-universal-rules/templates/workflows/verify-change.md",
             "runtime": "dual-runtime",
@@ -1489,6 +1569,14 @@
         {
             "scope": "root",
             "type": "github-copilot-instruction",
+            "name": "ai-scripts",
+            "path": ".github/instructions/ai-scripts.instructions.md",
+            "runtime": "github-copilot",
+            "description": "AI script registry consistency and risk-based execution rules"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
             "name": "ai-search",
             "path": ".github/instructions/ai-search.instructions.md",
             "runtime": "github-copilot",
@@ -1580,7 +1668,7 @@
             "name": "frontend",
             "path": ".github/instructions/frontend.instructions.md",
             "runtime": "github-copilot",
-            "description": "Frontend, UI, interaction, and presentation guidance"
+            "description": "applyTo: \"<FRONTEND_PATH_GLOB>\""
         },
         {
             "scope": "root",
@@ -1620,7 +1708,7 @@
             "name": "targets",
             "path": ".github/instructions/targets.instructions.md",
             "runtime": "github-copilot",
-            "description": "Target and platform adaptation guidance for multi-surface repositories"
+            "description": "applyTo: \"**\""
         },
         {
             "scope": "root",
@@ -1741,6 +1829,14 @@
             "path": ".github/prompts/review-search-tool.prompt.md",
             "runtime": "github-copilot",
             "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "script-inventory",
+            "path": ".github/prompts/script-inventory.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Build AI script inventory with risk and parity checks"
         },
         {
             "scope": "root",
@@ -1908,7 +2004,7 @@
             "name": "repository-researcher",
             "path": ".opencode/agents/repository-researcher.md",
             "runtime": "opencode",
-            "description": "Read-only repository researcher using ai-search first"
+            "description": "Strict script-first repository researcher using ai-search before raw search"
         },
         {
             "scope": "root",
@@ -1916,7 +2012,7 @@
             "name": "repository-reviewer",
             "path": ".opencode/agents/repository-reviewer.md",
             "runtime": "opencode",
-            "description": "Diff-first reviewer that verifies changes against repository evidence"
+            "description": "Strict script-first diff reviewer using ai-search and validator evidence"
         },
         {
             "scope": "root",
@@ -1961,10 +2057,26 @@
         {
             "scope": "root",
             "type": "opencode-command",
+            "name": "script-inventory",
+            "path": ".opencode/commands/script-inventory.md",
+            "runtime": "opencode",
+            "description": "Inventory registered AI scripts and risk"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
             "name": "search-evidence",
             "path": ".opencode/commands/search-evidence.md",
             "runtime": "opencode",
-            "description": "Search repository evidence using ai-search"
+            "description": "Collect script-first repository evidence using ai-search"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "verify-ai-wiring",
+            "path": ".opencode/commands/verify-ai-wiring.md",
+            "runtime": "opencode",
+            "description": "Verify OpenCode script-first AI wiring"
         },
         {
             "scope": "root",
@@ -1972,7 +2084,15 @@
             "name": "verify",
             "path": ".opencode/commands/verify.md",
             "runtime": "opencode",
-            "description": "Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+            "description": "description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "ai-scripts",
+            "path": ".opencode/skills/ai-scripts/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use registered scripts with risk-based approvals and evidence."
         },
         {
             "scope": "root",

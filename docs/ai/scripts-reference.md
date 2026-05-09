@@ -4,6 +4,10 @@ This document explains installer, validation, generation, and context scripts ma
 
 For the Copilot-approved terminal subset, use `docs/ai/script-registry.md` and `docs/ai/script-registry.json` as the tighter allowlist on top of this broader reference.
 
+Registry contract schema: `docs/ai/script-registry.schema.json`.
+
+Execution action reference: `docs/ai/tools/actions/use-ai-script.md`.
+
 ## Installer Entrypoints
 
 - `php tools/ai/install-ai-kit.php`
@@ -13,7 +17,7 @@ For the Copilot-approved terminal subset, use `docs/ai/script-registry.md` and `
   - Core flags: `--target`, `--runtime`, `--project-name`, `--dry-run`, `--force`, `--no-base`, `--allow-core-overwrite`, `--mode`, `--dependency-mode`, `--hook-driver`.
   - Safety: core base policy files are protected from accidental overwrite unless `--allow-core-overwrite` is explicitly passed.
 - `bash tools/ai/install-ai-kit.sh`
-  - Thin wrapper that forwards args to `install-ai-kit.php`.
+  - Thin wrapper that forwards args to `tools/ai/install-ai-kit.php`.
 - `bash tools/ai/install-copilot-kit.sh`
   - Legacy compatibility wrapper mapping old Copilot profile names to unified installer profiles.
 - `bash tools/ai/install-opencode-kit.sh`
@@ -72,10 +76,10 @@ For ordered installation recipes and selective pack examples, use `docs/ai/insta
 - Source scripts in this repository are under `scripts/ai/`.
 - Installed scripts-pack targets are written to `scripts/ai/` by installer exports.
 
-- `bash scripts/ai/run-repomix-context.sh <path>`
+- `bash scripts/ai/run-repomix-context.sh [path]`
   - Dependency-checking entrypoint for context packing.
   - Runs `repomix-context-tree.sh all` and validates outputs.
-- `bash scripts/ai/repomix-context-tree.sh <analyze|plan|pack|all|clean|purge> [root]`
+- `bash scripts/ai/repomix-context-tree.sh [analyze|plan|pack|all|clean|purge] [root]`
   - Tree-based context planner and packer.
   - Requires: `repomix`, `scc`, `jq`.
 - `bash scripts/ai/repomix-scc-router.sh ...`

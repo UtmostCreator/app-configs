@@ -66,7 +66,7 @@ permission:
     'fd *': allow
     'eza *': allow
     'rg *': allow
-    'grep *': allow
+    'grep *': deny
     'git grep *': allow
     'sg *': allow
     'sed -n *': allow

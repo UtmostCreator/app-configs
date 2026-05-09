@@ -24,6 +24,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'read-only',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier1',
+            'mutates_state' => false,
+            'writes_paths' => [],
+            'reads_secret_values' => false,
+            'supports_json' => true,
+            'bounded_output' => true,
+            'requires_approval' => false,
         ],
         'rg-code' => [
             'label' => 'Code-focused ripgrep wrapper',
@@ -54,6 +61,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'read-only',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier1',
+            'mutates_state' => false,
+            'writes_paths' => [],
+            'reads_secret_values' => false,
+            'supports_json' => true,
+            'bounded_output' => true,
+            'requires_approval' => false,
         ],
         'query-usage' => [
             'label' => 'Symbol usage query wrapper',
@@ -114,6 +128,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'read-only',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier2',
+            'mutates_state' => false,
+            'writes_paths' => [],
+            'reads_secret_values' => false,
+            'supports_json' => false,
+            'bounded_output' => true,
+            'requires_approval' => true,
         ],
         'ai-rollback' => [
             'label' => 'Rollback snapshot helper',
@@ -124,6 +145,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'mutating',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier3',
+            'mutates_state' => true,
+            'writes_paths' => ['.ai-logs/', 'docs/ai/generated/'],
+            'reads_secret_values' => false,
+            'supports_json' => false,
+            'bounded_output' => true,
+            'requires_approval' => true,
         ],
         'ai-edit' => [
             'label' => 'Scoped repository edit wrapper',
@@ -134,6 +162,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'mutating',
             'supports_dry_run' => true,
             'default_args' => [],
+            'tier' => 'tier3',
+            'mutates_state' => true,
+            'writes_paths' => ['repo-scoped'],
+            'reads_secret_values' => false,
+            'supports_json' => false,
+            'bounded_output' => true,
+            'requires_approval' => true,
         ],
         'pre-tool-use' => [
             'label' => 'Pre-tool policy decision hook',
@@ -144,6 +179,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'read-only',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier1',
+            'mutates_state' => false,
+            'writes_paths' => [],
+            'reads_secret_values' => false,
+            'supports_json' => true,
+            'bounded_output' => true,
+            'requires_approval' => false,
         ],
         'post-tool-use' => [
             'label' => 'Post-tool evidence writer hook',
@@ -154,6 +196,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'read-only',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier1',
+            'mutates_state' => false,
+            'writes_paths' => ['.ai-logs/'],
+            'reads_secret_values' => false,
+            'supports_json' => true,
+            'bounded_output' => true,
+            'requires_approval' => false,
         ],
         'repomix-context' => [
             'label' => 'Generate Repomix context bundle',
@@ -225,5 +274,16 @@ function aiInstallerScriptRegistry(): array
             'supports_dry_run' => false,
             'default_args' => [],
         ],
+    ];
+}
+
+function aiInstallerCommandPolicyRiskTiers(): array
+{
+    return [
+        'tier0' => 'environment probe',
+        'tier1' => 'bounded read-only wrapper',
+        'tier2' => 'ask-gated mutation-adjacent or broad read',
+        'tier3' => 'explicit approval mutation',
+        'tier4' => 'deny',
     ];
 }

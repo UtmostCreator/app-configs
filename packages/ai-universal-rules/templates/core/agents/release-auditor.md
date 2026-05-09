@@ -27,7 +27,7 @@ permission:
     'eza *': allow
     'rg *': allow
     'git grep *': allow
-    'grep *': allow
+    'grep *': deny
     'sed -n *': allow
     'head *': allow
     'tail *': allow

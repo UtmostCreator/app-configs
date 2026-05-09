@@ -31,6 +31,8 @@ install-ai-kit target='.' profile='dual' runtime='' opts='--dry-run':
   @bash -lc 'runtime="{{runtime}}"; if [[ -n "$runtime" ]]; then runtime="--runtime $runtime"; fi; php tools/ai/install-ai-kit.php --target {{target}} --profile {{profile}} $runtime {{opts}}'
 
 ai-check:
+  @bash scripts/ai/ai-search.sh doctor
+  @bash tests/scripts/ai/test-preview-file.sh
   @php tools/ai/validate-ai-config.php
   @php tools/ai/validate-ai-catalog.php
   @php tools/ai/generate-ai-catalog.php --check
@@ -40,6 +42,12 @@ ai-doctor:
 
 ai-search-test:
   @bash tests/scripts/ai/test-ai-search.sh
+
+preview-file-test:
+  @bash tests/scripts/ai/test-preview-file.sh
+
+ai-preview-test:
+  @bash tests/scripts/ai/test-preview-file.sh
 
 ai-validate:
   @php tools/ai/validate-ai-config.php

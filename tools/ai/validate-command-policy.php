@@ -43,7 +43,7 @@ $errors = [];
 $warnings = [];
 
 $tierNames = [];
-if (preg_match_all('/^\s{2}([a-z0-9-]+):\s*$/mi', $policyText, $matches) === 1) {
+if (preg_match_all('/^\s{2}([a-z0-9-]+):\s*$/mi', $policyText, $matches) > 0) {
     $tierNames = array_values(array_unique($matches[1]));
 }
 
@@ -52,7 +52,7 @@ if ($tierNames === []) {
 }
 
 // Unknown extends.
-if (preg_match_all('/^\s{4}extends:\s*([a-z0-9-]+)\s*$/mi', $policyText, $extendsMatches) === 1) {
+if (preg_match_all('/^\s{4}extends:\s*([a-z0-9-]+)\s*$/mi', $policyText, $extendsMatches) > 0) {
     foreach ($extendsMatches[1] as $targetTier) {
         if (!in_array($targetTier, $tierNames, true)) {
             $errors[] = "unknown tier inheritance target: {$targetTier}";
@@ -86,6 +86,7 @@ foreach (array_keys($extendsMap) as $start) {
 }
 
 // Detect contradictory commands in each tier.
+$tierSections = [];
 if (preg_match_all('/^\s{2}([a-z0-9-]+):\s*$([\s\S]*?)(?=^\s{2}[a-z0-9-]+:\s*$|\z)/mi', $policyText, $tierSections, PREG_SET_ORDER) > 0) {
     foreach ($tierSections as $section) {
         $tier = $section[1];
@@ -107,9 +108,11 @@ if (preg_match_all('/^\s{2}([a-z0-9-]+):\s*$([\s\S]*?)(?=^\s{2}[a-z0-9-]+:\s*$|\
 // Hard policy checks.
 $forbiddenAllowPatterns = ['grep *', 'find *', 'cat *', 'sed *', 'awk *', 'AI_ALLOW_UNSAFE=1 bash scripts/ai/ai-search.sh *', 'bash scripts/ai/ai-search.sh secrets *'];
 foreach ($forbiddenAllowPatterns as $pattern) {
-    if (preg_match('/^\s*-\s*"?' . preg_quote($pattern, '/') . '"?\s*$/mi', $policyText) === 1
-        && preg_match('/allow:\s*[\s\S]*' . preg_quote($pattern, '/') . '/mi', $policyText) === 1) {
-        $errors[] = "forbidden command allowed by policy: {$pattern}";
+    foreach ($tierSections as $section) {
+        $allow = extractListItems($section[2], 'allow');
+        if (in_array($pattern, $allow, true)) {
+            $errors[] = "forbidden command allowed by policy: {$pattern}";
+        }
     }
 }
 
@@ -123,12 +126,10 @@ if (!isset($registry['scripts']) || !is_array($registry['scripts'])) {
             continue;
         }
 
-        if (!array_key_exists('tier', $meta)) {
-            $warnings[] = "registry entry missing tier metadata: {$id}";
-        }
-
-        if (!array_key_exists('supports_json', $meta)) {
-            $warnings[] = "registry entry missing supports_json metadata: {$id}";
+        foreach (['tier', 'mutates_state', 'writes_paths', 'reads_secret_values', 'supports_json', 'bounded_output', 'requires_approval', 'command', 'interface'] as $field) {
+            if (!array_key_exists($field, $meta)) {
+                $warnings[] = "registry entry missing {$field} metadata: {$id}";
+            }
         }
     }
 }

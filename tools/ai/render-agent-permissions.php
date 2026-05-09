@@ -10,7 +10,7 @@ if ($root === false) {
 
 $agent = $argv[1] ?? null;
 if ($agent === null || $agent === '') {
-    fwrite(STDERR, "Usage: php tools/ai/render-agent-permissions.php <agent-name>\n");
+    fwrite(STDERR, "Usage: php tools/ai/render-agent-permissions.php AGENT_NAME\n");
     exit(1);
 }
 
@@ -88,7 +88,7 @@ function listItems(string $body, string $name): array
         return [];
     }
 
-    if (preg_match_all('/^\s{8}-\s*"([^"]+)"\s*$/mi', $m[1], $matches) === 0) {
+    if (preg_match_all('/^\s{8}-\s*"([^"]+)"\s*$/mi', $m[1], $matches) <= 0) {
         return [];
     }
 

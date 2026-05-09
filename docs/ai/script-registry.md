@@ -7,10 +7,10 @@ This file is the canonical allowlist reference for scripts installed by `scripts
 | id | label | source_path | installed_path | risk | required_tools | supports_dry_run | default_args |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `common` | Shared helper library for AI shell scripts | `scripts/ai/common.sh` | `scripts/ai/common.sh` | `read-only` | `bash` | `false` | `[]` |
-| `ai-search` | Safe repository text search wrapper | `scripts/ai/ai-search.sh` | `scripts/ai/ai-search.sh` | `read-only` | `bash, git, rg` | `false` | `[]` |
+| `ai-search` | Safe repository text search wrapper | `scripts/ai/ai-search.sh` | `scripts/ai/ai-search.sh` | `read-only` | `bash, git, jq, rg, fd, ast-grep` | `false` | `[]` |
 | `rg-code` | Code-focused ripgrep wrapper | `scripts/ai/rg-code.sh` | `scripts/ai/rg-code.sh` | `read-only` | `bash, rg` | `false` | `[]` |
 | `fd-files` | File discovery wrapper | `scripts/ai/fd-files.sh` | `scripts/ai/fd-files.sh` | `read-only` | `bash, fd` | `false` | `[]` |
-| `preview-file` | Safe file preview wrapper | `scripts/ai/preview-file.sh` | `scripts/ai/preview-file.sh` | `read-only` | `bash` | `false` | `[]` |
+| `preview-file` | Safe file preview wrapper | `scripts/ai/preview-file.sh` | `scripts/ai/preview-file.sh` | `read-only` | `bash, jq` | `false` | `[]` |
 | `query-usage` | Symbol usage query wrapper | `scripts/ai/query-usage.sh` | `scripts/ai/query-usage.sh` | `read-only` | `bash, rg` | `false` | `[]` |
 | `git-forensics` | Read-only git history tracing wrapper | `scripts/ai/git-forensics.sh` | `scripts/ai/git-forensics.sh` | `read-only` | `bash, git` | `false` | `[]` |
 | `gh-pr-context` | GitHub PR context wrapper | `scripts/ai/gh-pr-context.sh` | `scripts/ai/gh-pr-context.sh` | `read-only` | `bash, gh, git` | `false` | `[]` |

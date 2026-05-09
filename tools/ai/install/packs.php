@@ -23,6 +23,7 @@ function aiInstallerPackRegistry(): array
         ],
         'adapter-copilot' => [
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/copilot-instructions.template.md', 'target' => '.github/copilot-instructions.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/github/pull_request_template.md', 'target' => '.github/pull_request_template.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/copilot-vscode-settings.template.json', 'target' => '.vscode/settings.json', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => false],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/instructions', 'target' => '.github/instructions', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.github/agents', 'install_type' => 'copilot-agents', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
@@ -32,10 +33,12 @@ function aiInstallerPackRegistry(): array
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/instructions/execution-protocol.instructions.md', 'target' => '.github/instructions/execution-protocol.instructions.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'adapter-opencode' => [
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/opencode.json', 'target' => '.opencode/opencode.json', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.opencode/agents', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.opencode/skills', 'install_type' => 'skill-dirs', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.opencode/commands', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/commands', 'target' => '.opencode/commands', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/skills/ai-search/SKILL.md', 'target' => '.opencode/skills/ai-search/SKILL.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'capabilities-extended-lite' => [
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/capabilities/bug-regression', 'target' => 'docs/ai/capabilities/bug-regression', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
@@ -65,6 +68,8 @@ function aiInstallerPackRegistry(): array
             ['type' => 'file', 'source' => 'scripts/ai/git-forensics.sh', 'target' => 'scripts/ai/git-forensics.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/gh-pr-context.sh', 'target' => 'scripts/ai/gh-pr-context.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/preview-file.sh', 'target' => 'scripts/ai/preview-file.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'tests/scripts/ai/test-preview-file.sh', 'target' => 'tests/scripts/ai/test-preview-file.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/docs/ai/tools/actions/preview-file.md', 'target' => 'docs/ai/tools/actions/preview-file.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/query-usage.sh', 'target' => 'scripts/ai/query-usage.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/fd-files.sh', 'target' => 'scripts/ai/fd-files.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/rg-code.sh', 'target' => 'scripts/ai/rg-code.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
@@ -87,7 +92,9 @@ function aiInstallerPackRegistry(): array
             ['type' => 'file', 'source' => 'docs/ai/hooks.md', 'target' => 'docs/ai/hooks.md', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],
         ],
         'ci-pack' => [
-            ['type' => 'file', 'source' => '.github/workflows/validate-ai-surface.yml', 'target' => '.github/workflows/validate-ai-surface.yml', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/github/workflows/validate-ai-surface.yml', 'target' => '.github/workflows/validate-ai-surface.yml', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/github/workflows/test-external-install.yml', 'target' => '.github/workflows/test-external-install.yml', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/github/workflows/export-ai-universal-rules-preview.yml', 'target' => '.github/workflows/export-ai-universal-rules-preview.yml', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'docs/ai/validation.md', 'target' => 'docs/ai/validation.md', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],
         ],
         'evidence-pack' => [
@@ -230,8 +237,8 @@ function aiInstallerPackToolRequirements(array $selectedPacks): array
     $required = [];
     $optional = [];
     if (in_array('scripts-pack', $selectedPacks, true)) {
-        $required = array_merge($required, ['bash', 'git', 'jq', 'rg', 'repomix', 'scc']);
-        $optional = array_merge($optional, ['fd', 'gh', 'fzf', 'bat', 'delta', 'yq', 'shellcheck', 'semgrep', 'ast-grep']);
+        $required = array_merge($required, ['bash', 'git', 'jq', 'rg', 'fd', 'ast-grep', 'repomix', 'scc']);
+        $optional = array_merge($optional, ['gh', 'fzf', 'bat', 'delta', 'yq', 'shellcheck', 'semgrep']);
     }
     return [
         'required' => array_values(array_unique($required)),

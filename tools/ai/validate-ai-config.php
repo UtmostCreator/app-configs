@@ -425,14 +425,33 @@ $aiWiringRequiredFiles = [
     'docs/ai/tools/ai-search.md',
     'docs/ai/tools/tool-map.md',
     'docs/ai/tools/actions/search-evidence.md',
+    'docs/ai/tools/actions/preview-file.md',
+    'scripts/ai/preview-file.sh',
+    'tests/scripts/ai/test-preview-file.sh',
     '.github/instructions/ai-search.instructions.md',
     '.github/instructions/ai-tools.instructions.md',
     '.github/prompts/search-evidence.prompt.md',
     '.github/agents/repository-researcher.agent.md',
     '.opencode/opencode.json',
     '.opencode/commands/search-evidence.md',
+    '.opencode/commands/verify-ai-wiring.md',
     '.opencode/agents/repository-researcher.md',
+    '.opencode/agents/repository-reviewer.md',
     '.opencode/skills/ai-search/SKILL.md',
+    'packages/ai-universal-rules/templates/core/opencode.json',
+    'packages/ai-universal-rules/templates/core/agents/repository-researcher.md',
+    'packages/ai-universal-rules/templates/core/agents/repository-reviewer.md',
+    'packages/ai-universal-rules/templates/commands/search-evidence.md',
+    'packages/ai-universal-rules/templates/commands/verify-ai-wiring.md',
+    'packages/ai-universal-rules/templates/skills/ai-search/SKILL.md',
+    'packages/ai-universal-rules/templates/instructions/ai-search.instructions.md',
+    'packages/ai-universal-rules/templates/instructions/ai-tools.instructions.md',
+    'packages/ai-universal-rules/templates/workflows/search-evidence.md',
+    'packages/ai-universal-rules/templates/workflows/review-search-tool.md',
+    'packages/ai-universal-rules/templates/github/pull_request_template.md',
+    'packages/ai-universal-rules/templates/github/workflows/validate-ai-surface.yml',
+    'packages/ai-universal-rules/templates/github/workflows/test-external-install.yml',
+    'packages/ai-universal-rules/templates/github/workflows/export-ai-universal-rules-preview.yml',
 ];
 
 foreach ($aiWiringRequiredFiles as $relativePath) {
@@ -441,8 +460,9 @@ foreach ($aiWiringRequiredFiles as $relativePath) {
     }
 }
 
-$requiredSnippets = ['AI_OUTPUT=json bash scripts/ai/ai-search.sh', 'changed', 'staged', 'tracked', 'schema', 'unsafe-all', 'AI_ALLOW_UNLIMITED=1', 'unsafe_blocked', 'dry_run'];
-$wiringSources = ['AGENTS.md', 'docs/ai/tools/ai-search.md', '.github/copilot-instructions.md', '.opencode/skills/ai-search/SKILL.md'];
+$requiredSnippets = ['AI_OUTPUT=json bash scripts/ai/ai-search.sh', 'changed', 'staged', 'tracked', 'schema', 'unsafe-all', 'AI_ALLOW_UNLIMITED=1', 'unsafe_blocked', 'dry_run', 'bash scripts/ai/query-usage.sh', 'bash scripts/ai/ai-verify.sh', 'secrets'];
+$previewRequiredSnippets = ['AI_OUTPUT=json bash scripts/ai/preview-file.sh', '--range', '--around', '--max-columns', '--max-bytes', '--force', 'schema', 'status', 'tool', 'path', 'range', 'content', 'warnings', 'errors'];
+$wiringSources = ['AGENTS.md', 'docs/ai/tools/ai-search.md', 'docs/ai/tools/tool-map.md', 'docs/ai/tools/actions/preview-file.md', '.github/copilot-instructions.md', '.github/instructions/ai-tools.instructions.md', '.opencode/commands/search-evidence.md', '.opencode/commands/verify-ai-wiring.md', '.opencode/agents/repository-researcher.md', '.opencode/agents/repository-reviewer.md', '.opencode/skills/ai-search/SKILL.md', 'scripts/ai/preview-file.sh'];
 $combined = '';
 foreach ($wiringSources as $src) {
     $combined .= "\n" . (safeRead($root, $src) ?? '');
@@ -451,6 +471,17 @@ foreach ($requiredSnippets as $snippet) {
     if (strpos($combined, $snippet) === false) {
         $errors[] = "missing required AI wiring content snippet: {$snippet}";
     }
+}
+
+foreach ($previewRequiredSnippets as $snippet) {
+    if (strpos($combined, $snippet) === false) {
+        $errors[] = "missing required preview-file wiring content snippet: {$snippet}";
+    }
+}
+
+$opencodeConfig = loadJsonFile($root, '.opencode/opencode.json', $errors);
+if (is_array($opencodeConfig)) {
+    validateOpenCodePermissions($opencodeConfig, $errors);
 }
 
 if ($errors === []) {
@@ -472,6 +503,148 @@ foreach ($errors as $message) {
 }
 
 exit($errors === [] ? 0 : 1);
+
+function loadJsonFile(string $root, string $relativePath, array &$errors): ?array
+{
+    $content = safeRead($root, $relativePath);
+
+    if ($content === null) {
+        $errors[] = "missing JSON config file: {$relativePath}";
+        return null;
+    }
+
+    $decoded = json_decode($content, true);
+
+    if (!is_array($decoded)) {
+        $errors[] = "invalid JSON config file: {$relativePath}";
+        return null;
+    }
+
+    return $decoded;
+}
+
+function validateOpenCodePermissions(array $config, array &$errors): void
+{
+    $permission = $config['permission'] ?? null;
+
+    if (!is_array($permission)) {
+        $errors[] = '.opencode/opencode.json missing permission object';
+        return;
+    }
+
+    if (($permission['*'] ?? null) !== 'ask') {
+        $errors[] = '.opencode/opencode.json permission.* must be ask';
+    }
+
+    $bash = $permission['bash'] ?? null;
+    if (!is_array($bash)) {
+        $errors[] = '.opencode/opencode.json permission.bash must be an object';
+    } else {
+        requirePermissionValue($bash, '*', ['ask', 'deny'], 'permission.bash.*', $errors);
+
+        foreach (['git status*', 'git diff*', 'git log*'] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['allow'], "permission.bash {$pattern}", $errors);
+        }
+
+        foreach ([
+            'bash scripts/ai/ai-search.sh *',
+            'AI_OUTPUT=json bash scripts/ai/ai-search.sh *',
+            'env AI_OUTPUT=json bash scripts/ai/ai-search.sh *',
+            'bash scripts/ai/preview-file.sh *',
+            'AI_OUTPUT=json bash scripts/ai/preview-file.sh *',
+            'env AI_OUTPUT=json bash scripts/ai/preview-file.sh *',
+            'bash scripts/ai/query-usage.sh *',
+            'bash scripts/ai/ai-diff-context.sh *',
+            'bash scripts/ai/git-forensics.sh *',
+            'bash scripts/ai/ai-doc-check.sh *',
+            'bash scripts/ai/ai-test-select.sh *',
+            'bash scripts/ai/ai-task.sh *',
+            'bash scripts/ai/ai-structured.sh *',
+        ] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['allow', 'ask'], "safe wrapper {$pattern}", $errors);
+        }
+
+        foreach ([
+            'bash scripts/ai/ai-verify.sh *',
+            'bash scripts/ai/pack-context.sh *',
+            'bash scripts/ai/run-repomix-context.sh *',
+            'bash scripts/ai/repomix-context-tree.sh *',
+            'bash scripts/ai/repomix-scc-router.sh *',
+            'bash scripts/ai/ai-edit.sh *',
+            'bash scripts/ai/ai-rollback.sh *',
+            'bash scripts/ai/install-mandatory-tools.sh *',
+        ] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['ask'], "mutating or broad wrapper {$pattern}", $errors);
+        }
+
+        foreach (['grep *', 'rg *', 'find *', 'fd *', 'cat *', 'sed *', 'awk *'] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['ask'], "raw search/read command {$pattern}", $errors);
+        }
+
+        foreach (['rm *', 'chown *', 'sudo *', 'git push*'] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['deny'], "destructive command {$pattern}", $errors);
+        }
+
+        foreach (['mv *', 'cp *', 'chmod *', 'git reset*', 'git clean*'] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['ask'], "mutating command {$pattern}", $errors);
+        }
+    }
+
+    $read = $permission['read'] ?? null;
+    if (!is_array($read)) {
+        $errors[] = '.opencode/opencode.json permission.read must be an object';
+    } else {
+        requirePermissionValue($read, '*', ['allow'], 'permission.read.*', $errors);
+        foreach (['.env', '.env.*', '*.pem', '*.key', '*.crt'] as $pattern) {
+            requirePermissionValue($read, $pattern, ['deny'], "permission.read {$pattern}", $errors);
+        }
+    }
+
+    $edit = $permission['edit'] ?? null;
+    if (!is_array($edit)) {
+        $errors[] = '.opencode/opencode.json permission.edit must be an object';
+    } else {
+        requirePermissionValue($edit, '*', ['ask', 'deny'], 'permission.edit.*', $errors);
+        foreach (['docs/ai/generated/**', '.opencode/**', '.github/agents/**', '.github/instructions/**', '.github/prompts/**', '.github/prompts-optional/**', '.github/skills/**', '.github/workflows/**', '.github/copilot-instructions.md', '.github/pull_request_template.md', '.env', '.env.*', '*.pem', '*.key', '*.crt'] as $pattern) {
+            requirePermissionValue($edit, $pattern, ['deny'], "permission.edit {$pattern}", $errors);
+        }
+    }
+
+    foreach (['grep', 'glob', 'list'] as $tool) {
+        $toolPermission = $permission[$tool] ?? null;
+        if (!is_array($toolPermission)) {
+            $errors[] = ".opencode/opencode.json permission.{$tool} must be an object";
+            continue;
+        }
+
+        requirePermissionValue($toolPermission, '*', ['ask', 'deny'], "permission.{$tool}.*", $errors);
+    }
+
+    $skill = $permission['skill'] ?? null;
+    if (!is_array($skill)) {
+        $errors[] = '.opencode/opencode.json permission.skill must be an object';
+    } else {
+        requirePermissionValue($skill, '*', ['ask'], 'permission.skill.*', $errors);
+        foreach (['ai-search', 'ai-verification', 'ai-context'] as $skillName) {
+            requirePermissionValue($skill, $skillName, ['allow'], "permission.skill {$skillName}", $errors);
+        }
+    }
+
+    foreach (['external_directory', 'doom_loop'] as $guard) {
+        if (($permission[$guard] ?? null) !== 'ask') {
+            $errors[] = ".opencode/opencode.json permission.{$guard} must be ask";
+        }
+    }
+}
+
+function requirePermissionValue(array $permissions, string $pattern, array $allowedValues, string $label, array &$errors): void
+{
+    $value = $permissions[$pattern] ?? null;
+
+    if (!is_string($value) || !in_array($value, $allowedValues, true)) {
+        $errors[] = $label . ' must be ' . implode(' or ', $allowedValues);
+    }
+}
 
 function safeRead(string $root, string $relativePath): ?string
 {

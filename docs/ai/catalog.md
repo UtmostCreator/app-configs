@@ -17,16 +17,16 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 
 ## Highlights
 
-- `package / core-template` - 16
+- `package / core-template` - 20
 - `package / foundation-doc` - 6
-- `package / github-copilot-instruction-template` - 21
-- `package / opencode-command-template` - 1
+- `package / github-copilot-instruction-template` - 23
+- `package / opencode-command-template` - 3
 - `package / operations-doc` - 6
 - `package / optional-template` - 9
 - `package / package-capability` - 36
 - `package / shared-template` - 4
 - `package / workflow-doc` - 6
-- `package / workflow-template` - 13
+- `package / workflow-template` - 15
 - `root / adapter-doc` - 1
 - `root / adapter-hook` - 2
 - `root / adapter-hook-script` - 1
@@ -37,12 +37,12 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 - `root / exporter` - 1
 - `root / generator` - 1
 - `root / github-copilot-agent` - 10
-- `root / github-copilot-instruction` - 20
-- `root / github-copilot-prompt` - 15
+- `root / github-copilot-instruction` - 21
+- `root / github-copilot-prompt` - 16
 - `root / github-copilot-skill` - 13
 - `root / opencode-agent` - 10
-- `root / opencode-command` - 4
-- `root / opencode-skill` - 14
+- `root / opencode-command` - 6
+- `root / opencode-skill` - 15
 - `root / php-reference` - 3
 - `root / root-doc` - 16
 - `root / schema` - 1
@@ -112,6 +112,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-agent`|Reviewer|`.github/agents/reviewer.agent.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
 |`github-copilot-agent`|Workflow Auditor|`.github/agents/workflow-auditor.agent.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
 |`github-copilot-instruction`|ai-file-standards|`.github/instructions/ai-file-standards.instructions.md`|AI workflow file roles, line budgets, duplication rules, and adapter boundaries|
+|`github-copilot-instruction`|ai-scripts|`.github/instructions/ai-scripts.instructions.md`|AI script registry consistency and risk-based execution rules|
 |`github-copilot-instruction`|ai-search|`.github/instructions/ai-search.instructions.md`|applyTo: "scripts/ai/**,tests/scripts/ai/**,docs/ai/tools/**"|
 |`github-copilot-instruction`|ai-tooling|`.github/instructions/ai-tooling.instructions.md`|AI tooling contract, registry alignment, and hook-policy consistency|
 |`github-copilot-instruction`|ai-tools|`.github/instructions/ai-tools.instructions.md`|applyTo: "scripts/ai/**,tools/ai/**,docs/ai/tools/**"|
@@ -123,12 +124,12 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-instruction`|composer|`.github/instructions/composer.instructions.md`|Composer manifest and lockfile safety rules|
 |`github-copilot-instruction`|config-infra|`.github/instructions/config-infra.instructions.md`|Dependency, runner, and build-config safety rules|
 |`github-copilot-instruction`|execution-protocol|`.github/instructions/execution-protocol.instructions.md`|Evidence-first task execution, dirty-worktree protection, scope control, and final verification reporting.|
-|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|Frontend, UI, interaction, and presentation guidance|
+|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|applyTo: "<FRONTEND_PATH_GLOB>"|
 |`github-copilot-instruction`|generated-artifacts|`.github/instructions/generated-artifacts.instructions.md`|Generated artifact drift routing and source-first regeneration policy|
 |`github-copilot-instruction`|php|`.github/instructions/php.instructions.md`|PHP backend, Composer, test-runner, and PHP CLI tooling safety rules|
 |`github-copilot-instruction`|security|`.github/instructions/security.instructions.md`|Security, secrets, auth boundaries, and prompt-injection safeguards|
 |`github-copilot-instruction`|shell|`.github/instructions/shell.instructions.md`|Shell safety, portability, and verification rules|
-|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|Target and platform adaptation guidance for multi-surface repositories|
+|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|applyTo: "**"|
 |`github-copilot-instruction`|testing|`.github/instructions/testing.instructions.md`|Testing rules, baseline proof, regression-first bug fixes, and verification ladder|
 |`github-copilot-instruction`|tools|`.github/instructions/tools.instructions.md`|Tool selection and script enforcement — use rg/fd/approved scripts; never use bare grep/find|
 |`github-copilot-prompt`|architecture-plan|`.github/prompts/architecture-plan.prompt.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
@@ -144,6 +145,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-prompt`|repo-investigation|`.github/prompts/repo-investigation.prompt.md`|Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence.|
 |`github-copilot-prompt`|review-diff|`.github/prompts/review-diff.prompt.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
 |`github-copilot-prompt`|review-search-tool|`.github/prompts/review-search-tool.prompt.md`|Review ai-search implementation and contract safety|
+|`github-copilot-prompt`|script-inventory|`.github/prompts/script-inventory.prompt.md`|Build AI script inventory with risk and parity checks|
 |`github-copilot-prompt`|search-evidence|`.github/prompts/search-evidence.prompt.md`|Collect repository evidence using ai-search|
 |`github-copilot-prompt`|verify-change|`.github/prompts/verify-change.prompt.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
 |`github-copilot-skill`|architecture-plan|`.github/skills/architecture-plan/SKILL.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
@@ -164,15 +166,18 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`opencode-agent`|implementer|`.opencode/agents/implementer.md`|Use when a bounded implementation slice is clear and focused verification should happen in this repository|
 |`opencode-agent`|refactorer|`.opencode/agents/refactorer.md`|Use when behavior is already correct and the remaining work is structure, readability, duplication reduction, or maintainability|
 |`opencode-agent`|release-auditor|`.opencode/agents/release-auditor.md`|Use when medium or high risk changes need rollout, rollback, migration, observability, preview, or install-safety review|
-|`opencode-agent`|repository-researcher|`.opencode/agents/repository-researcher.md`|Read-only repository researcher using ai-search first|
-|`opencode-agent`|repository-reviewer|`.opencode/agents/repository-reviewer.md`|Diff-first reviewer that verifies changes against repository evidence|
+|`opencode-agent`|repository-researcher|`.opencode/agents/repository-researcher.md`|Strict script-first repository researcher using ai-search before raw search|
+|`opencode-agent`|repository-reviewer|`.opencode/agents/repository-reviewer.md`|Strict script-first diff reviewer using ai-search and validator evidence|
 |`opencode-agent`|researcher|`.opencode/agents/researcher.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
 |`opencode-agent`|reviewer|`.opencode/agents/reviewer.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
 |`opencode-agent`|workflow-auditor|`.opencode/agents/workflow-auditor.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
 |`opencode-command`|evidence-first-execution|`.opencode/commands/evidence-first-execution.md`|Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output.|
 |`opencode-command`|review-search-tool|`.opencode/commands/review-search-tool.md`|Review ai-search implementation and contract safety|
-|`opencode-command`|search-evidence|`.opencode/commands/search-evidence.md`|Search repository evidence using ai-search|
-|`opencode-command`|verify|`.opencode/commands/verify.md`|Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
+|`opencode-command`|script-inventory|`.opencode/commands/script-inventory.md`|Inventory registered AI scripts and risk|
+|`opencode-command`|search-evidence|`.opencode/commands/search-evidence.md`|Collect script-first repository evidence using ai-search|
+|`opencode-command`|verify-ai-wiring|`.opencode/commands/verify-ai-wiring.md`|Verify OpenCode script-first AI wiring|
+|`opencode-command`|verify|`.opencode/commands/verify.md`|description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
+|`opencode-skill`|ai-scripts|`.opencode/skills/ai-scripts/SKILL.md`|Use registered scripts with risk-based approvals and evidence.|
 |`opencode-skill`|ai-search|`.opencode/skills/ai-search/SKILL.md`|Use ai-search to collect bounded repository evidence.|
 |`opencode-skill`|architecture-plan|`.opencode/skills/architecture-plan/SKILL.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
 |`opencode-skill`|bug-regression|`.opencode/skills/bug-regression/SKILL.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
@@ -219,11 +224,14 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 | Type | Name | Path | Description |
 | --- | --- | --- | --- |
 |`core-template`|<PROJECT_NAME> - Repository Instructions|`packages/ai-universal-rules/templates/core/AGENTS.template.md`|- Project: `<PROJECT_NAME>`|
+|`core-template`|all_into_one|`packages/ai-universal-rules/templates/core/agents/all_into_one.bat`|@echo off|
 |`core-template`|Architect Agent|`packages/ai-universal-rules/templates/core/agents/architect.md`|Use when a change needs scoping, design, ownership decisions, contract boundaries, adapter strategy, or risk posture before implementation|
 |`core-template`|Config Maintainer Agent|`packages/ai-universal-rules/templates/core/agents/config-maintainer.md`|Use when changing editor, shell, runtime, or tool configuration while preserving current behavior|
 |`core-template`|Implementer Agent|`packages/ai-universal-rules/templates/core/agents/implementer.md`|Use when a bounded implementation slice is clear and focused verification should happen in this repository|
 |`core-template`|Refactorer Agent|`packages/ai-universal-rules/templates/core/agents/refactorer.md`|Use when behavior is already correct and the remaining work is structure, readability, duplication reduction, or maintainability|
 |`core-template`|Release Auditor Agent|`packages/ai-universal-rules/templates/core/agents/release-auditor.md`|Use when medium or high risk changes need rollout, rollback, migration, observability, preview, or install-safety review|
+|`core-template`|Repository Researcher|`packages/ai-universal-rules/templates/core/agents/repository-researcher.md`|Strict script-first repository researcher using ai-search before raw search|
+|`core-template`|Repository Reviewer|`packages/ai-universal-rules/templates/core/agents/repository-reviewer.md`|Strict script-first diff reviewer using ai-search and validator evidence|
 |`core-template`|Researcher Agent|`packages/ai-universal-rules/templates/core/agents/researcher.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
 |`core-template`|Reviewer Agent|`packages/ai-universal-rules/templates/core/agents/reviewer.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
 |`core-template`|Workflow Auditor Agent|`packages/ai-universal-rules/templates/core/agents/workflow-auditor.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
@@ -231,6 +239,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`core-template`|Repository Instructions For <PROJECT_NAME>|`packages/ai-universal-rules/templates/core/copilot-instructions.template.md`|Use these instructions as the repository-wide baseline for GitHub Copilot.|
 |`core-template`|copilot-vscode-settings.template|`packages/ai-universal-rules/templates/core/copilot-vscode-settings.template.json`|{|
 |`core-template`|Execution Protocol|`packages/ai-universal-rules/templates/core/execution-protocol.template.md`|Use this as the canonical operating contract for non-trivial AI-assisted planning, editing, review, and verification.|
+|`core-template`|opencode|`packages/ai-universal-rules/templates/core/opencode.json`|{|
 |`core-template`|<PROJECT_NAME> Project Context|`packages/ai-universal-rules/templates/core/project-context.template.md`|Use this file as durable project context for instructions, agents, prompts, and capabilities.|
 |`core-template`|<PROJECT_NAME> Project Stack|`packages/ai-universal-rules/templates/core/project-stack.template.md`|Compatibility note: `project-stack.template.md` remains for older installs.|
 |`core-template`|Workflow|`packages/ai-universal-rules/templates/core/workflow.template.md`|For non-trivial work, follow `docs/ai/execution-protocol.md`.|
@@ -242,7 +251,9 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`foundation-doc`|Skills|`packages/ai-universal-rules/docs/foundations/SKILLS.md`|Skills are the runtime adapter form of deeper workflow procedure.|
 |`github-copilot-instruction-template`|AI File Standards|`packages/ai-universal-rules/templates/instructions/ALL_IN_ONE.txt`|ai-file-standards.instructions.md|
 |`github-copilot-instruction-template`|AI File Standards|`packages/ai-universal-rules/templates/instructions/ai-file-standards.instructions.md`|AI workflow file roles, line budgets, duplication rules, and adapter boundaries|
+|`github-copilot-instruction-template`|AI Search Tool Instructions|`packages/ai-universal-rules/templates/instructions/ai-search.instructions.md`|applyTo: "scripts/ai/**,tests/scripts/ai/**,docs/ai/tools/**"|
 |`github-copilot-instruction-template`|AI Tooling Rules|`packages/ai-universal-rules/templates/instructions/ai-tooling.instructions.md`|AI tooling contract, registry alignment, and hook-policy consistency|
+|`github-copilot-instruction-template`|AI Tooling Instructions|`packages/ai-universal-rules/templates/instructions/ai-tools.instructions.md`|applyTo: "scripts/ai/**,tools/ai/**,docs/ai/tools/**"|
 |`github-copilot-instruction-template`|AI Workflow Rules|`packages/ai-universal-rules/templates/instructions/ai-workflow.instructions.md`|Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement|
 |`github-copilot-instruction-template`|all_into_one|`packages/ai-universal-rules/templates/instructions/all_into_one.bat`|@echo off|
 |`github-copilot-instruction-template`|Approval Boundaries|`packages/ai-universal-rules/templates/instructions/approval-boundaries.instructions.md`|Approval boundaries for destructive, privileged, broad, or policy-sensitive changes|
@@ -261,6 +272,8 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-instruction-template`|Target Rules|`packages/ai-universal-rules/templates/instructions/targets.instructions.md`|Target, runtime, platform, adapter, and deployment-surface adaptation guidance|
 |`github-copilot-instruction-template`|Testing Rules|`packages/ai-universal-rules/templates/instructions/testing.instructions.md`|Testing, verification ladder, regression coverage, and deterministic proof rules|
 |`github-copilot-instruction-template`|Tool Selection Rules|`packages/ai-universal-rules/templates/instructions/tools.instructions.md`|Tool selection and script enforcement — use rg/fd/approved scripts; never use bare grep/find|
+|`opencode-command-template`|search-evidence|`packages/ai-universal-rules/templates/commands/search-evidence.md`|Collect script-first repository evidence using ai-search|
+|`opencode-command-template`|verify-ai-wiring|`packages/ai-universal-rules/templates/commands/verify-ai-wiring.md`|Verify OpenCode script-first AI wiring|
 |`opencode-command-template`|verify|`packages/ai-universal-rules/templates/commands/verify.md`|Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
 |`operations-doc`|Evaluation Scenarios|`packages/ai-universal-rules/docs/operations/EVAL-SCENARIOS.md`|Use these scenarios to test workflow quality.|
 |`operations-doc`|Governance|`packages/ai-universal-rules/docs/operations/GOVERNANCE.md`|This package assumes AI instructions alone are not enough for production work.|
@@ -335,6 +348,8 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`workflow-template`|release-safety|`packages/ai-universal-rules/templates/workflows/release-safety.md`|Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards|
 |`workflow-template`|repo-investigation|`packages/ai-universal-rules/templates/workflows/repo-investigation.md`|Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence.|
 |`workflow-template`|review-diff|`packages/ai-universal-rules/templates/workflows/review-diff.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
+|`workflow-template`|review-search-tool|`packages/ai-universal-rules/templates/workflows/review-search-tool.md`|Review ai-search implementation and contract safety|
+|`workflow-template`|search-evidence|`packages/ai-universal-rules/templates/workflows/search-evidence.md`|Collect repository evidence using ai-search|
 |`workflow-template`|verify-change|`packages/ai-universal-rules/templates/workflows/verify-change.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
 
 ## Starter Profiles

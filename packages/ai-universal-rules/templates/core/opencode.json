@@ -35,15 +35,9 @@
       "*.key": "deny",
       "*.crt": "deny"
     },
-    "grep": {
-      "*": "ask"
-    },
-    "glob": {
-      "*": "ask"
-    },
-    "list": {
-      "*": "ask"
-    },
+    "grep": { "*": "ask" },
+    "glob": { "*": "ask" },
+    "list": { "*": "ask" },
     "bash": {
       "*": "ask",
       "git status*": "allow",

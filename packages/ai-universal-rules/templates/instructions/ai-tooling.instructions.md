@@ -9,3 +9,4 @@ description: "AI tooling contract, registry alignment, and hook-policy consisten
 - Preserve machine-readable output keys and exit semantics unless contract changes are approved.
 - Keep script registry aligned across PHP source and docs JSON/MD.
 - Keep hook policy aligned across policy, scripts, and hook config.
+- Use `scripts/ai/preview-file.sh` instead of raw `cat` for bounded file inspection, especially after search returns a file and line.

@@ -36,3 +36,5 @@ Safety controls to keep explicit in prompts and reviews:
 - `unsafe-all` needs explicit approval.
 - `secrets` needs explicit approval.
 - `AI_ALLOW_UNLIMITED=1` needs explicit approval.
+
+Required local tools: `bash`, `git`, `jq`, `rg`, `fd`, and `ast-grep`.

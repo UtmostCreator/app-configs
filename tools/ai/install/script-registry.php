@@ -4,6 +4,20 @@ declare(strict_types=1);
 
 function aiInstallerScriptRegistry(): array
 {
+    $root = realpath(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..');
+    if ($root !== false) {
+        $registryPath = $root . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'script-registry.json';
+        if (is_file($registryPath)) {
+            $registryRaw = file_get_contents($registryPath);
+            if ($registryRaw !== false) {
+                $registry = json_decode($registryRaw, true);
+                if (is_array($registry) && isset($registry['scripts']) && is_array($registry['scripts'])) {
+                    return $registry['scripts'];
+                }
+            }
+        }
+    }
+
     return [
         'common' => [
             'label' => 'Shared helper library for AI shell scripts',

@@ -17,6 +17,12 @@ Use this default workflow unless the task is clearly trivial:
 
 - `research when the owner is unclear -> plan for multi-step or risky work -> implement the bounded slice -> review in fresh context -> verify with evidence -> add release audit for medium or high risk`
 
+File preview rule:
+
+`AI_OUTPUT=json bash scripts/ai/preview-file.sh <path> --around <line> --context 30`
+
+After search finds a relevant file or line, inspect it with `preview-file.sh`. Do not use raw `cat` for large, unknown, generated, binary-looking, or vendored files. Prefer `--around` when a line number is known, `--range` when a block range is known, and JSON mode for evidence pipelines.
+
 Workflow rules:
 
 - Prefer the smallest safe change.

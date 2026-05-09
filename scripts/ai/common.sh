@@ -8,6 +8,7 @@ COPILOT_CONTEXT_DIR="${COPILOT_CONTEXT_DIR:-.repomix-context}"
 COPILOT_SESSION_DIR="${COPILOT_SESSION_DIR:-${COPILOT_LOG_DIR}/sessions}"
 COPILOT_SNAPSHOT_DIR="${COPILOT_SNAPSHOT_DIR:-${COPILOT_LOG_DIR}/snapshots}"
 COPILOT_EVENT_LOG="${COPILOT_EVENT_LOG:-${COPILOT_LOG_DIR}/tool-usage.jsonl}"
+AI_SESSION_GENERATED_DIR="${AI_SESSION_GENERATED_DIR:-docs/ai/generated/sessions}"
 
 if [[ -z "${NO_COLOR:-}" ]] && [[ -t 2 ]]; then
     _C_RESET=$'\033[0m'
@@ -38,12 +39,20 @@ agent_session_init() {
 
 append_log_entry() {
     local entry="${1:?entry required}"
+    local repo_root
 
     mkdir -p "$COPILOT_LOG_DIR"
     printf '%s\n' "$entry" >>"$COPILOT_EVENT_LOG"
 
     if [[ -n "${SESSION_LOG:-}" ]]; then
         printf '%s\n' "$entry" >>"$SESSION_LOG"
+    fi
+
+    if [[ "${AI_SESSION_DURABLE_LOG:-1}" == "1" && -n "${SESSION_ID:-}" ]]; then
+        repo_root="$(git_root 2>/dev/null || pwd)"
+        if command -v php >/dev/null 2>&1 && [[ -f "$repo_root/tools/ai/agent-log.php" ]]; then
+            php "$repo_root/tools/ai/agent-log.php" --root "$repo_root" --session-id "$SESSION_ID" --event-json "$entry" >/dev/null 2>&1 || true
+        fi
     fi
 }
 

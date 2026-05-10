@@ -57,6 +57,21 @@ Apply relevant targeted files:
 - `.github/instructions/ai-workflow.instructions.md`
 - `.github/instructions/ai-file-standards.instructions.md`
 - `.github/instructions/tools.instructions.md`
+- `.github/instructions/copilot-script-enforcement.instructions.md`
+
+## Copilot-Specific: Shell Script Enforcement
+
+Copilot VS Code built-in tools (`grep_search`, `read_file`, `file_search`, etc.) are preferred for search and read operations.
+However, for **verification, validation, workflow commands, and git forensics**, you MUST use `run_in_terminal` with the repository shell scripts listed in `.github/instructions/copilot-script-enforcement.instructions.md`.
+
+Mandatory before committing any code change:
+
+- `bash scripts/ai/ai-verify.sh .` — verification suite
+- `php tools/ai/validate-ai-config.php` — config validation
+- `php tools/ai/validate-ai-catalog.php` — catalog validation
+- `bash scripts/ai/ai-doc-check.sh --check` — doc consistency
+
+Do not claim verification is complete without running at least one of these commands.
 
 ## Working Style
 

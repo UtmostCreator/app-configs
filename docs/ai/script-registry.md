@@ -30,6 +30,8 @@ This file is the canonical allowlist reference for scripts installed by `scripts
 | `watch-loop` | Watched command retry wrapper | `scripts/ai/watch-loop.sh` | `scripts/ai/watch-loop.sh` | `read-only` | `bash` | `false` | `[]` |
 | `check-file-refs` | Unreferenced file audit | `scripts/ai/check-file-refs.sh` | `scripts/ai/check-file-refs.sh` | `read-only` | `bash, git, rg, jq` | `true` | `[]` |
 | `repo-stats` | Per-file and per-directory line/size metrics | `scripts/ai/repo-stats.sh` | `scripts/ai/repo-stats.sh` | `read-only` | `bash, git, scc, jq, awk` | `false` | `[]` |
+| `ai-file-freshness` | Check AI workflow files for staleness | `scripts/ai/ai-file-freshness.sh` | `scripts/ai/ai-file-freshness.sh` | `read-only` | `bash, git` | `false` | `["--days", "90"]` |
+| `ai-install-coverage` | Track AI install completeness and missing files | `scripts/ai/ai-install-coverage.sh` | `scripts/ai/ai-install-coverage.sh` | `read-only` | `bash` | `false` | `[]` |
 
 ## Policy Notes
 

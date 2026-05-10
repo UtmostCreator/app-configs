@@ -105,6 +105,22 @@ For ordered installation recipes and selective pack examples, use `docs/ai/insta
   - Options: `--json` for flat per-file JSON output instead of the default text report.
   - Registered in `docs/ai/script-registry.md` and `docs/ai/script-registry.json` under `repo-stats`.
 
+## AI File Freshness Check
+
+- `bash scripts/ai/ai-file-freshness.sh [--days N] [--json]`
+  - Scans all AI workflow files (AGENTS.md, .github/, docs/ai/, scripts/ai/, tools/ai/, etc.) and reports which haven't been modified within the threshold.
+  - Default threshold: 90 days. Use `--days N` to customize.
+  - Options: `--json` for machine-readable output.
+  - Registered in `docs/ai/script-registry.md` and `docs/ai/script-registry.json` under `ai-file-freshness`.
+
+## AI Install Coverage
+
+- `bash scripts/ai/ai-install-coverage.sh [--json] [--fix]`
+  - Checks which expected AI workflow files exist and reports missing ones with category breakdown.
+  - Covers: core files, instructions, agents, docs, scripts, tools, policies, and manifest.
+  - Options: `--json` for machine-readable output; `--fix` to show exact repair commands.
+  - Registered in `docs/ai/script-registry.md` and `docs/ai/script-registry.json` under `ai-install-coverage`.
+
 ## Windows / PowerShell Setup
 
 - `pwsh scripts/ai/setup-powershell-profile.ps1 [-DryRun] [-NoProfileUpdate]`

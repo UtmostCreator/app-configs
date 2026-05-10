@@ -1,14 +1,14 @@
 # app-configs
 
-Install-and-go AI workflow kit for adding ready-to-use GitHub Copilot and OpenCode guidance, agents, skills, prompts, commands, scripts, validation, and next-step documentation to other repositories.
+Personal macOS development environment configuration files — terminal, editor, shell, keyboard, and PHP reference material.
 
-This repository's main job is to ship a reusable AI setup that another project can install, verify, and use immediately. The remaining workstation configuration files are supporting dogfood/reference material, not the primary package boundary.
+> **Looking for the AI Workflow Kit?** It has moved to [awesome-ai-utmostcreator](https://github.com/UtmostCreator/awesome-ai-utmostcreator).
 
 ## Ghostty Full Disk Access Popup
 
 > macOS Settings -> Privacy & Security -> Full Disk Access -> enable Ghostty via the toggle
 
-## Workstation Highlights
+## What Is Here
 
 - Ghostty terminal configuration for a fast, keyboard-first terminal workflow
 - Neovim setup bootstrapped with `lazy.nvim`, including tmux-aware navigation and testing plugins
@@ -16,267 +16,58 @@ This repository's main job is to ship a reusable AI setup that another project c
 - PHP runtime and Laravel Pint configuration for consistent formatting and local development
 - VS Code settings, launch config, and extension recommendations for project work
 - Karabiner and keyboard documentation for cross-platform ergonomics
-- AI workflow validation and generation scripts for reusable repo guidance
-- optional local workflow scaffolding via `just`, `doctor`, and shared commit-hook scripts
+- PHP design patterns, principles, and built-in function reference examples
+- Doctor script and git hooks for local health checks
 
-## What Is Here
+## Documentation
 
-- `docs/software-and-cli-tools.md` - curated macOS development environment and CLI stack
-- `docs/shell-setup.md` - shell, prompt, and secret-handling setup
-- `docs/nvim-setup.md` - Neovim deployment and prerequisites
-- `docs/vscode-extensions.md` - VS Code extension recommendations
-- `docs/keyboard.md` - keyboard and Karabiner ergonomics notes
-- `configs/ghostty/` - terminal configuration
-- `configs/nvim/` - Neovim configuration and plugins
-- `configs/karabiner/` - keyboard remapping config
-- `reference/php/design-patterns/` - primary PHP design pattern example corpus
-- `reference/php/design-principles/` - PHP principles and composition examples
-- `reference/php/php-built-ins/` - PHP built-in function usage examples
-- `configs/php/` - PHP runtime and Pint configuration
-- `configs/vscode/` - workspace, user settings, keybindings, and launch config
-- `justfile` - optional workflow entrypoints for local health checks and AI validation
-- `scripts/` - Copilot wrappers, doctor checks, and shared git-hook scripts
+- `docs/software-and-cli-tools.md` — curated macOS development environment and CLI stack
+- `docs/shell-setup.md` — shell, prompt, and secret-handling setup
+- `docs/nvim-setup.md` — Neovim deployment and prerequisites
+- `docs/vscode-extensions.md` — VS Code extension recommendations
+- `docs/keyboard.md` — keyboard and Karabiner ergonomics notes
 
-## Repo Packages And Manifests
+## Configurations
 
-- `packages/ai-universal-rules/manifest.json` - canonical package metadata for the reusable AI workflow kit
-- `packages/ai-universal-rules/manifest.yml` - YAML mirror for the same package metadata
-- `packages/ai-universal-rules/catalog.json` - generated machine-readable catalog of package and root resources
-- `docs/ai/catalog.md` - generated human-readable catalog index
-- `llms.txt` - generated LLM-oriented index for key docs and assets
-- Root Node and Composer package manifests are intentionally not used in this repository
+- `configs/ghostty/` — terminal configuration
+- `configs/nvim/` — Neovim configuration and plugins
+- `configs/karabiner/` — keyboard remapping config
+- `configs/php/` — PHP runtime (`php.ini`) and Laravel Pint (`pint.json`)
+- `configs/shell/` — Starship prompt, `.zshrc`, `.gitconfig`
+- `configs/vscode/` — workspace settings, user settings, keybindings, launch config
 
-## AI Workflow Kit
+## PHP Reference
 
-The reusable AI workflow kit is the primary package surface for repo-scoped guidance across multiple tools.
+- `reference/php/design-patterns/` — primary PHP design pattern example corpus
+- `reference/php/design-principles/` — PHP principles and composition examples
+- `reference/php/php-built-ins/` — PHP built-in function usage examples
 
-- `packages/ai-universal-rules/` - canonical reusable package
-- `docs/ai/` - live repo-specific AI workflow docs and capability catalog
-- `docs/ai/agents.md` - live agent reference and package agent index
-- `docs/ai/failure-handling.md` - failure taxonomy, retry rules, and logging contract
-- `docs/ai/agent-ops-checklist.md` - phased verification checklist for AI workflow integration
-- `docs/ai/integration-matrix.md` - concept-to-file coverage map for the live AI workflow layer
-- `docs/ai/ai-file-standards.md` - primitive roles, line budgets, split rules, and duplication boundaries
-- `tools/ai/` - validation and catalog generation scripts
-- `.github/` - GitHub Copilot adapter files for this repository
-- `scripts/ai/` - stronger local AI tooling wrappers for search, PR context, context packing, hooks, and telemetry
+## Scripts
 
-The goal is to keep canonical workflow knowledge in one place and keep runtime-specific adapter files thin.
+- `scripts/doctor.sh` — local toolchain health check
+- `scripts/hooks/pre-commit.sh` — merge conflict marker detection + PHP lint
+- `scripts/hooks/commit-msg.sh` — commit message format validation
 
-### AI primitive boundaries
+## Style Configs (reference)
 
-| Primitive | Use it for | Do not use it for |
-| --- | --- | --- |
-| Instructions | stable repo/path rules | full task workflows |
-| Agents | persistent role, tools/permissions, handoff | capability examples or long checklists |
-| Prompts | one-shot Copilot tasks | durable policy |
-| OpenCode commands | short slash-command wrappers | long procedures |
-| Skills | runtime-loaded capability adapters | global project rules |
-| Capabilities | canonical reusable procedure with checklist/gotchas/reference/examples | provider-specific syntax |
+These exist as starter configs for target projects. No JS/TS/CSS source exists in this repo:
 
-Installable line budgets and hard limits live in `docs/ai/ai-file-standards.md` and package template `packages/ai-universal-rules/templates/core/ai-file-standards.template.md`.
-
-## Repository Layout
-
-```text
-.
-|-- .editorconfig
-|-- .eslintrc.json
-|-- .github/
-|   |-- agents/
-|   |-- copilot-instructions.md
-|   |-- hooks/
-|   |-- instructions/
-|   |-- prompts/
-|   |-- skills/
-|   `-- workflows/
-|-- AGENTS.md
-|-- packages/ai-universal-rules/
-|   |-- catalog.json
-|   |-- docs/
-|   |-- manifest.json
-|   |-- manifest.yml
-|   `-- templates/
-|-- CLAUDE.md
-|-- CONTRIBUTING.md
-|-- docs/
-|   |-- ai/
-|   |-- keyboard.md
-|   |-- nvim-setup.md
-|   |-- shell-setup.md
-|   |-- software-and-cli-tools.md
-|   `-- vscode-extensions.md
-|-- justfile
-|-- llms.txt
-|-- scripts/
-|   |-- ai/
-|   |-- doctor.sh
-|   `-- hooks/
-|-- SECURITY.md
-|-- SUPPORT.md
-|-- tools/
-|   `-- ai/
-|-- reference/
-|   `-- php/
-|-- configs/
-|   |-- ghostty/
-|   |-- karabiner/
-|   |-- nvim/
-|   |-- php/
-|   |-- shell/
-|   `-- vscode/
-`-- configs/vscode/
-    |-- keybindings.json
-    |-- launch.json
-    |-- user/
-    |-- workspace-example.json
-    `-- workspace-template.json
-```
+- `.eslintrc.json` — ESLint for Vue 3 + TypeScript
+- `.prettierrc.json` — Prettier formatting rules
+- `.stylelintrc.json` — Stylelint for Tailwind/Vue
+- `.editorconfig` — editor whitespace, indent, EOL (active)
 
 ## Quick Start
 
-### Local config use
-
-- Read the relevant setup note in `docs/`
-- Copy or merge the matching config into your local environment
-- Replace any machine-specific placeholders before using shared templates
-- Run `just doctor` after syncing config files if you use the local workflow scaffolding
-
-### AI workflow use
-
-- Start with `AGENTS.md`
-- For a Copilot-first onboarding and repo-copy install map, read `docs/ai/copilot-cli-repo-integration.md`
-- Read `docs/ai/project-context.md`
-- Browse `docs/ai/catalog.md` when you need the fastest path to relevant assets
-- Use `docs/ai/agents.md` when you need to know which live or package agent fits the job
-- Use `docs/ai/failure-handling.md` when commands fail, retries are needed, or you need the approved read-only posture
-- Use `docs/ai/agent-ops-checklist.md` to verify the repository after workflow changes
-- Use `docs/ai/integration-matrix.md` to see what is covered, partial, or still missing
-- Use the smallest relevant capability in `docs/ai/capabilities/`
-- Only then use runtime-specific adapter files such as `.github/copilot-instructions.md`
-- For GitHub Copilot, install both `github.copilot` and `github.copilot-chat`, then optionally add Copilot CLI for terminal-heavy work
-- For tool-routed Copilot workflows, follow `docs/ai/copilot-tooling.md` (instructions -> wrappers -> hooks -> skills/prompts -> MCP)
-- For the default tree-context workflow and legacy ranked-folder compatibility, follow `docs/ai/context-packing.md`
-- For deterministic folder/file inventory generation, follow `docs/ai/repo-documentation-generation.md`
-- For bootstrap install into another repository, follow `docs/ai/external-repo-install.md`
-- For the ordered selective install matrix across Copilot, OpenCode, scripts, docs, advisor, hooks, and Repomix helpers, follow `docs/ai/install-order.md`
-- For installer internals, runtime asset map, and verification flow, follow `docs/ai/installer-architecture.md`
-- For the role of agents, instructions, skills, prompts, commands, and capability support files, follow `docs/ai/ai-file-standards.md`
-- For package prerequisites and dependency setup, follow `docs/ai/toolchain-requirements.md`
-- For generated repository-wide tool discovery from shell scripts, use `docs/ai/repo-required-tools.md` and `bash scripts/ai/repo-tool-inventory.sh`
-- For maintained script usage and generated-output ownership, follow `docs/ai/scripts-reference.md`
-- Use `scripts/ai/ai-diff-context.sh` when you need narrow context for changed files, PR files, recent edits, or touched areas
-- Use `scripts/ai/ai-search.sh` when the agent should route all search through one stable entrypoint
-- For PHP guidance, search local examples in this order: `reference/php/design-patterns/` -> `reference/php/design-principles/` -> `reference/php/php-built-ins/`
-- Use `just php-examples-map` to print the preferred PHP example lookup order
-- Use `just php-patterns-search`, `just php-principles-search`, and `just php-builtins-search` for direct corpus search
-- Use `scripts/ai/ai-edit.sh` as the only approved path for broad repository edits
-- Use `scripts/ai/ai-verify.sh` after changes to run the project-aware verification stack
-- Use `scripts/ai/gh-pr-context.sh` for richer PR metadata, checks, reviews, and diff summaries
-- Use `scripts/ai/rg-code.sh` for mode-based search across PHP, JS, config, tracked files, or JSON output
-- Use `scripts/ai/check-file-refs.sh` to find files not referenced anywhere in the repo (surfaces orphaned docs and unused assets)
-- Use `just check-refs` for a quick local invocation, or `just check-refs-json` for machine-readable output
-- Run `php tools/ai/validate-ai-config.php` after changing root workflow files
-- Run `php tools/ai/validate-ai-catalog.php` after changing package metadata or generated docs
-- Run `php tools/ai/generate-ai-catalog.php` after changing cataloged assets or package metadata
-- Run `just ai-check` if you want one local command that wraps the three AI workflow checks above
-- Use `just verify` for the guarded post-edit verification path
-- Use `just edit-ast`, `just edit-text`, and their `-apply` variants instead of raw mass-edit shell commands
-
-### Regenerate And Verify
-
-Use this sequence when you want to refresh the generated AI workflow surfaces in this repository and know exactly what each command updates.
-
-1. `php tools/ai/generate-ai-catalog.php`
-   Updates `docs/ai/catalog.md`, `packages/ai-universal-rules/catalog.json`, `packages/ai-universal-rules/docs/BROWSE.md`, and `llms.txt`.
-2. `php tools/ai/generate-repo-structure.php --with-scc`
-   Updates `docs/ai/generated/repo-structure.json`, `docs/ai/generated/repo-structure.csv`, `docs/ai/generated/repo-structure.md`, and `docs/ai/generated/repo-structure.log`.
-3. `php tools/ai/ai.php install-docs --target . --write`
-   Updates `docs/ai/generated/install-instructions.json`, `docs/ai/generated/install-instructions.md`, `docs/ai/generated/install-catalog.json`, `docs/ai/generated/install-catalog.md`, `docs/ai/generated/install-docs.json`, `docs/ai/generated/install-docs.md`, and `packages/ai-universal-rules/docs/INSTALL-CATALOG.md`.
-4. `bash scripts/ai/repomix-context-tree.sh all .`
-   Updates `.repomix-context/tree-context/index.md`, `.repomix-context/tree-context/index.json`, `.repomix-context/tree-context/tree-plan.tsv`, `.repomix-context/tree-context/tree-plan.json`, `.repomix-context/tree-context/tree-manifest.json`, file metrics, folder metrics, and route bundles under `.repomix-context/tree-context/bundles/`.
-5. `bash scripts/ai/repo-tool-inventory.sh`
-   Regenerates `docs/ai/repo-required-tools.md` from the tracked scripts and workflow requirements.
-6. `php tools/ai/ai.php install --target . --profile full-governance --reinstall --dry-run`
-   Refreshes `docs/ai/generated/install.json` and `docs/ai/generated/install.md` with the current install plan only; no managed files are changed.
-7. `php tools/ai/ai.php install --target . --profile full-governance --reinstall --backup-only --apply`
-   Creates the explicit backup under `.ai-backups/install-TIMESTAMP/` and writes the backup id into `docs/ai/generated/install.json`.
-8. `php tools/ai/ai.php install --target . --profile full-governance --reinstall --apply --backup BACKUP_ID --allow-placeholders`
-   Applies the managed Copilot/OpenCode refresh for the current repository and rewrites `docs/ai/generated/install.json` and `docs/ai/generated/install.md` with the transaction result.
-9. `php tools/ai/ai.php placeholders`
-   Writes `docs/ai/generated/placeholders.json` and `docs/ai/generated/placeholders.md` so you can see which intentionally templated files still contain placeholders.
-10. `php tools/ai/validate-ai-config.php`
-    Validation only. Generates no repo files; checks root workflow surfaces and references.
-11. `php tools/ai/validate-ai-catalog.php`
-    Validation only. Generates no repo files; checks package/catalog metadata integrity.
-12. `php tools/ai/generate-ai-catalog.php --check`
-    Check mode only. Generates no files; confirms the catalog outputs are already current.
-13. `php tools/ai/ai.php verify --json`
-    Writes `docs/ai/generated/verify.json` and `docs/ai/generated/verify.md` with the unified verification result.
-14. `bash scripts/ai/check-file-refs.sh --format json`
-    Emits JSON to stdout only. It does not write repo files and is used to find unreferenced docs, scripts, and assets.
-
-For the broader script catalog, including read-only helpers such as `ai-search.sh`, `gh-pr-context.sh`, `preview-file.sh`, and `query-usage.sh`, use `docs/ai/scripts-reference.md`.
-
-### Install and tooling entrypoints
-
-Use the PHP entrypoints for deterministic install, validation, generation, export, and verification:
-
-- `tools/ai/install-ai-kit.php` - canonical external-repo installer.
-- `tools/ai/ai.php` - unified CLI dispatcher for install, docs, placeholders, advisor, and verification workflows.
-- `tools/ai/verify-full-install.php` and `tools/ai/full-install-validation.php` - full install verification paths.
-- `tools/ai/validate-install-surface.php`, `validate-ai-config.php`, `validate-ai-catalog.php`, `validate-adapter-drift.php`, `validate-generated-artifacts.php`, and `validate-placeholders.php` - focused validators.
-- `tools/ai/generate-ai-catalog.php`, `generate-repo-structure.php`, `repo-tool-inventory.php`, and `build-context-pack.php` - generated catalog, structure, tool, and context outputs.
-- `tools/ai/export-ai-universal-rules.php` - package export bundles.
-- `tools/ai/secret-scan.php` and `suggest-verification.php` - safety and verification helpers.
-
-Shell wrappers and repo-local scripts provide low-friction operation where Bash is available:
-
-- `tools/ai/install-ai-kit.sh`, `install-copilot-kit.sh`, and `install-opencode-kit.sh` - thin installer wrappers.
-- `scripts/ai/pre-tool-use.sh` and `post-tool-use.sh` - policy gate and evidence writer.
-- `scripts/ai/ai-search.sh`, `fd-files.sh`, `rg-code.sh`, `preview-file.sh`, and `query-usage.sh` - approved discovery helpers.
-- `scripts/ai/ai-diff-context.sh`, `pack-context.sh`, `run-repomix-context.sh`, `repomix-context-tree.sh`, and `repomix-scc-router.sh` - context packaging helpers.
-- `scripts/ai/ai-verify.sh`, `ai-test-select.sh`, `ai-doc-check.sh`, and `repo-tool-inventory.sh` - verification and documentation checks.
-- `scripts/ai/ai-edit.sh`, `ai-rollback.sh`, `session-checkpoint.sh`, `watch-loop.sh`, `ai-task.sh`, and `ai-structured.sh` - guarded edit/session helpers.
-- `scripts/ai/git-forensics.sh` and `gh-pr-context.sh` - read-only history and PR context helpers.
-- `scripts/ai/install-mandatory-tools.sh` - optional prerequisite installer; review before use.
-
-### GitHub Copilot install and read order
-
-- Minimum folders and files to copy into another repo: `.github/copilot-instructions.md`, `.github/hooks/tool-policy.json`, `docs/ai/project-context.md`, `docs/ai/workflow.md`, `docs/ai/agents.md`, `docs/ai/failure-handling.md`, `docs/ai/copilot-cli-repo-integration.md`, `docs/ai/capabilities/project-context/`, `docs/ai/capabilities/verify-change/`, `docs/ai/capabilities/review-diff/`, `scripts/ai/`
-- Optional Copilot add-ons after baseline works: `.github/instructions/`, `.github/agents/`, `.github/prompts/`, `.github/skills/`, `.github/hooks/`, `scripts/ai/`, `docs/ai/copilot-tooling.md`
-- For real installer commands instead of manual copying, use `docs/ai/install-order.md` first and `docs/ai/external-repo-install.md` second.
-- For a merge-safe refresh into an existing repo, use `php tools/ai/install-ai-kit.php --target /path/to/target-repo --profile full-governance --runtime github-copilot --with docs-reference-pack --upgrade-suffix=-upgrade`; identical files are skipped, while changed collisions are written as `-upgrade` copies for manual merge.
-- After installing `scripts-pack` into a target repo, run `cd /path/to/target-repo && bash scripts/ai/repo-tool-inventory.sh && bash scripts/ai/repomix-context-tree.sh all .` to regenerate the tool inventory and the default Repomix tree context in that target.
-- Recommended read order in this repo: `README.md` -> `.github/copilot-instructions.md` -> `docs/ai/project-context.md` -> `docs/ai/workflow.md` -> `docs/ai/agents.md` -> `docs/ai/failure-handling.md` -> relevant `docs/ai/capabilities/*`
-- Use `docs/ai/catalog.md` as the live generated inventory when you need the full list of agents, instructions, hooks, prompts, scripts, and canonical docs
-
-### Recommended AI footprint
-
-- Start with one instruction surface, one durable project context file, and three core capabilities: `project-context`, `verify-change`, `review-diff`
-- Keep live agents small at first (`2-4` total); default core set is `researcher`, `architect`, `implementer`, `reviewer`
-- Add optional agents such as `release-auditor` and `refactorer` only when recurring risk patterns justify them
-- Keep skills and prompt packs minimal until real workflow repetition exists; avoid large catalogs without clear ownership
-- Prioritize documented and verified workflows over quantity of agents, skills, or plugins
-
-### Context packing
-
-- `just context-analyze` - inspect how the repo splits under the default tree-context budget
-- `just context-stats` - alias for the default tree-context analysis step
-- `just context-plan` - write the default tree-context plan and manifest
-- `just context-pack` - pack the default tree-context leaf bundles and child indexes
-- `just context-pack-all` - run the full default tree-context build in one step
-- `just context-tree-run` - run the guided context build wrapper with dependency checks and post-run wiring instructions
-- `just context-plan-json` - print the current `tree-plan.json` for agent-friendly inspection
-- `scripts/ai/repomix-context-tree.sh` writes the default root index, child indexes, and leaf bundles under `.repomix-context/tree-context/`
-- `scripts/ai/run-repomix-context.sh` is the easiest entrypoint for humans and agents; it validates dependencies, runs generation, and prints what to open plus where to wire it
-- `scripts/ai/repomix-scc-router.sh` remains available when you explicitly want ranked-folder router output under `.repomix-context/`
+1. Read the relevant setup doc in `docs/`
+2. Copy or merge the config from `configs/` into your local environment
+3. Replace machine-specific placeholders
+4. Run `bash scripts/doctor.sh` to verify your local toolchain
 
 ## Important Notes
 
-- Some settings are intentionally machine-specific; shared docs should call those out instead of hiding them
-- This repo prefers a practical production-grade workflow model over a large catalog of agents, skills, or plugins
-- Safe repo-local read-only commands are approval-free by default unless they touch privileged access, secrets, or external side effects
+- Some settings are intentionally machine-specific; shared docs call those out
+- Git hooks use Lefthook (`.lefthook.yml`) — run `lefthook install` to activate
 
 ## Key Files
 
@@ -288,5 +79,5 @@ Shell wrappers and repo-local scripts provide low-friction operation where Bash 
 - `configs/ghostty/config`
 - `configs/nvim/init.lua`
 - `configs/php/pint.json`
-- `docs/ai/project-context.md`
-- `docs/ai/catalog.md`
+- `configs/vscode/user/settings.json`
+

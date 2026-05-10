@@ -34,6 +34,7 @@ This file lists baseline and referenced CLI tools used by the repository AI work
 - `node`
 - `npm`
 - `pnpm`
+- `realpath`
 - `sed`
 - `semgrep`
 - `shellcheck`
@@ -81,6 +82,8 @@ This file lists baseline and referenced CLI tools used by the repository AI work
 - `tests/fixtures/repos/existing-copilot/setup.sh`
 - `tests/fixtures/repos/existing-opencode/setup.sh`
 - `tests/fixtures/repos/minimal/setup.sh`
+- `tests/scripts/ai/test-ai-search.sh`
+- `tests/scripts/ai/test-preview-file.sh`
 - `tools/ai/install-ai-kit.sh`
 - `tools/ai/install-copilot-kit.sh`
 - `tools/ai/install-opencode-kit.sh`

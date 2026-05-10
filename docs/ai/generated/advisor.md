@@ -1,19 +1,19 @@
 # Advisor
 
 - Status: `ok`
-- Generated at: `2026-05-06T17:59:59+00:00`
-- Commit: `9313d57`
-- Branch: `main`
+- Generated at: `2026-05-10T10:32:57+00:00`
+- Commit: `06dde0c`
+- Branch: `codex/integrate-ai-search-scripts-into-project`
 - Recommended next action: `Run advisor --check to enforce deterministic advisor outputs.`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "advisor.json",
-    "generated_at": "2026-05-06T17:59:59+00:00",
+    "generated_at": "2026-05-10T10:32:57+00:00",
     "command": "php tools/ai/ai.php advisor",
-    "based_on_commit": "9313d57",
-    "based_on_branch": "main",
+    "based_on_commit": "06dde0c",
+    "based_on_branch": "codex/integrate-ai-search-scripts-into-project",
     "input_hashes": {},
     "status": "ok",
     "score": null,

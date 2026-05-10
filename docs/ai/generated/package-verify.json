@@ -1,10 +1,10 @@
 {
     "schema_version": 1,
     "artifact": "package-verify.json",
-    "generated_at": "2026-05-06T17:58:56+00:00",
+    "generated_at": "2026-05-10T10:33:08+00:00",
     "command": "php tools/ai/ai.php package-verify",
-    "based_on_commit": "f0e8a6e",
-    "based_on_branch": "main",
+    "based_on_commit": "06dde0c",
+    "based_on_branch": "codex/integrate-ai-search-scripts-into-project",
     "input_hashes": {},
     "status": "failed",
     "score": null,
@@ -12,7 +12,7 @@
     "recommended_next_action": "Refresh lock or revert unintended template drift.",
     "data": {
         "path": "packages/ai-universal-rules/package-lock.ai.json",
-        "mismatch_count": 69,
+        "mismatch_count": 84,
         "mismatches": [
             {
                 "path": "templates/all_into_one.bat",
@@ -24,12 +24,6 @@
                 "reason": "checksum_mismatch",
                 "expected": "sha256:7bf541be81cc1f0cb92868b089ff0f94c891175b67dac82220954081564f8919",
                 "current": "sha256:af095a83602f45b79003a86911d13867cc704315c024f57350d09042a4650be6"
-            },
-            {
-                "path": "templates/capabilities/bug-regression/CAPABILITY.md",
-                "reason": "checksum_mismatch",
-                "expected": "sha256:193f72b1e01f7b687725884a253793204473360553ef44a480eb6ded6cdaae6c",
-                "current": "sha256:5f0ce1e3d7605acfa00a73c481fd7c33944f2aacc9f1dc99521be6cb62b49e8e"
             },
             {
                 "path": "templates/capabilities/bug-regression/checklist.md",
@@ -60,12 +54,6 @@
                 "reason": "checksum_mismatch",
                 "expected": "sha256:966be588b9736f6b44a8ea7c76c6849cb8c7d6ece87dbf5a0afffc19fe6cd374",
                 "current": "sha256:34eddea65611144521775c0386ab841c247f8133b1f868dce499472856e69028"
-            },
-            {
-                "path": "templates/capabilities/dependency-upgrade/CAPABILITY.md",
-                "reason": "checksum_mismatch",
-                "expected": "sha256:4ada287950678e688df09123558679dd815d041cd05bb233fd86e4e69a5a02ce",
-                "current": "sha256:7e5b85f56234cb442b219450e71096d90a5fecd48458fb0252b6f9eb3657b38f"
             },
             {
                 "path": "templates/capabilities/dependency-upgrade/checklist.md",
@@ -141,12 +129,6 @@
                 "current": "sha256:70f6574d08d5731e2b075cb197b2a104e00595ec7f88657ba00d0d3d34b1d279"
             },
             {
-                "path": "templates/capabilities/release-safety/CAPABILITY.md",
-                "reason": "checksum_mismatch",
-                "expected": "sha256:60d3e5919702f1a985c17bb9f6c83c45dc8cb5553afa85027e3e807f6a05ee21",
-                "current": "sha256:cde53cbcf2d595f074bf09bb2622c0d6d09c1e27fcbaab1f6c9183a722251f4e"
-            },
-            {
                 "path": "templates/capabilities/release-safety/checklist.md",
                 "reason": "checksum_mismatch",
                 "expected": "sha256:d353c8616157621a32a006df57e887248ec4d3566e8d088000b5bb6aec20a8df",
@@ -169,12 +151,6 @@
                 "reason": "checksum_mismatch",
                 "expected": "sha256:c19b553473a445832865bbcc4fd1f6b0ae3819e0175e839cfe2484b138db49a7",
                 "current": "sha256:e5e19d07fef4d2c7f4962122f7f7551ca28a684dd1c75a21e189bda4260e5269"
-            },
-            {
-                "path": "templates/capabilities/review-diff/CAPABILITY.md",
-                "reason": "checksum_mismatch",
-                "expected": "sha256:33c6aab401382cede6ca71262f6f8949fa07bea7ae47961fe20ee6046bdcfb85",
-                "current": "sha256:2a61fbf3e298122aa1785e054b60e6d2a00505a0bf20f8d7d6b966fe669971ff"
             },
             {
                 "path": "templates/capabilities/review-diff/checklist.md",
@@ -201,12 +177,6 @@
                 "current": "sha256:e128240d362df8ebb7f52408b03af166551c1a30bd54fe896f278b0278b19724"
             },
             {
-                "path": "templates/capabilities/verify-change/CAPABILITY.md",
-                "reason": "checksum_mismatch",
-                "expected": "sha256:90f78ebbf36bae2062d6a31d58726c9592200330012d0d4f90da02809f18c4de",
-                "current": "sha256:f6f62fd97dc590a2b41a7da0ea0a86b2b84817ebab60ecb40e05c0f4066d6ef8"
-            },
-            {
                 "path": "templates/capabilities/verify-change/checklist.md",
                 "reason": "checksum_mismatch",
                 "expected": "sha256:c66c7ec6ee61bb6f0735613f0199d4700326f4901e85bb3f12ba1de524050ed8",
@@ -231,28 +201,83 @@
                 "current": "sha256:6a2bffa6316d0d68397d986fe955240a9a6d955a999748a1f79b54f494702c73"
             },
             {
+                "path": "templates/commands/search-evidence.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:12c812fa848ff921f53338a5ca8dca63624541a8f7f2cf866c8d471bbaf71f6c"
+            },
+            {
+                "path": "templates/commands/verify-ai-wiring.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:0ef10becc738132ae34fc1d996e1ae3aa9a75f86746cf3c3c002ee6517e5e45a"
+            },
+            {
                 "path": "templates/core/AGENTS.template.md",
                 "reason": "checksum_mismatch",
                 "expected": "sha256:50195d531092f310fc6c356017ebea24d72910ce556b4485dc61cb1e8726c6a8",
-                "current": "sha256:9f87feefb69da9b9bc786bf1a4996c6da47160dd9a4de2c1b2b9741789687684"
+                "current": "sha256:dcaa16beffbdf94457eb3abb4debac2de39647c3fb0c91671ed86dc8fd8ff77a"
+            },
+            {
+                "path": "templates/core/agents/all_into_one.bat",
+                "reason": "missing_from_lock",
+                "current": "sha256:c75c73b695acf6ed616fe24b658f672664cbcdc36ee859f32c7c2104fcb1d2b7"
             },
             {
                 "path": "templates/core/agents/architect.md",
                 "reason": "checksum_mismatch",
                 "expected": "sha256:9fbfdd205ae0af38675dc6ec988e9fa300151a6f4029d5c39b12de2c9fa20b7d",
-                "current": "sha256:e3430b673fa15648dac1508dd095ce13c6b115cedd2ac52ac3920c541523a9aa"
+                "current": "sha256:719ed4ed936a4618fdf77d97e49e2d35765333c6ea6170bc4e2972fc9edd60ad"
+            },
+            {
+                "path": "templates/core/agents/config-maintainer.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:66058beb3b1703e7c98846daaa20a6fb2f188ece867c3a787859f3c4285d46f9",
+                "current": "sha256:dc955602ce8bd02715cbef0b7a8c8067e4da0cd699b20df89645709005184e59"
             },
             {
                 "path": "templates/core/agents/implementer.md",
                 "reason": "checksum_mismatch",
                 "expected": "sha256:c52f15deed38994be00cffd4ae4bdd3dc7a3f0bf95f794d852bfe325e94c3e07",
-                "current": "sha256:a5474ae0d23bb36d693b09f7712dcbc814eda2ba1394eb68bd7e2312f88ae6fb"
+                "current": "sha256:84dbdb706035c6bad2595299556f3cc92f01d919abc770f029270629e682736d"
+            },
+            {
+                "path": "templates/core/agents/refactorer.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:64c5ea6b70b812f4b7996801cc402006984b4ffc1fc424975b0c21f720f8e169",
+                "current": "sha256:53c5f3abc17227a47fafd37746c9094b6c419641e0cb608a07aac7c865f51a5e"
+            },
+            {
+                "path": "templates/core/agents/release-auditor.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:2df0c8fec017045ce3973781d75cd42a123a9eb505a58159ec252c7e7376a579",
+                "current": "sha256:e0864d53f16513cba429434cbfed2593931fb7e21c24e55c56e695058ec16a45"
+            },
+            {
+                "path": "templates/core/agents/repository-researcher.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:c9c7019f995510848eb3fd7673ad9464c0d99ad8b26debfaf99d3b03666646fa"
+            },
+            {
+                "path": "templates/core/agents/repository-reviewer.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:cb7c3041041c7ff942156f99c625f21d987f6d2ff903f77526a454da236f3547"
+            },
+            {
+                "path": "templates/core/agents/researcher.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:325da9eacc073aeaef0de76f9bb2a78512688afce8aabc7e9936d417f726d7ae",
+                "current": "sha256:765084820044e1fc7429dca8776c15dc5171f9c79a82613707b284f40ed121da"
             },
             {
                 "path": "templates/core/agents/reviewer.md",
                 "reason": "checksum_mismatch",
                 "expected": "sha256:944a1e40a4e4ab50e135225a282e57fd5e0216916a4540f0968fae37753a2336",
-                "current": "sha256:e58b2a1897da21d614891d452d5dc62ea14e7bc99c3f774866c7c52f8e571266"
+                "current": "sha256:337130afadde0b3142b845d11317414249e663b5dd42688d7de18bcdb43babfe"
+            },
+            {
+                "path": "templates/core/agents/workflow-auditor.md",
+                "reason": "checksum_mismatch",
+                "expected": "sha256:632141c88cadc418e4f6d1f593602f60ca8d51e2d27acfaa37275b834e056651",
+                "current": "sha256:4799a8f5d238deff73c23655648d6f438933961964798e94f632ebd82799416a"
             },
             {
                 "path": "templates/core/ai-file-standards.template.md",
@@ -271,6 +296,11 @@
                 "current": "sha256:64aa95d9d704afec150f82e9a6eaf8acaed7e552f4a8b6816d9691adf33f7c3e"
             },
             {
+                "path": "templates/core/opencode.json",
+                "reason": "missing_from_lock",
+                "current": "sha256:f2e9fc76a5cec97cb7bda7b099344d592b27831b5e34dce600cf7a7f47e50f3c"
+            },
+            {
                 "path": "templates/core/project-stack.template.md",
                 "reason": "checksum_mismatch",
                 "expected": "sha256:b3f8c3d19d9b07257f242d10290adf7ce3b4f48ee5b45d4c5044cc5ba308ba0c",
@@ -283,9 +313,34 @@
                 "current": "sha256:da9e5e7c32ceb06f986f7119e85296df6b41c016f0a43b4fc1765a96dec57fce"
             },
             {
+                "path": "templates/docs/ai/tools/actions/preview-file.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:0c97a1f4cfb371ce2acd775402044e1bb3c856cf12cda7405d95eaf6f4303aca"
+            },
+            {
+                "path": "templates/github/pull_request_template.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:2e68235300df539f2ac81823ecfbfe13bcef97de94b4fcc20b0a76c18143f937"
+            },
+            {
+                "path": "templates/github/workflows/export-ai-universal-rules-preview.yml",
+                "reason": "missing_from_lock",
+                "current": "sha256:e313eac2506c4678e25af25e87761cc93e3cb4cccfa39df41fdc8fd0055dde1d"
+            },
+            {
+                "path": "templates/github/workflows/test-external-install.yml",
+                "reason": "missing_from_lock",
+                "current": "sha256:f421dbb03045a38de645f4e4954c639344e3c74487ce425d7818ed775be14b5d"
+            },
+            {
+                "path": "templates/github/workflows/validate-ai-surface.yml",
+                "reason": "missing_from_lock",
+                "current": "sha256:61b96fbbc6ba064eb48b52ffb8a74929cbcabe67e0b7b2589d11eca4bf8238b3"
+            },
+            {
                 "path": "templates/instructions/ALL_IN_ONE.txt",
                 "reason": "missing_from_lock",
-                "current": "sha256:336b89e1e44ff84923f7747ab0e9d64e9f46552dd818134834711e1cb71b4f70"
+                "current": "sha256:4a54c222584034efda25ce734c4fce626251af8a12c5188f0cf076a8902c4923"
             },
             {
                 "path": "templates/instructions/ai-file-standards.instructions.md",
@@ -293,9 +348,19 @@
                 "current": "sha256:8eea13c4f6763cccc97f225d8d4c2a16c6b95302ec25b22c44d581a6f6ad84c9"
             },
             {
+                "path": "templates/instructions/ai-search.instructions.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:b7cce500a99a5979287153884ce8ad2ef893ddd242581d96940f837e564477a9"
+            },
+            {
                 "path": "templates/instructions/ai-tooling.instructions.md",
                 "reason": "missing_from_lock",
-                "current": "sha256:6c4430fe595ca5a530bfd60b082c4efb4db5d459908beb1a359d9e022538605c"
+                "current": "sha256:f0b9626c6c382b1609c100885cbdbdc2fa6a955bb64beea04e12b2bdf4046a4f"
+            },
+            {
+                "path": "templates/instructions/ai-tools.instructions.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:0a200e7b7d14de7fc2927b73dbdc6b6a4195e93358b6d2967690f88fc726e4fe"
             },
             {
                 "path": "templates/instructions/all_into_one.bat",
@@ -374,16 +439,15 @@
                 "current": "sha256:76d01acf8a628a5f49025796bdfc08286cda0837ee208d21cb18f7883d55e228"
             },
             {
-                "path": "templates/shared/guardrails/AI-GUARDRAILS.md",
-                "reason": "checksum_mismatch",
-                "expected": "sha256:8e19dd76dc69d8b75808c9e1e76e24d5691ed063241df07bb1dab787d7281754",
-                "current": "sha256:16d6d04f33e0dab7bc769e52323ee085275ec85b38d36a2ac1d2316476afcec7"
-            },
-            {
                 "path": "templates/shared/verification/VERIFICATION-EVIDENCE.template.md",
                 "reason": "checksum_mismatch",
                 "expected": "sha256:43a3496d6abf3e3e4ad1fc804ccd91ff255fa034c4d54f7c9914feb84a2eab8b",
                 "current": "sha256:6b3d82a161cdd4b92c4cf96c70a8ee3d971b676554d71e6bbcd0d70ce2c2f4fc"
+            },
+            {
+                "path": "templates/skills/ai-search/SKILL.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:77f82bde01f4beeafe20d796a83c3e9bd037f8d86c738555d31a792ef2e02d48"
             },
             {
                 "path": "templates/snippets/approvals.snippet.md",
@@ -407,6 +471,16 @@
                 "path": "templates/workflows/evidence-first-execution.md",
                 "reason": "missing_from_lock",
                 "current": "sha256:021511d52df552ce7f9104b8682a0e0eab65b30d2783c4dffdf0b6ee09bdf707"
+            },
+            {
+                "path": "templates/workflows/review-search-tool.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:f3cd98e84c00b571c4e57611d5633deb3f4e7a3ccefcebbb1c875b1dfd583d80"
+            },
+            {
+                "path": "templates/workflows/search-evidence.md",
+                "reason": "missing_from_lock",
+                "current": "sha256:1802be31ff935d105d1466094e252ce888da4bcb589b7c87e4a9a4d0fa945bee"
             }
         ]
     }

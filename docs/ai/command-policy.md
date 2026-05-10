@@ -44,3 +44,12 @@ Commands must not print secret values. Secret scanners must redact values and re
 ## Unknown Command Rule
 
 Unknown commands are `ask` or `deny`; never silently allowed.
+
+## Maintenance Mode Rule
+
+Temporary install/upgrade elevation is supported through `docs/ai/maintenance-mode.md` and `php tools/ai/maintenance-mode.php`.
+
+- default policy remains strict
+- maintenance state must be explicit and time-bounded
+- only repository-delivered scripts are auto-allowed in maintenance mode
+- external scripts must remain `ask`

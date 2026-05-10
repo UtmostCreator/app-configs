@@ -22,6 +22,13 @@ _hook() {
     echo "$1" | bash "$SCRIPT"
 }
 
+_hook_with_env() {
+    local env_key="$1"
+    local env_value="$2"
+    local payload="$3"
+    echo "$payload" | env "$env_key=$env_value" bash "$SCRIPT"
+}
+
 _decision() {
     # Extract permissionDecision from JSON output.
     echo "$1" | jq -r '.permissionDecision'
@@ -142,6 +149,30 @@ teardown() {
 @test "denies unregistered scripts ai command" {
     output=$(_hook '{"toolName":"bash","toolArgs":{"command":"bash scripts/ai/watch-loop.sh echo ok php"}}')
     [ "$(_decision "$output")" = "deny" ]
+}
+
+@test "maintenance mode asks for external script execution" {
+    state_file="$HOME/maintenance-mode.json"
+    now="$(date +%s)"
+    exp="$((now + 600))"
+    cat >"$state_file" <<EOF
+{"enabled":true,"expires_at_epoch":$exp}
+EOF
+
+    output=$(_hook_with_env "COPILOT_MAINTENANCE_STATE_FILE" "$state_file" '{"toolName":"bash","toolArgs":{"command":"bash /tmp/not-repo-script.sh"}}')
+    [ "$(_decision "$output")" = "ask" ]
+}
+
+@test "maintenance mode allows repo ai-search with AI_OUTPUT prefix" {
+    state_file="$HOME/maintenance-mode.json"
+    now="$(date +%s)"
+    exp="$((now + 600))"
+    cat >"$state_file" <<EOF
+{"enabled":true,"expires_at_epoch":$exp}
+EOF
+
+    output=$(_hook_with_env "COPILOT_MAINTENANCE_STATE_FILE" "$state_file" '{"toolName":"bash","toolArgs":{"command":"AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked \"maintenance mode\" . --fixed"}}')
+    [ "$(_decision "$output")" = "allow" ]
 }
 
 # ---- confirm tests ----

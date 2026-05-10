@@ -247,9 +247,12 @@ class GenerateRepoStructureTest extends TestCase
             2 => ['pipe', 'w'],
         ];
 
-        $process = proc_open($command, $descriptors, $pipes, $cwd, [
-            'PATH' => (string) getenv('PATH'),
-        ]);
+        $path = $this->buildTestPath();
+        putenv('PATH=' . $path);
+        $_ENV['PATH'] = $path;
+        $_SERVER['PATH'] = $path;
+
+        $process = proc_open($command, $descriptors, $pipes, $cwd, null);
 
         $this->assertIsResource($process, "proc_open failed for: {$command}");
 
@@ -294,6 +297,33 @@ class GenerateRepoStructureTest extends TestCase
         }
 
         $this->removeDirectoryWithRetry($path);
+    }
+
+    private function buildTestPath(): string
+    {
+        $path = (string) getenv('PATH');
+
+        $extras = [
+            'C:\\Program Files\\Git\\cmd',
+            'C:\\xampp\\php',
+        ];
+
+        $userProfile = (string) getenv('USERPROFILE');
+        if ($userProfile !== '') {
+            $extras[] = $userProfile . '\\AppData\\Local\\Microsoft\\WinGet\\Links';
+            $extras[] = $userProfile . '\\AppData\\Roaming\\npm';
+        }
+
+        foreach ($extras as $extra) {
+            if ($extra === '' || !is_dir($extra)) {
+                continue;
+            }
+            if (stripos($path, $extra) === false) {
+                $path .= ';' . $extra;
+            }
+        }
+
+        return $path;
     }
 
     private function removeFileWithRetry(string $path): void

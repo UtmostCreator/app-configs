@@ -1,6 +1,7 @@
 ---
 description: Strict script-first diff reviewer using ai-search and validator evidence
 mode: subagent
+hidden: false
 permission:
   edit: deny
   bash:

@@ -12,6 +12,7 @@ This file is a thin Copilot adapter. Do not duplicate full workflows, policies, 
 - Use `.github/prompts/*.prompt.md` as task launchers.
 - Use `.github/skills/*/SKILL.md` as reusable capability wrappers.
 - Use `docs/ai/**` for canonical long-form workflow guidance.
+- Use `docs/ai/execution-protocol.md` as the canonical non-trivial execution contract.
 
 ## Safety Summary
 

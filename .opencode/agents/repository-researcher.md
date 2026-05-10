@@ -31,6 +31,8 @@ permission:
 
 Read-only evidence collection only. Do not edit files, run installers, mutate git state, or inspect secrets.
 
+Never emit ad-hoc Python or shell edit scripts, inline patches, or mutation commands. If evidence now supports a bounded code or config change, hand off to `implementer`. If ownership, scope, or contract boundaries remain unclear, hand off to `architect`.
+
 ## Mandatory sequence
 
 1. Run `git status --short`.
@@ -46,3 +48,4 @@ Read-only evidence collection only. Do not edit files, run installers, mutate gi
 - Commands or modes used.
 - Unknowns that evidence does not prove.
 - Safest next step and any approval needed.
+- Recommend exactly one next agent: `implementer` for bounded changes, `architect` for ambiguity, `reviewer` only after implementation exists.

@@ -28,6 +28,8 @@ This file is the canonical allowlist reference for scripts installed by `scripts
 | `repo-tool-inventory` | Generate/check required tools inventory doc | `scripts/ai/repo-tool-inventory.sh` | `scripts/ai/repo-tool-inventory.sh` | `read-only` | `bash, git` | `false` | `[]` |
 | `install-mandatory-tools` | Install mandatory CLI tools by OS | `scripts/ai/install-mandatory-tools.sh` | `scripts/ai/install-mandatory-tools.sh` | `mutating` | `bash` | `true` | `["--dry-run"]` |
 | `watch-loop` | Watched command retry wrapper | `scripts/ai/watch-loop.sh` | `scripts/ai/watch-loop.sh` | `read-only` | `bash` | `false` | `[]` |
+| `check-file-refs` | Unreferenced file audit | `scripts/ai/check-file-refs.sh` | `scripts/ai/check-file-refs.sh` | `read-only` | `bash, git, rg, jq` | `true` | `[]` |
+| `repo-stats` | Per-file and per-directory line/size metrics | `scripts/ai/repo-stats.sh` | `scripts/ai/repo-stats.sh` | `read-only` | `bash, git, scc, jq, awk` | `false` | `[]` |
 
 ## Policy Notes
 

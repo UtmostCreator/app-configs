@@ -3,24 +3,23 @@ applyTo: "**"
 description: "Evidence-first task execution, dirty-worktree protection, scope control, and final verification reporting."
 ---
 
-# Execution Protocol
+# Execution Protocol Instructions
 
-For non-trivial repository work, follow `docs/ai/execution-protocol.md`.
+For non-trivial work, follow `docs/ai/execution-protocol.md`.
 
 Before edits:
 
 - classify task mode
-- inspect `git status --short`
+- run or request `git status --short`
 - inspect relevant diffs
-- protect unrelated user changes
+- protect pre-existing user changes
 - declare intended scope
 - avoid broad rewrites
 
-For code or config changes, final output must include:
+For code changes, final output must include:
 
-- task mode
 - changed files
 - verification classification
 - checks run
-- rollback path for medium/high risk
+- rollback path (for medium/high risk)
 - remaining risks

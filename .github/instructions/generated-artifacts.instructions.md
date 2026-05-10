@@ -8,6 +8,5 @@ description: "Generated artifact drift routing and source-first regeneration pol
 - Treat generated outputs as non-canonical unless explicitly marked otherwise.
 - Change source/generator/schema first, then regenerate outputs.
 - Do not manually edit generated output to mask drift.
-- If drift appears, classify and report it before broad changes.
 
 For full policy and drift taxonomy, follow `docs/ai/generated-artifacts.md`.

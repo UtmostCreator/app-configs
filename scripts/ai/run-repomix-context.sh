@@ -16,9 +16,14 @@ Defaults:
   --compress
   --style xml
 
+Environment:
+  MAX_BUNDLE_TOKENS   Max tokens per bundle (default: 100000)
+  SECRETS_SCAN        Set to 0 to skip gitleaks scan
+
 Examples:
   scripts/ai/run-repomix-context.sh .
-  scripts/ai/run-repomix-context.sh . --depth 2 --top 20
+  scripts/ai/run-repomix-context.sh . --depth 3 --top 0 --min-code 0 --min-files 0
+  MAX_BUNDLE_TOKENS=50000 scripts/ai/run-repomix-context.sh . --depth 3
 EOF
 }
 

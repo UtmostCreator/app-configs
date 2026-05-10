@@ -1,6 +1,6 @@
 # AI Setup
 
-- Installed at: `2026-05-04T01:24:28+00:00`
+- Installed at: `2026-05-10T15:21:24+00:00`
 - Profile: `full-governance`
 - Package: `ai-universal-rules`
 

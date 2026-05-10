@@ -1,6 +1,6 @@
 ---
-applyTo: "scripts/ai/**,docs/ai/script-registry.md,docs/ai/script-registry.json,docs/ai/script-registry.schema.json,docs/ai/scripts-reference.md,docs/ai/tools/actions/use-ai-script.md"
-description: "AI script registry consistency and risk-based execution rules"
+applyTo: 'scripts/ai/**,docs/ai/script-registry.md,docs/ai/script-registry.json,docs/ai/script-registry.schema.json,docs/ai/scripts-reference.md,docs/ai/tools/actions/use-ai-script.md'
+description: 'AI script registry consistency and risk-based execution rules'
 ---
 
 # AI Scripts Rules

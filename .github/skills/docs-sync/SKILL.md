@@ -1,7 +1,7 @@
 ---
 name: docs-sync
 description: Use when changed behavior or workflow needs matching documentation updates without broad implementation planning
-argument-hint: 'Describe what changed and which docs should be synchronized'
+argument-hint: 'Describe the change and docs that should stay aligned'
 ---
 
 ## What I Do

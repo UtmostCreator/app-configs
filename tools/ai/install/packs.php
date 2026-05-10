@@ -40,6 +40,7 @@ function aiInstallerPackRegistry(): array
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.opencode/commands', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/commands', 'target' => '.opencode/commands', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/skills/ai-search/SKILL.md', 'target' => '.opencode/skills/ai-search/SKILL.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/skills/ai-scripts/SKILL.md', 'target' => '.opencode/skills/ai-scripts/SKILL.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'capabilities-extended-lite' => [
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/capabilities/bug-regression', 'target' => 'docs/ai/capabilities/bug-regression', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
@@ -92,9 +93,9 @@ function aiInstallerPackRegistry(): array
             ['type' => 'file', 'source' => 'docs/ai/script-registry.json', 'target' => 'docs/ai/script-registry.json', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'hooks-pack' => [
-            ['type' => 'file', 'source' => '.github/hooks/tool-policy.json', 'target' => '.github/hooks/tool-policy.json', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
-            ['type' => 'file', 'source' => '.github/hooks/tool-guardian.json', 'target' => '.github/hooks/tool-guardian.json', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
-            ['type' => 'file', 'source' => '.github/hooks/scripts/tool-guardian.ps1', 'target' => '.github/hooks/scripts/tool-guardian.ps1', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/github/hooks/tool-policy.json', 'target' => '.github/hooks/tool-policy.json', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/github/hooks/tool-guardian.json', 'target' => '.github/hooks/tool-guardian.json', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/github/hooks/scripts/tool-guardian.ps1', 'target' => '.github/hooks/scripts/tool-guardian.ps1', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
             ['type' => 'file', 'source' => 'scripts/hooks/pre-commit.sh', 'target' => 'scripts/hooks/pre-commit.sh', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/hooks/commit-msg.sh', 'target' => 'scripts/hooks/commit-msg.sh', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],
             ['type' => 'file', 'source' => 'docs/ai/hooks.md', 'target' => 'docs/ai/hooks.md', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],

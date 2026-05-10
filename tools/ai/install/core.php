@@ -58,6 +58,7 @@ function aiInstallerRun(array $argv): int
     }
 
     $applied = [];
+    $seenDirTargets = [];
     foreach ($plan as $item) {
         if ($item['action'] === 'SKIP_EXISTING_UNMANAGED' || $item['action'] === 'SKIP_PROTECTED_CORE' || $item['action'] === 'SKIP_IDENTICAL_EXISTING') {
             aiInstallerLog('skip ' . $item['target'] . ' (' . strtolower($item['action']) . ')');
@@ -80,7 +81,9 @@ function aiInstallerRun(array $argv): int
         } elseif (isset($item['rename_ext'])) {
             aiInstallerCopyDirWithRename($src, $dest, $item['rename_ext']);
         } else {
-            aiInstallerCopyDir($src, $dest);
+            $cleanFirst = !isset($seenDirTargets[$item['target']]);
+            $seenDirTargets[$item['target']] = true;
+            aiInstallerCopyDir($src, $dest, $cleanFirst);
         }
         $applied[] = $item;
         aiInstallerLog('copied ' . $item['type'] . ': ' . $item['target']);
@@ -379,7 +382,7 @@ function aiInstallerCopyDirWithRename(string $src, string $dest, string $newExt)
     }
 }
 
-function aiInstallerCopyDir(string $src, string $dest): void
+function aiInstallerCopyDir(string $src, string $dest, bool $cleanFirst = false): void
 {
     if (!is_dir($src)) {
         throw new RuntimeException('missing source directory: ' . $src);
@@ -389,7 +392,7 @@ function aiInstallerCopyDir(string $src, string $dest): void
     if ($srcReal !== false && $destReal !== false && $srcReal === $destReal) {
         return;
     }
-    if (file_exists($dest)) {
+    if ($cleanFirst && file_exists($dest)) {
         aiInstallerDeleteTree($dest);
     }
     aiInstallerMkdir($dest);

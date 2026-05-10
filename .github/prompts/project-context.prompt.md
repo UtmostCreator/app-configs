@@ -6,7 +6,7 @@ argument-hint: 'Describe what you are planning or reviewing in this repository'
 
 ## What I Do
 
-I provide durable repository context for `<PROJECT_NAME>` and point to the support files that other workflows should read next.
+I provide durable repository context for `app-configs` and point to the support files that other workflows should read next.
 
 ## When To Use Me
 
@@ -41,30 +41,30 @@ If no task context exists yet, stay read-only and produce the missing ownership,
 
 ## Project Shape
 
-- Project type: `<PROJECT_TYPE>`
-- Summary: `<PROJECT_SUMMARY>`
-- Primary language: `<PRIMARY_LANGUAGE>`
-- Primary runtime: `<PRIMARY_RUNTIME>`
-- Active paths: `<ACTIVE_PATHS>`
-- Inactive paths: `<INACTIVE_PATHS>`
-- Targets: `<TARGET_PLATFORMS>`
+- Project type: `php project`
+- Summary: `AI workflow starter for app-configs`
+- Primary language: `unknown`
+- Primary runtime: `unknown`
+- Active paths: `.ai-install-manifest.json,.ai-logs,.editorconfig,.eslintrc.json,.gitattributes,.github,.gitignore,.gitleaks.toml,.gitleaksignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,instruction improvements,justfile,llms.txt,opencode.jsonc,packages,phpunit.xml.dist,policies,readme-install.md,reference,scripts,tests,tools`
+- Inactive paths: `unknown`
+- Targets: `unknown`
 
 ## Architecture Notes
 
-- Primary entrypoints: `<PRIMARY_ENTRYPOINTS>`
-- Notes: `<ARCHITECTURE_NOTES>`
-- Risk areas: `<RISK_AREAS>`
+- Primary entrypoints: `README.md, docs/ai/project-context.md`
+- Notes: `Keep policy and capability docs canonical; keep runtime adapters thin.`
+- Risk areas: `stale docs, adapter drift, unsafe command usage`
 
 ## Verification Expectations
 
-- Main verification command: `<PRIMARY_VERIFY_COMMAND>`
-- Main build command: `<PRIMARY_BUILD_COMMAND>`
-- Main test command: `<PRIMARY_TEST_COMMAND>`
-- Preferred narrow-first pattern: `<NARROW_VERIFY_GUIDANCE>`
+- Main verification command: `unknown`
+- Main build command: `unknown`
+- Main test command: `unknown`
+- Preferred narrow-first pattern: `start with the narrowest repo-local check and escalate only if needed`
 
 ## Review Priorities
 
-- `<REVIEW_PRIORITIES>`
+- `correctness, regressions, configuration drift`
 
 ## Change Hygiene
 
@@ -74,11 +74,11 @@ If no task context exists yet, stay read-only and produce the missing ownership,
 
 ## Approval Boundaries
 
-- `<APPROVAL_REQUIRED_CHANGES>`
+- `secrets, destructive changes, auth or billing changes`
 
 ## Common Gotchas
 
-- `<KNOWN_GOTCHA_THEMES>`
+- `stale paths, broad edits without evidence, guessed behavior`
 
 ## Output Contract
 

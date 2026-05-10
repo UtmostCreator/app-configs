@@ -1,23 +1,17 @@
 ---
-description: Inventory registered AI scripts and risk
-agent: repository-researcher
+description: Build AI script inventory with risk and parity checks
 ---
 
-List script inventory from canonical docs and highlight risk class.
+Create a script inventory for `$ARGUMENTS` using repository-approved wrappers.
 
-## Required checks
+1. Run `git status --short`.
+2. Confirm scripts in `docs/ai/script-registry.json`.
+3. Cross-check parity against `docs/ai/script-registry.md` and `docs/ai/scripts-reference.md`.
+4. Return risk class and required tools for each relevant script.
+
+Preferred command patterns:
 
 ```bash
-git status --short
 AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked "scripts/ai/" . --fixed
 AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked "docs/ai/script-registry" . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked "docs/ai/scripts-reference.md" . --fixed
 ```
-
-## Return format
-
-- script id
-- installed path
-- risk (`read-only` or `mutating`)
-- required tools
-- parity status across `script-registry.json`, `script-registry.md`, and `scripts-reference.md`

@@ -1,14 +1,12 @@
 ---
-name: review-search-tool
 description: Review ai-search implementation and contract safety
 ---
 
-# review-search-tool
+Review `scripts/ai/ai-search.sh` and validate contract behavior.
 
-Use this skill when validating `scripts/ai/ai-search.sh` behavior, output contract, and safety posture.
+Run:
 
-Primary references:
-
-- `docs/ai/tools/ai-search.md`
-- `docs/ai/tools/actions/search-evidence.md`
-- `docs/ai/command-policy.md`
+```bash
+bash scripts/ai/ai-search.sh doctor
+bash tests/scripts/ai/test-ai-search.sh
+```

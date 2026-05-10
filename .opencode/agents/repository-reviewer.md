@@ -1,4 +1,5 @@
 ---
+id: repository-reviewer
 description: Strict script-first diff reviewer using ai-search and validator evidence
 mode: subagent
 hidden: false

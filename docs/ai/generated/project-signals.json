@@ -1,7 +1,7 @@
 {
     "schema_version": 1,
     "project": "app-configs",
-    "tracked_files_count": 765,
+    "tracked_files_count": 816,
     "top_level_paths": [
         ".ai-install-manifest.json",
         ".ai-logs",
@@ -48,7 +48,7 @@
         "tests_shell": 4,
         "scripts_copilot": 26,
         "scripts_ai": 26,
-        "tools_ai_php": 47
+        "tools_ai_php": 49
     },
     "ai_surface": {
         "AGENTS.md": true,

@@ -1,10 +1,10 @@
 {
     "schema_version": 1,
     "artifact": "install-docs.json",
-    "generated_at": "2026-05-06T17:59:57+00:00",
+    "generated_at": "2026-05-10T10:32:56+00:00",
     "command": "php tools/ai/ai.php install-docs --check",
-    "based_on_commit": "9313d57",
-    "based_on_branch": "main",
+    "based_on_commit": "06dde0c",
+    "based_on_branch": "codex/integrate-ai-search-scripts-into-project",
     "input_hashes": {},
     "status": "failed",
     "score": null,

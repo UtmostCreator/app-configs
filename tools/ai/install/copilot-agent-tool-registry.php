@@ -42,6 +42,8 @@ function aiCopilotAgentToolRegistry(): array
         'release-auditor'   => $readOnlyTools,
         'workflow-auditor'  => $readOnlyTools,
         'researcher'        => $executeToolsWithQuestions,
+        'repository-researcher' => $executeToolsWithQuestions,
+        'repository-reviewer' => $readOnlyTools,
         'implementer'       => $editExecuteTools,
         'config-maintainer' => $editExecuteTools,
         'refactorer'        => $editExecuteTools,

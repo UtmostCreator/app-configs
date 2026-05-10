@@ -1,6 +1,6 @@
 {
     "status": "partial",
-    "generated_at": "2026-05-06T18:00:03+00:00",
+    "generated_at": "2026-05-09T23:38:23+00:00",
     "root": "C:\\xampp\\htdocs\\app-configs",
     "steps": [
         {
@@ -8,10 +8,10 @@
             "id": "preflight",
             "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php preflight",
             "goal": "Installer prerequisites are ready.",
-            "exit": 0,
+            "exit": 1,
             "artifact": "docs/ai/generated/preflight.json",
-            "artifact_status": "ok",
-            "ok": true
+            "artifact_status": "failed",
+            "ok": false
         },
         {
             "order": 2,
@@ -78,20 +78,20 @@
             "id": "repomix-analyze",
             "command": "bash scripts/ai/repomix-context-tree.sh analyze .",
             "goal": "Repository structure/context signals are generated.",
-            "exit": 0,
+            "exit": 1,
             "artifact": ".repomix-context/tree-context/tree-plan.json",
             "artifact_status": "unknown",
-            "ok": true
+            "ok": false
         },
         {
             "order": 9,
             "id": "advisor-all",
             "command": "\"C:\\xampp\\php\\php.exe\" tools/ai/ai.php advisor --all",
             "goal": "Advisor analyzes repo and suggests fixes.",
-            "exit": 0,
+            "exit": 1,
             "artifact": "docs/ai/generated/advisor.json",
             "artifact_status": "ok",
-            "ok": true
+            "ok": false
         },
         {
             "order": 10,
@@ -105,7 +105,10 @@
         }
     ],
     "failed_steps": [
+        "preflight",
         "package-verify",
+        "repomix-analyze",
+        "advisor-all",
         "verify-changed"
     ],
     "recommended_next_steps": [

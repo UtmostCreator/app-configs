@@ -55,12 +55,19 @@ install_windows() {
     run_cmd winget install --id BurntSushi.ripgrep.MSVC -e --accept-source-agreements --accept-package-agreements || true
     run_cmd winget install --id jqlang.jq -e --accept-source-agreements --accept-package-agreements || true
     run_cmd winget install --id BenBoyter.scc -e --accept-source-agreements --accept-package-agreements || true
+    run_cmd winget install --id ast-grep.ast-grep -e --accept-source-agreements --accept-package-agreements || true
     run_cmd winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements || true
 
     if need_cmd npm; then
         run_cmd npm install -g repomix
     else
         printf 'Warning: npm not found after Node.js install; install repomix manually.\n' >&2
+    fi
+
+    if need_cmd powershell; then
+        run_cmd powershell -ExecutionPolicy Bypass -File scripts/ai/setup-powershell-profile.ps1
+    else
+        printf 'Warning: powershell not found; run scripts/ai/setup-powershell-profile.ps1 manually.\n' >&2
     fi
 }
 
@@ -71,7 +78,7 @@ install_macos() {
     }
 
     run_cmd brew update
-    run_cmd brew install git php ripgrep jq scc node
+    run_cmd brew install git php ripgrep jq scc node ast-grep
     run_cmd npm install -g repomix
 }
 
@@ -83,6 +90,12 @@ install_linux() {
 
     run_cmd sudo apt-get update
     run_cmd sudo apt-get install -y git php-cli ripgrep jq nodejs npm
+
+    if run_cmd sudo apt-get install -y ast-grep; then
+        :
+    else
+        printf 'Warning: failed to install ast-grep via apt; install manually if required.\n' >&2
+    fi
 
     if run_cmd sudo apt-get install -y scc; then
         :
@@ -103,12 +116,16 @@ verify_tools() {
         need_cmd "$tool" || missing+=("$tool")
     done
 
+    if ! need_cmd ast-grep && ! need_cmd sg; then
+        missing+=("ast-grep")
+    fi
+
     if ((${#missing[@]} > 0)); then
         printf 'Missing required tools: %s\n' "${missing[*]}" >&2
         return 1
     fi
 
-    printf 'All mandatory tools are installed: %s\n' "${required[*]}"
+    printf 'All mandatory tools are installed: %s ast-grep\n' "${required[*]}"
 }
 
 OS_KIND="$(detect_os)"

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 POLICY_FILE="${COPILOT_POLICY_FILE:-policies/copilot/policy.yaml}"
+MAINTENANCE_STATE_FILE="${COPILOT_MAINTENANCE_STATE_FILE:-.ai-logs/maintenance-mode.json}"
 
 deny() {
     jq -cn --arg reason "$1" '{permissionDecision:"deny", permissionDecisionReason:$reason}'
@@ -38,7 +39,7 @@ allow_registered_script() {
     while IFS= read -r path; do
         [[ -n "$path" ]] || continue
         escaped="$(printf '%s' "$path" | sed 's/[][.^$*+?(){}|\\]/\\&/g')"
-        if grep -Eq "^(bash[[:space:]]+)?(\./)?${escaped}([[:space:]]|$)" <<<"$compact"; then
+        if grep -Eq "^([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)*(bash[[:space:]]+)?(\./)?${escaped}([[:space:]]|$)" <<<"$compact"; then
             return 0
         fi
     done < <(jq -r '
@@ -51,6 +52,39 @@ allow_registered_script() {
         | map(select(type == "string" and . != ""))
         | unique[]
     ' "$registry_file" 2>/dev/null)
+
+    return 1
+}
+
+maintenance_mode_active() {
+    local state_file="$MAINTENANCE_STATE_FILE"
+    command -v jq >/dev/null 2>&1 || return 1
+    [[ -f "$state_file" ]] || return 1
+
+    local enabled expires_at now
+    enabled="$(jq -r '.enabled // false' "$state_file" 2>/dev/null || printf 'false')"
+    [[ "$enabled" == "true" ]] || return 1
+
+    expires_at="$(jq -r '.expires_at_epoch // 0' "$state_file" 2>/dev/null || printf '0')"
+    [[ "$expires_at" =~ ^[0-9]+$ ]] || return 1
+    now="$(date +%s)"
+    (( expires_at > now ))
+}
+
+maintenance_mode_allow() {
+    local compact="$1"
+
+    if allow_registered_script "$compact"; then
+        return 0
+    fi
+
+    if grep -Eq '^([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)*(bash[[:space:]]+)?(\./)?scripts/ai/(ai-search|preview-file|query-usage|git-forensics|ai-diff-context|ai-doc-check|ai-structured|ai-task|ai-test-select|ai-verify|pack-context|repomix-context-tree|repomix-scc-router|run-repomix-context|session-checkpoint)\.sh([[:space:]]|$)' <<<"$compact"; then
+        return 0
+    fi
+
+    if grep -Eq '^php[[:space:]]+tools/ai/(ai\.php[[:space:]]+install|install-ai-kit\.php|validate-ai-config\.php|validate-install-surface\.php|validate-ai-catalog\.php|validate-command-policy\.php|verify-full-install\.php|generate-ai-catalog\.php|maintenance-mode\.php)([[:space:]]|$)' <<<"$compact"; then
+        return 0
+    fi
 
     return 1
 }
@@ -143,6 +177,19 @@ fi
 if grep -Eq '(curl|wget|nc|ncat|netcat)[[:space:]].*(-d|--data|--upload-file|--data-binary)' <<<"$compact"; then
     deny 'possible data exfiltration command blocked by repo policy'
     exit 0
+fi
+
+if maintenance_mode_active; then
+    if maintenance_mode_allow "$compact"; then
+        allow
+        exit 0
+    fi
+
+    if grep -Eq '(^|[[:space:]])(bash[[:space:]]+)?[^[:space:]]+\.sh([[:space:]]|$)' <<<"$compact"; then
+        jq -cn --arg reason 'maintenance mode allows repository-delivered scripts only; external scripts require explicit approval' \
+            '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+        exit 0
+    fi
 fi
 
 if grep -Eq '(^|[[:space:]])(cat|bat|less|head|tail)([[:space:]]|$)' <<<"$compact" \
@@ -315,7 +362,8 @@ if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/repomix-scc-router\.sh[[:space
 fi
 
 if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/[^[:space:]]+\.sh\b' <<<"$compact"; then
-    deny 'script is not approved by docs/ai/script-registry.json or the tiered hook policy'
+    jq -cn --arg reason 'script is not approved by docs/ai/script-registry.json or the tiered hook policy — confirmation required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
     exit 0
 fi
 

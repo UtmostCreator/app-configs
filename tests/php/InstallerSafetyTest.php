@@ -28,14 +28,29 @@ class InstallerSafetyTest extends TestCase
     private function runTool(string $command, array $envOverride = []): array
     {
         $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-        $env = [
-            'HOME' => sys_get_temp_dir(),
-            'XDG_CONFIG_HOME' => sys_get_temp_dir(),
-            'GIT_CONFIG_GLOBAL' => '/dev/null',
-            'PATH' => (string) getenv('PATH'),
-        ];
-        foreach ($envOverride as $k => $v) {
-            $env[$k] = $v;
+        $path = $this->buildTestPath();
+        putenv('PATH=' . $path);
+        $_ENV['PATH'] = $path;
+        $_SERVER['PATH'] = $path;
+
+        $env = null;
+        if ($envOverride !== []) {
+            $env = [
+                'HOME' => sys_get_temp_dir(),
+                'XDG_CONFIG_HOME' => sys_get_temp_dir(),
+                'GIT_CONFIG_GLOBAL' => '/dev/null',
+                'PATH' => $path,
+            ];
+            foreach ($envOverride as $k => $v) {
+                $env[$k] = $v;
+            }
+        } else {
+            $env = [
+                'HOME' => sys_get_temp_dir(),
+                'XDG_CONFIG_HOME' => sys_get_temp_dir(),
+                'GIT_CONFIG_GLOBAL' => '/dev/null',
+                'PATH' => $path,
+            ];
         }
 
         $process = proc_open($command, $descriptors, $pipes, self::$repoRoot, $env);
@@ -85,6 +100,33 @@ class InstallerSafetyTest extends TestCase
         }
 
         @rmdir($path);
+    }
+
+    private function buildTestPath(): string
+    {
+        $path = (string) getenv('PATH');
+
+        $extras = [
+            'C:\\Program Files\\Git\\cmd',
+            'C:\\xampp\\php',
+        ];
+
+        $userProfile = (string) getenv('USERPROFILE');
+        if ($userProfile !== '') {
+            $extras[] = $userProfile . '\\AppData\\Local\\Microsoft\\WinGet\\Links';
+            $extras[] = $userProfile . '\\AppData\\Roaming\\npm';
+        }
+
+        foreach ($extras as $extra) {
+            if ($extra === '' || !is_dir($extra)) {
+                continue;
+            }
+            if (stripos($path, $extra) === false) {
+                $path .= ';' . $extra;
+            }
+        }
+
+        return $path;
     }
 
     public function testRunScriptUnknownIdIsRejected(): void

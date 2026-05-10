@@ -274,11 +274,7 @@ ensure_actionable_route() {
     local usable="$1"
     local fallback_row=''
     local fallback_group=''
-    local fallback_files=''
-    local fallback_code=''
-    local fallback_complexity=''
     local fallback_bytes=''
-    local fallback_score=''
     local fallback_tokens=''
     local fallback_decision=''
     local fallback_type=''
@@ -293,7 +289,7 @@ ensure_actionable_route() {
     fallback_row="$(tail -n +2 "$ROUTER_FOLDER_METRICS" | awk -F'\t' '$1 != "" && $4 + 0 > 0 { print; exit }')"
     [[ -n "$fallback_row" ]] || return 0
 
-    IFS=$'\t' read -r fallback_group fallback_files _fallback_lines fallback_code _fallback_comments _fallback_blanks fallback_complexity fallback_bytes _fallback_churn _fallback_code_share _fallback_complexity_share _fallback_file_share _fallback_byte_share _fallback_churn_share fallback_score <<<"$fallback_row"
+    IFS=$'\t' read -r fallback_group _fallback_files _fallback_lines _fallback_code _fallback_comments _fallback_blanks _fallback_complexity fallback_bytes _fallback_churn _fallback_code_share _fallback_complexity_share _fallback_file_share _fallback_byte_share _fallback_churn_share _fallback_score <<<"$fallback_row"
 
     fallback_tokens="$(estimate_tokens "$fallback_bytes")"
     if ((fallback_tokens <= usable)); then

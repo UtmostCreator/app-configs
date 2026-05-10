@@ -1,7 +1,7 @@
 # Scripts
 
 - Status: `failed`
-- Generated at: `2026-05-06T18:00:48+00:00`
+- Generated at: `2026-05-10T10:33:18+00:00`
 - Commit: `unknown`
 - Branch: `unknown`
 - Recommended next action: `Fix script/tool errors and retry.`
@@ -10,7 +10,7 @@
 {
     "schema_version": 1,
     "artifact": "scripts.json",
-    "generated_at": "2026-05-06T18:00:48+00:00",
+    "generated_at": "2026-05-10T10:33:18+00:00",
     "command": "php tools/ai/ai.php run-script repomix-context",
     "based_on_commit": "unknown",
     "based_on_branch": "unknown",

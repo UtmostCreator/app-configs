@@ -138,6 +138,7 @@ Minimum flow:
 - For behavior changes, name the focused test, flow, or assertion that proves the result.
 - For `medium` and `high` risk work, state rollback path and success signal alongside verification.
 - Do not report recommendations, assumptions, or unrun checks as completed work.
+- When listing runnable commands for users, print one command per line with no ordered/unordered list markers so each line is copy-paste ready.
 
 ## Review Priorities
 

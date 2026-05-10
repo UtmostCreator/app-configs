@@ -5,6 +5,14 @@ description: "Tool selection and script enforcement — use rg/fd/approved scrip
 
 # Tool Selection Rules
 
+## Surface-Aware Tool Routing
+
+Different AI surfaces have different built-in capabilities:
+
+- **Copilot VS Code**: Has built-in `grep_search`, `read_file`, `file_search`, `semantic_search`, `list_dir`. Use these for search/read. Use shell scripts for verification, validation, workflow, and git forensics.
+- **OpenCode**: No built-in search/read tools. Use shell scripts for everything.
+- **Claude Code**: Similar to OpenCode. Use shell scripts for everything.
+
 ## Required Tools
 
 When searching code or files, always prefer repository-aware tools:

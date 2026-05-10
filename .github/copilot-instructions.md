@@ -1,8 +1,10 @@
 # Repository Instructions For app-configs
+
 Use these instructions as the repository-wide baseline for GitHub Copilot.
 They should remain valid even if advanced agent features or prompt files are unavailable on the active surface.
 
 ## Project Context
+
 - Project: `app-configs`
 - Type: `php project`
 - Summary: `AI workflow starter for app-configs`

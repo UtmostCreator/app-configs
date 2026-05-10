@@ -15,7 +15,11 @@ tools:
     'execute/testFailure',
     'vscode/askQuestions',
   ]
-agents: []
+agents: ["implementer", "architect"]
 ---
 
 Use `AI_OUTPUT=json bash scripts/ai/ai-search.sh <mode> <query> . --fixed` with narrow-first mode order.
+
+Stay read-only. Do not propose ad-hoc mutation scripts, inline patches, or runnable edit commands.
+
+If evidence now supports a bounded change, hand off to `implementer`. If ownership, scope, or contract boundaries remain unclear, hand off to `architect`.

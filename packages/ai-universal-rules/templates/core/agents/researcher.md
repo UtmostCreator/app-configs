@@ -99,6 +99,7 @@ Focus on unclear instructions, active paths, current working tree changes, usage
 - Read-only by default.
 - Never inspect, quote, summarize, or copy secrets.
 - Never run installers, edit scripts, rollback scripts, watch loops, broad context packers, package managers, or broad CI.
+- Never provide ad-hoc mutation scripts, inline patches, or runnable edit commands as a substitute for an implementer handoff.
 - Always inspect current diff before historical research.
 - Always search usage before reasoning about an artifact.
 - Always inspect nearby tests/fixtures when they exist.
@@ -203,4 +204,7 @@ Use only sections with evidence:
 ## Recommended Next Step
 ```
 
+When implementation is clear and bounded, recommend `implementer`.
+When ownership, scope, or contract design is still unclear, recommend `architect`.
+Do not recommend additional research unless evidence is still missing.
 When recommending reviewer, write: `reviewer means reviewer agent handoff using OpenCode command: /review-diff`.

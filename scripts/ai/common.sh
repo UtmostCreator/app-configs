@@ -11,6 +11,7 @@ COPILOT_CONTEXT_DIR="${COPILOT_CONTEXT_DIR:-.repomix-context}"
 COPILOT_SESSION_DIR="${COPILOT_SESSION_DIR:-${COPILOT_LOG_DIR}/sessions}"
 COPILOT_SNAPSHOT_DIR="${COPILOT_SNAPSHOT_DIR:-${COPILOT_LOG_DIR}/snapshots}"
 COPILOT_EVENT_LOG="${COPILOT_EVENT_LOG:-${COPILOT_LOG_DIR}/tool-usage.jsonl}"
+AI_SESSION_GENERATED_DIR="${AI_SESSION_GENERATED_DIR:-docs/ai/generated/sessions}"
 
 AI_CMD_TIMEOUT="${AI_CMD_TIMEOUT:-120}"
 AI_OUTPUT_MAX_BYTES="${AI_OUTPUT_MAX_BYTES:-200000}"
@@ -665,6 +666,30 @@ require_clean_tree() {
 
     if ! git diff --quiet || ! git diff --cached --quiet; then
         die "working tree is not clean; commit or stash changes first"
+    fi
+}
+
+secrets_scan() {
+    local target="${1:-.}"
+
+    if command_exists gitleaks; then
+        gitleaks detect --source "$target" --redact --no-banner --exit-code 1 >/dev/null 2>&1
+    else
+        log_warn "gitleaks not installed; skipping secrets scan"
+        return 0
+    fi
+}
+
+require_clean_secret_scan() {
+    local target="${1:-.}"
+
+    if [[ "${SECRETS_SCAN:-1}" != "1" ]]; then
+        log_warn "SECRETS_SCAN disabled"
+        return 0
+    fi
+
+    if ! secrets_scan "$target"; then
+        die "secrets detected; refusing to continue"
     fi
 }
 

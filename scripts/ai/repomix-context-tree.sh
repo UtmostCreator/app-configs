@@ -491,7 +491,7 @@ build_human_index() {
 run_analyze() {
     need_bin jq
     ensure_tree_outputs
-    (cd "$ROOT" && bash "${router_args[@]}")
+    (cd "$ROOT" && "$BASH" "${router_args[@]}")
     build_plan
     build_human_index
     log "wrote $TREE_PLAN_TSV"

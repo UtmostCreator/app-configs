@@ -45,7 +45,7 @@ require_clean_secret_scan "$root_abs"
 
 section "Generate context tree"
 
-if ! bash "$TREE_SCRIPT" all "$root_abs" --compress --style xml "$@"; then
+if ! "$BASH" "$TREE_SCRIPT" all "$root_abs" --compress --style xml "$@"; then
     die "context tree generation failed"
 fi
 

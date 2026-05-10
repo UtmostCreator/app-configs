@@ -1,19 +1,19 @@
 # Preflight
 
 - Status: `ok`
-- Generated at: `2026-05-10T11:30:27+00:00`
-- Commit: `06dde0c`
-- Branch: `codex/integrate-ai-search-scripts-into-project`
+- Generated at: `2026-05-10T14:56:58+00:00`
+- Commit: `4fcd339`
+- Branch: `main`
 - Recommended next action: `Run package-verify then adapter-plan.`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "preflight.json",
-    "generated_at": "2026-05-10T11:30:27+00:00",
+    "generated_at": "2026-05-10T14:56:58+00:00",
     "command": "php tools/ai/ai.php preflight",
-    "based_on_commit": "06dde0c",
-    "based_on_branch": "codex/integrate-ai-search-scripts-into-project",
+    "based_on_commit": "4fcd339",
+    "based_on_branch": "main",
     "input_hashes": {},
     "status": "ok",
     "score": null,
@@ -37,8 +37,8 @@
             },
             {
                 "name": "ext_zip",
-                "status": "warning",
-                "reason": "ZipArchive unavailable; directory backup fallback will be used"
+                "status": "passed",
+                "reason": null
             },
             {
                 "name": "git",

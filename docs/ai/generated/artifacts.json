@@ -1,13 +1,13 @@
 {
     "schema_version": 1,
-    "updated_at": "2026-05-10T11:30:27+00:00",
-    "current_commit": "06dde0c",
+    "updated_at": "2026-05-10T14:56:59+00:00",
+    "current_commit": "4fcd339",
     "artifacts": {
         "preflight.json": {
-            "generated_at": "2026-05-10T11:30:27+00:00",
-            "based_on_commit": "06dde0c",
+            "generated_at": "2026-05-10T14:56:58+00:00",
+            "based_on_commit": "4fcd339",
             "command": "php tools/ai/ai.php preflight",
-            "estimated_tokens": 357,
+            "estimated_tokens": 331,
             "stale": false,
             "json_path": "docs/ai/generated/preflight.json",
             "md_path": "docs/ai/generated/preflight.md"
@@ -31,10 +31,10 @@
             "md_path": "docs/ai/generated/adapter-plan.md"
         },
         "install.json": {
-            "generated_at": "2026-05-10T11:30:27+00:00",
-            "based_on_commit": "06dde0c",
+            "generated_at": "2026-05-10T14:56:59+00:00",
+            "based_on_commit": "4fcd339",
             "command": "php tools/ai/ai.php install --apply",
-            "estimated_tokens": 182,
+            "estimated_tokens": 1017,
             "stale": false,
             "json_path": "docs/ai/generated/install.json",
             "md_path": "docs/ai/generated/install.md"
@@ -227,6 +227,24 @@
             "stale": false,
             "json_path": "docs/ai/generated/adapter-validate.json",
             "md_path": "docs/ai/generated/adapter-validate.md"
+        },
+        "install-transaction.json": {
+            "generated_at": "2026-05-10T14:56:58+00:00",
+            "based_on_commit": "4fcd339",
+            "command": "php tools/ai/ai.php install --apply",
+            "estimated_tokens": 160,
+            "stale": false,
+            "json_path": "docs/ai/generated/install-transaction.json",
+            "md_path": "docs/ai/generated/install-transaction.md"
+        },
+        "placeholders.json": {
+            "generated_at": "2026-05-10T14:56:33+00:00",
+            "based_on_commit": "4fcd339",
+            "command": "php tools/ai/ai.php placeholders",
+            "estimated_tokens": 2342,
+            "stale": false,
+            "json_path": "docs/ai/generated/placeholders.json",
+            "md_path": "docs/ai/generated/placeholders.md"
         }
     }
 }

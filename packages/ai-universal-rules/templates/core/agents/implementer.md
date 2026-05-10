@@ -96,6 +96,12 @@ permission:
     'bash scripts/ai/preview-file.sh *': allow
     'bash scripts/ai/query-usage.sh *': allow
     'bash scripts/ai/git-forensics.sh *': allow
+    'bash scripts/ai/ai-verify.sh *': allow
+    'bash scripts/ai/ai-doc-check.sh --check*': allow
+    'bash scripts/ai/ai-file-freshness.sh *': allow
+    'bash scripts/ai/ai-install-coverage.sh *': allow
+    'bash scripts/ai/check-file-refs.sh *': allow
+    'bash scripts/ai/repo-tool-inventory.sh --check*': allow
     'php -l *': allow
     'vendor/bin/phpunit *': allow
     './vendor/bin/phpunit *': allow
@@ -116,8 +122,6 @@ permission:
     'markdownlint-cli2 *': allow
     'php tools/ai/validate-*.php *': allow
     'php tools/ai/generate-*.php --check*': allow
-    'bash scripts/ai/ai-doc-check.sh --check*': allow
-    'bash scripts/ai/repo-tool-inventory.sh --check*': allow
 ---
 
 # Implementer Agent

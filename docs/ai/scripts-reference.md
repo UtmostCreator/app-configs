@@ -96,6 +96,22 @@ For ordered installation recipes and selective pack examples, use `docs/ai/insta
   - Just aliases: `just check-refs` (plain text) and `just check-refs-json` (JSON output).
   - Registered in `docs/ai/script-registry.md` and `docs/ai/script-registry.json` under `check-file-refs`.
 
+## Repository Metrics Script
+
+- `bash scripts/ai/repo-stats.sh [root] [--json]`
+  - Prints per-file and per-directory line/size metrics using `scc --by-file --format json` as the counting engine.
+  - Stdout only — no files written.
+  - Ignore model follows `.repomixignore` → `.ignore` → `.gitignore` (via git or fd natively).
+  - Options: `--json` for flat per-file JSON output instead of the default text report.
+  - Registered in `docs/ai/script-registry.md` and `docs/ai/script-registry.json` under `repo-stats`.
+
+## Windows / PowerShell Setup
+
+- `pwsh scripts/ai/setup-powershell-profile.ps1 [-DryRun] [-NoProfileUpdate]`
+  - Windows-only setup script. Ensures the user PATH contains required tool locations and optionally updates `$PROFILE.CurrentUserCurrentHost`.
+  - Use `-DryRun` to preview PATH changes without writing to the profile.
+  - Not registered in the bash script registry — run with `pwsh` on Windows only.
+
 ## Generated Artifacts Maintained By Scripts
 
 - `docs/ai/catalog.md`

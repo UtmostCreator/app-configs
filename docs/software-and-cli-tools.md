@@ -120,6 +120,7 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 ## Window Management
 
 - **[AeroSpace](https://github.com/nikitabobko/AeroSpace)** - tiling window manager
+- **[yabai](https://github.com/asmvik/yabai)** - Tiling window management for the Mac
 
 ## Menu Bar Management
 
@@ -203,6 +204,7 @@ brew install zsh-autosuggestions
 brew install zsh-syntax-highlighting
 brew install bats-core
 brew install actionlint
+brew install asmvik/formulae/yabai
 ```
 
 > `mysql-client` is often keg-only and may require adding Homebrew's bin path to your shell config.

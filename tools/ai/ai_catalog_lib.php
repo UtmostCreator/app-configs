@@ -52,6 +52,34 @@ function aiLoadJson(string $root, string $relativePath): array
     return $decoded;
 }
 
+/**
+ * @return list<string>
+ */
+function aiListFilesInDirectory(string $directory): array
+{
+    if (!is_dir($directory)) {
+        return [];
+    }
+
+    $files = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::LEAVES_ONLY
+    );
+
+    foreach ($iterator as $item) {
+        if (!$item->isFile()) {
+            continue;
+        }
+
+        $files[] = aiNormalizePath($item->getPathname());
+    }
+
+    sort($files);
+
+    return $files;
+}
+
 function aiParseFrontMatter(string $content): array
 {
     if (!str_starts_with($content, "---\n")) {

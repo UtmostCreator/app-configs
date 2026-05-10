@@ -59,10 +59,10 @@
         "root:github-copilot-agent": 10,
         "root:github-copilot-instruction": 21,
         "root:github-copilot-prompt": 16,
-        "root:github-copilot-skill": 13,
+        "root:github-copilot-skill": 15,
         "root:opencode-agent": 10,
         "root:opencode-command": 6,
-        "root:opencode-skill": 15,
+        "root:opencode-skill": 17,
         "root:php-reference": 3,
         "root:root-doc": 16,
         "root:schema": 1,
@@ -1953,6 +1953,22 @@
         {
             "scope": "root",
             "type": "github-copilot-skill",
+            "name": "review-search-tool",
+            "path": ".github/skills/review-search-tool/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "search-evidence",
+            "path": ".github/skills/search-evidence/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Collect repository evidence using ai-search"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
             "name": "verify-change",
             "path": ".github/skills/verify-change/SKILL.md",
             "runtime": "github-copilot",
@@ -2197,6 +2213,22 @@
             "path": ".opencode/skills/review-diff/SKILL.md",
             "runtime": "opencode",
             "description": "Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "review-search-tool",
+            "path": ".opencode/skills/review-search-tool/SKILL.md",
+            "runtime": "opencode",
+            "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "search-evidence",
+            "path": ".opencode/skills/search-evidence/SKILL.md",
+            "runtime": "opencode",
+            "description": "Collect repository evidence using ai-search"
         },
         {
             "scope": "root",

@@ -1,6 +1,7 @@
 ---
 description: Strict script-first repository researcher using ai-search before raw search
 mode: subagent
+hidden: false
 permission:
   edit: deny
   bash:

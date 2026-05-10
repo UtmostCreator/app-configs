@@ -3,6 +3,8 @@ set -euo pipefail
 # shellcheck source=scripts/ai/common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
+MAINTENANCE_STATE_FILE="${COPILOT_MAINTENANCE_STATE_FILE:-.ai-logs/maintenance-mode.json}"
+
 mkdir -p "$COPILOT_LOG_DIR"
 input="$(cat)"
 SESSION_ID="${SESSION_ID:-post-tool-use-$(date +%Y%m%d-%H%M%S)-$$}"
@@ -74,6 +76,24 @@ detect_mutation() {
     ' <<<"$input"
 }
 
+maintenance_mode_status() {
+    if ! command -v jq >/dev/null 2>&1 || [[ ! -f "$MAINTENANCE_STATE_FILE" ]]; then
+        printf 'inactive\n'
+        return 0
+    fi
+
+    local enabled expires_at now
+    enabled="$(jq -r '.enabled // false' "$MAINTENANCE_STATE_FILE" 2>/dev/null || printf 'false')"
+    expires_at="$(jq -r '.expires_at_epoch // 0' "$MAINTENANCE_STATE_FILE" 2>/dev/null || printf '0')"
+    now="$(date +%s)"
+
+    if [[ "$enabled" == "true" && "$expires_at" =~ ^[0-9]+$ ]] && (( expires_at > now )); then
+        printf 'active\n'
+    else
+        printf 'inactive\n'
+    fi
+}
+
 failure_category=""
 if jq -e '.toolResult.resultType? == "error" or .toolResult.isError? == true' >/dev/null 2>&1 <<<"$input"; then
     failure_category="$(classify_failure)"
@@ -82,6 +102,7 @@ fi
 auth_decision="$(authorization_decision "${failure_category:-unknown}")"
 exec_status="$(execution_status "${failure_category:-unknown}")"
 mutates_state="$(detect_mutation)"
+maintenance_mode="$(maintenance_mode_status)"
 args_hash="$(jq -cS '.toolArgs // {}' <<<"$input" | shasum -a 256 | awk '{print "sha256:" $1}')"
 
 entry="$(jq -cn \
@@ -97,6 +118,7 @@ entry="$(jq -cn \
     --arg auth_decision "$auth_decision" \
     --arg failure_category "$failure_category" \
     --arg exec_status "$exec_status" \
+    --arg maintenance_mode "$maintenance_mode" \
     --arg repo_root "$(git_root 2>/dev/null || pwd)" \
     --arg git_branch "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || printf 'unknown')" \
     --arg git_commit "$(git rev-parse HEAD 2>/dev/null || printf 'unknown')" \
@@ -152,10 +174,11 @@ entry="$(jq -cn \
       output: {
         preview: (($event.toolResult.output // $event.toolResult.stderr // null) | if type == "string" then .[:400] else null end)
       },
-      details: {
-        tool_args: ($event.toolArgs // {}),
-        result_type: ($event.toolResult.resultType // "unknown")
-      }
-    }')"
+        details: {
+          tool_args: ($event.toolArgs // {}),
+          result_type: ($event.toolResult.resultType // "unknown"),
+          maintenance_mode: $maintenance_mode
+        }
+      }')"
 
 append_log_entry "$entry"

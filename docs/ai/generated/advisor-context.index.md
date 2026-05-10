@@ -12,6 +12,7 @@
 - `packages/ai-universal-rules/catalog.json`
 - `packages/ai-universal-rules/manifest.json`
 - `packages/ai-universal-rules/manifest.yml`
+- `scripts/ai/ALL_IN_ONE.txt`
 - `scripts/ai/ai-diff-context.sh`
 - `scripts/ai/ai-doc-check.sh`
 - `scripts/ai/ai-edit.sh`
@@ -21,6 +22,7 @@
 - `scripts/ai/ai-task.sh`
 - `scripts/ai/ai-test-select.sh`
 - `scripts/ai/ai-verify.sh`
+- `scripts/ai/all_into_one.bat`
 - `scripts/ai/common.sh`
 - `scripts/ai/fd-files.sh`
 - `scripts/ai/gh-pr-context.sh`
@@ -62,6 +64,8 @@
 - `tests/php/GenerateRepoStructureTest.php`
 - `tests/php/InstallerSafetyTest.php`
 - `tests/php/bootstrap.php`
+- `tests/scripts/ai/test-ai-search.sh`
+- `tests/scripts/ai/test-preview-file.sh`
 - `tests/shell/doctor.bats`
 - `tests/shell/post-tool-use.bats`
 - `tests/shell/pre-tool-use.bats`
@@ -114,6 +118,7 @@
 - `tools/ai/install/verify-install-result.php`
 - `tools/ai/install/verify-manifest.php`
 - `tools/ai/install/verify-no-overwrite.php`
+- `tools/ai/render-agent-permissions.php`
 - `tools/ai/repo-tool-inventory.php`
 - `tools/ai/rules/agnostic-leak-rules.json`
 - `tools/ai/secret-scan.php`
@@ -155,6 +160,7 @@
 - `tools/ai/validate-adapter-drift.php`
 - `tools/ai/validate-ai-catalog.php`
 - `tools/ai/validate-ai-config.php`
+- `tools/ai/validate-command-policy.php`
 - `tools/ai/validate-generated-artifacts.php`
 - `tools/ai/validate-install-surface.php`
 - `tools/ai/validate-placeholders.php`

@@ -121,7 +121,7 @@ copy_dir_with_rename() {
     mkdir -p "$dest"
 
     while IFS= read -r -d '' file; do
-        rel="${file#$src/}"
+        rel="${file#"$src"/}"
         dir="$(dirname "$rel")"
         base="$(basename "$rel")"
         base="${base%.*}$new_ext"

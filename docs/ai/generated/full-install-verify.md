@@ -1,11 +1,11 @@
 # Full Install Verify
 
 - Status: `partial`
-- Generated at: `2026-05-06T18:00:03+00:00`
+- Generated at: `2026-05-09T23:38:23+00:00`
 
 ## Executed Steps
 
-- Step 1 (`preflight`): `"C:\xampp\php\php.exe" tools/ai/ai.php preflight` -> exit `0`, artifact status `ok`
+- Step 1 (`preflight`): `"C:\xampp\php\php.exe" tools/ai/ai.php preflight` -> exit `1`, artifact status `failed`
   - Goal: Installer prerequisites are ready.
 - Step 2 (`package-verify`): `"C:\xampp\php\php.exe" tools/ai/ai.php package-verify` -> exit `1`, artifact status `failed`
   - Goal: Template package lock is valid.
@@ -19,9 +19,9 @@
   - Goal: Catalog metadata is consistent.
 - Step 7 (`catalog-check`): `"C:\xampp\php\php.exe" tools/ai/generate-ai-catalog.php --check` -> exit `0`, artifact status `not-applicable`
   - Goal: Catalog outputs are up to date.
-- Step 8 (`repomix-analyze`): `bash scripts/ai/repomix-context-tree.sh analyze .` -> exit `0`, artifact status `unknown`
+- Step 8 (`repomix-analyze`): `bash scripts/ai/repomix-context-tree.sh analyze .` -> exit `1`, artifact status `unknown`
   - Goal: Repository structure/context signals are generated.
-- Step 9 (`advisor-all`): `"C:\xampp\php\php.exe" tools/ai/ai.php advisor --all` -> exit `0`, artifact status `ok`
+- Step 9 (`advisor-all`): `"C:\xampp\php\php.exe" tools/ai/ai.php advisor --all` -> exit `1`, artifact status `ok`
   - Goal: Advisor analyzes repo and suggests fixes.
 - Step 10 (`verify-changed`): `"C:\xampp\php\php.exe" tools/ai/ai.php verify --changed` -> exit `2`, artifact status `failed`
   - Goal: Changed-scope verification summary is current.

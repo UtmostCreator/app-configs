@@ -1,7 +1,7 @@
 # Toolchain
 
 - Status: `ok`
-- Generated at: `2026-05-06T18:00:49+00:00`
+- Generated at: `2026-05-10T10:33:18+00:00`
 - Commit: `unknown`
 - Branch: `unknown`
 - Recommended next action: `Review missing tools and rerun with --toolchain-apply only when needed.`
@@ -10,7 +10,7 @@
 {
     "schema_version": 1,
     "artifact": "toolchain.json",
-    "generated_at": "2026-05-06T18:00:49+00:00",
+    "generated_at": "2026-05-10T10:33:18+00:00",
     "command": "php tools/ai/ai.php toolchain",
     "based_on_commit": "unknown",
     "based_on_branch": "unknown",
@@ -91,6 +91,20 @@
                 "install_commands": []
             },
             {
+                "tool": "fd",
+                "label": "fd",
+                "present": false,
+                "version": "unknown",
+                "unknown": true
+            },
+            {
+                "tool": "ast-grep",
+                "label": "ast-grep",
+                "present": false,
+                "version": "unknown",
+                "unknown": true
+            },
+            {
                 "tool": "repomix",
                 "label": "Repomix",
                 "present": false,
@@ -149,6 +163,16 @@
                 "safe_auto_install": false
             },
             {
+                "tool": "fd",
+                "hint": "manual install required",
+                "safe_auto_install": false
+            },
+            {
+                "tool": "ast-grep",
+                "hint": "manual install required",
+                "safe_auto_install": false
+            },
+            {
                 "tool": "repomix",
                 "hint": "npm install -g repomix",
                 "safe_auto_install": true
@@ -183,6 +207,18 @@
                 "status": "blocked",
                 "reason": "auto-install not approved",
                 "hint": "winget install BurntSushi.ripgrep.MSVC"
+            },
+            {
+                "tool": "fd",
+                "status": "blocked",
+                "reason": "auto-install not approved",
+                "hint": "manual install required"
+            },
+            {
+                "tool": "ast-grep",
+                "status": "blocked",
+                "reason": "auto-install not approved",
+                "hint": "manual install required"
             },
             {
                 "tool": "repomix",

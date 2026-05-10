@@ -1,19 +1,19 @@
 # Preflight
 
 - Status: `ok`
-- Generated at: `2026-05-06T18:00:47+00:00`
-- Commit: `9313d57`
-- Branch: `main`
+- Generated at: `2026-05-10T11:30:27+00:00`
+- Commit: `06dde0c`
+- Branch: `codex/integrate-ai-search-scripts-into-project`
 - Recommended next action: `Run package-verify then adapter-plan.`
 
 ```json
 {
     "schema_version": 1,
     "artifact": "preflight.json",
-    "generated_at": "2026-05-06T18:00:47+00:00",
+    "generated_at": "2026-05-10T11:30:27+00:00",
     "command": "php tools/ai/ai.php preflight",
-    "based_on_commit": "9313d57",
-    "based_on_branch": "main",
+    "based_on_commit": "06dde0c",
+    "based_on_branch": "codex/integrate-ai-search-scripts-into-project",
     "input_hashes": {},
     "status": "ok",
     "score": null,

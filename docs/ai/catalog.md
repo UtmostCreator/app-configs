@@ -39,10 +39,10 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 - `root / github-copilot-agent` - 10
 - `root / github-copilot-instruction` - 21
 - `root / github-copilot-prompt` - 16
-- `root / github-copilot-skill` - 13
+- `root / github-copilot-skill` - 15
 - `root / opencode-agent` - 10
 - `root / opencode-command` - 6
-- `root / opencode-skill` - 15
+- `root / opencode-skill` - 17
 - `root / php-reference` - 3
 - `root / root-doc` - 16
 - `root / schema` - 1
@@ -160,6 +160,8 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-skill`|release-safety|`.github/skills/release-safety/SKILL.md`|Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards|
 |`github-copilot-skill`|repo-investigation|`.github/skills/repo-investigation/SKILL.md`|Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence.|
 |`github-copilot-skill`|review-diff|`.github/skills/review-diff/SKILL.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
+|`github-copilot-skill`|review-search-tool|`.github/skills/review-search-tool/SKILL.md`|Review ai-search implementation and contract safety|
+|`github-copilot-skill`|search-evidence|`.github/skills/search-evidence/SKILL.md`|Collect repository evidence using ai-search|
 |`github-copilot-skill`|verify-change|`.github/skills/verify-change/SKILL.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
 |`opencode-agent`|architect|`.opencode/agents/architect.md`|Use when a change needs scoping, design, ownership decisions, contract boundaries, adapter strategy, or risk posture before implementation|
 |`opencode-agent`|config-maintainer|`.opencode/agents/config-maintainer.md`|Use when changing editor, shell, runtime, or tool configuration while preserving current behavior|
@@ -191,6 +193,8 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`opencode-skill`|release-safety|`.opencode/skills/release-safety/SKILL.md`|Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards|
 |`opencode-skill`|repo-investigation|`.opencode/skills/repo-investigation/SKILL.md`|Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence.|
 |`opencode-skill`|review-diff|`.opencode/skills/review-diff/SKILL.md`|Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff|
+|`opencode-skill`|review-search-tool|`.opencode/skills/review-search-tool/SKILL.md`|Review ai-search implementation and contract safety|
+|`opencode-skill`|search-evidence|`.opencode/skills/search-evidence/SKILL.md`|Collect repository evidence using ai-search|
 |`opencode-skill`|verify-change|`.opencode/skills/verify-change/SKILL.md`|Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly|
 |`php-reference`|design-patterns|`reference/php/design-patterns`|Primary local PHP design pattern corpus for agent and human lookups.|
 |`php-reference`|design-principles|`reference/php/design-principles`|Secondary PHP principles and composition examples.|

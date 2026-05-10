@@ -1,8 +1,10 @@
 # Repository Instructions For <PROJECT_NAME>
+
 Use these instructions as the repository-wide baseline for GitHub Copilot.
 They should remain valid even if advanced agent features or prompt files are unavailable on the active surface.
 
 ## Project Context
+
 - Project: `<PROJECT_NAME>`
 - Type: `<PROJECT_TYPE>`
 - Summary: `<PROJECT_SUMMARY>`

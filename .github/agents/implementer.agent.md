@@ -1,7 +1,23 @@
 ---
 name: Implementer
 description: 'Use when a bounded implementation slice is clear and focused verification should happen in this repository'
-tools: ['search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/textSearch', 'search/usages', 'read/readFile', 'read/problems', 'edit/editFiles', 'edit/createFile', 'edit/createDirectory', 'execute/runInTerminal', 'execute/testFailure', 'vscode/askQuestions']
+tools:
+  [
+    'search/changes',
+    'search/codebase',
+    'search/fileSearch',
+    'search/listDirectory',
+    'search/textSearch',
+    'search/usages',
+    'read/readFile',
+    'read/problems',
+    'edit/editFiles',
+    'edit/createFile',
+    'edit/createDirectory',
+    'execute/runInTerminal',
+    'execute/testFailure',
+    'vscode/askQuestions',
+  ]
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -14,7 +30,6 @@ Available tools: `search/changes`, `search/codebase`, `search/fileSearch`, `sear
 
 - **Edit:** available
 - **Execute:** available — constrained by the Shell Boundary below
-
 
 ## Shell Boundary
 
@@ -166,22 +181,22 @@ For scores below 50/100, do not implement.
 
 ## Capability Routing
 
-| Capability                          | Load when implementation involves                            |
-| ----------------------------------- | ------------------------------------------------------------ |
-| `adapter-drift`                     | provider parity, adapter templates, instruction generation   |
-| `agent-observability-and-evidence`  | evidence logs, proof format, session notes                   |
-| `authorization-and-tool-governance` | permissions, hooks, allow/deny policy, sensitive operations  |
-| `bug-regression`                    | bug fix, reproduction, regression coverage                   |
-| `config-change-safety`              | YAML/JSON config, policies, runtime flags                    |
-| `dependency-upgrade`                | package versions, lockfiles, compatibility                   |
-| `docs-sync`                         | docs/capabilities/README alignment                           |
-| `evaluation-and-regression`         | eval checks, regression scoring                              |
-| `preview-environments`              | previews or smoke checks                                     |
-| `project-context`                   | context compiler, repo map, AI context                       |
-| `release-safety`                    | rollback, disable path, rollout risk                         |
-| `review-diff`                       | reviewer feedback or review-ready handoff                    |
-| `service-boundary-patterns`         | APIs, integrations, cross-package contracts                  |
-| `verify-change`                     | focused verification and proof                               |
+| Capability                          | Load when implementation involves                           |
+| ----------------------------------- | ----------------------------------------------------------- |
+| `adapter-drift`                     | provider parity, adapter templates, instruction generation  |
+| `agent-observability-and-evidence`  | evidence logs, proof format, session notes                  |
+| `authorization-and-tool-governance` | permissions, hooks, allow/deny policy, sensitive operations |
+| `bug-regression`                    | bug fix, reproduction, regression coverage                  |
+| `config-change-safety`              | YAML/JSON config, policies, runtime flags                   |
+| `dependency-upgrade`                | package versions, lockfiles, compatibility                  |
+| `docs-sync`                         | docs/capabilities/README alignment                          |
+| `evaluation-and-regression`         | eval checks, regression scoring                             |
+| `preview-environments`              | previews or smoke checks                                    |
+| `project-context`                   | context compiler, repo map, AI context                      |
+| `release-safety`                    | rollback, disable path, rollout risk                        |
+| `review-diff`                       | reviewer feedback or review-ready handoff                   |
+| `service-boundary-patterns`         | APIs, integrations, cross-package contracts                 |
+| `verify-change`                     | focused verification and proof                              |
 
 Load in this order: `CAPABILITY.md`, `checklist.md`, `gotchas.md`, `examples.md`, `reference.md`.
 

@@ -1,5 +1,21 @@
 # Good / Bad: File Viewing
 
+## Best (repository wrapper)
+
+```bash
+# Safe bounded preview — line numbers, max-lines, truncation protection
+bash scripts/ai/preview-file.sh app/Services/Checkout/CheckoutService.php --lines 200
+
+# Preview around a specific line
+bash scripts/ai/preview-file.sh app/Services/Checkout/CheckoutService.php --around 120 --context 30
+
+# Exact range
+bash scripts/ai/preview-file.sh app/Services/Checkout/CheckoutService.php --range 100:160
+
+# JSON envelope for pipelines
+AI_OUTPUT=json bash scripts/ai/preview-file.sh app/Services/Checkout/CheckoutService.php --lines 50
+```
+
 ## Good
 
 ```bash

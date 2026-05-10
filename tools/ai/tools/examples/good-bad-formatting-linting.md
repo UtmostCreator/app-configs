@@ -1,5 +1,15 @@
 # Good / Bad: Formatting and Linting
 
+## Best (repository wrapper)
+
+```bash
+# Documentation quality check — markdownlint, link validation
+bash scripts/ai/ai-doc-check.sh --check docs/ai
+
+# Focused verification for any change type
+bash scripts/ai/ai-verify.sh .
+```
+
 ## Good
 
 ```bash

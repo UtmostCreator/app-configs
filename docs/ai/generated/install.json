@@ -1,20 +1,30 @@
 {
     "schema_version": 1,
     "artifact": "install.json",
-    "generated_at": "2026-05-10T11:30:27+00:00",
+    "generated_at": "2026-05-10T14:56:59+00:00",
     "command": "php tools/ai/ai.php install --apply",
-    "based_on_commit": "06dde0c",
-    "based_on_branch": "codex/integrate-ai-search-scripts-into-project",
+    "based_on_commit": "4fcd339",
+    "based_on_branch": "main",
     "input_hashes": {},
-    "status": "blocked",
+    "status": "ok",
     "score": null,
     "stale": false,
-    "recommended_next_action": "Create backup first, then rerun apply with --backup <backup-id>.",
+    "recommended_next_action": "Install apply completed; run adapter-validate next.",
     "data": {
-        "status": "blocked",
+        "status": "ok",
         "mode": "sidecar-only",
-        "runtime_mode": "HUMAN_TTY",
-        "reason": "apply requires explicit backup id",
-        "next_action": "php tools/ai/ai.php install --backup-only --apply --mode sidecar-only"
+        "runtime_mode": "AI_AGENT",
+        "backup_id": "install-20260510-145449",
+        "transaction_id": "install-20260510-145658",
+        "installer_command": "php tools/ai/install-ai-kit.php --target . --runtime 'both' --profile 'full-governance' --no-base --allow-placeholders",
+        "installer_exit": 0,
+        "installer_stdout_preview": "[install-ai-kit] source root: /Users/rabbies-admin/Herd/app-configs\n[install-ai-kit] target root: /Users/rabbies-admin/Herd/app-configs\n[install-ai-kit] profile: full-governance\n[install-ai-kit] runtime: both\n[install-ai-kit] skip docs/ai/capabilities/dependency-upgrade (skip_identical_existing)\n[install-ai-kit] skip .github/hooks/tool-policy.json (skip_identical_existing)\n[install-ai-kit] skip .github/hooks/tool-guardian.json (skip_identical_existing)\n[install-ai-kit] skip .github/hooks/scripts/tool-guardian.ps1 (skip_identical_existing)\n[install-ai-kit] skip scripts/hooks/pre-commit.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/hooks/commit-msg.sh (skip_identical_existing)\n[install-ai-kit] skip docs/ai/hooks.md (skip_identical_existing)\n[install-ai-kit] skip .github/workflows/validate-ai-surface.yml (skip_existing_unmanaged)\n[install-ai-kit] skip .github/workflows/test-external-install.yml (skip_identical_existing)\n[install-ai-kit] skip .github/workflows/export-ai-universal-rules-preview.yml (skip_identical_existing)\n[install-ai-kit] skip docs/ai/validation.md (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/common.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/ai-search.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/ai-diff-context.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/ai-verify.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/ai-rollback.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/ai-edit.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/pack-context.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/pre-tool-use.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/post-tool-use.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/run-repomix-context.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/repomix-context-tree.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/repomix-scc-router.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/git-forensics.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/gh-pr-context.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/preview-file.sh (skip_identical_existing)\n[install-ai-kit] skip tests/scripts/ai/test-preview-file.sh (skip_identical_existing)\n[install-ai-kit] skip docs/ai/tools/actions/preview-file.md (skip_existing_unmanaged)\n[install-ai-kit] skip scripts/ai/query-usage.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/fd-files.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/rg-code.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/ai-structured.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/ai-task.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/ai-test-select.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/session-checkpoint.sh (skip_identical_existing)\n[install-ai-kit] skip scripts/ai/ai-doc-check.sh (skip_id",
+        "installer_stderr_preview": "",
+        "post_install_script": {
+            "requested": null,
+            "executed": false,
+            "reason": null,
+            "exit": null
+        }
     }
 }

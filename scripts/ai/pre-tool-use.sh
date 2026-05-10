@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-POLICY_FILE="${COPILOT_POLICY_FILE:-policies/copilot/policy.yaml}"
-MAINTENANCE_STATE_FILE="${COPILOT_MAINTENANCE_STATE_FILE:-.ai-logs/maintenance-mode.json}"
+if (( BASH_VERSINFO[0] < 4 )); then
+    printf '[ERROR] Bash 4+ required; current version is %s. On macOS: brew install bash\n' "${BASH_VERSION:-unknown}" >&2
+    exit 1
+fi
+
+POLICY_FILE="${AI_POLICY_FILE:-policies/ai/policy.yaml}"
+MAINTENANCE_STATE_FILE="${AI_MAINTENANCE_STATE_FILE:-.ai-logs/maintenance-mode.json}"
 
 deny() {
     jq -cn --arg reason "$1" '{permissionDecision:"deny", permissionDecisionReason:$reason}'
@@ -29,7 +34,7 @@ is_terminal_tool() {
 
 allow_registered_script() {
     local compact="$1"
-    local registry_file="${COPILOT_SCRIPT_REGISTRY_FILE:-docs/ai/script-registry.json}"
+    local registry_file="${AI_SCRIPT_REGISTRY_FILE:-docs/ai/script-registry.json}"
     local path escaped
 
     if ! command -v jq >/dev/null 2>&1 || [[ ! -f "$registry_file" ]]; then
@@ -113,7 +118,7 @@ evaluate_policy_yaml() {
         fi
     done < <(yq -r '.deny[]? | @base64' "$POLICY_FILE" 2>/dev/null || true)
 
-    if [[ "${COPILOT_STRICT_ALLOWLIST:-0}" != '1' ]]; then
+    if [[ "${AI_STRICT_ALLOWLIST:-${COPILOT_STRICT_ALLOWLIST:-0}}" != '1' ]]; then
         while IFS= read -r encoded; do
             [[ -n "$encoded" ]] || continue
             rule="$(printf '%s' "$encoded" | base64 -d)"
@@ -145,7 +150,7 @@ fi
 
 command="$(jq -r '.command // .commandLine // .text // empty' <<<"$tool_args_raw")"
 compact="$(tr -s '[:space:]' ' ' <<<"$command" | sed 's/^ //; s/ $//')"
-strict_allowlist="${COPILOT_STRICT_ALLOWLIST:-0}"
+strict_allowlist="${AI_STRICT_ALLOWLIST:-${COPILOT_STRICT_ALLOWLIST:-0}}"
 
 evaluate_policy_yaml "$compact" || true
 
@@ -321,7 +326,7 @@ if grep -Eq '^just[[:space:]]+context-(clean|purge)\b' <<<"$compact"; then
     exit 0
 fi
 
-# Tier 1: pure read-only copilot scripts
+# Tier 1: pure read-only AI scripts
 if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/(ai-search|ai-verify|preview-file|fd-files|rg-code|git-forensics|repo-stats|query-usage)\.sh\b' <<<"$compact"; then
     allow
     exit 0

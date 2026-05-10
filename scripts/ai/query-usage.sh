@@ -2,6 +2,11 @@
 # shellcheck disable=SC2016
 set -euo pipefail
 
+if (( BASH_VERSINFO[0] < 4 )); then
+    printf '[ERROR] Bash 4+ required; current version is %s. On macOS: brew install bash\n' "${BASH_VERSION:-unknown}" >&2
+    exit 1
+fi
+
 usage() {
     cat <<'EOF'
 Usage:

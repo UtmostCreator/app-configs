@@ -1,5 +1,18 @@
 # Good / Bad: Edit Sequence
 
+## Best (repository wrapper)
+
+```bash
+# Save session checkpoint before risky edits
+bash scripts/ai/session-checkpoint.sh create "before refactor"
+
+# Use bounded search-and-replace (requires approval)
+bash scripts/ai/ai-edit.sh replace "old_func" "new_func" app/Services
+
+# Rollback if something went wrong (requires approval)
+bash scripts/ai/ai-rollback.sh restore latest
+```
+
 ## Good
 
 ```bash

@@ -1,5 +1,15 @@
 # Good / Bad: GitHub Actions
 
+## Best (repository wrapper)
+
+```bash
+# Get structured PR context — description, diff summary, check status
+bash scripts/ai/gh-pr-context.sh 42
+
+# JSON output
+AI_OUTPUT=json bash scripts/ai/gh-pr-context.sh 42
+```
+
 ## Good
 
 ```bash

@@ -6,12 +6,23 @@ set -euo pipefail
 
 AI_TOOL_NAME="${AI_TOOL_NAME:-$(basename "${0:-ai-tool}")}"
 
-COPILOT_LOG_DIR="${COPILOT_LOG_DIR:-${AI_LOG_DIR:-.ai-logs}}"
-COPILOT_CONTEXT_DIR="${COPILOT_CONTEXT_DIR:-.repomix-context}"
-COPILOT_SESSION_DIR="${COPILOT_SESSION_DIR:-${COPILOT_LOG_DIR}/sessions}"
-COPILOT_SNAPSHOT_DIR="${COPILOT_SNAPSHOT_DIR:-${COPILOT_LOG_DIR}/snapshots}"
-COPILOT_EVENT_LOG="${COPILOT_EVENT_LOG:-${COPILOT_LOG_DIR}/tool-usage.jsonl}"
+# Canonical AI_* env vars. COPILOT_* kept as backward-compatible aliases.
+AI_LOG_DIR="${COPILOT_LOG_DIR:-${AI_LOG_DIR:-.ai-logs}}"
+AI_CONTEXT_DIR="${COPILOT_CONTEXT_DIR:-${AI_CONTEXT_DIR:-.repomix-context}}"
+AI_SESSION_DIR="${COPILOT_SESSION_DIR:-${AI_SESSION_DIR:-${AI_LOG_DIR}/sessions}}"
+AI_SNAPSHOT_DIR="${COPILOT_SNAPSHOT_DIR:-${AI_SNAPSHOT_DIR:-${AI_LOG_DIR}/snapshots}}"
+AI_EVENT_LOG="${COPILOT_EVENT_LOG:-${AI_EVENT_LOG:-${AI_LOG_DIR}/tool-usage.jsonl}}"
+AI_POLICY_FILE="${COPILOT_POLICY_FILE:-${AI_POLICY_FILE:-policies/ai/policy.yaml}}"
+AI_MAINTENANCE_STATE_FILE="${COPILOT_MAINTENANCE_STATE_FILE:-${AI_MAINTENANCE_STATE_FILE:-.ai-logs/maintenance-mode.json}}"
+AI_SCRIPT_REGISTRY_FILE="${COPILOT_SCRIPT_REGISTRY_FILE:-${AI_SCRIPT_REGISTRY_FILE:-docs/ai/script-registry.json}}"
 AI_SESSION_GENERATED_DIR="${AI_SESSION_GENERATED_DIR:-docs/ai/generated/sessions}"
+
+# Backward compatibility: export COPILOT_* aliases pointing to canonical AI_* values
+COPILOT_LOG_DIR="$AI_LOG_DIR"
+COPILOT_CONTEXT_DIR="$AI_CONTEXT_DIR"
+COPILOT_SESSION_DIR="$AI_SESSION_DIR"
+COPILOT_SNAPSHOT_DIR="$AI_SNAPSHOT_DIR"
+COPILOT_EVENT_LOG="$AI_EVENT_LOG"
 
 AI_CMD_TIMEOUT="${AI_CMD_TIMEOUT:-120}"
 AI_OUTPUT_MAX_BYTES="${AI_OUTPUT_MAX_BYTES:-200000}"
@@ -47,6 +58,11 @@ section() { printf '\n%b==> %s%b\n' "$_C_BOLD" "$*" "$_C_RESET" >&2; }
 
 command_exists() { command -v "$1" >/dev/null 2>&1; }
 hard_die() { log_error "$*"; exit 1; }
+
+# Enforce Bash 4+ at source time — all scripts sourcing common.sh require modern Bash.
+if (( BASH_VERSINFO[0] < 4 )); then
+    hard_die "Bash 4+ required; current version is ${BASH_VERSION:-unknown}. On macOS: brew install bash"
+fi
 
 require_bins() {
     local missing=()
@@ -275,8 +291,8 @@ append_jsonl_safe() {
 append_log_entry() {
     local entry="${1:?entry required}"
 
-    mkdir -p "$COPILOT_LOG_DIR"
-    append_jsonl_safe "$COPILOT_EVENT_LOG" "$entry"
+    mkdir -p "$AI_LOG_DIR"
+    append_jsonl_safe "$AI_EVENT_LOG" "$entry"
 
     if [[ -n "${SESSION_LOG:-}" ]]; then
         append_jsonl_safe "$SESSION_LOG" "$entry"
@@ -303,7 +319,7 @@ log_json() {
 
     json_available || return 127
 
-    mkdir -p "$COPILOT_LOG_DIR"
+    mkdir -p "$AI_LOG_DIR"
 
     payload_json="$(json_compact_or_raw "$payload")"
     repo_root_value="$(git_root 2>/dev/null || pwd)"
@@ -419,10 +435,10 @@ agent_session_init() {
     SESSION_ID="${SESSION_ID:-${name}-$(date +%Y%m%d-%H%M%S)-$$}"
     TRACE_ID="${TRACE_ID:-trc-${SESSION_ID}}"
     TASK_ID="${TASK_ID:-tsk-${SESSION_ID}}"
-    SESSION_DIR="${COPILOT_SESSION_DIR}/${SESSION_ID}"
+    SESSION_DIR="${AI_SESSION_DIR}/${SESSION_ID}"
     SESSION_LOG="${SESSION_DIR}/session.jsonl"
 
-    mkdir -p "$SESSION_DIR" "$COPILOT_LOG_DIR" "$COPILOT_SNAPSHOT_DIR"
+    mkdir -p "$SESSION_DIR" "$AI_LOG_DIR" "$AI_SNAPSHOT_DIR"
 
     AI_SESSION_INITIALIZED=1
     export SESSION_ID TRACE_ID TASK_ID SESSION_DIR SESSION_LOG AI_SESSION_INITIALIZED
@@ -430,6 +446,58 @@ agent_session_init() {
     log_json "session.start" '{}' "$name" || true
 
     [[ "$AI_SESSION_AUTO_TRAP" == "1" ]] && install_session_exit_trap
+}
+
+# ---------------------------------------------------------------------------
+# Snapshot management
+# ---------------------------------------------------------------------------
+
+snapshot_create() {
+    local label="${1:-snapshot}"
+    local ts
+    ts="$(date -u +%Y%m%dT%H%M%SZ)"
+    local snap_id="${label}-${ts}-$$"
+    local snap_dir="${AI_SNAPSHOT_DIR}/${snap_id}"
+
+    mkdir -p "$snap_dir"
+
+    local root
+    root="$(git_root 2>/dev/null || pwd)"
+
+    # Capture manifest: tracked files with their current state
+    (
+        cd "$root"
+        git diff --name-only 2>/dev/null || true
+        git diff --cached --name-only 2>/dev/null || true
+    ) | sort -u >"$snap_dir/changed-files.txt"
+
+    # Save current HEAD
+    git rev-parse HEAD 2>/dev/null >"$snap_dir/head-ref.txt" || true
+
+    # Save diff for rollback
+    (
+        cd "$root"
+        git diff 2>/dev/null || true
+    ) >"$snap_dir/working-tree.diff" || true
+
+    (
+        cd "$root"
+        git diff --cached 2>/dev/null || true
+    ) >"$snap_dir/staged.diff" || true
+
+    # Write manifest
+    jq -cn \
+        --arg id "$snap_id" \
+        --arg label "$label" \
+        --arg ts "$ts" \
+        --arg head "$(cat "$snap_dir/head-ref.txt" 2>/dev/null || echo unknown)" \
+        --argjson changed "$(jq -R . "$snap_dir/changed-files.txt" 2>/dev/null | jq -s . || echo '[]')" \
+        '{id:$id, label:$label, ts:$ts, head:$head, changed_files:$changed}' \
+        >"$snap_dir/manifest.json"
+
+    log_json "snapshot.create" "$(cat "$snap_dir/manifest.json")" "$AI_TOOL_NAME" || true
+
+    printf '%s\n' "$snap_dir"
 }
 
 require_approval() {

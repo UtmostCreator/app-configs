@@ -1,5 +1,15 @@
 # Good / Bad: Code Structure Search
 
+## Best (repository wrapper)
+
+```bash
+# AST-aware structural search via ai-search facade
+AI_LANG=php AI_OUTPUT=json bash scripts/ai/ai-search.sh struct 'new CheckoutService($A, $B)' app --fixed
+
+# Find all usages of a symbol before changing it
+bash scripts/ai/query-usage.sh CheckoutService
+```
+
 ## Good
 
 ```bash

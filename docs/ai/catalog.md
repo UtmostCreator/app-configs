@@ -19,7 +19,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 
 - `package / core-template` - 20
 - `package / foundation-doc` - 6
-- `package / github-copilot-instruction-template` - 23
+- `package / github-copilot-instruction-template` - 21
 - `package / opencode-command-template` - 3
 - `package / operations-doc` - 6
 - `package / optional-template` - 9
@@ -124,12 +124,12 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-instruction`|composer|`.github/instructions/composer.instructions.md`|Composer manifest and lockfile safety rules|
 |`github-copilot-instruction`|config-infra|`.github/instructions/config-infra.instructions.md`|Dependency, runner, and build-config safety rules|
 |`github-copilot-instruction`|execution-protocol|`.github/instructions/execution-protocol.instructions.md`|Evidence-first task execution, dirty-worktree protection, scope control, and final verification reporting.|
-|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|applyTo: "<FRONTEND_PATH_GLOB>"|
+|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|Frontend, UI, interaction, and presentation guidance|
 |`github-copilot-instruction`|generated-artifacts|`.github/instructions/generated-artifacts.instructions.md`|Generated artifact drift routing and source-first regeneration policy|
 |`github-copilot-instruction`|php|`.github/instructions/php.instructions.md`|PHP backend, Composer, test-runner, and PHP CLI tooling safety rules|
 |`github-copilot-instruction`|security|`.github/instructions/security.instructions.md`|Security, secrets, auth boundaries, and prompt-injection safeguards|
 |`github-copilot-instruction`|shell|`.github/instructions/shell.instructions.md`|Shell safety, portability, and verification rules|
-|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|applyTo: "**"|
+|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|Target and platform adaptation guidance for multi-surface repositories|
 |`github-copilot-instruction`|testing|`.github/instructions/testing.instructions.md`|Testing rules, baseline proof, regression-first bug fixes, and verification ladder|
 |`github-copilot-instruction`|tools|`.github/instructions/tools.instructions.md`|Tool selection and script enforcement — use rg/fd/approved scripts; never use bare grep/find|
 |`github-copilot-prompt`|architecture-plan|`.github/prompts/architecture-plan.prompt.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
@@ -178,7 +178,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`opencode-command`|script-inventory|`.opencode/commands/script-inventory.md`|Inventory registered AI scripts and risk|
 |`opencode-command`|search-evidence|`.opencode/commands/search-evidence.md`|Collect script-first repository evidence using ai-search|
 |`opencode-command`|verify-ai-wiring|`.opencode/commands/verify-ai-wiring.md`|Verify OpenCode script-first AI wiring|
-|`opencode-command`|verify|`.opencode/commands/verify.md`|description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
+|`opencode-command`|verify|`.opencode/commands/verify.md`|Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
 |`opencode-skill`|ai-scripts|`.opencode/skills/ai-scripts/SKILL.md`|Use registered scripts with risk-based approvals and evidence.|
 |`opencode-skill`|ai-search|`.opencode/skills/ai-search/SKILL.md`|Use ai-search to collect bounded repository evidence.|
 |`opencode-skill`|architecture-plan|`.opencode/skills/architecture-plan/SKILL.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
@@ -228,7 +228,6 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 | Type | Name | Path | Description |
 | --- | --- | --- | --- |
 |`core-template`|<PROJECT_NAME> - Repository Instructions|`packages/ai-universal-rules/templates/core/AGENTS.template.md`|- Project: `<PROJECT_NAME>`|
-|`core-template`|all_into_one|`packages/ai-universal-rules/templates/core/agents/all_into_one.bat`|@echo off|
 |`core-template`|Architect Agent|`packages/ai-universal-rules/templates/core/agents/architect.md`|Use when a change needs scoping, design, ownership decisions, contract boundaries, adapter strategy, or risk posture before implementation|
 |`core-template`|Config Maintainer Agent|`packages/ai-universal-rules/templates/core/agents/config-maintainer.md`|Use when changing editor, shell, runtime, or tool configuration while preserving current behavior|
 |`core-template`|Implementer Agent|`packages/ai-universal-rules/templates/core/agents/implementer.md`|Use when a bounded implementation slice is clear and focused verification should happen in this repository|
@@ -244,7 +243,8 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`core-template`|copilot-vscode-settings.template|`packages/ai-universal-rules/templates/core/copilot-vscode-settings.template.json`|{|
 |`core-template`|Execution Protocol|`packages/ai-universal-rules/templates/core/execution-protocol.template.md`|Use this as the canonical operating contract for non-trivial AI-assisted planning, editing, review, and verification.|
 |`core-template`|opencode|`packages/ai-universal-rules/templates/core/opencode.json`|{|
-|`core-template`|<PROJECT_NAME> Project Context|`packages/ai-universal-rules/templates/core/project-context.template.md`|Use this file as durable project context for instructions, agents, prompts, and capabilities.|
+|`core-template`|Project Context Placeholder Guide|`packages/ai-universal-rules/templates/core/project-context.placeholders.md`|Use this file when installing templates into a new project. Fill placeholders before enabling write-capable AI flows.|
+|`core-template`|<PROJECT_NAME> Project Context|`packages/ai-universal-rules/templates/core/project-context.template.md`|Use this file as durable, canonical project context for instructions, agents, prompts, and capabilities.|
 |`core-template`|<PROJECT_NAME> Project Stack|`packages/ai-universal-rules/templates/core/project-stack.template.md`|Compatibility note: `project-stack.template.md` remains for older installs.|
 |`core-template`|Workflow|`packages/ai-universal-rules/templates/core/workflow.template.md`|For non-trivial work, follow `docs/ai/execution-protocol.md`.|
 |`foundation-doc`|Capability Model|`packages/ai-universal-rules/docs/foundations/CAPABILITY-MODEL.md`|Capabilities are the canonical reusable workflow layer in this kit.|
@@ -253,13 +253,11 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`foundation-doc`|Design Principles|`packages/ai-universal-rules/docs/foundations/DESIGN-PRINCIPLES.md`|Use these principles when extending the kit.|
 |`foundation-doc`|Precedence|`packages/ai-universal-rules/docs/foundations/PRECEDENCE.md`|This package uses layered workflow assets, so precedence and non-overlap must be explicit.|
 |`foundation-doc`|Skills|`packages/ai-universal-rules/docs/foundations/SKILLS.md`|Skills are the runtime adapter form of deeper workflow procedure.|
-|`github-copilot-instruction-template`|AI File Standards|`packages/ai-universal-rules/templates/instructions/ALL_IN_ONE.txt`|ai-file-standards.instructions.md|
 |`github-copilot-instruction-template`|AI File Standards|`packages/ai-universal-rules/templates/instructions/ai-file-standards.instructions.md`|AI workflow file roles, line budgets, duplication rules, and adapter boundaries|
 |`github-copilot-instruction-template`|AI Search Tool Instructions|`packages/ai-universal-rules/templates/instructions/ai-search.instructions.md`|applyTo: "scripts/ai/**,tests/scripts/ai/**,docs/ai/tools/**"|
 |`github-copilot-instruction-template`|AI Tooling Rules|`packages/ai-universal-rules/templates/instructions/ai-tooling.instructions.md`|AI tooling contract, registry alignment, and hook-policy consistency|
 |`github-copilot-instruction-template`|AI Tooling Instructions|`packages/ai-universal-rules/templates/instructions/ai-tools.instructions.md`|applyTo: "scripts/ai/**,tools/ai/**,docs/ai/tools/**"|
 |`github-copilot-instruction-template`|AI Workflow Rules|`packages/ai-universal-rules/templates/instructions/ai-workflow.instructions.md`|Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement|
-|`github-copilot-instruction-template`|all_into_one|`packages/ai-universal-rules/templates/instructions/all_into_one.bat`|@echo off|
 |`github-copilot-instruction-template`|Approval Boundaries|`packages/ai-universal-rules/templates/instructions/approval-boundaries.instructions.md`|Approval boundaries for destructive, privileged, broad, or policy-sensitive changes|
 |`github-copilot-instruction-template`|Architecture Rules|`packages/ai-universal-rules/templates/instructions/architecture.instructions.md`|Architecture, ownership, layering, source-of-truth, and high-risk structural change guidance|
 |`github-copilot-instruction-template`|Base Instructions|`packages/ai-universal-rules/templates/instructions/base.instructions.md`|Minimal repository-wide fallback rules for Copilot path-specific instruction routing|

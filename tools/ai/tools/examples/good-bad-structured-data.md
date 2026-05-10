@@ -1,5 +1,13 @@
 # Good / Bad: Structured Data
 
+## Best (repository wrapper)
+
+```bash
+# Structured data queries with safe defaults
+bash scripts/ai/ai-structured.sh jq '.scripts' package.json
+bash scripts/ai/ai-structured.sh yq '.jobs | keys' .github/workflows/ci.yml
+```
+
 ## Good
 
 ```bash

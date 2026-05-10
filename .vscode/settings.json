@@ -9,7 +9,6 @@
   },
   "chat.agent.sandbox.enabled": true,
   "chat.agent.networkFilter": true,
-  "chat.agent.allowedNetworkDomains": [],
   "chat.agent.sandbox.FileSystem.mac": {
     "allowWrite": ["."],
     "denyWrite": [

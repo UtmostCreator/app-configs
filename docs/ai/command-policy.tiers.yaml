@@ -119,3 +119,30 @@ tiers:
         - "VERIFY=1 bash scripts/ai/ai-edit.sh *"
         - "bash scripts/ai/ai-rollback.sh apply *"
         - "bash scripts/ai/ai-rollback.sh prune *"
+
+  install-maintenance:
+    extends: base-verify
+    description: Temporary install/upgrade mode for repository-delivered AI install and verification scripts.
+    bash:
+      allow:
+        - "AI_OUTPUT=json bash scripts/ai/ai-search.sh changed * . --fixed"
+        - "AI_OUTPUT=json bash scripts/ai/ai-search.sh staged * . --fixed"
+        - "AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked * . --fixed"
+        - "bash scripts/ai/ai-search.sh changed * . --fixed"
+        - "bash scripts/ai/ai-search.sh staged * . --fixed"
+        - "bash scripts/ai/ai-search.sh tracked * . --fixed"
+        - "php tools/ai/maintenance-mode.php *"
+        - "php tools/ai/ai.php install * --dry-run"
+        - "php tools/ai/ai.php install * --apply"
+        - "php tools/ai/install-ai-kit.php *"
+        - "php tools/ai/validate-command-policy.php *"
+        - "php tools/ai/validate-ai-config.php"
+        - "php tools/ai/validate-install-surface.php"
+        - "php tools/ai/validate-ai-catalog.php"
+        - "php tools/ai/generate-ai-catalog.php --check"
+        - "php tools/ai/verify-full-install.php"
+        - "php tools/ai/ai.php advisor --all"
+        - "bash scripts/ai/run-repomix-context.sh *"
+        - "bash scripts/ai/repomix-context-tree.sh all *"
+      ask:
+        - "bash *.sh *"

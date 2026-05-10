@@ -1,11 +1,8 @@
 # Repository Instructions For <PROJECT_NAME>
-
 Use these instructions as the repository-wide baseline for GitHub Copilot.
-
 They should remain valid even if advanced agent features or prompt files are unavailable on the active surface.
 
 ## Project Context
-
 - Project: `<PROJECT_NAME>`
 - Type: `<PROJECT_TYPE>`
 - Summary: `<PROJECT_SUMMARY>`
@@ -36,6 +33,15 @@ Use these as source of truth:
 - `docs/ai/execution-protocol.md`
 - `docs/ai/generated-artifacts.md`
 - `docs/ai/adapter-contract.md`
+- `docs/ai/failure-handling.md`
+- `docs/ai/script-registry.md`
+- `docs/ai/script-registry.json`
+- `docs/ai/agent-ops-checklist.md`
+- `docs/ai/integration-matrix.md`
+- `docs/ai/capabilities/agent-observability-and-evidence/CAPABILITY.md`
+- `docs/ai/capabilities/evaluation-and-regression/CAPABILITY.md`
+- `docs/ai/capabilities/preview-environments/CAPABILITY.md`
+- `reference/php/design-patterns/`, `reference/php/design-principles/`, `reference/php/php-built-ins/`
 
 ## Targeted Instructions
 
@@ -65,6 +71,7 @@ Apply relevant targeted files:
 - For repository shell work, prefer approved wrappers from `docs/ai/script-registry.md`, `docs/ai/script-registry.json`, and `docs/ai/scripts-reference.md` over ad hoc terminal commands.
 - Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer; when the runtime supports repository hooks, keep them wired through `.github/hooks/tool-policy.json`, and when it does not, preserve the same boundary without claiming automatic enforcement.
 - Approval-free read-only commands should stay read-only: searches, file reads, diagnostics, diff/history inspection, and approved registry scripts.
+- Approval-free read-only commands include: `git status*`, `git diff*`, `git log*`, `bash scripts/ai/ai-search.sh *`, `AI_OUTPUT=json bash scripts/ai/ai-search.sh *`, `bash scripts/ai/preview-file.sh *`, `AI_OUTPUT=json bash scripts/ai/preview-file.sh *`, `bash scripts/ai/query-usage.sh *`, `bash scripts/ai/git-forensics.sh *`, and validator/check commands that do not mutate source.
 - Ask for approval before making: `<APPROVAL_REQUIRED_CHANGES>`
 - A human approver must be able to explain each changed section well enough to own the merge.
 - Distinguish current implementation from planned or hypothetical systems.

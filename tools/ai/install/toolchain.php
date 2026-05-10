@@ -52,6 +52,18 @@ function aiInstallerCheckTool(string $tool, array $meta): array
 
 function aiInstallerCommandExists(string $cmd): bool
 {
+    if ($cmd === 'ast-grep') {
+        if (aiInstallerCommandExists('ast-grep.exe') || aiInstallerCommandExists('sg') || aiInstallerCommandExists('sg.exe')) {
+            return true;
+        }
+    }
+
+    if ($cmd === 'repomix') {
+        if (aiInstallerCommandExists('repomix.cmd') || aiInstallerCommandExists('repomix.exe')) {
+            return true;
+        }
+    }
+
     $out = [];
     $exit = 0;
     if (PHP_OS_FAMILY === 'Windows') {

@@ -340,11 +340,30 @@ jobs:
 - Inactive or legacy paths: `unknown`
 - Primary entrypoints: `README.md, docs/ai/project-context.md`
 
+## OpenCode Script-First Rule
+
+- Start every non-trivial OpenCode session with `git status --short`, then collect evidence in this order: `AI_OUTPUT=json bash scripts/ai/ai-search.sh changed QUERY . --fixed`, `staged`, then `tracked` before broad modes.
+- Read files through `AI_OUTPUT=json bash scripts/ai/preview-file.sh PATH --around LINE --context 30` or `--range A:B`; do not use raw `cat`, `sed`, `awk`, `grep`, `rg`, `find`, `fd`, glob, or list before the approved wrappers unless explicitly approved.
+- Discover usage with `bash scripts/ai/query-usage.sh SYMBOL_OR_PATH` before adding parallel logic or changing contracts.
+- Verify with `bash scripts/ai/ai-verify.sh .` when behavior or wiring changes; for `ai-search` changes also run `AI_OUTPUT=json bash scripts/ai/ai-search.sh doctor` and the focused ai-search tests when available.
+- Escalate to `bash scripts/ai/pack-context.sh` or repomix context scripts only when bounded evidence is insufficient and the human approves the larger context pack.
+- Approval is required for `unsafe-all`, reading or editing secrets, `AI_ALLOW_UNLIMITED=1`, `ai-edit`, `ai-rollback`, `install-mandatory-tools`, destructive git, generated artifact edits, or any command that can delete, overwrite, install, deploy, or expose credentials.
+
 ## Default Workflow
 
 Use this default workflow unless the task is clearly trivial:
 
 - `research when the owner is unclear -> plan for multi-step or risky work -> implement the bounded slice -> review in fresh context -> verify with evidence -> add release audit for medium or high risk`
+
+Default evidence command:
+
+`AI_OUTPUT=json bash scripts/ai/ai-search.sh MODE QUERY . --fixed`
+
+File preview rule:
+
+`AI_OUTPUT=json bash scripts/ai/preview-file.sh PATH --around LINE --context 30`
+
+After `ai-search.sh` finds a relevant file or line, inspect it with `preview-file.sh`. Do not use raw `cat` for large, unknown, generated, binary-looking, or vendored files. Prefer `--around` when a line number is known, `--range` when a block range is known, and JSON mode for evidence pipelines.
 
 Workflow rules:
 
@@ -703,6 +722,10 @@ This document explains installer, validation, generation, and context scripts ma
 
 For the Copilot-approved terminal subset, use `docs/ai/script-registry.md` and `docs/ai/script-registry.json` as the tighter allowlist on top of this broader reference.
 
+Registry contract schema: `docs/ai/script-registry.schema.json`.
+
+Execution action reference: `docs/ai/tools/actions/use-ai-script.md`.
+
 ## Installer Entrypoints
 
 - `php tools/ai/install-ai-kit.php`
@@ -712,7 +735,7 @@ For the Copilot-approved terminal subset, use `docs/ai/script-registry.md` and `
   - Core flags: `--target`, `--runtime`, `--project-name`, `--dry-run`, `--force`, `--no-base`, `--allow-core-overwrite`, `--mode`, `--dependency-mode`, `--hook-driver`.
   - Safety: core base policy files are protected from accidental overwrite unless `--allow-core-overwrite` is explicitly passed.
 - `bash tools/ai/install-ai-kit.sh`
-  - Thin wrapper that forwards args to `install-ai-kit.php`.
+  - Thin wrapper that forwards args to `tools/ai/install-ai-kit.php`.
 - `bash tools/ai/install-copilot-kit.sh`
   - Legacy compatibility wrapper mapping old Copilot profile names to unified installer profiles.
 - `bash tools/ai/install-opencode-kit.sh`
@@ -771,10 +794,10 @@ For ordered installation recipes and selective pack examples, use `docs/ai/insta
 - Source scripts in this repository are under `scripts/ai/`.
 - Installed scripts-pack targets are written to `scripts/ai/` by installer exports.
 
-- `bash scripts/ai/run-repomix-context.sh <path>`
+- `bash scripts/ai/run-repomix-context.sh [path]`
   - Dependency-checking entrypoint for context packing.
   - Runs `repomix-context-tree.sh all` and validates outputs.
-- `bash scripts/ai/repomix-context-tree.sh <analyze|plan|pack|all|clean|purge> [root]`
+- `bash scripts/ai/repomix-context-tree.sh [analyze|plan|pack|all|clean|purge] [root]`
   - Tree-based context planner and packer.
   - Requires: `repomix`, `scc`, `jq`.
 - `bash scripts/ai/repomix-scc-router.sh ...`
@@ -1015,16 +1038,16 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         ]
     },
     "counts": {
-        "package:core-template": 16,
+        "package:core-template": 20,
         "package:foundation-doc": 6,
-        "package:github-copilot-instruction-template": 21,
-        "package:opencode-command-template": 1,
+        "package:github-copilot-instruction-template": 23,
+        "package:opencode-command-template": 3,
         "package:operations-doc": 6,
         "package:optional-template": 9,
         "package:package-capability": 36,
         "package:shared-template": 4,
         "package:workflow-doc": 6,
-        "package:workflow-template": 13,
+        "package:workflow-template": 15,
         "root:adapter-doc": 1,
         "root:adapter-hook": 2,
         "root:adapter-hook-script": 1,
@@ -1034,13 +1057,13 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         "root:cli": 1,
         "root:exporter": 1,
         "root:generator": 1,
-        "root:github-copilot-agent": 8,
-        "root:github-copilot-instruction": 18,
-        "root:github-copilot-prompt": 13,
-        "root:github-copilot-skill": 13,
-        "root:opencode-agent": 8,
-        "root:opencode-command": 2,
-        "root:opencode-skill": 13,
+        "root:github-copilot-agent": 10,
+        "root:github-copilot-instruction": 21,
+        "root:github-copilot-prompt": 16,
+        "root:github-copilot-skill": 15,
+        "root:opencode-agent": 10,
+        "root:opencode-command": 6,
+        "root:opencode-skill": 17,
         "root:php-reference": 3,
         "root:root-doc": 16,
         "root:schema": 1,
@@ -1055,6 +1078,14 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "path": "packages/ai-universal-rules/templates/core/AGENTS.template.md",
             "runtime": "canonical",
             "description": "- Project: `<PROJECT_NAME>`"
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "all_into_one",
+            "path": "packages/ai-universal-rules/templates/core/agents/all_into_one.bat",
+            "runtime": "canonical",
+            "description": "@echo off"
         },
         {
             "scope": "package",
@@ -1095,6 +1126,22 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "path": "packages/ai-universal-rules/templates/core/agents/release-auditor.md",
             "runtime": "canonical",
             "description": "Use when medium or high risk changes need rollout, rollback, migration, observability, preview, or install-safety review"
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "Repository Researcher",
+            "path": "packages/ai-universal-rules/templates/core/agents/repository-researcher.md",
+            "runtime": "canonical",
+            "description": "Strict script-first repository researcher using ai-search before raw search"
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "Repository Reviewer",
+            "path": "packages/ai-universal-rules/templates/core/agents/repository-reviewer.md",
+            "runtime": "canonical",
+            "description": "Strict script-first diff reviewer using ai-search and validator evidence"
         },
         {
             "scope": "package",
@@ -1151,6 +1198,14 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "path": "packages/ai-universal-rules/templates/core/execution-protocol.template.md",
             "runtime": "canonical",
             "description": "Use this as the canonical operating contract for non-trivial AI-assisted planning, editing, review, and verification."
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
+            "name": "opencode",
+            "path": "packages/ai-universal-rules/templates/core/opencode.json",
+            "runtime": "canonical",
+            "description": "{"
         },
         {
             "scope": "package",
@@ -1243,10 +1298,26 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "package",
             "type": "github-copilot-instruction-template",
+            "name": "AI Search Tool Instructions",
+            "path": "packages/ai-universal-rules/templates/instructions/ai-search.instructions.md",
+            "runtime": "github-copilot",
+            "description": "applyTo: \"scripts/ai/**,tests/scripts/ai/**,docs/ai/tools/**\""
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
             "name": "AI Tooling Rules",
             "path": "packages/ai-universal-rules/templates/instructions/ai-tooling.instructions.md",
             "runtime": "github-copilot",
             "description": "AI tooling contract, registry alignment, and hook-policy consistency"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
+            "name": "AI Tooling Instructions",
+            "path": "packages/ai-universal-rules/templates/instructions/ai-tools.instructions.md",
+            "runtime": "github-copilot",
+            "description": "applyTo: \"scripts/ai/**,tools/ai/**,docs/ai/tools/**\""
         },
         {
             "scope": "package",
@@ -1391,6 +1462,22 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "path": "packages/ai-universal-rules/templates/instructions/tools.instructions.md",
             "runtime": "github-copilot",
             "description": "Tool selection and script enforcement \u2014 use rg/fd/approved scripts; never use bare grep/find"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-command-template",
+            "name": "search-evidence",
+            "path": "packages/ai-universal-rules/templates/commands/search-evidence.md",
+            "runtime": "opencode",
+            "description": "Collect script-first repository evidence using ai-search"
+        },
+        {
+            "scope": "package",
+            "type": "opencode-command-template",
+            "name": "verify-ai-wiring",
+            "path": "packages/ai-universal-rules/templates/commands/verify-ai-wiring.md",
+            "runtime": "opencode",
+            "description": "Verify OpenCode script-first AI wiring"
         },
         {
             "scope": "package",
@@ -1987,6 +2074,22 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "package",
             "type": "workflow-template",
+            "name": "review-search-tool",
+            "path": "packages/ai-universal-rules/templates/workflows/review-search-tool.md",
+            "runtime": "dual-runtime",
+            "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "package",
+            "type": "workflow-template",
+            "name": "search-evidence",
+            "path": "packages/ai-universal-rules/templates/workflows/search-evidence.md",
+            "runtime": "dual-runtime",
+            "description": "Collect repository evidence using ai-search"
+        },
+        {
+            "scope": "package",
+            "type": "workflow-template",
             "name": "verify-change",
             "path": "packages/ai-universal-rules/templates/workflows/verify-change.md",
             "runtime": "dual-runtime",
@@ -2419,6 +2522,22 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "github-copilot-agent",
+            "name": "repository-researcher",
+            "path": ".github/agents/repository-researcher.agent.md",
+            "runtime": "github-copilot",
+            "description": "Read-only repository researcher that collects evidence."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
+            "name": "repository-reviewer",
+            "path": ".github/agents/repository-reviewer.agent.md",
+            "runtime": "github-copilot",
+            "description": "Diff-first reviewer that verifies changes with ai-search."
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-agent",
             "name": "Researcher",
             "path": ".github/agents/researcher.agent.md",
             "runtime": "github-copilot",
@@ -2451,10 +2570,34 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "github-copilot-instruction",
+            "name": "ai-scripts",
+            "path": ".github/instructions/ai-scripts.instructions.md",
+            "runtime": "github-copilot",
+            "description": "AI script registry consistency and risk-based execution rules"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "ai-search",
+            "path": ".github/instructions/ai-search.instructions.md",
+            "runtime": "github-copilot",
+            "description": "applyTo: \"scripts/ai/**,tests/scripts/ai/**,docs/ai/tools/**\""
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
             "name": "ai-tooling",
             "path": ".github/instructions/ai-tooling.instructions.md",
             "runtime": "github-copilot",
             "description": "AI tooling contract, registry alignment, and hook-policy consistency"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
+            "name": "ai-tools",
+            "path": ".github/instructions/ai-tools.instructions.md",
+            "runtime": "github-copilot",
+            "description": "applyTo: \"scripts/ai/**,tools/ai/**,docs/ai/tools/**\""
         },
         {
             "scope": "root",
@@ -2683,6 +2826,30 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "github-copilot-prompt",
+            "name": "review-search-tool",
+            "path": ".github/prompts/review-search-tool.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "script-inventory",
+            "path": ".github/prompts/script-inventory.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Build AI script inventory with risk and parity checks"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
+            "name": "search-evidence",
+            "path": ".github/prompts/search-evidence.prompt.md",
+            "runtime": "github-copilot",
+            "description": "Collect repository evidence using ai-search"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-prompt",
             "name": "verify-change",
             "path": ".github/prompts/verify-change.prompt.md",
             "runtime": "github-copilot",
@@ -2787,6 +2954,22 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "github-copilot-skill",
+            "name": "review-search-tool",
+            "path": ".github/skills/review-search-tool/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
+            "name": "search-evidence",
+            "path": ".github/skills/search-evidence/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Collect repository evidence using ai-search"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
             "name": "verify-change",
             "path": ".github/skills/verify-change/SKILL.md",
             "runtime": "github-copilot",
@@ -2835,6 +3018,22 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "opencode-agent",
+            "name": "repository-researcher",
+            "path": ".opencode/agents/repository-researcher.md",
+            "runtime": "opencode",
+            "description": "Strict script-first repository researcher using ai-search before raw search"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "repository-reviewer",
+            "path": ".opencode/agents/repository-reviewer.md",
+            "runtime": "opencode",
+            "description": "Strict script-first diff reviewer using ai-search and validator evidence"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
             "name": "researcher",
             "path": ".opencode/agents/researcher.md",
             "runtime": "opencode",
@@ -2867,10 +3066,58 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
         {
             "scope": "root",
             "type": "opencode-command",
+            "name": "review-search-tool",
+            "path": ".opencode/commands/review-search-tool.md",
+            "runtime": "opencode",
+            "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "script-inventory",
+            "path": ".opencode/commands/script-inventory.md",
+            "runtime": "opencode",
+            "description": "Inventory registered AI scripts and risk"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "search-evidence",
+            "path": ".opencode/commands/search-evidence.md",
+            "runtime": "opencode",
+            "description": "Collect script-first repository evidence using ai-search"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "verify-ai-wiring",
+            "path": ".opencode/commands/verify-ai-wiring.md",
+            "runtime": "opencode",
+            "description": "Verify OpenCode script-first AI wiring"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
             "name": "verify",
             "path": ".opencode/commands/verify.md",
             "runtime": "opencode",
             "description": "description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "ai-scripts",
+            "path": ".opencode/skills/ai-scripts/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use registered scripts with risk-based approvals and evidence."
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "ai-search",
+            "path": ".opencode/skills/ai-search/SKILL.md",
+            "runtime": "opencode",
+            "description": "Use ai-search to collect bounded repository evidence."
         },
         {
             "scope": "root",
@@ -2967,6 +3214,22 @@ Some tools installed by winget are not visible in Git Bash immediately. Reposito
             "path": ".opencode/skills/review-diff/SKILL.md",
             "runtime": "opencode",
             "description": "Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "review-search-tool",
+            "path": ".opencode/skills/review-search-tool/SKILL.md",
+            "runtime": "opencode",
+            "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "search-evidence",
+            "path": ".opencode/skills/search-evidence/SKILL.md",
+            "runtime": "opencode",
+            "description": "Collect repository evidence using ai-search"
         },
         {
             "scope": "root",
@@ -3512,6 +3775,6711 @@ starter_profiles:
 release:
   export_root: dist/ai-universal-rules
   bundle_prefix: ai-universal-rules
+
+```
+
+## FILE: scripts/ai/ALL_IN_ONE.txt
+
+```text
+ai-diff-context.sh
+
+#!/usr/bin/env bash
+# Pack changed or targeted files into AI context bundles.
+#
+# Name kept for compatibility.
+# Behaviour: packs full changed-file context; optionally includes diffs.
+
+set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+TOKEN_BUDGET="${TOKEN_BUDGET:-80000}"
+OUTPUT_DIR="${OUTPUT_DIR:-${COPILOT_CONTEXT_DIR}/diff}"
+INCLUDE_TESTS="${INCLUDE_TESTS:-1}"
+SECRETS_SCAN="${SECRETS_SCAN:-1}"
+INCLUDE_DIFFS="${INCLUDE_DIFFS:-0}"
+DRY_RUN="${DRY_RUN:-0}"
+STRICT_TOKENS="${STRICT_TOKENS:-0}"
+SPLIT_OUTPUT="${SPLIT_OUTPUT:-}"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  ai-diff-context.sh since <ref> [options]
+  ai-diff-context.sh unstaged [options]
+  ai-diff-context.sh pr <number> [options]
+  ai-diff-context.sh recent [--count N] [options]
+  ai-diff-context.sh touched <pattern> [options]
+
+Options:
+  --include-diffs         Include git diff / PR diff as context artifact
+  --no-tests              Do not include related tests
+  --no-secrets-scan       Disable gitleaks scan
+  --dry-run               Show selected files and estimated tokens only
+  --strict                Fail when output exceeds token budget
+  --token-budget N        Override TOKEN_BUDGET
+  --split SIZE            Pass --split-output SIZE to repomix when available
+  --help                  Show help
+
+Environment:
+  TOKEN_BUDGET=80000
+  INCLUDE_TESTS=1
+  SECRETS_SCAN=1
+  INCLUDE_DIFFS=0
+  DRY_RUN=0
+  STRICT_TOKENS=0
+  SPLIT_OUTPUT=
+  TOKEN_ESTIMATOR_CMD=custom-token-counter
+EOF
+}
+
+parse_common_option() {
+    case "${1:-}" in
+    --include-diffs)
+        INCLUDE_DIFFS=1
+        return 0
+        ;;
+    --no-tests)
+        INCLUDE_TESTS=0
+        return 0
+        ;;
+    --no-secrets-scan)
+        SECRETS_SCAN=0
+        return 0
+        ;;
+    --dry-run)
+        DRY_RUN=1
+        return 0
+        ;;
+    --strict)
+        STRICT_TOKENS=1
+        return 0
+        ;;
+    --token-budget)
+        TOKEN_BUDGET="${2:?token budget required}"
+        return 2
+        ;;
+    --token-budget=*)
+        TOKEN_BUDGET="${1#*=}"
+        return 0
+        ;;
+    --split)
+        SPLIT_OUTPUT="${2:?split size required}"
+        return 2
+        ;;
+    --split=*)
+        SPLIT_OUTPUT="${1#*=}"
+        return 0
+        ;;
+    --help | -h)
+        usage
+        exit 0
+        ;;
+    esac
+
+    return 1
+}
+
+repo_relative_file() {
+    local input="$1"
+    local root
+    root="$(git_root)"
+
+    input="${input#./}"
+
+    if [[ "$input" == "$root/"* ]]; then
+        input="${input#"$root/"}"
+    fi
+
+    printf '%s\n' "$input"
+}
+
+filter_existing() {
+    local root
+    root="$(git_root)"
+
+    while IFS= read -r f; do
+        [[ -n "$f" ]] || continue
+        f="$(repo_relative_file "$f")"
+
+        if [[ -f "$root/$f" ]]; then
+            printf '%s\n' "$f"
+        fi
+    done
+}
+
+deduplicate_files() {
+    printf '%s\n' "$@" | sed '/^$/d' | sort -u
+}
+
+regex_escape_lines() {
+    sed -E 's/[][(){}.^$+*?|\\]/\\&/g'
+}
+
+build_stem_regex() {
+    local stems=("$@")
+
+    printf '%s\n' "${stems[@]}" \
+        | sed '/^$/d' \
+        | sort -u \
+        | regex_escape_lines \
+        | paste -sd'|' -
+}
+
+collect_file_stems() {
+    local files=("$@")
+    local f base stem
+
+    for f in "${files[@]}"; do
+        base="$(basename "$f")"
+        stem="${base%.*}"
+
+        [[ -n "$stem" ]] || continue
+        [[ "$stem" != "$base" || "$base" != "." ]] || continue
+
+        printf '%s\n' "$stem"
+    done | sort -u
+}
+
+collect_related_tests() {
+    local files=("$@")
+    local root
+    local stems=()
+    local stem_regex
+
+    root="$(git_root)"
+
+    if [[ "$INCLUDE_TESTS" != "1" ]]; then
+        return 0
+    fi
+
+    if ((${#files[@]} == 0)); then
+        return 0
+    fi
+
+    if ! command -v fd >/dev/null 2>&1; then
+        log_warn "fd not installed; skipping related test discovery"
+        return 0
+    fi
+
+    mapfile -t stems < <(collect_file_stems "${files[@]}")
+    ((${#stems[@]} > 0)) || return 0
+
+    stem_regex="$(build_stem_regex "${stems[@]}")"
+    [[ -n "$stem_regex" ]] || return 0
+
+    {
+        # Common direct naming conventions.
+        fd --hidden -E vendor -E node_modules -E dist -E .git \
+            "(${stem_regex})(Test)?\.php$" "$root" 2>/dev/null || true
+
+        fd --hidden -E vendor -E node_modules -E dist -E .git \
+            "(${stem_regex})\.(test|spec)\.(js|ts|jsx|tsx|mjs|cjs)$" "$root" 2>/dev/null || true
+
+        fd --hidden -E vendor -E node_modules -E dist -E .git \
+            "(${stem_regex})Test\.(kt|kts)$" "$root" 2>/dev/null || true
+
+        # Conventional test folders where names may not match exactly.
+        if command -v rg >/dev/null 2>&1; then
+            rg -l --hidden \
+                -g '!vendor' \
+                -g '!node_modules' \
+                -g '!dist' \
+                -g '!.git' \
+                -g 'tests/**' \
+                -g 'test/**' \
+                -g 'spec/**' \
+                -g '__tests__/**' \
+                -g '*.{php,js,ts,jsx,tsx,kt,kts}' \
+                "(${stem_regex})" "$root" 2>/dev/null || true
+        fi
+    } | filter_existing | sort -u
+}
+
+estimate_files_tokens() {
+    local root
+    local total_bytes=0
+    local f
+    local bytes
+
+    root="$(git_root)"
+
+    for f in "$@"; do
+        [[ -f "$root/$f" ]] || continue
+        bytes="$(wc -c <"$root/$f" | tr -d ' ')"
+        total_bytes=$((total_bytes + bytes))
+    done
+
+    echo $(((total_bytes + 3) / 4))
+}
+
+write_diff_artifact() {
+    local label="$1"
+    shift
+    local mode="$1"
+    shift || true
+
+    [[ "$INCLUDE_DIFFS" == "1" ]] || return 0
+
+    local root
+    local diff_file
+    root="$(git_root)"
+    diff_file="${SESSION_DIR}/${label}.diff"
+
+    mkdir -p "$SESSION_DIR"
+
+    case "$mode" in
+    since)
+        local ref="${1:?ref required}"
+        (
+            cd "$root"
+            git diff "$ref"...HEAD 2>/dev/null || git diff "$ref"
+        ) >"$diff_file" || true
+        ;;
+    unstaged)
+        (
+            cd "$root"
+            printf '# git diff\n\n'
+            git diff || true
+            printf '\n# git diff --cached\n\n'
+            git diff --cached || true
+            printf '\n# untracked files\n\n'
+            git ls-files --others --exclude-standard | sed 's/^/UNTRACKED: /' || true
+        ) >"$diff_file"
+        ;;
+    pr)
+        local pr="${1:?PR number required}"
+        require_bins gh
+        gh pr diff "$pr" >"$diff_file" 2>/dev/null || true
+        ;;
+    recent)
+        local count="${1:?count required}"
+        (
+            cd "$root"
+            git diff "HEAD~${count}"..HEAD 2>/dev/null || git diff HEAD
+        ) >"$diff_file" || true
+        ;;
+    touched)
+        (
+            cd "$root"
+            git diff -- "$@" 2>/dev/null || true
+        ) >"$diff_file" || true
+        ;;
+    *)
+        die "unknown diff artifact mode: $mode"
+        ;;
+    esac
+
+    if [[ -s "$diff_file" ]]; then
+        repo_relative_file "$diff_file"
+    else
+        rm -f "$diff_file"
+    fi
+}
+
+pack_files_list() {
+    local label="$1"
+    shift
+    local files=("$@")
+    local root
+    local out_file
+    local manifest
+    local list_file
+    local tokens
+    local estimated_input_tokens
+    local repomix_args=()
+
+    root="$(git_root)"
+
+    mapfile -t files < <(deduplicate_files "${files[@]}" | filter_existing)
+    ((${#files[@]} > 0)) || die "no files to pack"
+
+    mkdir -p "$OUTPUT_DIR"
+    out_file="${OUTPUT_DIR}/${label}-$(date +%Y%m%d-%H%M%S).xml"
+    manifest="${out_file%.xml}.manifest.json"
+
+    estimated_input_tokens="$(estimate_files_tokens "${files[@]}")"
+
+    if [[ "$DRY_RUN" == "1" ]]; then
+        jq -n \
+            --arg label "$label" \
+            --arg output "$out_file" \
+            --argjson files "$(printf '%s\n' "${files[@]}" | jq -R . | jq -s .)" \
+            --argjson estimated_tokens "$estimated_input_tokens" \
+            --argjson token_budget "$TOKEN_BUDGET" \
+            '{
+              dry_run: true,
+              label: $label,
+              output: $output,
+              file_count: ($files | length),
+              estimated_input_tokens: $estimated_tokens,
+              token_budget: $token_budget,
+              files: $files
+            }'
+        return 0
+    fi
+
+    list_file="$(mktemp)"
+    printf '%s\n' "${files[@]}" >"$list_file"
+
+    log_info "Packing ${#files[@]} files into context"
+    log_info "Estimated input tokens before packing: ~${estimated_input_tokens}"
+
+    if [[ "$SECRETS_SCAN" == "1" ]]; then
+        section "Secrets scan"
+        require_clean_secret_scan "$root"
+        log_ok "No secrets found"
+    else
+        log_warn "Secrets scan disabled"
+    fi
+
+    if command -v repomix >/dev/null 2>&1; then
+        repomix_args=(--stdin --output "$out_file" --style xml --compress)
+
+        if [[ -n "$SPLIT_OUTPUT" ]]; then
+            repomix_args+=(--split-output "$SPLIT_OUTPUT")
+        fi
+
+        (
+            cd "$root"
+            repomix "${repomix_args[@]}" <"$list_file"
+        )
+    elif command -v files-to-prompt >/dev/null 2>&1; then
+        mapfile -t file_args <"$list_file"
+        (
+            cd "$root"
+            files-to-prompt "${file_args[@]}"
+        ) >"$out_file"
+    else
+        rm -f "$list_file"
+        die "no context packer available; install repomix or files-to-prompt"
+    fi
+
+    rm -f "$list_file"
+
+    tokens="$(estimate_tokens "$out_file")"
+
+    if ! within_token_budget "$out_file" "$TOKEN_BUDGET"; then
+        if [[ "$STRICT_TOKENS" == "1" ]]; then
+            die "context is ~${tokens} tokens, exceeding strict budget ${TOKEN_BUDGET}"
+        fi
+
+        log_warn "Context is ~${tokens} tokens, exceeding budget ${TOKEN_BUDGET}"
+    else
+        log_ok "Context packed: ~${tokens} tokens"
+    fi
+
+    jq -n \
+        --arg label "$label" \
+        --arg out "$out_file" \
+        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --argjson files "$(printf '%s\n' "${files[@]}" | jq -R . | jq -s .)" \
+        --argjson tokens "$tokens" \
+        --argjson estimated_input_tokens "$estimated_input_tokens" \
+        --argjson token_budget "$TOKEN_BUDGET" \
+        --argjson include_tests "$INCLUDE_TESTS" \
+        --argjson include_diffs "$INCLUDE_DIFFS" \
+        --argjson strict_tokens "$STRICT_TOKENS" \
+        --arg split_output "$SPLIT_OUTPUT" \
+        '{
+          label: $label,
+          output: $out,
+          ts: $ts,
+          file_count: ($files | length),
+          estimated_tokens: $tokens,
+          estimated_input_tokens: $estimated_input_tokens,
+          token_budget: $token_budget,
+          include_tests: ($include_tests == 1),
+          include_diffs: ($include_diffs == 1),
+          strict_tokens: ($strict_tokens == 1),
+          split_output: (if $split_output == "" then null else $split_output end),
+          files: $files
+        }' >"$manifest"
+
+    log_json "context.pack" "$(cat "$manifest")"
+    printf '%s\n' "$out_file"
+}
+
+append_tests() {
+    local -n files_ref=$1
+    local tests=()
+
+    if [[ "$INCLUDE_TESTS" == "1" ]]; then
+        mapfile -t tests < <(collect_related_tests "${files_ref[@]+${files_ref[@]}}")
+        files_ref+=("${tests[@]+${tests[@]}}")
+    fi
+}
+
+cmd_since() {
+    local positional=()
+    local shift_by=0
+    local arg
+
+    while (($# > 0)); do
+        arg="$1"
+        shift_by=0
+        if parse_common_option "$arg" "${2:-}"; then
+            shift_by=$?
+            shift "$shift_by"
+        else
+            positional+=("$arg")
+            shift
+        fi
+    done
+
+    local ref="${positional[0]:-}"
+    [[ -n "$ref" ]] || die "git ref required"
+
+    section "Changed files since $ref"
+
+    local files=()
+    local diff_artifact=""
+    mapfile -t files < <((git diff --name-only "$ref"...HEAD 2>/dev/null || git diff --name-only "$ref") | filter_existing)
+
+    append_tests files
+
+    diff_artifact="$(write_diff_artifact "since-${ref//\//-}" since "$ref" || true)"
+    [[ -n "$diff_artifact" ]] && files+=("$diff_artifact")
+
+    mapfile -t files < <(deduplicate_files "${files[@]+${files[@]}}" | filter_existing)
+    pack_files_list "since-${ref//\//-}" "${files[@]}"
+}
+
+cmd_unstaged() {
+    local shift_by=0
+
+    while (($# > 0)); do
+        shift_by=0
+        if parse_common_option "$1" "${2:-}"; then
+            shift_by=$?
+            shift "$shift_by"
+        else
+            die "unknown option: $1"
+        fi
+    done
+
+    section "Unstaged, staged, and untracked changed files"
+
+    local files=()
+    local diff_artifact=""
+    mapfile -t files < <({
+        git diff --name-only
+        git diff --cached --name-only
+        git ls-files --others --exclude-standard
+    } | sort -u | filter_existing)
+
+    append_tests files
+
+    diff_artifact="$(write_diff_artifact "unstaged" unstaged || true)"
+    [[ -n "$diff_artifact" ]] && files+=("$diff_artifact")
+
+    mapfile -t files < <(deduplicate_files "${files[@]+${files[@]}}" | filter_existing)
+    pack_files_list "unstaged" "${files[@]}"
+}
+
+cmd_pr() {
+    local positional=()
+    local shift_by=0
+    local arg
+
+    while (($# > 0)); do
+        arg="$1"
+        shift_by=0
+        if parse_common_option "$arg" "${2:-}"; then
+            shift_by=$?
+            shift "$shift_by"
+        else
+            positional+=("$arg")
+            shift
+        fi
+    done
+
+    local pr="${positional[0]:-}"
+    [[ -n "$pr" ]] || die "PR number required"
+
+    require_bins gh
+    section "Files in PR #$pr"
+
+    local files=()
+    local diff_artifact=""
+    mapfile -t files < <(gh pr view "$pr" --json files --jq '.files[].path' | filter_existing)
+
+    append_tests files
+
+    diff_artifact="$(write_diff_artifact "pr-${pr}" pr "$pr" || true)"
+    [[ -n "$diff_artifact" ]] && files+=("$diff_artifact")
+
+    mapfile -t files < <(deduplicate_files "${files[@]+${files[@]}}" | filter_existing)
+    pack_files_list "pr-${pr}" "${files[@]}"
+}
+
+cmd_recent() {
+    local count=10
+    local shift_by=0
+
+    while (($# > 0)); do
+        case "$1" in
+        --count | -n)
+            count="${2:?count required}"
+            shift 2
+            ;;
+        --count=*)
+            count="${1#*=}"
+            shift
+            ;;
+        *)
+            shift_by=0
+            if parse_common_option "$1" "${2:-}"; then
+                shift_by=$?
+                shift "$shift_by"
+            else
+                die "unknown option: $1"
+            fi
+            ;;
+        esac
+    done
+
+    section "Files changed in last $count commits"
+
+    local files=()
+    local diff_artifact=""
+    mapfile -t files < <(git log --name-only --pretty=format: -"$count" | sort -u | grep -v '^$' | filter_existing)
+
+    append_tests files
+
+    diff_artifact="$(write_diff_artifact "recent-${count}" recent "$count" || true)"
+    [[ -n "$diff_artifact" ]] && files+=("$diff_artifact")
+
+    mapfile -t files < <(deduplicate_files "${files[@]+${files[@]}}" | filter_existing)
+    pack_files_list "recent-${count}" "${files[@]}"
+}
+
+cmd_touched() {
+    local positional=()
+    local shift_by=0
+    local arg
+
+    while (($# > 0)); do
+        arg="$1"
+        shift_by=0
+        if parse_common_option "$arg" "${2:-}"; then
+            shift_by=$?
+            shift "$shift_by"
+        else
+            positional+=("$arg")
+            shift
+        fi
+    done
+
+    local pattern="${positional[0]:-}"
+    [[ -n "$pattern" ]] || die "pattern required"
+
+    require_bins fd rg
+    section "Files matching: $pattern"
+
+    local root
+    local files=()
+    local diff_artifact=""
+
+    root="$(git_root)"
+    mapfile -t files < <({
+        fd --hidden -E vendor -E node_modules -E dist -E .git "$pattern" "$root"
+        rg -l --hidden -g '!vendor' -g '!node_modules' -g '!dist' -g '!.git' "$pattern" "$root" 2>/dev/null || true
+    } | sort -u | filter_existing)
+
+    append_tests files
+
+    diff_artifact="$(write_diff_artifact "touched-${pattern//[^a-zA-Z0-9]/-}" touched "${files[@]}" || true)"
+    [[ -n "$diff_artifact" ]] && files+=("$diff_artifact")
+
+    mapfile -t files < <(deduplicate_files "${files[@]+${files[@]}}" | filter_existing)
+    pack_files_list "touched-${pattern//[^a-zA-Z0-9]/-}" "${files[@]}"
+}
+
+agent_session_init "ai-diff-context"
+require_bins jq
+
+cmd="${1:-}"
+[[ -n "$cmd" ]] || {
+    usage
+    exit 1
+}
+shift || true
+
+case "$cmd" in
+since) cmd_since "$@" ;;
+unstaged) cmd_unstaged "$@" ;;
+pr) cmd_pr "$@" ;;
+recent) cmd_recent "$@" ;;
+touched) cmd_touched "$@" ;;
+--help | -h) usage ;;
+*)
+    usage
+    die "unknown command: $cmd"
+    ;;
+esac
+
+
+ai-doc-check.sh
+
+#!/usr/bin/env bash
+# Documentation verification wrapper for AI agents.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ai/common.sh
+source "$SCRIPT_DIR/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  ai-doc-check.sh [all|markdownlint|links|drift]
+
+Environment:
+  DOC_PATHS="README.md docs/**/*.md"
+EOF
+}
+
+mode="${1:-all}"
+DOC_PATHS="${DOC_PATHS:-README.md docs/**/*.md}"
+failures=0
+
+agent_session_init "ai-doc-check"
+
+run_step() {
+    local label="$1"
+    shift
+
+    echo "==> $label"
+
+    if ! "$@"; then
+        echo "FAIL: $label" >&2
+        failures=$((failures + 1))
+    fi
+}
+
+run_markdownlint() {
+    if command -v markdownlint >/dev/null 2>&1; then
+        # shellcheck disable=SC2086
+        run_step "markdownlint" markdownlint $DOC_PATHS
+    else
+        log_warn "markdownlint not installed; skipping"
+    fi
+}
+
+run_links() {
+    if command -v lychee >/dev/null 2>&1; then
+        # shellcheck disable=SC2086
+        run_step "lychee" lychee $DOC_PATHS
+    else
+        log_warn "lychee not installed; skipping"
+    fi
+}
+
+run_drift() {
+    if [[ -f scripts/ai/repo-tool-inventory.sh ]]; then
+        run_step "repo-tool-inventory --check" bash scripts/ai/repo-tool-inventory.sh --check
+    fi
+
+    if [[ -f tools/ai/validate-generated-artifacts.php ]]; then
+        run_step "validate-generated-artifacts" php tools/ai/validate-generated-artifacts.php
+    fi
+}
+
+case "$mode" in
+all)
+    run_markdownlint
+    run_links
+    run_drift
+    ;;
+markdownlint)
+    run_markdownlint
+    ;;
+links)
+    run_links
+    ;;
+drift)
+    run_drift
+    ;;
+--help|-h)
+    usage
+    ;;
+*)
+    usage
+    die "unknown mode: $mode"
+    ;;
+esac
+
+if ((failures > 0)); then
+    log_json "doc-check.failed" "$(jq -cn --argjson failures "$failures" '{failures:$failures}')"
+    exit 1
+fi
+
+log_json "doc-check.passed" "$(jq -cn --arg mode "$mode" '{mode:$mode}')"
+echo "==> docs ok"
+
+
+ai-edit.sh
+
+#!/usr/bin/env bash
+# Guarded edit wrapper for broad repository modifications.
+
+set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  ai-edit.sh ast-grep LANG PATTERN REWRITE [root]
+  ai-edit.sh comby MATCH REWRITE [root]
+  ai-edit.sh sd FROM TO [root]
+
+Environment:
+  APPLY=1                 Apply changes. Default: dry-run.
+  VERIFY=1                Run ai-verify.sh after apply.
+  REQUIRE_CLEAN_TREE=1    Require clean tree before apply. Default: 1.
+EOF
+}
+
+show_diff() {
+    git --no-pager diff --stat || true
+    git --no-pager diff --color=always | sed -n '1,240p' || true
+}
+
+changed_files_json() {
+    {
+        git diff --name-only || true
+        git diff --cached --name-only || true
+        git ls-files --others --exclude-standard || true
+    } | sort -u | sed '/^$/d' | jq -R . | jq -s .
+}
+
+write_session_manifest() {
+    local status="$1"
+    local manifest_path="$SESSION_DIR/edit-session.json"
+
+    mkdir -p "$SESSION_DIR"
+
+    jq -n \
+        --arg session "${SESSION_ID:-unknown}" \
+        --arg mode "${mode:-unknown}" \
+        --arg root "${root:-.}" \
+        --arg status "$status" \
+        --arg snapshot "${snapshot:-}" \
+        --arg apply "${apply:-0}" \
+        --arg verify "${verify:-0}" \
+        --arg require_clean_tree "${require_clean_tree_flag:-1}" \
+        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --argjson changedFiles "$(changed_files_json)" \
+        '{
+          session: $session,
+          mode: $mode,
+          root: $root,
+          status: $status,
+          snapshot: (if $snapshot == "" then null else $snapshot end),
+          apply: ($apply == "1"),
+          verify: ($verify == "1"),
+          requireCleanTree: ($require_clean_tree == "1"),
+          ts: $ts,
+          changedFiles: $changedFiles
+        }' >"$manifest_path"
+
+    log_json "edit.manifest" "$(cat "$manifest_path")" || true
+}
+
+resolve_ast_grep() {
+    if command -v ast-grep >/dev/null 2>&1; then
+        printf 'ast-grep\n'
+        return 0
+    fi
+
+    if command -v sg >/dev/null 2>&1; then
+        printf 'sg\n'
+        return 0
+    fi
+
+    die "required tool not found: ast-grep or sg"
+}
+
+on_error() {
+    local exit_code=$?
+    write_session_manifest "failed" || true
+    exit "$exit_code"
+}
+
+mode="${1:-}"
+[[ -n "$mode" ]] || {
+    usage
+    exit 2
+}
+shift || true
+
+agent_session_init "ai-edit"
+require_bins jq git
+
+apply="${APPLY:-0}"
+verify="${VERIFY:-0}"
+require_clean_tree_flag="${REQUIRE_CLEAN_TREE:-1}"
+root='.'
+snapshot=''
+
+trap on_error ERR
+
+if [[ "$apply" == "1" ]]; then
+    if [[ "$require_clean_tree_flag" == "1" ]]; then
+        require_clean_tree
+    else
+        log_warn "REQUIRE_CLEAN_TREE=0; applying on a dirty tree is allowed for this run"
+    fi
+
+    snapshot="$(snapshot_create pre-edit)"
+    log_info "Snapshot: $snapshot"
+fi
+
+case "$mode" in
+ast-grep)
+    ast_bin="$(resolve_ast_grep)"
+    lang="${1:?lang required}"
+    pattern="${2:?pattern required}"
+    rewrite="${3:?rewrite required}"
+    root="${4:-.}"
+
+    if [[ "$apply" == "1" ]]; then
+        "$ast_bin" run --lang "$lang" --pattern "$pattern" --rewrite "$rewrite" "$root" --update-all
+    else
+        "$ast_bin" run --lang "$lang" --pattern "$pattern" --rewrite "$rewrite" "$root"
+        write_session_manifest "dry-run"
+        printf '\nDry-run only. Re-run with APPLY=1 to modify files.\n'
+        exit 0
+    fi
+    ;;
+
+comby)
+    require_bins comby
+    match="${1:?match required}"
+    rewrite="${2:?rewrite required}"
+    root="${3:-.}"
+
+    if [[ "$apply" == "1" ]]; then
+        comby "$match" "$rewrite" -matcher .generic -in-place "$root"
+    else
+        comby "$match" "$rewrite" -matcher .generic "$root"
+        write_session_manifest "dry-run"
+        printf '\nDry-run only. Re-run with APPLY=1 to modify files.\n'
+        exit 0
+    fi
+    ;;
+
+sd)
+    require_bins rg sd
+    from="${1:?from required}"
+    to="${2:?to required}"
+    root="${3:-.}"
+
+    if [[ "$apply" == "1" ]]; then
+        mapfile -t files < <(
+            rg -l --hidden \
+                -g '!vendor' \
+                -g '!node_modules' \
+                -g '!dist' \
+                -g '!.git' \
+                -g '!.repomix-context' \
+                "$from" "$root"
+        )
+
+        ((${#files[@]} > 0)) || die "no files matched replacement pattern"
+
+        for target_file in "${files[@]}"; do
+            sd "$from" "$to" "$target_file"
+        done
+    else
+        rg -n --hidden \
+            -g '!vendor' \
+            -g '!node_modules' \
+            -g '!dist' \
+            -g '!.git' \
+            -g '!.repomix-context' \
+            "$from" "$root"
+
+        write_session_manifest "dry-run"
+        printf '\nDry-run only. Re-run with APPLY=1 to modify files.\n'
+        exit 0
+    fi
+    ;;
+
+*)
+    usage
+    die "unknown mode: $mode"
+    ;;
+esac
+
+show_diff
+
+if [[ "$verify" == "1" ]]; then
+    if ! "$(dirname "${BASH_SOURCE[0]}")/ai-verify.sh" .; then
+        write_session_manifest "verify-failed"
+        exit 1
+    fi
+
+    write_session_manifest "verified"
+else
+    write_session_manifest "applied"
+fi
+
+log_json "edit.apply" "$(jq -cn --arg mode "$mode" --arg snapshot "$snapshot" '{mode:$mode, snapshot:$snapshot}')"
+
+
+ai-rollback.sh
+
+#!/usr/bin/env bash
+# Review and apply repository-local rollback snapshots created by AI tooling sessions.
+
+set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+SNAPSHOT_DIR="${COPILOT_SNAPSHOT_DIR:-.ai-logs/snapshots}"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  ai-rollback.sh list
+  ai-rollback.sh show SESSION_OR_SNAPSHOT
+  ai-rollback.sh apply SESSION_OR_SNAPSHOT
+  ai-rollback.sh prune [--days N]
+
+Environment:
+  ROLLBACK_REMOVE_CREATED_UNTRACKED=1
+EOF
+}
+
+confirm_mutation() {
+    local message="$1"
+
+    log_warn "$message"
+
+    if [[ -t 0 ]] && [[ "${CI:-}" != "true" ]]; then
+        printf '%b[WARN]%b Continue? [y/N] ' "$_C_YELLOW" "$_C_RESET" >&2
+        read -r confirm
+        [[ "$confirm" =~ ^[Yy]$ ]] || {
+            log_info "Aborted."
+            exit 0
+        }
+    fi
+}
+
+resolve_snapshot() {
+    local input="$1"
+    local match=""
+
+    [[ -n "$input" ]] || die "session or snapshot required"
+
+    if [[ -f "$input" ]]; then
+        printf '%s\n' "$input"
+        return 0
+    fi
+
+    if [[ ! -d "$SNAPSHOT_DIR" ]]; then
+        die "snapshot directory not found: $SNAPSHOT_DIR"
+    fi
+
+    match="$(
+        find "$SNAPSHOT_DIR" -maxdepth 1 \
+            \( -name "${input}*.manifest.json" -o -name "${input}*.patch" -o -name "${input}*.ref" \) \
+            | sort -r \
+            | head -1
+    )"
+
+    [[ -n "$match" ]] || die "no snapshot found matching: $input"
+    printf '%s\n' "$match"
+}
+
+snapshot_size() {
+    local snap="$1"
+    du -sh "$snap" 2>/dev/null | cut -f1
+}
+
+snapshot_date() {
+    local snap="$1"
+    stat -c '%y' "$snap" 2>/dev/null | cut -c1-16 ||
+        stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$snap" 2>/dev/null ||
+        printf '-'
+}
+
+cmd_list() {
+    if [[ ! -d "$SNAPSHOT_DIR" ]]; then
+        log_warn "No snapshot directory found at $SNAPSHOT_DIR"
+        exit 0
+    fi
+
+    local count=0
+    local snap
+    local base
+    local type
+
+    printf '%-60s  %-12s  %-10s  %s\n' "SNAPSHOT" "TYPE" "SIZE" "DATE"
+    printf '%s\n' "$(printf '=%.0s' {1..100})"
+
+    while IFS= read -r snap; do
+        [[ -n "$snap" ]] || continue
+
+        base="$(basename "$snap")"
+
+        case "$snap" in
+        *.manifest.json) type="manifest" ;;
+        *.patch) type="legacy-patch" ;;
+        *.ref) type="legacy-ref" ;;
+        *) type="unknown" ;;
+        esac
+
+        printf '%-60s  %-12s  %-10s  %s\n' \
+            "$base" \
+            "$type" \
+            "$(snapshot_size "$snap")" \
+            "$(snapshot_date "$snap")"
+
+        count=$((count + 1))
+    done < <(
+        find "$SNAPSHOT_DIR" -maxdepth 1 \
+            \( -name '*.manifest.json' -o -name '*.patch' -o -name '*.ref' \) \
+            | sort -r
+    )
+
+    printf '\n%d snapshot artifact(s) found\n' "$count"
+}
+
+cmd_show_manifest() {
+    local manifest="$1"
+    local patch_file
+    local untracked_list
+    local untracked_archive
+
+    jq '{
+      version,
+      session,
+      label,
+      base_ref,
+      root,
+      patch_file,
+      untracked_list,
+      untracked_archive,
+      has_untracked_archive,
+      ts
+    }' "$manifest"
+
+    patch_file="$(jq -r '.patch_file // empty' "$manifest")"
+    untracked_list="$(jq -r '.untracked_list // empty' "$manifest")"
+    untracked_archive="$(jq -r '.untracked_archive // empty' "$manifest")"
+
+    if [[ -n "$patch_file" && -f "$patch_file" && -s "$patch_file" ]]; then
+        echo
+        echo "## Patch stat"
+        git apply --stat "$patch_file" 2>/dev/null || sed -n '1,80p' "$patch_file"
+    fi
+
+    if [[ -n "$untracked_list" && -f "$untracked_list" && -s "$untracked_list" ]]; then
+        echo
+        echo "## Untracked files captured"
+        sed -n '1,120p' "$untracked_list"
+    fi
+
+    if [[ -n "$untracked_archive" && "$untracked_archive" != "null" ]]; then
+        echo
+        echo "## Untracked archive"
+        printf '%s\n' "$untracked_archive"
+    fi
+}
+
+cmd_show() {
+    local input="${1:?session or snapshot required}"
+    local snap
+
+    snap="$(resolve_snapshot "$input")"
+    log_info "Snapshot: $snap"
+
+    case "$snap" in
+    *.manifest.json)
+        cmd_show_manifest "$snap"
+        ;;
+    *.ref)
+        local ref
+        ref="$(<"$snap")"
+        log_info "Type: legacy ref"
+        git show --stat "$ref"
+        ;;
+    *.patch)
+        log_info "Type: legacy patch"
+        git apply --stat "$snap" 2>/dev/null || sed -n '1,120p' "$snap"
+        ;;
+    *)
+        die "unsupported snapshot type: $snap"
+        ;;
+    esac
+}
+
+cmd_apply() {
+    local input="${1:?session or snapshot required}"
+    local snap
+
+    snap="$(resolve_snapshot "$input")"
+
+    confirm_mutation "Rollback modifies the working tree and may remove created untracked files."
+
+    snapshot_apply "$snap"
+
+    log_ok "Rollback applied"
+    git --no-pager diff --stat || true
+    log_json "rollback.apply" "$(jq -cn --arg snapshot "$snap" '{snapshot:$snapshot}')"
+}
+
+cmd_prune() {
+    local days=14
+    local count=0
+    local snap
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+        --days)
+            days="${2:?days required}"
+            shift 2
+            ;;
+        --days=*)
+            days="${1#*=}"
+            shift
+            ;;
+        *) die "unknown option: $1" ;;
+        esac
+    done
+
+    confirm_mutation "Pruning rollback snapshots older than $days days deletes recovery artifacts."
+
+    if [[ ! -d "$SNAPSHOT_DIR" ]]; then
+        log_warn "No snapshot directory found at $SNAPSHOT_DIR"
+        exit 0
+    fi
+
+    while IFS= read -r snap; do
+        [[ -n "$snap" ]] || continue
+        rm -f "$snap"
+        count=$((count + 1))
+    done < <(
+        find "$SNAPSHOT_DIR" -maxdepth 1 \
+            \( -name '*.manifest.json' -o -name '*.patch' -o -name '*.ref' -o -name '*.untracked.txt' -o -name '*.untracked.tar.gz' \) \
+            -mtime +"$days" 2>/dev/null
+    )
+
+    log_ok "Pruned $count snapshot artifact(s)"
+    log_json "rollback.prune" "$(jq -cn --argjson days "$days" --argjson count "$count" '{days:$days, count:$count}')"
+}
+
+agent_session_init "ai-rollback"
+require_bins jq git
+
+cmd="${1:-}"
+[[ -n "$cmd" ]] || {
+    usage
+    exit 1
+}
+shift || true
+
+case "$cmd" in
+list) cmd_list ;;
+show) cmd_show "${1:-}" ;;
+apply) cmd_apply "${1:-}" ;;
+prune) cmd_prune "$@" ;;
+--help | -h) usage ;;
+*)
+    usage
+    die "unknown command: $cmd"
+    ;;
+esac
+
+
+
+ai-search.sh
+
+#!/usr/bin/env bash
+# Unified search wrapper so agents do not guess which discovery tool to call.
+
+set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  ai-search.sh MODE QUERY [root] [options]
+  ai-search.sh doctor
+
+Modes:
+  text files struct tracked changed staged docs tests config schema secrets unsafe-all all doctor
+EOF
+}
+
+mode="${1:-}"
+query="${2:-}"
+root="${3:-.}"
+shift $(( $# > 0 ? 1 : 0 )) || true
+[[ "$mode" == "doctor" ]] || shift $(( $# > 0 ? 1 : 0 )) || true
+[[ "$mode" == "doctor" ]] || shift $(( $# > 0 ? 1 : 0 )) || true
+
+JSON_MODE="${AI_OUTPUT:-}" ; JSON_MODE="${JSON_MODE,,}"
+DRY_RUN=0; FIXED=0; CONTEXT=2; MAX=100; MAX_COLUMNS=300; MAX_FILESIZE="1M"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --json) JSON_MODE="json"; shift ;;
+    --dry-run) DRY_RUN=1; shift ;;
+    --fixed|-F) FIXED=1; shift ;;
+    --context|-C) CONTEXT="${2:-2}"; shift 2 ;;
+    --context=*|-C=*) CONTEXT="${1#*=}"; shift ;;
+    --max|-m) MAX="${2:-100}"; shift 2 ;;
+    --max=*|-m=*) MAX="${1#*=}"; shift ;;
+    -m[0-9]*) MAX="${1#-m}"; shift ;;
+    --max-columns) MAX_COLUMNS="${2:-300}"; shift 2 ;;
+    --max-columns=*) MAX_COLUMNS="${1#*=}"; shift ;;
+    --max-filesize) MAX_FILESIZE="${2:-1M}"; shift 2 ;;
+    --max-filesize=*) MAX_FILESIZE="${1#*=}"; shift ;;
+    *) die "unknown option: $1" ;;
+  esac
+done
+
+emit() {
+  local status="$1" tool="$2" matches_json="${3:-[]}" warnings_json="${4:-[]}" errors_json="${5:-[]}"
+  local matches_file
+  matches_file="$(mktemp)"
+  printf '%s' "$matches_json" >"$matches_file"
+  jq -nc \
+    --arg status "$status" \
+    --arg tool "$tool" \
+    --arg mode "$mode" \
+    --arg query "$query" \
+    --arg root "$root" \
+    --argjson warnings "$warnings_json" \
+    --argjson errors "$errors_json" \
+    --argjson dry "$DRY_RUN" \
+    --argjson max "$MAX" \
+    --argjson context "$CONTEXT" \
+    --argjson max_columns "$MAX_COLUMNS" \
+    --arg max_filesize "$MAX_FILESIZE" \
+    --slurpfile matches "$matches_file" '
+{schema:"1",status:$status,tool:$tool,mode:$mode,query:$query,root:$root,matches:($matches[0] // []),limits:{max:$max,context:$context,max_columns:$max_columns,max_filesize:$max_filesize,unlimited:false},warnings:$warnings,errors:$errors,meta:{elapsed_ms:0,truncated:false,dry_run:($dry=="1")}}'
+  rm -f "$matches_file"
+}
+
+match_json_filter='[.[]|select(.type=="match")|{file:.data.path.text,line:.data.line_number,text:.data.lines.text}]'
+
+rg_matches() {
+  local rc stdout_file stderr_file stderr_output
+  stdout_file="$(mktemp)"
+  stderr_file="$(mktemp)"
+
+  set +e
+  rg "$@" >"$stdout_file" 2>"$stderr_file"
+  rc=$?
+  set -e
+
+  stderr_output="$(<"$stderr_file")"
+  if [[ -n "$stderr_output" ]]; then
+    printf '%s\n' "$stderr_output" >&2
+  fi
+
+  if [[ "$rc" -eq 1 ]]; then
+    rm -f "$stdout_file" "$stderr_file"
+    printf '[]'
+    return 0
+  fi
+
+  if [[ "$rc" -ne 0 ]]; then
+    rm -f "$stdout_file" "$stderr_file"
+    return "$rc"
+  fi
+
+  jq -sc "$match_json_filter" <"$stdout_file"
+  rc=$?
+  rm -f "$stdout_file" "$stderr_file"
+  return "$rc"
+}
+
+git_grep_matches() {
+  local output rc
+  local git_flags=(-n -m "$MAX")
+  [[ "$FIXED" == "1" ]] && git_flags+=(-F)
+
+  set +e
+  output="$(git -C "$root" grep "${git_flags[@]}" -- "$query" 2>&1)"
+  rc=$?
+  set -e
+
+  if [[ "$rc" -eq 1 ]]; then
+    printf '[]'
+    return 0
+  fi
+
+  if [[ "$rc" -ne 0 ]]; then
+    printf '%s\n' "$output" >&2
+    return "$rc"
+  fi
+
+  printf '%s' "$output" | jq -R 'split(":")|{file:.[0],line:(.[1]|tonumber),text:(.[2:]|join(":"))}' | jq -sc '.'
+}
+
+diff_file_matches() {
+  local diff_flag="${1:-}"
+  local -a diff_args=()
+  local -a files=()
+  [[ -n "$diff_flag" ]] && diff_args+=("$diff_flag")
+  mapfile -d '' files < <(git -C "$root" diff "${diff_args[@]}" --name-only -z)
+
+  if [[ "${#files[@]}" -eq 0 ]]; then
+    printf '[]'
+    return 0
+  fi
+
+  (cd "$root" && rg_matches "${rg_flags[@]}" --json "$query" "${files[@]}")
+}
+
+struct_matches() {
+  require_bins ast-grep
+  local output rc lang
+  lang="${AI_LANG:-php}"
+
+  set +e
+  output="$(ast-grep run --lang "$lang" --pattern "$query" "$root" 2>&1)"
+  rc=$?
+  set -e
+
+  if [[ "$rc" -eq 1 ]]; then
+    printf '[]'
+    return 0
+  fi
+
+  if [[ "$rc" -ne 0 ]]; then
+    printf '%s\n' "$output" >&2
+    return "$rc"
+  fi
+
+  printf '%s' "$output" | jq -R -s 'split("\n") | map(select(length > 0) | {file:"",line:0,text:.})'
+}
+
+if [[ "$mode" == "doctor" ]]; then
+  require_bins rg git jq fd ast-grep
+  [[ "$JSON_MODE" == "json" ]] && emit ok facade "[]" || echo "ok: ai-search doctor passed"
+  exit 0
+fi
+
+[[ -n "$mode" && -n "$query" ]] || {
+    usage
+    exit 2
+}
+
+if [[ "$mode" == "unsafe-all" || "$mode" == "secrets" ]]; then
+  if [[ "${AI_ALLOW_UNSAFE:-0}" != "1" ]]; then
+    [[ "$JSON_MODE" == "json" ]] && emit unsafe_blocked facade "[]" || echo "unsafe_blocked: approval required"
+    exit 0
+  fi
+fi
+
+if [[ "$DRY_RUN" == "1" ]]; then
+  [[ "$JSON_MODE" == "json" ]] && emit dry_run facade "[]" || echo "dry_run"
+  exit 0
+fi
+
+rg_flags=(-n -m "$MAX" -C "$CONTEXT" --max-columns "$MAX_COLUMNS" --max-filesize "$MAX_FILESIZE")
+[[ "$FIXED" == "1" ]] && rg_flags+=(-F)
+matches='[]'
+errors='[]'
+status_override=''
+
+case "$mode" in
+  text|all|unsafe-all|secrets) matches="$(rg_matches "${rg_flags[@]}" --json "$query" "$root")" || status_override="error" ;;
+  docs) matches="$(rg_matches "${rg_flags[@]}" --json -g '*.md' "$query" "$root")" || status_override="error" ;;
+  tests) matches="$(rg_matches "${rg_flags[@]}" --json -g 'tests/**' "$query" "$root")" || status_override="error" ;;
+  config|schema) matches="$(rg_matches "${rg_flags[@]}" --json -g '*.{json,yml,yaml,toml,xml,dist,lock}' "$query" "$root")" || status_override="error" ;;
+  files) require_bins fd; matches="$(fd "$query" "$root" | jq -R . | jq -sc '[.[]|{file:.,line:0,text:""}]')" || status_override="error" ;;
+  tracked) matches="$(git_grep_matches)" || status_override="error" ;;
+  changed) matches="$(diff_file_matches)" || status_override="error" ;;
+  staged) matches="$(diff_file_matches --cached)" || status_override="error" ;;
+  struct) matches="$(struct_matches)" || status_override="error" ;;
+  *) usage; die "unknown mode: $mode" ;;
+esac
+
+if [[ "$status_override" == "error" ]]; then
+  errors="$(jq -nc --arg mode "$mode" '[{message:("search failed for mode: " + $mode)}]')"
+  matches='[]'
+fi
+
+if [[ "$JSON_MODE" == "json" ]]; then
+  status="${status_override:-ok}"; [[ -z "$status_override" && "$(jq 'length' <<<"$matches")" == "0" ]] && status="no_matches"
+  emit "$status" facade "$matches" "[]" "$errors"
+else
+  [[ "$status_override" == "error" ]] && exit 1
+  jq -r '.[] | "\(.file):\(.line):\(.text)"' <<<"$matches"
+fi
+
+
+
+ai-structured.sh
+
+#!/usr/bin/env bash
+# Structured data query wrapper for AI agents.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ai/common.sh
+source "$SCRIPT_DIR/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  ai-structured.sh json FILE QUERY
+  ai-structured.sh yaml FILE QUERY
+  ai-structured.sh validate-json FILE
+  ai-structured.sh validate-yaml FILE
+  ai-structured.sh csv FILE [--head N]
+  ai-structured.sh xml FILE [XPATH]
+
+Examples:
+  scripts/ai/ai-structured.sh json package.json '.scripts'
+  scripts/ai/ai-structured.sh yaml .github/workflows/ci.yml '.jobs | keys'
+  scripts/ai/ai-structured.sh validate-json composer.json
+  scripts/ai/ai-structured.sh csv data.csv --head 20
+EOF
+}
+
+mode="${1:-}"
+[[ -n "$mode" ]] || {
+    usage
+    exit 2
+}
+shift || true
+
+agent_session_init "ai-structured"
+
+case "$mode" in
+json)
+    require_bins jq
+    file="${1:?file required}"
+    query="${2:?jq query required}"
+    [[ -f "$file" ]] || die "file not found: $file"
+    jq "$query" "$file"
+    ;;
+
+yaml|yml)
+    require_bins yq
+    file="${1:?file required}"
+    query="${2:?yq query required}"
+    [[ -f "$file" ]] || die "file not found: $file"
+    yq "$query" "$file"
+    ;;
+
+validate-json)
+    require_bins jq
+    file="${1:?file required}"
+    [[ -f "$file" ]] || die "file not found: $file"
+    jq empty "$file"
+    log_ok "valid JSON: $file"
+    ;;
+
+validate-yaml|validate-yml)
+    require_bins yq
+    file="${1:?file required}"
+    [[ -f "$file" ]] || die "file not found: $file"
+    yq '.' "$file" >/dev/null
+    log_ok "valid YAML: $file"
+    ;;
+
+csv)
+    file="${1:?file required}"
+    shift || true
+    [[ -f "$file" ]] || die "file not found: $file"
+
+    head_count=20
+    while (($# > 0)); do
+        case "$1" in
+        --head)
+            head_count="${2:?head count required}"
+            shift 2
+            ;;
+        --head=*)
+            head_count="${1#*=}"
+            shift
+            ;;
+        *) die "unknown option: $1" ;;
+        esac
+    done
+
+    if command -v mlr >/dev/null 2>&1; then
+        mlr --icsv --opprint head -n "$head_count" "$file"
+    elif command -v csvcut >/dev/null 2>&1; then
+        csvcut "$file" | head -n "$head_count"
+    else
+        head -n "$head_count" "$file"
+    fi
+    ;;
+
+xml)
+    file="${1:?file required}"
+    xpath="${2:-}"
+    [[ -f "$file" ]] || die "file not found: $file"
+
+    if command -v xmllint >/dev/null 2>&1; then
+        if [[ -n "$xpath" ]]; then
+            xmllint --xpath "$xpath" "$file"
+        else
+            xmllint --format "$file"
+        fi
+    else
+        die "xmllint not installed"
+    fi
+    ;;
+
+--help|-h)
+    usage
+    ;;
+
+*)
+    usage
+    die "unknown mode: $mode"
+    ;;
+esac
+
+log_json "structured.query" "$(jq -cn --arg mode "$mode" '{mode:$mode}')"
+
+
+ai-task.sh
+
+#!/usr/bin/env bash
+# Project task discovery wrapper for AI agents.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ai/common.sh
+source "$SCRIPT_DIR/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  ai-task.sh list
+  ai-task.sh verify
+  ai-task.sh test
+  ai-task.sh lint
+  ai-task.sh typecheck
+  ai-task.sh json
+
+Purpose:
+  Discover project-defined commands before guessing raw commands.
+EOF
+}
+
+mode="${1:-list}"
+shift || true
+
+agent_session_init "ai-task"
+
+has_package_script() {
+    local name="${1:?script name required}"
+    [[ -f package.json ]] || return 1
+    command -v jq >/dev/null 2>&1 || return 1
+    jq -e --arg name "$name" '.scripts[$name] // empty' package.json >/dev/null 2>&1
+}
+
+package_manager() {
+    if [[ -f package.json ]] && command -v jq >/dev/null 2>&1; then
+        declared="$(jq -r '.packageManager // empty' package.json)"
+        if [[ -n "$declared" ]]; then
+            printf '%s\n' "${declared%%@*}"
+            return 0
+        fi
+    fi
+
+    if [[ -f pnpm-lock.yaml ]]; then
+        printf 'pnpm\n'
+    elif [[ -f package-lock.json ]]; then
+        printf 'npm\n'
+    elif [[ -f yarn.lock ]]; then
+        printf 'yarn\n'
+    elif [[ -f package.json ]]; then
+        printf 'npm\n'
+    else
+        printf 'unknown\n'
+    fi
+}
+
+composer_scripts_json() {
+    if [[ -f composer.json ]] && command -v jq >/dev/null 2>&1; then
+        jq '.scripts // {}' composer.json
+    else
+        printf '{}\n'
+    fi
+}
+
+package_scripts_json() {
+    if [[ -f package.json ]] && command -v jq >/dev/null 2>&1; then
+        jq '.scripts // {}' package.json
+    else
+        printf '{}\n'
+    fi
+}
+
+just_tasks_json() {
+    if command -v just >/dev/null 2>&1 && [[ -f justfile || -f Justfile ]]; then
+        just --summary 2>/dev/null | tr ' ' '\n' | sed '/^$/d' | jq -R . | jq -s .
+    else
+        printf '[]\n'
+    fi
+}
+
+make_tasks_json() {
+    if [[ -f Makefile ]]; then
+        awk -F: '/^[A-Za-z0-9_.-]+:/ {print $1}' Makefile | sort -u | jq -R . | jq -s .
+    else
+        printf '[]\n'
+    fi
+}
+
+taskfile_tasks_json() {
+    if [[ -f Taskfile.yml || -f Taskfile.yaml ]] && command -v yq >/dev/null 2>&1; then
+        yq -o=json '.tasks | keys' Taskfile.yml 2>/dev/null ||
+            yq -o=json '.tasks | keys' Taskfile.yaml 2>/dev/null ||
+            printf '[]\n'
+    else
+        printf '[]\n'
+    fi
+}
+
+build_inventory() {
+    jq -n \
+        --arg package_manager "$(package_manager)" \
+        --argjson package_scripts "$(package_scripts_json)" \
+        --argjson composer_scripts "$(composer_scripts_json)" \
+        --argjson just_tasks "$(just_tasks_json)" \
+        --argjson make_tasks "$(make_tasks_json)" \
+        --argjson taskfile_tasks "$(taskfile_tasks_json)" \
+        '{
+          package_manager: $package_manager,
+          package_scripts: $package_scripts,
+          composer_scripts: $composer_scripts,
+          just_tasks: $just_tasks,
+          make_tasks: $make_tasks,
+          taskfile_tasks: $taskfile_tasks
+        }'
+}
+
+recommend_command() {
+    local intent="${1:?intent required}"
+    local pm
+    pm="$(package_manager)"
+    if [[ "$pm" == "unknown" ]]; then
+        pm=""
+    fi
+
+    case "$intent" in
+    verify)
+        if command -v just >/dev/null 2>&1 && just --summary 2>/dev/null | grep -qw verify; then
+            printf 'just verify\n'
+        elif has_package_script verify; then
+            if [[ -n "$pm" ]]; then
+                printf '%s run verify\n' "$pm"
+            else
+                printf 'scripts/ai/ai-verify.sh .\n'
+            fi
+        elif [[ -f composer.json ]] && jq -e '.scripts.verify // empty' composer.json >/dev/null 2>&1; then
+            printf 'composer run-script verify\n'
+        else
+            printf 'scripts/ai/ai-verify.sh .\n'
+        fi
+        ;;
+
+    test)
+        if has_package_script test; then
+            printf '%s test\n' "$pm"
+        elif [[ -f composer.json ]] && [[ -x vendor/bin/phpunit ]]; then
+            printf 'vendor/bin/phpunit\n'
+        elif [[ -f composer.json ]] && [[ -x vendor/bin/pest ]]; then
+            printf 'vendor/bin/pest\n'
+        else
+            printf 'scripts/ai/ai-verify.sh .\n'
+        fi
+        ;;
+
+    lint)
+        if has_package_script lint; then
+            printf '%s run lint\n' "$pm"
+        elif [[ -f composer.json ]] && [[ -x vendor/bin/pint ]]; then
+            printf 'vendor/bin/pint --test\n'
+        else
+            printf 'scripts/ai/ai-verify.sh .\n'
+        fi
+        ;;
+
+    typecheck)
+        if has_package_script typecheck; then
+            printf '%s run typecheck\n' "$pm"
+        elif [[ -f tsconfig.json ]]; then
+            printf '%s exec tsc --noEmit\n' "$pm"
+        elif [[ -f composer.json ]] && [[ -x vendor/bin/phpstan ]]; then
+            printf 'vendor/bin/phpstan analyse\n'
+        else
+            printf 'scripts/ai/ai-verify.sh .\n'
+        fi
+        ;;
+
+    *)
+        die "unknown recommendation intent: $intent"
+        ;;
+    esac
+}
+
+case "$mode" in
+list)
+    build_inventory
+    ;;
+
+json)
+    build_inventory
+    ;;
+
+verify|test|lint|typecheck)
+    recommend_command "$mode"
+    ;;
+
+--help|-h)
+    usage
+    ;;
+
+*)
+    usage
+    die "unknown mode: $mode"
+    ;;
+esac
+
+log_json "task.query" "$(jq -cn --arg mode "$mode" '{mode:$mode}')"
+
+
+ai-test-select.sh
+
+#!/usr/bin/env bash
+# Select focused tests for AI-driven changes.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ai/common.sh
+source "$SCRIPT_DIR/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  ai-test-select.sh changed
+  ai-test-select.sh file PATH
+  ai-test-select.sh symbol SYMBOL
+  ai-test-select.sh json
+
+Purpose:
+  Select focused tests before running broad verification.
+EOF
+}
+
+mode="${1:-}"
+[[ -n "$mode" ]] || {
+    usage
+    exit 2
+}
+shift || true
+
+agent_session_init "ai-test-select"
+require_bins jq git
+
+repo_files() {
+    git ls-files
+}
+
+changed_files() {
+    {
+        git diff --name-only --diff-filter=ACMRT
+        git diff --cached --name-only --diff-filter=ACMRT
+        git ls-files --others --exclude-standard
+    } | sort -u | existing_files_only
+}
+
+existing_files_only() {
+    while IFS= read -r file; do
+        [[ -n "$file" && -f "$file" ]] || continue
+        printf '%s\n' "$file"
+    done
+}
+
+lines_to_json_array() {
+    sed '/^$/d' | jq -R . | jq -s .
+}
+
+stem_for_file() {
+    local file="$1"
+    local base
+    base="$(basename "$file")"
+    printf '%s\n' "${base%.*}"
+}
+
+find_tests_for_stem() {
+    local stem="${1:-}"
+
+    [[ -n "$stem" ]] || return 0
+
+    {
+        repo_files | grep -E "(^|/)(tests?|spec|__tests__)/.*${stem}.*\.(php|js|ts|jsx|tsx|vue)$" || true
+        repo_files | grep -E "(^|/)${stem}(Test|Spec)?\.(php|js|ts|jsx|tsx)$" || true
+        repo_files | grep -E "(^|/)${stem}\.(test|spec)\.(js|ts|jsx|tsx)$" || true
+    } | sort -u
+}
+
+find_tests_for_symbol() {
+    local symbol="${1:?symbol required}"
+
+    if command -v rg >/dev/null 2>&1; then
+        rg -l --hidden \
+            -g 'tests/**' \
+            -g 'test/**' \
+            -g 'spec/**' \
+            -g '__tests__/**' \
+            -g '*.{php,js,ts,jsx,tsx,vue}' \
+            "$symbol" . 2>/dev/null | sed 's#^\./##' | sort -u
+    fi
+}
+
+command_for_test() {
+    local test_file="$1"
+
+    case "$test_file" in
+    *.php)
+        if [[ -f artisan ]]; then
+            printf 'php artisan test %s\n' "$test_file"
+        elif [[ -x vendor/bin/pest ]]; then
+            printf 'vendor/bin/pest %s\n' "$test_file"
+        elif [[ -x vendor/bin/phpunit ]]; then
+            printf 'vendor/bin/phpunit %s\n' "$test_file"
+        fi
+        ;;
+    *.js|*.ts|*.jsx|*.tsx|*.vue)
+        if [[ -f pnpm-lock.yaml ]]; then
+            printf 'pnpm test -- %s\n' "$test_file"
+        elif [[ -f package.json ]]; then
+            printf 'npm test -- %s\n' "$test_file"
+        fi
+        ;;
+    esac
+}
+
+emit_json() {
+    local files_json="$1"
+    local tests_json="$2"
+    local commands_json="$3"
+
+    jq -n \
+        --argjson files "$files_json" \
+        --argjson tests "$tests_json" \
+        --argjson commands "$commands_json" \
+        '{
+          input_files: $files,
+          candidate_tests: $tests,
+          recommended_commands: $commands
+        }'
+}
+
+select_for_files() {
+    local input_files=("$@")
+    local tests=()
+    local commands=()
+    local file
+    local stem
+    local test_file
+
+    for file in "${input_files[@]+${input_files[@]}}"; do
+        [[ -n "$file" ]] || continue
+        stem="$(stem_for_file "$file")"
+
+        while IFS= read -r test_file; do
+            [[ -n "$test_file" ]] || continue
+            tests+=("$test_file")
+        done < <(find_tests_for_stem "$stem")
+    done
+
+    mapfile -t tests < <(printf '%s\n' "${tests[@]+${tests[@]}}" | sed '/^$/d' | sort -u)
+
+    for test_file in "${tests[@]+${tests[@]}}"; do
+        while IFS= read -r command; do
+            [[ -n "$command" ]] || continue
+            commands+=("$command")
+        done < <(command_for_test "$test_file")
+    done
+
+    mapfile -t commands < <(printf '%s\n' "${commands[@]+${commands[@]}}" | sed '/^$/d' | sort -u)
+
+    emit_json \
+        "$(printf '%s\n' "${input_files[@]+${input_files[@]}}" | lines_to_json_array)" \
+        "$(printf '%s\n' "${tests[@]+${tests[@]}}" | lines_to_json_array)" \
+        "$(printf '%s\n' "${commands[@]+${commands[@]}}" | lines_to_json_array)"
+}
+
+case "$mode" in
+changed)
+    mapfile -t files < <(changed_files)
+    select_for_files "${files[@]+${files[@]}}"
+    ;;
+
+file)
+    file="${1:?file required}"
+    select_for_files "$file"
+    ;;
+
+symbol)
+    symbol="${1:?symbol required}"
+    mapfile -t tests < <(find_tests_for_symbol "$symbol")
+    commands=()
+
+    for test_file in "${tests[@]+${tests[@]}}"; do
+        while IFS= read -r command; do
+            [[ -n "$command" ]] || continue
+            commands+=("$command")
+        done < <(command_for_test "$test_file")
+    done
+
+    mapfile -t commands < <(printf '%s\n' "${commands[@]+${commands[@]}}" | sed '/^$/d' | sort -u)
+
+    emit_json \
+        "$(jq -n --arg symbol "$symbol" '[$symbol]')" \
+        "$(printf '%s\n' "${tests[@]+${tests[@]}}" | lines_to_json_array)" \
+        "$(printf '%s\n' "${commands[@]+${commands[@]}}" | lines_to_json_array)"
+    ;;
+
+json)
+    mapfile -t files < <(changed_files)
+    select_for_files "${files[@]+${files[@]}}"
+    ;;
+
+--help|-h)
+    usage
+    ;;
+
+*)
+    usage
+    die "unknown mode: $mode"
+    ;;
+esac
+
+log_json "test-select.query" "$(jq -cn --arg mode "$mode" '{mode:$mode}')"
+
+
+ai-verify.sh
+
+#!/usr/bin/env bash
+# Project-aware verification gate for AI-driven changes.
+
+set -euo pipefail
+
+# shellcheck source=scripts/ai/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+root="${1:-.}"
+
+VERIFY_FULL="${VERIFY_FULL:-0}"
+VERIFY_TIMEOUT="${VERIFY_TIMEOUT:-180}"
+SHELLCHECK_ARGS="${SHELLCHECK_ARGS:--x -e SC1091}"
+AI_VERIFY_SCOPE="${AI_VERIFY_SCOPE:-ai}"
+VERIFY_SECRETS="${VERIFY_SECRETS:-${SECRETS_SCAN:-1}}"
+
+failures=0
+
+cd "$root"
+
+run_step() {
+    local label="$1"
+    shift
+
+    echo "==> $label"
+
+    if ! run_with_timeout "$VERIFY_TIMEOUT" "$@"; then
+        echo "FAIL: $label failed" >&2
+        failures=$((failures + 1))
+    fi
+}
+
+has_package_script() {
+    local script_name="${1:?script name required}"
+    [[ -f package.json ]] || return 1
+    jq -e --arg name "$script_name" '.scripts[$name] // empty' package.json >/dev/null 2>&1
+}
+
+has_package_dependency() {
+    local package_name="${1:?package name required}"
+    [[ -f package.json ]] || return 1
+    jq -e --arg name "$package_name" '
+      (.dependencies[$name] // .devDependencies[$name] // .peerDependencies[$name] // empty)
+    ' package.json >/dev/null 2>&1
+}
+
+tracked_existing_shell_files() {
+    case "$AI_VERIFY_SCOPE" in
+        ai)
+            git ls-files -co --exclude-standard 'scripts/ai/*.sh' |
+            while IFS= read -r script; do
+                [[ -f "$script" ]] || continue
+                [[ "$script" == scripts/ai/check-batch*.sh ]] && continue
+                printf '%s\n' "$script"
+            done
+            ;;
+        changed)
+            {
+                git diff --name-only --diff-filter=ACMRT -- '*.sh'
+                git diff --cached --name-only --diff-filter=ACMRT -- '*.sh'
+                git ls-files --others --exclude-standard -- '*.sh'
+            } |
+            sort -u |
+            while IFS= read -r script; do
+                [[ -f "$script" ]] || continue
+                [[ "$script" == scripts/ai/check-batch*.sh ]] && continue
+                printf '%s\n' "$script"
+            done
+            ;;
+        all)
+            git ls-files -co --exclude-standard '*.sh' |
+            while IFS= read -r script; do
+                [[ -f "$script" ]] || continue
+                printf '%s\n' "$script"
+            done
+            ;;
+        *)
+            die "unknown AI_VERIFY_SCOPE: $AI_VERIFY_SCOPE"
+            ;;
+    esac
+}
+
+echo "==> repository"
+git status --short || true
+
+if command -v shellcheck >/dev/null 2>&1; then
+    while IFS= read -r script; do
+        [[ -n "$script" ]] || continue
+        # shellcheck disable=SC2086
+        run_step "shellcheck $script" shellcheck $SHELLCHECK_ARGS "$script"
+    done < <(tracked_existing_shell_files)
+fi
+
+if command -v shfmt >/dev/null 2>&1; then
+    while IFS= read -r script; do
+        [[ -n "$script" ]] || continue
+        run_step "shfmt -d $script" shfmt -d "$script"
+    done < <(tracked_existing_shell_files)
+fi
+
+if command -v actionlint >/dev/null 2>&1 && [[ -d .github/workflows ]]; then
+    run_step 'actionlint' actionlint
+fi
+
+if command -v lychee >/dev/null 2>&1; then
+    if [[ -f scripts/run-link-check.sh ]]; then
+        run_step 'bash scripts/run-link-check.sh' bash scripts/run-link-check.sh
+    else
+        run_step 'lychee README.md docs/**/*.md' lychee README.md docs/**/*.md
+    fi
+fi
+
+if [[ -f composer.json ]]; then
+    if command -v composer >/dev/null 2>&1; then
+        run_step 'composer validate --strict' composer validate --strict
+        run_step 'composer audit' composer audit
+    fi
+
+    if [[ -x vendor/bin/pint ]]; then
+        run_step 'vendor/bin/pint --test' vendor/bin/pint --test
+    fi
+
+    if [[ -x vendor/bin/phpstan ]]; then
+        run_step 'vendor/bin/phpstan analyse --memory-limit=1G' vendor/bin/phpstan analyse --memory-limit=1G
+    fi
+
+    if [[ -x vendor/bin/psalm ]]; then
+        run_step 'vendor/bin/psalm --no-cache' vendor/bin/psalm --no-cache
+    fi
+
+    if [[ "$VERIFY_FULL" == "1" ]]; then
+        if [[ -x vendor/bin/phpunit ]]; then
+            run_step 'vendor/bin/phpunit' vendor/bin/phpunit
+        fi
+
+        if [[ -x vendor/bin/pest ]]; then
+            run_step 'vendor/bin/pest' vendor/bin/pest
+        fi
+    else
+        log_warn "Skipping full PHP test suite. Use VERIFY_FULL=1 to run phpunit/pest."
+    fi
+fi
+
+if [[ -f package.json ]]; then
+    if command -v pnpm >/dev/null 2>&1; then
+        if has_package_script lint; then
+            run_step 'pnpm run lint' pnpm run lint
+        elif has_package_dependency eslint; then
+            run_step 'pnpm exec eslint .' pnpm exec eslint .
+        fi
+
+        if has_package_script typecheck; then
+            run_step 'pnpm run typecheck' pnpm run typecheck
+        elif [[ -f tsconfig.json ]] && has_package_dependency typescript; then
+            run_step 'pnpm exec tsc --noEmit' pnpm exec tsc --noEmit
+        fi
+
+        if has_package_dependency vue-tsc; then
+            run_step 'pnpm exec vue-tsc --noEmit' pnpm exec vue-tsc --noEmit
+        fi
+
+        if has_package_dependency nuxt || has_package_dependency nuxi; then
+            run_step 'pnpm exec nuxi typecheck' pnpm exec nuxi typecheck
+        fi
+
+        if has_package_dependency @graphql-codegen/cli && [[ -f codegen.yml || -f codegen.yaml || -f codegen.ts ]]; then
+            run_step 'pnpm exec graphql-codegen' pnpm exec graphql-codegen
+        fi
+
+        if has_package_dependency @graphql-eslint/eslint-plugin; then
+            run_step 'pnpm exec graphql-eslint .' pnpm exec graphql-eslint .
+        fi
+
+        if has_package_dependency biome; then
+            run_step 'pnpm exec biome check .' pnpm exec biome check .
+        fi
+
+        if has_package_dependency knip; then
+            run_step 'pnpm exec knip' pnpm exec knip
+        fi
+
+        if has_package_script test; then
+            if [[ "$VERIFY_FULL" == "1" ]]; then
+                run_step 'pnpm test' pnpm test
+            else
+                log_warn "Skipping full JS test suite. Use VERIFY_FULL=1 to run pnpm test."
+            fi
+        fi
+    elif command -v npm >/dev/null 2>&1; then
+        if has_package_script lint; then
+            run_step 'npm run lint' npm run lint
+        fi
+
+        if has_package_script typecheck; then
+            run_step 'npm run typecheck' npm run typecheck
+        fi
+
+        if has_package_script test; then
+            if [[ "$VERIFY_FULL" == "1" ]]; then
+                run_step 'npm test' npm test
+            else
+                log_warn "Skipping full JS test suite. Use VERIFY_FULL=1 to run npm test."
+            fi
+        fi
+    fi
+fi
+
+if [[ "$VERIFY_SECRETS" == "1" ]]; then
+    if command -v gitleaks >/dev/null 2>&1; then
+        run_step 'gitleaks detect --source . --redact --no-banner' gitleaks detect --source . --redact --no-banner
+    fi
+else
+    log_warn "Skipping secret scan. Use VERIFY_SECRETS=1 to enable gitleaks."
+fi
+
+if command -v trivy >/dev/null 2>&1; then
+    run_step 'trivy fs --scanners vuln,misconfig,secret .' trivy fs --scanners vuln,misconfig,secret .
+fi
+
+if command -v semgrep >/dev/null 2>&1; then
+    run_step 'semgrep scan --config auto .' semgrep scan --config auto .
+fi
+
+if command -v osv-scanner >/dev/null 2>&1; then
+    run_step 'osv-scanner scan --lockfile=.' osv-scanner scan --lockfile=.
+fi
+
+if ((failures > 0)); then
+    echo "==> failed: $failures verification step(s)" >&2
+    log_json "verify.failed" "$(jq -cn --argjson failures "$failures" '{failures:$failures}')" || true
+    exit 1
+fi
+
+echo '==> done'
+log_json "verify.passed" "$(jq -cn '{status:"passed"}')" || true
+
+
+common.sh
+
+#!/usr/bin/env bash
+# Shared library for repository AI tooling scripts.
+# common.sh v2: default-deny execution gate, bounded output, audit logging, rollback safety.
+
+set -euo pipefail
+
+AI_TOOL_NAME="${AI_TOOL_NAME:-$(basename "${0:-ai-tool}")}"
+
+COPILOT_LOG_DIR="${COPILOT_LOG_DIR:-${AI_LOG_DIR:-.ai-logs}}"
+COPILOT_CONTEXT_DIR="${COPILOT_CONTEXT_DIR:-.repomix-context}"
+COPILOT_SESSION_DIR="${COPILOT_SESSION_DIR:-${COPILOT_LOG_DIR}/sessions}"
+COPILOT_SNAPSHOT_DIR="${COPILOT_SNAPSHOT_DIR:-${COPILOT_LOG_DIR}/snapshots}"
+COPILOT_EVENT_LOG="${COPILOT_EVENT_LOG:-${COPILOT_LOG_DIR}/tool-usage.jsonl}"
+
+AI_CMD_TIMEOUT="${AI_CMD_TIMEOUT:-120}"
+AI_OUTPUT_MAX_BYTES="${AI_OUTPUT_MAX_BYTES:-200000}"
+AI_TOKEN_BUDGET="${AI_TOKEN_BUDGET:-128000}"
+AI_LOCK_TIMEOUT_SECONDS="${AI_LOCK_TIMEOUT_SECONDS:-10}"
+AI_LOG_MAX_BYTES="${AI_LOG_MAX_BYTES:-10485760}"
+AI_FAIL_ON_MISSING_SECRET_SCANNER="${AI_FAIL_ON_MISSING_SECRET_SCANNER:-0}"
+AI_REQUIRE_SCOPE_FOR_WRITE="${AI_REQUIRE_SCOPE_FOR_WRITE:-1}"
+AI_REDACT_STDOUT="${AI_REDACT_STDOUT:-0}"
+AI_SESSION_AUTO_TRAP="${AI_SESSION_AUTO_TRAP:-1}"
+
+if [[ -z "${NO_COLOR:-}" && -t 2 ]]; then
+    _C_RESET=$'\033[0m'
+    _C_RED=$'\033[0;31m'
+    _C_YELLOW=$'\033[0;33m'
+    _C_GREEN=$'\033[0;32m'
+    _C_CYAN=$'\033[0;36m'
+    _C_BOLD=$'\033[1m'
+else
+    _C_RESET=''
+    _C_RED=''
+    _C_YELLOW=''
+    _C_GREEN=''
+    _C_CYAN=''
+    _C_BOLD=''
+fi
+
+log_info() { printf '%b[INFO]%b  %s\n' "$_C_CYAN" "$_C_RESET" "$*" >&2; }
+log_ok() { printf '%b[OK]%b    %s\n' "$_C_GREEN" "$_C_RESET" "$*" >&2; }
+log_warn() { printf '%b[WARN]%b  %s\n' "$_C_YELLOW" "$_C_RESET" "$*" >&2; }
+log_error() { printf '%b[ERROR]%b %s\n' "$_C_RED" "$_C_RESET" "$*" >&2; }
+section() { printf '\n%b==> %s%b\n' "$_C_BOLD" "$*" "$_C_RESET" >&2; }
+
+command_exists() { command -v "$1" >/dev/null 2>&1; }
+hard_die() { log_error "$*"; exit 1; }
+
+require_bins() {
+    local missing=()
+    local bin
+
+    for bin in "$@"; do
+        command_exists "$bin" || missing+=("$bin")
+    done
+
+    ((${#missing[@]} == 0)) || hard_die "required tools not found: ${missing[*]}"
+}
+
+require_bash_version() {
+    local required="${1:-4}"
+    local major="${BASH_VERSINFO[0]:-0}"
+
+    ((major >= required)) || hard_die "Bash ${required}+ required; current version is ${BASH_VERSION:-unknown}"
+}
+
+common_require_core() {
+    require_bash_version 4
+    require_bins jq git
+}
+
+json_available() { command_exists jq; }
+
+find_timeout_bin() {
+    if command_exists gtimeout; then
+        printf '%s\n' gtimeout
+    elif command_exists timeout; then
+        printf '%s\n' timeout
+    else
+        return 1
+    fi
+}
+
+find_fd_bin() {
+    if command_exists fd; then
+        printf '%s\n' fd
+    elif command_exists fdfind; then
+        printf '%s\n' fdfind
+    else
+        return 1
+    fi
+}
+
+now_ms() {
+    local value
+
+    value="$(date +%s%3N 2>/dev/null || true)"
+
+    if [[ "$value" =~ ^[0-9]+$ ]]; then
+        printf '%s\n' "$value"
+        return 0
+    fi
+
+    if command_exists python3; then
+        python3 - <<'PY' 2>/dev/null && return 0
+import time
+print(int(time.time() * 1000))
+PY
+    fi
+
+    printf '%s000\n' "$(date +%s)"
+}
+
+redact_sensitive_text() {
+    sed -E \
+        -e 's/((token|password|passwd|secret|api[_-]?key|authorization|bearer)[[:space:]]*[:=][[:space:]]*)[^"[:space:]]+/\1REDACTED/Ig' \
+        -e 's/(Authorization:[[:space:]]*Bearer[[:space:]]+)[A-Za-z0-9._~+\/=-]+/\1REDACTED/Ig' \
+        -e 's/(-----BEGIN [A-Z ]+ PRIVATE KEY-----)[^-]*(-----END [A-Z ]+ PRIVATE KEY-----)/\1 REDACTED \2/g' \
+        -e 's/[A-Za-z0-9_\/+=-]{48,}/REDACTED_LONG_SECRET/g'
+}
+
+redact_json_payload() {
+    jq '
+      def redact:
+        if type == "object" then
+          with_entries(
+            if (.key | test("token|password|passwd|secret|api[_-]?key|authorization|bearer|private[_-]?key"; "i"))
+            then .value = "REDACTED"
+            else .value |= redact
+            end
+          )
+        elif type == "array" then map(redact)
+        elif type == "string" then
+          if test("[A-Za-z0-9_\\/+=-]{48,}") then "REDACTED_LONG_SECRET" else . end
+        else . end;
+      redact
+    '
+}
+
+json_compact_or_raw() {
+    local payload="${1:-{}}"
+
+    if jq -e . >/dev/null 2>&1 <<<"$payload"; then
+        jq -c . <<<"$payload" | redact_json_payload | jq -c .
+    else
+        jq -cn --arg raw "$(printf '%s' "$payload" | redact_sensitive_text)" '{raw:$raw}'
+    fi
+}
+
+emit_envelope() {
+    local status="${1:?status required}"
+    local tool="${2:?tool required}"
+    local data="${3:-{}}"
+    local warnings="${4:-[]}"
+    local errors="${5:-[]}"
+    local elapsed_ms="${6:-0}"
+    local truncated="${7:-false}"
+
+    common_require_core
+
+    jq -cn \
+        --arg schema "1" \
+        --arg status "$status" \
+        --arg tool "$tool" \
+        --argjson data "$(json_compact_or_raw "$data")" \
+        --argjson warnings "$warnings" \
+        --argjson errors "$errors" \
+        --argjson elapsed_ms "$elapsed_ms" \
+        --argjson truncated "$truncated" \
+        '{
+            schema: $schema,
+            status: $status,
+            tool: $tool,
+            data: $data,
+            warnings: $warnings,
+            errors: $errors,
+            meta: {
+                elapsed_ms: $elapsed_ms,
+                truncated: $truncated
+            }
+        }'
+}
+
+emit_blocked_envelope() {
+    local message="${1:?message required}"
+
+    common_require_core
+
+    jq -cn \
+        --arg message "$message" \
+        '{
+            schema: "1",
+            status: "unsafe_blocked",
+            tool: "facade",
+            data: {},
+            warnings: [],
+            errors: [$message],
+            meta: {
+                elapsed_ms: 0,
+                truncated: false
+            }
+        }'
+}
+
+rotate_log_if_needed_locked() {
+    local file="${1:?file required}"
+    local max_bytes="${AI_LOG_MAX_BYTES:-10485760}"
+    local size
+
+    [[ -f "$file" ]] || return 0
+
+    size="$(wc -c <"$file" | tr -d ' ')"
+
+    if ((size > max_bytes)); then
+        mv "$file" "${file}.$(date +%Y%m%d-%H%M%S).bak"
+    fi
+}
+
+_append_locked_flock() {
+    local file="${1:?file required}"
+    local entry="${2:?entry required}"
+    local lock_file="${file}.lock"
+
+    mkdir -p "$(dirname "$file")"
+
+    (
+        flock -x 9
+        rotate_log_if_needed_locked "$file"
+        printf '%s\n' "$entry" >>"$file"
+    ) 9>"$lock_file"
+}
+
+_append_locked_mkdir() {
+    local file="${1:?file required}"
+    local entry="${2:?entry required}"
+    local lock_dir="${file}.lockdir"
+    local start
+    local now
+
+    mkdir -p "$(dirname "$file")"
+
+    start="$(date +%s)"
+
+    while ! mkdir "$lock_dir" 2>/dev/null; do
+        now="$(date +%s)"
+
+        if ((now - start >= AI_LOCK_TIMEOUT_SECONDS)); then
+            log_warn "could not acquire log lock for $file; writing without lock"
+            rotate_log_if_needed_locked "$file"
+            printf '%s\n' "$entry" >>"$file"
+            return 0
+        fi
+
+        sleep 0.1
+    done
+
+    rotate_log_if_needed_locked "$file"
+    printf '%s\n' "$entry" >>"$file"
+    rmdir "$lock_dir" 2>/dev/null || rm -rf "$lock_dir"
+}
+
+append_jsonl_safe() {
+    local file="${1:?file required}"
+    local entry="${2:?entry required}"
+
+    if command_exists flock; then
+        _append_locked_flock "$file" "$entry"
+    else
+        _append_locked_mkdir "$file" "$entry"
+    fi
+}
+
+append_log_entry() {
+    local entry="${1:?entry required}"
+
+    mkdir -p "$COPILOT_LOG_DIR"
+    append_jsonl_safe "$COPILOT_EVENT_LOG" "$entry"
+
+    if [[ -n "${SESSION_LOG:-}" ]]; then
+        append_jsonl_safe "$SESSION_LOG" "$entry"
+    fi
+}
+
+git_root() {
+    git rev-parse --show-toplevel 2>/dev/null || pwd
+}
+
+repo_root() {
+    git_root
+}
+
+log_json() {
+    local event="${1:-event}"
+    local payload="${2:-{}}"
+    local caller="${3:-${AI_TOOL_NAME:-unknown}}"
+    local payload_json
+    local entry
+    local repo_root_value
+    local git_branch_value
+    local git_commit_value
+
+    json_available || return 127
+
+    mkdir -p "$COPILOT_LOG_DIR"
+
+    payload_json="$(json_compact_or_raw "$payload")"
+    repo_root_value="$(git_root 2>/dev/null || pwd)"
+    git_branch_value="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || printf 'unknown')"
+    git_commit_value="$(git rev-parse HEAD 2>/dev/null || printf 'unknown')"
+
+    entry="$(jq -cn \
+        --arg event_version "2.0" \
+        --arg event_type "$event" \
+        --arg trace_id "${TRACE_ID:-unknown}" \
+        --arg session_id "${SESSION_ID:-unknown}" \
+        --arg task_id "${TASK_ID:-unknown}" \
+        --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --arg actor_id "${ACTOR_ID:-$caller}" \
+        --arg delegated_by "${DELEGATED_BY:-}" \
+        --arg tool_name "$caller" \
+        --arg repo_root "$repo_root_value" \
+        --arg git_branch "$git_branch_value" \
+        --arg git_commit "$git_commit_value" \
+        --argjson data "$payload_json" \
+        '{
+            event_version: $event_version,
+            event_type: $event_type,
+            trace_id: $trace_id,
+            session_id: $session_id,
+            task_id: $task_id,
+            timestamp: $timestamp,
+            actor: {
+                type: "agent",
+                id: $actor_id,
+                delegated_by: (if $delegated_by == "" then null else $delegated_by end)
+            },
+            tool: {
+                name: $tool_name,
+                category: null,
+                args_hash: null,
+                mutates_state: false
+            },
+            authorization: {
+                policy_version: null,
+                decision: "unknown",
+                approval_required: null,
+                approved_by: null,
+                reason: null
+            },
+            execution: {
+                status: "unknown",
+                latency_ms: null,
+                retry_count: 0,
+                exit_code: null,
+                output_truncated: null
+            },
+            failure: {
+                category: null,
+                message: null,
+                resolution: null
+            },
+            repository: {
+                root: $repo_root,
+                git_branch: (if $git_branch == "" or $git_branch == "unknown" then null else $git_branch end),
+                git_commit: (if $git_commit == "" or $git_commit == "unknown" then null else $git_commit end)
+            },
+            output: {
+                preview: null
+            },
+            details: (if ($data | type) == "object" then $data else {raw: $data} end)
+        }')"
+
+    append_log_entry "$entry"
+}
+
+die() {
+    local msg="$*"
+
+    log_error "$msg"
+    log_json "error" "$(jq -cn --arg msg "$msg" '{msg:$msg}')" "$AI_TOOL_NAME" || true
+    exit 1
+}
+
+agent_session_finish() {
+    local exit_code="$?"
+
+    if [[ "${AI_SESSION_FINISHED:-0}" != "1" ]]; then
+        AI_SESSION_FINISHED=1
+        log_json "session.end" "$(jq -cn --argjson exit_code "$exit_code" '{exit_code:$exit_code}')" "$AI_TOOL_NAME" || true
+    fi
+
+    return "$exit_code"
+}
+
+install_session_exit_trap() {
+    [[ "${AI_SESSION_TRAP_INSTALLED:-0}" == "1" ]] && return 0
+
+    local existing
+    existing="$(trap -p EXIT || true)"
+
+    if [[ -n "$existing" && "${AI_FORCE_SESSION_TRAP:-0}" != "1" ]]; then
+        log_warn "existing EXIT trap detected; not installing session.end trap"
+        return 0
+    fi
+
+    trap agent_session_finish EXIT
+    AI_SESSION_TRAP_INSTALLED=1
+}
+
+agent_session_init() {
+    local name="${1:-${AI_TOOL_NAME:-$(basename "$0" .sh)}}"
+
+    common_require_core
+
+    [[ "${AI_SESSION_INITIALIZED:-0}" == "1" ]] && return 0
+
+    SESSION_ID="${SESSION_ID:-${name}-$(date +%Y%m%d-%H%M%S)-$$}"
+    TRACE_ID="${TRACE_ID:-trc-${SESSION_ID}}"
+    TASK_ID="${TASK_ID:-tsk-${SESSION_ID}}"
+    SESSION_DIR="${COPILOT_SESSION_DIR}/${SESSION_ID}"
+    SESSION_LOG="${SESSION_DIR}/session.jsonl"
+
+    mkdir -p "$SESSION_DIR" "$COPILOT_LOG_DIR" "$COPILOT_SNAPSHOT_DIR"
+
+    AI_SESSION_INITIALIZED=1
+    export SESSION_ID TRACE_ID TASK_ID SESSION_DIR SESSION_LOG AI_SESSION_INITIALIZED
+
+    log_json "session.start" '{}' "$name" || true
+
+    [[ "$AI_SESSION_AUTO_TRAP" == "1" ]] && install_session_exit_trap
+}
+
+require_approval() {
+    local action="${1:?action required}"
+    local env_name="${2:-AI_APPROVE_DESTRUCTIVE}"
+
+    if [[ "${!env_name:-0}" != "1" ]]; then
+        log_json "policy.blocked" "$(jq -cn --arg action "$action" --arg env "$env_name" '{action:$action,required_env:$env}')" "$AI_TOOL_NAME" || true
+
+        if [[ "${AI_OUTPUT:-}" == "json" ]]; then
+            emit_blocked_envelope "$action requires explicit approval: set ${env_name}=1"
+        else
+            log_error "$action requires explicit approval: set ${env_name}=1"
+        fi
+
+        exit 2
+    fi
+}
+
+require_scope_for_write() {
+    if [[ "$AI_REQUIRE_SCOPE_FOR_WRITE" == "1" && -z "${AI_TASK_SCOPE:-}" && "${AI_ALLOW_WRITE_WITHOUT_SCOPE:-0}" != "1" ]]; then
+        require_approval "write-capable command without AI_TASK_SCOPE" "AI_APPROVE_WRITE_WITHOUT_SCOPE"
+    fi
+}
+
+command_basename() {
+    basename -- "${1:-}"
+}
+
+classify_command() {
+    local cmd="${1:?command required}"
+    local base
+    local sub
+
+    base="$(command_basename "$cmd")"
+    sub="${2:-}"
+
+    case "$base" in
+        rg|fd|fdfind|cat|bat|sed|awk|jq|yq)
+            printf 'read\n'
+            ;;
+        git)
+            case "$sub" in
+                status|diff|show|log|grep|rev-parse|ls-files|branch)
+                    printf 'read\n'
+                    ;;
+                reset|clean|checkout|restore|apply|merge|rebase|commit|push|pull|fetch)
+                    printf 'destructive\n'
+                    ;;
+                *)
+                    printf 'unknown\n'
+                    ;;
+            esac
+            ;;
+        rm|rmdir|mv|truncate|dd)
+            printf 'destructive\n'
+            ;;
+        curl|wget|ssh|scp|rsync)
+            printf 'network\n'
+            ;;
+        brew|apt|apt-get|winget|choco)
+            printf 'install\n'
+            ;;
+        npm|pnpm|yarn|composer)
+            case "$sub" in
+                install|add|update|remove|upgrade|require|global)
+                    printf 'install\n'
+                    ;;
+                test|run|exec|lint|validate|check)
+                    printf 'write\n'
+                    ;;
+                *)
+                    printf 'unknown\n'
+                    ;;
+            esac
+            ;;
+        php|node|python|python3|bash|sh|zsh|make|just)
+            printf 'write\n'
+            ;;
+        *)
+            printf 'unknown\n'
+            ;;
+    esac
+}
+
+approval_env_for_category() {
+    case "$1" in
+        destructive) printf 'AI_APPROVE_DESTRUCTIVE\n' ;;
+        network) printf 'AI_APPROVE_NETWORK\n' ;;
+        install) printf 'AI_APPROVE_INSTALL\n' ;;
+        unknown) printf 'AI_APPROVE_UNKNOWN_COMMAND\n' ;;
+        *) printf '\n' ;;
+    esac
+}
+
+enforce_command_policy() {
+    local label="${1:?label required}"
+    local category
+    local env_name
+    local cmd_json
+
+    shift
+
+    [[ $# -gt 0 ]] || die "no command provided for policy enforcement"
+
+    category="$(classify_command "$@")"
+    env_name="$(approval_env_for_category "$category")"
+    cmd_json="$(printf '%s\n' "$@" | jq -R . | jq -s .)"
+
+    log_json "policy.command_classified" "$(jq -cn \
+        --arg label "$label" \
+        --arg category "$category" \
+        --argjson command "$cmd_json" \
+        '{label:$label,category:$category,command:$command}')" "$AI_TOOL_NAME" || true
+
+    case "$category" in
+        read)
+            return 0
+            ;;
+        write)
+            require_scope_for_write
+            return 0
+            ;;
+        destructive|network|install|unknown)
+            require_approval "command category '$category' for: $*" "$env_name"
+            ;;
+        *)
+            require_approval "unclassified command: $*" "AI_APPROVE_UNKNOWN_COMMAND"
+            ;;
+    esac
+}
+
+guard_command_before_run() {
+    local label="${1:?label required}"
+    shift
+
+    enforce_command_policy "$label" "$@"
+}
+
+realpath_safe() {
+    local path="${1:?path required}"
+
+    if command_exists python3; then
+        python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$path"
+    elif command_exists realpath; then
+        realpath "$path"
+    else
+        (
+            cd "$(dirname "$path")"
+            printf '%s/%s\n' "$PWD" "$(basename "$path")"
+        )
+    fi
+}
+
+assert_inside_repo() {
+    local path="${1:?path required}"
+    local root
+    local abs
+
+    root="$(realpath_safe "$(repo_root)")"
+    abs="$(realpath_safe "$path")"
+
+    case "$abs" in
+        "$root"|"$root"/*)
+            return 0
+            ;;
+        *)
+            die "path escapes repository root: $path"
+            ;;
+    esac
+}
+
+repo_relative_path() {
+    local path="${1:?path required}"
+    local root
+    local abs
+
+    root="$(realpath_safe "$(repo_root)")"
+    abs="$(realpath_safe "$path")"
+
+    case "$abs" in
+        "$root")
+            printf '.\n'
+            ;;
+        "$root"/*)
+            printf '%s\n' "${abs#"$root"/}"
+            ;;
+        *)
+            die "path escapes repository root: $path"
+            ;;
+    esac
+}
+
+assert_relative_safe_path() {
+    local path="${1:?path required}"
+
+    case "$path" in
+        ""|/*|../*|*/../*|*"/.."|.git|.git/*)
+            die "unsafe relative path: $path"
+            ;;
+    esac
+}
+
+path_matches_protected_pattern() {
+    local path="${1:?path required}"
+    local lower
+
+    lower="${path,,}"
+
+    case "$lower" in
+        .env|.env.*|.github|.github/*|.opencode|.opencode/*|agents.md|claude.md|docs/ai/generated|docs/ai/generated/*|*.key|*.pem|*.crt|*secret*|*token*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+require_path_write_allowed() {
+    local path="${1:?path required}"
+    local rel
+
+    rel="$(repo_relative_path "$path")"
+    assert_relative_safe_path "$rel"
+
+    if path_matches_protected_pattern "$rel"; then
+        require_approval "write to protected path '$rel'" "AI_APPROVE_PROTECTED_PATH"
+    fi
+}
+
+require_clean_tree() {
+    git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
+
+    if ! git diff --quiet || ! git diff --cached --quiet; then
+        die "working tree is not clean; commit or stash changes first"
+    fi
+}
+
+run_with_timeout() {
+    local seconds="${1:?seconds required}"
+    local timeout_bin
+
+    shift
+
+    if timeout_bin="$(find_timeout_bin 2>/dev/null)"; then
+        "$timeout_bin" "$seconds" "$@"
+        return $?
+    fi
+
+    if [[ "${AI_ALLOW_NO_TIMEOUT:-0}" == "1" ]]; then
+        log_warn "timeout unavailable; AI_ALLOW_NO_TIMEOUT=1, running unbounded"
+        "$@"
+        return $?
+    fi
+
+    log_warn "timeout unavailable; refusing unbounded execution"
+    return 124
+}
+
+bounded_capture_drain() {
+    local max_bytes="${1:?max bytes required}"
+    local output_file="${2:?output file required}"
+    local truncated_file="${3:?truncated flag file required}"
+
+    require_bins python3
+
+    python3 - "$max_bytes" "$output_file" "$truncated_file" <<'PY'
+import sys
+
+max_bytes = int(sys.argv[1])
+out_path = sys.argv[2]
+flag_path = sys.argv[3]
+
+written = 0
+truncated = False
+chunk_size = 65536
+
+with open(out_path, "wb") as out:
+    while True:
+        chunk = sys.stdin.buffer.read(chunk_size)
+        if not chunk:
+            break
+
+        remaining = max_bytes - written
+
+        if remaining > 0:
+            out.write(chunk[:remaining])
+            written += min(len(chunk), remaining)
+
+        if len(chunk) > remaining:
+            truncated = True
+
+        if written >= max_bytes and chunk:
+            truncated = True
+
+with open(flag_path, "w", encoding="utf-8") as f:
+    f.write("true" if truncated else "false")
+PY
+}
+
+wait_for_capture_flag() {
+    local file="${1:?file required}"
+    local i
+
+    for i in {1..50}; do
+        [[ -s "$file" ]] && return 0
+        sleep 0.02
+    done
+
+    printf 'true\n' >"$file"
+}
+
+truncate_file_preview() {
+    local file="${1:?file required}"
+    local max="${2:-$AI_OUTPUT_MAX_BYTES}"
+
+    head -c "$max" "$file" | redact_sensitive_text || true
+}
+
+estimate_file_tokens_fallback() {
+    local file="${1:?file required}"
+    local bytes
+
+    bytes="$(wc -c <"$file" | tr -d ' ')"
+    printf '%s\n' $(((bytes + 3) / 4))
+}
+
+estimate_tokens_string() {
+    local input="${1:-}"
+    local bytes
+
+    bytes="$(printf '%s' "$input" | wc -c | tr -d ' ')"
+    printf '%s\n' $(((bytes + 3) / 4))
+}
+
+estimate_tokens() {
+    local file="${1:?file required}"
+    local estimated=""
+
+    if [[ -n "${TOKEN_ESTIMATOR_CMD:-}" ]]; then
+        estimated="$($TOKEN_ESTIMATOR_CMD "$file" 2>/dev/null || true)"
+
+        if [[ "$estimated" =~ ^[0-9]+$ ]]; then
+            printf '%s\n' "$estimated"
+            return 0
+        fi
+
+        log_warn "TOKEN_ESTIMATOR_CMD failed; falling back to bytes/4"
+    fi
+
+    estimate_file_tokens_fallback "$file"
+}
+
+within_token_budget() {
+    local file="${1:?file required}"
+    local max="${2:-$AI_TOKEN_BUDGET}"
+    local tokens
+
+    tokens="$(estimate_tokens "$file")"
+    ((tokens <= max))
+}
+
+run_logged() {
+    local label="${1:?label required}"
+
+    shift
+
+    common_require_core
+    require_bins python3
+
+    guard_command_before_run "$label" "$@"
+
+    local timeout_seconds="${AI_CMD_TIMEOUT:-120}"
+    local max_bytes="${AI_OUTPUT_MAX_BYTES:-200000}"
+    local stdout_file
+    local stderr_file
+    local stdout_truncated_file
+    local stderr_truncated_file
+    local started
+    local ended
+    local exit_code
+    local stdout_preview
+    local stderr_preview
+    local stdout_truncated
+    local stderr_truncated
+    local cmd_json
+
+    stdout_file="$(mktemp)"
+    stderr_file="$(mktemp)"
+    stdout_truncated_file="$(mktemp)"
+    stderr_truncated_file="$(mktemp)"
+
+    started="$(now_ms)"
+
+    set +e
+    run_with_timeout "$timeout_seconds" "$@" \
+        > >(bounded_capture_drain "$max_bytes" "$stdout_file" "$stdout_truncated_file") \
+        2> >(bounded_capture_drain "$max_bytes" "$stderr_file" "$stderr_truncated_file")
+    exit_code=$?
+    set -e
+
+    wait_for_capture_flag "$stdout_truncated_file"
+    wait_for_capture_flag "$stderr_truncated_file"
+
+    ended="$(now_ms)"
+
+    stdout_preview="$(truncate_file_preview "$stdout_file" "$max_bytes")"
+    stderr_preview="$(truncate_file_preview "$stderr_file" "$max_bytes")"
+    stdout_truncated="$(cat "$stdout_truncated_file")"
+    stderr_truncated="$(cat "$stderr_truncated_file")"
+    cmd_json="$(printf '%s\n' "$@" | jq -R . | jq -s .)"
+
+    log_json "tool.run" "$(jq -cn \
+        --arg label "$label" \
+        --argjson command "$cmd_json" \
+        --argjson exit_code "$exit_code" \
+        --argjson latency_ms "$((ended - started))" \
+        --arg stdout_preview "$stdout_preview" \
+        --arg stderr_preview "$stderr_preview" \
+        --argjson stdout_truncated "$stdout_truncated" \
+        --argjson stderr_truncated "$stderr_truncated" \
+        '{
+            label: $label,
+            command: $command,
+            exit_code: $exit_code,
+            latency_ms: $latency_ms,
+            stdout_preview: $stdout_preview,
+            stderr_preview: $stderr_preview,
+            stdout_truncated: $stdout_truncated,
+            stderr_truncated: $stderr_truncated
+        }')" "$AI_TOOL_NAME" || true
+
+    if [[ "$AI_REDACT_STDOUT" == "1" ]]; then
+        redact_sensitive_text <"$stdout_file"
+    else
+        cat "$stdout_file"
+    fi
+
+    rm -f "$stdout_file" "$stderr_file" "$stdout_truncated_file" "$stderr_truncated_file"
+    return "$exit_code"
+}
+
+run_json_command() {
+    local label="${1:?label required}"
+    local output
+    local exit_code
+
+    shift
+
+    set +e
+    output="$(run_logged "$label" "$@")"
+    exit_code=$?
+    set -e
+
+    if ((exit_code != 0)); then
+        emit_envelope "error" "$label" '{}' '[]' "$(jq -cn --arg msg "command failed with exit code $exit_code" '[$msg]')" 0 false
+        return "$exit_code"
+    fi
+
+    if jq -e . >/dev/null 2>&1 <<<"$output"; then
+        printf '%s\n' "$output"
+    else
+        emit_envelope "error" "$label" '{}' '[]' "$(jq -cn --arg msg 'command did not emit valid JSON' '[$msg]')" 0 false
+        return 2
+    fi
+}
+
+
+fd-files.sh
+
+#!/usr/bin/env bash
+# Repo-aware file discovery wrapper.
+
+set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_bins fd jq
+
+usage() {
+    cat <<'EOF'
+Usage:
+  fd-files.sh QUERY [root] [--json] [--hidden] [--type EXT[,EXT]]
+EOF
+}
+
+query="${1:?query required}"
+shift || true
+
+root="."
+if [[ $# -gt 0 ]] && [[ "${1:-}" != --* ]]; then
+    root="$1"
+    shift || true
+fi
+
+OUTPUT_FORMAT="plain"
+INCLUDE_HIDDEN=0
+EXTRA_TYPES=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --json)
+        OUTPUT_FORMAT="json"
+        shift
+        ;;
+    --hidden)
+        INCLUDE_HIDDEN=1
+        shift
+        ;;
+    --type)
+        IFS=',' read -ra EXTRA_TYPES <<<"$2"
+        shift 2
+        ;;
+    --type=*)
+        IFS=',' read -ra EXTRA_TYPES <<<"${1#*=}"
+        shift
+        ;;
+    --help | -h)
+        usage
+        exit 0
+        ;;
+    *) die "unknown option: $1" ;;
+    esac
+done
+
+args=(
+    -E vendor
+    -E node_modules
+    -E dist
+    -E .git
+    -E .repomix-context
+)
+
+if [[ "$INCLUDE_HIDDEN" == "1" ]]; then
+    args+=(--hidden)
+fi
+
+for ext in "${EXTRA_TYPES[@]+${EXTRA_TYPES[@]}}"; do
+    args+=(-e "$ext")
+done
+
+if [[ "$OUTPUT_FORMAT" == "json" ]]; then
+    fd "${args[@]}" "$query" "$root" | jq -R . | jq -s .
+else
+    fd "${args[@]}" "$query" "$root"
+fi
+
+
+
+gh-pr-context.sh
+
+#!/usr/bin/env bash
+# Full PR context wrapper for review and context packing.
+
+set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_bins gh jq
+
+usage() {
+    echo "Usage: $0 <PR-number> [--diff] [--checks] [--reviews] [--pack] [--json]"
+}
+
+pr="${1:?PR number required}"
+shift || true
+
+WANT_DIFF=0
+WANT_CHECKS=0
+WANT_REVIEWS=0
+WANT_PACK=0
+OUTPUT_FORMAT="${OUTPUT_FORMAT:-plain}"
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --diff) WANT_DIFF=1 ;;
+    --checks) WANT_CHECKS=1 ;;
+    --reviews) WANT_REVIEWS=1 ;;
+    --pack) WANT_PACK=1 ;;
+    --json) OUTPUT_FORMAT="json" ;;
+    --help | -h)
+        usage
+        exit 0
+        ;;
+    *) die "unknown option: $1" ;;
+    esac
+    shift
+done
+
+agent_session_init "gh-pr-context"
+
+section "PR #$pr metadata"
+
+pr_json="$(gh pr view "$pr" \
+    --json title,body,author,state,baseRefName,headRefName,files,commits,labels,assignees,reviewRequests,isDraft,url,mergedAt,closedAt,createdAt,updatedAt)"
+
+checks_json="null"
+if [[ "$WANT_CHECKS" == "1" ]]; then
+    section "CI checks"
+    checks_json="$(gh pr checks "$pr" --json name,state,conclusion,startedAt,completedAt,link 2>/dev/null || echo '[]')"
+fi
+
+reviews_json="null"
+if [[ "$WANT_REVIEWS" == "1" ]]; then
+    section "Reviews"
+    reviews_json="$(gh pr view "$pr" --json reviews --jq '.reviews | map({author:.author.login, state:.state, body:.body, submittedAt:.submittedAt})')"
+fi
+
+diff_content=""
+if [[ "$WANT_DIFF" == "1" ]]; then
+    section "Diff"
+    diff_content="$(gh pr diff "$pr" 2>/dev/null || echo '(diff unavailable)')"
+fi
+
+if [[ "$OUTPUT_FORMAT" == "json" ]]; then
+    jq -n \
+        --argjson pr "$pr_json" \
+        --argjson checks "${checks_json:-null}" \
+        --argjson reviews "${reviews_json:-null}" \
+        --arg diff "$diff_content" \
+        '{
+      pr: {
+        title: $pr.title,
+        state: $pr.state,
+        isDraft: $pr.isDraft,
+        url: $pr.url,
+        author: $pr.author.login,
+        base: $pr.baseRefName,
+        head: $pr.headRefName,
+        labels: [$pr.labels[].name],
+        assignees: [$pr.assignees[].login],
+        commitCount: ($pr.commits | length),
+        fileCount: ($pr.files | length),
+        files: [$pr.files[].path],
+        createdAt: $pr.createdAt,
+        updatedAt: $pr.updatedAt
+      },
+      checks: $checks,
+      reviews: $reviews,
+      diff: (if $diff != "" then $diff else null end)
+    }'
+else
+    printf '# PR #%s - %s\n\n' "$pr" "$(echo "$pr_json" | jq -r '.title')"
+    echo "$pr_json" | jq -r '"**State:** \(.state)  |  **Author:** \(.author.login)  |  **Draft:** \(.isDraft)"'
+    echo "$pr_json" | jq -r '"**Base:** \(.baseRefName)  <-  **Head:** \(.headRefName)"'
+    echo "$pr_json" | jq -r '"**Files changed:** \(.files | length)  |  **Commits:** \(.commits | length)"'
+    echo
+    echo "## Files changed"
+    echo "$pr_json" | jq -r '.files[].path | "- " + .'
+    echo
+    echo "## Description"
+    echo "$pr_json" | jq -r '.body // "(no description)"'
+
+    if [[ "$WANT_CHECKS" == "1" ]] && [[ "$checks_json" != "null" ]]; then
+        echo
+        echo "## CI Checks"
+        printf '%-50s  %-12s  %s\n' "NAME" "STATE" "CONCLUSION"
+        echo "$checks_json" | jq -r '.[] | [.name, .state, (.conclusion // "-")] | @tsv' |
+            while IFS=$'\t' read -r name state conclusion; do
+                printf '%-50s  %-12s  %s\n' "$name" "$state" "$conclusion"
+            done
+    fi
+
+    if [[ "$WANT_REVIEWS" == "1" ]] && [[ "$reviews_json" != "null" ]]; then
+        echo
+        echo "## Reviews"
+        echo "$reviews_json" | jq -r '.[] | "- **\(.author)** [\(.state)]: \(.body // "(no comment)")"'
+    fi
+
+    if [[ "$WANT_DIFF" == "1" ]] && [[ -n "$diff_content" ]]; then
+        echo
+        echo "## Diff"
+        echo '```diff'
+        printf '%s\n' "$diff_content"
+        echo '```'
+    fi
+fi
+
+if [[ "$WANT_PACK" == "1" ]]; then
+    section "Packing PR files as AI context"
+    "$(dirname "${BASH_SOURCE[0]}")/ai-diff-context.sh" pr "$pr"
+fi
+
+log_json "gh-pr-context.done" \
+    "$(jq -cn --arg pr "$pr" --argjson diff "$WANT_DIFF" --argjson checks "$WANT_CHECKS" --argjson reviews "$WANT_REVIEWS" '{pr:$pr, diff:$diff, checks:$checks, reviews:$reviews}')"
+
+
+
+git-forensics.sh
+
+#!/usr/bin/env bash
+# Repo-aware git history and blame wrapper.
+
+set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_bins git
+
+usage() {
+    cat <<'EOF'
+Usage:
+  git-forensics.sh MODE TARGET [file] [--json]
+
+Modes:
+  S      search by added/removed string via git log -S
+  G      search by regex via git log -G
+  L      line history via git log -L
+  blame  annotate a line range in a file
+EOF
+}
+
+mode="${1:?mode required}"
+search_target="${2:?target required}"
+file="${3:-}"
+
+if [[ -n "$file" ]] && [[ "$file" == --* ]]; then
+    file=""
+fi
+
+shift 2 || true
+if [[ -n "$file" ]]; then
+    shift || true
+fi
+
+OUTPUT_JSON=0
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --json)
+        OUTPUT_JSON=1
+        shift
+        ;;
+    --help | -h)
+        usage
+        exit 0
+        ;;
+    *) die "unknown option: $1" ;;
+    esac
+done
+
+run_and_capture() {
+    local cmd=("$@")
+    if [[ "$OUTPUT_JSON" == "1" ]]; then
+        jq -n --arg mode "$mode" --arg target "$search_target" --arg file "$file" --arg output "$("${cmd[@]}")" '{mode:$mode, target:$target, file:(if $file == "" then null else $file end), output:$output}'
+    else
+        "${cmd[@]}"
+    fi
+}
+
+case "$mode" in
+S)
+    if [[ -n "$file" ]]; then
+        run_and_capture git log -S "$search_target" -p -- "$file"
+    else
+        run_and_capture git log -S "$search_target" -p
+    fi
+    ;;
+G)
+    if [[ -n "$file" ]]; then
+        run_and_capture git log -G "$search_target" -p -- "$file"
+    else
+        run_and_capture git log -G "$search_target" -p
+    fi
+    ;;
+L)
+    run_and_capture git log -L "$search_target"
+    ;;
+blame)
+    [[ -n "$file" ]] || die "file required for blame mode"
+    run_and_capture git blame -L "$search_target" "$file"
+    ;;
+*) die "unknown mode: $mode" ;;
+esac
+
+
+
+install-mandatory-tools.sh
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Installs mandatory CLI tools used by the repository's AI scripts.
+
+DRY_RUN=0
+
+if [[ "${1:-}" == "--dry-run" ]]; then
+    DRY_RUN=1
+fi
+
+run_cmd() {
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+        printf '[dry-run] %s\n' "$*"
+        return 0
+    fi
+    "$@"
+}
+
+need_cmd() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+detect_os() {
+    local uname_out
+    uname_out="$(uname -s 2>/dev/null || true)"
+    case "$uname_out" in
+    Darwin*)
+        printf 'macos\n'
+        ;;
+    Linux*)
+        printf 'linux\n'
+        ;;
+    MINGW* | MSYS* | CYGWIN*)
+        printf 'windows\n'
+        ;;
+    *)
+        if [[ "${OS:-}" == "Windows_NT" ]]; then
+            printf 'windows\n'
+        else
+            printf 'unknown\n'
+        fi
+        ;;
+    esac
+}
+
+install_windows() {
+    need_cmd winget || {
+        printf 'Error: winget is required on Windows.\n' >&2
+        exit 1
+    }
+
+    run_cmd winget install --id Git.Git -e --accept-source-agreements --accept-package-agreements || true
+    run_cmd winget install --id PHP.PHP.8.3 -e --accept-source-agreements --accept-package-agreements || true
+    run_cmd winget install --id BurntSushi.ripgrep.MSVC -e --accept-source-agreements --accept-package-agreements || true
+    run_cmd winget install --id jqlang.jq -e --accept-source-agreements --accept-package-agreements || true
+    run_cmd winget install --id BenBoyter.scc -e --accept-source-agreements --accept-package-agreements || true
+    run_cmd winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements || true
+
+    if need_cmd npm; then
+        run_cmd npm install -g repomix
+    else
+        printf 'Warning: npm not found after Node.js install; install repomix manually.\n' >&2
+    fi
+}
+
+install_macos() {
+    need_cmd brew || {
+        printf 'Error: Homebrew is required on macOS.\n' >&2
+        exit 1
+    }
+
+    run_cmd brew update
+    run_cmd brew install git php ripgrep jq scc node
+    run_cmd npm install -g repomix
+}
+
+install_linux() {
+    need_cmd apt-get || {
+        printf 'Error: this Linux installer targets Ubuntu/Debian (apt-get).\n' >&2
+        exit 1
+    }
+
+    run_cmd sudo apt-get update
+    run_cmd sudo apt-get install -y git php-cli ripgrep jq nodejs npm
+
+    if run_cmd sudo apt-get install -y scc; then
+        :
+    elif need_cmd go; then
+        run_cmd go install github.com/boyter/scc/v3@latest
+    else
+        printf 'Warning: failed to install scc via apt and Go is not available.\n' >&2
+    fi
+
+    run_cmd npm install -g repomix
+}
+
+verify_tools() {
+    local missing=()
+    local required=(bash git php rg jq scc repomix)
+
+    for tool in "${required[@]}"; do
+        need_cmd "$tool" || missing+=("$tool")
+    done
+
+    if ((${#missing[@]} > 0)); then
+        printf 'Missing required tools: %s\n' "${missing[*]}" >&2
+        return 1
+    fi
+
+    printf 'All mandatory tools are installed: %s\n' "${required[*]}"
+}
+
+OS_KIND="$(detect_os)"
+printf 'Detected OS: %s\n' "$OS_KIND"
+
+case "$OS_KIND" in
+windows) install_windows ;;
+macos) install_macos ;;
+linux) install_linux ;;
+*)
+    printf 'Error: unsupported OS for this installer.\n' >&2
+    exit 1
+    ;;
+esac
+
+verify_tools
+
+
+
+pack-context.sh
+
+#!/usr/bin/env bash
+# Safe context packer wrapper.
+#
+# Wraps repomix, files-to-prompt, or code2prompt with:
+# - secret scan
+# - stable output path
+# - token estimate
+# - manifest output
+# - session logging
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ai/common.sh
+source "$SCRIPT_DIR/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  pack-context.sh [auto|repomix|files-to-prompt|code2prompt] [tool args...]
+
+Environment:
+  OUTPUT_DIR=.repomix-context/manual
+  OUTPUT_FILE=<path>
+  OUTPUT_STYLE=xml
+  SECRETS_SCAN=1
+  TOKEN_BUDGET=80000
+
+Examples:
+  scripts/ai/pack-context.sh auto --include "docs/ai/**/*.md,tools/**/*.php"
+  OUTPUT_FILE=.repomix-context/manual/docs.xml scripts/ai/pack-context.sh repomix --include "docs/**/*.md"
+  scripts/ai/pack-context.sh files-to-prompt docs/ai/cli-tools.md docs/ai/tools/tool-map.md
+EOF
+}
+
+backend="${1:-auto}"
+
+case "$backend" in
+auto|repomix|files-to-prompt|code2prompt)
+    shift || true
+    ;;
+--help|-h)
+    usage
+    exit 0
+    ;;
+*)
+    # Backward-compatible behaviour: first arg is probably a tool arg; use auto backend.
+    backend="auto"
+    ;;
+esac
+
+agent_session_init "pack-context"
+require_bins jq
+
+root="$(git_root)"
+OUTPUT_DIR="${OUTPUT_DIR:-${COPILOT_CONTEXT_DIR}/manual}"
+OUTPUT_STYLE="${OUTPUT_STYLE:-xml}"
+TOKEN_BUDGET="${TOKEN_BUDGET:-80000}"
+timestamp="$(date +%Y%m%d-%H%M%S)"
+OUTPUT_FILE="${OUTPUT_FILE:-${OUTPUT_DIR}/context-${timestamp}.${OUTPUT_STYLE}}"
+
+mkdir -p "$OUTPUT_DIR"
+
+args_contain_output() {
+    local arg
+    for arg in "$@"; do
+        case "$arg" in
+        --output|--output=*)
+            return 0
+            ;;
+        esac
+    done
+    return 1
+}
+
+select_backend() {
+    case "$backend" in
+    auto)
+        if command -v repomix >/dev/null 2>&1; then
+            printf 'repomix\n'
+        elif command -v files-to-prompt >/dev/null 2>&1; then
+            printf 'files-to-prompt\n'
+        elif command -v code2prompt >/dev/null 2>&1; then
+            printf 'code2prompt\n'
+        else
+            die "no supported context packer found; install repomix, files-to-prompt, or code2prompt"
+        fi
+        ;;
+    repomix)
+        require_bins repomix
+        printf 'repomix\n'
+        ;;
+    files-to-prompt)
+        require_bins files-to-prompt
+        printf 'files-to-prompt\n'
+        ;;
+    code2prompt)
+        require_bins code2prompt
+        printf 'code2prompt\n'
+        ;;
+    *)
+        die "unknown backend: $backend"
+        ;;
+    esac
+}
+
+selected_backend="$(select_backend)"
+
+section "Secrets scan"
+require_clean_secret_scan "$root"
+
+section "Pack context"
+log_info "Backend: $selected_backend"
+log_info "Output: $OUTPUT_FILE"
+
+case "$selected_backend" in
+repomix)
+    repomix_args=("$@")
+
+    if ! args_contain_output "${repomix_args[@]+${repomix_args[@]}}"; then
+        repomix_args+=(--output "$OUTPUT_FILE")
+    fi
+
+    if [[ "$OUTPUT_STYLE" != "" ]]; then
+        repomix_args+=(--style "$OUTPUT_STYLE")
+    fi
+
+    (
+        cd "$root"
+        repomix "${repomix_args[@]}"
+    )
+    ;;
+files-to-prompt)
+    (
+        cd "$root"
+        files-to-prompt "$@"
+    ) >"$OUTPUT_FILE"
+    ;;
+code2prompt)
+    (
+        cd "$root"
+        code2prompt "$@"
+    ) >"$OUTPUT_FILE"
+    ;;
+*)
+    die "unsupported selected backend: $selected_backend"
+    ;;
+esac
+
+[[ -f "$OUTPUT_FILE" ]] || die "expected output file was not created: $OUTPUT_FILE"
+
+tokens="$(estimate_tokens "$OUTPUT_FILE")"
+
+if ! within_token_budget "$OUTPUT_FILE" "$TOKEN_BUDGET"; then
+    log_warn "Context is ~${tokens} tokens, exceeding budget ${TOKEN_BUDGET}"
+else
+    log_ok "Context packed: ~${tokens} tokens"
+fi
+
+manifest="${OUTPUT_FILE%.*}.manifest.json"
+
+jq -n \
+    --arg backend "$selected_backend" \
+    --arg output "$OUTPUT_FILE" \
+    --arg root "$root" \
+    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    --argjson tokens "$tokens" \
+    --argjson token_budget "$TOKEN_BUDGET" \
+    --argjson args "$(printf '%s\n' "$@" | jq -R . | jq -s .)" \
+    '{
+      backend: $backend,
+      output: $output,
+      root: $root,
+      ts: $ts,
+      estimated_tokens: $tokens,
+      token_budget: $token_budget,
+      args: $args
+    }' >"$manifest"
+
+log_json "context.pack.manual" "$(cat "$manifest")"
+printf '%s\n' "$OUTPUT_FILE"
+
+
+post-tool-use.sh
+
+#!/usr/bin/env bash
+set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+mkdir -p "$COPILOT_LOG_DIR"
+input="$(cat)"
+SESSION_ID="${SESSION_ID:-post-tool-use-$(date +%Y%m%d-%H%M%S)-$$}"
+TRACE_ID="${TRACE_ID:-trc-${SESSION_ID}}"
+TASK_ID="${TASK_ID:-tsk-${SESSION_ID}}"
+
+classify_failure() {
+    jq -r '
+    .toolResult as $r
+    | (.toolArgs.command // "") as $cmd
+    | (.toolResult.error // "") as $err
+    | if ($r.resultType // "") == "timeout" then "tool_timeout"
+      elif ($err | ascii_downcase | test("approval required|confirm required|explicit approval|human review required")) then "approval_missing"
+      elif ($err | ascii_downcase | test("not found|required tools not found|missing")) then "tool_unavailable"
+      elif ($err | ascii_downcase | test("unsafe mutation|destructive|blocked by repo policy")) then "unsafe_mutation_blocked"
+      elif ($err | ascii_downcase | test("denied|blocked|permission")) then "authorization_denied"
+      elif ($err | ascii_downcase | test("unknown option|unknown mode|usage|required|file required")) then "invalid_tool_input"
+      elif ($err | ascii_downcase | test("network|connection|dns|tls")) then "external_dependency_failure"
+      elif ($cmd | test("phpunit|pest|vitest|jest|npm run test|pnpm run test|yarn test")) then "test_failure"
+      elif ($cmd | test("eslint|biome|phpstan|psalm|shellcheck|markdownlint|stylelint|tsc")) then "lint_failure"
+      elif ($cmd | test("validate-ai-config|validate-ai-catalog|generate-ai-catalog|jq .*schema|ajv")) then "schema_validation_failure"
+      else "unknown"
+      end
+  ' <<<"$input"
+}
+
+authorization_decision() {
+    case "$1" in
+    approval_missing)
+        printf 'ask\n'
+        ;;
+    authorization_denied|unsafe_mutation_blocked)
+        printf 'denied\n'
+        ;;
+    *)
+        printf 'allowed\n'
+        ;;
+    esac
+}
+
+execution_status() {
+    local failure_category="$1"
+
+    if [[ "$failure_category" == "approval_missing" || "$failure_category" == "authorization_denied" || "$failure_category" == "unsafe_mutation_blocked" ]]; then
+        printf 'blocked\n'
+        return 0
+    fi
+
+    jq -r '
+      if (.toolResult.resultType // "") == "timeout" then "timeout"
+      elif (.toolResult.resultType // "") == "success" and (.toolResult.isError // false) == false then "success"
+      elif (.toolResult.resultType // "") == "error" or (.toolResult.isError // false) == true then "error"
+      else "unknown"
+      end
+    ' <<<"$input"
+}
+
+detect_mutation() {
+    jq -r '
+      (.toolName // "") as $tool
+      | (.toolArgs.command // "") as $cmd
+      | if (.toolMutatesState? != null) then .toolMutatesState
+        elif ($tool | ascii_downcase) == "write" then true
+        elif ($cmd | test("(^|[[:space:]])(rm|mv|cp|chmod|chown|touch|tee)([[:space:]]|$)")) then true
+        elif ($cmd | test("git\\s+(commit|stash\\s+(push|pop|drop)|reset\\s+--hard|clean\\s+-|checkout\\s+--)")) then true
+        elif ($cmd | test("scripts/ai/(ai-edit|ai-rollback)\\.sh")) then true
+        else false
+        end
+    ' <<<"$input"
+}
+
+failure_category=""
+if jq -e '.toolResult.resultType? == "error" or .toolResult.isError? == true' >/dev/null 2>&1 <<<"$input"; then
+    failure_category="$(classify_failure)"
+fi
+
+auth_decision="$(authorization_decision "${failure_category:-unknown}")"
+exec_status="$(execution_status "${failure_category:-unknown}")"
+mutates_state="$(detect_mutation)"
+args_hash="$(jq -cS '.toolArgs // {}' <<<"$input" | shasum -a 256 | awk '{print "sha256:" $1}')"
+
+entry="$(jq -cn \
+    --argjson event "$input" \
+    --arg event_version "1.1" \
+    --arg event_type "$(if [[ -n "$failure_category" ]]; then printf 'tool.failure'; else printf 'tool.result'; fi)" \
+    --arg trace_id "$TRACE_ID" \
+    --arg session_id "$SESSION_ID" \
+    --arg task_id "$TASK_ID" \
+    --arg actor_id "${ACTOR_ID:-post-tool-use}" \
+    --arg delegated_by "${DELEGATED_BY:-}" \
+    --arg args_hash "$args_hash" \
+    --arg auth_decision "$auth_decision" \
+    --arg failure_category "$failure_category" \
+    --arg exec_status "$exec_status" \
+    --arg repo_root "$(git_root 2>/dev/null || pwd)" \
+    --arg git_branch "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || printf 'unknown')" \
+    --arg git_commit "$(git rev-parse HEAD 2>/dev/null || printf 'unknown')" \
+    --argjson mutates_state "$mutates_state" \
+    '{
+      event_version: $event_version,
+      event_type: $event_type,
+      trace_id: $trace_id,
+      session_id: $session_id,
+      task_id: $task_id,
+      timestamp: ($event.timestamp // (now | strftime("%Y-%m-%dT%H:%M:%SZ"))),
+      actor: {
+        type: "agent",
+        id: $actor_id,
+        delegated_by: (if $delegated_by == "" then null else $delegated_by end)
+      },
+      tool: {
+        name: ($event.toolName // "unknown"),
+        category: ($event.toolCategory // null),
+        args_hash: (if $args_hash == "" then null else $args_hash end),
+        mutates_state: $mutates_state
+      },
+      authorization: {
+        policy_version: ($event.policyVersion // "1"),
+        decision: $auth_decision,
+        approval_required: (if $auth_decision == "ask" then true elif $auth_decision == "allowed" then false else null end),
+        approved_by: null,
+        reason: (if $failure_category == "" then null else $failure_category end)
+      },
+      execution: {
+        status: $exec_status,
+        latency_ms: ($event.durationMs // $event.toolResult.durationMs // null),
+        retry_count: ($event.retryCount // null),
+        exit_code: ($event.toolResult.exitCode // null),
+        output_truncated: ($event.toolResult.outputTruncated // null)
+      },
+      cost: {
+        model: ($event.model // null),
+        input_tokens: ($event.inputTokens // null),
+        output_tokens: ($event.outputTokens // null),
+        estimated_cost_usd: ($event.estimatedCostUsd // null)
+      },
+      failure: {
+        category: (if $failure_category == "" then null else $failure_category end),
+        message: ($event.toolResult.error // null),
+        resolution: null
+      },
+      repository: {
+        root: $repo_root,
+        git_branch: (if $git_branch == "" or $git_branch == "unknown" then null else $git_branch end),
+        git_commit: (if $git_commit == "" or $git_commit == "unknown" then null else $git_commit end)
+      },
+      output: {
+        preview: (($event.toolResult.output // $event.toolResult.stderr // null) | if type == "string" then .[:400] else null end)
+      },
+      details: {
+        tool_args: ($event.toolArgs // {}),
+        result_type: ($event.toolResult.resultType // "unknown")
+      }
+    }')"
+
+append_log_entry "$entry"
+
+
+
+pre-tool-use.sh
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+POLICY_FILE="${COPILOT_POLICY_FILE:-policies/copilot/policy.yaml}"
+
+deny() {
+    jq -cn --arg reason "$1" '{permissionDecision:"deny", permissionDecisionReason:$reason}'
+}
+
+allow() {
+    jq -cn '{permissionDecision:"allow"}'
+}
+
+input="$(cat)"
+tool_name="$(jq -r '.toolName // .tool_name // empty' <<<"$input")"
+tool_args_raw="$(jq -c '.toolArgs // .toolArgsRaw // .tool_input // {}' <<<"$input")"
+
+is_terminal_tool() {
+    case "$1" in
+        bash|runTerminalCommand|execute/runInTerminal)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+allow_registered_script() {
+    local compact="$1"
+    local registry_file="${COPILOT_SCRIPT_REGISTRY_FILE:-docs/ai/script-registry.json}"
+    local path escaped
+
+    if ! command -v jq >/dev/null 2>&1 || [[ ! -f "$registry_file" ]]; then
+        return 1
+    fi
+
+    while IFS= read -r path; do
+        [[ -n "$path" ]] || continue
+        escaped="$(printf '%s' "$path" | sed 's/[][.^$*+?(){}|\\]/\\&/g')"
+        if grep -Eq "^(bash[[:space:]]+)?(\./)?${escaped}([[:space:]]|$)" <<<"$compact"; then
+            return 0
+        fi
+    done < <(jq -r '
+        [
+          (.scripts // {} | to_entries[]?.value.installed_path),
+          (.scripts // {} | to_entries[]?.value.source_path),
+          (.scripts[]? | select(.approval == "allow") | .path)
+        ]
+        | flatten
+        | map(select(type == "string" and . != ""))
+        | unique[]
+    ' "$registry_file" 2>/dev/null)
+
+    return 1
+}
+
+evaluate_policy_yaml() {
+    local compact="$1"
+
+    command -v yq >/dev/null 2>&1 || return 1
+    [[ -f "$POLICY_FILE" ]] || return 1
+
+    local encoded rule pattern reason
+
+    policy_match() {
+        local pattern="$1"
+        PATTERN="$pattern" perl -e 'my $pattern = $ENV{PATTERN}; my $input = do { local $/; <STDIN> }; exit(($input =~ /$pattern/m) ? 0 : 1);' <<<"$compact"
+    }
+
+    while IFS= read -r encoded; do
+        [[ -n "$encoded" ]] || continue
+        rule="$(printf '%s' "$encoded" | base64 -d)"
+        pattern="$(printf '%s' "$rule" | yq -r '.pattern')"
+        reason="$(printf '%s' "$rule" | yq -r '.reason')"
+        if policy_match "$pattern"; then
+            deny "$reason"
+            exit 0
+        fi
+    done < <(yq -r '.deny[]? | @base64' "$POLICY_FILE" 2>/dev/null || true)
+
+    if [[ "${COPILOT_STRICT_ALLOWLIST:-0}" != '1' ]]; then
+        while IFS= read -r encoded; do
+            [[ -n "$encoded" ]] || continue
+            rule="$(printf '%s' "$encoded" | base64 -d)"
+            pattern="$(printf '%s' "$rule" | yq -r '.pattern')"
+            if policy_match "$pattern"; then
+                allow
+                exit 0
+            fi
+        done < <(yq -r '.allow[]? | @base64' "$POLICY_FILE" 2>/dev/null || true)
+    fi
+
+    while IFS= read -r encoded; do
+        [[ -n "$encoded" ]] || continue
+        rule="$(printf '%s' "$encoded" | base64 -d)"
+        pattern="$(printf '%s' "$rule" | yq -r '.pattern')"
+        reason="$(printf '%s' "$rule" | yq -r '.reason')"
+        if policy_match "$pattern"; then
+            jq -cn --arg reason "$reason" '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+            exit 0
+        fi
+    done < <(yq -r '.confirm[]? | @base64' "$POLICY_FILE" 2>/dev/null || true)
+
+    return 1
+}
+
+if ! is_terminal_tool "$tool_name"; then
+    exit 0
+fi
+
+command="$(jq -r '.command // .commandLine // .text // empty' <<<"$tool_args_raw")"
+compact="$(tr -s '[:space:]' ' ' <<<"$command" | sed 's/^ //; s/ $//')"
+strict_allowlist="${COPILOT_STRICT_ALLOWLIST:-0}"
+
+evaluate_policy_yaml "$compact" || true
+
+if grep -Eq '(^|[[:space:]])(sudo|su -|mkfs|dd|shutdown|reboot|halt|poweroff|mount|umount)([[:space:]]|$)' <<<"$compact"; then
+    deny 'dangerous system command blocked by repo policy'
+    exit 0
+fi
+
+if grep -Eq '(^|[[:space:]])(chmod|chown|chgrp)([[:space:]]|$)' <<<"$compact"; then
+    deny 'filesystem permission mutation blocked by repo policy'
+    exit 0
+fi
+
+if grep -Eq '(^|[[:space:]])rm([[:space:]]|$)' <<<"$compact"; then
+    deny 'rm blocked by repo policy'
+    exit 0
+fi
+
+if grep -Eq '^git[[:space:]]+(push|reset[[:space:]]+--hard|clean[[:space:]]+-|checkout[[:space:]]+--|restore[[:space:]]+--|rebase[[:space:]]|filter-branch|reflog[[:space:]]+delete)' <<<"$compact"; then
+    deny 'destructive git command blocked by repo policy'
+    exit 0
+fi
+
+if grep -Eq '(curl|wget).*[|][[:space:]]*(sh|bash|zsh|python|python3|php|node|ruby)' <<<"$compact"; then
+    deny 'remote pipe-to-shell execution blocked by repo policy'
+    exit 0
+fi
+
+if grep -Eq '(curl|wget|nc|ncat|netcat)[[:space:]].*(-d|--data|--upload-file|--data-binary)' <<<"$compact"; then
+    deny 'possible data exfiltration command blocked by repo policy'
+    exit 0
+fi
+
+if grep -Eq '(^|[[:space:]])(cat|bat|less|head|tail)([[:space:]]|$)' <<<"$compact" \
+    && grep -Eq '(^|[[:space:]])[^[:space:]]*\.env([^[:space:]]*)?([[:space:]]|$)' <<<"$compact" \
+    && ! grep -Eq '(^|[[:space:]])[^[:space:]]*\.env\.example([[:space:]]|$)' <<<"$compact"; then
+    deny 'direct .env secret extraction blocked by repo policy'
+    exit 0
+fi
+
+if allow_registered_script "$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^(rg|fd|fzf|bat|jq|yq|mlr|fx|delta|eza|ls|pwd|cat|head|tail|wc|sort|uniq|cut|date|env|which|type|file|stat|du|df)\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^git[[:space:]]+(log|show|diff|status|grep|blame|ls-files|branch|tag|describe|shortlog|rev-parse|cat-file|check-ignore|stash[[:space:]]+list)\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^gh[[:space:]]+(pr[[:space:]]+(view|list|checks|diff)|issue[[:space:]]+(view|list)|repo[[:space:]]+view|run[[:space:]]+(list|view))\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^ast-grep[[:space:]]+run([[:space:]]|$)' <<<"$compact" \
+    && ! grep -Eq '(^|[[:space:]])--(rewrite|update-all|U)([[:space:]]|$)' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^(semgrep[[:space:]]+scan|gitleaks[[:space:]]+detect|trivy[[:space:]]+fs|shellcheck|actionlint|lychee)\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^shfmt[[:space:]]+-d\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^composer[[:space:]]+(validate|show|depends|audit|check-platform-reqs|diagnose)\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^pnpm[[:space:]]+(exec[[:space:]]+(tsc|eslint|biome|knip)|audit|list|outdated)\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^vendor/bin/(phpunit|pest|phpstan|psalm)\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^vendor/bin/pint[[:space:]]+--test\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^vendor/bin/rector[[:space:]]+process[[:space:]]+--dry-run\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^git[[:space:]]+commit\b' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 2: git commit modifies history — confirm required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
+if grep -Eq '^git[[:space:]]+stash[[:space:]]+(push|drop|pop)\b' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 2: git stash push/pop/drop modifies working state — confirm required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
+# Tier 2: ai-edit in apply mode (APPLY=1 or VERIFY=1 prefix)
+if grep -Eq '(^|[[:space:]])(APPLY|VERIFY)=1' <<<"$compact" && grep -Eq '(^|[[:space:]])(bash[[:space:]]+)?(\./)?scripts/ai/ai-edit\.sh([[:space:]]|$)' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 2: ai-edit apply mode mutates source files — confirm required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
+# Tier 2: ai-edit dirty-tree apply mode
+if grep -Eq '(^|[[:space:]])REQUIRE_CLEAN_TREE=0' <<<"$compact" && grep -Eq '(^|[[:space:]])(bash[[:space:]]+)?(\./)?scripts/ai/ai-edit\.sh([[:space:]]|$)' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 2: ai-edit with REQUIRE_CLEAN_TREE=0 may edit on a dirty worktree — confirm required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
+# Tier 3: ai-rollback apply
+if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/ai-rollback\.sh[[:space:]]+apply\b' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 3: ai-rollback apply is a recovery mutation — explicit approval required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
+# Tier 3: ai-rollback prune
+if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/ai-rollback\.sh[[:space:]]+prune\b' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 3: ai-rollback prune deletes rollback snapshots — explicit approval required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
+# Tier 3: repomix-scc-router clean or purge
+if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/repomix-scc-router\.sh[[:space:]]+(clean|purge)\b' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 3: repomix-scc-router clean/purge deletes generated artifacts — explicit approval required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
+# Tier 3: repomix-context-tree clean or purge
+if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/repomix-context-tree\.sh[[:space:]]+(clean|purge)\b' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 3: repomix-context-tree clean/purge deletes generated artifacts — explicit approval required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
+# Tier 3: just context-clean or context-purge
+if grep -Eq '^just[[:space:]]+context-(clean|purge)\b' <<<"$compact"; then
+    jq -cn --arg reason 'Tier 3: just context-clean/purge deletes generated artifacts — explicit approval required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+    exit 0
+fi
+
+# Tier 1: pure read-only copilot scripts
+if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/(ai-search|ai-verify|preview-file|fd-files|rg-code|git-forensics|repo-stats|query-usage)\.sh\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+# Tier 1†: read-only-adjacent scripts (write only to known generated directories)
+if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/(ai-diff-context|pack-context|gh-pr-context|repomix-context-tree)\.sh\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^(\./)?scripts/(ai|copilot|opencode)/(ai-structured|ai-task)\.sh\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^(\./)?scripts/(ai|copilot|opencode)/(ai-test-select|ai-doc-check)\.sh\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+# Tier 1: ai-edit dry-run (no APPLY=1 or VERIFY=1)
+if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/ai-edit\.sh\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+# Tier 1: ai-rollback read-only subcommands (list, show)
+if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/ai-rollback\.sh[[:space:]]+(list|show)\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+# Tier 1: repomix-scc-router read-only subcommands
+if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/repomix-scc-router\.sh[[:space:]]+(stats|plan|run|bundle)\b' <<<"$compact"; then
+    allow
+    exit 0
+fi
+
+if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/[^[:space:]]+\.sh\b' <<<"$compact"; then
+    deny 'script is not approved by docs/ai/script-registry.json or the tiered hook policy'
+    exit 0
+fi
+
+# watch-loop: tier is inherited from the delegated command; fall through to other rules
+
+if [[ "$strict_allowlist" == '1' ]]; then
+    if grep -Eq '(^|[^|])[;]|&&|\|\||(^|[^>])>([^>]|$)|`|\$\(|(^|[[:space:]])tee([[:space:]]|$)' <<<"$compact"; then
+        deny 'strict allowlist mode blocks shell metacharacters and tee to prevent safe-prefix bypasses'
+        exit 0
+    fi
+
+    if grep -Eq '^(rg|fd|fzf|bat|jq|yq|ast-grep|semgrep|delta|eza|ls|wc|cut|sort|uniq|tr|stat|file|du|tree|pwd|whoami|id|uname|date|env|printenv|echo|printf)([[:space:]]|$)' <<<"$compact" \
+        || grep -Eq '^git([[:space:]]+--no-pager)?[[:space:]]+(grep|log|blame|show|diff|status|rev-parse|symbolic-ref|describe|ls-files|range-diff)([[:space:]]|$)' <<<"$compact" \
+        || grep -Eq '^git([[:space:]]+--no-pager)?[[:space:]]+worktree[[:space:]]+list([[:space:]]|$)' <<<"$compact" \
+        || grep -Eq '^gh[[:space:]]+(issue[[:space:]]+(view|list)|pr[[:space:]]+(view|list|checks)|repo[[:space:]]+view|search[[:space:]]+(issues|prs)|workflow[[:space:]]+view|run[[:space:]]+(view|list))([[:space:]]|$)' <<<"$compact" \
+        || grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/(rg-code|fd-files|preview-file|git-forensics|gh-pr-context|ast-search|ai-search|ai-verify|repo-stats|query-usage|pack-context|repomix-context-tree|repomix-scc-router)\.sh([[:space:]]|$)' <<<"$compact"; then
+        allow
+        exit 0
+    fi
+
+    deny 'strict allowlist mode denies commands outside the explicit read-only and approved-script list'
+    exit 0
+fi
+
+exit 0
+
+
+
+preview-file.sh
+
+#!/usr/bin/env bash
+# Safe bounded file preview for AI agents and humans.
+#
+# Purpose:
+# - Preview exactly one file.
+# - Prefer precise ranges over large dumps.
+# - Return compact JSON when --json or AI_OUTPUT=json is used.
+# - Prevent token blowups from huge files, binary files, and minified lines.
+#
+# Non-goals:
+# - No searching.
+# - No editing.
+# - No multi-file context packing.
+
+set -euo pipefail
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ -f "$script_dir/common.sh" ]]; then
+    # shellcheck source=scripts/ai/common.sh
+    source "$script_dir/common.sh"
+fi
+
+if ! declare -F die >/dev/null 2>&1; then
+    die() {
+        printf 'preview-file: error: %s\n' "$*" >&2
+        exit 2
+    }
+fi
+
+if ! declare -F require_bins >/dev/null 2>&1; then
+    require_bins() {
+        local missing=0
+        local bin
+        for bin in "$@"; do
+            if ! command -v "$bin" >/dev/null 2>&1; then
+                printf 'preview-file: error: required command not found: %s\n' "$bin" >&2
+                missing=1
+            fi
+        done
+        [[ "$missing" -eq 0 ]] || exit 2
+    }
+fi
+
+usage() {
+    cat <<'EOF'
+Usage:
+  preview-file.sh FILE [options]
+  preview-file.sh [options] FILE
+
+Core:
+  --lines N             Preview first N lines.
+  --range A:B           Preview inclusive line range A:B.
+  --around N            Preview around line N.
+  --context N           Context lines for --around. Default: 40.
+
+Safety:
+  --max-lines N         Maximum lines emitted. Default: 300.
+  --max-columns N       Truncate lines after N columns. Default: 300. Use 0 to disable.
+  --max-bytes N         Block files larger than N bytes. Supports 1000, 1K, 1M, 1G. Default: 1M.
+  --force               Allow binary-looking or oversized files.
+
+Output:
+  --json                Emit compact JSON envelope.
+  --plain               Emit deterministic plain text.
+  --bat                 Use bat for human preview when available.
+  --color               Allow colour with --bat.
+  --no-numbers          Disable line numbers.
+  --dry-run             Show resolved preview metadata without content.
+  --help, -h            Show this help.
+
+Environment:
+  AI_OUTPUT=json
+  AI_PREVIEW_LINES=80
+  AI_PREVIEW_HUMAN_LINES=200
+  AI_PREVIEW_CONTEXT=40
+  AI_PREVIEW_MAX_LINES=300
+  AI_PREVIEW_MAX_COLUMNS=300
+  AI_PREVIEW_MAX_BYTES=1M
+EOF
+}
+
+is_uint() {
+    [[ "${1:-}" =~ ^[0-9]+$ ]]
+}
+
+is_pos_int() {
+    is_uint "$1" && (( "$1" >= 1 ))
+}
+
+parse_bytes() {
+    local raw="${1:-}"
+    local value suffix number
+
+    value="$(printf '%s' "$raw" | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]')"
+
+    if [[ "$value" =~ ^([0-9]+)(B|K|KB|KI|KIB|M|MB|MI|MIB|G|GB|GI|GIB)?$ ]]; then
+        number="${BASH_REMATCH[1]}"
+        suffix="${BASH_REMATCH[2]:-B}"
+
+        case "$suffix" in
+            B|"")
+                printf '%s\n' "$number"
+                ;;
+            K|KB|KI|KIB)
+                printf '%s\n' $((number * 1024))
+                ;;
+            M|MB|MI|MIB)
+                printf '%s\n' $((number * 1024 * 1024))
+                ;;
+            G|GB|GI|GIB)
+                printf '%s\n' $((number * 1024 * 1024 * 1024))
+                ;;
+            *)
+                return 1
+                ;;
+        esac
+
+        return 0
+    fi
+
+    return 1
+}
+
+file_size_bytes() {
+    local path="$1"
+
+    stat -c '%s' -- "$path" 2>/dev/null \
+        || stat -f '%z' "$path" 2>/dev/null \
+        || wc -c < "$path" | tr -d '[:space:]'
+}
+
+json_array() {
+    require_bins jq
+
+    if [[ "$#" -eq 0 ]]; then
+        printf '[]'
+        return 0
+    fi
+
+    printf '%s\n' "$@" | jq -R . | jq -s .
+}
+
+json_output=false
+format_explicit=false
+use_bat=false
+color=false
+numbers=true
+force=false
+dry_run=false
+
+file=""
+lines=""
+range_arg=""
+around=""
+context="${AI_PREVIEW_CONTEXT:-40}"
+max_lines="${AI_PREVIEW_MAX_LINES:-300}"
+max_columns="${AI_PREVIEW_MAX_COLUMNS:-300}"
+max_bytes_raw="${AI_PREVIEW_MAX_BYTES:-1M}"
+
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        --json)
+            json_output=true
+            format_explicit=true
+            shift
+            ;;
+        --plain)
+            json_output=false
+            use_bat=false
+            format_explicit=true
+            shift
+            ;;
+        --bat)
+            json_output=false
+            use_bat=true
+            format_explicit=true
+            shift
+            ;;
+        --color)
+            color=true
+            shift
+            ;;
+        --no-numbers)
+            numbers=false
+            shift
+            ;;
+        --force)
+            force=true
+            shift
+            ;;
+        --dry-run)
+            dry_run=true
+            shift
+            ;;
+        --lines)
+            [[ "$#" -ge 2 ]] || die "--lines requires a value"
+            lines="$2"
+            shift 2
+            ;;
+        --lines=*)
+            lines="${1#*=}"
+            shift
+            ;;
+        --range)
+            [[ "$#" -ge 2 ]] || die "--range requires a value"
+            range_arg="$2"
+            shift 2
+            ;;
+        --range=*)
+            range_arg="${1#*=}"
+            shift
+            ;;
+        --around)
+            [[ "$#" -ge 2 ]] || die "--around requires a value"
+            around="$2"
+            shift 2
+            ;;
+        --around=*)
+            around="${1#*=}"
+            shift
+            ;;
+        --context)
+            [[ "$#" -ge 2 ]] || die "--context requires a value"
+            context="$2"
+            shift 2
+            ;;
+        --context=*)
+            context="${1#*=}"
+            shift
+            ;;
+        --max-lines)
+            [[ "$#" -ge 2 ]] || die "--max-lines requires a value"
+            max_lines="$2"
+            shift 2
+            ;;
+        --max-lines=*)
+            max_lines="${1#*=}"
+            shift
+            ;;
+        --max-columns)
+            [[ "$#" -ge 2 ]] || die "--max-columns requires a value"
+            max_columns="$2"
+            shift 2
+            ;;
+        --max-columns=*)
+            max_columns="${1#*=}"
+            shift
+            ;;
+        --max-bytes|--max-size)
+            [[ "$#" -ge 2 ]] || die "$1 requires a value"
+            max_bytes_raw="$2"
+            shift 2
+            ;;
+        --max-bytes=*|--max-size=*)
+            max_bytes_raw="${1#*=}"
+            shift
+            ;;
+        --)
+            shift
+            [[ "$#" -gt 0 ]] || die "-- requires a following file"
+            if [[ -n "$file" ]]; then
+                die "only one file may be provided"
+            fi
+            file="$1"
+            shift
+            ;;
+        --*)
+            die "unknown option: $1"
+            ;;
+        *)
+            if [[ -n "$file" ]]; then
+                die "only one file may be provided"
+            fi
+            file="$1"
+            shift
+            ;;
+    esac
+done
+
+if [[ "$format_explicit" == false && "${AI_OUTPUT:-}" == "json" ]]; then
+    json_output=true
+fi
+
+if [[ -z "$lines" ]]; then
+    if [[ "$json_output" == true ]]; then
+        lines="${AI_PREVIEW_LINES:-80}"
+    else
+        lines="${AI_PREVIEW_HUMAN_LINES:-200}"
+    fi
+fi
+
+emit_error() {
+    local message="$1"
+    local exit_code="${2:-2}"
+    local path="${file:-}"
+
+    if [[ "$json_output" == true ]]; then
+        require_bins jq
+
+        jq -n \
+            --arg schema "1" \
+            --arg status "error" \
+            --arg tool "preview-file" \
+            --arg path "$path" \
+            --argjson errors "$(json_array "$message")" \
+            '{
+                schema: $schema,
+                status: $status,
+                tool: $tool,
+                path: $path,
+                range: null,
+                total_lines: null,
+                truncated: false,
+                content: "",
+                limits: {},
+                warnings: [],
+                errors: $errors,
+                meta: {}
+            }'
+    else
+        printf 'preview-file: error: %s\n' "$message" >&2
+    fi
+
+    exit "$exit_code"
+}
+
+[[ -n "$file" ]] || emit_error "file required" 2
+[[ -f "$file" ]] || emit_error "file not found: $file" 1
+
+is_pos_int "$lines" || emit_error "--lines must be a positive integer" 2
+is_uint "$context" || emit_error "--context must be a non-negative integer" 2
+is_pos_int "$max_lines" || emit_error "--max-lines must be a positive integer" 2
+is_uint "$max_columns" || emit_error "--max-columns must be a non-negative integer" 2
+
+max_bytes="$(parse_bytes "$max_bytes_raw")" || emit_error "--max-bytes must be numeric or use K/M/G suffix" 2
+
+size_bytes="$(file_size_bytes "$file")"
+is_uint "$size_bytes" || size_bytes=0
+
+warnings=()
+
+normalized_path="${file#./}"
+case "/$normalized_path" in
+    *"/.git/"*|*"/.git")
+        if [[ "$force" != true ]]; then
+            emit_error ".git internals are blocked; use --force only with explicit approval" 2
+        fi
+        ;;
+    *"/node_modules/"*|*"/vendor/"*|*"/dist/"*|*"/build/"*|*"/coverage/"*|*"/docs/ai/generated/"*)
+        warnings+=("path looks generated, vendored, or high-volume; prefer narrow ranges")
+        ;;
+esac
+
+case "$normalized_path" in
+    *.min.js|*.min.css|*.map|package-lock.json|pnpm-lock.yaml|yarn.lock|composer.lock)
+        warnings+=("file is commonly large/generated; output remains bounded")
+        ;;
+esac
+
+if (( max_bytes > 0 && size_bytes > max_bytes )) && [[ "$force" != true ]]; then
+    emit_error "file exceeds max-bytes limit: ${size_bytes} > ${max_bytes}; use --force with a narrow range if needed" 2
+fi
+
+if [[ -s "$file" ]] && ! LC_ALL=C grep -Iq . < "$file"; then
+    if [[ "$force" != true ]]; then
+        emit_error "binary-looking file blocked; use --force only with explicit approval" 2
+    fi
+    warnings+=("binary-looking file was forced; output may be unsafe or unreadable")
+fi
+
+total_lines="$(awk 'END { print NR + 0 }' < "$file")"
+is_uint "$total_lines" || total_lines=0
+
+start=1
+end="$lines"
+
+if [[ -n "$range_arg" ]]; then
+    if [[ ! "$range_arg" =~ ^([0-9]+):([0-9]+)$ ]]; then
+        emit_error "--range must use A:B format" 2
+    fi
+
+    start="${BASH_REMATCH[1]}"
+    end="${BASH_REMATCH[2]}"
+
+    is_pos_int "$start" || emit_error "--range start must be >= 1" 2
+    is_pos_int "$end" || emit_error "--range end must be >= 1" 2
+    (( end >= start )) || emit_error "--range end must be >= start" 2
+fi
+
+if [[ -n "$around" ]]; then
+    is_pos_int "$around" || emit_error "--around must be a positive integer" 2
+
+    if (( around <= context )); then
+        start=1
+    else
+        start=$((around - context))
+    fi
+
+    end=$((around + context))
+fi
+
+if (( total_lines == 0 )); then
+    start=1
+    end=0
+else
+    if (( start > total_lines )); then
+        warnings+=("requested start line is beyond end of file; clamped to total_lines")
+        start="$total_lines"
+    fi
+
+    if (( end > total_lines )); then
+        end="$total_lines"
+    fi
+fi
+
+selected_count=0
+if (( end >= start )); then
+    selected_count=$((end - start + 1))
+fi
+
+truncated=false
+
+if (( selected_count > max_lines )); then
+    end=$((start + max_lines - 1))
+    selected_count="$max_lines"
+    truncated=true
+    warnings+=("range exceeded max-lines; output was truncated")
+fi
+
+if (( total_lines > 0 && end < total_lines )); then
+    truncated=true
+fi
+
+render_plain() {
+    awk \
+        -v start="$start" \
+        -v end="$end" \
+        -v max_columns="$max_columns" \
+        -v numbers="$([[ "$numbers" == true ]] && printf 1 || printf 0)" '
+        end == 0 { exit }
+        NR < start { next }
+        NR > end { exit }
+        {
+            line = $0
+
+            if (max_columns > 0 && length(line) > max_columns) {
+                line = substr(line, 1, max_columns) " …[truncated]"
+            }
+
+            if (numbers == 1) {
+                printf "%6d  %s\n", NR, line
+            } else {
+                print line
+            }
+        }
+    ' < "$file"
+}
+
+if [[ "$dry_run" == true ]]; then
+    if [[ "$json_output" == true ]]; then
+        require_bins jq
+
+        jq -n \
+            --arg schema "1" \
+            --arg status "dry_run" \
+            --arg tool "preview-file" \
+            --arg path "$file" \
+            --argjson start "$start" \
+            --argjson end "$end" \
+            --argjson total_lines "$total_lines" \
+            --argjson truncated "$truncated" \
+            --argjson max_lines "$max_lines" \
+            --argjson max_columns "$max_columns" \
+            --argjson max_bytes "$max_bytes" \
+            --argjson size_bytes "$size_bytes" \
+            --argjson warnings "$(json_array "${warnings[@]}")" \
+            '{
+                schema: $schema,
+                status: $status,
+                tool: $tool,
+                path: $path,
+                range: {
+                    start: $start,
+                    end: $end
+                },
+                total_lines: $total_lines,
+                truncated: $truncated,
+                content: "",
+                limits: {
+                    max_lines: $max_lines,
+                    max_columns: $max_columns,
+                    max_bytes: $max_bytes
+                },
+                warnings: $warnings,
+                errors: [],
+                meta: {
+                    size_bytes: $size_bytes
+                }
+            }'
+    else
+        printf 'Would preview %s lines %s:%s total_lines=%s size_bytes=%s truncated=%s\n' \
+            "$file" "$start" "$end" "$total_lines" "$size_bytes" "$truncated" >&2
+    fi
+
+    exit 0
+fi
+
+if [[ "$json_output" == true ]]; then
+    require_bins jq
+
+    content="$(render_plain)"
+
+    jq -n \
+        --arg schema "1" \
+        --arg status "ok" \
+        --arg tool "preview-file" \
+        --arg path "$file" \
+        --arg content "$content" \
+        --argjson start "$start" \
+        --argjson end "$end" \
+        --argjson total_lines "$total_lines" \
+        --argjson truncated "$truncated" \
+        --argjson max_lines "$max_lines" \
+        --argjson max_columns "$max_columns" \
+        --argjson max_bytes "$max_bytes" \
+        --argjson size_bytes "$size_bytes" \
+        --argjson warnings "$(json_array "${warnings[@]}")" \
+        '{
+            schema: $schema,
+            status: $status,
+            tool: $tool,
+            path: $path,
+            range: {
+                start: $start,
+                end: $end
+            },
+            total_lines: $total_lines,
+            truncated: $truncated,
+            content: $content,
+            limits: {
+                max_lines: $max_lines,
+                max_columns: $max_columns,
+                max_bytes: $max_bytes
+            },
+            warnings: $warnings,
+            errors: [],
+            meta: {
+                size_bytes: $size_bytes
+            }
+        }'
+
+    exit 0
+fi
+
+for warning in "${warnings[@]}"; do
+    printf 'preview-file: warning: %s\n' "$warning" >&2
+done
+
+if [[ "$use_bat" == true ]] && command -v bat >/dev/null 2>&1; then
+    bat_args=(--style=numbers --line-range "${start}:${end}")
+
+    if [[ "$color" == true ]]; then
+        bat_args+=(--color=auto)
+    else
+        bat_args+=(--color=never)
+    fi
+
+    exec bat "${bat_args[@]}" -- "$file"
+fi
+
+render_plain
+
+
+
+query-usage.sh
+
+#!/usr/bin/env bash
+# shellcheck disable=SC2016
+set -euo pipefail
+
+usage() {
+    cat <<'EOF'
+Usage:
+  scripts/ai/query-usage.sh [path] [--multiplier <n>] [--multiplier-label <label>] [--reserved-output <n>]
+
+Print a read-only usage closeout summary for inspected content.
+EOF
+}
+
+TARGET='.'
+MULTIPLIER='1'
+LABEL='1x'
+RESERVED_OUTPUT='4000'
+
+if (($# > 0)) && [[ "${1:-}" != --* ]]; then
+    TARGET="$1"
+    shift || true
+fi
+
+while (($# > 0)); do
+    case "$1" in
+    --multiplier) MULTIPLIER="$2"; shift 2 ;;
+    --multiplier=*) MULTIPLIER="${1#*=}"; shift ;;
+    --multiplier-label) LABEL="$2"; shift 2 ;;
+    --multiplier-label=*) LABEL="${1#*=}"; shift ;;
+    --reserved-output) RESERVED_OUTPUT="$2"; shift 2 ;;
+    --reserved-output=*) RESERVED_OUTPUT="${1#*=}"; shift ;;
+    --help | -h) usage; exit 0 ;;
+    *) echo "Unknown option: $1" >&2; usage; exit 2 ;;
+    esac
+done
+
+[[ -e "$TARGET" ]] || {
+    echo "Path not found: $TARGET" >&2
+    exit 1
+}
+
+if [[ -d "$TARGET" ]]; then
+    BYTES="$(git -C "$TARGET" ls-files -z 2>/dev/null | xargs -0 -I{} sh -c 'test -f "$1" && wc -c <"$1" || true' _ "$TARGET/{}" | awk '{s+=$1} END{print s+0}')"
+    if [[ "$BYTES" == "0" ]]; then
+        BYTES="$(rg --files "$TARGET" 2>/dev/null | xargs -I{} sh -c 'wc -c <"$1"' _ {} 2>/dev/null | awk '{s+=$1} END{print s+0}')"
+    fi
+else
+    BYTES="$(wc -c < "$TARGET")"
+fi
+
+RAW_TOKENS="$(awk -v b="$BYTES" 'BEGIN { printf "%d", int((b + 3) / 4) }')"
+WEIGHTED="$(awk -v t="$RAW_TOKENS" -v m="$MULTIPLIER" 'BEGIN { printf "%.2f", t * m }')"
+
+cat <<EOF
+query_usage:
+  path: $TARGET
+  bytes: $BYTES
+  raw_estimated_tokens: $RAW_TOKENS
+  multiplier_label: $LABEL
+  multiplier: $MULTIPLIER
+  weighted_usage: $WEIGHTED
+  reserved_output_tokens: $RESERVED_OUTPUT
+EOF
+
+
+
+repo-tool-inventory.sh
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+PHP_BIN="${PHP_BIN:-php}"
+
+exec "$PHP_BIN" "$ROOT/tools/ai/repo-tool-inventory.php" "$@"
+
+
+repomix-context-tree.sh
+
+#!/usr/bin/env bash
+# shellcheck disable=SC2016
+set -euo pipefail
+
+COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ai/common.sh
+source "$COMMON_DIR/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  scripts/ai/repomix-context-tree.sh <analyze|plan|pack|all|clean|purge> [root] [options]
+
+Commands:
+  analyze   Generate planner and human/machine index outputs.
+  plan      Alias of analyze.
+  pack      Pack only routes marked as decision=pack.
+  all       Run analyze then pack.
+  clean     Remove generated bundles/indexes and keep plan files.
+  purge     Remove the full tree-context output directory.
+
+Options:
+  --output-dir <dir>          Base output directory (default: .repomix-context)
+  --depth <n>                 Folder grouping depth for stats (default: 1)
+  --top <n>                   Max routes to consider, 0 means all (default: 25)
+  --min-code <n>              Minimum code lines per route (default: 300)
+  --min-files <n>             Minimum files per route (default: 2)
+  --min-score <n>             Minimum ranking score (default: 0)
+  --min-complexity <n>        Minimum complexity (default: 0)
+  --changed-since <ref>       Scope stats input to files changed since ref
+  --churn-count <n>           Commit count for churn weighting (default: 50)
+  --style <xml|markdown|json|plain>
+  --split-size <size>
+  --compress
+  --include-logs
+  --include-logs-count <n>
+  --include-diffs
+  --context-window <n>        Context window estimate (default: 128000)
+  --reserved-output <n>       Reserved output tokens (default: 4000)
+  --instruction-overhead <n>  Instruction overhead tokens (default: 8000)
+  --safety-factor <float>     Safety multiplier (default: 0.85)
+  --help
+EOF
+}
+
+die() {
+    printf 'Error: %s\n' "$1" >&2
+    exit 1
+}
+
+log() {
+    printf '[repomix-tree] %s\n' "$1"
+}
+
+confirm_context_delete() {
+    local action="$1"
+    local target="$2"
+
+    log "requested destructive context action: $action -> $target"
+
+    if [[ "${APPROVE_CONTEXT_DELETE:-0}" == "1" ]]; then
+        return 0
+    fi
+
+    if [[ -t 0 ]] && [[ "${CI:-}" != "true" ]]; then
+        printf 'Continue with %s on %s? [y/N] ' "$action" "$target" >&2
+        read -r confirm
+        [[ "$confirm" =~ ^[Yy]$ ]] && return 0
+    fi
+
+    die "context deletion requires APPROVE_CONTEXT_DELETE=1 or interactive confirmation"
+}
+
+add_winget_paths() {
+    local user_name="${USER:-${USERNAME:-}}"
+    local base="/c/Users/${user_name}/AppData/Local/Microsoft/WinGet/Packages"
+    [[ -d "$base" ]] || return 0
+    local dir
+    while IFS= read -r dir; do
+        case ":$PATH:" in
+        *":$dir:"*) ;;
+        *) PATH="$PATH:$dir" ;;
+        esac
+    done < <(find "$base" -maxdepth 3 -type f -name '*.exe' -printf '%h\n' 2>/dev/null | sort -u)
+}
+
+need_bin() {
+    local name="$1"
+    command -v "$name" >/dev/null 2>&1 || die "required binary '$name' not found"
+}
+
+ext_for_style() {
+    case "$1" in
+    xml) printf 'xml\n' ;;
+    markdown) printf 'md\n' ;;
+    json) printf 'json\n' ;;
+    plain) printf 'txt\n' ;;
+    *) die "unsupported style '$1'" ;;
+    esac
+}
+
+abs_path() {
+    local input="$1"
+    if [[ "$input" = /* ]]; then
+        printf '%s\n' "$input"
+    else
+        printf '%s\n' "$(cd "$(dirname "$input")" && pwd)/$(basename "$input")"
+    fi
+}
+
+safe_name() {
+    local name="$1"
+    name="${name//\//}"
+    name="${name//\//__}"
+    name="${name// /_}"
+    printf '%s\n' "$name"
+}
+
+estimate_tokens() {
+    local bytes="$1"
+    awk -v b="$bytes" 'BEGIN { printf "%d", int((b + 3) / 4) }'
+}
+
+usable_budget() {
+    awk -v cw="$CONTEXT_WINDOW" -v ro="$RESERVED_OUTPUT" -v io="$INSTRUCTION_OVERHEAD" -v sf="$SAFETY_FACTOR" 'BEGIN {
+      raw = cw - ro - io
+      if (raw < 0) raw = 0
+      usable = int(raw * sf)
+      if (usable < 0) usable = 0
+      printf "%d", usable
+    }'
+}
+
+COMMAND="${1:-}"
+[[ -n "$COMMAND" ]] || {
+    usage
+    exit 1
+}
+[[ "$COMMAND" != "--help" && "$COMMAND" != "-h" ]] || {
+    usage
+    exit 0
+}
+shift || true
+
+ROOT_INPUT='.'
+if (($# > 0)) && [[ "${1:-}" != --* ]]; then
+    ROOT_INPUT="$1"
+    shift || true
+fi
+
+OUTPUT_DIR='.repomix-context'
+DEPTH=1
+TOP=25
+MIN_CODE=300
+MIN_FILES=2
+MIN_SCORE=0
+MIN_COMPLEXITY=0
+CHANGED_SINCE=''
+CHURN_COUNT=50
+STYLE='xml'
+SPLIT_SIZE=''
+COMPRESS=0
+INCLUDE_LOGS=0
+INCLUDE_LOGS_COUNT=20
+INCLUDE_DIFFS=0
+CONTEXT_WINDOW=128000
+RESERVED_OUTPUT=4000
+INSTRUCTION_OVERHEAD=8000
+SAFETY_FACTOR=0.85
+
+while (($# > 0)); do
+    case "$1" in
+    --output-dir) OUTPUT_DIR="$2"; shift 2 ;;
+    --output-dir=*) OUTPUT_DIR="${1#*=}"; shift ;;
+    --depth) DEPTH="$2"; shift 2 ;;
+    --depth=*) DEPTH="${1#*=}"; shift ;;
+    --top) TOP="$2"; shift 2 ;;
+    --top=*) TOP="${1#*=}"; shift ;;
+    --min-code) MIN_CODE="$2"; shift 2 ;;
+    --min-code=*) MIN_CODE="${1#*=}"; shift ;;
+    --min-files) MIN_FILES="$2"; shift 2 ;;
+    --min-files=*) MIN_FILES="${1#*=}"; shift ;;
+    --min-score) MIN_SCORE="$2"; shift 2 ;;
+    --min-score=*) MIN_SCORE="${1#*=}"; shift ;;
+    --min-complexity) MIN_COMPLEXITY="$2"; shift 2 ;;
+    --min-complexity=*) MIN_COMPLEXITY="${1#*=}"; shift ;;
+    --changed-since) CHANGED_SINCE="$2"; shift 2 ;;
+    --changed-since=*) CHANGED_SINCE="${1#*=}"; shift ;;
+    --churn-count) CHURN_COUNT="$2"; shift 2 ;;
+    --churn-count=*) CHURN_COUNT="${1#*=}"; shift ;;
+    --style) STYLE="$2"; shift 2 ;;
+    --style=*) STYLE="${1#*=}"; shift ;;
+    --split-size) SPLIT_SIZE="$2"; shift 2 ;;
+    --split-size=*) SPLIT_SIZE="${1#*=}"; shift ;;
+    --compress) COMPRESS=1; shift ;;
+    --include-logs) INCLUDE_LOGS=1; shift ;;
+    --include-logs-count) INCLUDE_LOGS_COUNT="$2"; shift 2 ;;
+    --include-logs-count=*) INCLUDE_LOGS_COUNT="${1#*=}"; shift ;;
+    --include-diffs) INCLUDE_DIFFS=1; shift ;;
+    --context-window) CONTEXT_WINDOW="$2"; shift 2 ;;
+    --context-window=*) CONTEXT_WINDOW="${1#*=}"; shift ;;
+    --reserved-output) RESERVED_OUTPUT="$2"; shift 2 ;;
+    --reserved-output=*) RESERVED_OUTPUT="${1#*=}"; shift ;;
+    --instruction-overhead) INSTRUCTION_OVERHEAD="$2"; shift 2 ;;
+    --instruction-overhead=*) INSTRUCTION_OVERHEAD="${1#*=}"; shift ;;
+    --safety-factor) SAFETY_FACTOR="$2"; shift 2 ;;
+    --safety-factor=*) SAFETY_FACTOR="${1#*=}"; shift ;;
+    --help | -h) usage; exit 0 ;;
+    *) die "unknown option '$1'" ;;
+    esac
+done
+
+ROOT="$(abs_path "$ROOT_INPUT")"
+[[ -d "$ROOT" ]] || die "root directory '$ROOT' does not exist"
+
+require_clean_secret_scan "$ROOT"
+
+add_winget_paths
+
+if [[ "$OUTPUT_DIR" = /* ]]; then
+    OUTPUT_DIR_ABS="$OUTPUT_DIR"
+else
+    OUTPUT_DIR_ABS="$ROOT/$OUTPUT_DIR"
+fi
+
+TREE_DIR="$OUTPUT_DIR_ABS/tree-context"
+BUNDLES_DIR="$TREE_DIR/bundles"
+INDEXES_DIR="$TREE_DIR/indexes"
+TREE_PLAN_TSV="$TREE_DIR/tree-plan.tsv"
+TREE_PLAN_JSON="$TREE_DIR/tree-plan.json"
+TREE_MANIFEST_JSON="$TREE_DIR/tree-manifest.json"
+INDEX_MD="$TREE_DIR/index.md"
+INDEX_JSON="$TREE_DIR/index.json"
+ROUTER_FOLDER_METRICS="$TREE_DIR/folder-metrics.tsv"
+ROUTER_FILE_METRICS="$TREE_DIR/file-metrics.tsv"
+STYLE_EXT="$(ext_for_style "$STYLE")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROUTER_SCRIPT="$SCRIPT_DIR/repomix-scc-router.sh"
+
+router_args=("$ROUTER_SCRIPT" stats . --output-dir "$TREE_DIR" --depth "$DEPTH" --top "$TOP" --min-code "$MIN_CODE" --min-files "$MIN_FILES" --min-score "$MIN_SCORE" --min-complexity "$MIN_COMPLEXITY" --churn-count "$CHURN_COUNT" --style "$STYLE" --include-logs-count "$INCLUDE_LOGS_COUNT")
+[[ -n "$CHANGED_SINCE" ]] && router_args+=(--changed-since "$CHANGED_SINCE")
+[[ -n "$SPLIT_SIZE" ]] && router_args+=(--split-size "$SPLIT_SIZE")
+[[ "$COMPRESS" == "1" ]] && router_args+=(--compress)
+[[ "$INCLUDE_LOGS" == "1" ]] && router_args+=(--include-logs)
+[[ "$INCLUDE_DIFFS" == "1" ]] && router_args+=(--include-diffs)
+
+ensure_tree_outputs() {
+    mkdir -p "$TREE_DIR" "$BUNDLES_DIR" "$INDEXES_DIR"
+}
+
+generate_child_index() {
+    local route="$1"
+    local decision="$2"
+    local output_rel="$3"
+    local reason="$4"
+    local output_abs="$TREE_DIR/$output_rel"
+
+    [[ "$decision" == "split" ]] || return 0
+    mkdir -p "$(dirname "$output_abs")"
+
+    {
+        printf '# Child Context Index\n\n'
+        printf 'Route: `%s`\n\n' "$route"
+        printf 'Reason: `%s`\n\n' "$reason"
+        printf 'This route exceeds budget. Create deeper bundles by rerunning with a larger `--depth` or a smaller scope.\n\n'
+        printf '## Suggested Next Actions\n\n'
+        printf '1. Re-run `scripts/ai/repomix-context-tree.sh plan . --depth %s` to split this route further.\n' "$((DEPTH + 1))"
+        printf '2. Open the resulting child route with decision `pack`.\n'
+        printf '3. Keep sibling routes closed unless the task crosses boundaries.\n'
+    } >"$output_abs"
+}
+
+ensure_actionable_route() {
+    local usable="$1"
+    local fallback_row=''
+    local fallback_group=''
+    local fallback_files=''
+    local fallback_code=''
+    local fallback_complexity=''
+    local fallback_bytes=''
+    local fallback_score=''
+    local fallback_tokens=''
+    local fallback_decision=''
+    local fallback_type=''
+    local fallback_output=''
+    local fallback_reason=''
+    local temp_plan=''
+
+    if awk -F'\t' 'NR > 1 && ($3 == "pack" || $3 == "split") { found = 1 } END { exit found ? 0 : 1 }' "$TREE_PLAN_TSV"; then
+        return 0
+    fi
+
+    fallback_row="$(tail -n +2 "$ROUTER_FOLDER_METRICS" | awk -F'\t' '$1 != "" && $4 + 0 > 0 { print; exit }')"
+    [[ -n "$fallback_row" ]] || return 0
+
+    IFS=$'\t' read -r fallback_group fallback_files _fallback_lines fallback_code _fallback_comments _fallback_blanks fallback_complexity fallback_bytes _fallback_churn _fallback_code_share _fallback_complexity_share _fallback_file_share _fallback_byte_share _fallback_churn_share fallback_score <<<"$fallback_row"
+
+    fallback_tokens="$(estimate_tokens "$fallback_bytes")"
+    if ((fallback_tokens <= usable)); then
+        fallback_decision='pack'
+        fallback_type='bundle'
+        fallback_output="bundles/$(safe_name "$fallback_group").$STYLE_EXT"
+        fallback_reason='fallback route because no route met thresholds; estimated tokens fit route budget'
+    else
+        fallback_decision='split'
+        fallback_type='index'
+        fallback_output="indexes/$(safe_name "$fallback_group").md"
+        fallback_reason='fallback route because no route met thresholds; estimated tokens exceed route budget'
+    fi
+
+    temp_plan="$TREE_DIR/.tree-plan.tsv.tmp"
+    awk -F'\t' -v OFS='\t' \
+        -v target_group="$fallback_group" \
+        -v target_type="$fallback_type" \
+        -v target_decision="$fallback_decision" \
+        -v target_tokens="$fallback_tokens" \
+        -v target_budget="$usable" \
+        -v target_output="$fallback_output" \
+        -v target_reason="$fallback_reason" \
+        'NR == 1 { print; next }
+         $1 == target_group && replaced == 0 {
+             print $1, target_type, target_decision, target_tokens, target_budget, target_output, target_reason
+             replaced = 1
+             next
+         }
+         { print }
+        ' "$TREE_PLAN_TSV" >"$temp_plan"
+    mv "$temp_plan" "$TREE_PLAN_TSV"
+}
+
+build_plan() {
+    local usable
+    local selected=0
+
+    usable="$(usable_budget)"
+    [[ -f "$ROUTER_FOLDER_METRICS" ]] || die "missing folder metrics: $ROUTER_FOLDER_METRICS"
+
+    {
+        printf 'route\ttype\tdecision\testimated_tokens\tbudget\toutput\treason\n'
+        tail -n +2 "$ROUTER_FOLDER_METRICS" | while IFS=$'\t' read -r group files _lines code _comments _blanks complexity bytes _churn _code_share _complexity_share _file_share _byte_share _churn_share score; do
+            [[ -n "$group" ]] || continue
+
+            if ((TOP > 0 && selected >= TOP)); then
+                decision='skip'
+                type='skipped'
+                output='-'
+                reason='exceeds top limit'
+                tokens="$(estimate_tokens "$bytes")"
+                printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$group" "$type" "$decision" "$tokens" "$usable" "$output" "$reason"
+                continue
+            fi
+
+            if ((code < MIN_CODE)); then
+                decision='skip'
+                type='skipped'
+                output='-'
+                reason='below min-code threshold'
+                tokens="$(estimate_tokens "$bytes")"
+                printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$group" "$type" "$decision" "$tokens" "$usable" "$output" "$reason"
+                continue
+            fi
+
+            if ((files < MIN_FILES)); then
+                decision='skip'
+                type='skipped'
+                output='-'
+                reason='below min-files threshold'
+                tokens="$(estimate_tokens "$bytes")"
+                printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$group" "$type" "$decision" "$tokens" "$usable" "$output" "$reason"
+                continue
+            fi
+
+            if ((complexity < MIN_COMPLEXITY)); then
+                decision='skip'
+                type='skipped'
+                output='-'
+                reason='below min-complexity threshold'
+                tokens="$(estimate_tokens "$bytes")"
+                printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$group" "$type" "$decision" "$tokens" "$usable" "$output" "$reason"
+                continue
+            fi
+
+            awk -v score_value="$score" -v min_score_value="$MIN_SCORE" 'BEGIN { exit !(score_value + 0 >= min_score_value + 0) }' || {
+                decision='skip'
+                type='skipped'
+                output='-'
+                reason='below min-score threshold'
+                tokens="$(estimate_tokens "$bytes")"
+                printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$group" "$type" "$decision" "$tokens" "$usable" "$output" "$reason"
+                continue
+            }
+
+            selected=$((selected + 1))
+            tokens="$(estimate_tokens "$bytes")"
+
+            if ((tokens <= usable)); then
+                decision='pack'
+                type='bundle'
+                output="bundles/$(safe_name "$group").$STYLE_EXT"
+                reason='estimated tokens fit route budget'
+            else
+                decision='split'
+                type='index'
+                output="indexes/$(safe_name "$group").md"
+                reason='estimated tokens exceed route budget'
+            fi
+
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' "$group" "$type" "$decision" "$tokens" "$usable" "$output" "$reason"
+        done
+    } >"$TREE_PLAN_TSV"
+
+    if [[ $(wc -l <"$TREE_PLAN_TSV") -le 1 ]]; then
+        die "no routes generated"
+    fi
+
+    ensure_actionable_route "$usable"
+
+    jq -R -s '
+      split("\n") | map(select(length > 0) | split("\t")) as $rows
+      | ($rows[0]) as $header
+      | [ $rows[1:][] as $row
+          | reduce range(0; $header|length) as $i ({}; . + { ($header[$i]): ($row[$i] // "") })
+        ]
+    ' "$TREE_PLAN_TSV" >"$TREE_PLAN_JSON"
+
+    jq -n \
+      --arg root "$ROOT" \
+      --arg generated_at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+      --argjson context_window "$CONTEXT_WINDOW" \
+      --argjson reserved_output "$RESERVED_OUTPUT" \
+      --argjson instruction_overhead "$INSTRUCTION_OVERHEAD" \
+      --argjson safety_factor "$SAFETY_FACTOR" \
+      --argjson usable_budget "$usable" \
+      --arg style "$STYLE" \
+      --arg compress "$COMPRESS" \
+      --arg changed_since "$CHANGED_SINCE" \
+      --slurpfile plan "$TREE_PLAN_JSON" \
+      '{
+        root: $root,
+        generated_at: $generated_at,
+        budget: {
+          context_window: $context_window,
+          reserved_output: $reserved_output,
+          instruction_overhead: $instruction_overhead,
+          safety_factor: $safety_factor,
+          usable_budget: $usable_budget
+        },
+        repomix: {
+          style: $style,
+          compress: ($compress == "1"),
+          changed_since: (if $changed_since == "" then null else $changed_since end)
+        },
+        routes: ($plan[0] // [])
+      }' >"$TREE_MANIFEST_JSON"
+
+    jq -n --slurpfile plan "$TREE_PLAN_JSON" '{generated_at: now, routes: ($plan[0] // [])}' >"$INDEX_JSON"
+}
+
+build_human_index() {
+    {
+        printf '# Context Index\n\n'
+        printf '## Purpose\n\n'
+        printf 'Route repository context into the smallest useful bundle before loading broader areas.\n\n'
+        printf '## Open This First\n\n'
+        printf 'Open one route marked `pack` that matches your task scope. If all relevant routes are `split`, open that child index first.\n\n'
+        printf '## Top-Level Routes\n\n'
+        printf '| Route | Type | Decision | Estimated Tokens | Budget | Why | Open |\n'
+        printf '| --- | --- | --- | ---: | ---: | --- | --- |\n'
+        tail -n +2 "$TREE_PLAN_TSV" | while IFS=$'\t' read -r route type decision estimated_tokens budget output reason; do
+            printf '| `%s` | `%s` | `%s` | %s | %s | %s | `%s` |\n' "$route" "$type" "$decision" "$estimated_tokens" "$budget" "$reason" "$output"
+        done
+        printf '\n## Next Steps For AI Agents\n\n'
+        printf 'If decision is `pack`: open the bundle and start work there; avoid sibling bundles unless scope expands.\n\n'
+        printf 'If decision is `split`: open the child index and continue route selection until you reach a `pack` route.\n\n'
+        printf 'If decision is `skip`: avoid as primary context unless the task explicitly targets that path.\n\n'
+        printf '## Wiring Locations\n\n'
+        printf '%s\n' '- `AGENTS.md`'
+        printf '%s\n' '- `.github/copilot-instructions.md`'
+        printf '%s\n' '- `docs/ai/copilot-tooling.md`'
+        printf '%s\n\n' '- `docs/ai/context-packing.md`'
+        printf '## Machine Files\n\n'
+        printf '%s\n' '- `tree-plan.tsv`'
+        printf '%s\n' '- `tree-plan.json`'
+        printf '%s\n' '- `tree-manifest.json`'
+        printf '%s\n\n' '- `index.json`'
+        printf '## Regeneration Command\n\n'
+        printf '`scripts/ai/repomix-context-tree.sh all . --compress --style %s`\n' "$STYLE"
+    } >"$INDEX_MD"
+
+    tail -n +2 "$TREE_PLAN_TSV" | while IFS=$'\t' read -r route _type decision _estimated_tokens _budget output reason; do
+        generate_child_index "$route" "$decision" "$output" "$reason"
+    done
+}
+
+run_analyze() {
+    need_bin jq
+    ensure_tree_outputs
+    (cd "$ROOT" && bash "${router_args[@]}")
+    build_plan
+    build_human_index
+    log "wrote $TREE_PLAN_TSV"
+    log "wrote $TREE_PLAN_JSON"
+    log "wrote $TREE_MANIFEST_JSON"
+    log "wrote $INDEX_MD"
+    log "wrote $INDEX_JSON"
+}
+
+pack_route() {
+    local route="$1"
+    local output="$2"
+    local out_abs="$TREE_DIR/$output"
+    local repomix_args=(--output "$out_abs" --style "$STYLE")
+
+    mkdir -p "$(dirname "$out_abs")"
+    [[ "$COMPRESS" == "1" ]] && repomix_args+=(--compress)
+    [[ -n "$SPLIT_SIZE" ]] && repomix_args+=(--split-output "$SPLIT_SIZE")
+    [[ "$INCLUDE_LOGS" == "1" ]] && repomix_args+=(--include-logs --include-logs-count "$INCLUDE_LOGS_COUNT")
+    [[ "$INCLUDE_DIFFS" == "1" ]] && repomix_args+=(--include-diffs)
+
+    if [[ "$route" == "_root" ]]; then
+        local list_file
+        list_file="$(mktemp)"
+        awk -F'\t' 'NR > 1 && $1 == "_root" { print $2 }' "$ROUTER_FILE_METRICS" >"$list_file"
+        [[ -s "$list_file" ]] || {
+            rm -f "$list_file"
+            log "skip packing '$route' because no files matched"
+            return 0
+        }
+        (cd "$ROOT" && repomix --stdin "${repomix_args[@]}" <"$list_file")
+        rm -f "$list_file"
+    else
+        (cd "$ROOT" && repomix --include "$route/**" "${repomix_args[@]}")
+    fi
+}
+
+run_pack() {
+    need_bin repomix
+    [[ -f "$TREE_PLAN_TSV" ]] || run_analyze
+    [[ -f "$ROUTER_FILE_METRICS" ]] || die "missing file metrics for packing: $ROUTER_FILE_METRICS"
+
+    local packed=0
+    tail -n +2 "$TREE_PLAN_TSV" | while IFS=$'\t' read -r route _type decision _estimated_tokens _budget output _reason; do
+        [[ "$decision" == "pack" ]] || continue
+        pack_route "$route" "$output"
+        packed=$((packed + 1))
+    done
+
+    # while loop runs in subshell in some shells; verify bundles instead of relying on counter
+    ls "$BUNDLES_DIR" >/dev/null 2>&1 || die "no bundles generated"
+}
+
+run_all() {
+    run_analyze
+    run_pack
+}
+
+run_clean() {
+    confirm_context_delete "clean" "$TREE_DIR"
+    rm -rf "$BUNDLES_DIR" "$INDEXES_DIR" "$INDEX_MD" "$INDEX_JSON"
+    log "removed generated bundles and indexes from $TREE_DIR"
+}
+
+run_purge() {
+    [[ -d "$TREE_DIR" ]] || {
+        log "no tree-context directory at $TREE_DIR"
+        return 0
+    }
+
+    [[ "$TREE_DIR" != "/" ]] || die "refusing to delete root directory"
+    [[ "$TREE_DIR" != "$ROOT" ]] || die "refusing to delete repository root"
+
+    confirm_context_delete "purge" "$TREE_DIR"
+    rm -rf "$TREE_DIR"
+    log "removed tree-context directory $TREE_DIR"
+}
+
+case "$COMMAND" in
+analyze | plan) run_analyze ;;
+pack) run_pack ;;
+all) run_all ;;
+clean) run_clean ;;
+purge) run_purge ;;
+*) usage; die "unknown command '$COMMAND'" ;;
+esac
+
+
+
+repomix-scc-router.sh
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ai/common.sh
+source "$COMMON_DIR/common.sh"
+
+shopt -s extglob
+if ((BASH_VERSINFO[0] >= 4)); then
+    shopt -s globstar
+fi
+
+usage() {
+    cat <<'EOF'
+Usage:
+  scripts/ai/repomix-scc-router.sh <stats|plan|pack|all|clean|purge> [root] [options]
+
+Commands:
+  stats   Run scc analysis and write file/folder metrics.
+  plan    Run stats and create a ranked bundle plan.
+  pack    Pack bundles from an existing bundle plan.
+  all     Run stats, plan, and pack.
+  clean   Delete generated bundles and keep metrics files.
+  purge   Delete the entire output directory.
+
+Options:
+  --output-dir <dir>          Output directory (default: .repomix-context)
+  --depth <n>                 Folder grouping depth (default: 1)
+  --top <n>                   Max folders to pack, 0 means all (default: 25)
+  --min-code <n>              Minimum code lines per folder (default: 300)
+  --min-files <n>             Minimum files per folder (default: 2)
+  --min-score <n>             Minimum ranking score (default: 0)
+  --min-complexity <n>        Minimum cyclomatic complexity per folder (default: 0)
+  --changed-since <ref>       Limit planning and stats weighting to files changed since ref
+  --churn-count <n>           Commit count used for churn weighting (default: 50)
+  --style <xml|markdown|json|plain>
+                              Repomix output style (default: xml)
+  --split-size <size>         Repomix split size, for example 10mb
+  --compress                  Enable repomix compression
+  --include-logs              Include git logs in bundles
+  --include-logs-count <n>    Commit count for --include-logs (default: 20)
+  --include-diffs             Include git diffs in bundles
+  --help                      Show this help
+
+Examples:
+  scripts/ai/repomix-scc-router.sh stats . --depth 1
+  scripts/ai/repomix-scc-router.sh plan . --depth 2 --top 20
+  scripts/ai/repomix-scc-router.sh all . --depth 1 --compress --split-size 10mb
+  scripts/ai/repomix-scc-router.sh clean .
+  scripts/ai/repomix-scc-router.sh purge .
+EOF
+}
+
+die() {
+    printf 'Error: %s\n' "$1" >&2
+    exit 1
+}
+
+log() {
+    printf '[repomix-router] %s\n' "$1"
+}
+
+confirm_context_delete() {
+    local action="$1"
+    local target="$2"
+
+    log "requested destructive context action: $action -> $target"
+
+    if [[ "${APPROVE_CONTEXT_DELETE:-0}" == "1" ]]; then
+        return 0
+    fi
+
+    if [[ -t 0 ]] && [[ "${CI:-}" != "true" ]]; then
+        printf 'Continue with %s on %s? [y/N] ' "$action" "$target" >&2
+        read -r confirm
+        [[ "$confirm" =~ ^[Yy]$ ]] && return 0
+    fi
+
+    die "context deletion requires APPROVE_CONTEXT_DELETE=1 or interactive confirmation"
+}
+
+need_bin() {
+    local name="$1"
+    command -v "$name" >/dev/null 2>&1 || die "required binary '$name' not found"
+}
+
+to_posix_path() {
+    local input="$1"
+    if [[ "$input" =~ ^[A-Za-z]:\\ ]]; then
+        local drive="${input:0:1}"
+        local rest="${input:2}"
+        rest="${rest//\\//}"
+        printf '/%s%s\n' "${drive,,}" "$rest"
+        return 0
+    fi
+
+    printf '%s\n' "$input"
+}
+
+resolve_scc_bin() {
+    local candidate=""
+    local local_app_data="${LOCALAPPDATA:-}"
+    local base=""
+
+    if candidate="$(command -v scc 2>/dev/null)" && [[ -n "$candidate" ]]; then
+        printf '%s\n' "$candidate"
+        return 0
+    fi
+
+    if [[ -n "$local_app_data" ]]; then
+        base="$(to_posix_path "$local_app_data")/Microsoft/WinGet/Packages"
+        for candidate in "$base"/BenBoyter.scc*/scc.exe; do
+            if [[ -x "$candidate" ]]; then
+                printf '%s\n' "$candidate"
+                return 0
+            fi
+        done
+    fi
+
+    for candidate in /c/Users/*/AppData/Local/Microsoft/WinGet/Packages/BenBoyter.scc*/scc.exe; do
+        if [[ -x "$candidate" ]]; then
+            printf '%s\n' "$candidate"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+abs_path() {
+    local input="$1"
+    if [[ "$input" = /* ]]; then
+        printf '%s\n' "$input"
+    else
+        printf '%s\n' "$(cd "$(dirname "$input")" && pwd)/$(basename "$input")"
+    fi
+}
+
+ext_for_style() {
+    case "$1" in
+    xml) printf 'xml\n' ;;
+    markdown) printf 'md\n' ;;
+    json) printf 'json\n' ;;
+    plain) printf 'txt\n' ;;
+    *) die "unsupported style '$1'" ;;
+    esac
+}
+
+group_for_path() {
+    local path="$1"
+    local requested_depth="$2"
+    path="${path//\\//}"
+    local directory="${path%/*}"
+    local IFS='/'
+    local parts=()
+    local group_parts=()
+    local index=0
+
+    if [[ "$path" != */* ]]; then
+        printf '_root\n'
+        return 0
+    fi
+
+    read -r -a parts <<<"$directory"
+    for part in "${parts[@]}"; do
+        [[ -n "$part" ]] || continue
+        group_parts+=("$part")
+        index=$((index + 1))
+        if ((index >= requested_depth)); then
+            break
+        fi
+    done
+
+    if ((${#group_parts[@]} == 0)); then
+        printf '_root\n'
+    else
+        local IFS='/'
+        printf '%s\n' "${group_parts[*]}"
+    fi
+}
+
+safe_group_name() {
+    local name="$1"
+    name="${name//\\//}"
+    name="${name//\//__}"
+    name="${name// /_}"
+    printf '%s\n' "$name"
+}
+
+IGNORE_PATTERNS=()
+COLLECTED_FILES=()
+COLLECTED_CHANGED_FILES=()
+
+load_ignore_patterns() {
+    local ignore_file="$ROOT/.repomixignore"
+    local relative_output_dir="$OUTPUT_DIR_REL"
+
+    IGNORE_PATTERNS=()
+    if [[ -f "$ignore_file" ]]; then
+        while IFS= read -r line; do
+            line="${line%$'\r'}"
+            [[ -n "$line" ]] || continue
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            IGNORE_PATTERNS+=("$line")
+        done <"$ignore_file"
+    fi
+
+    IGNORE_PATTERNS+=("$relative_output_dir/**")
+}
+
+path_is_ignored() {
+    local path="$1"
+    local pattern
+
+    for pattern in "${IGNORE_PATTERNS[@]}"; do
+        # shellcheck disable=SC2053
+        if [[ "$path" == $pattern ]] || [[ "./$path" == $pattern ]]; then
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+collect_files() {
+    local path
+    COLLECTED_FILES=()
+    if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        while IFS= read -r path; do
+            [[ -n "$path" ]] || continue
+            [[ -f "$ROOT/$path" ]] || continue
+            if ! path_is_ignored "$path"; then
+                COLLECTED_FILES+=("$path")
+            fi
+        done < <(git -C "$ROOT" ls-files -co --exclude-standard)
+    else
+        while IFS= read -r path; do
+            [[ -n "$path" ]] || continue
+            [[ -f "$ROOT/$path" ]] || continue
+            if ! path_is_ignored "$path"; then
+                COLLECTED_FILES+=("$path")
+            fi
+        done < <(rg --files --hidden "$ROOT")
+    fi
+
+    ((${#COLLECTED_FILES[@]} > 0)) || die "no files available after applying ignore rules"
+}
+
+collect_changed_files() {
+    local path
+    COLLECTED_CHANGED_FILES=()
+
+    [[ -n "$CHANGED_SINCE" ]] || return 0
+
+    if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        while IFS= read -r path; do
+            [[ -n "$path" ]] || continue
+            [[ -f "$ROOT/$path" ]] || continue
+            if ! path_is_ignored "$path"; then
+                COLLECTED_CHANGED_FILES+=("$path")
+            fi
+        done < <((git -C "$ROOT" diff --name-only "$CHANGED_SINCE"...HEAD 2>/dev/null || git -C "$ROOT" diff --name-only "$CHANGED_SINCE") | sort -u)
+    fi
+}
+
+run_scc_analysis() {
+    local -a files=()
+    local -a changed_files=()
+    local scc_bin
+    local chunk_size=200
+    local idx=0
+    local total=0
+
+    scc_bin="$(resolve_scc_bin)" || die "required binary 'scc' not found"
+    load_ignore_patterns
+    collect_files
+    if [[ -n "${COLLECTED_FILES[*]-}" ]]; then
+        files=("${COLLECTED_FILES[@]}")
+    else
+        files=()
+    fi
+    collect_changed_files
+    if [[ -n "${COLLECTED_CHANGED_FILES[*]-}" ]]; then
+        changed_files=("${COLLECTED_CHANGED_FILES[@]}")
+    else
+        changed_files=()
+    fi
+
+    if [[ -n "$CHANGED_SINCE" ]]; then
+        log "limiting stats input to ${#changed_files[@]} changed files since $CHANGED_SINCE"
+        files=("${changed_files[@]}")
+    fi
+
+    mkdir -p "$OUTPUT_DIR_ABS"
+
+    log "running scc on ${#files[@]} files"
+    : >"$RAW_METRICS"
+
+    if ((${#files[@]} == 0)); then
+        log "no files selected for analysis; writing empty metrics"
+        return 0
+    fi
+
+    (
+        cd "$ROOT"
+        if ((${#files[@]} > chunk_size)); then
+            total=${#files[@]}
+            while ((idx < total)); do
+                local -a chunk=("${files[@]:idx:chunk_size}")
+                local chunk_output="$OUTPUT_DIR_ABS/scc-openmetrics-$idx.txt"
+                "$scc_bin" --by-file --format openmetrics --output "$chunk_output" --no-cocomo "${chunk[@]}"
+                cat "$chunk_output" >>"$RAW_METRICS"
+                rm -f "$chunk_output"
+                idx=$((idx + chunk_size))
+            done
+        else
+            "$scc_bin" --by-file --format openmetrics --output "$RAW_METRICS" --no-cocomo "${files[@]}"
+        fi
+    )
+}
+
+write_file_metrics() {
+    awk '
+    BEGIN {
+      FS = " "
+      OFS = "\t"
+    }
+    {
+      if ($0 !~ /^scc_(lines|code|comments|blanks|complexity|bytes)\{.*file="[^"]+".*\} [0-9]+$/) {
+        next
+      }
+
+      split($0, parts, " ")
+      metric_line = parts[1]
+      value = parts[2]
+
+      metric = metric_line
+      sub(/^scc_/, "", metric)
+      sub(/\{.*/, "", metric)
+
+      file = metric_line
+      sub(/^.*file="/, "", file)
+      sub(/".*/, "", file)
+      gsub(/\\/, "/", file)
+      gsub(/\/+/ , "/", file)
+      sub(/^\.\//, "", file)
+
+      language = metric_line
+      sub(/^.*language="/, "", language)
+      sub(/".*/, "", language)
+
+      seen[file] = 1
+      languages[file] = language
+      data[file, metric] = value + 0
+    }
+    END {
+      print "file", "language", "lines", "code", "comments", "blanks", "complexity", "bytes"
+      for (file in seen) {
+        print file, languages[file], data[file, "lines"] + 0, data[file, "code"] + 0, data[file, "comments"] + 0, data[file, "blanks"] + 0, data[file, "complexity"] + 0, data[file, "bytes"] + 0
+      }
+    }
+  ' "$RAW_METRICS" >"$FILE_METRICS_RAW"
+
+    {
+        printf 'group\tfile\tlanguage\tlines\tcode\tcomments\tblanks\tcomplexity\tbytes\n'
+        tail -n +2 "$FILE_METRICS_RAW" | while IFS=$'\t' read -r file language lines code comments blanks complexity bytes; do
+            [[ -n "$file" ]] || continue
+            printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+                "$(group_for_path "$file" "$DEPTH")" \
+                "$file" \
+                "$language" \
+                "$lines" \
+                "$code" \
+                "$comments" \
+                "$blanks" \
+                "$complexity" \
+                "$bytes"
+        done
+    } >"$FILE_METRICS"
+}
+
+write_folder_metrics() {
+    local summary_tmp="$OUTPUT_DIR_ABS/folder-metrics.unsorted.tsv"
+    local churn_tmp="$OUTPUT_DIR_ABS/folder-churn.tsv"
+
+    {
+        printf 'group\tchurn\n'
+        if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            git -C "$ROOT" log --name-only --pretty=format: -"$CHURN_COUNT" |
+                awk 'NF { print }' |
+                awk -v depth="$DEPTH" '
+            function group_for(path, depth_value,   directory, count, segment, parts, group) {
+              gsub(/\\/, "/", path)
+              sub(/^\.\//, "", path)
+              if (path !~ /\//) {
+                return "_root"
+              }
+              directory = path
+              sub(/\/[^\/]+$/, "", directory)
+              count = split(directory, parts, "/")
+              group = ""
+              for (i = 1; i <= count && i <= depth_value; i++) {
+                if (parts[i] == "") {
+                  continue
+                }
+                group = group (group == "" ? "" : "/") parts[i]
+              }
+              return group == "" ? "_root" : group
+            }
+            {
+              churn[group_for($0, depth)] += 1
+            }
+            END {
+              for (group in churn) {
+                printf "%s\t%d\n", group, churn[group]
+              }
+            }
+          ' |
+                sort -t $'\t' -k1,1
+        fi
+    } >"$churn_tmp"
+
+    awk -F'\t' '
+    BEGIN { OFS = "\t" }
+    FNR == 1 && NR == 1 { next }
+    FILENAME == ARGV[1] {
+      churn[$1] = $2 + 0
+      next
+    }
+    FNR == 1 { next }
+    {
+      group = $1
+      files[group] += 1
+      lines[group] += $4
+      code[group] += $5
+      comments[group] += $6
+      blanks[group] += $7
+      complexity[group] += $8
+      bytes[group] += $9
+
+      total_files += 1
+      total_code += $5
+      total_complexity += $8
+      total_bytes += $9
+      total_churn += churn[group]
+    }
+    END {
+      for (group in files) {
+        code_share = total_code > 0 ? code[group] / total_code : 0
+        complexity_share = total_complexity > 0 ? complexity[group] / total_complexity : 0
+        file_share = total_files > 0 ? files[group] / total_files : 0
+        byte_share = total_bytes > 0 ? bytes[group] / total_bytes : 0
+        churn_share = total_churn > 0 ? churn[group] / total_churn : 0
+        score = (code_share * 45) + (complexity_share * 20) + (file_share * 10) + (byte_share * 10) + (churn_share * 15)
+        printf "%s\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\t%.6f\n", group, files[group], lines[group], code[group], comments[group], blanks[group], complexity[group], bytes[group], churn[group] + 0, code_share, complexity_share, file_share, byte_share, churn_share, score
+      }
+    }
+  ' "$churn_tmp" "$FILE_METRICS" >"$summary_tmp"
+
+    {
+        printf 'group\tfiles\tlines\tcode\tcomments\tblanks\tcomplexity\tbytes\tchurn\tcode_share\tcomplexity_share\tfile_share\tbyte_share\tchurn_share\tscore\n'
+        sort -t $'\t' -k15,15nr "$summary_tmp"
+    } >"$FOLDER_METRICS"
+
+    rm -f "$summary_tmp" "$churn_tmp"
+}
+
+run_stats() {
+    run_scc_analysis
+    write_file_metrics
+    write_folder_metrics
+    log "wrote analysis outputs to $OUTPUT_DIR_ABS"
+}
+
+write_bundle_plan() {
+    local selected=0
+
+    [[ -f "$FOLDER_METRICS" ]] || die "missing folder metrics: run 'stats' first"
+
+    {
+        printf 'rank\tgroup\tfiles\tlines\tcode\tcomments\tblanks\tcomplexity\tbytes\tchurn\tcode_share\tcomplexity_share\tfile_share\tbyte_share\tchurn_share\tscore\tbundle\n'
+        tail -n +2 "$FOLDER_METRICS" | while IFS=$'\t' read -r group files lines code comments blanks complexity bytes churn code_share complexity_share file_share byte_share churn_share score; do
+            [[ -n "$group" ]] || continue
+
+            if ((TOP > 0 && selected >= TOP)); then
+                break
+            fi
+
+            if ((code < MIN_CODE)); then
+                continue
+            fi
+
+            if ((files < MIN_FILES)); then
+                continue
+            fi
+
+            if ((complexity < MIN_COMPLEXITY)); then
+                continue
+            fi
+
+            awk -v score="$score" -v min_score="$MIN_SCORE" 'BEGIN { exit !(score + 0 >= min_score + 0) }' || continue
+
+            selected=$((selected + 1))
+            printf '%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+                "$selected" \
+                "$group" \
+                "$files" \
+                "$lines" \
+                "$code" \
+                "$comments" \
+                "$blanks" \
+                "$complexity" \
+                "$bytes" \
+                "$churn" \
+                "$code_share" \
+                "$complexity_share" \
+                "$file_share" \
+                "$byte_share" \
+                "$churn_share" \
+                "$score" \
+                "bundles/$(safe_group_name "$group").$STYLE_EXT"
+        done
+    } >"$BUNDLE_PLAN"
+
+    if [[ $(wc -l <"$BUNDLE_PLAN") -le 1 ]]; then
+        die "bundle plan is empty after filtering"
+    fi
+
+    log "wrote bundle plan to $BUNDLE_PLAN"
+
+    jq -R -s '
+    split("\n")
+    | map(select(length > 0) | split("\t")) as $rows
+    | ($rows[0]) as $header
+    | [ $rows[1:][] as $row
+        | reduce range(0; $header|length) as $i ({}; . + { ($header[$i]): ($row[$i] // "") })
+      ]
+  ' "$BUNDLE_PLAN" >"$BUNDLE_PLAN_JSON"
+
+    log "wrote bundle plan to $BUNDLE_PLAN_JSON"
+}
+
+pack_group() {
+    local group="$1"
+    local bundle_rel="$2"
+    local bundle_abs="$OUTPUT_DIR_ABS/$bundle_rel"
+    local list_file
+    local -a repomix_args
+    local include_pattern
+
+    mkdir -p "$(dirname "$bundle_abs")"
+
+    repomix_args=(--output "$bundle_abs" --style "$STYLE")
+    if [[ "$COMPRESS" == "1" ]]; then
+        repomix_args+=(--compress)
+    fi
+    if [[ -n "$SPLIT_SIZE" ]]; then
+        repomix_args+=(--split-output "$SPLIT_SIZE")
+    fi
+    if [[ "$INCLUDE_LOGS" == "1" ]]; then
+        repomix_args+=(--include-logs --include-logs-count "$INCLUDE_LOGS_COUNT")
+    fi
+    if [[ "$INCLUDE_DIFFS" == "1" ]]; then
+        repomix_args+=(--include-diffs)
+    fi
+
+    if [[ "$group" == "_root" ]]; then
+        list_file="$(mktemp)"
+        tail -n +2 "$FILE_METRICS" | while IFS=$'\t' read -r file_group file _; do
+            if [[ "$file_group" == "$group" ]]; then
+                printf '%s\n' "$file"
+            fi
+        done >"$list_file"
+
+        [[ -s "$list_file" ]] || die "no files matched group '$group'"
+
+        log "packing group '$group' -> $bundle_rel"
+        (
+            cd "$ROOT"
+            repomix --stdin "${repomix_args[@]}" <"$list_file"
+        )
+
+        rm -f "$list_file"
+        return 0
+    fi
+
+    include_pattern="$group/**"
+    log "packing group '$group' -> $bundle_rel"
+    (
+        cd "$ROOT"
+        repomix --include "$include_pattern" "${repomix_args[@]}"
+    )
+}
+
+run_pack() {
+    need_bin repomix
+
+    [[ -f "$BUNDLE_PLAN" ]] || die "missing bundle plan: run 'plan' first"
+    [[ -f "$FILE_METRICS" ]] || die "missing file metrics: run 'stats' first"
+
+    tail -n +2 "$BUNDLE_PLAN" | while IFS=$'\t' read -r _rank group _files _lines _code _comments _blanks _complexity _bytes _churn _code_share _complexity_share _file_share _byte_share _churn_share _score bundle; do
+        [[ -n "$group" ]] || continue
+        pack_group "$group" "$bundle"
+    done
+}
+
+run_clean() {
+    local bundles_dir="$OUTPUT_DIR_ABS/bundles"
+
+    if [[ ! -d "$bundles_dir" ]]; then
+        log "no bundles directory to remove at $bundles_dir"
+        return 0
+    fi
+
+    confirm_context_delete "clean" "$bundles_dir"
+    rm -rf "$bundles_dir"
+    log "removed generated bundles from $bundles_dir"
+}
+
+run_purge() {
+    if [[ ! -e "$OUTPUT_DIR_ABS" ]]; then
+        log "no output directory to remove at $OUTPUT_DIR_ABS"
+        return 0
+    fi
+
+    [[ "$OUTPUT_DIR_ABS" != "/" ]] || die "refusing to delete root directory"
+    [[ "$OUTPUT_DIR_ABS" != "$ROOT" ]] || die "refusing to delete repository root"
+
+    confirm_context_delete "purge" "$OUTPUT_DIR_ABS"
+    rm -rf "$OUTPUT_DIR_ABS"
+    log "removed output directory $OUTPUT_DIR_ABS"
+}
+
+COMMAND="${1:-}"
+if [[ -z "$COMMAND" ]]; then
+    usage
+    exit 1
+fi
+if [[ "$COMMAND" == "--help" || "$COMMAND" == "-h" ]]; then
+    usage
+    exit 0
+fi
+shift || true
+
+ROOT_INPUT='.'
+if (($# > 0)) && [[ "${1:-}" != --* ]]; then
+    ROOT_INPUT="$1"
+    shift || true
+fi
+
+OUTPUT_DIR='.repomix-context'
+DEPTH=1
+TOP=25
+MIN_CODE=300
+MIN_FILES=2
+MIN_SCORE=0
+MIN_COMPLEXITY=0
+CHANGED_SINCE=''
+CHURN_COUNT=50
+STYLE='xml'
+STYLE_EXT='xml'
+SPLIT_SIZE=''
+COMPRESS=0
+INCLUDE_LOGS=0
+INCLUDE_LOGS_COUNT=20
+INCLUDE_DIFFS=0
+
+while (($# > 0)); do
+    case "$1" in
+    --output-dir)
+        OUTPUT_DIR="$2"
+        shift 2
+        ;;
+    --output-dir=*)
+        OUTPUT_DIR="${1#*=}"
+        shift
+        ;;
+    --depth)
+        DEPTH="$2"
+        shift 2
+        ;;
+    --depth=*)
+        DEPTH="${1#*=}"
+        shift
+        ;;
+    --top)
+        TOP="$2"
+        shift 2
+        ;;
+    --top=*)
+        TOP="${1#*=}"
+        shift
+        ;;
+    --min-code)
+        MIN_CODE="$2"
+        shift 2
+        ;;
+    --min-code=*)
+        MIN_CODE="${1#*=}"
+        shift
+        ;;
+    --min-files)
+        MIN_FILES="$2"
+        shift 2
+        ;;
+    --min-files=*)
+        MIN_FILES="${1#*=}"
+        shift
+        ;;
+    --min-score)
+        MIN_SCORE="$2"
+        shift 2
+        ;;
+    --min-score=*)
+        MIN_SCORE="${1#*=}"
+        shift
+        ;;
+    --min-complexity)
+        MIN_COMPLEXITY="$2"
+        shift 2
+        ;;
+    --min-complexity=*)
+        MIN_COMPLEXITY="${1#*=}"
+        shift
+        ;;
+    --changed-since)
+        CHANGED_SINCE="$2"
+        shift 2
+        ;;
+    --changed-since=*)
+        CHANGED_SINCE="${1#*=}"
+        shift
+        ;;
+    --churn-count)
+        CHURN_COUNT="$2"
+        shift 2
+        ;;
+    --churn-count=*)
+        CHURN_COUNT="${1#*=}"
+        shift
+        ;;
+    --style)
+        STYLE="$2"
+        shift 2
+        ;;
+    --style=*)
+        STYLE="${1#*=}"
+        shift
+        ;;
+    --split-size)
+        SPLIT_SIZE="$2"
+        shift 2
+        ;;
+    --split-size=*)
+        SPLIT_SIZE="${1#*=}"
+        shift
+        ;;
+    --compress)
+        COMPRESS=1
+        shift
+        ;;
+    --include-logs)
+        INCLUDE_LOGS=1
+        shift
+        ;;
+    --include-logs-count)
+        INCLUDE_LOGS_COUNT="$2"
+        shift 2
+        ;;
+    --include-logs-count=*)
+        INCLUDE_LOGS_COUNT="${1#*=}"
+        shift
+        ;;
+    --include-diffs)
+        INCLUDE_DIFFS=1
+        shift
+        ;;
+    --help | -h)
+        usage
+        exit 0
+        ;;
+    *)
+        die "unknown option '$1'"
+        ;;
+    esac
+done
+
+ROOT="$(abs_path "$ROOT_INPUT")"
+[[ -d "$ROOT" ]] || die "root directory '$ROOT' does not exist"
+
+require_clean_secret_scan "$ROOT"
+
+if [[ "$OUTPUT_DIR" = /* ]]; then
+    OUTPUT_DIR_ABS="$OUTPUT_DIR"
+    OUTPUT_DIR_REL="$(basename "$OUTPUT_DIR")"
+else
+    OUTPUT_DIR_REL="$OUTPUT_DIR"
+    OUTPUT_DIR_ABS="$ROOT/$OUTPUT_DIR"
+fi
+
+STYLE_EXT="$(ext_for_style "$STYLE")"
+
+RAW_METRICS="$OUTPUT_DIR_ABS/scc-openmetrics.txt"
+FILE_METRICS_RAW="$OUTPUT_DIR_ABS/file-metrics.raw.tsv"
+FILE_METRICS="$OUTPUT_DIR_ABS/file-metrics.tsv"
+FOLDER_METRICS="$OUTPUT_DIR_ABS/folder-metrics.tsv"
+BUNDLE_PLAN="$OUTPUT_DIR_ABS/bundle-plan.tsv"
+BUNDLE_PLAN_JSON="$OUTPUT_DIR_ABS/bundle-plan.json"
+
+case "$COMMAND" in
+stats)
+    run_stats
+    ;;
+plan)
+    run_stats
+    write_bundle_plan
+    ;;
+pack)
+    run_pack
+    ;;
+all)
+    run_stats
+    write_bundle_plan
+    run_pack
+    ;;
+clean)
+    run_clean
+    ;;
+purge)
+    run_purge
+    ;;
+*)
+    usage
+    die "unknown command '$COMMAND'"
+    ;;
+esac
+
+
+
+rg-code.sh
+
+#!/usr/bin/env bash
+# Production-grade code search wrapper with repo-aware defaults.
+
+set -euo pipefail
+# shellcheck source=scripts/ai/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+require_bins rg jq
+
+usage() {
+    cat <<'EOF'
+Usage:
+  rg-code.sh <pattern> [root] [options]
+
+Modes: default | all | tracked | php | js | blade | kotlin | config
+Output: --json | --files | --count
+Options: --context N | --type EXT[,EXT] | --mode MODE
+EOF
+}
+
+pattern="${1:?pattern required}"
+shift || true
+
+root="."
+if [[ $# -gt 0 ]] && [[ "${1:-}" != --* ]]; then
+    root="$1"
+    shift || true
+fi
+
+MODE="default"
+CONTEXT_LINES=0
+OUT_MODE="matches"
+EXTRA_TYPES=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    --mode)
+        MODE="$2"
+        shift 2
+        ;;
+    --mode=*)
+        MODE="${1#*=}"
+        shift
+        ;;
+    --context | -C)
+        CONTEXT_LINES="$2"
+        shift 2
+        ;;
+    --context=*)
+        CONTEXT_LINES="${1#*=}"
+        shift
+        ;;
+    --type)
+        IFS=',' read -ra EXTRA_TYPES <<<"$2"
+        shift 2
+        ;;
+    --type=*)
+        IFS=',' read -ra EXTRA_TYPES <<<"${1#*=}"
+        shift
+        ;;
+    --json)
+        OUT_MODE="json"
+        shift
+        ;;
+    --files)
+        OUT_MODE="files"
+        shift
+        ;;
+    --count)
+        OUT_MODE="count"
+        shift
+        ;;
+    --help | -h)
+        usage
+        exit 0
+        ;;
+    *) die "unknown option: $1" ;;
+    esac
+done
+
+BASE_EXCLUDES=(
+    -g '!vendor'
+    -g '!node_modules'
+    -g '!dist'
+    -g '!.git'
+    -g '!.repomix-context'
+    -g '!*.min.js'
+    -g '!*.min.css'
+    -g '!package-lock.json'
+    -g '!composer.lock'
+    -g '!*.snap'
+)
+
+mode_args=()
+case "$MODE" in
+default) mode_args=(--hidden) ;;
+all) mode_args=(-uuu) ;;
+tracked)
+    git -C "$root" grep -n "$pattern"
+    exit $?
+    ;;
+php) mode_args=(--hidden -g '*.php') ;;
+js) mode_args=(--hidden -g '*.{js,ts,jsx,tsx,mjs,cjs}') ;;
+blade) mode_args=(--hidden -g '*.blade.php') ;;
+kotlin) mode_args=(--hidden -g '*.{kt,kts}') ;;
+config) mode_args=(--hidden -g '*.{json,yaml,yml,toml,env,env.*}') ;;
+*) die "unknown mode: $MODE" ;;
+esac
+
+for ext in "${EXTRA_TYPES[@]+${EXTRA_TYPES[@]}}"; do
+    mode_args+=(-g "*.$ext")
+done
+
+if ((CONTEXT_LINES > 0)); then
+    mode_args+=(-C "$CONTEXT_LINES")
+fi
+
+case "$OUT_MODE" in
+json)
+    rg "${mode_args[@]}" "${BASE_EXCLUDES[@]}" \
+        --json -n "$pattern" "$root" |
+        jq -sc '[.[] | select(.type == "match") | {
+          file: .data.path.text,
+          line: .data.line_number,
+          col: .data.submatches[0].start,
+          text: .data.lines.text
+        }]'
+    ;;
+files)
+    rg "${mode_args[@]}" "${BASE_EXCLUDES[@]}" -l -n "$pattern" "$root"
+    ;;
+count)
+    rg "${mode_args[@]}" "${BASE_EXCLUDES[@]}" -c -n "$pattern" "$root"
+    ;;
+matches)
+    rg "${mode_args[@]}" "${BASE_EXCLUDES[@]}" -n "$pattern" "$root"
+    ;;
+esac
+
+
+
+run-repomix-context.sh
+
+#!/usr/bin/env bash
+# Generate repository context tree through the safer shared wrapper path.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ai/common.sh
+source "$SCRIPT_DIR/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  run-repomix-context.sh [root] [options passed to repomix-context-tree.sh]
+
+Defaults:
+  --compress
+  --style xml
+
+Examples:
+  scripts/ai/run-repomix-context.sh .
+  scripts/ai/run-repomix-context.sh . --depth 2 --top 20
+EOF
+}
+
+case "${1:-}" in
+--help|-h)
+    usage
+    exit 0
+    ;;
+esac
+
+ROOT="${1:-.}"
+shift || true
+
+agent_session_init "run-repomix-context"
+require_bins git jq rg scc repomix
+
+root_abs="$(cd "$ROOT" && pwd)"
+TREE_SCRIPT="$SCRIPT_DIR/repomix-context-tree.sh"
+
+[[ -f "$TREE_SCRIPT" ]] || die "missing tree script at $TREE_SCRIPT"
+
+section "Secrets scan"
+require_clean_secret_scan "$root_abs"
+
+section "Generate context tree"
+
+if ! bash "$TREE_SCRIPT" all "$root_abs" --compress --style xml "$@"; then
+    die "context tree generation failed"
+fi
+
+OUTPUT_DIR="$root_abs/.repomix-context/tree-context"
+INDEX_MD="$OUTPUT_DIR/index.md"
+PLAN_JSON="$OUTPUT_DIR/tree-plan.json"
+MANIFEST_JSON="$OUTPUT_DIR/tree-manifest.json"
+BUNDLES_DIR="$OUTPUT_DIR/bundles"
+
+[[ -f "$INDEX_MD" ]] || die "missing generated index: $INDEX_MD"
+[[ -f "$PLAN_JSON" ]] || die "missing generated plan: $PLAN_JSON"
+[[ -f "$MANIFEST_JSON" ]] || die "missing generated manifest: $MANIFEST_JSON"
+[[ -d "$BUNDLES_DIR" ]] || die "missing generated bundles directory: $BUNDLES_DIR"
+
+jq . "$PLAN_JSON" >/dev/null
+jq . "$MANIFEST_JSON" >/dev/null
+
+bundle_count="$(find "$BUNDLES_DIR" -type f 2>/dev/null | wc -l | tr -d ' ')"
+
+if [[ "$bundle_count" == "0" ]]; then
+    die "no context bundles generated in $BUNDLES_DIR"
+fi
+
+jq -n \
+    --arg root "$root_abs" \
+    --arg index "$INDEX_MD" \
+    --arg plan "$PLAN_JSON" \
+    --arg manifest "$MANIFEST_JSON" \
+    --arg bundles "$BUNDLES_DIR" \
+    --argjson bundle_count "$bundle_count" \
+    --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+    '{
+      root: $root,
+      index: $index,
+      plan: $plan,
+      manifest: $manifest,
+      bundles: $bundles,
+      bundle_count: $bundle_count,
+      ts: $ts
+    }' >"$OUTPUT_DIR/run-manifest.json"
+
+log_json "context.tree.run" "$(cat "$OUTPUT_DIR/run-manifest.json")"
+
+cat <<EOF
+Context package generated.
+
+Open first:
+  .repomix-context/tree-context/index.md
+
+Machine plan:
+  .repomix-context/tree-context/tree-plan.json
+
+Manifest:
+  .repomix-context/tree-context/tree-manifest.json
+
+Bundles:
+  .repomix-context/tree-context/bundles/
+EOF
+
+
+session-checkpoint.sh
+
+#!/usr/bin/env bash
+# Create a repository-local checkpoint using the shared snapshot system.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ai/common.sh
+source "$SCRIPT_DIR/common.sh"
+
+usage() {
+    cat <<'EOF'
+Usage:
+  session-checkpoint.sh [label]
+
+Creates a manifest-based snapshot in .ai-logs/snapshots/.
+
+Examples:
+  scripts/ai/session-checkpoint.sh
+  scripts/ai/session-checkpoint.sh before-refactor
+EOF
+}
+
+case "${1:-}" in
+--help|-h)
+    usage
+    exit 0
+    ;;
+esac
+
+label="${1:-checkpoint}"
+
+agent_session_init "session-checkpoint"
+require_bins jq git
+
+snapshot="$(snapshot_create "$label")"
+
+printf 'checkpoint created: %s\n' "$snapshot"
+
+log_json "checkpoint.create" "$(jq -cn --arg snapshot "$snapshot" --arg label "$label" '{snapshot:$snapshot, label:$label}')"
+
+
+
+watch-loop.sh
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+# shellcheck source=scripts/ai/common.sh
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+command_to_run="${1:?command required}"
+extensions="${2:-md,json,sh,lua,php,yml,yaml}"
+debounce_ms="${WATCH_DEBOUNCE_MS:-500}"
+
+mkdir -p "$COPILOT_LOG_DIR"
+watch_log="$COPILOT_LOG_DIR/watch-loop.jsonl"
+
+log_watch_event() {
+    local event="$1"
+    jq -cn --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg event "$event" --arg command "$command_to_run" --arg extensions "$extensions" --arg debounce "$debounce_ms" '{ts:$ts, event:$event, command:$command, extensions:$extensions, debounceMs:($debounce|tonumber)}' >>"$watch_log"
+}
+
+if command -v watchexec >/dev/null 2>&1; then
+    log_watch_event "watch.start.watchexec"
+    watchexec --debounce "$debounce_ms" -e "$extensions" -- bash -lc "$command_to_run"
+    exit 0
+fi
+
+if command -v entr >/dev/null 2>&1; then
+    log_watch_event "watch.start.entr"
+    rg --files \
+        -g '!vendor' \
+        -g '!node_modules' \
+        -g '!dist' \
+        -g '!.git' |
+        entr -r bash -lc "$command_to_run"
+    exit 0
+fi
+
+echo "No file watcher found. Install watchexec (preferred) or entr." >&2
+exit 1
 
 ```
 
@@ -4749,49 +11717,213 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 usage() {
     cat <<'EOF'
 Usage:
-  ai-search.sh MODE QUERY [root]
+  ai-search.sh MODE QUERY [root] [options]
+  ai-search.sh doctor
 
 Modes:
-  text
-  files
-  struct
-  tracked
-  all
+  text files struct tracked changed staged docs tests config schema secrets unsafe-all all doctor
 EOF
 }
 
 mode="${1:-}"
 query="${2:-}"
 root="${3:-.}"
+shift $(( $# > 0 ? 1 : 0 )) || true
+[[ "$mode" == "doctor" ]] || shift $(( $# > 0 ? 1 : 0 )) || true
+[[ "$mode" == "doctor" ]] || shift $(( $# > 0 ? 1 : 0 )) || true
+
+JSON_MODE="${AI_OUTPUT:-}" ; JSON_MODE="${JSON_MODE,,}"
+DRY_RUN=0; FIXED=0; CONTEXT=2; MAX=100; MAX_COLUMNS=300; MAX_FILESIZE="1M"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --json) JSON_MODE="json"; shift ;;
+    --dry-run) DRY_RUN=1; shift ;;
+    --fixed|-F) FIXED=1; shift ;;
+    --context|-C) CONTEXT="${2:-2}"; shift 2 ;;
+    --context=*|-C=*) CONTEXT="${1#*=}"; shift ;;
+    --max|-m) MAX="${2:-100}"; shift 2 ;;
+    --max=*|-m=*) MAX="${1#*=}"; shift ;;
+    -m[0-9]*) MAX="${1#-m}"; shift ;;
+    --max-columns) MAX_COLUMNS="${2:-300}"; shift 2 ;;
+    --max-columns=*) MAX_COLUMNS="${1#*=}"; shift ;;
+    --max-filesize) MAX_FILESIZE="${2:-1M}"; shift 2 ;;
+    --max-filesize=*) MAX_FILESIZE="${1#*=}"; shift ;;
+    *) die "unknown option: $1" ;;
+  esac
+done
+
+emit() {
+  local status="$1" tool="$2" matches_json="${3:-[]}" warnings_json="${4:-[]}" errors_json="${5:-[]}"
+  local matches_file
+  matches_file="$(mktemp)"
+  printf '%s' "$matches_json" >"$matches_file"
+  jq -nc \
+    --arg status "$status" \
+    --arg tool "$tool" \
+    --arg mode "$mode" \
+    --arg query "$query" \
+    --arg root "$root" \
+    --argjson warnings "$warnings_json" \
+    --argjson errors "$errors_json" \
+    --argjson dry "$DRY_RUN" \
+    --argjson max "$MAX" \
+    --argjson context "$CONTEXT" \
+    --argjson max_columns "$MAX_COLUMNS" \
+    --arg max_filesize "$MAX_FILESIZE" \
+    --slurpfile matches "$matches_file" '
+{schema:"1",status:$status,tool:$tool,mode:$mode,query:$query,root:$root,matches:($matches[0] // []),limits:{max:$max,context:$context,max_columns:$max_columns,max_filesize:$max_filesize,unlimited:false},warnings:$warnings,errors:$errors,meta:{elapsed_ms:0,truncated:false,dry_run:($dry=="1")}}'
+  rm -f "$matches_file"
+}
+
+match_json_filter='[.[]|select(.type=="match")|{file:.data.path.text,line:.data.line_number,text:.data.lines.text}]'
+
+rg_matches() {
+  local rc stdout_file stderr_file stderr_output
+  stdout_file="$(mktemp)"
+  stderr_file="$(mktemp)"
+
+  set +e
+  rg "$@" >"$stdout_file" 2>"$stderr_file"
+  rc=$?
+  set -e
+
+  stderr_output="$(<"$stderr_file")"
+  if [[ -n "$stderr_output" ]]; then
+    printf '%s\n' "$stderr_output" >&2
+  fi
+
+  if [[ "$rc" -eq 1 ]]; then
+    rm -f "$stdout_file" "$stderr_file"
+    printf '[]'
+    return 0
+  fi
+
+  if [[ "$rc" -ne 0 ]]; then
+    rm -f "$stdout_file" "$stderr_file"
+    return "$rc"
+  fi
+
+  jq -sc "$match_json_filter" <"$stdout_file"
+  rc=$?
+  rm -f "$stdout_file" "$stderr_file"
+  return "$rc"
+}
+
+git_grep_matches() {
+  local output rc
+  local git_flags=(-n -m "$MAX")
+  [[ "$FIXED" == "1" ]] && git_flags+=(-F)
+
+  set +e
+  output="$(git -C "$root" grep "${git_flags[@]}" -- "$query" 2>&1)"
+  rc=$?
+  set -e
+
+  if [[ "$rc" -eq 1 ]]; then
+    printf '[]'
+    return 0
+  fi
+
+  if [[ "$rc" -ne 0 ]]; then
+    printf '%s\n' "$output" >&2
+    return "$rc"
+  fi
+
+  printf '%s' "$output" | jq -R 'split(":")|{file:.[0],line:(.[1]|tonumber),text:(.[2:]|join(":"))}' | jq -sc '.'
+}
+
+diff_file_matches() {
+  local diff_flag="${1:-}"
+  local -a diff_args=()
+  local -a files=()
+  [[ -n "$diff_flag" ]] && diff_args+=("$diff_flag")
+  mapfile -d '' files < <(git -C "$root" diff "${diff_args[@]}" --name-only -z)
+
+  if [[ "${#files[@]}" -eq 0 ]]; then
+    printf '[]'
+    return 0
+  fi
+
+  (cd "$root" && rg_matches "${rg_flags[@]}" --json "$query" "${files[@]}")
+}
+
+struct_matches() {
+  require_bins ast-grep
+  local output rc lang
+  lang="${AI_LANG:-php}"
+
+  set +e
+  output="$(ast-grep run --lang "$lang" --pattern "$query" "$root" 2>&1)"
+  rc=$?
+  set -e
+
+  if [[ "$rc" -eq 1 ]]; then
+    printf '[]'
+    return 0
+  fi
+
+  if [[ "$rc" -ne 0 ]]; then
+    printf '%s\n' "$output" >&2
+    return "$rc"
+  fi
+
+  printf '%s' "$output" | jq -R -s 'split("\n") | map(select(length > 0) | {file:"",line:0,text:.})'
+}
+
+if [[ "$mode" == "doctor" ]]; then
+  require_bins rg git jq fd ast-grep
+  [[ "$JSON_MODE" == "json" ]] && emit ok facade "[]" || echo "ok: ai-search doctor passed"
+  exit 0
+fi
 
 [[ -n "$mode" && -n "$query" ]] || {
     usage
     exit 2
 }
 
+if [[ "$mode" == "unsafe-all" || "$mode" == "secrets" ]]; then
+  if [[ "${AI_ALLOW_UNSAFE:-0}" != "1" ]]; then
+    [[ "$JSON_MODE" == "json" ]] && emit unsafe_blocked facade "[]" || echo "unsafe_blocked: approval required"
+    exit 0
+  fi
+fi
+
+if [[ "$DRY_RUN" == "1" ]]; then
+  [[ "$JSON_MODE" == "json" ]] && emit dry_run facade "[]" || echo "dry_run"
+  exit 0
+fi
+
+rg_flags=(-n -m "$MAX" -C "$CONTEXT" --max-columns "$MAX_COLUMNS" --max-filesize "$MAX_FILESIZE")
+[[ "$FIXED" == "1" ]] && rg_flags+=(-F)
+matches='[]'
+errors='[]'
+status_override=''
+
 case "$mode" in
-text)
-    "$(dirname "${BASH_SOURCE[0]}")/rg-code.sh" "$query" "$root"
-    ;;
-files)
-    "$(dirname "${BASH_SOURCE[0]}")/fd-files.sh" "$query" "$root"
-    ;;
-struct)
-    require_bins ast-grep
-    lang="${AI_LANG:-php}"
-    ast-grep run --lang "$lang" --pattern "$query" "$root"
-    ;;
-tracked)
-    "$(dirname "${BASH_SOURCE[0]}")/rg-code.sh" "$query" "$root" --mode tracked
-    ;;
-all)
-    "$(dirname "${BASH_SOURCE[0]}")/rg-code.sh" "$query" "$root" --mode all
-    ;;
-*)
-    usage
-    die "unknown mode: $mode"
-    ;;
+  text|all|unsafe-all|secrets) matches="$(rg_matches "${rg_flags[@]}" --json "$query" "$root")" || status_override="error" ;;
+  docs) matches="$(rg_matches "${rg_flags[@]}" --json -g '*.md' "$query" "$root")" || status_override="error" ;;
+  tests) matches="$(rg_matches "${rg_flags[@]}" --json -g 'tests/**' "$query" "$root")" || status_override="error" ;;
+  config|schema) matches="$(rg_matches "${rg_flags[@]}" --json -g '*.{json,yml,yaml,toml,xml,dist,lock}' "$query" "$root")" || status_override="error" ;;
+  files) require_bins fd; matches="$(fd "$query" "$root" | jq -R . | jq -sc '[.[]|{file:.,line:0,text:""}]')" || status_override="error" ;;
+  tracked) matches="$(git_grep_matches)" || status_override="error" ;;
+  changed) matches="$(diff_file_matches)" || status_override="error" ;;
+  staged) matches="$(diff_file_matches --cached)" || status_override="error" ;;
+  struct) matches="$(struct_matches)" || status_override="error" ;;
+  *) usage; die "unknown mode: $mode" ;;
 esac
+
+if [[ "$status_override" == "error" ]]; then
+  errors="$(jq -nc --arg mode "$mode" '[{message:("search failed for mode: " + $mode)}]')"
+  matches='[]'
+fi
+
+if [[ "$JSON_MODE" == "json" ]]; then
+  status="${status_override:-ok}"; [[ -z "$status_override" && "$(jq 'length' <<<"$matches")" == "0" ]] && status="no_matches"
+  emit "$status" facade "$matches" "[]" "$errors"
+else
+  [[ "$status_override" == "error" ]] && exit 1
+  jq -r '.[] | "\(.file):\(.line):\(.text)"' <<<"$matches"
+fi
 
 ```
 
@@ -5591,13 +12723,197 @@ echo '==> done'
 log_json "verify.passed" "$(jq -cn '{status:"passed"}')" || true
 ```
 
+## FILE: scripts/ai/all_into_one.bat
+
+```text
+@echo off
+setlocal EnableExtensions EnableDelayedExpansion
+
+set "OUT=ALL_IN_ONE.txt"
+set "TYPES=*"
+set "DEPTH=1"
+set "ROOT=%CD%"
+set "FIRST=1"
+set "COUNT=0"
+
+rem Usage:
+rem   scan.bat
+rem   scan.bat --types md,txt,php --depth 2
+rem   scan.bat --types * --depth 0 --out ALL_IN_ONE.txt
+rem
+rem Depth:
+rem   --depth 1 = current directory only
+rem   --depth 2 = current directory + one nested level
+rem   --depth 0 = unlimited recursive depth
+
+:parse
+if "%~1"=="" goto after_parse
+
+set "ARG=%~1"
+
+if /I "!ARG!"=="--help" goto usage
+
+if /I "!ARG!"=="--out" (
+  if "%~2"=="" goto usage
+  set "OUT=%~2"
+  shift
+  shift
+  goto parse
+)
+
+if /I "!ARG:~0,6!"=="--out=" (
+  set "OUT=!ARG:~6!"
+  shift
+  goto parse
+)
+
+if /I "!ARG!"=="--types" (
+  if "%~2"=="" goto usage
+  set "TYPES=%~2"
+  shift
+  shift
+  goto parse
+)
+
+if /I "!ARG:~0,8!"=="--types=" (
+  set "TYPES=!ARG:~8!"
+  shift
+  goto parse
+)
+
+if /I "!ARG!"=="--depth" (
+  if "%~2"=="" goto usage
+  set "DEPTH=%~2"
+  shift
+  shift
+  goto parse
+)
+
+if /I "!ARG:~0,8!"=="--depth=" (
+  set "DEPTH=!ARG:~8!"
+  shift
+  goto parse
+)
+
+echo Unknown argument: %~1
+exit /b 1
+
+:after_parse
+echo(%DEPTH%| findstr /R "^[0-9][0-9]*$" >nul
+if errorlevel 1 (
+  echo Invalid --depth value: "%DEPTH%".
+  exit /b 1
+)
+
+for %%O in ("%OUT%") do set "OUT_ABS=%%~fO"
+set "SCRIPT_ABS=%~f0"
+
+if exist "%OUT_ABS%" del "%OUT_ABS%"
+
+set "TYPE_LIST=%TYPES:,= %"
+set "TYPE_LIST=%TYPE_LIST:;= %"
+
+call :scan_dir "%ROOT%" 1
+
+if !COUNT! EQU 0 (
+  echo No matching files found in "%ROOT%".
+  exit /b 1
+)
+
+echo Built "%OUT_ABS%" from !COUNT! file(s).
+exit /b 0
+
+:scan_dir
+set "DIR=%~1"
+set "LEVEL=%~2"
+
+for %%F in ("%DIR%\*") do (
+  if not exist "%%~fF\" (
+    call :maybe_append "%%~fF"
+  )
+)
+
+set /a NEXT_LEVEL=LEVEL + 1
+
+if "%DEPTH%"=="0" (
+  for /D %%D in ("%DIR%\*") do (
+    call :scan_dir "%%~fD" !NEXT_LEVEL!
+  )
+) else (
+  if %LEVEL% LSS %DEPTH% (
+    for /D %%D in ("%DIR%\*") do (
+      call :scan_dir "%%~fD" !NEXT_LEVEL!
+    )
+  )
+)
+
+exit /b 0
+
+:maybe_append
+set "FILE=%~1"
+
+if /I "%FILE%"=="%SCRIPT_ABS%" exit /b 0
+if /I "%FILE%"=="%OUT_ABS%" exit /b 0
+
+set "MATCH=0"
+
+if "%TYPES%"=="*" (
+  set "MATCH=1"
+) else (
+  set "EXT=%~x1"
+  set "EXT=!EXT:~1!"
+
+  for %%T in (%TYPE_LIST%) do (
+    set "T=%%~T"
+    set "T=!T:*.=!"
+    if "!T:~0,1!"=="." set "T=!T:~1!"
+
+    if /I "!T!"=="!EXT!" set "MATCH=1"
+  )
+)
+
+if "!MATCH!" NEQ "1" exit /b 0
+
+set "REL=%FILE%"
+set "REL=!REL:%ROOT%\=!"
+
+if !FIRST! EQU 0 (
+  for /L %%S in (1,1,3) do >> "%OUT_ABS%" echo(
+)
+
+>> "%OUT_ABS%" echo !REL!
+>> "%OUT_ABS%" echo(
+type "%FILE%" >> "%OUT_ABS%"
+
+set "FIRST=0"
+set /a COUNT+=1
+
+exit /b 0
+
+:usage
+echo Usage:
+echo   %~nx0
+echo   %~nx0 --types md,txt,php --depth 2
+echo   %~nx0 --types * --depth 0 --out ALL_IN_ONE.txt
+echo.
+echo Options:
+echo   --types   File extensions to include. Example: md,txt,php,js
+echo             Use * for all file types.
+echo   --depth   1 = current directory only, 2 = one nested level, 0 = unlimited.
+echo   --out     Output file path.
+exit /b 1
+```
+
 ## FILE: scripts/ai/common.sh
 
 ```text
 #!/usr/bin/env bash
 # Shared library for repository AI tooling scripts.
+# common.sh v2: default-deny execution gate, bounded output, audit logging, rollback safety.
 
 set -euo pipefail
+
+AI_TOOL_NAME="${AI_TOOL_NAME:-$(basename "${0:-ai-tool}")}"
 
 COPILOT_LOG_DIR="${COPILOT_LOG_DIR:-${AI_LOG_DIR:-.ai-logs}}"
 COPILOT_CONTEXT_DIR="${COPILOT_CONTEXT_DIR:-.repomix-context}"
@@ -5605,7 +12921,17 @@ COPILOT_SESSION_DIR="${COPILOT_SESSION_DIR:-${COPILOT_LOG_DIR}/sessions}"
 COPILOT_SNAPSHOT_DIR="${COPILOT_SNAPSHOT_DIR:-${COPILOT_LOG_DIR}/snapshots}"
 COPILOT_EVENT_LOG="${COPILOT_EVENT_LOG:-${COPILOT_LOG_DIR}/tool-usage.jsonl}"
 
-if [[ -z "${NO_COLOR:-}" ]] && [[ -t 2 ]]; then
+AI_CMD_TIMEOUT="${AI_CMD_TIMEOUT:-120}"
+AI_OUTPUT_MAX_BYTES="${AI_OUTPUT_MAX_BYTES:-200000}"
+AI_TOKEN_BUDGET="${AI_TOKEN_BUDGET:-128000}"
+AI_LOCK_TIMEOUT_SECONDS="${AI_LOCK_TIMEOUT_SECONDS:-10}"
+AI_LOG_MAX_BYTES="${AI_LOG_MAX_BYTES:-10485760}"
+AI_FAIL_ON_MISSING_SECRET_SCANNER="${AI_FAIL_ON_MISSING_SECRET_SCANNER:-0}"
+AI_REQUIRE_SCOPE_FOR_WRITE="${AI_REQUIRE_SCOPE_FOR_WRITE:-1}"
+AI_REDACT_STDOUT="${AI_REDACT_STDOUT:-0}"
+AI_SESSION_AUTO_TRAP="${AI_SESSION_AUTO_TRAP:-1}"
+
+if [[ -z "${NO_COLOR:-}" && -t 2 ]]; then
     _C_RESET=$'\033[0m'
     _C_RED=$'\033[0;31m'
     _C_YELLOW=$'\033[0;33m'
@@ -5621,139 +12947,247 @@ else
     _C_BOLD=''
 fi
 
-agent_session_init() {
-    local name="${1:-$(basename "$0" .sh)}"
-    SESSION_ID="${SESSION_ID:-${name}-$(date +%Y%m%d-%H%M%S)-$$}"
-    TRACE_ID="${TRACE_ID:-trc-${SESSION_ID}}"
-    TASK_ID="${TASK_ID:-tsk-${SESSION_ID}}"
-    SESSION_DIR="${COPILOT_SESSION_DIR}/${SESSION_ID}"
-    SESSION_LOG="${SESSION_DIR}/session.jsonl"
-    mkdir -p "$SESSION_DIR" "$COPILOT_LOG_DIR" "$COPILOT_SNAPSHOT_DIR"
-    log_json "session.start" '{}' || true
+log_info() { printf '%b[INFO]%b  %s\n' "$_C_CYAN" "$_C_RESET" "$*" >&2; }
+log_ok() { printf '%b[OK]%b    %s\n' "$_C_GREEN" "$_C_RESET" "$*" >&2; }
+log_warn() { printf '%b[WARN]%b  %s\n' "$_C_YELLOW" "$_C_RESET" "$*" >&2; }
+log_error() { printf '%b[ERROR]%b %s\n' "$_C_RED" "$_C_RESET" "$*" >&2; }
+section() { printf '\n%b==> %s%b\n' "$_C_BOLD" "$*" "$_C_RESET" >&2; }
+
+command_exists() { command -v "$1" >/dev/null 2>&1; }
+hard_die() { log_error "$*"; exit 1; }
+
+require_bins() {
+    local missing=()
+    local bin
+
+    for bin in "$@"; do
+        command_exists "$bin" || missing+=("$bin")
+    done
+
+    ((${#missing[@]} == 0)) || hard_die "required tools not found: ${missing[*]}"
+}
+
+require_bash_version() {
+    local required="${1:-4}"
+    local major="${BASH_VERSINFO[0]:-0}"
+
+    ((major >= required)) || hard_die "Bash ${required}+ required; current version is ${BASH_VERSION:-unknown}"
+}
+
+common_require_core() {
+    require_bash_version 4
+    require_bins jq git
+}
+
+json_available() { command_exists jq; }
+
+find_timeout_bin() {
+    if command_exists gtimeout; then
+        printf '%s\n' gtimeout
+    elif command_exists timeout; then
+        printf '%s\n' timeout
+    else
+        return 1
+    fi
+}
+
+find_fd_bin() {
+    if command_exists fd; then
+        printf '%s\n' fd
+    elif command_exists fdfind; then
+        printf '%s\n' fdfind
+    else
+        return 1
+    fi
+}
+
+now_ms() {
+    local value
+
+    value="$(date +%s%3N 2>/dev/null || true)"
+
+    if [[ "$value" =~ ^[0-9]+$ ]]; then
+        printf '%s\n' "$value"
+        return 0
+    fi
+
+    if command_exists python3; then
+        python3 - <<'PY' 2>/dev/null && return 0
+import time
+print(int(time.time() * 1000))
+PY
+    fi
+
+    printf '%s000\n' "$(date +%s)"
+}
+
+redact_sensitive_text() {
+    sed -E \
+        -e 's/((token|password|passwd|secret|api[_-]?key|authorization|bearer)[[:space:]]*[:=][[:space:]]*)[^"[:space:]]+/\1REDACTED/Ig' \
+        -e 's/(Authorization:[[:space:]]*Bearer[[:space:]]+)[A-Za-z0-9._~+\/=-]+/\1REDACTED/Ig' \
+        -e 's/(-----BEGIN [A-Z ]+ PRIVATE KEY-----)[^-]*(-----END [A-Z ]+ PRIVATE KEY-----)/\1 REDACTED \2/g' \
+        -e 's/[A-Za-z0-9_\/+=-]{48,}/REDACTED_LONG_SECRET/g'
+}
+
+redact_json_payload() {
+    jq '
+      def redact:
+        if type == "object" then
+          with_entries(
+            if (.key | test("token|password|passwd|secret|api[_-]?key|authorization|bearer|private[_-]?key"; "i"))
+            then .value = "REDACTED"
+            else .value |= redact
+            end
+          )
+        elif type == "array" then map(redact)
+        elif type == "string" then
+          if test("[A-Za-z0-9_\\/+=-]{48,}") then "REDACTED_LONG_SECRET" else . end
+        else . end;
+      redact
+    '
+}
+
+json_compact_or_raw() {
+    local payload="${1:-{}}"
+
+    if jq -e . >/dev/null 2>&1 <<<"$payload"; then
+        jq -c . <<<"$payload" | redact_json_payload | jq -c .
+    else
+        jq -cn --arg raw "$(printf '%s' "$payload" | redact_sensitive_text)" '{raw:$raw}'
+    fi
+}
+
+emit_envelope() {
+    local status="${1:?status required}"
+    local tool="${2:?tool required}"
+    local data="${3:-{}}"
+    local warnings="${4:-[]}"
+    local errors="${5:-[]}"
+    local elapsed_ms="${6:-0}"
+    local truncated="${7:-false}"
+
+    common_require_core
+
+    jq -cn \
+        --arg schema "1" \
+        --arg status "$status" \
+        --arg tool "$tool" \
+        --argjson data "$(json_compact_or_raw "$data")" \
+        --argjson warnings "$warnings" \
+        --argjson errors "$errors" \
+        --argjson elapsed_ms "$elapsed_ms" \
+        --argjson truncated "$truncated" \
+        '{
+            schema: $schema,
+            status: $status,
+            tool: $tool,
+            data: $data,
+            warnings: $warnings,
+            errors: $errors,
+            meta: {
+                elapsed_ms: $elapsed_ms,
+                truncated: $truncated
+            }
+        }'
+}
+
+emit_blocked_envelope() {
+    local message="${1:?message required}"
+
+    common_require_core
+
+    jq -cn \
+        --arg message "$message" \
+        '{
+            schema: "1",
+            status: "unsafe_blocked",
+            tool: "facade",
+            data: {},
+            warnings: [],
+            errors: [$message],
+            meta: {
+                elapsed_ms: 0,
+                truncated: false
+            }
+        }'
+}
+
+rotate_log_if_needed_locked() {
+    local file="${1:?file required}"
+    local max_bytes="${AI_LOG_MAX_BYTES:-10485760}"
+    local size
+
+    [[ -f "$file" ]] || return 0
+
+    size="$(wc -c <"$file" | tr -d ' ')"
+
+    if ((size > max_bytes)); then
+        mv "$file" "${file}.$(date +%Y%m%d-%H%M%S).bak"
+    fi
+}
+
+_append_locked_flock() {
+    local file="${1:?file required}"
+    local entry="${2:?entry required}"
+    local lock_file="${file}.lock"
+
+    mkdir -p "$(dirname "$file")"
+
+    (
+        flock -x 9
+        rotate_log_if_needed_locked "$file"
+        printf '%s\n' "$entry" >>"$file"
+    ) 9>"$lock_file"
+}
+
+_append_locked_mkdir() {
+    local file="${1:?file required}"
+    local entry="${2:?entry required}"
+    local lock_dir="${file}.lockdir"
+    local start
+    local now
+
+    mkdir -p "$(dirname "$file")"
+
+    start="$(date +%s)"
+
+    while ! mkdir "$lock_dir" 2>/dev/null; do
+        now="$(date +%s)"
+
+        if ((now - start >= AI_LOCK_TIMEOUT_SECONDS)); then
+            log_warn "could not acquire log lock for $file; writing without lock"
+            rotate_log_if_needed_locked "$file"
+            printf '%s\n' "$entry" >>"$file"
+            return 0
+        fi
+
+        sleep 0.1
+    done
+
+    rotate_log_if_needed_locked "$file"
+    printf '%s\n' "$entry" >>"$file"
+    rmdir "$lock_dir" 2>/dev/null || rm -rf "$lock_dir"
+}
+
+append_jsonl_safe() {
+    local file="${1:?file required}"
+    local entry="${2:?entry required}"
+
+    if command_exists flock; then
+        _append_locked_flock "$file" "$entry"
+    else
+        _append_locked_mkdir "$file" "$entry"
+    fi
 }
 
 append_log_entry() {
     local entry="${1:?entry required}"
 
     mkdir -p "$COPILOT_LOG_DIR"
-    printf '%s\n' "$entry" >>"$COPILOT_EVENT_LOG"
+    append_jsonl_safe "$COPILOT_EVENT_LOG" "$entry"
 
     if [[ -n "${SESSION_LOG:-}" ]]; then
-        printf '%s\n' "$entry" >>"$SESSION_LOG"
-    fi
-}
-
-log_json() {
-    local event="${1:-event}"
-    local payload="${2:-{}}"
-    local payload_json
-    local entry
-
-    if ! payload_json="$(jq -c . <<<"$payload" 2>/dev/null)"; then
-        payload_json="$(jq -cn --arg raw "$payload" '{raw:$raw}')"
-    fi
-
-        entry="$(jq -cn \
-                --arg event_version "1.1" \
-                --arg event_type "$event" \
-                --arg trace_id "${TRACE_ID:-unknown}" \
-                --arg session_id "${SESSION_ID:-unknown}" \
-                --arg task_id "${TASK_ID:-unknown}" \
-                --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-                --arg actor_id "${ACTOR_ID:-$(basename "${BASH_SOURCE[1]:-unknown}" .sh)}" \
-                --arg delegated_by "${DELEGATED_BY:-}" \
-                --arg tool_name "$(basename "${BASH_SOURCE[1]:-unknown}")" \
-                --arg repo_root "$(git_root 2>/dev/null || pwd)" \
-                --arg git_branch "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || printf 'unknown')" \
-                --arg git_commit "$(git rev-parse HEAD 2>/dev/null || printf 'unknown')" \
-                --argjson data "$payload_json" \
-                '{
-                    event_version: $event_version,
-                    event_type: $event_type,
-                    trace_id: $trace_id,
-                    session_id: $session_id,
-                    task_id: $task_id,
-                    timestamp: $timestamp,
-                    actor: {
-                        type: "agent",
-                        id: $actor_id,
-                        delegated_by: (if $delegated_by == "" then null else $delegated_by end)
-                    },
-                    tool: {
-                        name: $tool_name,
-                        category: null,
-                        args_hash: null,
-                        mutates_state: false
-                    },
-                    authorization: {
-                        policy_version: null,
-                        decision: "unknown",
-                        approval_required: null,
-                        approved_by: null,
-                        reason: null
-                    },
-                    execution: {
-                        status: "unknown",
-                        latency_ms: null,
-                        retry_count: 0,
-                        exit_code: null,
-                        output_truncated: null
-                    },
-                    cost: {
-                        model: null,
-                        input_tokens: null,
-                        output_tokens: null,
-                        estimated_cost_usd: null
-                    },
-                    failure: {
-                        category: null,
-                        message: null,
-                        resolution: null
-                    },
-                    repository: {
-                        root: $repo_root,
-                        git_branch: (if $git_branch == "" or $git_branch == "unknown" then null else $git_branch end),
-                        git_commit: (if $git_commit == "" or $git_commit == "unknown" then null else $git_commit end)
-                    },
-                    output: {
-                        preview: null
-                    },
-                    details: (if ($data | type) == "object" then $data else {raw: $data} end)
-                }')"
-
-        append_log_entry "$entry"
-}
-
-log_info() { printf '%b[INFO]%b  %s\n' "$_C_CYAN" "$_C_RESET" "$*" >&2; }
-log_ok() { printf '%b[OK]%b    %s\n' "$_C_GREEN" "$_C_RESET" "$*" >&2; }
-log_warn() { printf '%b[WARN]%b  %s\n' "$_C_YELLOW" "$_C_RESET" "$*" >&2; }
-log_error() { printf '%b[ERROR]%b %s\n' "$_C_RED" "$_C_RESET" "$*" >&2; }
-
-die() {
-    log_error "$*"
-    log_json "error" "$(jq -cn --arg msg "$*" '{msg:$msg}')" || true
-    exit 1
-}
-
-section() {
-    printf '\n%b==> %s%b\n' "$_C_BOLD" "$*" "$_C_RESET" >&2
-}
-
-require_bins() {
-    local missing=()
-    local bin
-    for bin in "$@"; do
-        command -v "$bin" >/dev/null 2>&1 || missing+=("$bin")
-    done
-    if ((${#missing[@]} > 0)); then
-        die "required tools not found: ${missing[*]}"
-    fi
-}
-
-require_clean_tree() {
-    git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
-    if ! git diff --quiet || ! git diff --cached --quiet; then
-        die "working tree is not clean; commit or stash changes first"
+        append_jsonl_safe "$SESSION_LOG" "$entry"
     fi
 }
 
@@ -5761,49 +13195,490 @@ git_root() {
     git rev-parse --show-toplevel 2>/dev/null || pwd
 }
 
-run_with_timeout() {
-    local seconds="${1:?seconds required}"
-    shift
-    local timeout_bin=""
-    if command -v gtimeout >/dev/null 2>&1; then
-        timeout_bin="gtimeout"
-    elif command -v timeout >/dev/null 2>&1; then
-        timeout_bin="timeout"
-    fi
-
-    if [[ -n "$timeout_bin" ]]; then
-        "$timeout_bin" "$seconds" "$@"
-    else
-        "$@"
-    fi
+repo_root() {
+    git_root
 }
 
-require_clean_secret_scan() {
-    local target="${1:-.}"
+log_json() {
+    local event="${1:-event}"
+    local payload="${2:-{}}"
+    local caller="${3:-${AI_TOOL_NAME:-unknown}}"
+    local payload_json
+    local entry
+    local repo_root_value
+    local git_branch_value
+    local git_commit_value
 
-    if [[ "${SECRETS_SCAN:-1}" != "1" ]]; then
-        log_warn "SECRETS_SCAN disabled"
+    json_available || return 127
+
+    mkdir -p "$COPILOT_LOG_DIR"
+
+    payload_json="$(json_compact_or_raw "$payload")"
+    repo_root_value="$(git_root 2>/dev/null || pwd)"
+    git_branch_value="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || printf 'unknown')"
+    git_commit_value="$(git rev-parse HEAD 2>/dev/null || printf 'unknown')"
+
+    entry="$(jq -cn \
+        --arg event_version "2.0" \
+        --arg event_type "$event" \
+        --arg trace_id "${TRACE_ID:-unknown}" \
+        --arg session_id "${SESSION_ID:-unknown}" \
+        --arg task_id "${TASK_ID:-unknown}" \
+        --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        --arg actor_id "${ACTOR_ID:-$caller}" \
+        --arg delegated_by "${DELEGATED_BY:-}" \
+        --arg tool_name "$caller" \
+        --arg repo_root "$repo_root_value" \
+        --arg git_branch "$git_branch_value" \
+        --arg git_commit "$git_commit_value" \
+        --argjson data "$payload_json" \
+        '{
+            event_version: $event_version,
+            event_type: $event_type,
+            trace_id: $trace_id,
+            session_id: $session_id,
+            task_id: $task_id,
+            timestamp: $timestamp,
+            actor: {
+                type: "agent",
+                id: $actor_id,
+                delegated_by: (if $delegated_by == "" then null else $delegated_by end)
+            },
+            tool: {
+                name: $tool_name,
+                category: null,
+                args_hash: null,
+                mutates_state: false
+            },
+            authorization: {
+                policy_version: null,
+                decision: "unknown",
+                approval_required: null,
+                approved_by: null,
+                reason: null
+            },
+            execution: {
+                status: "unknown",
+                latency_ms: null,
+                retry_count: 0,
+                exit_code: null,
+                output_truncated: null
+            },
+            failure: {
+                category: null,
+                message: null,
+                resolution: null
+            },
+            repository: {
+                root: $repo_root,
+                git_branch: (if $git_branch == "" or $git_branch == "unknown" then null else $git_branch end),
+                git_commit: (if $git_commit == "" or $git_commit == "unknown" then null else $git_commit end)
+            },
+            output: {
+                preview: null
+            },
+            details: (if ($data | type) == "object" then $data else {raw: $data} end)
+        }')"
+
+    append_log_entry "$entry"
+}
+
+die() {
+    local msg="$*"
+
+    log_error "$msg"
+    log_json "error" "$(jq -cn --arg msg "$msg" '{msg:$msg}')" "$AI_TOOL_NAME" || true
+    exit 1
+}
+
+agent_session_finish() {
+    local exit_code="$?"
+
+    if [[ "${AI_SESSION_FINISHED:-0}" != "1" ]]; then
+        AI_SESSION_FINISHED=1
+        log_json "session.end" "$(jq -cn --argjson exit_code "$exit_code" '{exit_code:$exit_code}')" "$AI_TOOL_NAME" || true
+    fi
+
+    return "$exit_code"
+}
+
+install_session_exit_trap() {
+    [[ "${AI_SESSION_TRAP_INSTALLED:-0}" == "1" ]] && return 0
+
+    local existing
+    existing="$(trap -p EXIT || true)"
+
+    if [[ -n "$existing" && "${AI_FORCE_SESSION_TRAP:-0}" != "1" ]]; then
+        log_warn "existing EXIT trap detected; not installing session.end trap"
         return 0
     fi
 
-    if ! secrets_scan "$target"; then
-        die "secrets detected; refusing to continue"
+    trap agent_session_finish EXIT
+    AI_SESSION_TRAP_INSTALLED=1
+}
+
+agent_session_init() {
+    local name="${1:-${AI_TOOL_NAME:-$(basename "$0" .sh)}}"
+
+    common_require_core
+
+    [[ "${AI_SESSION_INITIALIZED:-0}" == "1" ]] && return 0
+
+    SESSION_ID="${SESSION_ID:-${name}-$(date +%Y%m%d-%H%M%S)-$$}"
+    TRACE_ID="${TRACE_ID:-trc-${SESSION_ID}}"
+    TASK_ID="${TASK_ID:-tsk-${SESSION_ID}}"
+    SESSION_DIR="${COPILOT_SESSION_DIR}/${SESSION_ID}"
+    SESSION_LOG="${SESSION_DIR}/session.jsonl"
+
+    mkdir -p "$SESSION_DIR" "$COPILOT_LOG_DIR" "$COPILOT_SNAPSHOT_DIR"
+
+    AI_SESSION_INITIALIZED=1
+    export SESSION_ID TRACE_ID TASK_ID SESSION_DIR SESSION_LOG AI_SESSION_INITIALIZED
+
+    log_json "session.start" '{}' "$name" || true
+
+    [[ "$AI_SESSION_AUTO_TRAP" == "1" ]] && install_session_exit_trap
+}
+
+require_approval() {
+    local action="${1:?action required}"
+    local env_name="${2:-AI_APPROVE_DESTRUCTIVE}"
+
+    if [[ "${!env_name:-0}" != "1" ]]; then
+        log_json "policy.blocked" "$(jq -cn --arg action "$action" --arg env "$env_name" '{action:$action,required_env:$env}')" "$AI_TOOL_NAME" || true
+
+        if [[ "${AI_OUTPUT:-}" == "json" ]]; then
+            emit_blocked_envelope "$action requires explicit approval: set ${env_name}=1"
+        else
+            log_error "$action requires explicit approval: set ${env_name}=1"
+        fi
+
+        exit 2
     fi
+}
+
+require_scope_for_write() {
+    if [[ "$AI_REQUIRE_SCOPE_FOR_WRITE" == "1" && -z "${AI_TASK_SCOPE:-}" && "${AI_ALLOW_WRITE_WITHOUT_SCOPE:-0}" != "1" ]]; then
+        require_approval "write-capable command without AI_TASK_SCOPE" "AI_APPROVE_WRITE_WITHOUT_SCOPE"
+    fi
+}
+
+command_basename() {
+    basename -- "${1:-}"
+}
+
+classify_command() {
+    local cmd="${1:?command required}"
+    local base
+    local sub
+
+    base="$(command_basename "$cmd")"
+    sub="${2:-}"
+
+    case "$base" in
+        rg|fd|fdfind|cat|bat|sed|awk|jq|yq)
+            printf 'read\n'
+            ;;
+        git)
+            case "$sub" in
+                status|diff|show|log|grep|rev-parse|ls-files|branch)
+                    printf 'read\n'
+                    ;;
+                reset|clean|checkout|restore|apply|merge|rebase|commit|push|pull|fetch)
+                    printf 'destructive\n'
+                    ;;
+                *)
+                    printf 'unknown\n'
+                    ;;
+            esac
+            ;;
+        rm|rmdir|mv|truncate|dd)
+            printf 'destructive\n'
+            ;;
+        curl|wget|ssh|scp|rsync)
+            printf 'network\n'
+            ;;
+        brew|apt|apt-get|winget|choco)
+            printf 'install\n'
+            ;;
+        npm|pnpm|yarn|composer)
+            case "$sub" in
+                install|add|update|remove|upgrade|require|global)
+                    printf 'install\n'
+                    ;;
+                test|run|exec|lint|validate|check)
+                    printf 'write\n'
+                    ;;
+                *)
+                    printf 'unknown\n'
+                    ;;
+            esac
+            ;;
+        php|node|python|python3|bash|sh|zsh|make|just)
+            printf 'write\n'
+            ;;
+        *)
+            printf 'unknown\n'
+            ;;
+    esac
+}
+
+approval_env_for_category() {
+    case "$1" in
+        destructive) printf 'AI_APPROVE_DESTRUCTIVE\n' ;;
+        network) printf 'AI_APPROVE_NETWORK\n' ;;
+        install) printf 'AI_APPROVE_INSTALL\n' ;;
+        unknown) printf 'AI_APPROVE_UNKNOWN_COMMAND\n' ;;
+        *) printf '\n' ;;
+    esac
+}
+
+enforce_command_policy() {
+    local label="${1:?label required}"
+    local category
+    local env_name
+    local cmd_json
+
+    shift
+
+    [[ $# -gt 0 ]] || die "no command provided for policy enforcement"
+
+    category="$(classify_command "$@")"
+    env_name="$(approval_env_for_category "$category")"
+    cmd_json="$(printf '%s\n' "$@" | jq -R . | jq -s .)"
+
+    log_json "policy.command_classified" "$(jq -cn \
+        --arg label "$label" \
+        --arg category "$category" \
+        --argjson command "$cmd_json" \
+        '{label:$label,category:$category,command:$command}')" "$AI_TOOL_NAME" || true
+
+    case "$category" in
+        read)
+            return 0
+            ;;
+        write)
+            require_scope_for_write
+            return 0
+            ;;
+        destructive|network|install|unknown)
+            require_approval "command category '$category' for: $*" "$env_name"
+            ;;
+        *)
+            require_approval "unclassified command: $*" "AI_APPROVE_UNKNOWN_COMMAND"
+            ;;
+    esac
+}
+
+guard_command_before_run() {
+    local label="${1:?label required}"
+    shift
+
+    enforce_command_policy "$label" "$@"
+}
+
+realpath_safe() {
+    local path="${1:?path required}"
+
+    if command_exists python3; then
+        python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$path"
+    elif command_exists realpath; then
+        realpath "$path"
+    else
+        (
+            cd "$(dirname "$path")"
+            printf '%s/%s\n' "$PWD" "$(basename "$path")"
+        )
+    fi
+}
+
+assert_inside_repo() {
+    local path="${1:?path required}"
+    local root
+    local abs
+
+    root="$(realpath_safe "$(repo_root)")"
+    abs="$(realpath_safe "$path")"
+
+    case "$abs" in
+        "$root"|"$root"/*)
+            return 0
+            ;;
+        *)
+            die "path escapes repository root: $path"
+            ;;
+    esac
+}
+
+repo_relative_path() {
+    local path="${1:?path required}"
+    local root
+    local abs
+
+    root="$(realpath_safe "$(repo_root)")"
+    abs="$(realpath_safe "$path")"
+
+    case "$abs" in
+        "$root")
+            printf '.\n'
+            ;;
+        "$root"/*)
+            printf '%s\n' "${abs#"$root"/}"
+            ;;
+        *)
+            die "path escapes repository root: $path"
+            ;;
+    esac
+}
+
+assert_relative_safe_path() {
+    local path="${1:?path required}"
+
+    case "$path" in
+        ""|/*|../*|*/../*|*"/.."|.git|.git/*)
+            die "unsafe relative path: $path"
+            ;;
+    esac
+}
+
+path_matches_protected_pattern() {
+    local path="${1:?path required}"
+    local lower
+
+    lower="${path,,}"
+
+    case "$lower" in
+        .env|.env.*|.github|.github/*|.opencode|.opencode/*|agents.md|claude.md|docs/ai/generated|docs/ai/generated/*|*.key|*.pem|*.crt|*secret*|*token*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+require_path_write_allowed() {
+    local path="${1:?path required}"
+    local rel
+
+    rel="$(repo_relative_path "$path")"
+    assert_relative_safe_path "$rel"
+
+    if path_matches_protected_pattern "$rel"; then
+        require_approval "write to protected path '$rel'" "AI_APPROVE_PROTECTED_PATH"
+    fi
+}
+
+require_clean_tree() {
+    git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
+
+    if ! git diff --quiet || ! git diff --cached --quiet; then
+        die "working tree is not clean; commit or stash changes first"
+    fi
+}
+
+run_with_timeout() {
+    local seconds="${1:?seconds required}"
+    local timeout_bin
+
+    shift
+
+    if timeout_bin="$(find_timeout_bin 2>/dev/null)"; then
+        "$timeout_bin" "$seconds" "$@"
+        return $?
+    fi
+
+    if [[ "${AI_ALLOW_NO_TIMEOUT:-0}" == "1" ]]; then
+        log_warn "timeout unavailable; AI_ALLOW_NO_TIMEOUT=1, running unbounded"
+        "$@"
+        return $?
+    fi
+
+    log_warn "timeout unavailable; refusing unbounded execution"
+    return 124
+}
+
+bounded_capture_drain() {
+    local max_bytes="${1:?max bytes required}"
+    local output_file="${2:?output file required}"
+    local truncated_file="${3:?truncated flag file required}"
+
+    require_bins python3
+
+    python3 - "$max_bytes" "$output_file" "$truncated_file" <<'PY'
+import sys
+
+max_bytes = int(sys.argv[1])
+out_path = sys.argv[2]
+flag_path = sys.argv[3]
+
+written = 0
+truncated = False
+chunk_size = 65536
+
+with open(out_path, "wb") as out:
+    while True:
+        chunk = sys.stdin.buffer.read(chunk_size)
+        if not chunk:
+            break
+
+        remaining = max_bytes - written
+
+        if remaining > 0:
+            out.write(chunk[:remaining])
+            written += min(len(chunk), remaining)
+
+        if len(chunk) > remaining:
+            truncated = True
+
+        if written >= max_bytes and chunk:
+            truncated = True
+
+with open(flag_path, "w", encoding="utf-8") as f:
+    f.write("true" if truncated else "false")
+PY
+}
+
+wait_for_capture_flag() {
+    local file="${1:?file required}"
+    local _retry
+
+    for _retry in {1..50}; do
+        [[ -s "$file" ]] && return 0
+        sleep 0.02
+    done
+
+    printf 'true\n' >"$file"
+}
+
+truncate_file_preview() {
+    local file="${1:?file required}"
+    local max="${2:-$AI_OUTPUT_MAX_BYTES}"
+
+    head -c "$max" "$file" | redact_sensitive_text || true
 }
 
 estimate_file_tokens_fallback() {
     local file="${1:?file required}"
     local bytes
+
     bytes="$(wc -c <"$file" | tr -d ' ')"
-    echo $(((bytes + 3) / 4))
+    printf '%s\n' $(((bytes + 3) / 4))
+}
+
+estimate_tokens_string() {
+    local input="${1:-}"
+    local bytes
+
+    bytes="$(printf '%s' "$input" | wc -c | tr -d ' ')"
+    printf '%s\n' $(((bytes + 3) / 4))
 }
 
 estimate_tokens() {
     local file="${1:?file required}"
+    local estimated=""
 
     if [[ -n "${TOKEN_ESTIMATOR_CMD:-}" ]]; then
-        local estimated=""
-
         estimated="$($TOKEN_ESTIMATOR_CMD "$file" 2>/dev/null || true)"
 
         if [[ "$estimated" =~ ^[0-9]+$ ]]; then
@@ -5811,7 +13686,7 @@ estimate_tokens() {
             return 0
         fi
 
-        log_warn "TOKEN_ESTIMATOR_CMD failed or returned non-integer output; falling back to bytes/4"
+        log_warn "TOKEN_ESTIMATOR_CMD failed; falling back to bytes/4"
     fi
 
     estimate_file_tokens_fallback "$file"
@@ -5819,242 +13694,116 @@ estimate_tokens() {
 
 within_token_budget() {
     local file="${1:?file required}"
-    local max="${2:-128000}"
+    local max="${2:-$AI_TOKEN_BUDGET}"
     local tokens
+
     tokens="$(estimate_tokens "$file")"
     ((tokens <= max))
 }
 
-secrets_scan() {
-    local target="${1:-.}"
-    if command -v gitleaks >/dev/null 2>&1; then
-        gitleaks detect --source "$target" --redact --no-banner --exit-code 1 >/dev/null 2>&1
-    else
-        log_warn "gitleaks not installed; skipping secrets scan"
-        return 0
-    fi
-}
+run_logged() {
+    local label="${1:?label required}"
 
-snapshot_create() {
-    local label="${1:-snap}"
-    local session="${SESSION_ID:-manual}"
-    local timestamp
-    local snap_base
-    local patch_file
-    local manifest_file
-    local manifest_tmp
-    local untracked_list
-    local untracked_archive
-    local base_ref
-    local root
-    local has_untracked_archive_json=false
+    shift
 
-    git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "not inside a git repository"
+    common_require_core
+    require_bins python3
 
-    root="$(git_root)"
-    timestamp="$(date +%H%M%S)"
-    base_ref="$(git -C "$root" rev-parse HEAD)"
+    guard_command_before_run "$label" "$@"
 
-    mkdir -p "$COPILOT_SNAPSHOT_DIR"
+    local timeout_seconds="${AI_CMD_TIMEOUT:-120}"
+    local max_bytes="${AI_OUTPUT_MAX_BYTES:-200000}"
+    local stdout_file
+    local stderr_file
+    local stdout_truncated_file
+    local stderr_truncated_file
+    local started
+    local ended
+    local exit_code
+    local stdout_preview
+    local stderr_preview
+    local stdout_truncated
+    local stderr_truncated
+    local cmd_json
 
-    snap_base="${COPILOT_SNAPSHOT_DIR}/${session}-${label}-${timestamp}"
-    patch_file="${snap_base}.patch"
-    manifest_file="${snap_base}.manifest.json"
-    manifest_tmp="${manifest_file}.tmp"
-    untracked_list="${snap_base}.untracked.txt"
-    untracked_archive="${snap_base}.untracked.tar.gz"
+    stdout_file="$(mktemp)"
+    stderr_file="$(mktemp)"
+    stdout_truncated_file="$(mktemp)"
+    stderr_truncated_file="$(mktemp)"
 
-    pushd "$root" >/dev/null
+    started="$(now_ms)"
 
-    git diff --binary HEAD >"$patch_file"
-    git ls-files --others --exclude-standard >"$untracked_list"
+    set +e
+    run_with_timeout "$timeout_seconds" "$@" \
+        > >(bounded_capture_drain "$max_bytes" "$stdout_file" "$stdout_truncated_file") \
+        2> >(bounded_capture_drain "$max_bytes" "$stderr_file" "$stderr_truncated_file")
+    exit_code=$?
+    set -e
 
-    if [[ -s "$untracked_list" ]]; then
-        if command -v tar >/dev/null 2>&1; then
-            if tar -czf "$untracked_archive" -T "$untracked_list" 2>/dev/null; then
-                has_untracked_archive_json=true
-            else
-                rm -f "$untracked_archive"
-                log_warn "failed to archive untracked files for snapshot"
-            fi
-        else
-            log_warn "tar not installed; untracked file contents will not be archived"
-        fi
-    fi
+    wait_for_capture_flag "$stdout_truncated_file"
+    wait_for_capture_flag "$stderr_truncated_file"
 
-    popd >/dev/null
+    ended="$(now_ms)"
 
-    jq -n \
-        --arg version "2" \
-        --arg session "$session" \
+    stdout_preview="$(truncate_file_preview "$stdout_file" "$max_bytes")"
+    stderr_preview="$(truncate_file_preview "$stderr_file" "$max_bytes")"
+    stdout_truncated="$(cat "$stdout_truncated_file")"
+    stderr_truncated="$(cat "$stderr_truncated_file")"
+    cmd_json="$(printf '%s\n' "$@" | jq -R . | jq -s .)"
+
+    log_json "tool.run" "$(jq -cn \
         --arg label "$label" \
-        --arg base_ref "$base_ref" \
-        --arg root "$root" \
-        --arg patch_file "$patch_file" \
-        --arg manifest_file "$manifest_file" \
-        --arg untracked_list "$untracked_list" \
-        --arg untracked_archive "$untracked_archive" \
-        --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-        --argjson has_untracked_archive "$has_untracked_archive_json" \
+        --argjson command "$cmd_json" \
+        --argjson exit_code "$exit_code" \
+        --argjson latency_ms "$((ended - started))" \
+        --arg stdout_preview "$stdout_preview" \
+        --arg stderr_preview "$stderr_preview" \
+        --argjson stdout_truncated "$stdout_truncated" \
+        --argjson stderr_truncated "$stderr_truncated" \
         '{
-          version: ($version | tonumber),
-          session: $session,
-          label: $label,
-          base_ref: $base_ref,
-          root: $root,
-          patch_file: $patch_file,
-          manifest_file: $manifest_file,
-          untracked_list: $untracked_list,
-          untracked_archive: (if $has_untracked_archive then $untracked_archive else null end),
-          has_untracked_archive: $has_untracked_archive,
-          ts: $ts
-        }' >"$manifest_tmp"
+            label: $label,
+            command: $command,
+            exit_code: $exit_code,
+            latency_ms: $latency_ms,
+            stdout_preview: $stdout_preview,
+            stderr_preview: $stderr_preview,
+            stdout_truncated: $stdout_truncated,
+            stderr_truncated: $stderr_truncated
+        }')" "$AI_TOOL_NAME" || true
 
-    mv "$manifest_tmp" "$manifest_file"
-
-    log_json "snapshot.create" "$(cat "$manifest_file")" || true
-    printf '%s\n' "$manifest_file"
-}
-
-_snapshot_manifest_value() {
-    local manifest="${1:?manifest required}"
-    local key="${2:?key required}"
-    jq -r --arg key "$key" '.[$key] // empty' "$manifest"
-}
-
-_snapshot_path_from_manifest() {
-    local manifest="${1:?manifest required}"
-    local key="${2:?key required}"
-    local value
-    local dir
-
-    value="$(_snapshot_manifest_value "$manifest" "$key")"
-    [[ -n "$value" && "$value" != "null" ]] || return 1
-
-    if [[ "$value" = /* || "$value" =~ ^[A-Za-z]: ]]; then
-        printf '%s\n' "$value"
-        return 0
+    if [[ "$AI_REDACT_STDOUT" == "1" ]]; then
+        redact_sensitive_text <"$stdout_file"
+    else
+        cat "$stdout_file"
     fi
 
-    dir="$(dirname "$manifest")"
-    printf '%s/%s\n' "$dir" "$value"
+    rm -f "$stdout_file" "$stderr_file" "$stdout_truncated_file" "$stderr_truncated_file"
+    return "$exit_code"
 }
 
-_snapshot_protected_untracked_path() {
-    local path="${1:?path required}"
+run_json_command() {
+    local label="${1:?label required}"
+    local output
+    local exit_code
 
-    case "$path" in
-    .git | .git/*)
-        return 0
-        ;;
-    "$COPILOT_LOG_DIR" | "$COPILOT_LOG_DIR"/*)
-        return 0
-        ;;
-    "$COPILOT_CONTEXT_DIR" | "$COPILOT_CONTEXT_DIR"/*)
-        return 0
-        ;;
-    .ai-logs | .ai-logs/*)
-        return 0
-        ;;
-    .repomix-context | .repomix-context/*)
-        return 0
-        ;;
-    esac
+    shift
 
-    return 1
-}
+    set +e
+    output="$(run_logged "$label" "$@")"
+    exit_code=$?
+    set -e
 
-_snapshot_untracked_existed() {
-    local file="${1:?file required}"
-    local list="${2:?list required}"
+    if ((exit_code != 0)); then
+        emit_envelope "error" "$label" '{}' '[]' "$(jq -cn --arg msg "command failed with exit code $exit_code" '[$msg]')" 0 false
+        return "$exit_code"
+    fi
 
-    [[ -f "$list" ]] || return 1
-    grep -Fxq "$file" "$list"
-}
-
-snapshot_apply_manifest() {
-    local manifest="${1:?manifest file required}"
-    local root
-    local base_ref
-    local patch_file
-    local untracked_list
-    local untracked_archive
-    local current_untracked=()
-    local path
-
-    [[ -f "$manifest" ]] || die "snapshot manifest not found: $manifest"
-
-    require_bins jq git
-
-    root="$(_snapshot_manifest_value "$manifest" root)"
-    base_ref="$(_snapshot_manifest_value "$manifest" base_ref)"
-    patch_file="$(_snapshot_path_from_manifest "$manifest" patch_file || true)"
-    untracked_list="$(_snapshot_path_from_manifest "$manifest" untracked_list || true)"
-    untracked_archive="$(_snapshot_path_from_manifest "$manifest" untracked_archive || true)"
-
-    [[ -n "$root" && -d "$root" ]] || root="$(git_root)"
-    [[ -n "$base_ref" ]] || die "snapshot manifest missing base_ref"
-
-    (
-        cd "$root"
-
-        log_warn "Applying rollback snapshot. This will reset tracked files to snapshot state."
-
-        mapfile -t current_untracked < <(git ls-files --others --exclude-standard)
-
-        git reset --hard "$base_ref" >/dev/null
-
-        if [[ -n "$patch_file" && -f "$patch_file" && -s "$patch_file" ]]; then
-            git apply --whitespace=fix "$patch_file"
-        fi
-
-        if [[ "${ROLLBACK_REMOVE_CREATED_UNTRACKED:-1}" == "1" ]]; then
-            for path in "${current_untracked[@]+${current_untracked[@]}}"; do
-                [[ -n "$path" ]] || continue
-
-                if _snapshot_protected_untracked_path "$path"; then
-                    continue
-                fi
-
-                if ! _snapshot_untracked_existed "$path" "$untracked_list"; then
-                    rm -f -- "$path"
-                fi
-            done
-        else
-            log_warn "ROLLBACK_REMOVE_CREATED_UNTRACKED=0; created untracked files were not removed"
-        fi
-
-        if [[ -n "$untracked_archive" && -f "$untracked_archive" ]]; then
-            tar -xzf "$untracked_archive"
-        fi
-    )
-
-    log_json "snapshot.apply" "$(cat "$manifest")" || true
-}
-
-snapshot_apply() {
-    local snap_file="${1:?snapshot file required}"
-
-    [[ -f "$snap_file" ]] || die "snapshot not found: $snap_file"
-
-    case "$snap_file" in
-    *.manifest.json)
-        snapshot_apply_manifest "$snap_file"
-        ;;
-    *.ref)
-        local ref
-        ref="$(<"$snap_file")"
-        git reset --hard "$ref"
-        log_json "snapshot.apply.legacy_ref" "$(jq -cn --arg file "$snap_file" --arg ref "$ref" '{file:$file, ref:$ref}')" || true
-        ;;
-    *.patch)
-        git apply --whitespace=fix "$snap_file"
-        log_json "snapshot.apply.legacy_patch" "$(jq -cn --arg file "$snap_file" '{file:$file}')" || true
-        ;;
-    *)
-        die "unsupported snapshot type: $snap_file"
-        ;;
-    esac
+    if jq -e . >/dev/null 2>&1 <<<"$output"; then
+        printf '%s\n' "$output"
+    else
+        emit_envelope "error" "$label" '{}' '[]' "$(jq -cn --arg msg 'command did not emit valid JSON' '[$msg]')" 0 false
+        return 2
+    fi
 }
 
 ```
@@ -6430,12 +14179,19 @@ install_windows() {
     run_cmd winget install --id BurntSushi.ripgrep.MSVC -e --accept-source-agreements --accept-package-agreements || true
     run_cmd winget install --id jqlang.jq -e --accept-source-agreements --accept-package-agreements || true
     run_cmd winget install --id BenBoyter.scc -e --accept-source-agreements --accept-package-agreements || true
+    run_cmd winget install --id ast-grep.ast-grep -e --accept-source-agreements --accept-package-agreements || true
     run_cmd winget install --id OpenJS.NodeJS.LTS -e --accept-source-agreements --accept-package-agreements || true
 
     if need_cmd npm; then
         run_cmd npm install -g repomix
     else
         printf 'Warning: npm not found after Node.js install; install repomix manually.\n' >&2
+    fi
+
+    if need_cmd powershell; then
+        run_cmd powershell -ExecutionPolicy Bypass -File scripts/ai/setup-powershell-profile.ps1
+    else
+        printf 'Warning: powershell not found; run scripts/ai/setup-powershell-profile.ps1 manually.\n' >&2
     fi
 }
 
@@ -6446,7 +14202,7 @@ install_macos() {
     }
 
     run_cmd brew update
-    run_cmd brew install git php ripgrep jq scc node
+    run_cmd brew install git php ripgrep jq scc node ast-grep
     run_cmd npm install -g repomix
 }
 
@@ -6458,6 +14214,12 @@ install_linux() {
 
     run_cmd sudo apt-get update
     run_cmd sudo apt-get install -y git php-cli ripgrep jq nodejs npm
+
+    if run_cmd sudo apt-get install -y ast-grep; then
+        :
+    else
+        printf 'Warning: failed to install ast-grep via apt; install manually if required.\n' >&2
+    fi
 
     if run_cmd sudo apt-get install -y scc; then
         :
@@ -6478,12 +14240,16 @@ verify_tools() {
         need_cmd "$tool" || missing+=("$tool")
     done
 
+    if ! need_cmd ast-grep && ! need_cmd sg; then
+        missing+=("ast-grep")
+    fi
+
     if ((${#missing[@]} > 0)); then
         printf 'Missing required tools: %s\n' "${missing[*]}" >&2
         return 1
     fi
 
-    printf 'All mandatory tools are installed: %s\n' "${required[*]}"
+    printf 'All mandatory tools are installed: %s ast-grep\n' "${required[*]}"
 }
 
 OS_KIND="$(detect_os)"
@@ -6697,6 +14463,8 @@ set -euo pipefail
 # shellcheck source=scripts/ai/common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
+MAINTENANCE_STATE_FILE="${COPILOT_MAINTENANCE_STATE_FILE:-.ai-logs/maintenance-mode.json}"
+
 mkdir -p "$COPILOT_LOG_DIR"
 input="$(cat)"
 SESSION_ID="${SESSION_ID:-post-tool-use-$(date +%Y%m%d-%H%M%S)-$$}"
@@ -6768,6 +14536,24 @@ detect_mutation() {
     ' <<<"$input"
 }
 
+maintenance_mode_status() {
+    if ! command -v jq >/dev/null 2>&1 || [[ ! -f "$MAINTENANCE_STATE_FILE" ]]; then
+        printf 'inactive\n'
+        return 0
+    fi
+
+    local enabled expires_at now
+    enabled="$(jq -r '.enabled // false' "$MAINTENANCE_STATE_FILE" 2>/dev/null || printf 'false')"
+    expires_at="$(jq -r '.expires_at_epoch // 0' "$MAINTENANCE_STATE_FILE" 2>/dev/null || printf '0')"
+    now="$(date +%s)"
+
+    if [[ "$enabled" == "true" && "$expires_at" =~ ^[0-9]+$ ]] && (( expires_at > now )); then
+        printf 'active\n'
+    else
+        printf 'inactive\n'
+    fi
+}
+
 failure_category=""
 if jq -e '.toolResult.resultType? == "error" or .toolResult.isError? == true' >/dev/null 2>&1 <<<"$input"; then
     failure_category="$(classify_failure)"
@@ -6776,6 +14562,7 @@ fi
 auth_decision="$(authorization_decision "${failure_category:-unknown}")"
 exec_status="$(execution_status "${failure_category:-unknown}")"
 mutates_state="$(detect_mutation)"
+maintenance_mode="$(maintenance_mode_status)"
 args_hash="$(jq -cS '.toolArgs // {}' <<<"$input" | shasum -a 256 | awk '{print "sha256:" $1}')"
 
 entry="$(jq -cn \
@@ -6791,6 +14578,7 @@ entry="$(jq -cn \
     --arg auth_decision "$auth_decision" \
     --arg failure_category "$failure_category" \
     --arg exec_status "$exec_status" \
+    --arg maintenance_mode "$maintenance_mode" \
     --arg repo_root "$(git_root 2>/dev/null || pwd)" \
     --arg git_branch "$(git rev-parse --abbrev-ref HEAD 2>/dev/null || printf 'unknown')" \
     --arg git_commit "$(git rev-parse HEAD 2>/dev/null || printf 'unknown')" \
@@ -6846,11 +14634,12 @@ entry="$(jq -cn \
       output: {
         preview: (($event.toolResult.output // $event.toolResult.stderr // null) | if type == "string" then .[:400] else null end)
       },
-      details: {
-        tool_args: ($event.toolArgs // {}),
-        result_type: ($event.toolResult.resultType // "unknown")
-      }
-    }')"
+        details: {
+          tool_args: ($event.toolArgs // {}),
+          result_type: ($event.toolResult.resultType // "unknown"),
+          maintenance_mode: $maintenance_mode
+        }
+      }')"
 
 append_log_entry "$entry"
 
@@ -6863,6 +14652,7 @@ append_log_entry "$entry"
 set -euo pipefail
 
 POLICY_FILE="${COPILOT_POLICY_FILE:-policies/copilot/policy.yaml}"
+MAINTENANCE_STATE_FILE="${COPILOT_MAINTENANCE_STATE_FILE:-.ai-logs/maintenance-mode.json}"
 
 deny() {
     jq -cn --arg reason "$1" '{permissionDecision:"deny", permissionDecisionReason:$reason}'
@@ -6899,7 +14689,7 @@ allow_registered_script() {
     while IFS= read -r path; do
         [[ -n "$path" ]] || continue
         escaped="$(printf '%s' "$path" | sed 's/[][.^$*+?(){}|\\]/\\&/g')"
-        if grep -Eq "^(bash[[:space:]]+)?(\./)?${escaped}([[:space:]]|$)" <<<"$compact"; then
+        if grep -Eq "^([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)*(bash[[:space:]]+)?(\./)?${escaped}([[:space:]]|$)" <<<"$compact"; then
             return 0
         fi
     done < <(jq -r '
@@ -6912,6 +14702,39 @@ allow_registered_script() {
         | map(select(type == "string" and . != ""))
         | unique[]
     ' "$registry_file" 2>/dev/null)
+
+    return 1
+}
+
+maintenance_mode_active() {
+    local state_file="$MAINTENANCE_STATE_FILE"
+    command -v jq >/dev/null 2>&1 || return 1
+    [[ -f "$state_file" ]] || return 1
+
+    local enabled expires_at now
+    enabled="$(jq -r '.enabled // false' "$state_file" 2>/dev/null || printf 'false')"
+    [[ "$enabled" == "true" ]] || return 1
+
+    expires_at="$(jq -r '.expires_at_epoch // 0' "$state_file" 2>/dev/null || printf '0')"
+    [[ "$expires_at" =~ ^[0-9]+$ ]] || return 1
+    now="$(date +%s)"
+    (( expires_at > now ))
+}
+
+maintenance_mode_allow() {
+    local compact="$1"
+
+    if allow_registered_script "$compact"; then
+        return 0
+    fi
+
+    if grep -Eq '^([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]+[[:space:]]+)*(bash[[:space:]]+)?(\./)?scripts/ai/(ai-search|preview-file|query-usage|git-forensics|ai-diff-context|ai-doc-check|ai-structured|ai-task|ai-test-select|ai-verify|pack-context|repomix-context-tree|repomix-scc-router|run-repomix-context|session-checkpoint)\.sh([[:space:]]|$)' <<<"$compact"; then
+        return 0
+    fi
+
+    if grep -Eq '^php[[:space:]]+tools/ai/(ai\.php[[:space:]]+install|install-ai-kit\.php|validate-ai-config\.php|validate-install-surface\.php|validate-ai-catalog\.php|validate-command-policy\.php|verify-full-install\.php|generate-ai-catalog\.php|maintenance-mode\.php)([[:space:]]|$)' <<<"$compact"; then
+        return 0
+    fi
 
     return 1
 }
@@ -7004,6 +14827,19 @@ fi
 if grep -Eq '(curl|wget|nc|ncat|netcat)[[:space:]].*(-d|--data|--upload-file|--data-binary)' <<<"$compact"; then
     deny 'possible data exfiltration command blocked by repo policy'
     exit 0
+fi
+
+if maintenance_mode_active; then
+    if maintenance_mode_allow "$compact"; then
+        allow
+        exit 0
+    fi
+
+    if grep -Eq '(^|[[:space:]])(bash[[:space:]]+)?[^[:space:]]+\.sh([[:space:]]|$)' <<<"$compact"; then
+        jq -cn --arg reason 'maintenance mode allows repository-delivered scripts only; external scripts require explicit approval' \
+            '{permissionDecision:"ask", permissionDecisionReason:$reason}'
+        exit 0
+    fi
 fi
 
 if grep -Eq '(^|[[:space:]])(cat|bat|less|head|tail)([[:space:]]|$)' <<<"$compact" \
@@ -7176,7 +15012,8 @@ if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/repomix-scc-router\.sh[[:space
 fi
 
 if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/[^[:space:]]+\.sh\b' <<<"$compact"; then
-    deny 'script is not approved by docs/ai/script-registry.json or the tiered hook policy'
+    jq -cn --arg reason 'script is not approved by docs/ai/script-registry.json or the tiered hook policy — confirmation required' \
+        '{permissionDecision:"ask", permissionDecisionReason:$reason}'
     exit 0
 fi
 
@@ -7209,64 +15046,581 @@ exit 0
 
 ```text
 #!/usr/bin/env bash
-# Smart preview wrapper with text and fallback modes.
+# Safe bounded file preview for AI agents and humans.
+#
+# Purpose:
+# - Preview exactly one file.
+# - Prefer precise ranges over large dumps.
+# - Return compact JSON when --json or AI_OUTPUT=json is used.
+# - Prevent token blowups from huge files, binary files, and minified lines.
+#
+# Non-goals:
+# - No searching.
+# - No editing.
+# - No multi-file context packing.
 
 set -euo pipefail
-# shellcheck source=scripts/ai/common.sh
-source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+if [[ -f "$script_dir/common.sh" ]]; then
+    # shellcheck source=scripts/ai/common.sh
+    source "$script_dir/common.sh"
+fi
+
+if ! declare -F die >/dev/null 2>&1; then
+    die() {
+        printf 'preview-file: error: %s\n' "$*" >&2
+        exit 2
+    }
+fi
+
+if ! declare -F require_bins >/dev/null 2>&1; then
+    require_bins() {
+        local missing_flag=0
+        local bin
+        for bin in "$@"; do
+            if ! command -v "$bin" >/dev/null 2>&1; then
+                printf 'preview-file: error: required command not found: %s\n' "$bin" >&2
+                missing_flag=1
+            fi
+        done
+        [[ "$missing_flag" -eq 0 ]] || exit 2
+    }
+fi
 
 usage() {
     cat <<'EOF'
 Usage:
-  preview-file.sh FILE [--plain] [--lines N]
+  preview-file.sh FILE [options]
+  preview-file.sh [options] FILE
+
+Core:
+  --lines N             Preview first N lines.
+  --range A:B           Preview inclusive line range A:B.
+  --around N            Preview around line N.
+  --context N           Context lines for --around. Default: 40.
+
+Safety:
+  --max-lines N         Maximum lines emitted. Default: 300.
+  --max-columns N       Truncate lines after N columns. Default: 300. Use 0 to disable.
+  --max-bytes N         Block files larger than N bytes. Supports 1000, 1K, 1M, 1G. Default: 1M.
+  --force               Allow binary-looking or oversized files.
+
+Output:
+  --json                Emit compact JSON envelope.
+  --plain               Emit deterministic plain text.
+  --bat                 Use bat for human preview when available.
+  --color               Allow colour with --bat.
+  --no-numbers          Disable line numbers.
+  --dry-run             Show resolved preview metadata without content.
+  --help, -h            Show this help.
+
+Environment:
+  AI_OUTPUT=json
+  AI_PREVIEW_LINES=80
+  AI_PREVIEW_HUMAN_LINES=200
+  AI_PREVIEW_CONTEXT=40
+  AI_PREVIEW_MAX_LINES=300
+  AI_PREVIEW_MAX_COLUMNS=300
+  AI_PREVIEW_MAX_BYTES=1M
 EOF
 }
 
-file="${1:?file required}"
-shift || true
+is_uint() {
+    [[ "${1:-}" =~ ^[0-9]+$ ]]
+}
 
-[[ -f "$file" ]] || die "file not found: $file"
+is_pos_int() {
+    is_uint "$1" && (( "$1" >= 1 ))
+}
 
-PLAIN=0
-LINES=""
+parse_bytes() {
+    local raw="${1:-}"
+    local value suffix number
 
-while [[ $# -gt 0 ]]; do
+    value="$(printf '%s' "$raw" | tr '[:lower:]' '[:upper:]' | tr -d '[:space:]')"
+
+    if [[ "$value" =~ ^([0-9]+)(B|K|KB|KI|KIB|M|MB|MI|MIB|G|GB|GI|GIB)?$ ]]; then
+        number="${BASH_REMATCH[1]}"
+        suffix="${BASH_REMATCH[2]:-B}"
+
+        case "$suffix" in
+            B|"")
+                printf '%s\n' "$number"
+                ;;
+            K|KB|KI|KIB)
+                printf '%s\n' $((number * 1024))
+                ;;
+            M|MB|MI|MIB)
+                printf '%s\n' $((number * 1024 * 1024))
+                ;;
+            G|GB|GI|GIB)
+                printf '%s\n' $((number * 1024 * 1024 * 1024))
+                ;;
+            *)
+                return 1
+                ;;
+        esac
+
+        return 0
+    fi
+
+    return 1
+}
+
+file_size_bytes() {
+    local path="$1"
+
+    stat -c '%s' -- "$path" 2>/dev/null \
+        || stat -f '%z' "$path" 2>/dev/null \
+        || wc -c < "$path" | tr -d '[:space:]'
+}
+
+json_array() {
+    require_bins jq
+
+    if [[ "$#" -eq 0 ]]; then
+        printf '[]'
+        return 0
+    fi
+
+    printf '%s\n' "$@" | jq -R . | jq -s .
+}
+
+json_output=false
+format_explicit=false
+use_bat=false
+color=false
+numbers=true
+force=false
+dry_run=false
+
+file=""
+lines=""
+range_arg=""
+around=""
+context="${AI_PREVIEW_CONTEXT:-40}"
+max_lines="${AI_PREVIEW_MAX_LINES:-300}"
+max_columns="${AI_PREVIEW_MAX_COLUMNS:-300}"
+max_bytes_raw="${AI_PREVIEW_MAX_BYTES:-1M}"
+
+while [[ "$#" -gt 0 ]]; do
     case "$1" in
-    --plain)
-        PLAIN=1
-        shift
-        ;;
-    --lines)
-        LINES="$2"
-        shift 2
-        ;;
-    --lines=*)
-        LINES="${1#*=}"
-        shift
-        ;;
-    --help | -h)
-        usage
-        exit 0
-        ;;
-    *) die "unknown option: $1" ;;
+        --help|-h)
+            usage
+            exit 0
+            ;;
+        --json)
+            json_output=true
+            format_explicit=true
+            shift
+            ;;
+        --plain)
+            json_output=false
+            use_bat=false
+            format_explicit=true
+            shift
+            ;;
+        --bat)
+            json_output=false
+            use_bat=true
+            format_explicit=true
+            shift
+            ;;
+        --color)
+            color=true
+            shift
+            ;;
+        --no-numbers)
+            numbers=false
+            shift
+            ;;
+        --force)
+            force=true
+            shift
+            ;;
+        --dry-run)
+            dry_run=true
+            shift
+            ;;
+        --lines)
+            [[ "$#" -ge 2 ]] || die "--lines requires a value"
+            lines="$2"
+            shift 2
+            ;;
+        --lines=*)
+            lines="${1#*=}"
+            shift
+            ;;
+        --range)
+            [[ "$#" -ge 2 ]] || die "--range requires a value"
+            range_arg="$2"
+            shift 2
+            ;;
+        --range=*)
+            range_arg="${1#*=}"
+            shift
+            ;;
+        --around)
+            [[ "$#" -ge 2 ]] || die "--around requires a value"
+            around="$2"
+            shift 2
+            ;;
+        --around=*)
+            around="${1#*=}"
+            shift
+            ;;
+        --context)
+            [[ "$#" -ge 2 ]] || die "--context requires a value"
+            context="$2"
+            shift 2
+            ;;
+        --context=*)
+            context="${1#*=}"
+            shift
+            ;;
+        --max-lines)
+            [[ "$#" -ge 2 ]] || die "--max-lines requires a value"
+            max_lines="$2"
+            shift 2
+            ;;
+        --max-lines=*)
+            max_lines="${1#*=}"
+            shift
+            ;;
+        --max-columns)
+            [[ "$#" -ge 2 ]] || die "--max-columns requires a value"
+            max_columns="$2"
+            shift 2
+            ;;
+        --max-columns=*)
+            max_columns="${1#*=}"
+            shift
+            ;;
+        --max-bytes|--max-size)
+            [[ "$#" -ge 2 ]] || die "$1 requires a value"
+            max_bytes_raw="$2"
+            shift 2
+            ;;
+        --max-bytes=*|--max-size=*)
+            max_bytes_raw="${1#*=}"
+            shift
+            ;;
+        --)
+            shift
+            [[ "$#" -gt 0 ]] || die "-- requires a following file"
+            if [[ -n "$file" ]]; then
+                die "only one file may be provided"
+            fi
+            file="$1"
+            shift
+            ;;
+        --*)
+            die "unknown option: $1"
+            ;;
+        *)
+            if [[ -n "$file" ]]; then
+                die "only one file may be provided"
+            fi
+            file="$1"
+            shift
+            ;;
     esac
 done
 
-bat_args=(--style=numbers --color=always)
-if [[ -n "$LINES" ]]; then
-    bat_args+=(--line-range ":$LINES")
+if [[ "$format_explicit" == false && "${AI_OUTPUT:-}" == "json" ]]; then
+    json_output=true
 fi
 
-if [[ "$PLAIN" == "0" ]] && command -v bat >/dev/null 2>&1; then
-    bat "${bat_args[@]}" "$file"
+if [[ -z "$lines" ]]; then
+    if [[ "$json_output" == true ]]; then
+        lines="${AI_PREVIEW_LINES:-80}"
+    else
+        lines="${AI_PREVIEW_HUMAN_LINES:-200}"
+    fi
+fi
+
+emit_error() {
+    local message="$1"
+    local exit_code="${2:-2}"
+    local path="${file:-}"
+
+    if [[ "$json_output" == true ]]; then
+        require_bins jq
+
+        jq -n \
+            --arg schema "1" \
+            --arg status "error" \
+            --arg tool "preview-file" \
+            --arg path "$path" \
+            --argjson errors "$(json_array "$message")" \
+            '{
+                schema: $schema,
+                status: $status,
+                tool: $tool,
+                path: $path,
+                range: null,
+                total_lines: null,
+                truncated: false,
+                content: "",
+                limits: {},
+                warnings: [],
+                errors: $errors,
+                meta: {}
+            }'
+    else
+        printf 'preview-file: error: %s\n' "$message" >&2
+    fi
+
+    exit "$exit_code"
+}
+
+[[ -n "$file" ]] || emit_error "file required" 2
+[[ -f "$file" ]] || emit_error "file not found: $file" 1
+
+is_pos_int "$lines" || emit_error "--lines must be a positive integer" 2
+is_uint "$context" || emit_error "--context must be a non-negative integer" 2
+is_pos_int "$max_lines" || emit_error "--max-lines must be a positive integer" 2
+is_uint "$max_columns" || emit_error "--max-columns must be a non-negative integer" 2
+
+max_bytes="$(parse_bytes "$max_bytes_raw")" || emit_error "--max-bytes must be numeric or use K/M/G suffix" 2
+
+size_bytes="$(file_size_bytes "$file")"
+is_uint "$size_bytes" || size_bytes=0
+
+warnings=()
+
+normalized_path="${file#./}"
+case "/$normalized_path" in
+    *"/.git/"*|*"/.git")
+        if [[ "$force" != true ]]; then
+            emit_error ".git internals are blocked; use --force only with explicit approval" 2
+        fi
+        ;;
+    *"/node_modules/"*|*"/vendor/"*|*"/dist/"*|*"/build/"*|*"/coverage/"*|*"/docs/ai/generated/"*)
+        warnings+=("path looks generated, vendored, or high-volume; prefer narrow ranges")
+        ;;
+esac
+
+case "$normalized_path" in
+    *.min.js|*.min.css|*.map|package-lock.json|pnpm-lock.yaml|yarn.lock|composer.lock)
+        warnings+=("file is commonly large/generated; output remains bounded")
+        ;;
+esac
+
+if (( max_bytes > 0 && size_bytes > max_bytes )) && [[ "$force" != true ]]; then
+    emit_error "file exceeds max-bytes limit: ${size_bytes} > ${max_bytes}; use --force with a narrow range if needed" 2
+fi
+
+if [[ -s "$file" ]] && ! LC_ALL=C grep -Iq . < "$file"; then
+    if [[ "$force" != true ]]; then
+        emit_error "binary-looking file blocked; use --force only with explicit approval" 2
+    fi
+    warnings+=("binary-looking file was forced; output may be unsafe or unreadable")
+fi
+
+total_lines="$(awk 'END { print NR + 0 }' < "$file")"
+is_uint "$total_lines" || total_lines=0
+
+start=1
+end="$lines"
+
+if [[ -n "$range_arg" ]]; then
+    if [[ ! "$range_arg" =~ ^([0-9]+):([0-9]+)$ ]]; then
+        emit_error "--range must use A:B format" 2
+    fi
+
+    start="${BASH_REMATCH[1]}"
+    end="${BASH_REMATCH[2]}"
+
+    is_pos_int "$start" || emit_error "--range start must be >= 1" 2
+    is_pos_int "$end" || emit_error "--range end must be >= 1" 2
+    (( end >= start )) || emit_error "--range end must be >= start" 2
+fi
+
+if [[ -n "$around" ]]; then
+    is_pos_int "$around" || emit_error "--around must be a positive integer" 2
+
+    if (( around <= context )); then
+        start=1
+    else
+        start=$((around - context))
+    fi
+
+    end=$((around + context))
+fi
+
+if (( total_lines == 0 )); then
+    start=1
+    end=0
+else
+    if (( start > total_lines )); then
+        warnings+=("requested start line is beyond end of file; clamped to total_lines")
+        start="$total_lines"
+    fi
+
+    if (( end > total_lines )); then
+        end="$total_lines"
+    fi
+fi
+
+selected_count=0
+if (( end >= start )); then
+    selected_count=$((end - start + 1))
+fi
+
+truncated=false
+
+if (( selected_count > max_lines )); then
+    end=$((start + max_lines - 1))
+    selected_count="$max_lines"
+    truncated=true
+    warnings+=("range exceeded max-lines; output was truncated")
+fi
+
+if (( total_lines > 0 && end < total_lines )); then
+    truncated=true
+fi
+
+render_plain() {
+    awk \
+        -v start="$start" \
+        -v end="$end" \
+        -v max_columns="$max_columns" \
+        -v numbers="$([[ "$numbers" == true ]] && printf 1 || printf 0)" '
+        end == 0 { exit }
+        NR < start { next }
+        NR > end { exit }
+        {
+            line = $0
+
+            if (max_columns > 0 && length(line) > max_columns) {
+                line = substr(line, 1, max_columns) " …[truncated]"
+            }
+
+            if (numbers == 1) {
+                printf "%6d  %s\n", NR, line
+            } else {
+                print line
+            }
+        }
+    ' < "$file"
+}
+
+if [[ "$dry_run" == true ]]; then
+    if [[ "$json_output" == true ]]; then
+        require_bins jq
+
+        jq -n \
+            --arg schema "1" \
+            --arg status "dry_run" \
+            --arg tool "preview-file" \
+            --arg path "$file" \
+            --argjson start "$start" \
+            --argjson end "$end" \
+            --argjson total_lines "$total_lines" \
+            --argjson truncated "$truncated" \
+            --argjson max_lines "$max_lines" \
+            --argjson max_columns "$max_columns" \
+            --argjson max_bytes "$max_bytes" \
+            --argjson size_bytes "$size_bytes" \
+            --argjson warnings "$(json_array "${warnings[@]}")" \
+            '{
+                schema: $schema,
+                status: $status,
+                tool: $tool,
+                path: $path,
+                range: {
+                    start: $start,
+                    end: $end
+                },
+                total_lines: $total_lines,
+                truncated: $truncated,
+                content: "",
+                limits: {
+                    max_lines: $max_lines,
+                    max_columns: $max_columns,
+                    max_bytes: $max_bytes
+                },
+                warnings: $warnings,
+                errors: [],
+                meta: {
+                    size_bytes: $size_bytes
+                }
+            }'
+    else
+        printf 'Would preview %s lines %s:%s total_lines=%s size_bytes=%s truncated=%s\n' \
+            "$file" "$start" "$end" "$total_lines" "$size_bytes" "$truncated" >&2
+    fi
+
     exit 0
 fi
 
-if [[ -n "$LINES" ]]; then
-    sed -n "1,${LINES}p" "$file"
-else
-    sed -n '1,200p' "$file"
+if [[ "$json_output" == true ]]; then
+    require_bins jq
+
+    content="$(render_plain)"
+
+    jq -n \
+        --arg schema "1" \
+        --arg status "ok" \
+        --arg tool "preview-file" \
+        --arg path "$file" \
+        --arg content "$content" \
+        --argjson start "$start" \
+        --argjson end "$end" \
+        --argjson total_lines "$total_lines" \
+        --argjson truncated "$truncated" \
+        --argjson max_lines "$max_lines" \
+        --argjson max_columns "$max_columns" \
+        --argjson max_bytes "$max_bytes" \
+        --argjson size_bytes "$size_bytes" \
+        --argjson warnings "$(json_array "${warnings[@]}")" \
+        '{
+            schema: $schema,
+            status: $status,
+            tool: $tool,
+            path: $path,
+            range: {
+                start: $start,
+                end: $end
+            },
+            total_lines: $total_lines,
+            truncated: $truncated,
+            content: $content,
+            limits: {
+                max_lines: $max_lines,
+                max_columns: $max_columns,
+                max_bytes: $max_bytes
+            },
+            warnings: $warnings,
+            errors: [],
+            meta: {
+                size_bytes: $size_bytes
+            }
+        }'
+
+    exit 0
 fi
+
+for warning in "${warnings[@]}"; do
+    printf 'preview-file: warning: %s\n' "$warning" >&2
+done
+
+if [[ "$use_bat" == true ]] && command -v bat >/dev/null 2>&1; then
+    bat_args=(--style=numbers --line-range "${start}:${end}")
+
+    if [[ "$color" == true ]]; then
+        bat_args+=(--color=auto)
+    else
+        bat_args+=(--color=never)
+    fi
+
+    exec bat "${bat_args[@]}" -- "$file"
+fi
+
+render_plain
 
 ```
 
@@ -7631,11 +15985,7 @@ ensure_actionable_route() {
     local usable="$1"
     local fallback_row=''
     local fallback_group=''
-    local fallback_files=''
-    local fallback_code=''
-    local fallback_complexity=''
     local fallback_bytes=''
-    local fallback_score=''
     local fallback_tokens=''
     local fallback_decision=''
     local fallback_type=''
@@ -7650,7 +16000,7 @@ ensure_actionable_route() {
     fallback_row="$(tail -n +2 "$ROUTER_FOLDER_METRICS" | awk -F'\t' '$1 != "" && $4 + 0 > 0 { print; exit }')"
     [[ -n "$fallback_row" ]] || return 0
 
-    IFS=$'\t' read -r fallback_group fallback_files _fallback_lines fallback_code _fallback_comments _fallback_blanks fallback_complexity fallback_bytes _fallback_churn _fallback_code_share _fallback_complexity_share _fallback_file_share _fallback_byte_share _fallback_churn_share fallback_score <<<"$fallback_row"
+    IFS=$'\t' read -r fallback_group _fallback_files _fallback_lines _fallback_code _fallback_comments _fallback_blanks _fallback_complexity fallback_bytes _fallback_churn _fallback_code_share _fallback_complexity_share _fallback_file_share _fallback_byte_share _fallback_churn_share _fallback_score <<<"$fallback_row"
 
     fallback_tokens="$(estimate_tokens "$fallback_bytes")"
     if ((fallback_tokens <= usable)); then
@@ -10961,9 +19311,12 @@ class GenerateRepoStructureTest extends TestCase
             2 => ['pipe', 'w'],
         ];
 
-        $process = proc_open($command, $descriptors, $pipes, $cwd, [
-            'PATH' => (string) getenv('PATH'),
-        ]);
+        $path = $this->buildTestPath();
+        putenv('PATH=' . $path);
+        $_ENV['PATH'] = $path;
+        $_SERVER['PATH'] = $path;
+
+        $process = proc_open($command, $descriptors, $pipes, $cwd, null);
 
         $this->assertIsResource($process, "proc_open failed for: {$command}");
 
@@ -11008,6 +19361,33 @@ class GenerateRepoStructureTest extends TestCase
         }
 
         $this->removeDirectoryWithRetry($path);
+    }
+
+    private function buildTestPath(): string
+    {
+        $path = (string) getenv('PATH');
+
+        $extras = [
+            'C:\\Program Files\\Git\\cmd',
+            'C:\\xampp\\php',
+        ];
+
+        $userProfile = (string) getenv('USERPROFILE');
+        if ($userProfile !== '') {
+            $extras[] = $userProfile . '\\AppData\\Local\\Microsoft\\WinGet\\Links';
+            $extras[] = $userProfile . '\\AppData\\Roaming\\npm';
+        }
+
+        foreach ($extras as $extra) {
+            if ($extra === '' || !is_dir($extra)) {
+                continue;
+            }
+            if (stripos($path, $extra) === false) {
+                $path .= ';' . $extra;
+            }
+        }
+
+        return $path;
     }
 
     private function removeFileWithRetry(string $path): void
@@ -11060,6 +19440,7 @@ class GenerateRepoStructureTest extends TestCase
         throw new RuntimeException("Unable to delete directory: {$path}");
     }
 }
+
 ```
 
 ## FILE: tests/php/InstallerSafetyTest.php
@@ -11095,14 +19476,29 @@ class InstallerSafetyTest extends TestCase
     private function runTool(string $command, array $envOverride = []): array
     {
         $descriptors = [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']];
-        $env = [
-            'HOME' => sys_get_temp_dir(),
-            'XDG_CONFIG_HOME' => sys_get_temp_dir(),
-            'GIT_CONFIG_GLOBAL' => '/dev/null',
-            'PATH' => (string) getenv('PATH'),
-        ];
-        foreach ($envOverride as $k => $v) {
-            $env[$k] = $v;
+        $path = $this->buildTestPath();
+        putenv('PATH=' . $path);
+        $_ENV['PATH'] = $path;
+        $_SERVER['PATH'] = $path;
+
+        $env = null;
+        if ($envOverride !== []) {
+            $env = [
+                'HOME' => sys_get_temp_dir(),
+                'XDG_CONFIG_HOME' => sys_get_temp_dir(),
+                'GIT_CONFIG_GLOBAL' => '/dev/null',
+                'PATH' => $path,
+            ];
+            foreach ($envOverride as $k => $v) {
+                $env[$k] = $v;
+            }
+        } else {
+            $env = [
+                'HOME' => sys_get_temp_dir(),
+                'XDG_CONFIG_HOME' => sys_get_temp_dir(),
+                'GIT_CONFIG_GLOBAL' => '/dev/null',
+                'PATH' => $path,
+            ];
         }
 
         $process = proc_open($command, $descriptors, $pipes, self::$repoRoot, $env);
@@ -11152,6 +19548,33 @@ class InstallerSafetyTest extends TestCase
         }
 
         @rmdir($path);
+    }
+
+    private function buildTestPath(): string
+    {
+        $path = (string) getenv('PATH');
+
+        $extras = [
+            'C:\\Program Files\\Git\\cmd',
+            'C:\\xampp\\php',
+        ];
+
+        $userProfile = (string) getenv('USERPROFILE');
+        if ($userProfile !== '') {
+            $extras[] = $userProfile . '\\AppData\\Local\\Microsoft\\WinGet\\Links';
+            $extras[] = $userProfile . '\\AppData\\Roaming\\npm';
+        }
+
+        foreach ($extras as $extra) {
+            if ($extra === '' || !is_dir($extra)) {
+                continue;
+            }
+            if (stripos($path, $extra) === false) {
+                $path .= ';' . $extra;
+            }
+        }
+
+        return $path;
     }
 
     public function testRunScriptUnknownIdIsRejected(): void
@@ -11415,6 +19838,140 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
 require_once dirname(__DIR__, 2) . '/tools/ai/ai_catalog_lib.php';
 
+```
+
+## FILE: tests/scripts/ai/test-ai-search.sh
+
+```text
+#!/usr/bin/env bash
+set -euo pipefail
+AI_OUTPUT=json bash scripts/ai/ai-search.sh doctor | jq -e '.status=="ok"' >/dev/null
+AI_OUTPUT=json bash scripts/ai/ai-search.sh text AGENTS.md . --dry-run | jq -e '.status=="dry_run"' >/dev/null
+AI_OUTPUT=json bash scripts/ai/ai-search.sh unsafe-all AGENTS.md . | jq -e '.status=="unsafe_blocked"' >/dev/null
+AI_OUTPUT=json bash scripts/ai/ai-search.sh docs "Project Summary" . --fixed | jq -e '.status=="ok" or .status=="no_matches"' >/dev/null
+AI_OUTPUT=json bash scripts/ai/ai-search.sh text "definitely-no-such-ai-search-term" . --fixed | jq -e '.status=="no_matches" and (.matches|length)==0' >/dev/null
+AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked AGENTS . --fixed | jq -e '.status=="ok" and (.matches|length)>0' >/dev/null
+AI_LANG=php AI_OUTPUT=json bash scripts/ai/ai-search.sh struct '$A' tools --fixed | jq -e '.status=="ok" or .status=="no_matches"' >/dev/null
+
+repo_root="$(git rev-parse --show-toplevel)"
+tmp_dir="$(mktemp -d)"
+trap 'rm -rf "$tmp_dir"' EXIT
+(cd "$tmp_dir" && AI_OUTPUT=json bash "$repo_root/scripts/ai/ai-search.sh" changed "ai-search" "$repo_root" --fixed | jq -e '.status=="ok" or .status=="no_matches"' >/dev/null)
+echo "ai-search tests passed"
+
+```
+
+## FILE: tests/scripts/ai/test-preview-file.sh
+
+```text
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
+script="$repo_root/scripts/ai/preview-file.sh"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+
+mkdir -p "$tmp/app" "$tmp/node_modules/pkg" "$tmp/.git"
+
+cat > "$tmp/app/UserService.php" <<'PHP'
+<?php
+class UserService {
+    public function login() {
+        return true;
+    }
+
+    public function logout() {
+        return true;
+    }
+}
+PHP
+
+# Help must work without a file.
+bash "$script" --help >/dev/null
+
+# Default/plain preview.
+bash "$script" "$tmp/app/UserService.php" --lines 3 | grep -q 'UserService'
+
+# Range preview.
+bash "$script" "$tmp/app/UserService.php" --range 3:5 | grep -q 'login'
+
+# Around preview.
+bash "$script" "$tmp/app/UserService.php" --around 7 --context 1 | grep -q 'logout'
+
+# JSON envelope.
+AI_OUTPUT=json bash "$script" "$tmp/app/UserService.php" --lines 4 \
+    | jq -e '
+        .schema == "1"
+        and .status == "ok"
+        and .tool == "preview-file"
+        and .path != ""
+        and (.content | contains("UserService"))
+        and (.warnings | type == "array")
+        and (.errors | type == "array")
+    ' >/dev/null
+
+# Dry run.
+AI_OUTPUT=json bash "$script" "$tmp/app/UserService.php" --around 4 --dry-run \
+    | jq -e '.status == "dry_run" and .content == ""' >/dev/null
+
+# Invalid line count must fail.
+if bash "$script" "$tmp/app/UserService.php" --lines abc >/dev/null 2>&1; then
+    echo "expected invalid --lines to fail" >&2
+    exit 1
+fi
+
+# Invalid range must fail.
+if bash "$script" "$tmp/app/UserService.php" --range 10:2 >/dev/null 2>&1; then
+    echo "expected invalid --range to fail" >&2
+    exit 1
+fi
+
+# Missing file must produce JSON error envelope.
+AI_OUTPUT=json bash "$script" "$tmp/app/Missing.php" 2>/dev/null \
+    | jq -e '.status == "error" and (.errors | length == 1)' >/dev/null
+
+# Binary-looking file blocked by default.
+printf '\000\001\002' > "$tmp/app/blob.bin"
+
+if bash "$script" "$tmp/app/blob.bin" >/dev/null 2>&1; then
+    echo "expected binary file to be blocked" >&2
+    exit 1
+fi
+
+AI_OUTPUT=json bash "$script" "$tmp/app/blob.bin" 2>/dev/null \
+    | jq -e '.status == "error" and (.errors[0] | contains("binary"))' >/dev/null
+
+# Max bytes should block oversized files.
+python3 - "$tmp/app/large.txt" <<'PY'
+import sys
+with open(sys.argv[1], "w", encoding="utf-8") as f:
+    f.write("A" * 5000)
+PY
+
+if bash "$script" "$tmp/app/large.txt" --max-bytes 100 >/dev/null 2>&1; then
+    echo "expected max-bytes block" >&2
+    exit 1
+fi
+
+# Long line truncation.
+bash "$script" "$tmp/app/large.txt" --force --max-bytes 10K --max-columns 20 --lines 1 \
+    | grep -q 'truncated'
+
+# Generated/vendor path warning.
+AI_OUTPUT=json bash "$script" "$tmp/node_modules/pkg/index.js" --force 2>/dev/null \
+    | jq -e '.status == "error" or (.warnings | type == "array")' >/dev/null || true
+
+# .git internals blocked unless forced.
+echo "secretish" > "$tmp/.git/config"
+
+if bash "$script" "$tmp/.git/config" >/dev/null 2>&1; then
+    echo "expected .git internals to be blocked" >&2
+    exit 1
+fi
+
+echo "preview-file tests passed"
 ```
 
 ## FILE: tests/shell/doctor.bats
@@ -11731,6 +20288,13 @@ _hook() {
     echo "$1" | bash "$SCRIPT"
 }
 
+_hook_with_env() {
+    local env_key="$1"
+    local env_value="$2"
+    local payload="$3"
+    echo "$payload" | env "$env_key=$env_value" bash "$SCRIPT"
+}
+
 _decision() {
     # Extract permissionDecision from JSON output.
     echo "$1" | jq -r '.permissionDecision'
@@ -11851,6 +20415,30 @@ teardown() {
 @test "denies unregistered scripts ai command" {
     output=$(_hook '{"toolName":"bash","toolArgs":{"command":"bash scripts/ai/watch-loop.sh echo ok php"}}')
     [ "$(_decision "$output")" = "deny" ]
+}
+
+@test "maintenance mode asks for external script execution" {
+    state_file="$HOME/maintenance-mode.json"
+    now="$(date +%s)"
+    exp="$((now + 600))"
+    cat >"$state_file" <<EOF
+{"enabled":true,"expires_at_epoch":$exp}
+EOF
+
+    output=$(_hook_with_env "COPILOT_MAINTENANCE_STATE_FILE" "$state_file" '{"toolName":"bash","toolArgs":{"command":"bash /tmp/not-repo-script.sh"}}')
+    [ "$(_decision "$output")" = "ask" ]
+}
+
+@test "maintenance mode allows repo ai-search with AI_OUTPUT prefix" {
+    state_file="$HOME/maintenance-mode.json"
+    now="$(date +%s)"
+    exp="$((now + 600))"
+    cat >"$state_file" <<EOF
+{"enabled":true,"expires_at_epoch":$exp}
+EOF
+
+    output=$(_hook_with_env "COPILOT_MAINTENANCE_STATE_FILE" "$state_file" '{"toolName":"bash","toolArgs":{"command":"AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked \"maintenance mode\" . --fixed"}}')
+    [ "$(_decision "$output")" = "allow" ]
 }
 
 # ---- confirm tests ----
@@ -16458,6 +25046,34 @@ function aiLoadJson(string $root, string $relativePath): array
     return $decoded;
 }
 
+/**
+ * @return list<string>
+ */
+function aiListFilesInDirectory(string $directory): array
+{
+    if (!is_dir($directory)) {
+        return [];
+    }
+
+    $files = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::LEAVES_ONLY
+    );
+
+    foreach ($iterator as $item) {
+        if (!$item->isFile()) {
+            continue;
+        }
+
+        $files[] = aiNormalizePath($item->getPathname());
+    }
+
+    sort($files);
+
+    return $files;
+}
+
 function aiParseFrontMatter(string $content): array
 {
     if (!str_starts_with($content, "---\n")) {
@@ -20352,6 +28968,8 @@ function aiCopilotAgentToolRegistry(): array
         'release-auditor'   => $readOnlyTools,
         'workflow-auditor'  => $readOnlyTools,
         'researcher'        => $executeToolsWithQuestions,
+        'repository-researcher' => $executeToolsWithQuestions,
+        'repository-reviewer' => $readOnlyTools,
         'implementer'       => $editExecuteTools,
         'config-maintainer' => $editExecuteTools,
         'refactorer'        => $editExecuteTools,
@@ -21317,7 +29935,7 @@ copy_dir_with_rename() {
     mkdir -p "$dest"
 
     while IFS= read -r -d '' file; do
-        rel="${file#$src/}"
+        rel="${file#"$src"/}"
         dir="$(dirname "$rel")"
         base="$(basename "$rel")"
         base="${base%.*}$new_ext"
@@ -21617,6 +30235,7 @@ function aiInstallerPackRegistry(): array
         ],
         'adapter-copilot' => [
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/copilot-instructions.template.md', 'target' => '.github/copilot-instructions.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/github/pull_request_template.md', 'target' => '.github/pull_request_template.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/copilot-vscode-settings.template.json', 'target' => '.vscode/settings.json', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => false],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/instructions', 'target' => '.github/instructions', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.github/agents', 'install_type' => 'copilot-agents', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
@@ -21626,10 +30245,12 @@ function aiInstallerPackRegistry(): array
             ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/instructions/execution-protocol.instructions.md', 'target' => '.github/instructions/execution-protocol.instructions.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'adapter-opencode' => [
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/core/opencode.json', 'target' => '.opencode/opencode.json', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/core/agents', 'target' => '.opencode/agents', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.opencode/skills', 'install_type' => 'skill-dirs', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/workflows', 'target' => '.opencode/commands', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/commands', 'target' => '.opencode/commands', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/skills/ai-search/SKILL.md', 'target' => '.opencode/skills/ai-search/SKILL.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
         ],
         'capabilities-extended-lite' => [
             ['type' => 'dir', 'source' => 'packages/ai-universal-rules/templates/capabilities/bug-regression', 'target' => 'docs/ai/capabilities/bug-regression', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
@@ -21659,14 +30280,21 @@ function aiInstallerPackRegistry(): array
             ['type' => 'file', 'source' => 'scripts/ai/git-forensics.sh', 'target' => 'scripts/ai/git-forensics.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/gh-pr-context.sh', 'target' => 'scripts/ai/gh-pr-context.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/preview-file.sh', 'target' => 'scripts/ai/preview-file.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'tests/scripts/ai/test-preview-file.sh', 'target' => 'tests/scripts/ai/test-preview-file.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/docs/ai/tools/actions/preview-file.md', 'target' => 'docs/ai/tools/actions/preview-file.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/query-usage.sh', 'target' => 'scripts/ai/query-usage.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/fd-files.sh', 'target' => 'scripts/ai/fd-files.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/rg-code.sh', 'target' => 'scripts/ai/rg-code.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'scripts/ai/ai-structured.sh', 'target' => 'scripts/ai/ai-structured.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'scripts/ai/ai-task.sh', 'target' => 'scripts/ai/ai-task.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'scripts/ai/ai-test-select.sh', 'target' => 'scripts/ai/ai-test-select.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'scripts/ai/session-checkpoint.sh', 'target' => 'scripts/ai/session-checkpoint.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/ai-doc-check.sh', 'target' => 'scripts/ai/ai-doc-check.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
             ['type' => 'file', 'source' => 'scripts/ai/watch-loop.sh', 'target' => 'scripts/ai/watch-loop.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'scripts/ai/repo-tool-inventory.sh', 'target' => 'scripts/ai/repo-tool-inventory.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
             ['type' => 'file', 'source' => 'tools/ai/repo-tool-inventory.php', 'target' => 'tools/ai/repo-tool-inventory.php', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
-            ['type' => 'file', 'source' => 'scripts/ai/install-mandatory-tools.sh', 'target' => 'scripts/ai/install-mandatory-tools.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
+             ['type' => 'file', 'source' => 'scripts/ai/install-mandatory-tools.sh', 'target' => 'scripts/ai/install-mandatory-tools.sh', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
+              ['type' => 'file', 'source' => 'scripts/ai/setup-powershell-profile.ps1', 'target' => 'scripts/ai/setup-powershell-profile.ps1', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
             ['type' => 'file', 'source' => 'docs/ai/repo-required-tools.md', 'target' => 'docs/ai/repo-required-tools.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
             ['type' => 'file', 'source' => 'docs/ai/mandatory-tools-install.md', 'target' => 'docs/ai/mandatory-tools-install.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => false],
             ['type' => 'file', 'source' => 'docs/ai/script-registry.md', 'target' => 'docs/ai/script-registry.md', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
@@ -21681,7 +30309,9 @@ function aiInstallerPackRegistry(): array
             ['type' => 'file', 'source' => 'docs/ai/hooks.md', 'target' => 'docs/ai/hooks.md', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],
         ],
         'ci-pack' => [
-            ['type' => 'file', 'source' => '.github/workflows/validate-ai-surface.yml', 'target' => '.github/workflows/validate-ai-surface.yml', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/github/workflows/validate-ai-surface.yml', 'target' => '.github/workflows/validate-ai-surface.yml', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/github/workflows/test-external-install.yml', 'target' => '.github/workflows/test-external-install.yml', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
+            ['type' => 'file', 'source' => 'packages/ai-universal-rules/templates/github/workflows/export-ai-universal-rules-preview.yml', 'target' => '.github/workflows/export-ai-universal-rules-preview.yml', 'core' => false, 'merge_strategy' => 'replace', 'required' => true],
             ['type' => 'file', 'source' => 'docs/ai/validation.md', 'target' => 'docs/ai/validation.md', 'core' => false, 'merge_strategy' => 'skip-if-exists', 'required' => true],
         ],
         'evidence-pack' => [
@@ -21824,8 +30454,8 @@ function aiInstallerPackToolRequirements(array $selectedPacks): array
     $required = [];
     $optional = [];
     if (in_array('scripts-pack', $selectedPacks, true)) {
-        $required = array_merge($required, ['bash', 'git', 'jq', 'rg', 'repomix', 'scc']);
-        $optional = array_merge($optional, ['fd', 'gh', 'fzf', 'bat', 'delta', 'yq', 'shellcheck', 'semgrep', 'ast-grep']);
+        $required = array_merge($required, ['bash', 'git', 'jq', 'rg', 'fd', 'ast-grep', 'repomix', 'scc']);
+        $optional = array_merge($optional, ['gh', 'fzf', 'bat', 'delta', 'yq', 'shellcheck', 'semgrep']);
     }
     return [
         'required' => array_values(array_unique($required)),
@@ -22122,6 +30752,20 @@ declare(strict_types=1);
 
 function aiInstallerScriptRegistry(): array
 {
+    $root = realpath(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..');
+    if ($root !== false) {
+        $registryPath = $root . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'script-registry.json';
+        if (is_file($registryPath)) {
+            $registryRaw = file_get_contents($registryPath);
+            if ($registryRaw !== false) {
+                $registry = json_decode($registryRaw, true);
+                if (is_array($registry) && isset($registry['scripts']) && is_array($registry['scripts'])) {
+                    return $registry['scripts'];
+                }
+            }
+        }
+    }
+
     return [
         'common' => [
             'label' => 'Shared helper library for AI shell scripts',
@@ -22138,10 +30782,17 @@ function aiInstallerScriptRegistry(): array
             'source_path' => 'scripts/ai/ai-search.sh',
             'installed_path' => 'scripts/ai/ai-search.sh',
             'pack' => 'scripts-pack',
-            'required_tools' => ['bash', 'git', 'rg'],
+            'required_tools' => ['bash', 'git', 'jq', 'rg', 'fd', 'ast-grep'],
             'risk' => 'read-only',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier1',
+            'mutates_state' => false,
+            'writes_paths' => [],
+            'reads_secret_values' => false,
+            'supports_json' => true,
+            'bounded_output' => true,
+            'requires_approval' => false,
         ],
         'rg-code' => [
             'label' => 'Code-focused ripgrep wrapper',
@@ -22168,10 +30819,17 @@ function aiInstallerScriptRegistry(): array
             'source_path' => 'scripts/ai/preview-file.sh',
             'installed_path' => 'scripts/ai/preview-file.sh',
             'pack' => 'scripts-pack',
-            'required_tools' => ['bash'],
+            'required_tools' => ['bash', 'jq'],
             'risk' => 'read-only',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier1',
+            'mutates_state' => false,
+            'writes_paths' => [],
+            'reads_secret_values' => false,
+            'supports_json' => true,
+            'bounded_output' => true,
+            'requires_approval' => false,
         ],
         'query-usage' => [
             'label' => 'Symbol usage query wrapper',
@@ -22232,6 +30890,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'read-only',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier2',
+            'mutates_state' => false,
+            'writes_paths' => [],
+            'reads_secret_values' => false,
+            'supports_json' => false,
+            'bounded_output' => true,
+            'requires_approval' => true,
         ],
         'ai-rollback' => [
             'label' => 'Rollback snapshot helper',
@@ -22242,6 +30907,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'mutating',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier3',
+            'mutates_state' => true,
+            'writes_paths' => ['.ai-logs/', 'docs/ai/generated/'],
+            'reads_secret_values' => false,
+            'supports_json' => false,
+            'bounded_output' => true,
+            'requires_approval' => true,
         ],
         'ai-edit' => [
             'label' => 'Scoped repository edit wrapper',
@@ -22252,6 +30924,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'mutating',
             'supports_dry_run' => true,
             'default_args' => [],
+            'tier' => 'tier3',
+            'mutates_state' => true,
+            'writes_paths' => ['repo-scoped'],
+            'reads_secret_values' => false,
+            'supports_json' => false,
+            'bounded_output' => true,
+            'requires_approval' => true,
         ],
         'pre-tool-use' => [
             'label' => 'Pre-tool policy decision hook',
@@ -22262,6 +30941,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'read-only',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier1',
+            'mutates_state' => false,
+            'writes_paths' => [],
+            'reads_secret_values' => false,
+            'supports_json' => true,
+            'bounded_output' => true,
+            'requires_approval' => false,
         ],
         'post-tool-use' => [
             'label' => 'Post-tool evidence writer hook',
@@ -22272,6 +30958,13 @@ function aiInstallerScriptRegistry(): array
             'risk' => 'read-only',
             'supports_dry_run' => false,
             'default_args' => [],
+            'tier' => 'tier1',
+            'mutates_state' => false,
+            'writes_paths' => ['.ai-logs/'],
+            'reads_secret_values' => false,
+            'supports_json' => true,
+            'bounded_output' => true,
+            'requires_approval' => false,
         ],
         'repomix-context' => [
             'label' => 'Generate Repomix context bundle',
@@ -22333,6 +31026,16 @@ function aiInstallerScriptRegistry(): array
             'supports_dry_run' => true,
             'default_args' => ['--dry-run'],
         ],
+        'setup-powershell-profile' => [
+            'label' => 'Persist PowerShell PATH and tool aliases',
+            'source_path' => 'scripts/ai/setup-powershell-profile.ps1',
+            'installed_path' => 'scripts/ai/setup-powershell-profile.ps1',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['powershell'],
+            'risk' => 'mutating',
+            'supports_dry_run' => true,
+            'default_args' => ['-DryRun'],
+        ],
         'watch-loop' => [
             'label' => 'Watched command retry wrapper',
             'source_path' => 'scripts/ai/watch-loop.sh',
@@ -22343,6 +31046,17 @@ function aiInstallerScriptRegistry(): array
             'supports_dry_run' => false,
             'default_args' => [],
         ],
+    ];
+}
+
+function aiInstallerCommandPolicyRiskTiers(): array
+{
+    return [
+        'tier0' => 'environment probe',
+        'tier1' => 'bounded read-only wrapper',
+        'tier2' => 'ask-gated mutation-adjacent or broad read',
+        'tier3' => 'explicit approval mutation',
+        'tier4' => 'deny',
     ];
 }
 
@@ -22535,6 +31249,18 @@ function aiInstallerCheckTool(string $tool, array $meta): array
 
 function aiInstallerCommandExists(string $cmd): bool
 {
+    if ($cmd === 'ast-grep') {
+        if (aiInstallerCommandExists('ast-grep.exe') || aiInstallerCommandExists('sg') || aiInstallerCommandExists('sg.exe')) {
+            return true;
+        }
+    }
+
+    if ($cmd === 'repomix') {
+        if (aiInstallerCommandExists('repomix.cmd') || aiInstallerCommandExists('repomix.exe')) {
+            return true;
+        }
+    }
+
     $out = [];
     $exit = 0;
     if (PHP_OS_FAMILY === 'Windows') {
@@ -22765,6 +31491,108 @@ foreach ($decoded['files'] as $path => $meta) {
 
 fwrite(STDOUT, "OK: no unmanaged overwrite markers detected in manifest\n");
 exit(0);
+
+```
+
+## FILE: tools/ai/render-agent-permissions.php
+
+```text
+<?php
+
+declare(strict_types=1);
+
+$root = realpath(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..');
+if ($root === false) {
+    fwrite(STDERR, "ERROR: could not resolve repository root\n");
+    exit(1);
+}
+
+$agent = $argv[1] ?? null;
+if ($agent === null || $agent === '') {
+    fwrite(STDERR, "Usage: php tools/ai/render-agent-permissions.php AGENT_NAME\n");
+    exit(1);
+}
+
+$map = [
+    'architect' => 'base-readonly',
+    'researcher' => 'base-readonly',
+    'workflow-auditor' => 'base-readonly',
+    'release-auditor' => 'base-readonly',
+    'reviewer' => 'base-verify',
+    'config-maintainer' => 'base-verify',
+    'implementer' => 'base-impl',
+    'refactorer' => 'base-impl',
+];
+
+if (!isset($map[$agent])) {
+    fwrite(STDERR, "ERROR: unknown agent mapping for {$agent}\n");
+    exit(1);
+}
+
+$policyPath = $root . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'command-policy.tiers.yaml';
+$yaml = file_get_contents($policyPath);
+if ($yaml === false) {
+    fwrite(STDERR, "ERROR: failed to read command policy tiers\n");
+    exit(1);
+}
+
+$tierName = $map[$agent];
+$tierData = parseTier($yaml, $tierName);
+if ($tierData === null) {
+    fwrite(STDERR, "ERROR: tier not found: {$tierName}\n");
+    exit(1);
+}
+
+$lines = [];
+$lines[] = 'permission:';
+$lines[] = '  edit: ' . ($tierData['edit'] ?? 'deny');
+$lines[] = '  bash:';
+$lines[] = "    '*': deny";
+
+foreach ($tierData['allow'] as $cmd) {
+    $lines[] = "    '" . str_replace("'", "''", $cmd) . "': allow";
+}
+foreach ($tierData['ask'] as $cmd) {
+    $lines[] = "    '" . str_replace("'", "''", $cmd) . "': ask";
+}
+foreach ($tierData['deny'] as $cmd) {
+    $lines[] = "    '" . str_replace("'", "''", $cmd) . "': deny";
+}
+
+echo implode(PHP_EOL, $lines) . PHP_EOL;
+
+function parseTier(string $yaml, string $tier): ?array
+{
+    if (preg_match('/^\s{2}' . preg_quote($tier, '/') . ':\s*$([\s\S]*?)(?=^\s{2}[a-z0-9-]+:\s*$|\z)/mi', $yaml, $m) !== 1) {
+        return null;
+    }
+
+    $body = $m[1];
+    $edit = null;
+    if (preg_match('/^\s{4}edit:\s*(allow|deny)\s*$/mi', $body, $editMatch) === 1) {
+        $edit = $editMatch[1];
+    }
+
+    return [
+        'edit' => $edit,
+        'allow' => listItems($body, 'allow'),
+        'ask' => listItems($body, 'ask'),
+        'deny' => listItems($body, 'deny'),
+    ];
+}
+
+function listItems(string $body, string $name): array
+{
+    if (preg_match('/^\s{6}' . preg_quote($name, '/') . ':\s*$([\s\S]*?)(?=^\s{6}(allow|ask|deny):\s*$|^\s{2}[a-z0-9-]+:\s*$|\z)/mi', $body, $m) !== 1) {
+        return [];
+    }
+
+    if (preg_match_all('/^\s{8}-\s*"([^"]+)"\s*$/mi', $m[1], $matches) <= 0) {
+        return [];
+    }
+
+    return array_values(array_unique($matches[1]));
+}
 
 ```
 
@@ -25283,6 +34111,12 @@ $requiredFiles = [
     'docs/ai/integration-matrix.md',
     'docs/ai/script-registry.md',
     'docs/ai/script-registry.json',
+    'docs/ai/command-policy.md',
+    'docs/ai/command-policy.tiers.yaml',
+    '.schemas/ai-command-policy.schema.json',
+    'docs/ai/script-registry.schema.json',
+    'docs/ai/scripts-reference.md',
+    'docs/ai/tools/actions/use-ai-script.md',
     'docs/ai/AI-GUARDRAILS.md',
     'docs/ai/catalog.md',
     'docs/ai/capabilities/README.md',
@@ -25323,6 +34157,8 @@ $requiredFiles = [
     'scripts/ai/ai-edit.sh',
     'scripts/ai/ai-verify.sh',
     'scripts/ai/ai-rollback.sh',
+    'tools/ai/validate-command-policy.php',
+    'tools/ai/render-agent-permissions.php',
     'policies/copilot/policy.yaml',
     '.schemas/evidence-event.schema.json',
     '.ai-logs/README.md',
@@ -25354,6 +34190,12 @@ $liveFiles = [
     'docs/ai/catalog.md',
     'docs/ai/script-registry.md',
     'docs/ai/script-registry.json',
+    'docs/ai/command-policy.md',
+    'docs/ai/command-policy.tiers.yaml',
+    '.schemas/ai-command-policy.schema.json',
+    'docs/ai/script-registry.schema.json',
+    'docs/ai/scripts-reference.md',
+    'docs/ai/tools/actions/use-ai-script.md',
     'docs/ai/capabilities/README.md',
     '.github/copilot-instructions.md',
     '.github/instructions/ai-workflow.instructions.md',
@@ -25682,6 +34524,69 @@ if ($claudeContent !== null && strpos($claudeContent, 'docs/ai/integration-matri
     $warnings[] = 'CLAUDE.md should reference docs/ai/integration-matrix.md';
 }
 
+$aiWiringRequiredFiles = [
+    'docs/ai/tools/ai-search.md',
+    'docs/ai/tools/tool-map.md',
+    'docs/ai/tools/actions/search-evidence.md',
+    'docs/ai/tools/actions/preview-file.md',
+    'scripts/ai/preview-file.sh',
+    'tests/scripts/ai/test-preview-file.sh',
+    '.github/instructions/ai-search.instructions.md',
+    '.github/instructions/ai-tools.instructions.md',
+    '.github/prompts/search-evidence.prompt.md',
+    '.github/agents/repository-researcher.agent.md',
+    '.opencode/opencode.json',
+    '.opencode/commands/search-evidence.md',
+    '.opencode/commands/verify-ai-wiring.md',
+    '.opencode/agents/repository-researcher.md',
+    '.opencode/agents/repository-reviewer.md',
+    '.opencode/skills/ai-search/SKILL.md',
+    'packages/ai-universal-rules/templates/core/opencode.json',
+    'packages/ai-universal-rules/templates/core/agents/repository-researcher.md',
+    'packages/ai-universal-rules/templates/core/agents/repository-reviewer.md',
+    'packages/ai-universal-rules/templates/commands/search-evidence.md',
+    'packages/ai-universal-rules/templates/commands/verify-ai-wiring.md',
+    'packages/ai-universal-rules/templates/skills/ai-search/SKILL.md',
+    'packages/ai-universal-rules/templates/instructions/ai-search.instructions.md',
+    'packages/ai-universal-rules/templates/instructions/ai-tools.instructions.md',
+    'packages/ai-universal-rules/templates/workflows/search-evidence.md',
+    'packages/ai-universal-rules/templates/workflows/review-search-tool.md',
+    'packages/ai-universal-rules/templates/github/pull_request_template.md',
+    'packages/ai-universal-rules/templates/github/workflows/validate-ai-surface.yml',
+    'packages/ai-universal-rules/templates/github/workflows/test-external-install.yml',
+    'packages/ai-universal-rules/templates/github/workflows/export-ai-universal-rules-preview.yml',
+];
+
+foreach ($aiWiringRequiredFiles as $relativePath) {
+    if (!is_file($root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath))) {
+        $errors[] = "missing required AI wiring file: {$relativePath}";
+    }
+}
+
+$requiredSnippets = ['AI_OUTPUT=json bash scripts/ai/ai-search.sh', 'changed', 'staged', 'tracked', 'schema', 'unsafe-all', 'AI_ALLOW_UNLIMITED=1', 'unsafe_blocked', 'dry_run', 'bash scripts/ai/query-usage.sh', 'bash scripts/ai/ai-verify.sh', 'secrets'];
+$previewRequiredSnippets = ['AI_OUTPUT=json bash scripts/ai/preview-file.sh', '--range', '--around', '--max-columns', '--max-bytes', '--force', 'schema', 'status', 'tool', 'path', 'range', 'content', 'warnings', 'errors'];
+$wiringSources = ['AGENTS.md', 'docs/ai/tools/ai-search.md', 'docs/ai/tools/tool-map.md', 'docs/ai/tools/actions/preview-file.md', '.github/copilot-instructions.md', '.github/instructions/ai-tools.instructions.md', '.opencode/commands/search-evidence.md', '.opencode/commands/verify-ai-wiring.md', '.opencode/agents/repository-researcher.md', '.opencode/agents/repository-reviewer.md', '.opencode/skills/ai-search/SKILL.md', 'scripts/ai/preview-file.sh'];
+$combined = '';
+foreach ($wiringSources as $src) {
+    $combined .= "\n" . (safeRead($root, $src) ?? '');
+}
+foreach ($requiredSnippets as $snippet) {
+    if (strpos($combined, $snippet) === false) {
+        $errors[] = "missing required AI wiring content snippet: {$snippet}";
+    }
+}
+
+foreach ($previewRequiredSnippets as $snippet) {
+    if (strpos($combined, $snippet) === false) {
+        $errors[] = "missing required preview-file wiring content snippet: {$snippet}";
+    }
+}
+
+$opencodeConfig = loadJsonFile($root, '.opencode/opencode.json', $errors);
+if (is_array($opencodeConfig)) {
+    validateOpenCodePermissions($opencodeConfig, $errors);
+}
+
 if ($errors === []) {
     $oks[] = $warnings === []
         ? 'rootAIworkflowvalidationpassed'
@@ -25701,6 +34606,148 @@ foreach ($errors as $message) {
 }
 
 exit($errors === [] ? 0 : 1);
+
+function loadJsonFile(string $root, string $relativePath, array &$errors): ?array
+{
+    $content = safeRead($root, $relativePath);
+
+    if ($content === null) {
+        $errors[] = "missing JSON config file: {$relativePath}";
+        return null;
+    }
+
+    $decoded = json_decode($content, true);
+
+    if (!is_array($decoded)) {
+        $errors[] = "invalid JSON config file: {$relativePath}";
+        return null;
+    }
+
+    return $decoded;
+}
+
+function validateOpenCodePermissions(array $config, array &$errors): void
+{
+    $permission = $config['permission'] ?? null;
+
+    if (!is_array($permission)) {
+        $errors[] = '.opencode/opencode.json missing permission object';
+        return;
+    }
+
+    if (($permission['*'] ?? null) !== 'ask') {
+        $errors[] = '.opencode/opencode.json permission.* must be ask';
+    }
+
+    $bash = $permission['bash'] ?? null;
+    if (!is_array($bash)) {
+        $errors[] = '.opencode/opencode.json permission.bash must be an object';
+    } else {
+        requirePermissionValue($bash, '*', ['ask', 'deny'], 'permission.bash.*', $errors);
+
+        foreach (['git status*', 'git diff*', 'git log*'] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['allow'], "permission.bash {$pattern}", $errors);
+        }
+
+        foreach ([
+            'bash scripts/ai/ai-search.sh *',
+            'AI_OUTPUT=json bash scripts/ai/ai-search.sh *',
+            'env AI_OUTPUT=json bash scripts/ai/ai-search.sh *',
+            'bash scripts/ai/preview-file.sh *',
+            'AI_OUTPUT=json bash scripts/ai/preview-file.sh *',
+            'env AI_OUTPUT=json bash scripts/ai/preview-file.sh *',
+            'bash scripts/ai/query-usage.sh *',
+            'bash scripts/ai/ai-diff-context.sh *',
+            'bash scripts/ai/git-forensics.sh *',
+            'bash scripts/ai/ai-doc-check.sh *',
+            'bash scripts/ai/ai-test-select.sh *',
+            'bash scripts/ai/ai-task.sh *',
+            'bash scripts/ai/ai-structured.sh *',
+        ] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['allow', 'ask'], "safe wrapper {$pattern}", $errors);
+        }
+
+        foreach ([
+            'bash scripts/ai/ai-verify.sh *',
+            'bash scripts/ai/pack-context.sh *',
+            'bash scripts/ai/run-repomix-context.sh *',
+            'bash scripts/ai/repomix-context-tree.sh *',
+            'bash scripts/ai/repomix-scc-router.sh *',
+            'bash scripts/ai/ai-edit.sh *',
+            'bash scripts/ai/ai-rollback.sh *',
+            'bash scripts/ai/install-mandatory-tools.sh *',
+        ] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['ask'], "mutating or broad wrapper {$pattern}", $errors);
+        }
+
+        foreach (['grep *', 'rg *', 'find *', 'fd *', 'cat *', 'sed *', 'awk *'] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['ask'], "raw search/read command {$pattern}", $errors);
+        }
+
+        foreach (['rm *', 'chown *', 'sudo *', 'git push*'] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['deny'], "destructive command {$pattern}", $errors);
+        }
+
+        foreach (['mv *', 'cp *', 'chmod *', 'git reset*', 'git clean*'] as $pattern) {
+            requirePermissionValue($bash, $pattern, ['ask'], "mutating command {$pattern}", $errors);
+        }
+    }
+
+    $read = $permission['read'] ?? null;
+    if (!is_array($read)) {
+        $errors[] = '.opencode/opencode.json permission.read must be an object';
+    } else {
+        requirePermissionValue($read, '*', ['allow'], 'permission.read.*', $errors);
+        foreach (['.env', '.env.*', '*.pem', '*.key', '*.crt'] as $pattern) {
+            requirePermissionValue($read, $pattern, ['deny'], "permission.read {$pattern}", $errors);
+        }
+    }
+
+    $edit = $permission['edit'] ?? null;
+    if (!is_array($edit)) {
+        $errors[] = '.opencode/opencode.json permission.edit must be an object';
+    } else {
+        requirePermissionValue($edit, '*', ['ask', 'deny'], 'permission.edit.*', $errors);
+        foreach (['docs/ai/generated/**', '.opencode/**', '.github/agents/**', '.github/instructions/**', '.github/prompts/**', '.github/prompts-optional/**', '.github/skills/**', '.github/workflows/**', '.github/copilot-instructions.md', '.github/pull_request_template.md', '.env', '.env.*', '*.pem', '*.key', '*.crt'] as $pattern) {
+            requirePermissionValue($edit, $pattern, ['deny'], "permission.edit {$pattern}", $errors);
+        }
+    }
+
+    foreach (['grep', 'glob', 'list'] as $tool) {
+        $toolPermission = $permission[$tool] ?? null;
+        if (!is_array($toolPermission)) {
+            $errors[] = ".opencode/opencode.json permission.{$tool} must be an object";
+            continue;
+        }
+
+        requirePermissionValue($toolPermission, '*', ['ask', 'deny'], "permission.{$tool}.*", $errors);
+    }
+
+    $skill = $permission['skill'] ?? null;
+    if (!is_array($skill)) {
+        $errors[] = '.opencode/opencode.json permission.skill must be an object';
+    } else {
+        requirePermissionValue($skill, '*', ['ask'], 'permission.skill.*', $errors);
+        foreach (['ai-search', 'ai-verification', 'ai-context'] as $skillName) {
+            requirePermissionValue($skill, $skillName, ['allow'], "permission.skill {$skillName}", $errors);
+        }
+    }
+
+    foreach (['external_directory', 'doom_loop'] as $guard) {
+        if (($permission[$guard] ?? null) !== 'ask') {
+            $errors[] = ".opencode/opencode.json permission.{$guard} must be ask";
+        }
+    }
+}
+
+function requirePermissionValue(array $permissions, string $pattern, array $allowedValues, string $label, array &$errors): void
+{
+    $value = $permissions[$pattern] ?? null;
+
+    if (!is_string($value) || !in_array($value, $allowedValues, true)) {
+        $errors[] = $label . ' must be ' . implode(' or ', $allowedValues);
+    }
+}
 
 function safeRead(string $root, string $relativePath): ?string
 {
@@ -25791,6 +34838,203 @@ function loadAgnosticLeakRules(string $root): array
         'banned_terms' => is_array($bannedTerms) ? array_values(array_filter($bannedTerms, 'is_string')) : $defaults['banned_terms'],
         'allowed_paths' => is_array($allowedPaths) ? array_values(array_filter($allowedPaths, 'is_string')) : [],
     ];
+}
+
+```
+
+## FILE: tools/ai/validate-command-policy.php
+
+```text
+<?php
+
+declare(strict_types=1);
+
+$root = realpath(__DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..');
+if ($root === false) {
+    fwrite(STDERR, "ERROR: could not resolve repository root\n");
+    exit(1);
+}
+
+$policyPath = $root . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'command-policy.tiers.yaml';
+$registryPath = $root . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'script-registry.json';
+$preToolPath = $root . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'pre-tool-use.sh';
+$maintenanceToolPath = $root . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'maintenance-mode.php';
+
+if (!is_file($policyPath)) {
+    fwrite(STDERR, "ERROR: missing docs/ai/command-policy.tiers.yaml\n");
+    exit(1);
+}
+
+if (!is_file($registryPath)) {
+    fwrite(STDERR, "ERROR: missing docs/ai/script-registry.json\n");
+    exit(1);
+}
+
+if (!is_file($preToolPath)) {
+    fwrite(STDERR, "ERROR: missing scripts/ai/pre-tool-use.sh\n");
+    exit(1);
+}
+
+if (!is_file($maintenanceToolPath)) {
+    fwrite(STDERR, "ERROR: missing tools/ai/maintenance-mode.php\n");
+    exit(1);
+}
+
+$policyText = file_get_contents($policyPath);
+if ($policyText === false) {
+    fwrite(STDERR, "ERROR: failed reading policy yaml\n");
+    exit(1);
+}
+
+$registryRaw = file_get_contents($registryPath);
+if ($registryRaw === false) {
+    fwrite(STDERR, "ERROR: failed reading script registry\n");
+    exit(1);
+}
+
+$registry = json_decode($registryRaw, true);
+if (!is_array($registry)) {
+    fwrite(STDERR, "ERROR: invalid JSON in script registry\n");
+    exit(1);
+}
+
+$preToolText = file_get_contents($preToolPath);
+if ($preToolText === false) {
+    fwrite(STDERR, "ERROR: failed reading scripts/ai/pre-tool-use.sh\n");
+    exit(1);
+}
+
+$errors = [];
+$warnings = [];
+
+$tierNames = [];
+if (preg_match_all('/^\s{2}([a-z0-9-]+):\s*$/mi', $policyText, $matches) > 0) {
+    $tierNames = array_values(array_unique($matches[1]));
+}
+
+if ($tierNames === []) {
+    $errors[] = 'no tiers found under docs/ai/command-policy.tiers.yaml';
+}
+
+// Unknown extends.
+if (preg_match_all('/^\s{4}extends:\s*([a-z0-9-]+)\s*$/mi', $policyText, $extendsMatches) > 0) {
+    foreach ($extendsMatches[1] as $targetTier) {
+        if (!in_array($targetTier, $tierNames, true)) {
+            $errors[] = "unknown tier inheritance target: {$targetTier}";
+        }
+    }
+}
+
+// Circular extends detection from simple adjacency map.
+$extendsMap = [];
+if (preg_match_all('/^\s{2}([a-z0-9-]+):\s*$([\s\S]*?)(?=^\s{2}[a-z0-9-]+:\s*$|\z)/mi', $policyText, $tierBlocks, PREG_SET_ORDER) > 0) {
+    foreach ($tierBlocks as $block) {
+        $tier = $block[1];
+        $body = $block[2];
+        if (preg_match('/^\s{4}extends:\s*([a-z0-9-]+)\s*$/mi', $body, $m) === 1) {
+            $extendsMap[$tier] = $m[1];
+        }
+    }
+}
+
+foreach (array_keys($extendsMap) as $start) {
+    $seen = [];
+    $cursor = $start;
+    while (isset($extendsMap[$cursor])) {
+        if (isset($seen[$cursor])) {
+            $errors[] = "circular tier inheritance detected at: {$cursor}";
+            break;
+        }
+        $seen[$cursor] = true;
+        $cursor = $extendsMap[$cursor];
+    }
+}
+
+// Detect contradictory commands in each tier.
+$tierSections = [];
+if (preg_match_all('/^\s{2}([a-z0-9-]+):\s*$([\s\S]*?)(?=^\s{2}[a-z0-9-]+:\s*$|\z)/mi', $policyText, $tierSections, PREG_SET_ORDER) > 0) {
+    foreach ($tierSections as $section) {
+        $tier = $section[1];
+        $body = $section[2];
+
+        $allow = extractListItems($body, 'allow');
+        $ask = extractListItems($body, 'ask');
+        $deny = extractListItems($body, 'deny');
+
+        foreach (array_intersect($allow, $deny) as $dup) {
+            $errors[] = "tier {$tier} command appears in allow and deny: {$dup}";
+        }
+        foreach (array_intersect($allow, $ask) as $dup) {
+            $warnings[] = "tier {$tier} command appears in allow and ask: {$dup}";
+        }
+    }
+}
+
+// Hard policy checks.
+$forbiddenAllowPatterns = ['grep *', 'find *', 'cat *', 'sed *', 'awk *', 'AI_ALLOW_UNSAFE=1 bash scripts/ai/ai-search.sh *', 'bash scripts/ai/ai-search.sh secrets *'];
+foreach ($forbiddenAllowPatterns as $pattern) {
+    foreach ($tierSections as $section) {
+        $allow = extractListItems($section[2], 'allow');
+        if (in_array($pattern, $allow, true)) {
+            $errors[] = "forbidden command allowed by policy: {$pattern}";
+        }
+    }
+}
+
+if (strpos($preToolText, 'MAINTENANCE_STATE_FILE') === false) {
+    $errors[] = 'pre-tool-use.sh must define MAINTENANCE_STATE_FILE for temporary install mode governance';
+}
+
+if (strpos($preToolText, 'maintenance mode allows repository-delivered scripts only') === false) {
+    $warnings[] = 'maintenance-mode external script ask-gate reason not found in pre-tool-use.sh';
+}
+
+// Minimal registry alignment checks.
+if (!isset($registry['scripts']) || !is_array($registry['scripts'])) {
+    $errors[] = 'script registry missing scripts object';
+} else {
+    foreach ($registry['scripts'] as $id => $meta) {
+        if (!is_array($meta)) {
+            $errors[] = "registry entry is not object: {$id}";
+            continue;
+        }
+
+        foreach (['tier', 'mutates_state', 'writes_paths', 'reads_secret_values', 'supports_json', 'bounded_output', 'requires_approval', 'command', 'interface'] as $field) {
+            if (!array_key_exists($field, $meta)) {
+                $warnings[] = "registry entry missing {$field} metadata: {$id}";
+            }
+        }
+    }
+}
+
+$status = $errors === [] ? 'passed' : 'failed';
+$score = $errors === [] ? max(85, 100 - count($warnings)) : max(40, 90 - (count($errors) * 10) - count($warnings));
+
+$result = [
+    'status' => $status,
+    'policy_score' => $score,
+    'findings' => array_merge(
+        array_map(static fn(string $message): array => ['severity' => 'major', 'issue' => $message], $errors),
+        array_map(static fn(string $message): array => ['severity' => 'minor', 'issue' => $message], $warnings),
+    ),
+];
+
+echo json_encode($result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+
+exit($errors === [] ? 0 : 1);
+
+function extractListItems(string $tierBody, string $section): array
+{
+    if (preg_match('/^\s{6}' . preg_quote($section, '/') . ':\s*$([\s\S]*?)(?=^\s{6}(allow|ask|deny):\s*$|^\s{2}[a-z0-9-]+:\s*$|\z)/mi', $tierBody, $m) !== 1) {
+        return [];
+    }
+
+    $items = [];
+    if (preg_match_all('/^\s{8}-\s*"([^"]+)"\s*$/mi', $m[1], $matches) > 0) {
+        $items = $matches[1];
+    }
+
+    return array_values(array_unique($items));
 }
 
 ```

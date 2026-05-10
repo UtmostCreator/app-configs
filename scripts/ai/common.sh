@@ -732,9 +732,9 @@ PY
 
 wait_for_capture_flag() {
     local file="${1:?file required}"
-    local i
+    local _retry
 
-    for i in {1..50}; do
+    for _retry in {1..50}; do
         [[ -s "$file" ]] && return 0
         sleep 0.02
     done

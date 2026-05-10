@@ -30,15 +30,15 @@ fi
 
 if ! declare -F require_bins >/dev/null 2>&1; then
     require_bins() {
-        local missing=0
+        local missing_flag=0
         local bin
         for bin in "$@"; do
             if ! command -v "$bin" >/dev/null 2>&1; then
                 printf 'preview-file: error: required command not found: %s\n' "$bin" >&2
-                missing=1
+                missing_flag=1
             fi
         done
-        [[ "$missing" -eq 0 ]] || exit 2
+        [[ "$missing_flag" -eq 0 ]] || exit 2
     }
 fi
 

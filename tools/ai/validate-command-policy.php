@@ -10,6 +10,8 @@ if ($root === false) {
 
 $policyPath = $root . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'command-policy.tiers.yaml';
 $registryPath = $root . DIRECTORY_SEPARATOR . 'docs' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'script-registry.json';
+$preToolPath = $root . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'pre-tool-use.sh';
+$maintenanceToolPath = $root . DIRECTORY_SEPARATOR . 'tools' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'maintenance-mode.php';
 
 if (!is_file($policyPath)) {
     fwrite(STDERR, "ERROR: missing docs/ai/command-policy.tiers.yaml\n");
@@ -18,6 +20,16 @@ if (!is_file($policyPath)) {
 
 if (!is_file($registryPath)) {
     fwrite(STDERR, "ERROR: missing docs/ai/script-registry.json\n");
+    exit(1);
+}
+
+if (!is_file($preToolPath)) {
+    fwrite(STDERR, "ERROR: missing scripts/ai/pre-tool-use.sh\n");
+    exit(1);
+}
+
+if (!is_file($maintenanceToolPath)) {
+    fwrite(STDERR, "ERROR: missing tools/ai/maintenance-mode.php\n");
     exit(1);
 }
 
@@ -36,6 +48,12 @@ if ($registryRaw === false) {
 $registry = json_decode($registryRaw, true);
 if (!is_array($registry)) {
     fwrite(STDERR, "ERROR: invalid JSON in script registry\n");
+    exit(1);
+}
+
+$preToolText = file_get_contents($preToolPath);
+if ($preToolText === false) {
+    fwrite(STDERR, "ERROR: failed reading scripts/ai/pre-tool-use.sh\n");
     exit(1);
 }
 
@@ -114,6 +132,14 @@ foreach ($forbiddenAllowPatterns as $pattern) {
             $errors[] = "forbidden command allowed by policy: {$pattern}";
         }
     }
+}
+
+if (strpos($preToolText, 'MAINTENANCE_STATE_FILE') === false) {
+    $errors[] = 'pre-tool-use.sh must define MAINTENANCE_STATE_FILE for temporary install mode governance';
+}
+
+if (strpos($preToolText, 'maintenance mode allows repository-delivered scripts only') === false) {
+    $warnings[] = 'maintenance-mode external script ask-gate reason not found in pre-tool-use.sh';
 }
 
 // Minimal registry alignment checks.

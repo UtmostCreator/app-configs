@@ -278,6 +278,16 @@ function aiInstallerScriptRegistry(): array
             'supports_dry_run' => true,
             'default_args' => ['--dry-run'],
         ],
+        'setup-powershell-profile' => [
+            'label' => 'Persist PowerShell PATH and tool aliases',
+            'source_path' => 'scripts/ai/setup-powershell-profile.ps1',
+            'installed_path' => 'scripts/ai/setup-powershell-profile.ps1',
+            'pack' => 'scripts-pack',
+            'required_tools' => ['powershell'],
+            'risk' => 'mutating',
+            'supports_dry_run' => true,
+            'default_args' => ['-DryRun'],
+        ],
         'watch-loop' => [
             'label' => 'Watched command retry wrapper',
             'source_path' => 'scripts/ai/watch-loop.sh',

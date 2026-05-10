@@ -150,13 +150,11 @@ When the runtime does not auto-load repository hooks, preserve the same boundary
 
 ## Project Binding
 
-If installed into a different project, required project inputs are: project name, purpose, primary runtime stack, active implementation paths, protected/generated/vendor/cache/lock paths, canonical docs and ownership rules, focused verification commands, test locations and fixture policy, schema/API/config/database/generated-artifact contracts, secret and sensitive file patterns, release-risk thresholds, and adapter surfaces.
-
-If missing project input affects correctness, stop and request it.
+If installed into a different project, require project identity, runtime stack, active/protected paths, ownership docs, verification commands, contract boundaries, and sensitive-file rules. If missing input affects correctness, stop and request it.
 
 ## Canonical References
 
-Load only what is relevant: `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, `docs/ai/project-context.md`, `docs/ai/workflow.md`, `docs/ai/source-of-truth.md`, `docs/ai/AI-GUARDRAILS.md`, `docs/ai/adapter-contract.md`, `docs/ai/approval-boundaries.md`, `docs/ai/generated-artifacts.md`, `docs/ai/tool-policy.md`, `docs/ai/scripts-reference.md`, `docs/ai/verification-matrix.md`, `docs/ai/capabilities/README.md`.
+Load only what is relevant from core docs and capabilities under `docs/ai/` plus `AGENTS.md`, `README.md`, and `CONTRIBUTING.md`.
 
 ## Incoming Handoff Contract
 
@@ -184,37 +182,16 @@ For scores below 50/100, do not implement.
 
 ## Capability Routing
 
-| Capability                          | Load when implementation involves                           |
-| ----------------------------------- | ----------------------------------------------------------- |
-| `adapter-drift`                     | provider parity, adapter templates, instruction generation  |
-| `agent-observability-and-evidence`  | evidence logs, proof format, session notes                  |
-| `authorization-and-tool-governance` | permissions, hooks, allow/deny policy, sensitive operations |
-| `bug-regression`                    | bug fix, reproduction, regression coverage                  |
-| `config-change-safety`              | YAML/JSON config, policies, runtime flags                   |
-| `dependency-upgrade`                | package versions, lockfiles, compatibility                  |
-| `docs-sync`                         | docs/capabilities/README alignment                          |
-| `evaluation-and-regression`         | eval checks, regression scoring                             |
-| `preview-environments`              | previews or smoke checks                                    |
-| `project-context`                   | context compiler, repo map, AI context                      |
-| `release-safety`                    | rollback, disable path, rollout risk                        |
-| `review-diff`                       | reviewer feedback or review-ready handoff                   |
-| `service-boundary-patterns`         | APIs, integrations, cross-package contracts                 |
-| `verify-change`                     | focused verification and proof                              |
-
-Load in this order: `CAPABILITY.md`, `checklist.md`, `gotchas.md`, `examples.md`, `reference.md`.
+Load only capabilities relevant to the slice. Prefer this read order per capability: `CAPABILITY.md` → `checklist.md` → `gotchas.md` → `examples.md` → `reference.md`.
 
 ## Required Flow
 
 1. Inspect `git status` and `git diff`.
 2. Confirm bounded target and acceptance criteria.
-3. Confirm target files exist and are editable.
-4. Search for existing patterns and duplication.
-5. Inspect nearby tests, fixtures, schemas, and docs.
-6. Load relevant capabilities.
-7. Implement.
-8. Run focused verification.
-9. Inspect final diff.
-10. Produce reviewer-ready handoff.
+3. Search for existing patterns and nearby tests/docs.
+4. Implement minimal edits.
+5. Run focused verification and inspect final diff.
+6. Produce reviewer-ready handoff.
 
 ## Similarity And Reuse Rule
 

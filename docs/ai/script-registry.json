@@ -1015,6 +1015,73 @@
           "--help"
         ]
       }
+    },
+    "ai-file-freshness": {
+      "category": "audit",
+      "label": "Check AI workflow files for staleness",
+      "source_path": "scripts/ai/ai-file-freshness.sh",
+      "installed_path": "scripts/ai/ai-file-freshness.sh",
+      "pack": "scripts-pack",
+      "required_tools": [
+        "bash",
+        "git"
+      ],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": ["--days", "90"],
+      "tier": "tier1",
+      "mutates_state": false,
+      "writes_paths": [],
+      "reads_secret_values": false,
+      "supports_json": true,
+      "bounded_output": true,
+      "requires_approval": false,
+      "command": "scripts/ai/ai-file-freshness.sh",
+      "metadata_status": "complete",
+      "interface": {
+        "usage": [
+          "ai-file-freshness.sh [--days N] [--json]"
+        ],
+        "modes": [],
+        "options": [
+          "--days",
+          "--json",
+          "--help"
+        ]
+      }
+    },
+    "ai-install-coverage": {
+      "category": "audit",
+      "label": "Track AI install completeness and missing files",
+      "source_path": "scripts/ai/ai-install-coverage.sh",
+      "installed_path": "scripts/ai/ai-install-coverage.sh",
+      "pack": "scripts-pack",
+      "required_tools": [
+        "bash"
+      ],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": [],
+      "tier": "tier1",
+      "mutates_state": false,
+      "writes_paths": [],
+      "reads_secret_values": false,
+      "supports_json": true,
+      "bounded_output": true,
+      "requires_approval": false,
+      "command": "scripts/ai/ai-install-coverage.sh",
+      "metadata_status": "complete",
+      "interface": {
+        "usage": [
+          "ai-install-coverage.sh [--json] [--fix]"
+        ],
+        "modes": [],
+        "options": [
+          "--json",
+          "--fix",
+          "--help"
+        ]
+      }
     }
   }
 }

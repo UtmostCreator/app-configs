@@ -1,45 +1,57 @@
 # Local runtime and cache surfaces
+
 .git/**
 .husky/**
 
 # Local/editor and temp files
+
 .idea/**
 .vscode/**
 .DS_Store
 Thumbs.db
-*.log
-*.tmp
-*.bak
-*.swp
-*.swo
+_.log
+_.tmp
+_.bak
+_.swp
+\*.swo
 
 # Generated context outputs
+
 repomix-output*.xml
 repomix-*.xml
-context-*.md
+context-\*.md
 .repomix-context/**
 .ai-backups/**
-.ai-tmp/**
+.ai-tmp/\*\*
 
 # Generated catalog surfaces
+
 docs/ai/catalog.md
 packages/ai-universal-rules/docs/BROWSE.md
 packages/ai-universal-rules/catalog.json
 llms.txt
 
+# Large generated artifacts (blow up repomix bundles)
+
+docs/ai/generated/**
+docs/generated/**
+
 # Binary assets with low code-review value
-**/*.keystore
-**/*.jks
-**/*.jar
-**/*.png
-**/*.jpg
-**/*.jpeg
-**/*.gif
-**/*.webp
-**/*.ico
+
+**/\*.keystore
+**/_.jks
+\*\*/_.jar
+**/\*.png
+**/_.jpg
+\*\*/_.jpeg
+**/\*.gif
+**/_.webp
+\*\*/_.ico
 
 # Local machine-specific files
+
 tools/karabiner/karabiner.json
 
 # Low-value schema/editor metadata
-.schemas/**
+
+.schemas/\*\*

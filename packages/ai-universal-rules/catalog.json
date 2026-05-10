@@ -46,7 +46,7 @@
         "package:package-capability": 36,
         "package:shared-template": 4,
         "package:workflow-doc": 6,
-        "package:workflow-template": 15,
+        "package:workflow-template": 16,
         "root:adapter-doc": 1,
         "root:adapter-hook": 2,
         "root:adapter-hook-script": 1,
@@ -59,10 +59,10 @@
         "root:github-copilot-agent": 10,
         "root:github-copilot-instruction": 21,
         "root:github-copilot-prompt": 16,
-        "root:github-copilot-skill": 15,
+        "root:github-copilot-skill": 16,
         "root:opencode-agent": 10,
-        "root:opencode-command": 6,
-        "root:opencode-skill": 17,
+        "root:opencode-command": 18,
+        "root:opencode-skill": 18,
         "root:php-reference": 3,
         "root:root-doc": 16,
         "root:schema": 1,
@@ -289,6 +289,14 @@
         {
             "scope": "package",
             "type": "github-copilot-instruction-template",
+            "name": "AI Scripts Rules",
+            "path": "packages/ai-universal-rules/templates/instructions/ai-scripts.instructions.md",
+            "runtime": "github-copilot",
+            "description": "AI script registry consistency and risk-based execution rules"
+        },
+        {
+            "scope": "package",
+            "type": "github-copilot-instruction-template",
             "name": "AI Search Tool Instructions",
             "path": "packages/ai-universal-rules/templates/instructions/ai-search.instructions.md",
             "runtime": "github-copilot",
@@ -301,14 +309,6 @@
             "path": "packages/ai-universal-rules/templates/instructions/ai-tooling.instructions.md",
             "runtime": "github-copilot",
             "description": "AI tooling contract, registry alignment, and hook-policy consistency"
-        },
-        {
-            "scope": "package",
-            "type": "github-copilot-instruction-template",
-            "name": "AI Tooling Instructions",
-            "path": "packages/ai-universal-rules/templates/instructions/ai-tools.instructions.md",
-            "runtime": "github-copilot",
-            "description": "applyTo: \"scripts/ai/**,tools/ai/**,docs/ai/tools/**\""
         },
         {
             "scope": "package",
@@ -1065,6 +1065,14 @@
         {
             "scope": "package",
             "type": "workflow-template",
+            "name": "script-inventory",
+            "path": "packages/ai-universal-rules/templates/workflows/script-inventory.md",
+            "runtime": "dual-runtime",
+            "description": "Build AI script inventory with risk and parity checks"
+        },
+        {
+            "scope": "package",
+            "type": "workflow-template",
             "name": "search-evidence",
             "path": "packages/ai-universal-rules/templates/workflows/search-evidence.md",
             "runtime": "dual-runtime",
@@ -1505,18 +1513,18 @@
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "repository-researcher",
+            "name": "Repository Researcher",
             "path": ".github/agents/repository-researcher.agent.md",
             "runtime": "github-copilot",
-            "description": "Read-only repository researcher that collects evidence."
+            "description": "Strict script-first repository researcher using ai-search before raw search"
         },
         {
             "scope": "root",
             "type": "github-copilot-agent",
-            "name": "repository-reviewer",
+            "name": "Repository Reviewer",
             "path": ".github/agents/repository-reviewer.agent.md",
             "runtime": "github-copilot",
-            "description": "Diff-first reviewer that verifies changes with ai-search."
+            "description": "Strict script-first diff reviewer using ai-search and validator evidence"
         },
         {
             "scope": "root",
@@ -1577,14 +1585,6 @@
         {
             "scope": "root",
             "type": "github-copilot-instruction",
-            "name": "ai-tools",
-            "path": ".github/instructions/ai-tools.instructions.md",
-            "runtime": "github-copilot",
-            "description": "applyTo: \"scripts/ai/**,tools/ai/**,docs/ai/tools/**\""
-        },
-        {
-            "scope": "root",
-            "type": "github-copilot-instruction",
             "name": "ai-workflow",
             "path": ".github/instructions/ai-workflow.instructions.md",
             "runtime": "github-copilot",
@@ -1604,7 +1604,7 @@
             "name": "architecture",
             "path": ".github/instructions/architecture.instructions.md",
             "runtime": "github-copilot",
-            "description": "Architecture, ownership, and layering guidance"
+            "description": "Architecture, ownership, layering, source-of-truth, and high-risk structural change guidance"
         },
         {
             "scope": "root",
@@ -1641,6 +1641,14 @@
         {
             "scope": "root",
             "type": "github-copilot-instruction",
+            "name": "context-gate",
+            "path": ".github/instructions/context-gate.instructions.md",
+            "runtime": "github-copilot",
+            "description": "Mandatory task-context loading before planning, editing, or reviewing"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-instruction",
             "name": "execution-protocol",
             "path": ".github/instructions/execution-protocol.instructions.md",
             "runtime": "github-copilot",
@@ -1652,7 +1660,7 @@
             "name": "frontend",
             "path": ".github/instructions/frontend.instructions.md",
             "runtime": "github-copilot",
-            "description": "Frontend, UI, interaction, and presentation guidance"
+            "description": "Frontend, UI, accessibility, state, interaction, and presentation guidance"
         },
         {
             "scope": "root",
@@ -1692,7 +1700,7 @@
             "name": "targets",
             "path": ".github/instructions/targets.instructions.md",
             "runtime": "github-copilot",
-            "description": "Target and platform adaptation guidance for multi-surface repositories"
+            "description": "Target, runtime, platform, adapter, and deployment-surface adaptation guidance"
         },
         {
             "scope": "root",
@@ -1700,7 +1708,7 @@
             "name": "testing",
             "path": ".github/instructions/testing.instructions.md",
             "runtime": "github-copilot",
-            "description": "Testing rules, baseline proof, regression-first bug fixes, and verification ladder"
+            "description": "Testing, verification ladder, regression coverage, and deterministic proof rules"
         },
         {
             "scope": "root",
@@ -1945,6 +1953,14 @@
         {
             "scope": "root",
             "type": "github-copilot-skill",
+            "name": "script-inventory",
+            "path": ".github/skills/script-inventory/SKILL.md",
+            "runtime": "github-copilot",
+            "description": "Build AI script inventory with risk and parity checks"
+        },
+        {
+            "scope": "root",
+            "type": "github-copilot-skill",
             "name": "search-evidence",
             "path": ".github/skills/search-evidence/SKILL.md",
             "runtime": "github-copilot",
@@ -2041,10 +2057,98 @@
         {
             "scope": "root",
             "type": "opencode-command",
+            "name": "architecture-plan",
+            "path": ".opencode/commands/architecture-plan.md",
+            "runtime": "opencode",
+            "description": "Use when producing a focused implementation plan for a medium or large change before implementation begins"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "bug-regression",
+            "path": ".opencode/commands/bug-regression.md",
+            "runtime": "opencode",
+            "description": "Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "dependency-upgrade",
+            "path": ".opencode/commands/dependency-upgrade.md",
+            "runtime": "opencode",
+            "description": "Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "docs-sync",
+            "path": ".opencode/commands/docs-sync.md",
+            "runtime": "opencode",
+            "description": "Use when changed behavior or workflow needs matching documentation updates without broad implementation planning"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
             "name": "evidence-first-execution",
             "path": ".opencode/commands/evidence-first-execution.md",
             "runtime": "opencode",
             "description": "Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output."
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "new-feature",
+            "path": ".opencode/commands/new-feature.md",
+            "runtime": "opencode",
+            "description": "Use when implementing a bounded feature with existing repository patterns and focused verification"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "plan-slice",
+            "path": ".opencode/commands/plan-slice.md",
+            "runtime": "opencode",
+            "description": "Use when a task is multi-step, ambiguous, or architecture-affecting and needs a bounded plan before implementation"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "project-context",
+            "path": ".opencode/commands/project-context.md",
+            "runtime": "opencode",
+            "description": "Use when planning or reviewing work in an unfamiliar area, choosing verification depth, or checking approval boundaries before editing"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "regression-test",
+            "path": ".opencode/commands/regression-test.md",
+            "runtime": "opencode",
+            "description": "Use when the main task is to create a failing or proving regression test for a reported bug or edge case"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "release-safety",
+            "path": ".opencode/commands/release-safety.md",
+            "runtime": "opencode",
+            "description": "Use when a change has rollout, rollback, migration, or compatibility risk that needs release-specific safeguards"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "repo-investigation",
+            "path": ".opencode/commands/repo-investigation.md",
+            "runtime": "opencode",
+            "description": "Use when investigating a bug, regression, suspicious behavior, or change history in this repository and you need a read-first workflow with exact evidence."
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "review-diff",
+            "path": ".opencode/commands/review-diff.md",
+            "runtime": "opencode",
+            "description": "Use when reviewing a change set for correctness, regression risk, policy fit, and missing verification starting from the diff"
         },
         {
             "scope": "root",
@@ -2060,7 +2164,7 @@
             "name": "script-inventory",
             "path": ".opencode/commands/script-inventory.md",
             "runtime": "opencode",
-            "description": "Inventory registered AI scripts and risk"
+            "description": "Build AI script inventory with risk and parity checks"
         },
         {
             "scope": "root",
@@ -2077,6 +2181,14 @@
             "path": ".opencode/commands/verify-ai-wiring.md",
             "runtime": "opencode",
             "description": "Verify OpenCode script-first AI wiring"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-command",
+            "name": "verify-change",
+            "path": ".opencode/commands/verify-change.md",
+            "runtime": "opencode",
+            "description": "Use when behavior changed and you need to choose the smallest relevant verification first, then report evidence clearly"
         },
         {
             "scope": "root",
@@ -2205,6 +2317,14 @@
             "path": ".opencode/skills/review-search-tool/SKILL.md",
             "runtime": "opencode",
             "description": "Review ai-search implementation and contract safety"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-skill",
+            "name": "script-inventory",
+            "path": ".opencode/skills/script-inventory/SKILL.md",
+            "runtime": "opencode",
+            "description": "Build AI script inventory with risk and parity checks"
         },
         {
             "scope": "root",

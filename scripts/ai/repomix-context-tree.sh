@@ -39,6 +39,7 @@ Options:
   --reserved-output <n>       Reserved output tokens (default: 4000)
   --instruction-overhead <n>  Instruction overhead tokens (default: 8000)
   --safety-factor <float>     Safety multiplier (default: 0.85)
+  --max-bundle-tokens <n>     Max tokens per bundle before forcing split (default: 100000)
   --help
 EOF
 }
@@ -167,6 +168,7 @@ CONTEXT_WINDOW=128000
 RESERVED_OUTPUT=4000
 INSTRUCTION_OVERHEAD=8000
 SAFETY_FACTOR=0.85
+MAX_BUNDLE_TOKENS=${MAX_BUNDLE_TOKENS:-100000}
 
 while (($# > 0)); do
     case "$1" in
@@ -205,6 +207,8 @@ while (($# > 0)); do
     --instruction-overhead=*) INSTRUCTION_OVERHEAD="${1#*=}"; shift ;;
     --safety-factor) SAFETY_FACTOR="$2"; shift 2 ;;
     --safety-factor=*) SAFETY_FACTOR="${1#*=}"; shift ;;
+    --max-bundle-tokens) MAX_BUNDLE_TOKENS="$2"; shift 2 ;;
+    --max-bundle-tokens=*) MAX_BUNDLE_TOKENS="${1#*=}"; shift ;;
     --help | -h) usage; exit 0 ;;
     *) die "unknown option '$1'" ;;
     esac
@@ -292,7 +296,7 @@ ensure_actionable_route() {
     IFS=$'\t' read -r fallback_group _fallback_files _fallback_lines _fallback_code _fallback_comments _fallback_blanks _fallback_complexity fallback_bytes _fallback_churn _fallback_code_share _fallback_complexity_share _fallback_file_share _fallback_byte_share _fallback_churn_share _fallback_score <<<"$fallback_row"
 
     fallback_tokens="$(estimate_tokens "$fallback_bytes")"
-    if ((fallback_tokens <= usable)); then
+    if ((fallback_tokens <= usable && fallback_tokens <= MAX_BUNDLE_TOKENS)); then
         fallback_decision='pack'
         fallback_type='bundle'
         fallback_output="bundles/$(safe_name "$fallback_group").$STYLE_EXT"
@@ -389,7 +393,12 @@ build_plan() {
             selected=$((selected + 1))
             tokens="$(estimate_tokens "$bytes")"
 
-            if ((tokens <= usable)); then
+            if ((tokens > MAX_BUNDLE_TOKENS)); then
+                decision='split'
+                type='index'
+                output="indexes/$(safe_name "$group").md"
+                reason="estimated tokens ($tokens) exceed max-bundle-tokens ($MAX_BUNDLE_TOKENS)"
+            elif ((tokens <= usable)); then
                 decision='pack'
                 type='bundle'
                 output="bundles/$(safe_name "$group").$STYLE_EXT"
@@ -426,6 +435,7 @@ build_plan() {
       --argjson reserved_output "$RESERVED_OUTPUT" \
       --argjson instruction_overhead "$INSTRUCTION_OVERHEAD" \
       --argjson safety_factor "$SAFETY_FACTOR" \
+      --argjson max_bundle_tokens "$MAX_BUNDLE_TOKENS" \
       --argjson usable_budget "$usable" \
       --arg style "$STYLE" \
       --arg compress "$COMPRESS" \
@@ -439,6 +449,7 @@ build_plan() {
           reserved_output: $reserved_output,
           instruction_overhead: $instruction_overhead,
           safety_factor: $safety_factor,
+          max_bundle_tokens: $max_bundle_tokens,
           usable_budget: $usable_budget
         },
         repomix: {

@@ -22,20 +22,7 @@ AI_OUTPUT=json bash scripts/ai/preview-file.sh <path> --range 40:90
 
 ## Output contract
 
-JSON mode returns:
-
-- `schema`
-- `status`
-- `tool`
-- `path`
-- `range`
-- `total_lines`
-- `truncated`
-- `content`
-- `limits`
-- `warnings`
-- `errors`
-- `meta.size_bytes`
+JSON mode returns `schema`, `status`, `tool`, `path`, `range`, `total_lines`, `truncated`, `content`, `limits`, `warnings`, `errors`, and `meta.size_bytes`.
 
 ## Safety
 

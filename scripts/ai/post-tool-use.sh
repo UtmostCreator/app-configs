@@ -3,9 +3,9 @@ set -euo pipefail
 # shellcheck source=scripts/ai/common.sh
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
-MAINTENANCE_STATE_FILE="${COPILOT_MAINTENANCE_STATE_FILE:-.ai-logs/maintenance-mode.json}"
+MAINTENANCE_STATE_FILE="${AI_MAINTENANCE_STATE_FILE:-.ai-logs/maintenance-mode.json}"
 
-mkdir -p "$COPILOT_LOG_DIR"
+mkdir -p "$AI_LOG_DIR"
 input="$(cat)"
 SESSION_ID="${SESSION_ID:-post-tool-use-$(date +%Y%m%d-%H%M%S)-$$}"
 TRACE_ID="${TRACE_ID:-trc-${SESSION_ID}}"

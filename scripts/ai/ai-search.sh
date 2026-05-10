@@ -127,15 +127,22 @@ diff_file_matches() {
   local diff_flag="${1:-}"
   local -a diff_args=()
   local -a files=()
+  local -a existing=()
   [[ -n "$diff_flag" ]] && diff_args+=("$diff_flag")
   mapfile -d '' files < <(git -C "$root" diff "${diff_args[@]}" --name-only -z)
 
-  if [[ "${#files[@]}" -eq 0 ]]; then
+  # Filter out deleted files that no longer exist on disk
+  local f
+  for f in "${files[@]}"; do
+    [[ -n "$f" && -f "$root/$f" ]] && existing+=("$f")
+  done
+
+  if [[ "${#existing[@]}" -eq 0 ]]; then
     printf '[]'
     return 0
   fi
 
-  (cd "$root" && rg_matches "${rg_flags[@]}" --json "$query" "${files[@]}")
+  (cd "$root" && rg_matches "${rg_flags[@]}" --json "$query" "${existing[@]}")
 }
 
 struct_matches() {

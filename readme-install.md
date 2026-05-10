@@ -1,102 +1,219 @@
-# In-Repo Installation Runbook (Restarted From Zero)
+# Installation Guide
 
-Target repository: `C:/xampp/htdocs/app-configs`
+Install AI workflow tooling into this repository or any target project.
 
-## Step Log
+## Prerequisites
 
-| # | command | description | verification step / expected result |
-|---|---|---|---|
-| 1 | `git status --short` | Capture pre-install backup evidence of working tree before overwrite-style operations. | **Observed:** `?? readme-install.md`. **Expected:** known baseline before install/apply. |
-| 2 | `git log -1 --oneline` | Capture rollback anchor commit before running install flow. | **Observed:** `06dde0c feat(policy): correct policy and regestry scripts & rules`. **Expected:** latest commit hash recorded. |
-| 3 | `php tools/ai/ai.php install --profile full-governance --reinstall --dry-run` | Canonical full-governance dry-run reinstall plan (covers copilot/opencode/scripts/hooks/advisor surfaces). | **Blocked by policy gate:** command class is `ask` in current runtime policy, execution denied. **Expected when approved:** dry-run install plan output without mutations. |
-| 4 | `php tools/ai/install-ai-kit.php --target . --profile full-governance --runtime dual --dry-run --force` | Alternative direct installer dry-run with explicit force/override semantics. | **Blocked by policy gate:** denied in current runtime. **Expected when approved:** overwrite plan for dual runtime surfaces. |
-| 5 | `php tools/ai/validate-command-policy.php .` | Validate command-policy tiers and registry contracts after policy/registry work. | **Observed:** `{"status":"passed","policy_score":100,...}`. **Expected:** pass with no major findings. |
-| 6 | `php tools/ai/validate-ai-config.php` | Verify root AI workflow files, references, and policy consistency. | **Observed:** `OK: rootAIworkflowvalidationpassedwithwarnings` with only `.github/copilot-instructions.md` warnings. **Expected:** pass (warnings allowed). |
-| 7 | `php tools/ai/validate-ai-catalog.php` | Validate AI catalog metadata integrity. | **Observed:** `OK: AI catalog metadata validation passed`. **Expected:** pass. |
-| 8 | `php tools/ai/generate-ai-catalog.php --check` | Ensure generated catalog artifacts are up to date after changes. | **Observed:** all up to date (`catalog.json`, `docs/ai/catalog.md`, `BROWSE.md`, `llms.txt`). **Expected:** no drift. |
-| 9 | `php tools/ai/verify-full-install.php` | Full install verification chain (preflight -> package verify -> plan -> validation -> repomix -> advisor -> verify). | **Blocked by policy gate:** command is `ask` and denied in this runtime. **Expected when approved:** full/partial install state + remediation list. |
-| 10 | `bash scripts/ai/run-repomix-context.sh .` | Repomix context script verification path. | **Not runnable in this runtime:** `bash` not available. **Expected when available:** context pack analysis + validation output. |
-| 11 | `bash scripts/ai/repomix-context-tree.sh all .` | Repomix tree pack/plan/analyze comprehensive script check. | **Not runnable in this runtime:** `bash` not available. **Expected when available:** context tree artifacts and summary. |
-| 12 | `php tools/ai/ai.php advisor --all` | Advisory script pass over generated signals/context. | **Blocked by policy gate:** not allowlisted for direct execution in this runtime. **Expected when approved:** advisor findings and recommendations. |
-
-## Preferred Options (and Why)
-
-| Option | Prefer? | Why |
+| Tool | Minimum | Check |
 |---|---|---|
-| `--profile full-governance` | Yes | Broadest install profile that includes both Copilot and OpenCode governance surfaces plus verification-oriented defaults. |
-| `--reinstall` | Yes (for restart-from-zero) | Reapplies surfaces on top of existing repo to refresh adapters/scripts/docs without manual cleanup. |
-| `--dry-run` first | Always | Produces explicit mutation plan before apply; safest way to verify intended overwrite scope. |
-| `--runtime dual` | Yes | Ensures both Copilot and OpenCode installation targets are refreshed in one run. |
-| `--force` | Use carefully | Needed when overwrite semantics are required; pair with dry-run evidence first. |
-| `--verify-after` | Yes | Runs follow-up validation chain automatically after install for immediate proof. |
+| PHP | 8.1+ | `php -v` |
+| Composer | 2.x | `composer --version` |
+| Bash | 4.0+ | `bash --version` (macOS: `brew install bash`) |
+| Git | 2.x | `git --version` |
+| jq | 1.6+ | `jq --version` |
+| repomix | latest | `repomix --version` (`npm i -g repomix`) |
+| scc | latest | `scc --version` (`brew install scc`) |
+| rg | latest | `rg --version` (`brew install ripgrep`) |
+| fd | latest | `fd --version` (`brew install fd`) |
 
-## Full Installation Command Set To Run When Policy Approval Is Granted
+Install all CLI tools at once:
 
-1. `php tools/ai/ai.php install --profile full-governance --reinstall --dry-run`
-2. `php tools/ai/ai.php install --profile full-governance --reinstall --apply`
-3. `php tools/ai/validate-ai-config.php`
-4. `php tools/ai/validate-install-surface.php`
-5. `php tools/ai/validate-ai-catalog.php`
-6. `php tools/ai/generate-ai-catalog.php --check`
-7. `php tools/ai/verify-full-install.php`
-8. `bash scripts/ai/run-repomix-context.sh .`
-9. `bash scripts/ai/repomix-context-tree.sh all .`
-10. `php tools/ai/ai.php advisor --all`
+```bash
+/opt/homebrew/bin/bash scripts/ai/install-mandatory-tools.sh
+```
 
-## Current Session Status
+## Quick Start (Full Installation)
 
-- Validation commands that are allowlisted **were executed successfully** (steps 5-8).
-- Core installer/apply/verify-full-install/advisor/repomix commands are **policy-gated (`ask`) and were denied in this runtime**, so full in-place reinstall could not be completed here.
-- This file documents both executed evidence and the exact command set required to finish full installation once approval/policy gate is opened.
+### 1. Preflight check
 
-## Maintenance Mode (Temporary Full-Install Window)
+```bash
+php tools/ai/ai.php preflight
+```
 
-Use maintenance mode to temporarily permit full repository install/verify workflows while keeping strict defaults outside this window.
+### 2. Dry-run to preview changes
 
-1. `php tools/ai/maintenance-mode.php status`
-2. `php tools/ai/maintenance-mode.php enable --reason "full-governance reinstall" --ttl-seconds 1800`
-3. run the full installation command set in this runbook
-4. `php tools/ai/maintenance-mode.php disable`
+```bash
+php tools/ai/ai.php install --profile full-governance --reinstall --dry-run
+```
 
-### Explicitly allowed search evidence during maintenance mode
+### 3. Apply installation
 
-- `AI_OUTPUT=json bash scripts/ai/ai-search.sh changed "maintenance mode" . --fixed`
-- `AI_OUTPUT=json bash scripts/ai/ai-search.sh staged "maintenance mode" . --fixed`
-- `AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked "maintenance mode" . --fixed`
+```bash
+php tools/ai/ai.php install --profile full-governance --reinstall --apply
+```
 
-If a script is not repository-delivered under this repo path, it must remain `ask` (human approval required).
+### 4. Validate
 
-## Continuation Session (Post-Install-Surface Fixes)
+```bash
+php tools/ai/validate-ai-config.php
+php tools/ai/validate-install-surface.php
+php tools/ai/validate-ai-catalog.php
+php tools/ai/generate-ai-catalog.php --check
+```
 
-| # | command | description | verification step / expected result |
+### 5. Full verification
+
+```bash
+php tools/ai/verify-full-install.php
+```
+
+## Installation Profiles
+
+| Profile | Surfaces | Use when |
+|---|---|---|
+| `full-governance` | Copilot + OpenCode + scripts + hooks + advisor | Full AI workflow setup (recommended) |
+| `copilot-only` | Copilot adapter + instructions + agents + skills | VS Code / GitHub Copilot only |
+| `opencode-only` | OpenCode adapter + skills | OpenCode CLI only |
+| `scripts-only` | AI scripts + common.sh | Bash scripts only |
+
+List available profiles and packs:
+
+```bash
+php tools/ai/ai.php packs
+```
+
+## Install Options
+
+| Option | Purpose |
+|---|---|
+| `--profile <name>` | Select installation profile |
+| `--reinstall` | Refresh all surfaces (overwrites managed files) |
+| `--dry-run` | Preview changes without writing files |
+| `--apply` | Write files (default is dry-run) |
+| `--force` | Overwrite even if target has local modifications |
+| `--verify-after` | Run validation automatically after install |
+
+## Repomix Context Generation
+
+Generate AI-ready context bundles from any project. Use strong params for projects with deeply nested folder structures.
+
+### Recommended command (for any project)
+
+```bash
+SECRETS_SCAN=0 /opt/homebrew/bin/bash scripts/ai/run-repomix-context.sh /Users/USER_NAME/Herd/PROJECT_NAME/ \
+  --top 0 \
+  --min-code 0 \
+  --min-files 0 \
+  --depth 5
+```
+
+### Parameter reference
+
+| Parameter | Default | Recommended | Why |
 |---|---|---|---|
-| 13 | `php tools/ai/validate-install-surface.php` | Re-run install-surface verifier after source fixes. | **Observed:** `OK: install surface validation passed` with warnings only (line budgets + missing optional `.vscode/settings.json`). **Expected:** no install-surface errors. |
-| 14 | `php tools/ai/validate-ai-config.php` | Confirm overall AI config after repairs. | **Observed:** pass with `.github/copilot-instructions.md` advisory warnings only. **Expected:** pass. |
-| 15 | `php tools/ai/validate-ai-catalog.php` | Confirm catalog integrity. | **Observed:** pass. **Expected:** pass. |
-| 16 | `php tools/ai/generate-ai-catalog.php --check` | Drift check after adding missing skills/pack mappings. | **Observed:** `catalog.json` and `docs/ai/catalog.md` out of date. **Expected after regenerate:** up to date. |
+| `--depth` | 1 | 3–5 | Higher depth captures deeply nested folders in other projects |
+| `--top` | 25 | 0 | `0` means all routes — ensures nothing is skipped |
+| `--min-code` | 300 | 0 | `0` captures small files/configs that matter |
+| `--min-files` | 2 | 0 | `0` captures single-file routes |
+| `--min-score` | 0 | 0 | No score filtering |
+| `--min-complexity` | 0 | 0 | No complexity filtering |
+| `--compress` | off | on | Reduces token usage (added automatically by `run-repomix-context.sh`) |
+| `--style` | xml | xml | XML style is default and most compatible |
+| `--context-window` | 128000 | 128000 | Match your model's context window |
+| `SECRETS_SCAN` | 1 | 0 | Disable if gitleaks is not installed or project is local-only |
 
-### Additional fixes applied in this continuation
+### Output structure
 
-1. Added missing `scripts-pack` entries in installer pack registry for:
-   - `scripts/ai/ai-structured.sh`
-   - `scripts/ai/ai-task.sh`
-   - `scripts/ai/ai-test-select.sh`
-   - `scripts/ai/session-checkpoint.sh`
-2. Added missing installed skills to satisfy workflow-template validation:
-   - `.github/skills/review-search-tool/SKILL.md`
-   - `.github/skills/search-evidence/SKILL.md`
-   - `.opencode/skills/review-search-tool/SKILL.md`
-   - `.opencode/skills/search-evidence/SKILL.md`
-3. Updated Copilot repository agents to use fine-grained VS Code tool names:
-   - `.github/agents/repository-researcher.agent.md`
-   - `.github/agents/repository-reviewer.agent.md`
-4. Added execution-protocol reference in `.github/copilot-instructions.md`.
+```
+.repomix-context/tree-context/
+├── index.md              ← Human-readable route index (open first)
+├── tree-plan.json        ← Machine-readable route plan
+├── tree-manifest.json    ← Full generation manifest
+├── bundles/              ← Packed context files per route
+└── indexes/              ← Split-route child indexes
+```
 
-### Remaining action to complete this runbook
+### Other context scripts
 
-- Regenerate catalog artifacts (not just `--check`) and re-run checks:
-  1. `php tools/ai/generate-ai-catalog.php`
-  2. `php tools/ai/generate-ai-catalog.php --check`
+| Script | Purpose |
+|---|---|
+| `repomix-context-tree.sh` | Lower-level: analyze, plan, pack, or clean context tree |
+| `repomix-scc-router.sh` | Size-aware routing using scc metrics |
+| `pack-context.sh` | Quick focused context for a single area |
+| `ai-diff-context.sh` | Context from current git diff only |
+
+## Post-Install Validation Commands
+
+```bash
+# Validate AI config and references
+php tools/ai/validate-ai-config.php
+
+# Validate installed adapter surfaces
+php tools/ai/validate-install-surface.php
+
+# Validate catalog metadata
+php tools/ai/validate-ai-catalog.php
+
+# Check generated artifacts for drift
+php tools/ai/generate-ai-catalog.php --check
+
+# Validate command policy tiers
+php tools/ai/validate-command-policy.php .
+
+# Full verification chain
+php tools/ai/verify-full-install.php
+
+# Run AI advisor
+php tools/ai/ai.php advisor --all
+```
+
+## Regenerating Catalog Artifacts
+
+If `--check` shows drift:
+
+```bash
+php tools/ai/generate-ai-catalog.php
+php tools/ai/generate-ai-catalog.php --check
+```
+
+## Running AI Script Tests
+
+All scripts have tests in `tests/scripts/ai/`. Requires Bash 4+.
+
+```bash
+# Run all test suites
+SUITE_TIMEOUT=60 /opt/homebrew/bin/bash tests/scripts/ai/run-all-tests.sh
+
+# Run a single suite
+/opt/homebrew/bin/bash tests/scripts/ai/test-common.sh
+```
+
+## Maintenance Mode
+
+Temporarily permit full install/verify workflows:
+
+```bash
+php tools/ai/maintenance-mode.php enable --reason "full-governance reinstall" --ttl-seconds 1800
+# run installation commands
+php tools/ai/maintenance-mode.php disable
+```
+
+## Troubleshooting
+
+### macOS: Bash version too old
+
+System bash is 3.2. Install Homebrew bash:
+
+```bash
+brew install bash
+/opt/homebrew/bin/bash --version  # should show 5.x
+```
+
+Use `/opt/homebrew/bin/bash` to run scripts, or add it to PATH.
+
+### Windows: Git not in PATH
+
+```powershell
+$env:Path = "C:\Program Files\Git\cmd;$env:Path"
+git --version
+```
+
+### repomix not found
+
+```bash
+npm i -g repomix
+repomix --version
+```
 
 If your shell prints `'git' is not recognized as an internal or external command` during installer commands, add Git to PATH and retry:
 

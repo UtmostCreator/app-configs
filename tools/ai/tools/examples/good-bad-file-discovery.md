@@ -1,5 +1,15 @@
 # Good / Bad: File Discovery
 
+## Best (repository wrapper)
+
+```bash
+# Find files by pattern — ignore-aware, bounded output, JSON mode
+bash scripts/ai/fd-files.sh "Service" app
+
+# JSON output for pipelines
+bash scripts/ai/fd-files.sh "config" . --json
+```
+
 ## Good
 
 ```bash

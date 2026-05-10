@@ -39,7 +39,7 @@
     "counts": {
         "package:core-template": 20,
         "package:foundation-doc": 6,
-        "package:github-copilot-instruction-template": 23,
+        "package:github-copilot-instruction-template": 21,
         "package:opencode-command-template": 3,
         "package:operations-doc": 6,
         "package:optional-template": 9,
@@ -77,14 +77,6 @@
             "path": "packages/ai-universal-rules/templates/core/AGENTS.template.md",
             "runtime": "canonical",
             "description": "- Project: `<PROJECT_NAME>`"
-        },
-        {
-            "scope": "package",
-            "type": "core-template",
-            "name": "all_into_one",
-            "path": "packages/ai-universal-rules/templates/core/agents/all_into_one.bat",
-            "runtime": "canonical",
-            "description": "@echo off"
         },
         {
             "scope": "package",
@@ -209,10 +201,18 @@
         {
             "scope": "package",
             "type": "core-template",
+            "name": "Project Context Placeholder Guide",
+            "path": "packages/ai-universal-rules/templates/core/project-context.placeholders.md",
+            "runtime": "canonical",
+            "description": "Use this file when installing templates into a new project. Fill placeholders before enabling write-capable AI flows."
+        },
+        {
+            "scope": "package",
+            "type": "core-template",
             "name": "<PROJECT_NAME> Project Context",
             "path": "packages/ai-universal-rules/templates/core/project-context.template.md",
             "runtime": "canonical",
-            "description": "Use this file as durable project context for instructions, agents, prompts, and capabilities."
+            "description": "Use this file as durable, canonical project context for instructions, agents, prompts, and capabilities."
         },
         {
             "scope": "package",
@@ -282,14 +282,6 @@
             "scope": "package",
             "type": "github-copilot-instruction-template",
             "name": "AI File Standards",
-            "path": "packages/ai-universal-rules/templates/instructions/ALL_IN_ONE.txt",
-            "runtime": "github-copilot",
-            "description": "ai-file-standards.instructions.md"
-        },
-        {
-            "scope": "package",
-            "type": "github-copilot-instruction-template",
-            "name": "AI File Standards",
             "path": "packages/ai-universal-rules/templates/instructions/ai-file-standards.instructions.md",
             "runtime": "github-copilot",
             "description": "AI workflow file roles, line budgets, duplication rules, and adapter boundaries"
@@ -325,14 +317,6 @@
             "path": "packages/ai-universal-rules/templates/instructions/ai-workflow.instructions.md",
             "runtime": "github-copilot",
             "description": "Rules for AI workflow docs, Copilot adapter files, and stronger VS Code enforcement"
-        },
-        {
-            "scope": "package",
-            "type": "github-copilot-instruction-template",
-            "name": "all_into_one",
-            "path": "packages/ai-universal-rules/templates/instructions/all_into_one.bat",
-            "runtime": "github-copilot",
-            "description": "@echo off"
         },
         {
             "scope": "package",
@@ -1668,7 +1652,7 @@
             "name": "frontend",
             "path": ".github/instructions/frontend.instructions.md",
             "runtime": "github-copilot",
-            "description": "applyTo: \"<FRONTEND_PATH_GLOB>\""
+            "description": "Frontend, UI, interaction, and presentation guidance"
         },
         {
             "scope": "root",
@@ -1708,7 +1692,7 @@
             "name": "targets",
             "path": ".github/instructions/targets.instructions.md",
             "runtime": "github-copilot",
-            "description": "applyTo: \"**\""
+            "description": "Target and platform adaptation guidance for multi-surface repositories"
         },
         {
             "scope": "root",
@@ -2100,7 +2084,7 @@
             "name": "verify",
             "path": ".opencode/commands/verify.md",
             "runtime": "opencode",
-            "description": "description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+            "description": "Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
         },
         {
             "scope": "root",

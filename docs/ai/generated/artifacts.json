@@ -1,7 +1,7 @@
 {
     "schema_version": 1,
-    "updated_at": "2026-05-10T15:25:12+00:00",
-    "current_commit": "b75bf1b",
+    "updated_at": "2026-05-10T16:05:47+00:00",
+    "current_commit": "912d55a",
     "artifacts": {
         "preflight.json": {
             "generated_at": "2026-05-10T15:25:11+00:00",
@@ -85,10 +85,10 @@
             "md_path": "docs/ai/generated/toolchain.md"
         },
         "ai-commands.json": {
-            "generated_at": "2026-05-10T10:32:52+00:00",
-            "based_on_commit": "06dde0c",
+            "generated_at": "2026-05-10T16:05:47+00:00",
+            "based_on_commit": "912d55a",
             "command": "php tools/ai/ai.php list",
-            "estimated_tokens": 377,
+            "estimated_tokens": 367,
             "stale": false,
             "json_path": "docs/ai/generated/ai-commands.json",
             "md_path": "docs/ai/generated/ai-commands.md"

@@ -1,11 +1,11 @@
 {
     "schema_version": 1,
-    "updated_at": "2026-05-10T14:56:59+00:00",
-    "current_commit": "4fcd339",
+    "updated_at": "2026-05-10T15:25:12+00:00",
+    "current_commit": "b75bf1b",
     "artifacts": {
         "preflight.json": {
-            "generated_at": "2026-05-10T14:56:58+00:00",
-            "based_on_commit": "4fcd339",
+            "generated_at": "2026-05-10T15:25:11+00:00",
+            "based_on_commit": "b75bf1b",
             "command": "php tools/ai/ai.php preflight",
             "estimated_tokens": 331,
             "stale": false,
@@ -31,10 +31,10 @@
             "md_path": "docs/ai/generated/adapter-plan.md"
         },
         "install.json": {
-            "generated_at": "2026-05-10T14:56:59+00:00",
-            "based_on_commit": "4fcd339",
+            "generated_at": "2026-05-10T15:25:11+00:00",
+            "based_on_commit": "b75bf1b",
             "command": "php tools/ai/ai.php install --apply",
-            "estimated_tokens": 1017,
+            "estimated_tokens": 1016,
             "stale": false,
             "json_path": "docs/ai/generated/install.json",
             "md_path": "docs/ai/generated/install.md"
@@ -229,8 +229,8 @@
             "md_path": "docs/ai/generated/adapter-validate.md"
         },
         "install-transaction.json": {
-            "generated_at": "2026-05-10T14:56:58+00:00",
-            "based_on_commit": "4fcd339",
+            "generated_at": "2026-05-10T15:25:11+00:00",
+            "based_on_commit": "b75bf1b",
             "command": "php tools/ai/ai.php install --apply",
             "estimated_tokens": 160,
             "stale": false,

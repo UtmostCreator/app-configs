@@ -1,15 +1,17 @@
 ---
-name: search-evidence
 description: Collect repository evidence using ai-search
 ---
 
-# search-evidence
+Collect repository evidence for `$ARGUMENTS`.
 
-Use this skill for bounded repository evidence collection.
+1. Run `git status --short`.
+2. Search changed, staged, then tracked evidence before broad modes.
+3. Prefer JSON output.
 
-Required sequence:
+Default commands:
 
-1. `git status --short`
-2. `AI_OUTPUT=json bash scripts/ai/ai-search.sh changed QUERY . --fixed`
-3. `AI_OUTPUT=json bash scripts/ai/ai-search.sh staged QUERY . --fixed`
-4. `AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked QUERY . --fixed`
+```bash
+AI_OUTPUT=json bash scripts/ai/ai-search.sh changed "$ARGUMENTS" . --fixed
+AI_OUTPUT=json bash scripts/ai/ai-search.sh staged "$ARGUMENTS" . --fixed
+AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked "$ARGUMENTS" . --fixed
+```

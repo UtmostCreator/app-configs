@@ -1,23 +1,7 @@
 ---
 name: Implementer
 description: 'Use when a bounded implementation slice is clear and focused verification should happen in this repository'
-tools:
-  [
-    'search/changes',
-    'search/codebase',
-    'search/fileSearch',
-    'search/listDirectory',
-    'search/textSearch',
-    'search/usages',
-    'read/readFile',
-    'read/problems',
-    'edit/editFiles',
-    'edit/createFile',
-    'edit/createDirectory',
-    'execute/runInTerminal',
-    'execute/testFailure',
-    'vscode/askQuestions',
-  ]
+tools: ['search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/textSearch', 'search/usages', 'read/readFile', 'read/problems', 'edit/editFiles', 'edit/createFile', 'edit/createDirectory', 'execute/runInTerminal', 'execute/testFailure', 'vscode/askQuestions']
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -30,6 +14,7 @@ Available tools: `search/changes`, `search/codebase`, `search/fileSearch`, `sear
 
 - **Edit:** available
 - **Execute:** available — constrained by the Shell Boundary below
+
 
 ## Shell Boundary
 
@@ -59,7 +44,6 @@ Approved scripts (run from the repository root using `scripts/ai`):
 - `fd *`
 - `eza *`
 - `rg *`
-- `grep *`
 - `git grep *`
 - `sg *`
 - `sed -n *`
@@ -122,6 +106,12 @@ Execute one clearly bounded slice with the smallest safe change. Do not redesign
 
 Implement the agreed change, prove it with focused verification, and hand off a review-ready diff.
 
+## Shell Governance
+
+Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
+When the active runtime supports repository hooks, these scripts must remain authoritative through `.github/hooks/tool-policy.json` and emit local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.
+When the runtime does not auto-load repository hooks, preserve the same boundary manually: stay inside the bash allowlist, prefer approved registry scripts, and do not claim automatic hook enforcement.
+
 ## Hard Rules
 
 - Implement only one bounded slice.
@@ -172,22 +162,22 @@ For scores below 50/100, do not implement.
 
 ## Capability Routing
 
-| Capability                          | Load when implementation involves                           |
-| ----------------------------------- | ----------------------------------------------------------- |
-| `adapter-drift`                     | provider parity, adapter templates, instruction generation  |
-| `agent-observability-and-evidence`  | evidence logs, proof format, session notes                  |
-| `authorization-and-tool-governance` | permissions, hooks, allow/deny policy, sensitive operations |
-| `bug-regression`                    | bug fix, reproduction, regression coverage                  |
-| `config-change-safety`              | YAML/JSON config, policies, runtime flags                   |
-| `dependency-upgrade`                | package versions, lockfiles, compatibility                  |
-| `docs-sync`                         | docs/capabilities/README alignment                          |
-| `evaluation-and-regression`         | eval checks, regression scoring                             |
-| `preview-environments`              | previews or smoke checks                                    |
-| `project-context`                   | context compiler, repo map, AI context                      |
-| `release-safety`                    | rollback, disable path, rollout risk                        |
-| `review-diff`                       | reviewer feedback or review-ready handoff                   |
-| `service-boundary-patterns`         | APIs, integrations, cross-package contracts                 |
-| `verify-change`                     | focused verification and proof                              |
+| Capability                          | Load when implementation involves                            |
+| ----------------------------------- | ------------------------------------------------------------ |
+| `adapter-drift`                     | provider parity, adapter templates, instruction generation   |
+| `agent-observability-and-evidence`  | evidence logs, proof format, session notes                   |
+| `authorization-and-tool-governance` | permissions, hooks, allow/deny policy, sensitive operations  |
+| `bug-regression`                    | bug fix, reproduction, regression coverage                   |
+| `config-change-safety`              | YAML/JSON config, policies, runtime flags                    |
+| `dependency-upgrade`                | package versions, lockfiles, compatibility                   |
+| `docs-sync`                         | docs/capabilities/README alignment                           |
+| `evaluation-and-regression`         | eval checks, regression scoring                              |
+| `preview-environments`              | previews or smoke checks                                     |
+| `project-context`                   | context compiler, repo map, AI context                       |
+| `release-safety`                    | rollback, disable path, rollout risk                         |
+| `review-diff`                       | reviewer feedback or review-ready handoff                    |
+| `service-boundary-patterns`         | APIs, integrations, cross-package contracts                  |
+| `verify-change`                     | focused verification and proof                               |
 
 Load in this order: `CAPABILITY.md`, `checklist.md`, `gotchas.md`, `examples.md`, `reference.md`.
 

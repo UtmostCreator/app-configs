@@ -24,10 +24,10 @@ I select and run the most relevant verification path for a change and separate e
 
 ## Project Commands
 
-- Main verification command: `<PRIMARY_VERIFY_COMMAND>`
-- Main build command: `<PRIMARY_BUILD_COMMAND>`
-- Main test command: `<PRIMARY_TEST_COMMAND>`
-- Preferred narrow-first pattern: `<NARROW_VERIFY_GUIDANCE>`
+- Main verification command: `unknown`
+- Main build command: `unknown`
+- Main test command: `unknown`
+- Preferred narrow-first pattern: `start with the narrowest repo-local check and escalate only if needed`
 
 ## Output
 

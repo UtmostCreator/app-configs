@@ -1,6 +1,6 @@
 ---
-applyTo: "**"
-description: "Tool selection and script enforcement — use rg/fd/approved scripts; never use bare grep/find"
+applyTo: '**'
+description: 'Tool selection and script enforcement — use rg/fd/approved scripts; never use bare grep/find'
 ---
 
 # Tool Selection Rules

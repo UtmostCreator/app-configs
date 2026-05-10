@@ -1,6 +1,6 @@
 ---
-applyTo: "**"
-description: "Copilot-specific script enforcement — when built-in tools are insufficient, use repository shell scripts"
+applyTo: '**'
+description: 'Copilot-specific script enforcement — when built-in tools are insufficient, use repository shell scripts'
 ---
 
 # Copilot Script Enforcement

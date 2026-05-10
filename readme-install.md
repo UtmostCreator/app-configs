@@ -4,17 +4,17 @@ Install AI workflow tooling into this repository or any target project.
 
 ## Prerequisites
 
-| Tool | Minimum | Check |
-|---|---|---|
-| PHP | 8.1+ | `php -v` |
-| Composer | 2.x | `composer --version` |
-| Bash | 4.0+ | `bash --version` (macOS: `brew install bash`) |
-| Git | 2.x | `git --version` |
-| jq | 1.6+ | `jq --version` |
-| repomix | latest | `repomix --version` (`npm i -g repomix`) |
-| scc | latest | `scc --version` (`brew install scc`) |
-| rg | latest | `rg --version` (`brew install ripgrep`) |
-| fd | latest | `fd --version` (`brew install fd`) |
+| Tool     | Minimum | Check                                         |
+| -------- | ------- | --------------------------------------------- |
+| PHP      | 8.1+    | `php -v`                                      |
+| Composer | 2.x     | `composer --version`                          |
+| Bash     | 4.0+    | `bash --version` (macOS: `brew install bash`) |
+| Git      | 2.x     | `git --version`                               |
+| jq       | 1.6+    | `jq --version`                                |
+| repomix  | latest  | `repomix --version` (`npm i -g repomix`)      |
+| scc      | latest  | `scc --version` (`brew install scc`)          |
+| rg       | latest  | `rg --version` (`brew install ripgrep`)       |
+| fd       | latest  | `fd --version` (`brew install fd`)            |
 
 Install all CLI tools at once:
 
@@ -59,12 +59,12 @@ php tools/ai/verify-full-install.php
 
 ## Installation Profiles
 
-| Profile | Surfaces | Use when |
-|---|---|---|
-| `full-governance` | Copilot + OpenCode + scripts + hooks + advisor | Full AI workflow setup (recommended) |
-| `copilot-only` | Copilot adapter + instructions + agents + skills | VS Code / GitHub Copilot only |
-| `opencode-only` | OpenCode adapter + skills | OpenCode CLI only |
-| `scripts-only` | AI scripts + common.sh | Bash scripts only |
+| Profile           | Surfaces                                         | Use when                             |
+| ----------------- | ------------------------------------------------ | ------------------------------------ |
+| `full-governance` | Copilot + OpenCode + scripts + hooks + advisor   | Full AI workflow setup (recommended) |
+| `copilot-only`    | Copilot adapter + instructions + agents + skills | VS Code / GitHub Copilot only        |
+| `opencode-only`   | OpenCode adapter + skills                        | OpenCode CLI only                    |
+| `scripts-only`    | AI scripts + common.sh                           | Bash scripts only                    |
 
 List available profiles and packs:
 
@@ -74,14 +74,14 @@ php tools/ai/ai.php packs
 
 ## Install Options
 
-| Option | Purpose |
-|---|---|
-| `--profile <name>` | Select installation profile |
-| `--reinstall` | Refresh all surfaces (overwrites managed files) |
-| `--dry-run` | Preview changes without writing files |
-| `--apply` | Write files (default is dry-run) |
-| `--force` | Overwrite even if target has local modifications |
-| `--verify-after` | Run validation automatically after install |
+| Option             | Purpose                                          |
+| ------------------ | ------------------------------------------------ |
+| `--profile <name>` | Select installation profile                      |
+| `--reinstall`      | Refresh all surfaces (overwrites managed files)  |
+| `--dry-run`        | Preview changes without writing files            |
+| `--apply`          | Write files (default is dry-run)                 |
+| `--force`          | Overwrite even if target has local modifications |
+| `--verify-after`   | Run validation automatically after install       |
 
 ## Repomix Context Generation
 
@@ -94,23 +94,27 @@ SECRETS_SCAN=0 /opt/homebrew/bin/bash scripts/ai/run-repomix-context.sh /Users/U
   --top 0 \
   --min-code 0 \
   --min-files 0 \
-  --depth 5
+  --depth 3
 ```
+
+For very large projects, increase `--depth` to 4 or 5. If any bundle exceeds the token cap, it will be marked `split` automatically.
 
 ### Parameter reference
 
-| Parameter | Default | Recommended | Why |
-|---|---|---|---|
-| `--depth` | 1 | 3–5 | Higher depth captures deeply nested folders in other projects |
-| `--top` | 25 | 0 | `0` means all routes — ensures nothing is skipped |
-| `--min-code` | 300 | 0 | `0` captures small files/configs that matter |
-| `--min-files` | 2 | 0 | `0` captures single-file routes |
-| `--min-score` | 0 | 0 | No score filtering |
-| `--min-complexity` | 0 | 0 | No complexity filtering |
-| `--compress` | off | on | Reduces token usage (added automatically by `run-repomix-context.sh`) |
-| `--style` | xml | xml | XML style is default and most compatible |
-| `--context-window` | 128000 | 128000 | Match your model's context window |
-| `SECRETS_SCAN` | 1 | 0 | Disable if gitleaks is not installed or project is local-only |
+| Parameter             | Default | Recommended | Why                                                                   |
+| --------------------- | ------- | ----------- | --------------------------------------------------------------------- |
+| `--depth`             | 1       | 3           | Captures nested folders; use 4–5 for very large projects              |
+| `--top`               | 25      | 0           | `0` means all routes — ensures nothing is skipped                     |
+| `--min-code`          | 300     | 0           | `0` captures small files/configs that matter                          |
+| `--min-files`         | 2       | 0           | `0` captures single-file routes                                       |
+| `--min-score`         | 0       | 0           | No score filtering                                                    |
+| `--min-complexity`    | 0       | 0           | No complexity filtering                                               |
+| `--max-bundle-tokens` | 100000  | 100000      | Max tokens per bundle; oversized routes are force-split               |
+| `--compress`          | off     | on          | Reduces token usage (added automatically by `run-repomix-context.sh`) |
+| `--style`             | xml     | xml         | XML style is default and most compatible                              |
+| `--context-window`    | 128000  | 128000      | Match your model's context window                                     |
+| `SECRETS_SCAN`        | 1       | 0           | Disable if gitleaks is not installed or project is local-only         |
+| `MAX_BUNDLE_TOKENS`   | 100000  | 100000      | Env var override for `--max-bundle-tokens`                            |
 
 ### Output structure
 
@@ -125,12 +129,12 @@ SECRETS_SCAN=0 /opt/homebrew/bin/bash scripts/ai/run-repomix-context.sh /Users/U
 
 ### Other context scripts
 
-| Script | Purpose |
-|---|---|
+| Script                    | Purpose                                                 |
+| ------------------------- | ------------------------------------------------------- |
 | `repomix-context-tree.sh` | Lower-level: analyze, plan, pack, or clean context tree |
-| `repomix-scc-router.sh` | Size-aware routing using scc metrics |
-| `pack-context.sh` | Quick focused context for a single area |
-| `ai-diff-context.sh` | Context from current git diff only |
+| `repomix-scc-router.sh`   | Size-aware routing using scc metrics                    |
+| `pack-context.sh`         | Quick focused context for a single area                 |
+| `ai-diff-context.sh`      | Context from current git diff only                      |
 
 ## Post-Install Validation Commands
 

@@ -2414,21 +2414,24 @@ function aiRunInstallWorkflow(string $root, array $args): int
     }
 
     $backupId = aiParseArg($args, 'backup') ?? '';
-    if ($backupId === '') {
+    if ($backupId === '' && empty($installConfig['force'])) {
         $data = [
             'status' => 'blocked',
             'mode' => $mode,
             'runtime_mode' => $runtimeMode,
-            'reason' => 'apply requires explicit backup id',
+            'reason' => 'apply requires explicit backup id (use --force to skip)',
             'next_action' => 'php tools/ai/ai.php install --backup-only --apply --mode ' . $mode,
         ];
-        $written = aiCliWriteArtifact($root, 'install', 'php tools/ai/ai.php install --apply', $data, 'blocked', null, 'Create backup first, then rerun apply with --backup <backup-id>.');
+        $written = aiCliWriteArtifact($root, 'install', 'php tools/ai/ai.php install --apply', $data, 'blocked', null, 'Create backup first, then rerun apply with --backup <backup-id>. Use --force to bypass backup requirement.');
+        fwrite(STDERR, "Error: backup is mandatory for install --apply. Create a backup first or use --force to skip." . PHP_EOL);
         fwrite(STDOUT, "OK: wrote {$written['json']} and {$written['markdown']}" . PHP_EOL);
         return 1;
     }
-    $backupManifestPath = $root . DIRECTORY_SEPARATOR . '.ai-backups' . DIRECTORY_SEPARATOR . $backupId . DIRECTORY_SEPARATOR . 'manifest.json';
-    if (!is_file($backupManifestPath)) {
-        throw new RuntimeException('backup manifest not found for apply backup id: ' . $backupId);
+    if ($backupId !== '') {
+        $backupManifestPath = $root . DIRECTORY_SEPARATOR . '.ai-backups' . DIRECTORY_SEPARATOR . $backupId . DIRECTORY_SEPARATOR . 'manifest.json';
+        if (!is_file($backupManifestPath)) {
+            throw new RuntimeException('backup manifest not found for apply backup id: ' . $backupId);
+        }
     }
 
     $transactionId = 'install-' . gmdate('Ymd-His');

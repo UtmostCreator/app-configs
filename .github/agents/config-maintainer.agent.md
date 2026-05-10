@@ -1,23 +1,7 @@
 ---
 name: Config Maintainer
 description: 'Use when changing editor, shell, runtime, or tool configuration while preserving current behavior'
-tools:
-  [
-    'search/changes',
-    'search/codebase',
-    'search/fileSearch',
-    'search/listDirectory',
-    'search/textSearch',
-    'search/usages',
-    'read/readFile',
-    'read/problems',
-    'edit/editFiles',
-    'edit/createFile',
-    'edit/createDirectory',
-    'execute/runInTerminal',
-    'execute/testFailure',
-    'vscode/askQuestions',
-  ]
+tools: ['search/changes', 'search/codebase', 'search/fileSearch', 'search/listDirectory', 'search/textSearch', 'search/usages', 'read/readFile', 'read/problems', 'edit/editFiles', 'edit/createFile', 'edit/createDirectory', 'execute/runInTerminal', 'execute/testFailure', 'vscode/askQuestions']
 user-invocable: true
 disable-model-invocation: false
 ---
@@ -30,6 +14,7 @@ Available tools: `search/changes`, `search/codebase`, `search/fileSearch`, `sear
 
 - **Edit:** available
 - **Execute:** available — constrained by the Shell Boundary below
+
 
 ## Shell Boundary
 
@@ -58,7 +43,6 @@ Approved scripts (run from the repository root using `scripts/ai`):
 - `eza *`
 - `rg *`
 - `git grep *`
-- `grep *`
 - `head *`
 - `tail *`
 - `jq *`
@@ -79,6 +63,12 @@ Change editor, shell, runtime, or tool configuration while preserving current be
 ## Core Mission
 
 Apply targeted config changes that preserve compatibility, document the affected surface, and flag any machine-wide or approval-gated impacts.
+
+## Shell Governance
+
+Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
+When the active runtime supports repository hooks, these scripts must remain authoritative through `.github/hooks/tool-policy.json` and emit local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.
+When the runtime does not auto-load repository hooks, preserve the same boundary manually: stay inside the bash allowlist, prefer approved registry scripts, and do not claim automatic hook enforcement.
 
 ## Hard Rules
 

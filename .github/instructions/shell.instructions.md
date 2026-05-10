@@ -11,5 +11,3 @@ description: "Shell safety, portability, and verification rules"
 - Prefer strict mode compatible with script shell (`set -eu` or `set -euo pipefail` for bash).
 - Use safe temporary-file handling and cleanup.
 - Preserve deterministic output and clear exit codes.
-
-For workflow YAML behavior, use `ci-workflows.instructions.md`.

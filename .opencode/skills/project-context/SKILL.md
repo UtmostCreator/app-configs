@@ -25,6 +25,19 @@ I provide durable repository context for `app-configs` and point to the support 
 - `docs/ai/capabilities/project-context/CAPABILITY.md`
 - `docs/ai/capabilities/project-context/gotchas.md`
 - `docs/ai/capabilities/project-context/examples.md`
+- `.github/instructions/context-gate.instructions.md`
+- `.github/instructions/architecture.instructions.md`
+- `.github/instructions/targets.instructions.md`
+
+## Task Context Sources
+
+Load the smallest relevant task context first when available:
+
+- `docs/ai/generated/task-context/latest.md`
+- `php tools/ai/compile-task-context.php`
+- `php tools/ai/impact.php`
+
+If no task context exists yet, stay read-only and produce the missing ownership, path, target, and verification map.
 
 ## Project Shape
 
@@ -32,7 +45,7 @@ I provide durable repository context for `app-configs` and point to the support 
 - Summary: `AI workflow starter for app-configs`
 - Primary language: `unknown`
 - Primary runtime: `unknown`
-- Active paths: `.ai-install-manifest.json,.ai-logs,.editorconfig,.eslintrc.json,.gitattributes,.github,.gitignore,.gitleaks.toml,.gitleaksignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,justfile,llms.txt,packages,phpunit.xml.dist,policies,reference,scripts,tests,tools`
+- Active paths: `.ai-install-manifest.json,.ai-logs,.editorconfig,.eslintrc.json,.gitattributes,.github,.gitignore,.gitleaks.toml,.gitleaksignore,.husky,.lefthook.yml,.markdownlint-cli2.yaml,.opencode,.prettierrc.json,.repomixignore,.schemas,.shellcheckrc,.stylelintrc.json,AGENTS.md,CLAUDE.md,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,composer.json,composer.lock,configs,docs,instruction improvements,justfile,llms.txt,opencode.jsonc,packages,phpunit.xml.dist,policies,readme-install.md,reference,scripts,tests,tools`
 - Inactive paths: `unknown`
 - Targets: `unknown`
 
@@ -66,3 +79,12 @@ I provide durable repository context for `app-configs` and point to the support 
 ## Common Gotchas
 
 - `stale paths, broad edits without evidence, guessed behavior`
+
+## Output Contract
+
+- current owner or `unknown`
+- affected paths and targets
+- canonical docs to read next
+- approval boundaries relevant to the request
+- focused verification starting point
+- recommended next stage: research, plan, implement, review

@@ -9,5 +9,3 @@ description: "PHP backend, Composer, test-runner, and PHP CLI tooling safety rul
 - Do not edit `composer.lock` unless dependency/platform changes are in scope.
 - Prefer typed, explicit, existing project patterns over new abstractions.
 - Preserve deterministic CLI behavior under `tools/ai/**`.
-
-For bug fixes: prove baseline, add failing regression test when practical, then implement minimal source fix.

@@ -73,6 +73,11 @@ Approved scripts (run from the repository root using `scripts/ai`):
 - `bash scripts/ai/preview-file.sh *`
 - `bash scripts/ai/query-usage.sh *`
 - `bash scripts/ai/git-forensics.sh *`
+- `bash scripts/ai/ai-verify.sh *`
+- `bash scripts/ai/ai-doc-check.sh --check*`
+- `bash scripts/ai/ai-file-freshness.sh *`
+- `bash scripts/ai/ai-install-coverage.sh *`
+- `bash scripts/ai/check-file-refs.sh *`
 - `php -l *`
 - `vendor/bin/phpunit *`
 - `./vendor/bin/phpunit *`
@@ -93,7 +98,6 @@ Approved scripts (run from the repository root using `scripts/ai`):
 - `markdownlint-cli2 *`
 - `php tools/ai/validate-*.php *`
 - `php tools/ai/generate-*.php --check*`
-- `bash scripts/ai/ai-doc-check.sh --check*`
 
 Do not run arbitrary shell commands. Do not run commands not in this list.
 Do not run: `rm`, `mv`, `cp`, `chmod`, `curl | sh`, install commands, unregistered `scripts/ai/*.sh`, `git push`, `git reset`, deploy commands.

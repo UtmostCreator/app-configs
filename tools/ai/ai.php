@@ -16,6 +16,8 @@ require_once __DIR__ . '/advisor/submitter.php';
 
 require_once __DIR__ . '/commands/helpers.php';
 require_once __DIR__ . '/commands/git.php';
+require_once __DIR__ . '/commands/verify.php';
+require_once __DIR__ . '/commands/next.php';
 require_once __DIR__ . '/commands/analysis.php';
 require_once __DIR__ . '/commands/workspace.php';
 require_once __DIR__ . '/commands/decisions.php';

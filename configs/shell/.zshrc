@@ -1,4 +1,4 @@
-// ~/.zshrc
+
 # Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
 # if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
 #   source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
@@ -35,6 +35,9 @@ export NVM_DIR="$HOME/.nvm"
 # Homebrew mysql-client
 export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"
 
+# Copilot CLI: enforce repo hook allowlists when available.
+export COPILOT_STRICT_ALLOWLIST=1
+
 # Powerlevel10k config (disabled)
 # [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
@@ -54,11 +57,12 @@ bindkey '^I^I' autosuggest-accept
 # Shift+Tab: accept autosuggestion (common escape sequence)
 # bindkey '^[[Z' autosuggest-accept
 
-export NODE_EXTRA_CA_CERTS="$HOME/Library/Application Support/Herd/config/valet/CA/LaravelValetCASelfSigned.pem"
-
-if [[ -f "$HOME/.secrets" ]]; then
-  source "$HOME/.secrets"
+# GitHub NPM token — load only when already signed into 1Password CLI.
+# This avoids startup prompts in new shells.
+if op whoami >/dev/null 2>&1; then
+    export NPM_TOKEN="$(op item get 'GitHub NPM Token' --fields label=token --reveal 2>/dev/null)"
 fi
+export NODE_EXTRA_CA_CERTS="$HOME/Library/Application Support/Herd/config/valet/CA/LaravelValetCASelfSigned.pem"
 
 source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
@@ -67,6 +71,10 @@ eval "$(fzf --zsh)"
 
 # zoxide
 eval "$(zoxide init zsh)"
+
+# 1Password CLI: do not auto-sign in on shell startup.
+# Run `op signin` manually when you need 1Password-backed commands.
+
 
 # Yazi shell wrapper — changes directory on exit
 function yy() {
@@ -79,31 +87,8 @@ function yy() {
     rm -f -- "$tmp"
 }
 
-# CMS dev workspace
-alias cms='bash ~/cms-dev.sh'
-export APP_CONFIGS_HOME="${APP_CONFIGS_HOME:-$HOME/workspace/app-configs}"
-alias acfg='cd "$APP_CONFIGS_HOME"'
-
-function acfg-doctor() {
-    if command -v just >/dev/null 2>&1; then
-        (cd "$APP_CONFIGS_HOME" && just doctor)
-    else
-        (cd "$APP_CONFIGS_HOME" && bash scripts/doctor.sh)
-    fi
-}
-
-function acfg-ai-check() {
-    if command -v just >/dev/null 2>&1; then
-        (cd "$APP_CONFIGS_HOME" && just ai-check)
-    else
-        (
-            cd "$APP_CONFIGS_HOME" &&
-            php tools/ai/validate-ai-config.php &&
-            php tools/ai/validate-ai-catalog.php &&
-            php tools/ai/generate-ai-catalog.php --check
-        )
-    fi
-}
+# CMS dev workspace (source ~/scripts)
+source ~/scripts.zsh
 
 export ATUIN_TMUX_POPUP=false
 # shellcheck disable=SC2034,SC2153,SC2086,SC2155
@@ -340,19 +325,41 @@ zle -N _atuin_ai_question_mark
 bindkey '?' _atuin_ai_question_mark # Question mark
 
 
-# update all packages, list them here
+# Herd injected PHP 8.4 configuration.
+export HERD_PHP_84_INI_SCAN_DIR="/Users/USER/Library/Application Support/Herd/config/php/84/"
+
+
+# Herd injected PHP 8.3 configuration.
+export HERD_PHP_83_INI_SCAN_DIR="/Users/USER/Library/Application Support/Herd/config/php/83/"
+
+# aliases
+atest() {
+  php artisan test --filter="$1"
+}
+
+rggi() {
+  rg \
+    --glob '!*.sql' \
+    --glob '!*.dump' \
+    --glob '!*.seed.*' \
+    --glob '!database/**' \
+    --glob '!storage/**' \
+    "$@"
+}
+
 brewup() {
   local formulae=(
     atuin bat btop colima docker docker-compose eza fd fzf git-delta just
     lazygit lnav mise mysql-client neovim pnpm ripgrep ripgrep-all starship
-    tldr tmux yazi zoxide zsh-autosuggestions zsh-syntax-highlighting
+    tldr tmux yazi zoxide zsh-autosuggestions zsh-syntax-highlighting copilot-cli
+    ast-grep
   )
 
   local casks=(
     aerospace bruno firefox flameshot
     font-jetbrains-mono-nerd-font font-meslo-lg-nerd-font ghostty
     jordanbaird-ice linearmouse notunes sequel-ace stats
-    intellij-idea-ce alt-tab
+    intellij-idea-ce alt-tab visual-studio-code
   )
 
   local installed_formulae=()
@@ -388,3 +395,15 @@ brewup() {
   brew cleanup
 }
 
+# >>> composer 1password wrapper
+composer() {
+  op run --env-file="$HOME/.config/1password/composer.env" -- sh -c '
+    export COMPOSER_AUTH="{\"github-oauth\":{\"github.com\":\"$GITHUB_COMPOSER_TOKEN\"}}"
+    exec "$@"
+  ' sh "/Users/USER/Library/Application Support/Herd/bin//composer" "$@"
+}
+# <<< composer 1password wrapper
+
+# Pin mise versions
+# eval "$(mise activate zsh)"
+export PATH="$HOME/.local/bin:$PATH"

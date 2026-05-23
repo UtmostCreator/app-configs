@@ -1,0 +1,168 @@
+"$schema" = "https://starship.rs/config-schema.json"
+
+add_newline = true
+palette = "nord"
+scan_timeout = 30
+command_timeout = 700
+
+format = """
+$directory\
+$git_branch\
+$git_status\
+$git_state\
+$git_commit\
+$git_metrics\
+$fill\
+$python\
+$lua\
+$nodejs\
+$golang\
+$haskell\
+$rust\
+$ruby\
+$package\
+$aws\
+$docker_context\
+$jobs\
+$cmd_duration\
+$line_break\
+$character"""
+
+[directory]
+style = "bold fg:dark_blue"
+format = "[$path ]($style)"
+truncation_length = 3
+truncation_symbol = "…/"
+truncate_to_repo = true
+repo_root_style = "bold fg:purple"
+before_repo_root_style = "fg:gray"
+
+[directory.substitutions]
+Documents = "󰈙"
+Downloads = "󰉍"
+Music = "󰝚"
+Pictures = "󰋩"
+
+[git_branch]
+symbol = " "
+style = "bold fg:green"
+format = "[$symbol$branch ]($style)"
+truncation_length = 32
+truncation_symbol = "…"
+only_attached = false
+
+[git_status]
+format = '([$conflicted$staged$modified$renamed$deleted$untracked$stashed$ahead_behind]($style) )'
+style = "bold fg:yellow"
+
+# Use single quotes so backslashes are literal for the inner \[ \]
+conflicted = ' [\[C:${count}\]](fg:red)'
+staged     = ' [\[A:${count}\]](fg:green)'
+modified   = ' [\[M:${count}\]](fg:yellow)'
+renamed    = ' [\[R:${count}\]](fg:magenta)'
+deleted    = ' [\[D:${count}\]](fg:red)'
+untracked  = ' [\[U:${count}\]](fg:cyan)'
+stashed    = ' [\[S:${count}\]](fg:blue)'
+
+ahead = "[⇡${count}](fg:green)"
+behind = "[⇣${count}](fg:red)"
+diverged = "[⇕⇡${ahead_count}⇣${behind_count}](fg:orange)"
+up_to_date = "[✓](fg:green)"
+
+[git_state]
+format = '\([$state( $progress_current/$progress_total)]($style)\) '
+style = "bold fg:red"
+
+[git_commit]
+disabled = false
+commit_hash_length = 7
+tag_symbol = "🏷 "
+only_detached = false
+tag_disabled = false
+format = '[$hash$tag ]($style) '
+style = "fg:gray"
+
+[git_metrics]
+disabled = false
+added_style = "fg:green"
+deleted_style = "fg:red"
+format = "([+$added]($added_style) )([-$deleted]($deleted_style) )"
+ignore_submodules = true
+
+[fill]
+symbol = " "
+
+[python]
+style = "teal"
+symbol = " "
+format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
+pyenv_version_name = true
+pyenv_prefix = ""
+
+[lua]
+symbol = " "
+
+[nodejs]
+disabled = true
+style = "blue"
+symbol = " "
+
+[golang]
+style = "blue"
+symbol = " "
+
+[haskell]
+style = "blue"
+symbol = " "
+
+[rust]
+style = "orange"
+symbol = " "
+
+[ruby]
+style = "blue"
+symbol = " "
+
+[package]
+symbol = "󰏗 "
+
+[aws]
+symbol = "󰸏 "
+style = "yellow"
+format = '[$symbol($profile )(\[$duration\] )]($style)'
+
+[docker_context]
+symbol = " "
+style = "fg:teal"
+format = "[$symbol$context ]($style)"
+detect_files = ["docker-compose.yml", "docker-compose.yaml", "Dockerfile"]
+detect_extensions = ["Dockerfile"]
+
+[jobs]
+symbol = "✦ "
+style = "red"
+number_threshold = 1
+format = "[$symbol$number ]($style)"
+
+[cmd_duration]
+min_time = 500
+style = "fg:gray"
+format = "[${duration} ]($style)"
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
+vimcmd_symbol = "[❮](bold green)"
+
+[palettes.nord]
+dark_blue = "#5E81AC"
+blue = "#81A1C1"
+teal = "#88C0D0"
+red = "#BF616A"
+orange = "#D08770"
+green = "#A3BE8C"
+yellow = "#EBCB8B"
+purple = "#B48EAD"
+gray = "#4C566A"
+black = "#2E3440"
+white = "#D8DEE9"

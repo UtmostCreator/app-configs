@@ -214,6 +214,66 @@ function aiShellNullRedirect(): string
     return PHP_OS_FAMILY === 'Windows' ? ' 2>NUL' : ' 2>/dev/null';
 }
 
+/**
+ * Resolve the base branch to diff against for context-gathering commands.
+ *
+ * Resolution order (first non-empty wins):
+ *   1. Explicit override (caller-supplied)
+ *   2. GITHUB_BASE_REF env (set by GitHub Actions on pull_request)
+ *   3. CI_MERGE_REQUEST_TARGET_BRANCH_NAME env (GitLab)
+ *   4. AI_BASE_BRANCH env (user override)
+ *   5. `scripts/ai/git-branch-origin.sh --guess` against current branch
+ *   6. `origin/HEAD` symbolic ref short name
+ *   7. Fallback to 'main' to preserve previous behavior
+ *
+ * The result is never returned empty.
+ */
+function aiDetectBaseBranch(string $root, ?string $explicit = null): string
+{
+    $explicit = $explicit !== null ? trim($explicit) : '';
+    if ($explicit !== '') {
+        return $explicit;
+    }
+
+    foreach (['GITHUB_BASE_REF', 'CI_MERGE_REQUEST_TARGET_BRANCH_NAME', 'AI_BASE_BRANCH'] as $envVar) {
+        $envValue = getenv($envVar);
+        if (is_string($envValue) && trim($envValue) !== '') {
+            return trim($envValue);
+        }
+    }
+
+    $script = $root . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'ai' . DIRECTORY_SEPARATOR . 'git-branch-origin.sh';
+    if (is_file($script) && aiCliCommandExists('bash')) {
+        $cmd = 'bash ' . escapeshellarg($script) . ' --guess' . aiShellNullRedirect();
+        $output = [];
+        $exit = 0;
+        exec('cd ' . escapeshellarg($root) . ' && ' . $cmd, $output, $exit);
+        if ($exit === 0) {
+            $candidate = trim((string) ($output[0] ?? ''));
+            if ($candidate !== '' && stripos($candidate, 'Unknown') !== 0) {
+                return $candidate;
+            }
+        }
+    }
+
+    $headOut = [];
+    $headExit = 0;
+    exec('git -C ' . escapeshellarg($root) . ' symbolic-ref --quiet --short refs/remotes/origin/HEAD' . aiShellNullRedirect(), $headOut, $headExit);
+    if ($headExit === 0) {
+        $candidate = trim((string) ($headOut[0] ?? ''));
+        if ($candidate !== '') {
+            if (str_starts_with($candidate, 'origin/')) {
+                $candidate = substr($candidate, strlen('origin/'));
+            }
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+    }
+
+    return 'main';
+}
+
 function aiCliCommandExists(string $command): bool
 {
     $out = [];
@@ -287,18 +347,19 @@ function aiEvaluateStaleEntries(string $root): array
 
 function aiRunDiffSummary(string $root, array $args): int
 {
-    $base = 'main';
+    $explicit = null;
     for ($i = 0; $i < count($args); $i++) {
         $arg = $args[$i];
         if ($arg === '--base') {
-            $base = (string) ($args[$i + 1] ?? $base);
+            $explicit = (string) ($args[$i + 1] ?? '');
             $i++;
             continue;
         }
         if (str_starts_with($arg, '--base=')) {
-            $base = (string) substr($arg, 7);
+            $explicit = (string) substr($arg, 7);
         }
     }
+    $base = aiDetectBaseBranch($root, $explicit);
 
     $changed = [];
     exec(
@@ -368,18 +429,19 @@ function aiRunDiffSummary(string $root, array $args): int
 
 function aiRunRisk(string $root, array $args): int
 {
-    $base = 'main';
+    $explicit = null;
     for ($i = 0; $i < count($args); $i++) {
         $arg = $args[$i];
         if ($arg === '--base') {
-            $base = (string) ($args[$i + 1] ?? $base);
+            $explicit = (string) ($args[$i + 1] ?? '');
             $i++;
             continue;
         }
         if (str_starts_with($arg, '--base=')) {
-            $base = (string) substr($arg, 7);
+            $explicit = (string) substr($arg, 7);
         }
     }
+    $base = aiDetectBaseBranch($root, $explicit);
 
     $changed = [];
     exec(
@@ -1723,7 +1785,7 @@ function aiRunAutoFix(string $root, array $args): int
 
 function aiRunImpact(string $root, array $args): int
 {
-    $base = aiParseArg($args, 'base') ?? 'main';
+    $base = aiDetectBaseBranch($root, aiParseArg($args, 'base'));
     $changed = [];
     exec('git -C ' . escapeshellarg($root) . ' diff --name-only ' . escapeshellarg($base) . '...HEAD', $changed);
 

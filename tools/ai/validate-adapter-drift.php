@@ -41,6 +41,34 @@ $adapterFiles = array_values(array_unique($adapterFiles));
 if ($changedOnly) {
     $baseRef = getenv('GITHUB_BASE_REF');
     if (!is_string($baseRef) || $baseRef === '') {
+        $baseRef = getenv('AI_BASE_BRANCH');
+    }
+    if (!is_string($baseRef) || $baseRef === '') {
+        $script = $root . '/scripts/ai/git-branch-origin.sh';
+        if (is_file($script)) {
+            $detectOut = [];
+            $detectExit = 0;
+            exec('cd ' . escapeshellarg($root) . ' && bash ' . escapeshellarg($script) . ' --guess 2>/dev/null', $detectOut, $detectExit);
+            if ($detectExit === 0) {
+                $candidate = trim((string) ($detectOut[0] ?? ''));
+                if ($candidate !== '' && stripos($candidate, 'Unknown') !== 0) {
+                    $baseRef = $candidate;
+                }
+            }
+        }
+    }
+    if (!is_string($baseRef) || $baseRef === '') {
+        $headOut = [];
+        $headExit = 0;
+        exec('git -C ' . escapeshellarg($root) . ' symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null', $headOut, $headExit);
+        if ($headExit === 0) {
+            $candidate = trim((string) ($headOut[0] ?? ''));
+            if ($candidate !== '') {
+                $baseRef = str_starts_with($candidate, 'origin/') ? substr($candidate, 7) : $candidate;
+            }
+        }
+    }
+    if (!is_string($baseRef) || $baseRef === '') {
         $baseRef = 'main';
     }
 

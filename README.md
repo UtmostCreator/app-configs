@@ -28,6 +28,8 @@ Personal macOS development environment configuration files ΓÇö terminal, edit
 - `docs/keyboard.md` — keyboard and Karabiner ergonomics notes
 - `docs/windows/QUICKSTART.md` — persistent SSH agent with 8h passphrase prompt on Windows
 - `docs/windows/ssh-agent-setup.md` — long-form Windows SSH reference and rollback notes
+- `docs/unix/QUICKSTART.md` — persistent SSH agent for Linux / macOS / WSL (passphrase once per boot)
+- `docs/unix/ssh-agent-setup.md` — long-form Linux/macOS SSH agent reference and rollback notes
 
 ## Configurations
 
@@ -36,6 +38,7 @@ Personal macOS development environment configuration files ΓÇö terminal, edit
 - `configs/karabiner/` ΓÇö keyboard remapping config
 - `configs/php/` ΓÇö PHP runtime (`php.ini`) and Laravel Pint (`pint.json`)
 - `configs/shell/` ΓÇö Starship prompt, `.zshrc`, `.gitconfig`
+- `configs/shell/ssh-agent/` ΓÇö portable ssh-agent loader for bash/zsh/fish (Linux + macOS)
 - `configs/vscode/` ΓÇö workspace settings, user settings, keybindings, launch config
 
 ## PHP Reference
@@ -49,6 +52,7 @@ Personal macOS development environment configuration files ΓÇö terminal, edit
 - `scripts/doctor.sh` ΓÇö local toolchain health check
 - `scripts/hooks/pre-commit.sh` ΓÇö merge conflict marker detection + PHP lint
 - `scripts/hooks/commit-msg.sh` ΓÇö commit message format validation
+- `scripts/unix/ssh-agent-setup.sh` ΓÇö idempotent ssh-agent installer for Linux / macOS / WSL
 
 ## Style Configs (reference)
 
@@ -79,6 +83,7 @@ These exist as starter configs for target projects. No JS/TS/CSS source exists i
 - `docs/keyboard.md`
 - `docs/vscode-extensions.md`
 - `docs/windows/QUICKSTART.md`
+- `docs/unix/QUICKSTART.md`
 - `configs/ghostty/config`
 - `configs/nvim/init.lua`
 - `configs/php/pint.json`

@@ -1,8 +1,8 @@
 # Install
 
 - Status: `ok`
-- Generated at: `2026-05-06T18:00:48+00:00`
-- Commit: `9313d57`
+- Generated at: `2026-05-23T19:04:00+00:00`
+- Commit: `b3151b1`
 - Branch: `main`
 - Recommended next action: `Run install --backup-only before install --apply.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "install.json",
-    "generated_at": "2026-05-06T18:00:48+00:00",
+    "generated_at": "2026-05-23T19:04:00+00:00",
     "command": "php tools/ai/ai.php install --dry-run",
-    "based_on_commit": "9313d57",
+    "based_on_commit": "b3151b1",
     "based_on_branch": "main",
     "input_hashes": {},
     "status": "ok",
@@ -38,7 +38,7 @@
         "apply": false,
         "summary": {
             "create": 1,
-            "skip": 15
+            "skip": 16
         },
         "install_kind": "reinstall",
         "required_first": [

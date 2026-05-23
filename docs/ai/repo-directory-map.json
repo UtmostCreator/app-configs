@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "directories": [
+    {
+      "path": ".",
+      "purpose": "Repository root metadata, contribution guides, and shared lint/format configs.",
+      "designed_for": "Project-wide configuration consumed by editors, linters, and contributors.",
+      "install_guide": "README.md",
+      "install_script": "none",
+      "ai_entrypoint": "README.md",
+      "notes": "Root-level tracked files (.editorconfig, .gitignore, .lefthook.yml, lint configs, README, CONTRIBUTING, SECURITY, SUPPORT) are grouped under '.'."
+    },
+    {
+      "path": ".husky",
+      "purpose": "Husky git hook entrypoints that delegate to scripts/hooks/.",
+      "designed_for": "Local git hook execution on commit and pre-commit.",
+      "install_guide": "CONTRIBUTING.md",
+      "install_script": "none",
+      "ai_entrypoint": ".husky/pre-commit",
+      "notes": "Thin shims; canonical hook logic lives under scripts/hooks/."
+    },
+    {
+      "path": ".schemas",
+      "purpose": "JSON schemas validating local artifacts produced by AI tooling.",
+      "designed_for": "Tooling validation and contract enforcement for session logs and similar artifacts.",
+      "install_guide": "docs/ai/observability.md",
+      "install_script": "none",
+      "ai_entrypoint": ".schemas/ai-session-event.schema.json",
+      "notes": "Schema set consumed by tools/ai/validate-session-log.php."
+    },
+    {
+      "path": "backup-sanitized",
+      "purpose": "Sanitized historical dotfile backups kept for reference and machine bootstrap.",
+      "designed_for": "Restoring or comparing prior shell, editor, and tool configuration snapshots.",
+      "install_guide": "README.md",
+      "install_script": "none",
+      "ai_entrypoint": "none",
+      "notes": "Read-only archive; no live entrypoint."
+    },
+    {
+      "path": "configs",
+      "purpose": "Canonical configuration files for terminal, editor, shell, and language tooling.",
+      "designed_for": "Copying or symlinking into a target machine's user config directories.",
+      "install_guide": "configs/README.md",
+      "install_script": "none",
+      "ai_entrypoint": "configs/README.md",
+      "notes": "Subfolders: ghostty, karabiner, nvim, php, shell, vscode."
+    },
+    {
+      "path": "docs",
+      "purpose": "Setup guides, platform-specific runbooks, and reference documentation.",
+      "designed_for": "Humans bootstrapping a new development environment on macOS, Linux, WSL, or Windows.",
+      "install_guide": "docs/README.md",
+      "install_script": "docs/install-dev-tools.sh",
+      "ai_entrypoint": "docs/README.md",
+      "notes": "Includes platform-scoped subfolders (unix/, windows/) and the AI workflow notes under ai/."
+    },
+    {
+      "path": "reference",
+      "purpose": "Code reference corpus, primarily PHP design patterns, principles, and built-in examples.",
+      "designed_for": "Local study, prompt grounding, and pattern lookup.",
+      "install_guide": "reference/README.md",
+      "install_script": "none",
+      "ai_entrypoint": "reference/README.md",
+      "notes": "Curated example code; not executed by the project itself."
+    },
+    {
+      "path": "scripts",
+      "purpose": "Shell utilities for local health checks, git hook bodies, and platform setup.",
+      "designed_for": "Direct invocation by contributors and by Lefthook/Husky hooks.",
+      "install_guide": "docs/shell-setup.md",
+      "install_script": "scripts/doctor.sh",
+      "ai_entrypoint": "scripts/doctor.sh",
+      "notes": "Includes scripts/hooks/ (commit-msg, pre-commit) and scripts/unix/ (ssh-agent-setup.sh)."
+    },
+    {
+      "path": "tests",
+      "purpose": "PHP test suite covering session-log tooling helpers.",
+      "designed_for": "Local verification of tools/ai/ behaviour during development.",
+      "install_guide": "CONTRIBUTING.md",
+      "install_script": "none",
+      "ai_entrypoint": "tests/php/SessionLogToolsTest.php",
+      "notes": "Run with phpunit or via project task runner."
+    },
+    {
+      "path": "tools",
+      "purpose": "PHP CLI utilities supporting AI session logging and validation.",
+      "designed_for": "Local invocation by contributors and CI for session capture and validation.",
+      "install_guide": "docs/ai/observability.md",
+      "install_script": "none",
+      "ai_entrypoint": "tools/ai/session-start.php",
+      "notes": "Backed by .schemas/ai-session-event.schema.json and tested under tests/php/."
+    }
+  ],
+  "metadata_exemptions": []
+}

@@ -1540,7 +1540,7 @@
             "name": "frontend",
             "path": ".github/instructions/frontend.instructions.md",
             "runtime": "github-copilot",
-            "description": "applyTo: \"<FRONTEND_PATH_GLOB>\""
+            "description": "Frontend, UI, interaction, and presentation guidance"
         },
         {
             "scope": "root",
@@ -1580,7 +1580,7 @@
             "name": "targets",
             "path": ".github/instructions/targets.instructions.md",
             "runtime": "github-copilot",
-            "description": "applyTo: \"**\""
+            "description": "Target and platform adaptation guidance for multi-surface repositories"
         },
         {
             "scope": "root",
@@ -1884,7 +1884,7 @@
             "name": "verify",
             "path": ".opencode/commands/verify.md",
             "runtime": "opencode",
-            "description": "description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
+            "description": "Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance"
         },
         {
             "scope": "root",

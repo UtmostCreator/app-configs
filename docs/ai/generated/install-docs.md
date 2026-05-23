@@ -1,8 +1,8 @@
 # Install docs
 
 - Status: `failed`
-- Generated at: `2026-05-06T17:59:57+00:00`
-- Commit: `9313d57`
+- Generated at: `2026-05-23T19:03:41+00:00`
+- Commit: `b3151b1`
 - Branch: `main`
 - Recommended next action: `Run install-docs --write to regenerate install docs.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "install-docs.json",
-    "generated_at": "2026-05-06T17:59:57+00:00",
+    "generated_at": "2026-05-23T19:03:41+00:00",
     "command": "php tools/ai/ai.php install-docs --check",
-    "based_on_commit": "9313d57",
+    "based_on_commit": "b3151b1",
     "based_on_branch": "main",
     "input_hashes": {},
     "status": "failed",

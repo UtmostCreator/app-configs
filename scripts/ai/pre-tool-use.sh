@@ -275,7 +275,7 @@ if grep -Eq '^just[[:space:]]+context-(clean|purge)\b' <<<"$compact"; then
 fi
 
 # Tier 1: pure read-only copilot scripts
-if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/(ai-search|ai-verify|preview-file|fd-files|rg-code|git-forensics|repo-stats|query-usage)\.sh\b' <<<"$compact"; then
+if grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/(ai-search|ai-verify|preview-file|fd-files|rg-code|git-forensics|git-branch-origin|repo-stats|query-usage)\.sh\b' <<<"$compact"; then
     allow
     exit 0
 fi
@@ -331,7 +331,7 @@ if [[ "$strict_allowlist" == '1' ]]; then
         || grep -Eq '^git([[:space:]]+--no-pager)?[[:space:]]+(grep|log|blame|show|diff|status|rev-parse|symbolic-ref|describe|ls-files|range-diff)([[:space:]]|$)' <<<"$compact" \
         || grep -Eq '^git([[:space:]]+--no-pager)?[[:space:]]+worktree[[:space:]]+list([[:space:]]|$)' <<<"$compact" \
         || grep -Eq '^gh[[:space:]]+(issue[[:space:]]+(view|list)|pr[[:space:]]+(view|list|checks)|repo[[:space:]]+view|search[[:space:]]+(issues|prs)|workflow[[:space:]]+view|run[[:space:]]+(view|list))([[:space:]]|$)' <<<"$compact" \
-        || grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/(rg-code|fd-files|preview-file|git-forensics|gh-pr-context|ast-search|ai-search|ai-verify|repo-stats|query-usage|pack-context|repomix-context-tree|repomix-scc-router)\.sh([[:space:]]|$)' <<<"$compact"; then
+        || grep -Eq '^(bash[[:space:]]+)?(\./)?scripts/ai/(rg-code|fd-files|preview-file|git-forensics|git-branch-origin|gh-pr-context|ast-search|ai-search|ai-verify|repo-stats|query-usage|pack-context|repomix-context-tree|repomix-scc-router)\.sh([[:space:]]|$)' <<<"$compact"; then
         allow
         exit 0
     fi

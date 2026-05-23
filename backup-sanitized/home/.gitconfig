@@ -73,7 +73,7 @@
 [core]
 	pager = delta
 	editor = code --wait
-	excludesFile = /Users/rabbies-admin/.gitignore_global
+	excludesFile = <HOME>/.gitignore_global
 
 [delta]
 	navigate = true
@@ -89,8 +89,8 @@
 [user]
 	name = UtmostCreator
 	email = Roman.Zakhriapa@rabbies.com
-[includeIf "gitdir/i:/Users/rabbies-admin/herd/"]
-	path = /Users/rabbies-admin/.gitconfig-work
+[includeIf "gitdir/i:<HOME>/herd/"]
+	path = <HOME>/.gitconfig-work
 
 [fetch]
 	prune = true

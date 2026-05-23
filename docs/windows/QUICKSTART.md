@@ -46,7 +46,7 @@ Get-Service ssh-agent | Select-Object Name, Status, StartType
 
 Close the admin window. You will not need Administrator again for normal work.
 
-## Step 2 — Load your key and install the 8h re-prompt (normal user PowerShell)
+## Step 2 — Load your key, install the profile snippet, and set git's ssh command (normal user PowerShell)
 
 Open a **regular** (non-admin) PowerShell session:
 
@@ -59,13 +59,21 @@ cd C:\xampp\htdocs\app-configs
 ssh-add "$HOME\.ssh\github.uc.ll5"
 
 # 2b. One-time: install the 8h re-prompt block into your PowerShell profile.
-#     Idempotent: re-running does nothing if the block already exists.
-pwsh -NoProfile -File docs\windows\scripts\Install-SshAgentProfileSnippet.ps1
-
-# 2c. Scope git to use Windows OpenSSH for THIS PowerShell profile only
-#     (Git Bash keeps using its own agent because Git Bash does not read
-#     PowerShell profiles).
+#     Idempotent. Re-run to refresh the block. Pass -Remove to uninstall.
 pwsh -NoProfile -File docs\windows\scripts\Install-SshAgentProfileSnippet.ps1 -IncludeGitSshOverride
+
+# 2c. CRITICAL for Git for Windows: tell git.exe (the one bundled at
+#     C:\Program Files\Git\mingw64\bin\git.exe) to use Windows OpenSSH
+#     instead of its own bundled ssh.exe. Without this, git ignores both
+#     $env:GIT_SSH and the agent, falling back to Git Bash's separate
+#     ssh which has no agent reachable from PowerShell or CMD.
+#
+#     This is a GLOBAL setting: it applies to every shell on this PC
+#     (PowerShell, CMD, Windows Terminal tabs, Git Bash, VS Code's
+#     integrated terminal). Git Bash users keep their .bashrc agent
+#     working because Git Bash's ssh-agent is independent; this only
+#     changes which ssh BINARY git invokes.
+git config --global core.sshCommand "C:/WINDOWS/System32/OpenSSH/ssh.exe"
 ```
 
 Verify:
@@ -165,7 +173,56 @@ pwsh -NoProfile -File docs\windows\scripts\Install-SshAgentProfileSnippet.ps1 -R
 - **Windows OpenSSH `ssh-add` has no `-t` flag**, so we cannot ask the
   agent itself to expire the key. We emulate the 8h prompt at the
   *profile* layer instead, using a marker file's `LastWriteTime`.
-- **Git Bash is untouched** because the override is set via `$env:GIT_SSH`
-  in the PowerShell profile, which Git Bash never reads.
 - **Per-session helper still exists** (`Setup-SshAgent.ps1`) as a fallback
   for users who cannot or do not want to run the admin step.
+
+### Why `git config --global core.sshCommand` is mandatory
+
+`git.exe` from "Git for Windows" (`C:\Program Files\Git\mingw64\bin\git.exe`)
+resolves which `ssh` to use in this order:
+
+1. `GIT_SSH_COMMAND` env var
+2. `core.sshCommand` git config
+3. `GIT_SSH` env var (legacy)
+4. Hardcoded fallback to `C:\Program Files\Git\usr\bin\ssh.exe` (Git Bash's
+   own ssh, which uses Unix-domain sockets that Windows OpenSSH does not
+   share)
+
+If only steps 3-4 are populated, you get a passphrase prompt every git
+operation: Git Bash's ssh starts a fresh session each time and has no
+access to the Windows ssh-agent service.
+
+`core.sshCommand` (step 2) is the only persistent, shell-agnostic lever.
+Setting it globally makes every git invocation - from PowerShell, CMD,
+Git Bash, VS Code, etc. - use Windows OpenSSH, which DOES talk to the
+agent service.
+
+The `$env:GIT_SSH` line installed by `Install-SshAgentProfileSnippet.ps1`
+is a belt-and-suspenders backup for tools that read step 3 directly. The
+git config line is the real fix.
+
+### Diagnosing "it keeps prompting"
+
+Symptom: `git pull` from PowerShell still asks for the passphrase even
+after the QUICKSTART steps.
+
+Diagnose:
+
+```powershell
+git config --global --get core.sshCommand
+# Expected: C:/WINDOWS/System32/OpenSSH/ssh.exe
+# If empty: re-run step 2c.
+
+Get-Service ssh-agent | Select-Object Status, StartType
+# Expected: Running, Automatic
+# If not: re-run step 1 as administrator.
+
+ssh-add -l
+# Expected: lists at least one key. "The agent has no identities" means
+# the service is running but the key was never loaded; run step 2a.
+
+# Check the passphrase prompt path. If git's passphrase prompt shows
+# C:\Users\...\.ssh\<key> (forward slashes mixed in), it's Git Bash's ssh.
+# If it shows C:\Users\...\.ssh\<key> with all backslashes, it's Windows
+# OpenSSH. You want all backslashes.
+```

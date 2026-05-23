@@ -70,6 +70,16 @@
       "supports_dry_run": false,
       "default_args": []
     },
+    "git-branch-origin": {
+      "label": "Detect the branch a local branch was created from",
+      "source_path": "scripts/ai/git-branch-origin.sh",
+      "installed_path": "scripts/ai/git-branch-origin.sh",
+      "pack": "scripts-pack",
+      "required_tools": ["bash", "git"],
+      "risk": "read-only",
+      "supports_dry_run": false,
+      "default_args": []
+    },
     "gh-pr-context": {
       "label": "GitHub PR context wrapper",
       "source_path": "scripts/ai/gh-pr-context.sh",

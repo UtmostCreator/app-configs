@@ -13,6 +13,7 @@ This file is the canonical allowlist reference for scripts installed by `scripts
 | `preview-file` | Safe file preview wrapper | `scripts/ai/preview-file.sh` | `scripts/ai/preview-file.sh` | `read-only` | `bash` | `false` | `[]` |
 | `query-usage` | Symbol usage query wrapper | `scripts/ai/query-usage.sh` | `scripts/ai/query-usage.sh` | `read-only` | `bash, rg` | `false` | `[]` |
 | `git-forensics` | Read-only git history tracing wrapper | `scripts/ai/git-forensics.sh` | `scripts/ai/git-forensics.sh` | `read-only` | `bash, git` | `false` | `[]` |
+| `git-branch-origin` | Detect the branch a local branch was created from | `scripts/ai/git-branch-origin.sh` | `scripts/ai/git-branch-origin.sh` | `read-only` | `bash, git` | `false` | `[]` |
 | `gh-pr-context` | GitHub PR context wrapper | `scripts/ai/gh-pr-context.sh` | `scripts/ai/gh-pr-context.sh` | `read-only` | `bash, gh, git` | `false` | `[]` |
 | `ai-doc-check` | AI docs consistency checker wrapper | `scripts/ai/ai-doc-check.sh` | `scripts/ai/ai-doc-check.sh` | `read-only` | `bash, git, rg` | `true` | `["--check"]` |
 | `ai-diff-context` | Diff-aware context extraction wrapper | `scripts/ai/ai-diff-context.sh` | `scripts/ai/ai-diff-context.sh` | `read-only` | `bash, git` | `false` | `[]` |

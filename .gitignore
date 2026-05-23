@@ -50,6 +50,9 @@ coverage/
 /docs/generated/*
 !/docs/generated/README.md
 
+# Timestamped generated verification logs (kept for legacy compatibility)
+/docs/ai/generated/logs/
+
 # Optional installed packs; source lives under packages/ai-universal-rules/templates/optional/
 .github/prompts-optional/
 .opencode/agents-optional/

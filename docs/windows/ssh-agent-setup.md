@@ -1,13 +1,13 @@
-# SSH Agent Setup on Windows (8-hour TTL)
+# SSH Agent Setup on Windows (8-hour passphrase re-prompt)
 
-This document captures the diagnosis and the planned fixes for making
-`git@github.com:...` work seamlessly from PowerShell on this Windows machine,
-matching the 8-hour key TTL already configured for Git Bash.
+This document is the long-form reference. For the copy-paste runbook see
+[QUICKSTART.md](QUICKSTART.md).
 
 It exists because PowerShell sessions on this machine cannot reach the
-`ssh-agent` that Git Bash starts. The merge in the current task was blocked by
-`Permission denied (publickey)` and we need both shells to share working SSH
-auth.
+`ssh-agent` that Git Bash starts, so `git@github.com:...` fails with
+`Permission denied (publickey)` from any PowerShell shell. We want both
+shells to share working SSH auth, with at most one passphrase prompt per
+8 hours.
 
 ## 1. Diagnosis (Status: completed)
 
@@ -129,44 +129,35 @@ The Windows agent persists keys for the current Windows user account across
 reboots, until you explicitly remove them with `ssh-add -d` or
 `ssh-add -D`.
 
-### 5.4 Add an 8-hour re-add policy to your PowerShell profile
+### 5.4 Install the 8-hour re-prompt snippet in your PowerShell profile
 
 Windows OpenSSH `ssh-add` has no `-t` flag. To mimic the 8-hour TTL from
-`.bashrc`, add a small block to your PowerShell profile that records the
-last add time and re-adds the key if it is older than 8 hours.
+`.bashrc`, we maintain a marker file's `LastWriteTime` as the anchor and
+only call `ssh-add` again after 8 hours have elapsed.
 
-Append this to `Microsoft.PowerShell_profile.ps1`:
+Use the helper script (idempotent, supports `-Remove`):
 
 ```powershell
-# --- ssh-agent 8h TTL emulation -----------------------------------------
-$sshKey   = Join-Path $HOME '.ssh\github.uc.ll5'
-$stateDir = Join-Path $HOME '.ssh\state'
-$stateFile = Join-Path $stateDir 'pwsh-last-add.txt'
+# Without GIT_SSH override (git.exe in PowerShell continues to use whatever
+# `core.sshCommand` resolves to):
+pwsh -NoProfile -File docs\windows\scripts\Install-SshAgentProfileSnippet.ps1
 
-if ((Get-Service ssh-agent -ErrorAction SilentlyContinue).Status -eq 'Running' `
-    -and (Test-Path $sshKey)) {
-    if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir -Force | Out-Null }
-    $needsReAdd = $true
-    if (Test-Path $stateFile) {
-        $last = Get-Item $stateFile -ErrorAction SilentlyContinue
-        if ($last -and ((Get-Date) - $last.LastWriteTime).TotalHours -lt 8) {
-            $needsReAdd = $false
-        }
-    }
-    if ($needsReAdd) {
-        $loaded = & "C:\WINDOWS\System32\OpenSSH\ssh-add.exe" -l 2>$null
-        if (-not $loaded -or $loaded -notmatch (Split-Path -Leaf $sshKey)) {
-            & "C:\WINDOWS\System32\OpenSSH\ssh-add.exe" $sshKey | Out-Null
-        }
-        New-Item -ItemType File -Path $stateFile -Force | Out-Null
-    }
-}
-# --- end ssh-agent block ------------------------------------------------
+# With GIT_SSH override (recommended; scopes Windows OpenSSH to PowerShell
+# only, leaves Git Bash unaffected):
+pwsh -NoProfile -File docs\windows\scripts\Install-SshAgentProfileSnippet.ps1 -IncludeGitSshOverride
+
+# Remove later:
+pwsh -NoProfile -File docs\windows\scripts\Install-SshAgentProfileSnippet.ps1 -Remove
 ```
 
-The block is safe to re-run, does nothing if the service is stopped or the
-key is missing, and only invokes `ssh-add` when more than 8 hours have
-passed since the last marker write.
+The installed block, delimited by
+`# --- ssh-agent 8h prompt (managed by ...) ---` and
+`# --- end ssh-agent 8h prompt ---`, is safe to re-run, does nothing if
+the service is stopped or the key is missing, and only invokes `ssh-add`
+when more than 8 hours have passed since the last marker write.
+
+The marker file is `$HOME\.ssh\state\pwsh-last-add.txt`. Delete it to
+force a prompt on the next PowerShell session.
 
 ## 6. Verification (planned)
 
@@ -203,6 +194,8 @@ the current task.
 
 ## 9. Related files in this repo
 
-- [scripts/Setup-SshAgent.ps1](scripts/Setup-SshAgent.ps1)
-- [scripts/Enable-SshAgentService.ps1](scripts/Enable-SshAgentService.ps1)
+- [QUICKSTART.md](QUICKSTART.md) - copy-paste runbook (start here).
+- [scripts/Enable-SshAgentService.ps1](scripts/Enable-SshAgentService.ps1) - admin service enabler.
+- [scripts/Install-SshAgentProfileSnippet.ps1](scripts/Install-SshAgentProfileSnippet.ps1) - PowerShell profile snippet installer/remover.
+- [scripts/Setup-SshAgent.ps1](scripts/Setup-SshAgent.ps1) - per-session fallback when admin is unavailable.
 - [README.md](README.md) - index for `docs/windows/`.

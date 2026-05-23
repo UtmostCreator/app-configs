@@ -73,6 +73,7 @@
 [core]
 	pager = delta
 	editor = code --wait
+	excludesFile = /Users/user/.gitignore_global
 
 [delta]
 	navigate = true
@@ -86,8 +87,10 @@
 [interactive]
 	diffFilter = delta --color-only
 [user]
-	name = YOURUSERNAME
-	email = YOUREMAIL
+	name = UtmostCreator
+	email = 22347676+UtmostCreator@users.noreply.github.com
+[includeIf "gitdir/i:/Users/user/herd/"]
+	path = /Users/user/.gitconfig-work
 
 [fetch]
 	prune = true

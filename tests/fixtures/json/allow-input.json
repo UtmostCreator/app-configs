@@ -1,6 +1,0 @@
-{
-  "toolName": "bash",
-  "toolArgs": {
-    "command": "rg pattern ."
-  }
-}

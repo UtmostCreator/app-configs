@@ -69,9 +69,9 @@ function New-SnippetBody {
     )
 
     $gitSshLine = if ($WithGitSsh) {
-        '    $env:GIT_SSH = "C:\WINDOWS\System32\OpenSSH\ssh.exe"'
+        '$env:GIT_SSH = "C:\WINDOWS\System32\OpenSSH\ssh.exe"'
     } else {
-        '    # GIT_SSH override not installed; pass -IncludeGitSshOverride to enable.'
+        '# GIT_SSH override not installed; pass -IncludeGitSshOverride to enable.'
     }
 
     $keyLiteral = $Key.Replace("'", "''")
@@ -81,33 +81,32 @@ $beginMarker
 # Re-prompts for the SSH passphrase at most once per 8 hours, mirroring the
 # Git Bash SSH_ADD_TTL=28800 setup. Safe to keep when offline: skips silently
 # if the Windows ssh-agent service or the key file are unavailable.
-$beginMarker
 $gitSshLine
-    `$keyPath   = '$keyLiteral'
-    `$stateDir  = Join-Path `$HOME '.ssh\state'
-    `$marker    = Join-Path `$stateDir 'pwsh-last-add.txt'
-    `$svc       = Get-Service ssh-agent -ErrorAction SilentlyContinue
-    `$ssh_add   = 'C:\WINDOWS\System32\OpenSSH\ssh-add.exe'
-    if (`$svc -and `$svc.Status -eq 'Running' -and (Test-Path `$keyPath) -and (Test-Path `$ssh_add)) {
-        if (-not (Test-Path `$stateDir)) {
-            New-Item -ItemType Directory -Path `$stateDir -Force | Out-Null
-        }
-        `$needsAdd = `$true
-        if (Test-Path `$marker) {
-            `$lastWrite = (Get-Item `$marker -ErrorAction SilentlyContinue).LastWriteTime
-            if (`$lastWrite -and ((Get-Date) - `$lastWrite).TotalHours -lt 8) {
-                `$needsAdd = `$false
-            }
-        }
-        if (`$needsAdd) {
-            `$listed = & `$ssh_add -l 2>&1
-            `$keyName = Split-Path -Leaf `$keyPath
-            if (`$LASTEXITCODE -ne 0 -or `$listed -notmatch [regex]::Escape(`$keyName)) {
-                & `$ssh_add `$keyPath
-            }
-            New-Item -ItemType File -Path `$marker -Force | Out-Null
+`$keyPath   = '$keyLiteral'
+`$stateDir  = Join-Path `$HOME '.ssh\state'
+`$marker    = Join-Path `$stateDir 'pwsh-last-add.txt'
+`$svc       = Get-Service ssh-agent -ErrorAction SilentlyContinue
+`$ssh_add   = 'C:\WINDOWS\System32\OpenSSH\ssh-add.exe'
+if (`$svc -and `$svc.Status -eq 'Running' -and (Test-Path `$keyPath) -and (Test-Path `$ssh_add)) {
+    if (-not (Test-Path `$stateDir)) {
+        New-Item -ItemType Directory -Path `$stateDir -Force | Out-Null
+    }
+    `$needsAdd = `$true
+    if (Test-Path `$marker) {
+        `$lastWrite = (Get-Item `$marker -ErrorAction SilentlyContinue).LastWriteTime
+        if (`$lastWrite -and ((Get-Date) - `$lastWrite).TotalHours -lt 8) {
+            `$needsAdd = `$false
         }
     }
+    if (`$needsAdd) {
+        `$listed = & `$ssh_add -l 2>&1
+        `$keyName = Split-Path -Leaf `$keyPath
+        if (`$LASTEXITCODE -ne 0 -or `$listed -notmatch [regex]::Escape(`$keyName)) {
+            & `$ssh_add `$keyPath
+        }
+        New-Item -ItemType File -Path `$marker -Force | Out-Null
+    }
+}
 $endMarker
 "@
 }

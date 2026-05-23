@@ -168,16 +168,22 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 
 ```bash
 brew install atuin
+brew install ast-grep
 brew install bat
 brew install btop
 brew install colima
 brew install docker
+brew install docker-buildx
+brew install duti
 brew install eza
 brew install fd
 brew install fzf
+brew install gh
 brew install git-delta
 brew install difftastic
 brew install direnv
+brew install gitleaks
+brew install jq
 brew install copilot-cli
 brew install just
 brew install lazygit
@@ -186,6 +192,8 @@ brew install lychee
 brew install mise
 brew install mysql-client
 brew install neovim
+brew install p7zip
+brew install php
 brew install pnpm
 brew install ripgrep
 brew install ripgrep-all

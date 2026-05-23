@@ -406,4 +406,6 @@ composer() {
 
 # Pin mise versions
 # eval "$(mise activate zsh)"
+
+# allow git to pick e.g. scripts like git-branch-origin (w/o .sh from this folder)
 export PATH="$HOME/.local/bin:$PATH"

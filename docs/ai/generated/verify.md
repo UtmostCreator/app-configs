@@ -1,8 +1,8 @@
 # Verify
 
 - Status: `failed`
-- Generated at: `2026-05-06T18:00:03+00:00`
-- Commit: `9313d57`
+- Generated at: `2026-05-23T19:03:47+00:00`
+- Commit: `b3151b1`
 - Branch: `main`
 - Recommended next action: `Open verify logs and fix the first failing check before proceeding.`
 
@@ -10,9 +10,9 @@
 {
     "schema_version": 1,
     "artifact": "verify.json",
-    "generated_at": "2026-05-06T18:00:03+00:00",
+    "generated_at": "2026-05-23T19:03:47+00:00",
     "command": "php tools/ai/ai.php verify --changed",
-    "based_on_commit": "9313d57",
+    "based_on_commit": "b3151b1",
     "based_on_branch": "main",
     "input_hashes": {},
     "status": "failed",
@@ -25,7 +25,7 @@
         "summary": {
             "errors": 1,
             "warnings": 0,
-            "info": 5
+            "info": 2
         },
         "check_count": 6,
         "failed_checks": [
@@ -38,7 +38,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260506-195955/validate-ai-config.log"
+                "log": "docs/ai/generated/logs/verify-20260523-210338/validate-ai-config.log"
             },
             {
                 "name": "validate-ai-catalog",
@@ -46,15 +46,15 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260506-195955/validate-ai-catalog.log"
+                "log": "docs/ai/generated/logs/verify-20260523-210338/validate-ai-catalog.log"
             },
             {
                 "name": "generate-ai-catalog-check",
                 "command": "php tools/ai/generate-ai-catalog.php --check",
                 "exit": 0,
                 "passed": true,
-                "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260506-195955/generate-ai-catalog-check.log"
+                "auto_fix_applied": true,
+                "log": "docs/ai/generated/logs/verify-20260523-210338/generate-ai-catalog-check.log"
             },
             {
                 "name": "generate-repo-structure-check",
@@ -62,7 +62,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": true,
-                "log": "docs/ai/generated/logs/verify-20260506-195955/generate-repo-structure-check.log"
+                "log": "docs/ai/generated/logs/verify-20260523-210338/generate-repo-structure-check.log"
             },
             {
                 "name": "install-docs-check",
@@ -70,7 +70,7 @@
                 "exit": 1,
                 "passed": false,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260506-195955/install-docs-check.log"
+                "log": "docs/ai/generated/logs/verify-20260523-210338/install-docs-check.log"
             },
             {
                 "name": "advisor-check",
@@ -78,7 +78,7 @@
                 "exit": 0,
                 "passed": true,
                 "auto_fix_applied": false,
-                "log": "docs/ai/generated/logs/verify-20260506-195955/advisor-check.log"
+                "log": "docs/ai/generated/logs/verify-20260523-210338/advisor-check.log"
             }
         ],
         "findings": [
@@ -88,27 +88,6 @@
                 "file": null,
                 "message": "Verification check failed: install-docs-check",
                 "suggested_fix": "Inspect docs/ai/generated logs and rerun verify."
-            },
-            {
-                "severity": "INFO",
-                "code": "MISSING_OPTIONAL_TOOL",
-                "file": "scripts/ai",
-                "message": "Optional tool missing: fzf",
-                "suggested_fix": "Install optional tooling for faster workflows."
-            },
-            {
-                "severity": "INFO",
-                "code": "MISSING_OPTIONAL_TOOL",
-                "file": "scripts/ai",
-                "message": "Optional tool missing: delta",
-                "suggested_fix": "Install optional tooling for faster workflows."
-            },
-            {
-                "severity": "INFO",
-                "code": "MISSING_OPTIONAL_TOOL",
-                "file": "scripts/ai",
-                "message": "Optional tool missing: semgrep",
-                "suggested_fix": "Install optional tooling for faster workflows."
             },
             {
                 "severity": "INFO",
@@ -125,7 +104,7 @@
                 "suggested_fix": "Verify hook execution manually on Windows."
             }
         ],
-        "log_dir": "docs/ai/generated/logs/verify-20260506-195955"
+        "log_dir": "docs/ai/generated/logs/verify-20260523-210338"
     }
 }
 ```

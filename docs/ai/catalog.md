@@ -119,12 +119,12 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`github-copilot-instruction`|composer|`.github/instructions/composer.instructions.md`|Composer manifest and lockfile safety rules|
 |`github-copilot-instruction`|config-infra|`.github/instructions/config-infra.instructions.md`|Dependency, runner, and build-config safety rules|
 |`github-copilot-instruction`|execution-protocol|`.github/instructions/execution-protocol.instructions.md`|Evidence-first task execution, dirty-worktree protection, scope control, and final verification reporting.|
-|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|applyTo: "<FRONTEND_PATH_GLOB>"|
+|`github-copilot-instruction`|frontend|`.github/instructions/frontend.instructions.md`|Frontend, UI, interaction, and presentation guidance|
 |`github-copilot-instruction`|generated-artifacts|`.github/instructions/generated-artifacts.instructions.md`|Generated artifact drift routing and source-first regeneration policy|
 |`github-copilot-instruction`|php|`.github/instructions/php.instructions.md`|PHP backend, Composer, test-runner, and PHP CLI tooling safety rules|
 |`github-copilot-instruction`|security|`.github/instructions/security.instructions.md`|Security, secrets, auth boundaries, and prompt-injection safeguards|
 |`github-copilot-instruction`|shell|`.github/instructions/shell.instructions.md`|Shell safety, portability, and verification rules|
-|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|applyTo: "**"|
+|`github-copilot-instruction`|targets|`.github/instructions/targets.instructions.md`|Target and platform adaptation guidance for multi-surface repositories|
 |`github-copilot-instruction`|testing|`.github/instructions/testing.instructions.md`|Testing rules, baseline proof, regression-first bug fixes, and verification ladder|
 |`github-copilot-instruction`|tools|`.github/instructions/tools.instructions.md`|Tool selection and script enforcement — use rg/fd/approved scripts; never use bare grep/find|
 |`github-copilot-prompt`|architecture-plan|`.github/prompts/architecture-plan.prompt.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
@@ -162,7 +162,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`opencode-agent`|reviewer|`.opencode/agents/reviewer.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
 |`opencode-agent`|workflow-auditor|`.opencode/agents/workflow-auditor.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
 |`opencode-command`|evidence-first-execution|`.opencode/commands/evidence-first-execution.md`|Use when planning, editing, reviewing, or verifying repository changes that require scope control, dirty-worktree protection, and evidence-backed output.|
-|`opencode-command`|verify|`.opencode/commands/verify.md`|description: Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
+|`opencode-command`|verify|`.opencode/commands/verify.md`|Compatibility command that runs the verification workflow; prefer the verify-change skill for reusable guidance|
 |`opencode-skill`|architecture-plan|`.opencode/skills/architecture-plan/SKILL.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
 |`opencode-skill`|bug-regression|`.opencode/skills/bug-regression/SKILL.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|
 |`opencode-skill`|dependency-upgrade|`.opencode/skills/dependency-upgrade/SKILL.md`|Use when upgrading a dependency and you need compatibility, verification, and release-risk guidance|

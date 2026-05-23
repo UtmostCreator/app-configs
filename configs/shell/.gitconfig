@@ -73,6 +73,7 @@
 [core]
 	pager = delta
 	editor = code --wait
+	excludesFile = /Users/rabbies-admin/.gitignore_global
 
 [delta]
 	navigate = true
@@ -86,8 +87,10 @@
 [interactive]
 	diffFilter = delta --color-only
 [user]
-	name = YOURUSERNAME
-	email = YOUREMAIL
+	name = UtmostCreator
+	email = Roman.Zakhriapa@rabbies.com
+[includeIf "gitdir/i:/Users/rabbies-admin/herd/"]
+	path = /Users/rabbies-admin/.gitconfig-work
 
 [fetch]
 	prune = true

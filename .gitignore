@@ -40,10 +40,15 @@ coverage/
 # Local Composer binary
 /composer.phar
 
-# Timestamped generated verification logs
-/docs/ai/generated/logs/
+# Generated documentation outputs (regenerate locally; do not commit)
+# Keep only the README.md inside each generated folder to document the policy.
+/docs/ai/generated/*
+!/docs/ai/generated/README.md
+!/docs/ai/generated/sessions/
 /docs/ai/generated/sessions/*
 !/docs/ai/generated/sessions/.gitkeep
+/docs/generated/*
+!/docs/generated/README.md
 
 # Optional installed packs; source lives under packages/ai-universal-rules/templates/optional/
 .github/prompts-optional/

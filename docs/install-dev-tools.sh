@@ -67,9 +67,7 @@ FORMULAE=(
   actionlint
 )
 
-CASKS=(
-  copilot-cli
-)
+CASKS=()
 
 usage() {
   sed -n '1,24p' "$0"
@@ -500,7 +498,6 @@ check_required fzf fzf --version
 check_required git-delta delta --version
 check_required difftastic difft --version
 check_required direnv direnv --version
-check_optional copilot-cli copilot --version
 check_required just just --version
 check_required lazygit lazygit --version
 check_required lnav lnav --version

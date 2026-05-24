@@ -51,7 +51,7 @@ because those are deferred / out-of-scope, not forbidden.
 
 This repo does NOT store secrets. Identity that drives templating lives in
 `home/.chezmoidata/personal.yaml` which is gitignored. Only
-`home/.chezmoidata/personal.yaml.example` is committed.
+`home/personal.yaml.example` is committed (it lives outside `.chezmoidata/` because chezmoi autoloads every YAML/TOML/JSON in that dir).
 
 For real per-host secrets (SSH keys, API tokens), chezmoi supports
 `age`, `1Password`, and `Bitwarden` integrations. Choose explicitly when

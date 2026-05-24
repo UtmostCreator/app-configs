@@ -90,7 +90,7 @@ done
 echo "-- Dotfiles migration core --"
 for file in \
     .chezmoiroot \
-    home/.chezmoidata/personal.yaml.example \
+    home/personal.yaml.example \
     home/.chezmoiignore \
     home/dot_zshrc.tmpl \
     home/dot_gitconfig.tmpl \

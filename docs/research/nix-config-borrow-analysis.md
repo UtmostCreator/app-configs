@@ -128,9 +128,32 @@ Three slices, smallest first. Each is a separate PR-sized commit.
 5. **Slice 5 (signing-key materialisation)** — when you actually adopt signed commits.
 6. **Slice 4 (sops-nix)** — when secrets handling becomes a real need.
 
-## Open question for the user
+## Brave extension list (locked for Slice 1)
 
-The Brave extension IDs in upstream `brave.nix` are ID-only (no names). Before bringing the list in, we should annotate each (e.g. `ublock-origin`, `vimium-c`, `bitwarden`, etc.) so reviewers know what's being deployed. Want me to resolve the 8 IDs and produce an annotated list in Slice 1, or carry them across as-is and you'll annotate later?
+User-supplied annotated list. **This replaces the 8 IDs in upstream
+`brave.nix`** — the placeholder entry `bnjjngeaknajbdcgpfkgnonkmififhfo`
+("fake filler") was dropped. Use this exact list in
+`nix/modules/home/brave.nix` when Slice 1 ships:
+
+| Chrome Web Store ID | Name | Notes |
+|---------------------|------|-------|
+| `fdpohaocaechififmbbbbbknoalclacl` | GoFullPage — Full Page Screen Capture | |
+| `bkhaagjahfmjljalopjnoealnfndnagc` | Octotree — GitHub code tree | |
+| `abjcfabbhafbcdfjoecdgepllmpfceif` | Magic Actions for YouTube™ | **Disabled by default** — install but ship `installation_mode = "normal_installed"` (not `force_installed`) so the user can toggle off. |
+| `dhdgffkkebhmkfjojejmpbldmpobfkfo` | Tampermonkey | |
+| `cjpalhdlnbpafiamejdnhcphjbkeiagm` | uBlock Origin | |
+| `eadndfjplgieldjbigjakmdgkmoaaaoc` | Xdebug helper | |
+| `chphlpgkkbolifaimnlloiipkdnihall` | OneTab | |
+
+Implementation hint for Slice 1: Brave (Chromium-derived) honours the
+Chromium `ExtensionInstallForcelist` policy in
+`/etc/brave/policies/managed/00-shared.json` (or
+`~/.config/BraveSoftware/Brave-Browser/policies/managed/` for per-user).
+The format is `<ID>;<update_url>` and the canonical update URL is
+`https://clients2.google.com/service/update2/crx`. Magic Actions stays
+out of `ExtensionInstallForcelist` and instead uses
+`ExtensionSettings.<id>.installation_mode = "normal_installed"` so it
+can be disabled.
 
 ## Failure ledger for this research slice
 

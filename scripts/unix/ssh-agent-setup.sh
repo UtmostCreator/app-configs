@@ -6,8 +6,10 @@
 #   2. On Linux, ensures `keychain` is available (or warns how to install it).
 #   3. On macOS, ensures ~/.ssh/config has `UseKeychain yes` and
 #      `AddKeysToAgent yes` for Host *.
-#   4. Copies the appropriate snippet from configs/shell/ssh-agent/ into
-#      the right deploy location.
+#   4. Copies the appropriate snippet from the chezmoi source tree
+#      (home/dot_config/app-configs/ssh-agent.sh and
+#      home/dot_config/fish/conf.d/ssh-agent.fish) into the right deploy
+#      location.
 #   5. Adds a single source line to the user's rc file (bash/zsh) if not
 #      already present. Fish is auto-loaded from conf.d.
 #
@@ -22,7 +24,13 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && cd .. && pwd)"
-SNIPPET_DIR="$ROOT_DIR/configs/shell/ssh-agent"
+# Bash/zsh snippet lives at home/dot_config/app-configs/ssh-agent.sh and the
+# fish snippet at home/dot_config/fish/conf.d/ssh-agent.fish (chezmoi source
+# tree). The deployed paths under $HOME are $DEPLOY_DIR/ssh-agent.sh and
+# $HOME/.config/fish/conf.d/ssh-agent.fish, set by chezmoi or by this script
+# when chezmoi is not in use.
+SNIPPET_SH="$ROOT_DIR/home/dot_config/app-configs/ssh-agent.sh"
+SNIPPET_FISH="$ROOT_DIR/home/dot_config/fish/conf.d/ssh-agent.fish"
 DEPLOY_DIR="$HOME/.config/app-configs"
 MARKER_BEGIN="# >>> app-configs ssh-agent >>>"
 MARKER_END="# <<< app-configs ssh-agent <<<"
@@ -108,7 +116,7 @@ check_keychain_linux() {
 install_posix_snippet() {
     local rc="$1"  # path to ~/.bashrc or ~/.zshrc
     mkdir -p "$DEPLOY_DIR"
-    install -m 0644 "$SNIPPET_DIR/ssh-agent.sh" "$DEPLOY_DIR/ssh-agent.sh"
+    install -m 0644 "$SNIPPET_SH" "$DEPLOY_DIR/ssh-agent.sh"
     log "Installed snippet to $DEPLOY_DIR/ssh-agent.sh"
 
     touch "$rc"
@@ -147,7 +155,7 @@ remove_posix_snippet() {
 install_fish_snippet() {
     local conf_d="$HOME/.config/fish/conf.d"
     mkdir -p "$conf_d"
-    install -m 0644 "$SNIPPET_DIR/ssh-agent.fish" "$conf_d/ssh-agent.fish"
+    install -m 0644 "$SNIPPET_FISH" "$conf_d/ssh-agent.fish"
     log "Installed snippet to $conf_d/ssh-agent.fish"
     if [ -n "${APP_CONFIGS_SSH_KEYS:-}" ] && command -v fish >/dev/null 2>&1; then
         # shellcheck disable=SC2016

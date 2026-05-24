@@ -1,4 +1,7 @@
-// per-workspace settings e.g. .configs/vscode/settings.json
+// Per-workspace VS Code settings template. Drop into your project as
+// .vscode/settings.json. Repository-wide user-level settings are managed by
+// chezmoi at home/dot_config/Code/User/settings.json.tmpl (Linux/WSL) and
+// home/Library/Application Support/Code/User/settings.json.tmpl (macOS).
 {
   // =========================
   // Formatting / code style only

@@ -1,58 +1,58 @@
-# Shell Setup
+# Shell setup
 
 ## Stack
 
 - **zsh** via [Oh My Zsh](https://ohmyz.sh/)
 - **Starship** prompt ([starship.rs](https://starship.rs/))
-- **zsh-autosuggestions** + **zsh-syntax-highlighting** plugins
+- **zsh-autosuggestions** + **zsh-syntax-highlighting** plugins (installed
+  by Home Manager — see `nix/modules/home/shell-packages.nix`)
 
-## Files
+## Files (chezmoi-managed)
 
-| Repo path             | Deploy to                          |
-| --------------------- | ---------------------------------- |
-| `configs/shell/.zshrc`        | `~/.zshrc`                         |
-| `configs/shell/starship.toml` | `~/.config/starship/starship.toml` |
+Source files live in `home/` under the chezmoi tree.
 
-## Optional Local Workflow Helpers
+| Source                               | Deploys to                          |
+| ------------------------------------ | ----------------------------------- |
+| `home/dot_zshrc.tmpl`                | `~/.zshrc` (templated identity)     |
+| `home/dot_zprofile.tmpl`             | `~/.zprofile`                       |
+| `home/dot_gitconfig.tmpl`            | `~/.gitconfig` (templated identity) |
+| `home/dot_bashrc`                    | `~/.bashrc` (fallback shell)        |
+| `home/dot_config/starship/starship.toml` | `~/.config/starship/starship.toml` |
+| `home/dot_config/atuin/config.toml`  | `~/.config/atuin/config.toml`       |
+| `home/dot_config/app-configs/ssh-agent.sh` | sourced from `~/.zshrc`       |
 
-If you keep this repo checked out locally, `configs/shell/.zshrc` also exposes small helpers for jumping into the repo and running health checks.
+## Deploy
 
-- Set `APP_CONFIGS_HOME` if your clone is not at the default path.
-- Use `acfg` to jump to the repo.
-- Use `acfg-doctor` to run the local repo health check.
-- Use `acfg-ai-check` to run the bundled AI workflow validation commands.
+```bash
+# Cold start (first time on this host):
+bash scripts/bootstrap.sh --dry-run
+bash scripts/bootstrap.sh --yes
+
+# Ongoing:
+mise run sync             # preview
+mise run sync:apply       # apply
+```
 
 ## Prerequisites
 
+Oh My Zsh is installed once per host outside the dotfiles tree:
+
 ```bash
-# Oh My Zsh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
-
-# Starship
-brew install starship
-
-# zsh-autosuggestions
-git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
-
-# zsh-syntax-highlighting
-brew install zsh-syntax-highlighting
 ```
+
+`starship`, `zsh-autosuggestions`, `zsh-syntax-highlighting`, etc. come from
+Home Manager (see `docs/migration-package-ownership.md`).
 
 ## Secrets
 
-Sensitive tokens (e.g. `NPM_TOKEN`) must be set in `~/.secrets` and sourced from `.zshrc`.
-That file is gitignored and never committed.
+Sensitive tokens (e.g. `NPM_TOKEN`) live in `~/.secrets`, sourced from
+`~/.zshrc`. That file is gitignored at the user level (never in this repo).
 
 ```bash
-# ~/.secrets  (create manually, never commit)
+# ~/.secrets — create manually, never commit
 export NPM_TOKEN="ghp_your_token_here"
 ```
 
-## Optional Workflow Commands
-
-If you install [`just`](https://github.com/casey/just), the repo includes:
-
-- `just doctor`
-- `just bootstrap`
-- `just ai-check`
-- `just hook-run-precommit`
+Real `home/.chezmoidata/personal.yaml` (name, email, signing key, host
+profile) is also gitignored; only `personal.yaml.example` is committed.

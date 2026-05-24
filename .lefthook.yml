@@ -1,8 +1,21 @@
 pre-commit:
   parallel: false
   commands:
+    no-personal-yaml:
+      run: |
+        if git diff --cached --name-only | grep -qE '^home/\.chezmoidata/personal\.yaml$'; then
+          echo "ERROR: home/.chezmoidata/personal.yaml is staged."
+          echo "It contains real identity values and must never be committed."
+          echo "Run: git restore --staged home/.chezmoidata/personal.yaml"
+          exit 1
+        fi
     shared-precommit:
       run: bash scripts/hooks/pre-commit.sh
+
+pre-push:
+  commands:
+    validate-config:
+      run: bash scripts/validate-config.sh
 
 commit-msg:
   commands:

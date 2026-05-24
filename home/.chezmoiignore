@@ -1,0 +1,27 @@
+README.md
+.DS_Store
+
+{{- $hostProfile := default "linux-desktop" .hostProfile -}}
+{{- $gui := default false .gui -}}
+
+{{- if ne .chezmoi.os "darwin" }}
+# macOS-only paths excluded on Linux/WSL
+Library/Application Support/Code/User/**
+dot_config/karabiner/**
+{{- end }}
+
+{{- if eq .chezmoi.os "darwin" }}
+# Linux/WSL VS Code path excluded on macOS
+dot_config/Code/User/**
+{{- end }}
+
+{{- if or (eq $hostProfile "wsl") (eq $hostProfile "linux-cli") }}
+# WSL and linux-cli: no Ghostty (no GUI terminal)
+dot_config/ghostty/**
+{{- end }}
+
+{{- if not $gui }}
+# Headless / gui=false: belt-and-braces drop ghostty + karabiner
+dot_config/ghostty/**
+dot_config/karabiner/**
+{{- end }}

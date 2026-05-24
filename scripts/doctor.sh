@@ -78,10 +78,22 @@ for file in \
     docs/ai/workflow.md \
     docs/software-and-cli-tools.md \
     docs/vscode-extensions.md \
-    configs/shell/.zshrc \
     .lefthook.yml \
     scripts/hooks/pre-commit.sh \
     scripts/hooks/commit-msg.sh; do
+    check_file "$file"
+done
+
+echo "-- Dotfiles migration core --"
+for file in \
+    .chezmoiroot \
+    home/.chezmoidata/personal.yaml.example \
+    home/.chezmoiignore \
+    home/dot_zshrc.tmpl \
+    home/dot_gitconfig.tmpl \
+    docs/migration-source-of-truth.md \
+    docs/migration-package-ownership.md \
+    docs/migration-decisions.md; do
     check_file "$file"
 done
 
@@ -89,7 +101,8 @@ echo "-- Optional workflow files --"
 for file in \
     justfile \
     Justfile \
-    .github/copilot-instructions.md; do
+    .github/copilot-instructions.md \
+    docs/install-dev-tools.sh; do
     check_optional_file "$file"
 done
 

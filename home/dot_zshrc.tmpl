@@ -326,13 +326,15 @@ bindkey '?' _atuin_ai_question_mark # Question mark
 
 
 # Herd injected PHP 8.4 configuration.
-export HERD_PHP_84_INI_SCAN_DIR="/Users/USER/Library/Application Support/Herd/config/php/84/"
+export HERD_PHP_84_INI_SCAN_DIR="$HOME/Library/Application Support/Herd/config/php/84/"
 
 
 # Herd injected PHP 8.3 configuration.
-export HERD_PHP_83_INI_SCAN_DIR="/Users/USER/Library/Application Support/Herd/config/php/83/"
+export HERD_PHP_83_INI_SCAN_DIR="$HOME/Library/Application Support/Herd/config/php/83/"
 
 # aliases
+alias op-refresh='op signin && source ~/.zshrc'
+
 atest() {
   php artisan test --filter="$1"
 }
@@ -400,12 +402,10 @@ composer() {
   op run --env-file="$HOME/.config/1password/composer.env" -- sh -c '
     export COMPOSER_AUTH="{\"github-oauth\":{\"github.com\":\"$GITHUB_COMPOSER_TOKEN\"}}"
     exec "$@"
-  ' sh "/Users/USER/Library/Application Support/Herd/bin//composer" "$@"
+  ' sh "$HOME/Library/Application Support/Herd/bin//composer" "$@"
 }
 # <<< composer 1password wrapper
 
 # Pin mise versions
 # eval "$(mise activate zsh)"
-
-# allow git to pick e.g. scripts like git-branch-origin (w/o .sh from this folder)
 export PATH="$HOME/.local/bin:$PATH"

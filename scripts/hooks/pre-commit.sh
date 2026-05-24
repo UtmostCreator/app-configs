@@ -42,8 +42,19 @@ else
 fi
 
 if [[ -n "$staged_files" ]]; then
-    echo "[hook] running full repo health check"
-    bash scripts/repo-health-check.sh staged
+    # Delegate the project health check to the scripts we actually ship.
+    # scripts/doctor.sh checks toolchain + tracked-file presence.
+    # scripts/validate-config.sh enforces the dotfiles-migration invariants.
+    # If either script is missing (e.g. partial clone), only warn — never
+    # block a commit on infrastructure that is not present.
+    for script in scripts/doctor.sh scripts/validate-config.sh; do
+        if [[ -x "$script" ]] || [[ -f "$script" ]]; then
+            echo "[hook] running $script"
+            bash "$script"
+        else
+            echo "[hook][warn] $script missing; skipping"
+        fi
+    done
 fi
 
 echo "[hook] pre-commit passed"

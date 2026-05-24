@@ -61,12 +61,15 @@ run_required() {
 echo "== app-configs doctor =="
 
 echo "-- Required binaries --"
-for bin in bash git rg php; do
+for bin in bash git rg; do
     check_required_bin "$bin"
 done
 
 echo "-- Optional binaries --"
-for bin in just code repomix scc bats actionlint shellcheck shfmt lychee jq yq; do
+# php is optional at the host level. The dotfiles bootstrap does NOT install
+# php (mise.toml intentionally does not pin a runtime). When php is absent
+# the AI workflow validators below are skipped with a warning, not a fail.
+for bin in php just code repomix scc bats actionlint shellcheck shfmt lychee jq yq; do
     check_optional_bin "$bin"
 done
 
@@ -108,9 +111,17 @@ done
 
 echo "-- AI workflow validation --"
 cd "$ROOT_DIR"
-run_required "AI config validation" php tools/ai/validate-ai-config.php
-run_required "AI catalog validation" php tools/ai/validate-ai-catalog.php
-run_required "AI catalog generated files are current" php tools/ai/generate-ai-catalog.php --check
+if command -v php >/dev/null 2>&1; then
+    run_required "AI config validation" php tools/ai/validate-ai-config.php
+    run_required "AI catalog validation" php tools/ai/validate-ai-catalog.php
+    run_required "AI catalog generated files are current" php tools/ai/generate-ai-catalog.php --check
+else
+    warn "php missing; AI workflow validators skipped"
+    warn "  install php (system pkg, or pin in home/dot_config/mise/config.toml.tmpl)"
+    warn "  to run: php tools/ai/validate-ai-config.php"
+    warn "         php tools/ai/validate-ai-catalog.php"
+    warn "         php tools/ai/generate-ai-catalog.php --check"
+fi
 
 echo "-- Secret scanner availability --"
 if command -v gitleaks >/dev/null 2>&1; then

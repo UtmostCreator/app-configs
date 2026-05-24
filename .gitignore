@@ -59,3 +59,20 @@ coverage/
 # Optional installed packs; source lives under packages/ai-universal-rules/templates/optional/
 .github/prompts-optional/
 .opencode/agents-optional/
+
+# Dotfiles migration — chezmoi private state
+# Real personal data and chezmoi runtime state must never be committed.
+home/.chezmoidata/personal.yaml
+home/.chezmoidata/personal.local.yaml
+home/.chezmoistate/
+
+# Dotfiles migration — Nix build outputs
+result
+result-*
+
+# Dotfiles migration — mise local overrides
+mise.local.toml
+.mise.local.toml
+
+# Dotfiles migration — chezmoi snapshot-home outputs (local recovery only)
+.dotfiles-snapshots/

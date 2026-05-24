@@ -16,7 +16,7 @@ if ($root === false) {
     exit(1);
 }
 
-if ($targetArg !== null || (!is_dir($root . DIRECTORY_SEPARATOR . 'packages') && is_file($root . DIRECTORY_SEPARATOR . '.ai-install-manifest.json'))) {
+if ($targetArg !== null || (is_file($root . DIRECTORY_SEPARATOR . '.ai-install-manifest.json') && !is_dir($root . DIRECTORY_SEPARATOR . 'packages' . DIRECTORY_SEPARATOR . 'ai-universal-rules' . DIRECTORY_SEPARATOR . 'templates'))) {
     $errors = [];
     foreach (['AGENTS.md', 'docs/ai/project-context.md', 'docs/ai/POST-INSTALL.md', 'scripts/ai/ai-search.sh', 'tools/ai/validate-install-surface.php', '.ai-install-manifest.json'] as $required) {
         if (!file_exists($root . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $required))) {

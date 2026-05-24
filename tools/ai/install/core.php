@@ -119,6 +119,19 @@ function aiInstallerRun(array $argv): int
         $manifest = aiInstallerBuildManifest($config, $packs, $applied);
         $manifest['placeholders'] = $placeholderStatus;
         aiInstallerWriteManifest($config['targetRoot'], $manifest);
+
+        if (!empty($config['verifyAfter'])) {
+            $verify = aiInstallerRunTargetCommand($config['targetRoot'], [PHP_BINARY, 'tools/ai/ai.php', 'verify']);
+            if ($verify['stdout'] !== '') {
+                fwrite(STDOUT, $verify['stdout']);
+            }
+            if ($verify['stderr'] !== '') {
+                fwrite(STDERR, $verify['stderr']);
+            }
+            if ($verify['exit'] !== 0) {
+                throw new RuntimeException('post-install verification failed; inspect target docs/ai/generated/verify.json');
+            }
+        }
     }
 
     aiInstallerLog($config['dryRun'] ? 'dry-run complete; no files changed' : 'install complete');
@@ -262,6 +275,28 @@ function aiInstallerAssertAllowedTarget(array $config): void
     if ($targetRoot === $reservedExampleRoot || str_starts_with($targetRoot . '/', $reservedExampleRoot . '/')) {
         throw new RuntimeException('installer target under packages/ai-universal-rules/examples is reserved; install into a dedicated external project directory instead');
     }
+}
+
+/** @param list<string> $command @return array{stdout:string,stderr:string,exit:int} */
+function aiInstallerRunTargetCommand(string $targetRoot, array $command): array
+{
+    $escaped = implode(' ', array_map('escapeshellarg', $command));
+    $descriptors = [
+        0 => ['pipe', 'r'],
+        1 => ['pipe', 'w'],
+        2 => ['pipe', 'w'],
+    ];
+    $process = proc_open($escaped, $descriptors, $pipes, $targetRoot);
+    if (!is_resource($process)) {
+        throw new RuntimeException('could not start post-install verification');
+    }
+    fclose($pipes[0]);
+    $stdout = (string) stream_get_contents($pipes[1]);
+    $stderr = (string) stream_get_contents($pipes[2]);
+    fclose($pipes[1]);
+    fclose($pipes[2]);
+    $exit = proc_close($process);
+    return ['stdout' => $stdout, 'stderr' => $stderr, 'exit' => $exit];
 }
 
 function aiInstallerCollectPlaceholderStatus(string $targetRoot): array
@@ -461,6 +496,10 @@ function aiInstallerCopyFile(string $src, string $dest): void
     aiInstallerMkdir(dirname($dest));
     if (!copy($src, $dest)) {
         throw new RuntimeException('failed to copy file: ' . $src);
+    }
+    $mode = @fileperms($src);
+    if ($mode !== false) {
+        @chmod($dest, $mode & 0777);
     }
 }
 

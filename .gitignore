@@ -44,6 +44,9 @@ coverage/
 # Keep only the README.md inside each generated folder to document the policy.
 /docs/ai/generated/*
 !/docs/ai/generated/README.md
+!/docs/ai/generated/task-context/
+/docs/ai/generated/task-context/*
+!/docs/ai/generated/task-context/latest.md
 !/docs/ai/generated/sessions/
 /docs/ai/generated/sessions/*
 !/docs/ai/generated/sessions/.gitkeep

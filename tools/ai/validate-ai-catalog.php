@@ -11,7 +11,7 @@ foreach ($argv as $arg) {
     }
 }
 
-if ($targetArg !== null || (!is_dir(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'packages') && is_file(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . '.ai-install-manifest.json'))) {
+if ($targetArg !== null || (is_file(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . '.ai-install-manifest.json') && !is_dir(dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'packages' . DIRECTORY_SEPARATOR . 'ai-universal-rules' . DIRECTORY_SEPARATOR . 'templates'))) {
     $targetRoot = $targetArg !== null ? realpath($targetArg) : realpath(dirname(__DIR__, 2));
     if ($targetRoot === false) {
         fwrite(STDERR, "ERROR: target root not found\n");

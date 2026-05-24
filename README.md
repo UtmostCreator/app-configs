@@ -1,92 +1,105 @@
 # app-configs
 
-Personal macOS development environment configuration files ΓÇö terminal, editor, shell, keyboard, and PHP reference material.
+Personal macOS / Linux / WSL2 development environment, packaged so a clean
+machine can reach a working setup with one bootstrap script.
 
-> **Looking for the AI Workflow Kit?** It has moved to [awesome-ai-utmostcreator](https://github.com/UtmostCreator/awesome-ai-utmostcreator).
+Stack: **chezmoi** (dotfiles) + **mise** (runtimes & tasks) + **Nix / Home
+Manager** (CLI packages) + **nix-darwin + Homebrew casks** (macOS GUI) +
+**Lefthook** (git hooks).
 
-## Ghostty Full Disk Access Popup
+> Looking for the AI Workflow Kit? It moved to
+> [awesome-ai-utmostcreator](https://github.com/UtmostCreator/awesome-ai-utmostcreator).
+> Anything under `.opencode/`, `.github/`, `docs/ai/`, `tools/ai/`,
+> `packages/ai-universal-rules/`, and `scripts/ai/` is the local mirror of
+> that kit and is governed separately from the dotfiles stack documented
+> here.
 
-> macOS Settings -> Privacy & Security -> Full Disk Access -> enable Ghostty via the toggle
+## Cold start (any supported host)
 
-## What Is Here
+```bash
+git clone <your-fork-of-this-repo> ~/dotfiles
+cd ~/dotfiles
 
-- Ghostty terminal configuration for a fast, keyboard-first terminal workflow
-- Neovim setup bootstrapped with `lazy.nvim`, including tmux-aware navigation and testing plugins
-- Zsh, Starship, and shell setup designed for repeatable CLI productivity
-- PHP runtime and Laravel Pint configuration for consistent formatting and local development
-- VS Code settings, launch config, and extension recommendations for project work
-- Karabiner and keyboard documentation for cross-platform ergonomics
-- PHP design patterns, principles, and built-in function reference examples
-- Doctor script and git hooks for local health checks
+cp home/.chezmoidata/personal.yaml.example home/.chezmoidata/personal.yaml
+$EDITOR home/.chezmoidata/personal.yaml      # name, email, hostProfile, gui
 
-## Documentation
+bash scripts/bootstrap.sh                    # default: dry-run, no mutations
+bash scripts/bootstrap.sh --yes              # actually install + apply
+```
 
-- `docs/software-and-cli-tools.md` — curated macOS development environment and CLI stack
-- `docs/shell-setup.md` — shell, prompt, and secret-handling setup
-- `docs/nvim-setup.md` — Neovim deployment and prerequisites
-- `docs/vscode-extensions.md` — VS Code extension recommendations
-- `docs/keyboard.md` — keyboard and Karabiner ergonomics notes
-- `docs/windows/QUICKSTART.md` — persistent SSH agent with 8h passphrase prompt on Windows
-- `docs/windows/ssh-agent-setup.md` — long-form Windows SSH reference and rollback notes
-- `docs/unix/QUICKSTART.md` — persistent SSH agent for Linux / macOS / WSL (passphrase once per boot)
-- `docs/unix/ssh-agent-setup.md` — long-form Linux/macOS SSH agent reference and rollback notes
+Full runbook: [`docs/bootstrap.md`](docs/bootstrap.md).
+Ownership rules and "why each tool": [`docs/architecture/tool-ownership.md`](docs/architecture/tool-ownership.md).
 
-## Configurations
+## Day-to-day
 
-- `configs/ghostty/` ΓÇö terminal configuration
-- `configs/nvim/` ΓÇö Neovim configuration and plugins
-- `configs/karabiner/` ΓÇö keyboard remapping config
-- `configs/php/` ΓÇö PHP runtime (`php.ini`) and Laravel Pint (`pint.json`)
-- `configs/shell/` ΓÇö Starship prompt, `.zshrc`, `.gitconfig`
-- `configs/shell/ssh-agent/` ΓÇö portable ssh-agent loader for bash/zsh/fish (Linux + macOS)
-- `configs/vscode/` ΓÇö workspace settings, user settings, keybindings, launch config
+```bash
+mise run sync           # preview pending changes (no mutation)
+mise run sync:apply     # apply (snapshots $HOME first, then chezmoi + HM/darwin + mise + lefthook)
+mise run apply          # chezmoi-only apply (no Nix/mise side effects)
+mise run doctor         # local health check
+mise run repo:validate  # architecture invariant guard
+mise run repo:check     # doctor + validator + (optional) nix flake check
+```
 
-## PHP Reference
+Optional CLI extras (dive / fx / navi / glow / gum):
 
-- `reference/php/design-patterns/` ΓÇö primary PHP design pattern example corpus
-- `reference/php/design-principles/` ΓÇö PHP principles and composition examples
-- `reference/php/php-built-ins/` ΓÇö PHP built-in function usage examples
+```bash
+mise run tools:optional:install
+mise run tools:optional:list
+```
 
-## Scripts
+## Supported targets
 
-- `scripts/doctor.sh` ΓÇö local toolchain health check
-- `scripts/hooks/pre-commit.sh` ΓÇö merge conflict marker detection + PHP lint
-- `scripts/hooks/commit-msg.sh` ΓÇö commit message format validation
-- `scripts/unix/ssh-agent-setup.sh` ΓÇö idempotent ssh-agent installer for Linux / macOS / WSL
+| Target | Coverage |
+|--------|----------|
+| macOS (Apple Silicon by default) | full (Home Manager + nix-darwin + Homebrew casks) |
+| Linux desktop | full (Home Manager standalone + GUI module) |
+| Linux CLI / headless | CLI-only (Home Manager standalone, no GUI) |
+| WSL2 | best-effort, Linux-flavoured CLI/dev only |
+| Windows native | not supported |
 
-## Style Configs (reference)
+## Layout
 
-These exist as starter configs for target projects. No JS/TS/CSS source exists in this repo:
+| Path | Owns |
+|------|------|
+| `home/` | chezmoi source tree (dotfiles in `~` and `~/.config/`). `home/.chezmoidata/personal.yaml.example` is committed; real `personal.yaml` is gitignored. |
+| `nix/` | Nix flake + Home Manager modules per host profile. `nix/flake.nix` exposes `homeConfigurations.{linux-desktop,linux-cli,wsl,macos}` and `darwinConfigurations.macos`. |
+| `mise.toml` | repo tasks. Tool versions are per-user in `home/dot_config/mise/config.toml.tmpl`. |
+| `.lefthook.yml` | git hooks: pre-commit (no-personal-yaml guard + shared-precommit) and pre-push (validate-config). |
+| `scripts/` | `bootstrap.sh`, `detect-host.sh`, `doctor.sh`, `snapshot-home.sh`, `validate-config.sh`, `uninstall.sh`, `test-bootstrap-docker.sh`, `check-source-of-truth.sh`, `generate-package-matrix.sh`, hooks under `scripts/hooks/`, and `scripts/unix/ssh-agent-setup.sh`. |
+| `docs/` | per-topic setup docs and the migration audit trail (`migration-*.md`). |
+| `docs/architecture/tool-ownership.md` | canonical statement of who owns what. |
+| `docs/bootstrap.md` | cold-start runbook + per-host notes + WSL2 caveats. |
+| `docs/templates/vscode/` | reusable per-project workspace template (`workspace-template.json`). |
 
-- `.eslintrc.json` ΓÇö ESLint for Vue 3 + TypeScript
-- `.prettierrc.json` ΓÇö Prettier formatting rules
-- `.stylelintrc.json` ΓÇö Stylelint for Tailwind/Vue
-- `.editorconfig` ΓÇö editor whitespace, indent, EOL (active)
+## Style configs (reference baseline)
 
-## Quick Start
+These ship for downstream projects; they describe formatting rules, not
+runtime behaviour:
 
-1. Read the relevant setup doc in `docs/`
-2. Copy or merge the config from `configs/` into your local environment
-3. Replace machine-specific placeholders
-4. Run `bash scripts/doctor.sh` to verify your local toolchain
+- `.editorconfig`, `.prettierrc.json`, `.eslintrc.json`, `.stylelintrc.json`
+- `.gitattributes` (LF/CRLF policy)
 
-## Important Notes
+## Verify your install
 
-- Some settings are intentionally machine-specific; shared docs call those out
-- Git hooks use Lefthook (`.lefthook.yml`) ΓÇö run `lefthook install` to activate
+```bash
+bash scripts/doctor.sh
+bash scripts/validate-config.sh
+mise run repo:check
+```
 
-## Key Files
+## Uninstall / handoff
 
-- `docs/software-and-cli-tools.md`
-- `docs/shell-setup.md`
-- `docs/nvim-setup.md`
-- `docs/keyboard.md`
-- `docs/vscode-extensions.md`
-- `docs/windows/QUICKSTART.md`
-- `docs/unix/QUICKSTART.md`
-- `configs/ghostty/config`
-- `configs/nvim/init.lua`
-- `configs/php/pint.json`
-- `configs/vscode/user/settings.json`
-- `scripts/git-branch-origin.sh`
+```bash
+bash scripts/uninstall.sh             # report only
+bash scripts/uninstall.sh --apply     # actually run
+```
 
+`scripts/uninstall.sh` never removes Nix itself and never deletes snapshots
+under `~/.local/state/dotfiles-snapshots/`.
+
+## Migration history
+
+See `new-architecture-todo-v2.md` and `docs/migration-*.md` for the phased
+migration audit trail (source-of-truth matrix, package ownership matrix,
+pre-flight decisions).

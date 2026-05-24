@@ -1,14 +1,30 @@
 # VS Code Extensions
 
-## get full list of extensions
+Workflow:
+
+1. VS Code user settings + keybindings are chezmoi-managed at:
+   - Linux / WSL: `~/.config/Code/User/`
+   - macOS: `~/Library/Application Support/Code/User/`
+
+   Sources live under `home/dot_config/Code/User/` and
+   `home/Library/Application Support/Code/User/` in the repo. Both
+   `settings.json.tmpl` wrappers fold full vs minimal via the `.minimal`
+   key in `home/.chezmoidata/personal.yaml`.
+
+2. Extensions themselves are installed via `code --install-extension`.
+   The bootstrap does **not** auto-install them; pick what you want from
+   the list below.
+
+## Export your current list
 
 ```bash
-code --list-extensions > vscode-extensions.txt
+code --list-extensions > /tmp/vscode-extensions.txt
 ```
 
-## list
+## Install the curated list
 
 ```bash
+xargs -L1 code --install-extension <<'EOF'
 alefragnani.bookmarks
 amiralizadeh9480.laravel-extra-intellisense
 anan.jetbrains-darcula-theme
@@ -30,8 +46,6 @@ ecmel.vscode-html-css
 editorconfig.editorconfig
 esbenp.prettier-vscode
 formulahendry.auto-close-tag
-github.copilot
-github.copilot-chat
 github.vscode-github-actions
 github.vscode-pull-request-github
 gruntfuggly.todo-tree
@@ -62,7 +76,6 @@ recca0120.vscode-phpunit
 redhat.vscode-yaml
 ryannaddy.laravel-artisan
 shufo.vscode-blade-formatter
-silasnevstad.gpthelper
 sonarsource.sonarlint-vscode
 streetsidesoftware.code-spell-checker
 stylelint.vscode-stylelint
@@ -71,71 +84,8 @@ unifiedjs.vscode-mdx
 usernamehw.errorlens
 vue.volar
 xdebug.php-debug
+EOF
 ```
 
-## to install them use this:
-
-```bash
-code --install-extension alefragnani.bookmarks
-code --install-extension amiralizadeh9480.laravel-extra-intellisense
-code --install-extension anan.jetbrains-darcula-theme
-code --install-extension astro-build.astro-vscode
-code --install-extension austenc.tailwind-docs
-code --install-extension bmewburn.vscode-intelephense-client
-code --install-extension bradlc.vscode-tailwindcss
-code --install-extension christian-kohler.npm-intellisense
-code --install-extension christian-kohler.path-intellisense
-code --install-extension codingyu.laravel-goto-view
-code --install-extension damms005.devdb
-code --install-extension davidanson.vscode-markdownlint
-code --install-extension dbaeumer.vscode-eslint
-code --install-extension devsense.phptools-vscode
-code --install-extension docker.docker
-code --install-extension dotenv.dotenv-vscode
-code --install-extension eamodio.gitlens
-code --install-extension ecmel.vscode-html-css
-code --install-extension editorconfig.editorconfig
-code --install-extension esbenp.prettier-vscode
-code --install-extension formulahendry.auto-close-tag
-code --install-extension github.copilot
-code --install-extension github.copilot-chat
-code --install-extension github.vscode-github-actions
-code --install-extension github.vscode-pull-request-github
-code --install-extension gruntfuggly.todo-tree
-code --install-extension hbenl.vscode-test-explorer
-code --install-extension htmlhint.vscode-htmlhint
-code --install-extension humao.rest-client
-code --install-extension k--kato.intellij-idea-keybindings
-code --install-extension mechatroner.rainbow-csv
-code --install-extension mehedidracula.php-namespace-resolver
-code --install-extension mhutchie.git-graph
-code --install-extension ms-azuretools.vscode-containers
-code --install-extension ms-azuretools.vscode-docker
-code --install-extension ms-playwright.playwright
-code --install-extension ms-vscode-remote.remote-containers
-code --install-extension ms-vscode-remote.remote-wsl
-code --install-extension ms-vscode.powershell
-code --install-extension ms-vscode.test-adapter-converter
-code --install-extension ms-vscode.vscode-typescript-next
-code --install-extension mtxr.sqltools
-code --install-extension mtxr.sqltools-driver-mysql
-code --install-extension naumovs.color-highlight
-code --install-extension neilbrayfield.php-docblocker
-code --install-extension nuxtr.nuxtr-vscode
-code --install-extension open-southeners.laravel-pint
-code --install-extension pkief.material-icon-theme
-code --install-extension pranaygp.vscode-css-peek
-code --install-extension recca0120.vscode-phpunit
-code --install-extension redhat.vscode-yaml
-code --install-extension ryannaddy.laravel-artisan
-code --install-extension shufo.vscode-blade-formatter
-code --install-extension silasnevstad.gpthelper
-code --install-extension sonarsource.sonarlint-vscode
-code --install-extension streetsidesoftware.code-spell-checker
-code --install-extension stylelint.vscode-stylelint
-code --install-extension tyriar.lorem-ipsum
-code --install-extension unifiedjs.vscode-mdx
-code --install-extension usernamehw.errorlens
-code --install-extension vue.volar
-code --install-extension xdebug.php-debug
-```
+> The list intentionally omits `github.copilot*` because this repo uses
+> OpenCode as the AI runtime. Install Copilot separately if you want it.

@@ -49,10 +49,10 @@ bash scripts/unix/ssh-agent-setup.sh --remove
 
 Files deployed:
 
-| Deploy path                                  | Source in repo                              |
-| -------------------------------------------- | ------------------------------------------- |
-| `~/.config/app-configs/ssh-agent.sh`          | `configs/shell/ssh-agent/ssh-agent.sh`       |
-| `~/.config/fish/conf.d/ssh-agent.fish`        | `configs/shell/ssh-agent/ssh-agent.fish`     |
+| Deploy path                                  | Source in repo                                              |
+| -------------------------------------------- | ----------------------------------------------------------- |
+| `~/.config/app-configs/ssh-agent.sh`          | `home/dot_config/app-configs/ssh-agent.sh` (chezmoi-managed) |
+| `~/.config/fish/conf.d/ssh-agent.fish`        | `home/dot_config/fish/conf.d/ssh-agent.fish` (chezmoi-managed) |
 
 The bash/zsh rc is edited inside a marker-delimited block:
 
@@ -77,9 +77,9 @@ sudo dnf install -y keychain            # Fedora/RHEL
 sudo pacman -S --needed keychain        # Arch
 brew install keychain                   # Homebrew on Linux
 
-# 2. Deploy the snippet.
+# 2. Deploy the snippet (or let chezmoi do it via `mise run sync:apply`).
 mkdir -p ~/.config/app-configs
-cp configs/shell/ssh-agent/ssh-agent.sh ~/.config/app-configs/
+cp home/dot_config/app-configs/ssh-agent.sh ~/.config/app-configs/
 
 # 3. Add to ~/.bashrc or ~/.zshrc (idempotent — only add once):
 cat >> ~/.bashrc <<'EOF'
@@ -96,7 +96,7 @@ EOF
 ```fish
 # Install keychain as above, then:
 mkdir -p ~/.config/fish/conf.d
-cp configs/shell/ssh-agent/ssh-agent.fish ~/.config/fish/conf.d/
+cp home/dot_config/fish/conf.d/ssh-agent.fish ~/.config/fish/conf.d/
 
 # Configure keys (universal var, persists across all fish sessions):
 set -Ux APP_CONFIGS_SSH_KEYS github.uc.ll5

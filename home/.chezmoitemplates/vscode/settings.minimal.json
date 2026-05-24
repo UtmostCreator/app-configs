@@ -1,6 +1,7 @@
-// ⚠️ end file name must be settings.json and it is user settings, NOT workspace
-// macos location: `~/Library/Application Support/Code/User/settings.json`
-// full config w/ styles: https://github.com/UtmostCreator/app-configs/blob/main/.configs/vscode/userSettings/settings.json
+// ⚠️ Deploys as ~/.config/Code/User/settings.json (Linux/WSL) or
+// ~/Library/Application Support/Code/User/settings.json (macOS) via chezmoi.
+// The "full" sibling lives in the same chezmoi templates directory:
+// home/.chezmoitemplates/vscode/settings.full.json.
 {
   // =========================
   // Consistent whitespace / EOL

@@ -21,17 +21,20 @@ inherit the user shell) must never block on a passphrase prompt.
 ## Components
 
 ```
-configs/shell/ssh-agent/
-    ssh-agent.sh        # bash + zsh loader (POSIX-ish)
-    ssh-agent.fish      # fish loader
-    README.md           # short usage
+home/dot_config/app-configs/
+    ssh-agent.sh                 # bash + zsh loader (POSIX-ish, chezmoi-managed)
+
+home/dot_config/fish/conf.d/
+    ssh-agent.fish               # fish loader (chezmoi-managed; auto-sourced)
 
 scripts/unix/
-    ssh-agent-setup.sh  # idempotent installer (install / --remove)
+    ssh-agent-setup.sh           # idempotent installer (install / --remove);
+                                 # also re-used by scripts/bootstrap.sh step 8.
 
 docs/unix/
-    QUICKSTART.md       # 1-command runbook
-    ssh-agent-setup.md  # this file
+    QUICKSTART.md                # 1-command runbook
+    ssh-agent-setup.md           # this file
+    ssh-agent-snippets.md        # short reference from the original README
 ```
 
 ## How the loader decides what to do

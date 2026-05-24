@@ -52,40 +52,37 @@ Run only the checks that match your change unless you touched shared generation 
 Run all checks end-to-end:
 
 ```bash
-just ci
-bash scripts/repo-health-check.sh
+bash scripts/doctor.sh           # local toolchain health check
+bash scripts/validate-config.sh  # architecture invariant guard
+mise run repo:check              # doctor + validator + optional nix flake check
 ```
 
 Run individual layers:
 
 ```bash
-just ai-check      # PHP AI validators (config, catalog, generated-output staleness)
-just health-check  # doctor + ai-check + lint + test-php + test-shell
-just lint          # shellcheck + shfmt + actionlint + lychee (offline docs link check)
-just test-php      # PHPUnit — tools/ai/ai_catalog_lib.php + CLI entrypoint contracts
-just test-shell    # bats — pre-tool-use.sh, post-tool-use.sh, doctor.sh
-just test          # test-php + test-shell
+mise run lint:check        # whitespace / repository lint (git diff --check)
+mise run lint:shell        # bash -n + shellcheck on migration scripts
+mise run repo:validate     # invariant guard only
 ```
 
-The pre-commit hook now runs `bash scripts/repo-health-check.sh staged` whenever staged changes exist, so new changes go through the full project health matrix before commit.
+The pre-commit hook (`scripts/hooks/pre-commit.sh`, wired via
+`.lefthook.yml`) runs:
 
-### Required in CI (must be installed for lint/test-shell to pass)
+- merge-conflict marker detection on staged blobs
+- `php -l` lint for staged `.php` files (skipped if PHP is absent)
+- secret scan via `gitleaks` (or `trufflehog`, or skipped if neither is present)
 
-| Tool         | Install                   |
-| ------------ | ------------------------- |
-| `shellcheck` | `brew install shellcheck` |
-| `shfmt`      | `brew install shfmt`      |
-| `actionlint` | `brew install actionlint` |
-| `lychee`     | `brew install lychee`     |
-| `bats`       | `brew install bats-core`  |
-| `jq`         | `brew install jq`         |
-| `yq`         | `brew install yq`         |
+The pre-push hook runs `bash scripts/validate-config.sh`.
 
-In CI these tools are installed at pinned versions (see `.github/workflows/validate-ai-surface.yml`). For macOS local use, `brew install` each tool + `brew pin` it to keep versions stable.
+### Recommended local tools
 
-### Optional locally (warnings only)
+These are needed by the lint/test surfaces above. Owned by Home Manager
+(see `nix/modules/home/dev.nix`), so `bash scripts/bootstrap.sh --yes`
+installs them. On macOS without Nix, `brew install <tool>` is the
+fallback.
 
-`bats`, `actionlint`, `shellcheck`, `shfmt`, `lychee`, `jq`, and `yq` — `just doctor` warns if absent but does not fail. The full repo health check does require them.
+- `shellcheck`, `shfmt`, `actionlint`, `lychee`, `bats` (`bats-core`), `jq`, `yq`
+- `gitleaks` (preferred) or `trufflehog` for the pre-commit secret scan
 
 ### Test fixtures
 

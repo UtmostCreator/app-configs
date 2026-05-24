@@ -40,6 +40,7 @@ Workflow rules:
 - Say `unknown` when the repository does not prove something.
 - If a slice grows beyond roughly 6 files or 300-500 changed lines, pause and confirm it is still one bounded outcome.
 - Stop repeated review or fix loops after three iterations and surface unresolved tradeoffs clearly.
+- **Failure flagging is mandatory.** Every command, edit, tool call, or sub-agent invocation that fails — for any reason: permission deny, tool error, missing dependency, non-zero exit, timeout, blocked file path, schema mismatch — must be flagged in the user-facing summary on completion of the slice. Record the literal command/tool, the failure reason in one line, and the resolution chosen (fixed, deferred, dropped). Append unresolved entries to `docs/migration-followups.md` (or the active follow-up doc for the slice). Silent failures, "best effort" omissions, and quietly-skipped verifications are not allowed.
 
 ## Approval Required Before Proceeding
 

@@ -20,6 +20,24 @@
       "notes": "Thin shims; canonical hook logic lives under scripts/hooks/."
     },
     {
+      "path": ".github",
+      "purpose": "Repository-hosted automation hooks and workflows installed by the AI workflow kit.",
+      "designed_for": "CI and policy automation, not GitHub Copilot runtime configuration in this OpenCode-only install.",
+      "install_guide": "docs/ai/POST-INSTALL.md",
+      "install_script": "none",
+      "ai_entrypoint": ".github/workflows/validate-ai-surface.yml",
+      "notes": "Contains hooks and workflows from governance packs; Copilot adapter files are intentionally absent."
+    },
+    {
+      "path": ".opencode",
+      "purpose": "OpenCode adapter configuration, agents, commands, and skills.",
+      "designed_for": "OpenCode CLI workflows in this repository.",
+      "install_guide": "docs/ai/POST-INSTALL.md",
+      "install_script": "none",
+      "ai_entrypoint": ".opencode/opencode.json",
+      "notes": "Primary installed AI runtime surface."
+    },
+    {
       "path": ".schemas",
       "purpose": "JSON schemas validating local artifacts produced by AI tooling.",
       "designed_for": "Tooling validation and contract enforcement for session logs and similar artifacts.",
@@ -54,6 +72,15 @@
       "install_script": "docs/install-dev-tools.sh",
       "ai_entrypoint": "docs/README.md",
       "notes": "Includes platform-scoped subfolders (unix/, windows/) and the AI workflow notes under ai/."
+    },
+    {
+      "path": "packages",
+      "purpose": "Installed AI package metadata and policy references used by validators.",
+      "designed_for": "Local validation of the installed AI workflow kit without requiring the source repository.",
+      "install_guide": "docs/ai/POST-INSTALL.md",
+      "install_script": "none",
+      "ai_entrypoint": "packages/ai-universal-rules/manifest.json",
+      "notes": "Contains package descriptors, catalog, docs, and policies; template source is not installed."
     },
     {
       "path": "reference",

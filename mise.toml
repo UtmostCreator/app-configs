@@ -1,0 +1,199 @@
+[tools]
+php = "8.4"
+
+# ─── Read-only helpers ───────────────────────────────────────────────────────
+
+[tasks.doctor]
+description = "Run repo health checks"
+run = "bash scripts/doctor.sh"
+
+[tasks.diff]
+description = "Preview chezmoi changes (no mutation)"
+run = "chezmoi diff"
+
+[tasks."lint:check"]
+description = "Whitespace and repository lint checks"
+run = "git diff --check"
+
+[tasks."lint:shell"]
+description = "Shell syntax + ShellCheck for migration scripts"
+run = """
+set -e
+bash -n scripts/bootstrap.sh scripts/detect-host.sh scripts/snapshot-home.sh \
+        scripts/validate-config.sh scripts/check-source-of-truth.sh \
+        scripts/generate-package-matrix.sh scripts/doctor.sh 2>/dev/null || \
+  echo 'missing: one or more scripts not yet created (Phase 7)'
+if command -v shellcheck >/dev/null 2>&1; then
+  shellcheck scripts/snapshot-home.sh scripts/validate-config.sh \
+             scripts/check-source-of-truth.sh scripts/generate-package-matrix.sh \
+             scripts/doctor.sh
+  for f in scripts/bootstrap.sh scripts/detect-host.sh; do
+    [ -f "$f" ] && shellcheck "$f"
+  done
+else
+  echo 'missing: shellcheck (skip lint; install via Nix per Phase 6 matrix)'
+fi
+"""
+
+[tasks."repo:validate"]
+description = "Architecture invariant guard"
+run = "bash scripts/validate-config.sh"
+
+[tasks."repo:check"]
+description = "Combined config consistency check"
+run = """
+set -e
+git diff --check
+bash scripts/doctor.sh
+bash scripts/validate-config.sh
+if command -v nix >/dev/null 2>&1 && [ -d nix ]; then
+  nix flake check ./nix
+else
+  echo 'missing: nix or nix/ flake (skip flake check)'
+fi
+"""
+
+# ─── chezmoi-only apply (no Nix/mise/lefthook side effects) ─────────────────
+
+[tasks.apply]
+description = "Apply chezmoi changes only (no Nix/mise/lefthook side effects)"
+run = """
+set -e
+if ! command -v chezmoi >/dev/null 2>&1; then
+  echo 'missing: chezmoi (install via nix profile or scripts/bootstrap.sh --yes)'
+  exit 1
+fi
+chezmoi diff
+printf 'Apply chezmoi changes? [y/N] '
+read -r ans
+[ "$ans" = "y" ] || [ "$ans" = "Y" ] || { echo 'Aborted'; exit 1; }
+if [ -x scripts/snapshot-home.sh ]; then
+  bash scripts/snapshot-home.sh
+else
+  echo 'missing: scripts/snapshot-home.sh'
+  exit 1
+fi
+chezmoi apply
+"""
+
+# ─── Sync semantics: default safe preview, explicit apply path ──────────────
+
+[tasks."sync:dry-run"]
+description = "Preview full sync (chezmoi + HM/darwin + mise + lefthook) without mutating"
+run = """
+set -e
+HOST="${HOST_PROFILE:-}"
+if [ -z "$HOST" ] && [ -x scripts/detect-host.sh ]; then
+  HOST="$(bash scripts/detect-host.sh 2>/dev/null || echo unknown)"
+fi
+echo "=== Host: ${HOST:-unknown} ==="
+echo
+echo '=== chezmoi diff ==='
+if command -v chezmoi >/dev/null 2>&1; then chezmoi diff; else echo 'missing: chezmoi'; fi
+echo
+echo '=== home-manager / darwin-rebuild dry-run ==='
+case "$HOST" in
+  macos)
+    if command -v darwin-rebuild >/dev/null 2>&1; then
+      darwin-rebuild check --flake ./nix#macos
+    else
+      echo 'missing: darwin-rebuild'
+    fi
+    ;;
+  linux-desktop|linux-cli|wsl)
+    if command -v home-manager >/dev/null 2>&1 && [ -d nix ]; then
+      home-manager switch --flake "./nix#$HOST" --dry-run
+    else
+      echo 'missing: home-manager or nix/ flake'
+    fi
+    ;;
+  *)
+    echo 'unknown host profile; set HOST_PROFILE=macos|linux-desktop|linux-cli|wsl'
+    ;;
+esac
+echo
+echo '=== mise install (advisory) ==='
+if command -v mise >/dev/null 2>&1; then
+  mise ls --missing 2>/dev/null || echo 'mise has nothing to install'
+else
+  echo 'missing: mise'
+fi
+echo
+echo 'Would run: lefthook install'
+"""
+
+[tasks."sync:apply"]
+description = "Apply full sync: snapshot + chezmoi + HM/darwin + mise + lefthook"
+run = """
+set -e
+HOST="${HOST_PROFILE:-}"
+if [ -z "$HOST" ] && [ -x scripts/detect-host.sh ]; then
+  HOST="$(bash scripts/detect-host.sh)"
+fi
+case "$HOST" in
+  macos|linux-desktop|linux-cli|wsl) ;;
+  *) echo "unsupported HOST_PROFILE: $HOST"; exit 1 ;;
+esac
+
+for cmd in chezmoi mise lefthook; do
+  command -v "$cmd" >/dev/null 2>&1 || { echo "missing: $cmd"; exit 1; }
+done
+
+chezmoi diff
+printf 'Apply full sync on host=%s? [y/N] ' "$HOST"
+read -r ans
+[ "$ans" = "y" ] || [ "$ans" = "Y" ] || { echo 'Aborted'; exit 1; }
+
+if [ -x scripts/snapshot-home.sh ]; then
+  bash scripts/snapshot-home.sh
+else
+  echo 'missing: scripts/snapshot-home.sh'; exit 1
+fi
+
+chezmoi apply
+
+case "$HOST" in
+  macos)
+    command -v darwin-rebuild >/dev/null 2>&1 || { echo 'missing: darwin-rebuild'; exit 1; }
+    darwin-rebuild switch --flake ./nix#macos
+    ;;
+  *)
+    command -v home-manager >/dev/null 2>&1 || { echo 'missing: home-manager'; exit 1; }
+    home-manager switch --flake "./nix#$HOST"
+    ;;
+esac
+
+mise install
+lefthook install
+"""
+
+[tasks.sync]
+description = "Default safe sync preview (alias for sync:dry-run)"
+run = "mise run sync:dry-run"
+
+# ─── Bootstrap convenience ──────────────────────────────────────────────────
+
+[tasks.bootstrap]
+description = "Cold-start: scripts/bootstrap.sh (default dry-run)"
+run = "bash scripts/bootstrap.sh"
+
+# ─── Nix flake helpers ──────────────────────────────────────────────────────
+
+[tasks."nix:check"]
+description = "Validate Nix flake"
+run = "nix flake check ./nix"
+
+[tasks."nix:show"]
+description = "Show flake outputs"
+run = "nix flake show ./nix"
+
+# ─── Optional AI/PHP tasks (out-of-scope for the dotfiles migration) ────────
+# Uncomment if you start editing AI/PHP workflow files in this branch.
+#
+# [tasks."ai:test:php"]
+# description = "Run repo AI/PHP tests"
+# run = "vendor/bin/phpunit tests/php || phpunit tests/php"
+#
+# [tasks."ai:repo:structure"]
+# description = "Regenerate AI repo structure doc"
+# run = "php tools/ai/generate-repo-structure.php"

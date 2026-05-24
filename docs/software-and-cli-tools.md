@@ -46,6 +46,20 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 - **[btop](https://github.com/aristocratos/btop)** - terminal resource monitor
 - **[GitHub Copilot CLI](https://github.com/github/copilot-cli)** - terminal-native Copilot workflow entrypoint
 
+### Optional Convenience Tools (opt-in via `mise run tools:optional:install`)
+
+These are recommended but not installed by default. Run the mise task to install them all via [aqua](https://aquaproj.github.io/) (prebuilt binaries, no build deps required):
+
+```bash
+mise run tools:optional:install
+```
+
+- **[dive](https://github.com/wagoodman/dive)** - explore Docker image layers and content
+- **[fx](https://github.com/antonmedv/fx)** - interactive JSON viewer / processor
+- **[navi](https://github.com/denisidoro/navi)** - interactive cheatsheet tool for the shell
+- **[glow](https://github.com/charmbracelet/glow)** - terminal Markdown reader
+- **[gum](https://github.com/charmbracelet/gum)** - shell-script TUI toolkit (prompts, spinners, choosers)
+
 ### AI Workflow Critical Additions
 
 - **[repomix](https://github.com/yamadashy/repomix)** - package repository context for LLM prompts
@@ -159,9 +173,32 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 
 ---
 
-## Install via Homebrew
+## How to install everything
 
-> Requires [Homebrew](https://brew.sh/) - install it first if not present:
+> **Preferred path on every host (macOS / Linux desktop / Linux CLI / WSL2):**
+>
+> ```bash
+> bash scripts/bootstrap.sh --yes
+> ```
+>
+> Bootstrap installs Nix, then `nix profile install chezmoi mise home-manager
+> lefthook`, validates the flake, runs chezmoi apply, runs `home-manager switch`
+> (or `darwin-rebuild switch` on macOS), then `mise install` and
+> `lefthook install`. Daily updates go through `mise run sync` (preview) and
+> `mise run sync:apply` (mutate). See [`bootstrap.md`](bootstrap.md) and
+> [`migration-package-ownership.md`](migration-package-ownership.md) for the
+> per-tool owner.
+>
+> Optional convenience tools (`dive`, `fx`, `navi`, `glow`, `gum`) are opt-in:
+>
+> ```bash
+> mise run tools:optional:install
+> ```
+
+## Install via Homebrew (macOS-only fallback)
+
+> Use this only if you choose not to run the bootstrap script. Requires
+> [Homebrew](https://brew.sh/):
 > `sh -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
 
 ### CLI tools (`brew install`)

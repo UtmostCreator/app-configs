@@ -84,6 +84,19 @@ apps are owned through `nix-darwin` Homebrew bridge (`nix/modules/darwin/homebre
 | `stripe` | manual | — | Same as `stripe/stripe-cli/stripe` row above. |
 | `tldr` | Nix | `nix/modules/home/cli.nix` | nixpkgs attribute is `tealdeer` (binary `tldr`); duplicates `tlrc` row above — pick one. Final: **`tlrc`** wins (matches install script). `tldr` row resolved as DROPPED. |
 
+## Optional convenience tools (mise aqua, opt-in)
+
+Installed by `mise run tools:optional:install`. Aqua provides prebuilt
+binaries so no host build deps are required.
+
+| Tool | Owner | Manifest | Notes |
+|------|-------|----------|-------|
+| `dive` | mise (aqua:wagoodman/dive) | `mise.toml` `tools:optional:install` | Inspect Docker image layers. |
+| `fx` | mise (aqua:antonmedv/fx) | `mise.toml` `tools:optional:install` | Interactive JSON viewer. |
+| `navi` | mise (aqua:denisidoro/navi) | `mise.toml` `tools:optional:install` | Cheatsheet TUI. |
+| `glow` | mise (aqua:charmbracelet/glow) | `mise.toml` `tools:optional:install` | Markdown reader in the terminal. |
+| `gum` | mise (aqua:charmbracelet/gum) | `mise.toml` `tools:optional:install` | TUI toolkit for shell scripts. |
+
 ## macOS GUI / cask (declarative via nix-darwin in Phase 8)
 
 Populate `nix/modules/darwin/homebrew.nix` with:

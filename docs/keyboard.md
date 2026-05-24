@@ -1,3 +1,9 @@
+# Keyboard (macOS Karabiner profile)
+
+> Karabiner config source: `home/dot_config/karabiner/karabiner.json`
+> (chezmoi-managed, macOS-gated by `home/.chezmoiignore`).
+> Karabiner-Elements itself comes from the cask bridge in
+> `nix/modules/darwin/homebrew.nix`.
 
 ## What your macOS → Windows 10 “muscle memory” mappings do (Karabiner profile)
 

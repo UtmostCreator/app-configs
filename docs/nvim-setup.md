@@ -1,32 +1,27 @@
-# Neovim Setup
+# Neovim setup
 
 ## Stack
 
-- **Neovim** (0.9+)
+- **Neovim** (0.9+) — installed by Home Manager (`nix/modules/home/dev.nix`)
 - Plugin manager: [lazy.nvim](https://github.com/folke/lazy.nvim) (configured in `init.lua`)
 - **vim-tmux-navigator** for seamless pane switching between Neovim and tmux
 
-## Files
+## Files (chezmoi-managed)
 
-| Repo path     | Deploy to         |
-| ------------- | ----------------- |
-| `configs/nvim/` | `~/.config/nvim/` |
+| Source                     | Deploys to        |
+| -------------------------- | ----------------- |
+| `home/dot_config/nvim/`    | `~/.config/nvim/` |
 
 ## Deploy
 
 ```bash
-# Backup existing config if present
-mv ~/.config/nvim ~/.config/nvim.bak 2>/dev/null
-
-# Symlink from repo
-ln -s /path/to/app-configs/configs/nvim ~/.config/
+mise run sync             # preview
+mise run sync:apply       # apply (snapshots ~ first)
 ```
 
-Then open Neovim — lazy.nvim will auto-install plugins on first launch.
+On first run, lazy.nvim auto-installs plugins when you open Neovim.
 
 ## Prerequisites
 
-```bash
-brew install neovim
-brew install tmux  # required for vim-tmux-navigator
-```
+`neovim`, `tmux`, and friends come from Home Manager; nothing to install by
+hand. See `docs/migration-package-ownership.md` for the per-tool owner.

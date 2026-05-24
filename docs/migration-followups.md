@@ -22,8 +22,8 @@ summary and unresolved entries land here.
 
 | Item | Why deferred | Unblock condition |
 |------|--------------|-------------------|
-| `nix flake check ./nix` | Nix not installed in this WSL session | Run after `bash scripts/bootstrap.sh --yes` provisions Nix. |
-| `home-manager switch --flake ./nix#wsl --dry-run` | Same as above | Same. |
+| `nix flake check ./nix` | Determinate Systems installer needs interactive `sudo`, which this opencode session does not have. Attempted 2026-05-24 — `sudo: A terminal is required to authenticate`. | Run from your own shell: `sh /tmp/nix-installer.sh install --no-confirm` (still cached) or `curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix \| sh -s -- install --no-confirm`. Then `nix flake check ./nix`. |
+| `home-manager switch --flake ./nix#wsl --dry-run` | Needs Nix and `home-manager` first (same blocker as above) | After Nix is installed, run `nix profile install nixpkgs#home-manager` then the dry-run command. |
 | `darwin-rebuild check --flake ./nix#macos` | macOS host required | Validate on a Mac before any production macOS use. |
 | `bash scripts/test-bootstrap-docker.sh` | docker not installed on this WSL host | Install Docker, then re-run before legacy-cleanup of `backup-sanitized/` is merged. |
 | `home/dot_config/mise/config.toml.tmpl` does not pin PHP | Per Phase 0/5 decision: keep repo-level toml task-only | Decide C4 first. |

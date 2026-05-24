@@ -1,27 +1,52 @@
 README.md
 .DS_Store
 
+# personal.yaml.example is documentation, not a dotfile to deploy.
+# The real file is home/.chezmoidata/personal.yaml (gitignored).
+personal.yaml.example
+
 {{- $hostProfile := default "linux-desktop" .hostProfile -}}
 {{- $gui := default false .gui -}}
 
+{{- /*
+  .chezmoiignore patterns match against TARGET (destination) paths
+  rooted at $HOME, not against source-tree names like dot_config/...
+  Use ~/.config/<dir> form (without the literal "~/"), i.e. ".config/<dir>"
+  and "Library/...".
+*/ -}}
+
 {{- if ne .chezmoi.os "darwin" }}
-# macOS-only paths excluded on Linux/WSL
-Library/Application Support/Code/User/**
-dot_config/karabiner/**
+# macOS-only paths excluded on Linux/WSL.
+Library
+Library/**
+.config/karabiner
+.config/karabiner/**
 {{- end }}
 
 {{- if eq .chezmoi.os "darwin" }}
-# Linux/WSL VS Code path excluded on macOS
-dot_config/Code/User/**
+# Linux/WSL VS Code path excluded on macOS.
+.config/Code
+.config/Code/**
+# Linux/WSL Ghostty XDG path excluded on macOS (macOS uses the
+# Library/Application Support/com.mitchellh.ghostty path instead).
+.config/ghostty
+.config/ghostty/**
 {{- end }}
 
 {{- if or (eq $hostProfile "wsl") (eq $hostProfile "linux-cli") }}
-# WSL and linux-cli: no Ghostty (no GUI terminal)
-dot_config/ghostty/**
+# WSL and linux-cli: no Ghostty (no GUI terminal).
+.config/ghostty
+.config/ghostty/**
+Library/Application Support/com.mitchellh.ghostty
+Library/Application Support/com.mitchellh.ghostty/**
 {{- end }}
 
 {{- if not $gui }}
-# Headless / gui=false: belt-and-braces drop ghostty + karabiner
-dot_config/ghostty/**
-dot_config/karabiner/**
+# Headless / gui=false: belt-and-braces drop ghostty + karabiner.
+.config/ghostty
+.config/ghostty/**
+Library/Application Support/com.mitchellh.ghostty
+Library/Application Support/com.mitchellh.ghostty/**
+.config/karabiner
+.config/karabiner/**
 {{- end }}

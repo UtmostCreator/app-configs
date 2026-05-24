@@ -68,7 +68,9 @@ was lost.
 | `dot_config/starship/starship.toml` | `~/.config/starship/starship.toml` | starship: XDG | ✅ | ✅ | ✅ | ✅ |
 | `dot_config/mise/config.toml.tmpl` | `~/.config/mise/config.toml` | mise: XDG (validated end-to-end on this WSL host) | ✅ | ✅ | ✅ | ✅ |
 | `dot_config/nvim/...` | `~/.config/nvim/...` | neovim: XDG | ✅ | ✅ | ✅ | ✅ |
-| `dot_config/ghostty/config.tmpl` | `~/.config/ghostty/config` | Ghostty: XDG **on all platforms** (macOS also accepts `~/Library/Application Support/com.mitchellh.ghostty/config` as override, but XDG works) | ✅ | ✅ | gated off via `.chezmoiignore` | gated off |
+| `dot_config/ghostty/config.tmpl` | `~/.config/ghostty/config` (XDG, Linux only) | Ghostty Linux/BSD: XDG | gated off via `.chezmoiignore` | ✅ | gated off | gated off |
+| `Library/Application Support/com.mitchellh.ghostty/config.tmpl` | `~/Library/Application Support/com.mitchellh.ghostty/config` (macOS only) | Ghostty macOS canonical path (loaded after XDG; if both exist macOS-specific wins) | ✅ | gated off | gated off | gated off |
+| `.chezmoitemplates/ghostty/config.body.tmpl` | (not deployed — shared body) | Single source of truth; both wrappers above pull it via `{{ template "ghostty/config.body.tmpl" . }}` | n/a | n/a | n/a | n/a |
 | `dot_config/karabiner/karabiner.json` | `~/.config/karabiner/karabiner.json` | karabiner-elements 14.x: `~/.config/karabiner/karabiner.json` | ✅ | n/a (gated) | n/a | n/a |
 | `dot_config/Code/User/{keybindings,settings}.json` | `~/.config/Code/User/...` | VS Code: Linux/WSL/code-server | gated off | ✅ | optional | ✅ (Remote-WSL server side only) |
 | `Library/Application Support/Code/User/{keybindings,settings}.json` | `~/Library/Application Support/Code/User/...` | VS Code: macOS | ✅ | gated | gated | gated |
@@ -77,18 +79,26 @@ was lost.
 | `executable_dot_local/bin/git-branch-origin` | `~/.local/bin/git-branch-origin` (0755) | needs `~/.local/bin` on PATH (the `.zshrc.tmpl` already adds it) | ✅ | ✅ | ✅ | ✅ |
 
 **Verdict:** every folder name maps to the canonical default location
-of its tool on each supported host. The Ghostty XDG path is the
-correct cross-platform target; the macOS-specific path is an
-additional override only relevant if a user explicitly creates one.
+of its tool on each supported host. Ghostty now ships **two** wrapper
+templates that both render from the shared body in
+`home/.chezmoitemplates/ghostty/config.body.tmpl`:
 
-### Minor follow-ups (non-blocking)
+- **macOS** deploys to `~/Library/Application Support/com.mitchellh.ghostty/config` (Ghostty's macOS-canonical path that overrides XDG)
+- **Linux desktop** deploys to `~/.config/ghostty/config` (XDG)
+- **linux-cli / WSL** skip both via `.chezmoiignore`
 
-1. Once we're confident all hosts run Ghostty ≥1.2.3, rename the
-   deploy target from `config` to `config.ghostty` (Ghostty's new
-   canonical filename; legacy `config` still works).
-2. If macOS users hit the `~/Library/Application Support/com.mitchellh.ghostty/` path because the official `.dmg` writes a starter config there, document it in `docs/bootstrap.md` ("Ghostty on macOS reads both paths; the XDG path we manage takes precedence unless macOS-specific overrides exist").
+`.chezmoiignore` is updated so each host renders **exactly one** of the
+two paths, never both. End-to-end validated locally with
+`chezmoi diff --source home --destination /tmp/cm-test/test-home` for
+linux-desktop, linux-cli, wsl, and macOS gates.
 
-Neither blocks merge or push.
+### Minor follow-up (non-blocking)
+
+Once all hosts run Ghostty ≥1.2.3, rename the deploy basename from
+`config` to `config.ghostty` (Ghostty's new canonical filename; legacy
+`config` still works). Single edit in the body wrapper filename + both
+wrapper paths; no body change. Defer until upgrade is confirmed across
+all real hosts.
 
 ## 3. Verification run (this turn)
 

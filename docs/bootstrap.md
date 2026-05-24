@@ -20,7 +20,7 @@ Windows native is explicitly not supported.
 git clone <your-fork-of-this-repo> ~/dotfiles && cd ~/dotfiles
 
 # 1. Create your private identity file (gitignored)
-cp home/.chezmoidata/personal.yaml.example home/.chezmoidata/personal.yaml
+cp home/personal.yaml.example home/.chezmoidata/personal.yaml
 $EDITOR home/.chezmoidata/personal.yaml   # name, email, signingKey, hostProfile, gui
 
 # 2. Preview what bootstrap would do (no mutations)
@@ -93,8 +93,10 @@ Restore from one with `cp -a <snapshot>/. ~/`.
 
 `home/.chezmoidata/personal.yaml` is gitignored and must never be
 committed. Lefthook `pre-commit` blocks accidental commits of it. The
-example file `home/.chezmoidata/personal.yaml.example` documents the
-required keys with fake values.
+example file `home/personal.yaml.example` documents the required keys
+with fake values. The example lives **outside** `home/.chezmoidata/`
+on purpose — chezmoi autoloads every `*.yaml|*.toml|*.json` inside the
+data dir and would fail to parse the `.example` suffix.
 
 For real per-host secrets (SSH keys, API tokens), pick one of chezmoi's
 secret backends (age, 1Password, Bitwarden) and add it as a separate

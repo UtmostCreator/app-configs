@@ -13,7 +13,7 @@ Baseline: 458 tracked files (see `/tmp/dotfiles-before.txt` for the live snapsho
 ## Implications
 
 - Phase 4 includes `home/dot_bashrc` migration.
-- Phase 4 ships `home/.chezmoidata/personal.yaml.example` as the committed template.
+- Phase 4 ships `home/personal.yaml.example` as the committed template (chezmoi autoloads YAML/TOML/JSON inside `home/.chezmoidata/`, so the example with the `.example` suffix lives one directory up).
 - `.gitignore` will block `home/.chezmoidata/personal.yaml`.
 - Phase 6 uses `aarch64-darwin` for the macos profile.
 - Phase 7 `scripts/detect-host.sh` returns `wsl` on this machine; bootstrap dry-runs validate the `wsl` profile first.

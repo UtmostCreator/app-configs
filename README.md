@@ -20,7 +20,7 @@ Manager** (CLI packages) + **nix-darwin + Homebrew casks** (macOS GUI) +
 git clone <your-fork-of-this-repo> ~/dotfiles
 cd ~/dotfiles
 
-cp home/.chezmoidata/personal.yaml.example home/.chezmoidata/personal.yaml
+cp home/personal.yaml.example home/.chezmoidata/personal.yaml
 $EDITOR home/.chezmoidata/personal.yaml      # name, email, hostProfile, gui
 
 bash scripts/bootstrap.sh                    # default: dry-run, no mutations
@@ -62,7 +62,7 @@ mise run tools:optional:list
 
 | Path | Owns |
 |------|------|
-| `home/` | chezmoi source tree (dotfiles in `~` and `~/.config/`). `home/.chezmoidata/personal.yaml.example` is committed; real `personal.yaml` is gitignored. |
+| `home/` | chezmoi source tree (dotfiles in `~` and `~/.config/`). Template `home/personal.yaml.example` is committed; real `home/.chezmoidata/personal.yaml` is gitignored. |
 | `nix/` | Nix flake + Home Manager modules per host profile. `nix/flake.nix` exposes `homeConfigurations.{linux-desktop,linux-cli,wsl,macos}` and `darwinConfigurations.macos`. |
 | `mise.toml` | repo tasks. Tool versions are per-user in `home/dot_config/mise/config.toml.tmpl`. |
 | `.lefthook.yml` | git hooks: pre-commit (no-personal-yaml guard + shared-precommit) and pre-push (validate-config). |

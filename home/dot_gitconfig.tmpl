@@ -73,7 +73,7 @@
 [core]
 	pager = delta
 	editor = code --wait
-	excludesFile = <HOME>/.gitignore_global
+	excludesFile = {{ .chezmoi.homeDir }}/.gitignore_global
 
 [delta]
 	navigate = true
@@ -87,10 +87,13 @@
 [interactive]
 	diffFilter = delta --color-only
 [user]
-	name = UtmostCreator
-	email = Roman.Zakhriapa@rabbies.com
-[includeIf "gitdir/i:<HOME>/herd/"]
-	path = <HOME>/.gitconfig-work
+	name = {{ .name }}
+	email = {{ .email }}
+{{- if .signingKey }}
+	signingKey = {{ .signingKey }}
+{{- end }}
+[includeIf "gitdir/i:{{ .chezmoi.homeDir }}/herd/"]
+	path = {{ .chezmoi.homeDir }}/.gitconfig-work
 
 [fetch]
 	prune = true

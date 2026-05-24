@@ -1,5 +1,14 @@
-[tools]
-php = "8.4"
+# Tool versions are intentionally NOT pinned in the repo mise.toml so that
+# repo tasks (doctor, lint, sync, etc.) work on any host without forcing a
+# specific PHP build. Per-user runtime pins live under
+# `home/dot_config/mise/config.toml.tmpl` (chezmoi-managed) so each machine
+# picks its own version without polluting this shared file.
+#
+# If you need a strict per-repo PHP/Node/etc. pin (e.g. for CI), uncomment
+# and set the version below.
+#
+# [tools]
+# php = "8.4"
 
 # ─── Read-only helpers ───────────────────────────────────────────────────────
 
@@ -186,6 +195,43 @@ run = "nix flake check ./nix"
 [tasks."nix:show"]
 description = "Show flake outputs"
 run = "nix flake show ./nix"
+
+# ─── Optional convenience tools (opt-in) ────────────────────────────────────
+# Recommended terminal helpers. Not installed by default — run the task
+# below or `mise install aqua:wagoodman/dive` etc. on demand.
+#
+# Installed via aqua (prebuilt binaries; no host build deps required).
+# See docs/software-and-cli-tools.md for what each one does.
+
+[tasks."tools:optional:install"]
+description = "Install + globally pin opt-in convenience tools (dive, fx, navi, glow, gum)"
+run = """
+set -e
+for tool in \
+  aqua:wagoodman/dive \
+  aqua:antonmedv/fx \
+  aqua:denisidoro/navi \
+  aqua:charmbracelet/glow \
+  aqua:charmbracelet/gum
+do
+  echo "=== mise use -g $tool ==="
+  mise use -g "$tool"   # installs + pins globally so shims have a version
+done
+echo
+echo 'Done. After `mise activate <shell>`, these binaries are on PATH via mise shims.'
+"""
+
+[tasks."tools:optional:list"]
+description = "List the opt-in convenience tools and their install state"
+run = """
+for tool in dive fx navi glow gum; do
+  if command -v "$tool" >/dev/null 2>&1; then
+    printf '  %-8s %s\\n' "$tool" "$(command -v "$tool")"
+  else
+    printf '  %-8s missing (run: mise run tools:optional:install)\\n' "$tool"
+  fi
+done
+"""
 
 # ─── Optional AI/PHP tasks (out-of-scope for the dotfiles migration) ────────
 # Uncomment if you start editing AI/PHP workflow files in this branch.

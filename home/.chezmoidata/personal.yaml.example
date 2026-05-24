@@ -1,0 +1,29 @@
+# Personal identity and host posture for chezmoi templating.
+#
+# Copy this file to home/.chezmoidata/personal.yaml and fill in real
+# values. The real file is gitignored. Templates referencing these
+# values render with `chezmoi execute-template`.
+#
+# Required keys: name, email, signingKey, hostProfile.
+# Optional keys with defaults: minimal=false, useGitDelta=true, gui=true.
+
+name: "Your Full Name"
+email: "you@example.com"
+signingKey: ""
+
+# Renders the minimal VS Code settings instead of the full set.
+minimal: false
+
+# Renders git delta in .gitconfig (set false to disable).
+useGitDelta: true
+
+# Host profile selector. One of:
+#   macos          - macOS, GUI module on, karabiner on
+#   linux-desktop  - Linux desktop, GUI module on, primary Linux target
+#   linux-cli      - headless Linux / CLI server, no GUI
+#   wsl            - WSL2, CLI only, zero Windows-side management
+hostProfile: "wsl"
+
+# Renders GUI-only configs (ghostty, etc). Default: true on macos/linux-desktop,
+# false on linux-cli/wsl. Override here if your machine differs.
+gui: false

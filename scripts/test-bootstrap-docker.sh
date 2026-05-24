@@ -59,7 +59,7 @@ docker run --rm \
     chown -R tester:tester /home/tester/repo
     su - tester -lc "
       cd ~/repo
-      cp home/.chezmoidata/personal.yaml.example home/.chezmoidata/personal.yaml
+      cp home/personal.yaml.example home/.chezmoidata/personal.yaml
       sed -i \"s/hostProfile: .*/hostProfile: linux-desktop/\" home/.chezmoidata/personal.yaml
       bash scripts/bootstrap.sh ${BOOTSTRAP_FLAG}
     "

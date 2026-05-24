@@ -37,11 +37,17 @@ else
   ok "no home/.chezmoiscripts/ (orchestration in bootstrap + mise)"
 fi
 
-# 3. personal.yaml.example committed
-if [[ ! -f home/.chezmoidata/personal.yaml.example ]]; then
-  err "home/.chezmoidata/personal.yaml.example missing"
+# 3. personal.yaml.example committed at home/personal.yaml.example.
+# It MUST live outside home/.chezmoidata/ because chezmoi autoloads every
+# YAML/TOML/JSON file in .chezmoidata/ and fails on unknown suffixes
+# (e.g. `.yaml.example`).
+if [[ ! -f home/personal.yaml.example ]]; then
+  err "home/personal.yaml.example missing"
 else
-  ok "personal.yaml.example present"
+  ok "personal.yaml.example present (at home/personal.yaml.example)"
+fi
+if [[ -f home/.chezmoidata/personal.yaml.example ]]; then
+  err "home/.chezmoidata/personal.yaml.example must not exist (chezmoi will try to parse '.example' and fail). Move to home/personal.yaml.example."
 fi
 
 # 4. personal.yaml (real) must be gitignored if it exists

@@ -11,7 +11,26 @@ A phased, checkboxed working document for migrating the dotfiles repo to a `chez
 
 Each phase is independently shippable.
 
-**Critical-pass score:** Current v2 before these corrections: ~78/100 (good architecture split, but unsafe sync/apply defaults, premature cleanup, and AI-specific verification assumptions). Expected score after applying this pass: ~88–90/100. Implementation proof is still pending until the migration is executed and validated on real/throwaway hosts.
+**Critical-pass score:** ~91/100 after supplement integration. This is not 95+ until the Phase 1/3 matrices are completed from real repository evidence and the helper scripts are implemented, run, and verified on throwaway/real hosts.
+
+## Supplement critical review
+
+Accepted into this plan:
+- Helper scripts for repeatable source/package matrices: `scripts/check-source-of-truth.sh` and `scripts/generate-package-matrix.sh`.
+- Shell syntax/lint checks via `bash -n` and ShellCheck.
+- PATH refresh after Nix profile installs, followed by callable checks for `chezmoi`, `mise`, `home-manager`, and `lefthook`.
+- Snapshot-before-apply via `scripts/snapshot-home.sh` before any real-machine `chezmoi apply`.
+- Architecture invariant validator: `scripts/validate-config.sh`, exposed as `mise run repo:validate`.
+- Optional Docker fresh-Ubuntu dry-run validation before legacy deletion.
+- Recovery/handoff helper: `scripts/uninstall.sh`.
+- Secrets and dependency-update documentation.
+- Lefthook guard to block staged `home/.chezmoidata/personal.yaml`.
+
+Rejected or modified:
+- Do **not** make validation fail merely because existing Windows-native files are present; Windows native management remains deferred and files remain untouched unless separately approved.
+- Do **not** require PHP/AI CI for this config-only migration unless AI/PHP workflow files are edited.
+- Do **not** make `mise run sync` mutating; it remains preview-only. `mise run sync:apply` is the explicit mutating command.
+- Do **not** hard-drop `direnv`; Phase 3 must decide whether to retain or drop it with evidence.
 
 ---
 
@@ -20,7 +39,7 @@ Each phase is independently shippable.
 | v1 design | v2 correction | Why |
 |-----------|---------------|-----|
 | WSL2 treated equal to Linux/macOS | WSL2 best-effort, no Windows-side scope | Avoid bottomless Windows complexity |
-| chezmoi `.chezmoiscripts/` ran home-manager, mise install, vscode extensions | All orchestration moved to `bootstrap.sh` + `mise run sync` task; chezmoi renders files only | One owner per concern; `chezmoi apply` becomes safe |
+| chezmoi `.chezmoiscripts/` ran home-manager, mise install, vscode extensions | All orchestration moved to `bootstrap.sh` + mise tasks (`mise run sync` previews; `mise run sync:apply` applies); chezmoi renders files only | One owner per concern; `chezmoi apply` becomes safe |
 | Cleanup before source-of-truth selection | New Phase 1: explicit source matrix before any deletes | Prevents losing the fresher copy of a duplicated file |
 | Nix package list built inside Phase 4 | New Phase 3: package ownership matrix as a discrete deliverable | Every tool maps to an owner before any Nix file is written |
 | Bootstrap silently applied everything | Bootstrap defaults to `--dry-run`; `--yes` required for mutations | Safety on real machines |
@@ -38,7 +57,7 @@ Each phase is independently shippable.
 | **Nix + Home Manager** | User-installed CLI packages via `home.packages` only | Files chezmoi configures |
 | **nix-darwin** | macOS system defaults, Homebrew cask bridge for GUI apps | Linux/WSL config |
 | **Lefthook** | Git hooks | Anything outside git lifecycle |
-| **bootstrap.sh** | Initial cold-start orchestration on new machines | Ongoing config sync (that's `mise run sync`) |
+| **bootstrap.sh** | Initial cold-start orchestration on new machines | Ongoing preview is `mise run sync`; mutating updates are `mise run sync:apply` |
 
 **Hard rules:**
 
@@ -146,6 +165,18 @@ For every config that exists in multiple places, decide which copy wins. Documen
 
 ## Actions
 
+### Create/use helper: `scripts/check-source-of-truth.sh`
+Planned script contract, not a substitute for human review:
+- Compares known duplicate/overlapping config sources and inventories `configs/` plus `backup-sanitized/`.
+- Emits a draft matrix to `docs/migration-source-of-truth.draft.md` with candidate paths, diff status, freshness hints where available, and unresolved `TBD` markers.
+- Never deletes or moves files.
+- Final human-reviewed output is `docs/migration-source-of-truth.md`; Phase 2 reads only the final reviewed file.
+
+Run after creating the script:
+```bash
+bash scripts/check-source-of-truth.sh
+```
+
 ### Run diff comparisons
 ```bash
 diff -u configs/shell/.zshrc        backup-sanitized/home/.zshrc          | head -100
@@ -185,6 +216,9 @@ diff -u scripts/git-branch-origin.sh backup-sanitized/home/.local/bin/git-branch
 - Whichever side lost above
 
 ## Validation
+- [ ] `docs/migration-source-of-truth.draft.md` generated by the helper
+- [ ] Draft has no unresolved `TBD` markers before Phase 2 begins
+- [ ] Final reviewed `docs/migration-source-of-truth.md` exists
 - [ ] Matrix has no TBDs
 - [ ] Every `configs/` file disposition documented (migrate / dupe-of-X / project-scoped / delete)
 - [ ] `configs/shell/ssh-agent/*` disposition documented
@@ -289,9 +323,21 @@ git commit -m "chore: drop duplicate and project-scoped configs"
 # Phase 3 — Package ownership matrix
 
 ## Goal
-Every tool from `docs/install-dev-tools.sh` and `docs/software-and-cli-tools.md` maps to an owner. **No Nix code written here.** Output is `docs/migration-package-ownership.md`.
+Every tool from `docs/install-dev-tools.sh` and `docs/software-and-cli-tools.md` maps to an owner. **No Nix code written here.** Draft output is `docs/migration-package-ownership.draft.md`; final reviewed output is `docs/migration-package-ownership.md`.
 
 ## Actions
+
+### Create/use helper: `scripts/generate-package-matrix.sh`
+Planned script contract, not a substitute for human verification:
+- Extracts package/tool candidates from `docs/install-dev-tools.sh`, `docs/software-and-cli-tools.md`, and current config references.
+- Generates `docs/migration-package-ownership.draft.md` with candidate owner, package/cask lookup hints, source references, and unresolved `TBD` markers.
+- May call `nix search nixpkgs <name>` and `brew search --casks <name>` when available, but search names are advisory only and must be manually verified before Nix/Homebrew code is written.
+- Final human-reviewed output is `docs/migration-package-ownership.md`; Phase 6 reads only the final reviewed file.
+
+Run after creating the script:
+```bash
+bash scripts/generate-package-matrix.sh
+```
 
 ### Build the list
 - [ ] Extract every package name from `docs/install-dev-tools.sh`
@@ -342,13 +388,18 @@ Template (populate from your actual list):
 
 ### Verify availability
 - [ ] For every Nix row: `nix search nixpkgs <name>` (or [search.nixos.org/packages](https://search.nixos.org/packages))
+- [ ] Treat `nix search` results as advisory; manually verify exact Nix attribute names against nixpkgs/search.nixos.org before use
 - [ ] For every cask row on macOS: `brew search --casks <name>`
 - [ ] Swap any missing Nix packages to manual or cask
 
 ### Save the matrix
-- [ ] Commit as `docs/migration-package-ownership.md` — Phase 6 reads from this
+- [ ] Commit reviewed `docs/migration-package-ownership.md` — Phase 6 reads from this
+- [ ] Cross-reference the final matrix from `docs/software-and-cli-tools.md` or `docs/architecture/tool-ownership.md`
 
 ## Validation
+- [ ] `docs/migration-package-ownership.draft.md` generated by the helper
+- [ ] Draft has no unresolved `TBD` markers before Phase 6 begins
+- [ ] Final reviewed `docs/migration-package-ownership.md` exists
 - [ ] Every tool has a non-TBD owner
 - [ ] Every Nix attribute name verified
 - [ ] Every cask verified (on macOS)
@@ -476,7 +527,27 @@ cp configs/vscode/keybindings.json     "home/Library/Application Support/Code/Us
 Fold `settings.minimal.json` into both `settings.json.tmpl` files with `{{ if .minimal }}...{{ else }}...{{ end }}`. Then `git rm configs/vscode/user/settings.minimal.json`.
 
 ### Explicitly DO NOT create `.chezmoiscripts/`
-All orchestration belongs in `bootstrap.sh` (cold start) and `mise run sync` (ongoing).
+All orchestration belongs in `bootstrap.sh` (cold start) and mise tasks for ongoing work: `mise run sync` previews; `mise run sync:apply` applies.
+
+### Create helper: `scripts/snapshot-home.sh`
+Planned script contract:
+- Before any `chezmoi apply` on a real machine, copy existing managed destination files into a timestamped recovery directory (for example under `~/.local/state/dotfiles-snapshots/<timestamp>/`).
+- Snapshot only paths that chezmoi would manage or overwrite; do not collect unrelated home files.
+- Print the snapshot location and a manifest of copied files.
+- In apply mode, failure to create the snapshot must fail the apply path. No opt-out is added in this plan; any future opt-out needs a separate review.
+
+Bootstrap and `sync:apply` must call this helper immediately before `chezmoi apply` once it exists.
+
+### Create validator: `scripts/validate-config.sh`
+Planned architecture invariant validator. It should fail on violations of v2's active architecture only:
+- Require `.chezmoiroot` at repo root and require it to point at `home`.
+- Forbid `.chezmoiscripts/`.
+- Require `home/.chezmoidata/personal.yaml.example` to be committed/present.
+- Require `home/.chezmoidata/personal.yaml` to be ignored and not staged.
+- Forbid Home Manager `programs.<x>.enable` except `programs.home-manager.enable = true;`.
+- Forbid bootstrap-managed tools (`chezmoi`, `mise`, `home-manager`, `lefthook`) in Home Manager package modules.
+
+The validator must **not** fail because existing Windows-native files are present, because `.husky/` still exists before separate hook cleanup approval, or because `direnv` exists before the Phase 3 decision explicitly drops it.
 
 ## Validation
 - [ ] Local dry-run:
@@ -513,6 +584,7 @@ All orchestration belongs in `bootstrap.sh` (cold start) and `mise run sync` (on
   test -f ~/.zshrc && echo OK
   test -x ~/.local/bin/git-branch-origin && echo OK
   ```
+- [ ] `bash scripts/validate-config.sh` passes after the validator exists
 
 ## Commit
 ```bash
@@ -522,7 +594,7 @@ git commit -m "feat: migrate dotfiles into chezmoi source tree (file rendering o
 - .chezmoiroot at repo root points to home/
 - Per Phase 1 source-of-truth matrix
 - OS + WSL + GUI gating via .chezmoiignore
-- No .chezmoiscripts/ — orchestration in bootstrap.sh + mise sync"
+- No .chezmoiscripts/ — orchestration in bootstrap.sh + mise sync preview/apply"
 ```
 
 ---
@@ -575,6 +647,7 @@ chezmoi diff
 printf 'Apply full sync? [y/N] '
 read -r ans
 [ "$ans" = "y" ] || [ "$ans" = "Y" ] || { echo "Aborted"; exit 1; }
+if [ -x scripts/snapshot-home.sh ]; then bash scripts/snapshot-home.sh; else echo "missing: scripts/snapshot-home.sh"; exit 1; fi
 chezmoi apply
 HOST="${HOST_PROFILE:-$(bash scripts/detect-host.sh)}"
 if [ "$HOST" = "macos" ]; then
@@ -589,6 +662,26 @@ lefthook install
 [tasks.sync]
 description = "Default safe sync preview (alias for sync:dry-run)"
 run = "mise run sync:dry-run"
+
+[tasks."lint:check"]
+description = "Whitespace and repository lint checks"
+run = "git diff --check"
+
+[tasks."lint:shell"]
+description = "Shell syntax and ShellCheck for migration scripts"
+run = """
+set -e
+bash -n scripts/bootstrap.sh scripts/detect-host.sh scripts/snapshot-home.sh scripts/validate-config.sh scripts/check-source-of-truth.sh scripts/generate-package-matrix.sh
+if command -v shellcheck >/dev/null 2>&1; then
+  shellcheck scripts/bootstrap.sh scripts/detect-host.sh scripts/snapshot-home.sh scripts/validate-config.sh scripts/check-source-of-truth.sh scripts/generate-package-matrix.sh
+else
+  echo "missing: shellcheck (skip lint; install via Nix per package matrix)"
+fi
+"""
+
+[tasks."repo:validate"]
+description = "Validate dotfiles architecture invariants"
+run = "bash scripts/validate-config.sh"
 
 [tasks.bootstrap]
 description = "Cold-start: scripts/bootstrap.sh"
@@ -607,6 +700,7 @@ description = "Dotfiles/config consistency check"
 run = """
 git diff --check
 bash scripts/doctor.sh
+bash scripts/validate-config.sh
 if command -v nix >/dev/null 2>&1; then nix flake check ./nix; else echo "missing: nix (skip flake check)"; fi
 """
 
@@ -623,9 +717,13 @@ if command -v nix >/dev/null 2>&1; then nix flake check ./nix; else echo "missin
 ## Validation
 - [ ] `mise tasks` lists all tasks
 - [ ] `mise run doctor` succeeds
+- [ ] `mise run lint:check` succeeds
+- [ ] `mise run lint:shell` succeeds, or records ShellCheck unavailable only before Nix package setup
+- [ ] `mise run repo:validate` succeeds after `scripts/validate-config.sh` exists
 - [ ] `mise install` installs PHP 8.4
 - [ ] `mise run sync` previews only and does not mutate
 - [ ] `mise run sync:apply` asks before applying
+- [ ] `mise run sync:apply` snapshots managed home files before `chezmoi apply`
 
 ## Commit
 ```bash
@@ -1086,6 +1184,12 @@ else
     nixpkgs#mise \
     nixpkgs#home-manager \
     nixpkgs#lefthook
+  # Refresh PATH for the current process after nix profile install.
+  export PATH="$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH"
+  [ -r /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ] && . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh || true
+  for cmd in chezmoi mise home-manager lefthook; do
+    command -v "$cmd" >/dev/null 2>&1 || fail "Missing after nix profile install: $cmd"
+  done
 fi
 
 # --- Validate flake ---
@@ -1114,6 +1218,8 @@ else
     read -rp "Apply chezmoi changes? [y/N] " ans
     [ "$ans" = "y" ] || [ "$ans" = "Y" ] || fail "Aborted"
   fi
+  [ -x "$REPO_ROOT/scripts/snapshot-home.sh" ] || fail "Missing executable snapshot helper: scripts/snapshot-home.sh"
+  bash "$REPO_ROOT/scripts/snapshot-home.sh"
   chezmoi apply
 fi
 
@@ -1179,6 +1285,14 @@ chmod +x scripts/bootstrap.sh
 ```
 
 ## Validation
+- [ ] Shell syntax passes:
+  ```bash
+  bash -n scripts/bootstrap.sh scripts/detect-host.sh scripts/snapshot-home.sh scripts/validate-config.sh
+  ```
+- [ ] ShellCheck passes once available:
+  ```bash
+  shellcheck scripts/bootstrap.sh scripts/detect-host.sh scripts/snapshot-home.sh scripts/validate-config.sh
+  ```
 - [ ] Dry-run on your current machine (default — must mutate nothing):
   ```bash
   bash scripts/bootstrap.sh
@@ -1189,9 +1303,19 @@ chmod +x scripts/bootstrap.sh
   ```
 - [ ] Verify post-apply:
   ```bash
+  command -v chezmoi
+  command -v mise
+  command -v home-manager
+  command -v lefthook
   which ripgrep
   test -f ~/.zshrc
   mise --version
+  ```
+- [ ] Snapshot was created before `chezmoi apply` and the apply failed if snapshot creation failed
+- [ ] Idempotency dry-run after apply reports no pending mutations; run this as a validation step, not as a recursive self-call inside bootstrap:
+  ```bash
+  bash scripts/bootstrap.sh --dry-run
+  mise run sync
   ```
 
 ## Rollback
@@ -1341,10 +1465,17 @@ Codify the rules from this plan's "Architecture summary" section. Explicitly sta
 - Home Manager: `home.packages` only, one exception (`programs.home-manager.enable`)
 - mise: runtimes + tasks; `direnv` retained or dropped only after the Phase 3 decision proves mise env activation covers current use
 - nix-darwin: macOS system defaults + cask bridge
-- bootstrap.sh: cold start once; `mise run sync` for updates
+- bootstrap.sh: cold start once; `mise run sync` previews updates; `mise run sync:apply` applies updates
+- Dependency update procedure: update `nix/flake.lock` separately from package-owner changes, verify exact Nix/cask names against the Phase 3 matrix, run `nix flake check ./nix`, then preview with `mise run sync` before `mise run sync:apply`.
 
 ### `docs/bootstrap.md`
 Cold-start procedure + per-OS notes.
+
+**Secrets handling guidance (mandatory):**
+- Real `home/.chezmoidata/personal.yaml` stays gitignored and must never be committed.
+- `personal.yaml.example` documents required keys with fake values only.
+- Host-specific secrets, SSH keys, signing keys, tokens, and machine-local paths are entered manually or managed by a separate approved secret workflow; this migration does not introduce secret distribution.
+- Lefthook must block staged `home/.chezmoidata/personal.yaml`.
 
 **WSL2 caveats section (mandatory):**
 - Windows VS Code (Remote-WSL) reads settings from Windows side. Not managed by this repo.
@@ -1365,6 +1496,27 @@ Cold-start procedure + per-OS notes.
 - [ ] Root `README.md` — new stack summary
 - [ ] `CONTRIBUTING.md` — Lefthook as intended hook runner; note `.husky/` remains until separate hook cleanup is approved, if applicable
 
+### `scripts/uninstall.sh` recovery helper
+Add a small recovery/handoff utility that documents and optionally performs safe local cleanup steps:
+- Print current Home Manager generations / nix-darwin rollback hints.
+- Print snapshot locations created by `scripts/snapshot-home.sh`.
+- Offer explicit, reviewed commands for removing Lefthook hooks and local profiles if the user is abandoning the migration.
+- Do not delete user data by default.
+
+### Lefthook planned guards
+- Block commits that stage `home/.chezmoidata/personal.yaml`.
+- Optionally add pre-push `bash scripts/validate-config.sh` after `scripts/validate-config.sh` exists.
+- Keep `.husky/` until separate hook cleanup is approved and Lefthook is installed/working.
+
+### Optional/deferred CI workflow
+CI is optional/deferred because this repository already has AI workflows and a config-only migration should not introduce conflicting CI without review. If enabled in a separate reviewed slice, keep it limited to:
+- shell syntax/lint for migration scripts
+- `bash scripts/validate-config.sh`
+- `nix flake check ./nix` only when `nix/` exists and Nix is available in the runner
+- `bash scripts/bootstrap.sh --dry-run`
+
+PHP tests remain optional/out-of-scope unless AI/PHP workflow files are edited.
+
 ### Regenerate inventory
 ```bash
 # Optional AI/repo inventory only; out of scope for config architecture unless AI docs are edited:
@@ -1375,6 +1527,9 @@ Cold-start procedure + per-OS notes.
 - [ ] All linked files exist
 - [ ] Markdown links/commands referenced in changed dotfiles docs are accurate
 - [ ] Repo AI/PHP tests are optional/out of scope unless this phase edits those surfaces
+- [ ] Secrets handling and dependency update procedure are documented
+- [ ] `scripts/uninstall.sh` exists and defaults to non-destructive recovery guidance
+- [ ] Lefthook blocks staged `home/.chezmoidata/personal.yaml`; optional pre-push validator runs only after the script exists
 - [ ] Fresh-clone walkthrough of `docs/bootstrap.md` succeeds on a VM (without you intervening)
 
 ## Commit
@@ -1394,6 +1549,7 @@ Delete migrated source folders. Only after every primary host is proven. Legacy 
 - Phases 1–9 complete
 - Bootstrap end-to-end tested on primary host
 - Phase 8 done (or explicitly deferred until Mac is available)
+- Optional/final gate considered: `scripts/test-bootstrap-docker.sh` fresh Ubuntu dry-run validation. Full apply in Docker/VM is opt-in only.
 
 ## Pre-flight checks
 - [ ] Every `backup-sanitized/home/` file has a counterpart in `home/`
@@ -1401,6 +1557,13 @@ Delete migrated source folders. Only after every primary host is proven. Legacy 
 - [ ] `docs/install-dev-tools.sh` either migrated and approved for deletion, or intentionally retained as a macOS/legacy reference
 - [ ] `chezmoi diff` empty
 - [ ] `nix flake check ./nix` passes
+- [ ] `bash scripts/test-bootstrap-docker.sh --dry-run` passes, or is explicitly skipped with a recorded reason (for example Docker unavailable)
+
+## Optional helper: `scripts/test-bootstrap-docker.sh`
+Planned script contract:
+- Build/run a fresh Ubuntu container, install only dry-run prerequisites, clone/mount the repo, and execute `bash scripts/bootstrap.sh --dry-run`.
+- Validate bootstrap safety and missing-tool messages without mutating the host.
+- Full apply testing must be explicitly opt-in and is not required before deletion unless separately approved.
 
 ## Actions
 ```bash
@@ -1413,6 +1576,7 @@ git rm -r configs
 ## Validation
 - [ ] Final tree matches end-state
 - [ ] Fresh-clone bootstrap on VM still works
+- [ ] Docker fresh-Ubuntu dry-run passes or skip reason is recorded
 - [ ] `mise run repo:check` passes
 
 ## Commit
@@ -1495,15 +1659,22 @@ Don't compress. Validation between phases on real machines.
 - [ ] Fresh clone + `bash scripts/bootstrap.sh --yes` succeeds on a clean VM
 - [ ] `chezmoi diff` empty
 - [ ] `nix flake check ./nix` passes
+- [ ] `bash scripts/validate-config.sh` and `mise run repo:validate` pass
+- [ ] `mise run lint:check` and `mise run lint:shell` pass
+- [ ] `scripts/test-bootstrap-docker.sh --dry-run` passes, or Docker validation is explicitly skipped with a recorded reason
+- [ ] CI/config validation is green if optional CI was enabled
 - [ ] `mise run repo:check` passes
-- [ ] `mise run sync:apply` is idempotent after a clean preview (running twice in a row makes no changes)
+- [ ] `mise run sync` is a clean preview and never mutates; `mise run sync:apply` is idempotent after a clean preview (running twice in a row makes no changes)
+- [ ] `home/.chezmoidata/personal.yaml` is ignored and blocked by Lefthook from being staged
+- [ ] `docs/bootstrap.md` and/or `docs/architecture/tool-ownership.md` include secrets handling and dependency update procedure
+- [ ] `scripts/doctor.sh` reflects the new tree and passes
 - [ ] `backup-sanitized/` and `configs/` deleted
 - [ ] `docs/architecture/tool-ownership.md` accurate
 - [ ] `docs/bootstrap.md` includes WSL2 caveats section
 - [ ] No `.chezmoiscripts/` directory exists
 - [ ] `docs/migration-source-of-truth.md` and `docs/migration-package-ownership.md` committed as audit trail
 
-When all boxes ticked, merge to `main` and run `bash scripts/bootstrap.sh --yes` (then `mise run sync` afterwards) on each real machine.
+When all boxes ticked, merge to `main` and run `bash scripts/bootstrap.sh --yes` on each real machine, then run `mise run sync` as a preview and `mise run sync:apply` only if needed.
 
 ---
 

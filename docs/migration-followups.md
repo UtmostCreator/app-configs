@@ -3,6 +3,11 @@
 Live ledger of things that **failed**, were **deferred**, or remain **open**
 after the Phase 0–10 dotfiles migration on `feat/dotfiles-migration`.
 
+Also covers stacked work on `feat/project-orchestrator` (chezmoi-templated
+tmux + health + GitHub orchestrator imported from
+`C:\xampp\htdocs\project-scripts` and anonymised — see
+`docs/projects/README.md`).
+
 Append-only. When an item is resolved, move it to the "Resolved" section
 with the resolution commit hash.
 
@@ -29,6 +34,8 @@ summary and unresolved entries land here.
 | `home/dot_config/mise/config.toml.tmpl` does not pin PHP | Per Phase 0/5 decision: keep repo-level toml task-only | Decide C4 first. |
 | `.opencode/agents/implementer.md` + `.opencode/opencode.json` widening uncommitted | Reviewer flagged the diff as overbroad (every `deny` flipped to `allow`/`ask`). User instruction: "do not commit this files for now." | Either revert with `git restore`, or land a surgical narrower patch on a `chore/opencode-policy-*` branch with explicit reviewer sign-off. |
 | Docker-image policy comment removed from `tools:optional:install` | Aqua backend status (`experimental = true` floor on older mise versions) not documented in mise.toml | Add a `mise --version` floor note in `docs/bootstrap.md` once the project decides a minimum. |
+| `feat/project-orchestrator` history-rewrite of authoring identities | Reviewer flagged `Roman.Zakhriapa@rabbies.com` + `romazahrypa@gmail.com` in commit-author metadata on `main`. Per Q2 of the project-orchestrator brief, this slice **only** sanitises new content; existing-history rewrite is a separate later slice with explicit sign-off (because `git filter-repo` + force-push invalidates the open PR's commit shas). | Land `feat/dotfiles-migration` and `feat/project-orchestrator` first; then file a `chore/rewrite-authors` PR with the exact `git filter-repo --email-callback` invocation + coordination plan for the force-push. |
+| `feat/project-orchestrator` `Herd` mention in `home/dot_gitconfig.tmpl` | The committed dotfiles `gitconfig` includes a `gitdir/i:{{ .chezmoi.homeDir }}/herd/` selector. `Herd` is a personal-machine convention (the Laravel Herd install path), not a project name — but it's a leak under a strict reading of the anonymisation contract. | Replace with a configurable selector via `personal.yaml` (e.g. `{{ .gitconfig.work_dir_pattern }}`) in a separate slice; not blocking. |
 
 ## Resolved
 
@@ -51,6 +58,7 @@ summary and unresolved entries land here.
 | 2026-05-24 | **`.chezmoiignore` rule selector** — patterns used `dot_config/...` (source-tree path) instead of `.config/...` (target path). Result: `karabiner` and `Library/...` directory entries still appeared in `chezmoi diff` on Linux even though file children were excluded | Rewrote `home/.chezmoiignore` to use target paths (`.config/karabiner`, `Library/Application Support/...`). Added explicit dir entries alongside `/**` so chezmoi excludes the parent dir as well as children. Verified for all four host profiles. |
 | 2026-05-24 | **`scripts/bootstrap.sh` `interactive_confirm` unbound `CI`** — with `set -u`, the log line `log "Non-interactive (CI=$CI or no tty); ..."` dereferenced `$CI` directly on the non-interactive auto-confirm path. In any non-TTY shell without `CI=` exported (cron, opencode, local automation) the bootstrap aborted with `unbound variable` instead of auto-confirming, breaking exactly the `--yes` path the function was meant to support. | Captured `${CI:-}` into a local `ci_flag` at the top of the function and log `CI=${ci_flag:-<unset>}` instead. Regression test: `env -i bash -c '...interactive_confirm "test"' ` now logs `CI=<unset> or no tty` and returns 0. |
 | 2026-05-24 | **`.github/workflows/validate-ai-surface.yml` `test-php` job** — the job ran `composer install --no-interaction --prefer-dist` unconditionally; this repo (and any kit-only install) has no `composer.json`, so the step failed on every push and PR and kept the workflow permanently red on unrelated changes. | Added a `Detect PHP test project` step that checks for `composer.json` and gates the setup-php / composer-install / phpunit steps on `steps.detect.outputs.has_php == 'true'`. Emits a GitHub `::notice::` when skipped. Also added `--no-run-if-empty` to the `lint` job's shellcheck xargs invocation for the same parity reason. actionlint clean. |
+| 2026-05-24 | **Personal project orchestrator imported from `C:\xampp\htdocs\project-scripts`** — original was 5 named projects (CMS / frontend / traverse / vue-components / stripe), hard-coded paths, 1058-line health monitor, 668-line PR watcher, project names in every script. | New `scripts/projects/` tree on `feat/project-orchestrator`. Generic over N projects via `home/.chezmoidata/projects.yaml` (gitignored). `tmux-master.sh` (~190 lines, generic), `tmux-logs.sh`, `tmux-ssh.sh`, `repo-checks.sh`, `health/run.sh` + `render.sh` + `checks.d/*`, `github/sync-main.sh`, slim `github/pr-watch.sh` (~110 lines). Zero project names in tracked code (leak grep passes). ~5k lines → ~640 lines. New mise tasks under `projects:*`. Docs: `docs/projects/README.md`. |
 
 ## Process notes
 

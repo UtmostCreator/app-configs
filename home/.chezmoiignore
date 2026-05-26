@@ -5,6 +5,12 @@ README.md
 # The real file is home/.chezmoidata/personal.yaml (gitignored).
 personal.yaml.example
 
+# projects.yaml.example same — template only, never deployed to $HOME.
+# Real per-host config lives in home/.chezmoidata/projects.yaml
+# (gitignored). chezmoi renders home/dot_config/projects/config.yaml.tmpl
+# from that into ~/.config/projects/config.yaml.
+projects.yaml.example
+
 {{- $hostProfile := default "linux-desktop" .hostProfile -}}
 {{- $gui := default false .gui -}}
 

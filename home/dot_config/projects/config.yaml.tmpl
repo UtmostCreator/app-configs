@@ -1,0 +1,37 @@
+{{/*
+  Renders only the projects/tmux/ssh_workspace/github/health subset of
+  home/.chezmoidata/projects.yaml into ~/.config/projects/config.yaml.
+  Do NOT use `toYaml .` here — that would leak personal.yaml fields
+  (name, email, signingKey, hostProfile, gui) into a world-readable file.
+
+  scripts/projects/lib.sh reads this file via yq. If no projects.yaml
+  exists yet, the stub keeps the file syntactically valid so
+  `chezmoi diff` on a fresh clone does not fail.
+*/ -}}
+{{- $cfg := dict -}}
+{{- if hasKey . "projects" -}}
+{{-   $_ := set $cfg "projects" .projects -}}
+{{- end -}}
+{{- if hasKey . "tmux" -}}
+{{-   $_ := set $cfg "tmux" .tmux -}}
+{{- end -}}
+{{- if hasKey . "ssh_workspace" -}}
+{{-   $_ := set $cfg "ssh_workspace" .ssh_workspace -}}
+{{- end -}}
+{{- if hasKey . "github" -}}
+{{-   $_ := set $cfg "github" .github -}}
+{{- end -}}
+{{- if hasKey . "health" -}}
+{{-   $_ := set $cfg "health" .health -}}
+{{- end -}}
+{{- if eq (len $cfg) 0 -}}
+# Auto-generated stub. Copy home/projects.yaml.example into
+# home/.chezmoidata/projects.yaml, fill in real values, then run
+# `mise run sync:apply` (or `chezmoi apply`).
+projects: {}
+tmux:
+  master_session: "dev-workspace"
+  log_session: "dev-logs"
+{{- else -}}
+{{ $cfg | toYaml | trim }}
+{{- end }}

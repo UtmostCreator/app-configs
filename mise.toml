@@ -249,6 +249,43 @@ for tool in dive fx navi glow gum; do
 done
 """
 
+# ─── Project orchestrator (opt-in) ──────────────────────────────────────────
+# Per-host project list lives in home/.chezmoidata/projects.yaml (gitignored).
+# Render it into ~/.config/projects/config.yaml via `chezmoi apply` (or
+# `mise run sync:apply`). Then any of these tasks just work.
+
+[tasks."projects:tmux"]
+description = "Open the master tmux workspace (one pane per project + logs + services)"
+run = "bash scripts/projects/tmux-master.sh"
+
+[tasks."projects:logs"]
+description = "Open the N-pane log viewer for projects with service.log set"
+run = "bash scripts/projects/tmux-logs.sh"
+
+[tasks."projects:ssh"]
+description = "Open one tmux pane per SSH host listed in projects.yaml"
+run = "bash scripts/projects/tmux-ssh.sh"
+
+[tasks."projects:repo"]
+description = "Run repo-checks for one project (usage: mise run projects:repo -- <project-id>)"
+run = "bash scripts/projects/repo-checks.sh"
+
+[tasks."projects:health"]
+description = "Run every check in scripts/projects/health/checks.d/ and pretty-print"
+run = "bash scripts/projects/health/run.sh"
+
+[tasks."projects:health:json"]
+description = "Run health checks and emit raw JSON (for scripting / dashboards)"
+run = "bash scripts/projects/health/run.sh --json"
+
+[tasks."projects:sync-main"]
+description = "Fetch + fast-forward 'main' on every project (or one: -- <project-id>)"
+run = "bash scripts/projects/github/sync-main.sh"
+
+[tasks."projects:pr-watch"]
+description = "Poll GitHub for PR transitions on tracked repos (--once for single poll)"
+run = "bash scripts/projects/github/pr-watch.sh"
+
 # ─── Optional AI/PHP tasks (out-of-scope for the dotfiles migration) ────────
 # Uncomment if you start editing AI/PHP workflow files in this branch.
 #

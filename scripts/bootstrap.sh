@@ -64,8 +64,13 @@ done
 
 interactive_confirm() {
   local question="$1"
-  if [[ -n "${CI:-}" ]] || [[ ! -t 0 ]]; then
-    log "Non-interactive (CI=$CI or no tty); auto-confirming: $question"
+  local ci_flag="${CI:-}"
+  # Auto-confirm when CI is set OR stdin is not a TTY. Both branches must
+  # use the :-default form: `set -u` would otherwise abort on a plain
+  # `$CI` reference whenever the caller is non-interactive without CI=
+  # exported (e.g. local automation, cron, an opencode session).
+  if [[ -n "$ci_flag" ]] || [[ ! -t 0 ]]; then
+    log "Non-interactive (CI=${ci_flag:-<unset>} or no tty); auto-confirming: $question"
     return 0
   fi
   printf '%s [y/N] ' "$question"

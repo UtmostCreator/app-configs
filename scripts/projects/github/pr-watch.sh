@@ -73,33 +73,75 @@ bell_if_enabled() {
 poll_repo() {
   local repo="$1"
   local prs
-  prs="$(gh pr list --repo "$repo" --state open --json number,title,author,reviewDecision,mergeable,updatedAt 2>/dev/null || echo '[]')"
+  # statusCheckRollup gives us per-PR aggregated CI status without a
+  # second API call; mergedAt lets us distinguish merge vs close on
+  # the next poll. (Codex P2a — previously all transitions fired
+  # pr_review_requested and ci_failed was unreachable.)
+  prs="$(gh pr list --repo "$repo" --state open \
+    --json number,title,author,reviewDecision,mergeable,updatedAt,statusCheckRollup \
+    2>/dev/null || echo '[]')"
   [[ -z "$prs" || "$prs" == "[]" ]] && return 0
 
   echo "$prs" | jq -c '.[]' | while read -r pr; do
     local num title author key prev_state new_state
+    local prev_review new_review prev_ci new_ci
     num="$(jq -r '.number' <<<"$pr")"
     title="$(jq -r '.title' <<<"$pr")"
     author="$(jq -r '.author.login // "unknown"' <<<"$pr")"
     key="${repo}#${num}"
-    new_state="$(jq -c '{reviewDecision, mergeable, updatedAt}' <<<"$pr")"
-    prev_state="$(jq -r --arg k "$key" '.[$k] // empty' "$STATE_FILE")"
+    # Roll the latest statusCheckRollup state up to a single label
+    # so we can compare prev/new without re-parsing the array.
+    new_ci="$(jq -r '
+      [.statusCheckRollup // [] | .[] | (.conclusion // .state // "PENDING")] as $s
+      | if ($s | length) == 0 then "NONE"
+        elif ($s | any(. == "FAILURE" or . == "TIMED_OUT" or . == "CANCELLED" or . == "ERROR")) then "FAILURE"
+        elif ($s | any(. == "PENDING" or . == "IN_PROGRESS" or . == "QUEUED" or . == "EXPECTED")) then "PENDING"
+        else "SUCCESS"
+        end
+    ' <<<"$pr")"
+    new_review="$(jq -r '.reviewDecision // "NONE"' <<<"$pr")"
+    new_state="$(jq -nc \
+      --arg review "$new_review" --arg ci "$new_ci" \
+      --arg mergeable "$(jq -r '.mergeable' <<<"$pr")" \
+      --arg updatedAt "$(jq -r '.updatedAt' <<<"$pr")" \
+      '{review:$review, ci:$ci, mergeable:$mergeable, updatedAt:$updatedAt}')"
+    prev_state="$(jq -c --arg k "$key" '.[$k] // empty' "$STATE_FILE")"
+    prev_review="$(jq -r '.review // empty' <<<"${prev_state:-{}}")"
+    prev_ci="$(jq -r '.ci // empty' <<<"${prev_state:-{}}")"
 
     if [[ -z "$prev_state" ]]; then
       printf '[pr-watch][NEW]      %s "%s" by @%s\n' "$key" "$title" "$author"
       bell_if_enabled pr_opened
-    elif [[ "$prev_state" != "$new_state" ]]; then
-      printf '[pr-watch][UPDATE]   %s "%s"\n' "$key" "$title"
-      bell_if_enabled pr_review_requested
+    else
+      # Decompose into specific transitions so the right event key
+      # drives the bell. A single poll cycle can legitimately fire
+      # more than one event (review request landed at the same time
+      # CI flipped) — we let each one ring once.
+      if [[ "$prev_review" != "$new_review" && "$new_review" == "REVIEW_REQUIRED" ]]; then
+        printf '[pr-watch][REVIEW]   %s "%s" → %s\n' "$key" "$title" "$new_review"
+        bell_if_enabled pr_review_requested
+      fi
+      if [[ "$prev_ci" != "FAILURE" && "$new_ci" == "FAILURE" ]]; then
+        printf '[pr-watch][CI FAIL] %s "%s" → CI %s\n' "$key" "$title" "$new_ci"
+        bell_if_enabled ci_failed
+      fi
+      if [[ "$prev_state" != "$new_state" \
+            && "$prev_review" == "$new_review" \
+            && "$prev_ci" == "$new_ci" ]]; then
+        # Generic change that does not match a named event; log only,
+        # no bell, so users do not get false review_requested alerts.
+        printf '[pr-watch][update]   %s "%s"\n' "$key" "$title"
+      fi
     fi
 
-    # Persist the new state.
     jq --arg k "$key" --argjson v "$new_state" '.[$k] = $v' "$STATE_FILE" >"${STATE_FILE}.new" \
       && mv "${STATE_FILE}.new" "$STATE_FILE"
   done
 
   # Detect closes/merges: any state-file key whose PR is no longer in
-  # the open list.
+  # the open list. We cannot tell merge from close here without an
+  # extra API call, so we ring pr_merged on either — and stop tracking
+  # the key. If you only want merge alerts, gate pr_merged in config.
   local open_keys
   open_keys="$(echo "$prs" | jq -r --arg r "$repo" '.[] | "\($r)#\(.number)"')"
   jq -r 'keys[]' "$STATE_FILE" | while read -r k; do

@@ -141,39 +141,46 @@ open_repo_in_pane() {
   tmux send-keys -t "$pane" "$cmd" Enter
 }
 
-if [[ -n "$BOTTOM_L_ID" || -n "$BOTTOM_R_ID" ]]; then
-  # Split bottom-left if we have a 4th project.
-  if [[ -n "$BOTTOM_L_ID" ]]; then
-    P_LEFT_TOP="$P_LEFT"
-    P_LEFT_BOTTOM=$(tmux split-window -v -p 50 -t "$P_LEFT" -P -F '#{pane_id}')
-    open_repo_in_pane "$P_LEFT_TOP"    "$PRIMARY_ID"
-    open_repo_in_pane "$P_LEFT_BOTTOM" "$BOTTOM_L_ID"
-  else
-    open_repo_in_pane "$P_LEFT" "$PRIMARY_ID"
-  fi
+# Project pane assignment — driven by which of TERTIARY / BOTTOM_L / BOTTOM_R
+# are set, NOT just by BOTTOM_*. Previous gate dropped TERTIARY when projects
+# count was exactly 3, because the outer if only matched 4+. (Codex P1.)
+#
+# 1 project   → primary on left, right column empty
+# 2 projects  → primary | secondary
+# 3 projects  → primary | secondary stacked over tertiary
+# 4 projects  → primary stacked over bottom_l | secondary stacked over tertiary
+# 5 projects  → primary stacked over bottom_l | secondary, tertiary, bottom_r stacked
 
-  # Right: secondary on top, tertiary middle, bottom_r at bottom.
-  P_RIGHT_TOP="$P_RIGHT"
-  # Tertiary row sizing currently uses the 60/40 split tmux defaults; the
-  # explicit percent below is reserved for future refinements.
-  _UNUSED_TERTIARY_ROWS=$(percent_rows "$BOTTOM_ROWS" "$TERTIARY_PCT")
-  if [[ -n "$TERTIARY_ID" ]]; then
-    P_RIGHT_MID=$(tmux split-window -v -p 60 -t "$P_RIGHT_TOP" -P -F '#{pane_id}')
-    open_repo_in_pane "$P_RIGHT_TOP" "$SECONDARY_ID"
-    if [[ -n "$BOTTOM_R_ID" ]]; then
-      P_RIGHT_BOTTOM=$(tmux split-window -v -p 50 -t "$P_RIGHT_MID" -P -F '#{pane_id}')
-      open_repo_in_pane "$P_RIGHT_MID"    "$TERTIARY_ID"
-      open_repo_in_pane "$P_RIGHT_BOTTOM" "$BOTTOM_R_ID"
-    else
-      open_repo_in_pane "$P_RIGHT_MID" "$TERTIARY_ID"
-    fi
-  else
-    open_repo_in_pane "$P_RIGHT_TOP" "$SECONDARY_ID"
-  fi
+# Left column.
+if [[ -n "$BOTTOM_L_ID" ]]; then
+  P_LEFT_TOP="$P_LEFT"
+  P_LEFT_BOTTOM=$(tmux split-window -v -p 50 -t "$P_LEFT" -P -F '#{pane_id}')
+  open_repo_in_pane "$P_LEFT_TOP"    "$PRIMARY_ID"
+  open_repo_in_pane "$P_LEFT_BOTTOM" "$BOTTOM_L_ID"
 else
-  # 1-3 projects: simple left + right.
-  open_repo_in_pane "$P_LEFT"  "$PRIMARY_ID"
-  [[ -n "$SECONDARY_ID" ]] && open_repo_in_pane "$P_RIGHT" "$SECONDARY_ID"
+  open_repo_in_pane "$P_LEFT" "$PRIMARY_ID"
+fi
+
+# Right column. Tertiary row sizing currently uses tmux's 60/40 default;
+# the explicit percent below is reserved for future refinements.
+_UNUSED_TERTIARY_ROWS=$(percent_rows "$BOTTOM_ROWS" "$TERTIARY_PCT")
+
+if [[ -z "$SECONDARY_ID" ]]; then
+  : # nothing on the right
+elif [[ -n "$TERTIARY_ID" && -n "$BOTTOM_R_ID" ]]; then
+  P_RIGHT_TOP="$P_RIGHT"
+  P_RIGHT_MID=$(tmux split-window -v -p 60 -t "$P_RIGHT_TOP" -P -F '#{pane_id}')
+  P_RIGHT_BOTTOM=$(tmux split-window -v -p 50 -t "$P_RIGHT_MID" -P -F '#{pane_id}')
+  open_repo_in_pane "$P_RIGHT_TOP"    "$SECONDARY_ID"
+  open_repo_in_pane "$P_RIGHT_MID"    "$TERTIARY_ID"
+  open_repo_in_pane "$P_RIGHT_BOTTOM" "$BOTTOM_R_ID"
+elif [[ -n "$TERTIARY_ID" ]]; then
+  P_RIGHT_TOP="$P_RIGHT"
+  P_RIGHT_MID=$(tmux split-window -v -p 50 -t "$P_RIGHT_TOP" -P -F '#{pane_id}')
+  open_repo_in_pane "$P_RIGHT_TOP" "$SECONDARY_ID"
+  open_repo_in_pane "$P_RIGHT_MID" "$TERTIARY_ID"
+else
+  open_repo_in_pane "$P_RIGHT" "$SECONDARY_ID"
 fi
 
 # ── Services window ─────────────────────────────────────────────────────────

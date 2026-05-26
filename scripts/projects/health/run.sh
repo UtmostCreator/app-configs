@@ -13,7 +13,14 @@
 # Modes:
 #   default        — pretty-print via render.sh (or jq fallback)
 #   --json         — raw aggregate JSON on stdout
-#   --quiet        — no output; exit 0 if all ok, 1 if any fail
+#   --quiet        — no output
+#
+# Exit-code contract for all modes:
+#   0 — overall.failed == 0 (covers ok and warn-only runs)
+#   1 — overall.failed >= 1
+#
+# Warnings deliberately do NOT fail automation. Anything you want to
+# actually fail CI should emit status "fail" inside its checks.d script.
 #
 # Usage:
 #   bash scripts/projects/health/run.sh
@@ -71,12 +78,30 @@ AGG="$(jq -nc --slurpfile checks <(jq -nc 'inputs' <"$TMP" 2>/dev/null || echo '
   }
 ')"
 
+# Exit-code contract (documented at the top of this file):
+#   0 — all ok, or warn-only (no checks have status == fail)
+#   1 — at least one check has status == fail
+#
+# Codex P2b: the previous '== ok' guard treated warn as failure too,
+# which made --quiet exit non-zero on warning-only runs even though the
+# docstring promised "exit 0 if all ok, 1 if any fail". We now key on
+# overall.failed > 0, which mirrors the doc and lets warn-only runs
+# pass automation gates.
+final_exit() {
+  local failed
+  failed="$(jq -r '.overall.failed' <<<"$AGG")"
+  if [[ "$failed" -gt 0 ]]; then
+    return 1
+  fi
+  return 0
+}
+
 case "$MODE" in
   json)
     printf '%s\n' "$AGG"
     ;;
   quiet)
-    [[ "$(jq -r '.overall.status' <<<"$AGG")" == "ok" ]]
+    final_exit
     exit
     ;;
   pretty)
@@ -85,7 +110,7 @@ case "$MODE" in
     else
       printf '%s\n' "$AGG" | jq .
     fi
-    [[ "$(jq -r '.overall.status' <<<"$AGG")" == "ok" ]]
+    final_exit
     exit
     ;;
 esac

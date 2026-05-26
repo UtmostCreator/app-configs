@@ -1,0 +1,138 @@
+# Project orchestrator config.
+#
+# Copy this file to home/.chezmoidata/projects.yaml and fill in real
+# values. The real file is gitignored. The committed scripts under
+# scripts/projects/ read this via `bash scripts/projects/detect-project.sh`,
+# which sources $HOME/.config/projects/config.yaml (chezmoi-rendered).
+#
+# Schema is intentionally flat: id -> definition. Add a project by
+# adding a key under `projects:`. Order in this file controls the
+# pane order in the tmux master layout.
+
+projects:
+  # Each id is a short slug used as the mise task suffix
+  # (e.g. `mise run projects:tmux` reads all of these).
+  cms:
+    name: "cms"                                 # human label, no real product name
+    dir: "~/work/cms"                           # absolute path; tilde expanded at use
+    repo_url: "git@github.com:org/cms.git"     # for sync-main + PR watcher
+    pane_label: "CMS"                           # tmux pane title
+    branch_pattern: "feature-[0-9]+"            # regex for auto-checkout; "" to disable
+    # service block is optional; omit for a non-service project (e.g. a library)
+    service:
+      pane: "cms-service"                       # tmux pane name for the dev server
+      start_cmd: "npm run dev"                  # command to run in the service pane
+      log: "~/work/cms/storage/logs/laravel.log"
+    # health.checks lists check-ids from scripts/projects/health/checks.d/
+    # plus per-project overrides. Empty array = skipped.
+    health:
+      checks:
+        - http
+        - process
+      http_url: "http://cms.local/up"
+
+  frontend:
+    name: "frontend"
+    dir: "~/work/frontend"
+    repo_url: "git@github.com:org/frontend.git"
+    pane_label: "FRONTEND"
+    branch_pattern: ""
+    service:
+      pane: "frontend-service"
+      start_cmd: "npm run dev"
+      log: "~/logs/frontend-npm.log"
+    health:
+      checks:
+        - http
+      http_url: "http://localhost:3000"
+
+  api:
+    name: "api"
+    dir: "~/work/api"
+    repo_url: "git@github.com:org/api.git"
+    pane_label: "API"
+    branch_pattern: ""
+    health:
+      checks: []
+
+  components:
+    name: "components"
+    dir: "~/work/components"
+    repo_url: "git@github.com:org/components.git"
+    pane_label: "COMPONENTS"
+    branch_pattern: ""
+    health:
+      checks: []
+
+  payments:
+    name: "payments"
+    dir: "~/work/payments"
+    repo_url: "git@github.com:org/payments.git"
+    pane_label: "PAYMENTS"
+    branch_pattern: ""
+    health:
+      checks: []
+
+# tmux session names and layout percentages. The master layout is:
+#
+# ┌────────────────────────────────────────────────────────────────┐
+# │                       log pane (LOG_PERCENT)                   │
+# ├────────────────────────┬───────────────────────────────────────┤
+# │ left.top (PRIMARY)     │ right.top (SECONDARY)                 │
+# │ -------- (rest)        │ right.middle (TERTIARY)               │
+# │                        │ right.bottom (rest)                   │
+# └────────────────────────┴───────────────────────────────────────┘
+#
+# Pane assignment to projects (by index in projects: above):
+#   primary    = projects[0]   (top-left, main repo)
+#   secondary  = projects[1]   (top-right)
+#   tertiary   = projects[2]   (middle-right)
+#   bottom_left  = projects[3] (bottom-left, below primary)
+#   bottom_right = projects[4] (bottom-right, below tertiary)
+#
+# Override per-host by editing this file.
+tmux:
+  master_session: "dev-workspace"
+  log_session: "dev-logs"
+  layout:
+    log_percent: 25
+    primary_percent: 50
+    secondary_percent: 25
+    tertiary_percent: 30
+
+# SSH workspace (tmux-ssh.sh) — N panes, one per entry below.
+# Each value is an alias from your ~/.ssh/config.
+ssh_workspace:
+  session: "remote-shells"
+  hosts:
+    - test-host
+    - poc-host
+
+# GitHub PR watcher (was gh-pr-watch.sh).
+github:
+  pr_watch:
+    enabled: true
+    interval_seconds: 20
+    # Watch only these org/repos; leave empty to watch every repo your
+    # gh user can see (slow, noisy).
+    include_repos:
+      - org/cms
+      - org/frontend
+      - org/api
+    # Per-event sounds. afplay on macOS, paplay on Linux, terminal bell
+    # as last resort. Disable an event by setting enabled: false.
+    events:
+      pr_opened:
+        enabled: true
+      pr_review_requested:
+        enabled: true
+      pr_merged:
+        enabled: true
+      ci_failed:
+        enabled: true
+
+# Health monitor retries (one profile only — no FAST_MODE split).
+health:
+  retries:
+    http_tries: 5
+    http_sleep_seconds: 2

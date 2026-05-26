@@ -55,6 +55,15 @@ jobs:
       - name: Lint shell scripts
         run: git ls-files '*.sh' | xargs --no-run-if-empty shellcheck -x
 
+      - name: Setup Go for actionlint
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Install actionlint
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+
       # actionlint runs against .github/workflows/. If a clone has no
       # workflows the binary still passes (it just finds nothing to lint).
       - name: Lint GitHub Actions workflows

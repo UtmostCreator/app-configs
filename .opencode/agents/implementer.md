@@ -29,31 +29,31 @@ permission:
     'tools/**': allow
     'tests/**': allow
     'docs/**': allow
-    'vendor/**': deny
-    'node_modules/**': deny
-    '.git/**': deny
-    'dist/**': deny
-    'build/**': deny
-    'coverage/**': deny
-    '.cache/**': deny
-    'docs/ai/generated/**': deny
-    'docs/generated/**': deny
-    '*.generated.*': deny
-    '*.lock': deny
-    'composer.lock': deny
-    'package-lock.json': deny
-    'pnpm-lock.yaml': deny
-    'yarn.lock': deny
-    'bun.lockb': deny
-    '*.pem': deny
-    '*.key': deny
-    '*.crt': deny
-    '.env*': deny
-    'secrets.*': deny
-    'credentials.*': deny
-    'auth.json': deny
+    'vendor/**': ask
+    'node_modules/**': ask
+    '.git/**': ask
+    'dist/**': ask
+    'build/**': ask
+    'coverage/**': ask
+    '.cache/**': ask
+    'docs/ai/generated/**': ask
+    'docs/generated/**': ask
+    '*.generated.*': ask
+    '*.lock': ask
+    'composer.lock': ask
+    'package-lock.json': ask
+    'pnpm-lock.yaml': ask
+    'yarn.lock': ask
+    'bun.lockb': ask
+    '*.pem': ask
+    '*.key': ask
+    '*.crt': ask
+    '.env*': ask
+    'secrets.*': ask
+    'credentials.*': ask
+    'auth.json': ask
   bash:
-    '*': deny
+    '*': ask
     'command -v *': allow
     'test -f *': allow
     'test -x *': allow
@@ -66,7 +66,7 @@ permission:
     'fd *': allow
     'eza *': allow
     'rg *': allow
-    'grep *': deny
+    'grep *': ask
     'git grep *': allow
     'sg *': allow
     'sed -n *': allow

@@ -5,7 +5,7 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 ## Primary Development Stack
 
 - **Terminal:** Ghostty + tmux
-- **Shell:** Zsh + Oh My Zsh + Starship + Atuin
+- **Shell:** fish (primary; native autosuggestions + highlighting) + Starship + Atuin. zsh + Oh My Zsh still supported. See `docs/shell-setup.md`.
 - **Navigation/Search:** fzf, fd, ripgrep, ripgrep-all, zoxide, Yazi
 - **Editor:** Neovim (lazy.nvim) + BBEdit
 - **Git:** lazygit + delta
@@ -22,13 +22,18 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 
 ### Shell
 
-- **[Oh My Zsh](https://github.com/ohmyzsh/ohmyzsh)** - Zsh configuration framework
-- **[Starship](https://starship.rs)** - active prompt setup
-- **[zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)** - inline command suggestions
-- **[zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)** - command syntax highlighting
+- **[fish](https://fishshell.com)** - primary interactive shell; ships
+  autosuggestions + syntax highlighting **natively** (no extra plugins)
+- **[Starship](https://starship.rs)** - active prompt setup (all shells)
 - **[Atuin](https://github.com/atuinsh/atuin)** - searchable shell history with sync
+- **[Oh My Zsh](https://github.com/ohmyzsh/ohmyzsh)** - Zsh framework (zsh still
+  supported as an alternative shell)
+- **[zsh-autosuggestions](https://github.com/zsh-users/zsh-autosuggestions)** /
+  **[zsh-syntax-highlighting](https://github.com/zsh-users/zsh-syntax-highlighting)**
+  - only for the zsh path; fish uses its built-ins
 
-> Previously used: [Powerlevel10k](https://github.com/romkatv/powerlevel10k)
+> Previously used: Zsh as primary, [Powerlevel10k](https://github.com/romkatv/powerlevel10k).
+> Shell config + how to switch: `docs/shell-setup.md`.
 
 ## Navigation And CLI Workflow
 

@@ -23,6 +23,12 @@
     lnav
     lychee
     mariadb          # provides the `mysql` client; lighter than full mysql-client formula
+    # ── Nix config maintenance toolchain (keeps this flake disciplined) ──
+    deadnix          # find unused Nix bindings
+    nh               # friendlier home-manager/nixos-rebuild + GC wrapper
+    nix-index        # nix-locate: which package provides a missing command
+    nixfmt-rfc-style # canonical Nix formatter (RFC 166 style)
+    statix           # Nix linter (anti-patterns, suggestions)
     neovim
     nodejs_22        # node 22 runtime. On NixOS the mise core:node backend cannot
                      # use nodejs.org prebuilt binaries (stub ld-linux loader) and

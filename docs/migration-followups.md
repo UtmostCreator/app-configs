@@ -39,6 +39,13 @@ summary and unresolved entries land here.
 | `feat/project-orchestrator` history-rewrite of authoring identities | Reviewer flagged two personal author emails (a `@gmail.com` and a `@rabbies.com` work address — values redacted from this doc) in commit-author metadata on `main`. Per Q2 of the project-orchestrator brief, this slice **only** sanitises new content; existing-history rewrite is a separate later slice with explicit sign-off (because `git filter-repo` + force-push invalidates the open PR's commit shas). See `docs/git-history-email-rewrite.md` for the exact, approval-gated procedure. | Land `feat/dotfiles-migration` and `feat/project-orchestrator` first; then file a `chore/rewrite-authors` PR per `docs/git-history-email-rewrite.md` with the `git filter-repo --mailmap` invocation + coordination plan for the force-push. |
 | `feat/project-orchestrator` `Herd` mention in `home/dot_gitconfig.tmpl` | The committed dotfiles `gitconfig` includes a `gitdir/i:{{ .chezmoi.homeDir }}/herd/` selector. `Herd` is a personal-machine convention (the Laravel Herd install path), not a project name — but it's a leak under a strict reading of the anonymisation contract. | Replace with a configurable selector via `personal.yaml` (e.g. `{{ .gitconfig.work_dir_pattern }}`) in a separate slice; not blocking. |
 
+## Open — observations from dual-boot / NVMe slice (2026-06-02)
+
+| Item | Why open | Unblock condition |
+|------|----------|-------------------|
+| `docs/ai/script-registry.json` references `scripts/ai/install-mandatory-tools.sh` which does not exist on disk | Generated mirror (per `docs/ai/script-registry.md`, source of truth is `tools/ai/install/script-registry.php`). Hand-editing a generated artifact is out of scope; the generator should be re-run. | Run the registry generator (`php tools/ai/...`) in a dedicated slice and commit the regenerated `script-registry.json`. |
+| Dual-boot activation on the live host is NOT done | This slice only added the opt-in `nix/modules/nixos/dual-boot.nix` module + read-only `scripts/detect-os-disks.sh`. No `/etc/nixos` edit, no `nixos-rebuild`, no `efibootmgr` boot-order change (boot/auth-sensitive, needs approval). | Separate approved slice: import module in `/etc/nixos`, run `scripts/detect-os-disks.sh`, discover `windowsDeviceHandle` via EDK2 `map -c`, `nixos-rebuild switch`, then `efibootmgr -o` to make NixOS default. |
+
 ## Resolved
 
 | Date | Issue | Resolution commit |

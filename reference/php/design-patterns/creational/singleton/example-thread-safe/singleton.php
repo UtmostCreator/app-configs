@@ -115,7 +115,7 @@ $users = $db->fetchAll("SELECT * FROM user");
 $user = $db->fetch("SELECT * FROM user WHERE id = ?", [1]);
 
 // 3. Insert new user
-$newId = $db->insert('user', ['first_name' => 'Roman', 'email' => 'r@example.com']);
+$newId = $db->insert('user', ['first_name' => 'Alex', 'email' => 'alex@example.com']);
 
 // 4. Update existing user
 $updated = $db->update('user', ['email' => 'new@example.com'], 'id = ?', [1]);

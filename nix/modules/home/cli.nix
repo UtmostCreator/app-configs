@@ -12,6 +12,10 @@
     btop
     eza
     fd
+    fish             # interactive shell (native autosuggestions + syntax
+                     # highlighting; config in ~/.config/fish/config.fish).
+                     # Added as a plain package, not programs.fish.enable,
+                     # to satisfy the validate-config.sh invariant.
     fzf
     jq
     yq-go            # yq formula -> yq-go in nixpkgs

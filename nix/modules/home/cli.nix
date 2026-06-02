@@ -24,6 +24,7 @@
     starship
     tealdeer         # tldr/tlrc alternative in nixpkgs (binary: tldr)
     tmux
+    tree             # directory tree view (eza --tree also works)
     yazi
     zoxide
   ];

@@ -5,7 +5,7 @@
   # imported only by linux-desktop (nix/hosts/linux-desktop/home.nix).
   #
   # Cross-platform mapping for these apps lives in
-  # docs/software-and-cli-tools.md ("Cross-platform install matrix").
+  # repo-docs/software-and-cli-tools.md ("Cross-platform install matrix").
   #
   # Guarded on isLinux so an accidental import on a Darwin build is a no-op
   # rather than pulling Linux GUI builds onto macOS.

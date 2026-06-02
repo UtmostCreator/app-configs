@@ -76,3 +76,8 @@ mise.local.toml
 
 # Dotfiles migration — chezmoi snapshot-home outputs (local recovery only)
 .dotfiles-snapshots/
+
+# Local repo-audit scratch (raw scc scans; canonical scc lives under
+# docs/ai/generated/repo-structure.* per the AI kit). Regenerate locally.
+/scc-by-file.csv
+/scc-by-file-new.csv

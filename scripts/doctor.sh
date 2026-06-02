@@ -79,8 +79,8 @@ for file in \
     AGENTS.md \
     docs/ai/project-context.md \
     docs/ai/workflow.md \
-    docs/software-and-cli-tools.md \
-    docs/vscode-extensions.md \
+    repo-docs/software-and-cli-tools.md \
+    repo-docs/vscode-extensions.md \
     .lefthook.yml \
     scripts/hooks/pre-commit.sh \
     scripts/hooks/commit-msg.sh; do
@@ -94,9 +94,9 @@ for file in \
     home/.chezmoiignore \
     home/dot_zshrc.tmpl \
     home/dot_gitconfig.tmpl \
-    docs/migration-source-of-truth.md \
-    docs/migration-package-ownership.md \
-    docs/migration-decisions.md; do
+    repo-docs/migration-source-of-truth.md \
+    repo-docs/migration-package-ownership.md \
+    repo-docs/migration-decisions.md; do
     check_file "$file"
 done
 
@@ -105,7 +105,7 @@ for file in \
     justfile \
     Justfile \
     .github/copilot-instructions.md \
-    docs/install-dev-tools.sh; do
+    repo-docs/install-dev-tools.sh; do
     check_optional_file "$file"
 done
 

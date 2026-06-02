@@ -130,6 +130,84 @@ If something is wrong, roll back instantly:
 sudo nixos-rebuild switch --rollback
 ```
 
+## Dual-boot with Windows (optional)
+
+This repo ships an **opt-in** NixOS module and a **read-only** detector for a
+safe Windows + Linux boot menu via systemd-boot (the bootloader this machine
+already uses). Nothing here runs automatically — it is config you apply to
+`/etc/nixos` yourself.
+
+- Module: `nix/modules/nixos/dual-boot.nix` (options under `myConfig.dualBoot`).
+  Inert unless `enable = true`, so single-OS users can ignore it.
+- Detector: `scripts/detect-os-disks.sh` — scans disks live (read-only) and
+  prints a suggested `myConfig.dualBoot` snippet. It never writes config and
+  never touches the bootloader.
+
+### 1. Detect what you have
+
+```bash
+bash scripts/detect-os-disks.sh            # human report + suggested snippet
+AI_OUTPUT=json bash scripts/detect-os-disks.sh   # machine-readable
+```
+
+It reports, per physical disk, whether it holds Windows or Linux, marks the
+disk the current OS booted from, and tells you whether Windows is on the **same**
+disk/ESP as NixOS or a **separate** one.
+
+### 2. Enable the module in `/etc/nixos`
+
+Import it and set the options the detector suggested. Two cases:
+
+**Same disk/ESP** (systemd-boot auto-detects Windows — fully reproducible):
+
+```nix
+myConfig.dualBoot.enable = true;
+```
+
+**Separate disk** (Windows on its own ESP — needs a one-time device handle):
+
+```nix
+myConfig.dualBoot = {
+  enable = true;
+  windowsOnSeparateDisk = true;
+  # windowsDeviceHandle = "HD0c1";  # discover it once (step 3)
+};
+```
+
+> systemd-boot cannot load an EFI binary from another disk's ESP directly, so
+> the separate-disk path chainloads Windows **read-only** via the EDK2 UEFI
+> Shell. Neither OS can overwrite the other's ESP: systemd-boot only ever writes
+> to its own ESP (`/boot` here), and Windows lives on its own disk.
+
+### 3. Discover `windowsDeviceHandle` (separate disk only)
+
+1. Set `windowsOnSeparateDisk = true` (this adds the EDK2 UEFI Shell entry),
+   then `sudo nixos-rebuild boot --flake /etc/nixos#nixos`.
+2. Reboot, choose **"EDK2 UEFI Shell"** from the systemd-boot menu.
+3. Run `map -c` to list consistent device handles (e.g. `HD0c1`).
+4. For each handle, run `ls HD0c1:\EFI`; the Windows ESP has a `Microsoft` dir.
+5. Confirm with `HD0c1:\EFI\Microsoft\Boot\Bootmgfw.efi` (Windows should boot).
+6. Put that handle in `windowsDeviceHandle`, then
+   `sudo nixos-rebuild switch --flake /etc/nixos#nixos`.
+
+### 4. Make NixOS the default and set menu order
+
+The module sets `boot.loader.efi.canTouchEfiVariables = true`, so after a
+rebuild **`efibootmgr` is available** on the system and the NixOS UEFI entry is
+registered. To make NixOS the firmware default (instead of Windows):
+
+```bash
+efibootmgr                       # list entries; note the NixOS + Windows IDs
+sudo efibootmgr -o 0001,0000     # boot order: NixOS first, then Windows (use YOUR ids)
+```
+
+Within the systemd-boot menu itself, NixOS sorts ahead of the Windows entry by
+default; `myConfig.dualBoot.timeout` (default 5s) controls the menu wait.
+
+> Rollback: every `nixos-rebuild switch` creates a generation; pick an older one
+> from the boot menu or run `sudo nixos-rebuild switch --rollback`. The boot
+> order change is reversible with another `efibootmgr -o`.
+
 ## Where this fits in the install flow
 
 1. `bash scripts/install.sh` — user env (packages + dotfiles + fish config).

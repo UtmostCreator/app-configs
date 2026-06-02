@@ -9,6 +9,48 @@ NixOS handling.
 - NixOS specifics & failure modes: `docs/install-nixos.md`
 - Cold-start runbook (manual, step-by-step): `docs/bootstrap.md`
 
+## 0. "Am I all set?" — check in one command
+
+```bash
+sys-readiness        # or: bash scripts/readiness.sh   or: mise run readiness
+```
+
+It verifies core tooling, all apps/CLI, dotfiles, git aliases, health checks,
+and the NixOS system layer, then prints a verdict:
+
+- **ALL SET** (exit 0) — nothing to do.
+- **User environment READY, system rebuild pending** (exit 2) — apps + dotfiles
+  are done; the optional NixOS system layer (fish login shell, trusted-users,
+  GC timer) still needs a rebuild. Run **`sys-setup`** (below).
+- **NOT READY** (exit 1) — run `sys-install`.
+
+### Do I need `nixos-rebuild switch`?
+
+Yes, **once**, only for the NixOS **system** layer (fish as login shell,
+trusted-users, declarative GC) — Home Manager cannot set these. Everything else
+(every app, CLI tool, dotfile) is already applied by `sys-install`/`sys-update`
+without sudo. Automate the system step:
+
+```bash
+sudo sys-setup --apply      # or: sudo bash scripts/system-setup.sh --apply
+```
+
+This idempotently writes `/etc/nixos/app-configs-extra.nix` (backing up your
+config first), imports it, and runs `nixos-rebuild switch --flake /etc/nixos#nixos`.
+Preview first without sudo: `sys-setup` (report only). After it finishes, open a
+**new terminal** (you'll land in fish); reboot only if a kernel/driver changed.
+Details: `docs/nixos-rebuild.md`.
+
+### The complete "I'm set" sequence on a fresh machine
+
+```bash
+git clone <your-fork> ~/dotfiles && cd ~/dotfiles
+bash scripts/install.sh            # 1. apps + CLI + dotfiles (unattended, no sudo)
+sudo bash scripts/system-setup.sh --apply   # 2. system layer + nixos-rebuild (once)
+exec fish                          # 3. (or open a new terminal)
+sys-readiness                      # 4. confirm: should print ALL SET
+```
+
 ## 1. Install — one command, walk away
 
 ```bash

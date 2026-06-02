@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# sys-readiness — "am I all set?" Verifies the whole stack is installed and
+# usable and reports what (if anything) is left, including a pending NixOS
+# system rebuild. Read-only. Usable from any shell, anywhere.
+set -euo pipefail
+DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
+exec bash "$DOTFILES_DIR/scripts/readiness.sh" "$@"

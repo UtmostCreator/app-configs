@@ -38,3 +38,11 @@ end
 function sys-doctor --description 'Run the system/dotfiles health check'
     bash "$DOTFILES_DIR/scripts/doctor.sh" $argv
 end
+
+function sys-readiness --description 'Am I all set? Verify install + report whats left'
+    bash "$DOTFILES_DIR/scripts/readiness.sh" $argv
+end
+
+function sys-setup --description 'NixOS system layer setup (fish shell + gc); add --apply with sudo'
+    bash "$DOTFILES_DIR/scripts/system-setup.sh" $argv
+end

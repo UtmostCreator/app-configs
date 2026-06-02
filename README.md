@@ -115,6 +115,6 @@ under `~/.local/state/dotfiles-snapshots/`.
 
 ## Migration history
 
-See `new-architecture-todo-v2.md` and `docs/migration-*.md` for the phased
+See `docs/migration-implementation-plan.md` and `docs/migration-*.md` for the phased
 migration audit trail (source-of-truth matrix, package ownership matrix,
 pre-flight decisions).

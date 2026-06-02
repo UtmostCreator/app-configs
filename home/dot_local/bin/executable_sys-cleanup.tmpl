@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# sys-cleanup — reclaim disk used by installed applications/packages safely:
+# de-duplicates the Nix store (where every app lives) and prunes tool caches,
+# keeping ALL rollback generations. Pass --gc to also remove aged generations
+# (older than KEEP_DAYS, default 14d; recent rollbacks kept). Any shell, anywhere.
+set -euo pipefail
+DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
+exec bash "$DOTFILES_DIR/scripts/cleanup.sh" --apply "$@"

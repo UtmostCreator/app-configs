@@ -1,39 +1,40 @@
 {{- /*
-  Fish functions for the dotfiles maintenance scripts (install / update /
-  cleanup). chezmoi renders {{ .chezmoi.sourceDir }} to the absolute repo path
-  at apply time, so these work from any directory.
+  Fish functions for the whole-stack maintenance scripts. These manage
+  installed APPLICATIONS + CLI tools + dotfiles + system store, not just
+  dotfiles. chezmoi renders {{ .chezmoi.sourceDir }} to the repo path at apply
+  time, so they work from any directory.
 
   Auto-sourced by fish (conf.d). Provides:
-    df-install   -> scripts/install.sh           (re-run unattended install)
-    df-update    -> scripts/update-all.sh --apply (brewup equivalent)
-    df-cleanup   -> scripts/cleanup.sh --apply    (safe, keeps rollbacks)
-    df-cleanup-gc-> scripts/cleanup.sh --apply --gc
-    df-doctor    -> scripts/doctor.sh
-    dfcd         -> cd into the dotfiles repo
+    sys-update    -> update all apps/CLI/dotfiles + safe cleanup (brewup)
+    sys-cleanup   -> de-dup store + prune caches (keeps rollbacks)
+    sys-cleanup-gc-> + remove aged generations (keeps recent)
+    sys-install   -> re-run unattended full install
+    sys-doctor    -> health check
+    syscd         -> cd into the repo
 */ -}}
-# Resolve the dotfiles repo. chezmoi source is <repo>/home, so strip /home.
+# Resolve the repo. chezmoi source is <repo>/home, so strip /home.
 set -gx DOTFILES_DIR {{ .chezmoi.sourceDir | trimSuffix "/home" }}
 
-function dfcd --description 'cd into the dotfiles repo'
+function syscd --description 'cd into the dotfiles/system repo'
     cd "$DOTFILES_DIR"
 end
 
-function df-install --description 'Re-run the unattended dotfiles install'
+function sys-install --description 'Re-run the unattended full install (apps + config)'
     bash "$DOTFILES_DIR/scripts/install.sh" $argv
 end
 
-function df-update --description 'Update everything (brewup equivalent)'
+function sys-update --description 'Update all installed apps/CLI + config (brewup equivalent)'
     bash "$DOTFILES_DIR/scripts/update-all.sh" --apply $argv
 end
 
-function df-cleanup --description 'Safe cleanup (keeps all rollback generations)'
+function sys-cleanup --description 'Safe cleanup of app store + caches (keeps all rollbacks)'
     bash "$DOTFILES_DIR/scripts/cleanup.sh" --apply $argv
 end
 
-function df-cleanup-gc --description 'Cleanup + reclaim aged generations (keeps recent)'
+function sys-cleanup-gc --description 'Cleanup + remove aged generations (keeps recent)'
     bash "$DOTFILES_DIR/scripts/cleanup.sh" --apply --gc $argv
 end
 
-function df-doctor --description 'Run the dotfiles health check'
+function sys-doctor --description 'Run the system/dotfiles health check'
     bash "$DOTFILES_DIR/scripts/doctor.sh" $argv
 end

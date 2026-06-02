@@ -209,15 +209,29 @@ bash scripts/uninstall.sh --apply     # actually run
 Never removes Nix itself and never deletes snapshots under
 `~/.local/state/dotfiles-snapshots/`.
 
+## Short commands (installed to PATH + fish)
+
+After install, these are on `PATH` (`~/.local/bin`) and as fish functions, so
+you can run them from any directory / any shell. They manage **installed
+applications + CLI tools + dotfiles**, not just dotfiles:
+
+| Command (PATH) | fish function | Does |
+| --- | --- | --- |
+| `sys-update` | `sys-update` | Update all apps/CLI + config (brewup equivalent) + safe cleanup |
+| `sys-cleanup` | `sys-cleanup` | De-dup Nix store + prune caches (keeps all rollbacks) |
+| `sys-cleanup --gc` | `sys-cleanup-gc` | + remove aged generations (keeps recent) |
+| `sys-install` | `sys-install` | Re-run the unattended full install |
+| — | `sys-doctor` / `syscd` | Health check / cd into the repo |
+
 ## Quick reference
 
 | Goal | Command |
 | --- | --- |
-| Install everything, unattended | `mise run install` (or `bash scripts/install.sh`) |
+| Install everything, unattended | `sys-install` · `mise run install` · `bash scripts/install.sh` |
 | Preview install | `DRY_RUN=1 bash scripts/install.sh` |
-| Update everything (brewup) | `mise run update:apply` |
-| Safe cleanup (keep rollbacks) | `mise run cleanup:apply` |
-| Reclaim aged generations | `mise run cleanup:gc` |
+| Update everything (brewup) | `sys-update` · `mise run update:apply` |
+| Safe cleanup (keep rollbacks) | `sys-cleanup` · `mise run cleanup:apply` |
+| Reclaim aged generations | `sys-cleanup --gc` · `mise run cleanup:gc` |
 | Format / lint Nix | `mise run nix:fmt` · `mise run nix:lint` |
-| Health check | `mise run repo:check` |
+| Health check | `sys-doctor` · `mise run repo:check` |
 | Make fish the login shell (NixOS) | see `docs/install-nixos.md` |

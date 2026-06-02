@@ -1,0 +1,359 @@
+[
+  {
+    "path": "docs/INSTALL.md",
+    "repo_referrers": [
+      "README.md",
+      "docs/bootstrap.md",
+      "docs/migration-followups.md",
+      "docs/nixos-rebuild.md",
+      "scripts/install.sh"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/README.md",
+    "repo_referrers": [
+      "docs/migration-followups.md",
+      "docs/migration-implementation-plan.md"
+    ],
+    "kit_referrers": [
+      "docs/ai/repo-directory-map.json"
+    ]
+  },
+  {
+    "path": "docs/app-list.md",
+    "repo_referrers": [
+      "docs/INSTALL.md",
+      "docs/migration-followups.md",
+      "docs/nix-specific-and-replacements.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/architecture/tool-ownership.md",
+    "repo_referrers": [
+      "README.md",
+      "docs/INSTALL.md",
+      "docs/bootstrap.md",
+      "docs/migration-followups.md",
+      "docs/migration-implementation-plan.md",
+      "docs/pr-body-2026-05-24.md",
+      "docs/research/nix-config-borrow-analysis.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/bootstrap.md",
+    "repo_referrers": [
+      "README.md",
+      "docs/INSTALL.md",
+      "docs/install-nixos.md",
+      "docs/migration-followups.md",
+      "docs/migration-implementation-plan.md",
+      "docs/migration-package-ownership.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/git-history-email-rewrite.md",
+    "repo_referrers": [
+      "docs/migration-followups.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/install-dev-tools-windows.ps1",
+    "repo_referrers": [],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/install-dev-tools.sh",
+    "repo_referrers": [
+      "docs/migration-followups.md",
+      "docs/migration-implementation-plan.md",
+      "docs/migration-package-ownership.draft.md",
+      "docs/migration-package-ownership.md",
+      "docs/migration-source-of-truth.md",
+      "scripts/doctor.sh",
+      "scripts/generate-package-matrix.sh"
+    ],
+    "kit_referrers": [
+      "docs/ai/repo-directory-map.json",
+      "docs/ai/repo-required-tools.md"
+    ]
+  },
+  {
+    "path": "docs/install-nixos.md",
+    "repo_referrers": [
+      "README.md",
+      "docs/INSTALL.md",
+      "docs/app-list.md",
+      "docs/bootstrap.md",
+      "docs/migration-followups.md",
+      "docs/nixos-rebuild.md",
+      "docs/shell-setup.md",
+      "docs/software-and-cli-tools.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/keyboard.md",
+    "repo_referrers": [
+      "docs/migration-implementation-plan.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/migration-audit-2026-05-24.md",
+    "repo_referrers": [
+      "docs/pr-body-2026-05-24.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/migration-decisions.md",
+    "repo_referrers": [
+      "docs/architecture/tool-ownership.md",
+      "scripts/doctor.sh"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/migration-followups.md",
+    "repo_referrers": [
+      "docs/git-history-email-rewrite.md",
+      "docs/install-nixos.md",
+      "docs/migration-audit-2026-05-24.md",
+      "docs/pr-body-2026-05-24.md",
+      "docs/projects/README.md"
+    ],
+    "kit_referrers": [
+      "AGENTS.md"
+    ]
+  },
+  {
+    "path": "docs/migration-implementation-plan.md",
+    "repo_referrers": [
+      "README.md",
+      "docs/architecture/tool-ownership.md",
+      "docs/pr-body-2026-05-24.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/migration-package-ownership.draft.md",
+    "repo_referrers": [
+      "docs/migration-implementation-plan.md",
+      "docs/migration-package-ownership.md",
+      "scripts/generate-package-matrix.sh"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/migration-package-ownership.md",
+    "repo_referrers": [
+      "docs/architecture/tool-ownership.md",
+      "docs/migration-implementation-plan.md",
+      "docs/migration-package-ownership.draft.md",
+      "docs/nvim-setup.md",
+      "docs/pr-body-2026-05-24.md",
+      "docs/shell-setup.md",
+      "docs/software-and-cli-tools.md",
+      "nix/modules/darwin/homebrew.nix",
+      "nix/modules/home/cli.nix",
+      "scripts/doctor.sh",
+      "scripts/generate-package-matrix.sh",
+      "scripts/validate-config.sh"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/migration-source-of-truth.draft.md",
+    "repo_referrers": [
+      "docs/migration-implementation-plan.md",
+      "docs/migration-source-of-truth.md",
+      "scripts/check-source-of-truth.sh"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/migration-source-of-truth.md",
+    "repo_referrers": [
+      "docs/architecture/tool-ownership.md",
+      "docs/migration-audit-2026-05-24.md",
+      "docs/migration-implementation-plan.md",
+      "docs/migration-source-of-truth.draft.md",
+      "scripts/check-source-of-truth.sh",
+      "scripts/doctor.sh",
+      "scripts/validate-config.sh"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/nix-specific-and-replacements.md",
+    "repo_referrers": [
+      "README.md",
+      "docs/migration-followups.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/nixos-rebuild.md",
+    "repo_referrers": [
+      "README.md",
+      "docs/INSTALL.md",
+      "docs/bootstrap.md",
+      "docs/migration-followups.md",
+      "docs/shell-setup.md",
+      "scripts/install.sh",
+      "scripts/readiness.sh"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/nvim-setup.md",
+    "repo_referrers": [
+      "docs/migration-implementation-plan.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/pr-body-2026-05-24.md",
+    "repo_referrers": [],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/projects/README.md",
+    "repo_referrers": [
+      "docs/migration-followups.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/repair-dev-tools-windows.ps1",
+    "repo_referrers": [],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/research/nix-config-borrow-analysis.md",
+    "repo_referrers": [
+      "docs/pr-body-2026-05-24.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/shell-setup.md",
+    "repo_referrers": [
+      "docs/migration-implementation-plan.md",
+      "docs/software-and-cli-tools.md",
+      "docs/unix/ssh-agent-setup.md"
+    ],
+    "kit_referrers": [
+      "docs/ai/repo-directory-map.json"
+    ]
+  },
+  {
+    "path": "docs/software-and-cli-tools.md",
+    "repo_referrers": [
+      "docs/migration-implementation-plan.md",
+      "docs/migration-package-ownership.draft.md",
+      "docs/migration-package-ownership.md",
+      "mise.toml",
+      "nix/modules/home/gui.nix",
+      "scripts/doctor.sh",
+      "scripts/generate-package-matrix.sh"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/templates/vscode/workspace-example.json",
+    "repo_referrers": [],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/templates/vscode/workspace-template.json",
+    "repo_referrers": [
+      "docs/migration-followups.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/unix/QUICKSTART.md",
+    "repo_referrers": [
+      "docs/migration-followups.md",
+      "docs/migration-source-of-truth.md",
+      "docs/unix/ssh-agent-snippets.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/unix/ssh-agent-setup.md",
+    "repo_referrers": [
+      "docs/migration-followups.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/unix/ssh-agent-snippets.md",
+    "repo_referrers": [
+      "docs/migration-source-of-truth.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/verify-dev-tools-gitbash.sh",
+    "repo_referrers": [],
+    "kit_referrers": [
+      "docs/ai/repo-required-tools.md"
+    ]
+  },
+  {
+    "path": "docs/verify-dev-tools-powershell.ps1",
+    "repo_referrers": [],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/vscode-extensions.md",
+    "repo_referrers": [
+      "docs/migration-followups.md",
+      "docs/migration-implementation-plan.md",
+      "scripts/doctor.sh"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/windows/QUICKSTART.md",
+    "repo_referrers": [
+      "docs/unix/QUICKSTART.md",
+      "docs/unix/ssh-agent-setup.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/windows/README.md",
+    "repo_referrers": [],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/windows/scripts/Enable-SshAgentService.ps1",
+    "repo_referrers": [],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/windows/scripts/Install-SshAgentProfileSnippet.ps1",
+    "repo_referrers": [],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/windows/scripts/Setup-SshAgent.ps1",
+    "repo_referrers": [
+      "docs/windows/README.md"
+    ],
+    "kit_referrers": []
+  },
+  {
+    "path": "docs/windows/ssh-agent-setup.md",
+    "repo_referrers": [],
+    "kit_referrers": []
+  }
+]

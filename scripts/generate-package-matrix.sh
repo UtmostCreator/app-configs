@@ -2,10 +2,10 @@
 # shellcheck disable=SC2016
 # Package-ownership helper for the dotfiles migration (Phase 3).
 #
-# Read-only. Extracts candidate tool names from docs/install-dev-tools.sh,
-# cross-references docs/software-and-cli-tools.md, optionally probes
+# Read-only. Extracts candidate tool names from repo-docs/install-dev-tools.sh,
+# cross-references repo-docs/software-and-cli-tools.md, optionally probes
 # nixpkgs/Homebrew availability when those tools are present, and writes
-# a draft matrix at docs/migration-package-ownership.draft.md with TBD
+# a draft matrix at repo-docs/migration-package-ownership.draft.md with TBD
 # rows for human review. Never installs anything.
 #
 # Usage:
@@ -20,7 +20,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-OUTPUT="docs/migration-package-ownership.draft.md"
+OUTPUT="repo-docs/migration-package-ownership.draft.md"
 PROBE=1
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -43,8 +43,8 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-INSTALL_SCRIPT="docs/install-dev-tools.sh"
-DOCS_FILE="docs/software-and-cli-tools.md"
+INSTALL_SCRIPT="repo-docs/install-dev-tools.sh"
+DOCS_FILE="repo-docs/software-and-cli-tools.md"
 
 if [[ ! -f "$INSTALL_SCRIPT" ]]; then
   printf '[generate-package-matrix] missing %s\n' "$INSTALL_SCRIPT" >&2
@@ -55,7 +55,7 @@ mkdir -p "$(dirname "$OUTPUT")"
 now="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 # Extract candidate tool names from the FORMULAE=( ... ) and CASKS=( ... )
-# blocks in docs/install-dev-tools.sh. Handles both single-line forms
+# blocks in repo-docs/install-dev-tools.sh. Handles both single-line forms
 # (FOO=()) and multi-line forms (FOO=( \n item \n )). Awk-based to avoid
 # sourcing the script.
 extract_array() {
@@ -77,7 +77,7 @@ extract_array() {
 formulae="$(extract_array FORMULAE | sort -u)"
 casks="$(extract_array CASKS | sort -u)"
 
-# Optional: tools mentioned in docs/software-and-cli-tools.md but not in
+# Optional: tools mentioned in repo-docs/software-and-cli-tools.md but not in
 # the install script. Surface via grep so the reviewer sees the gap.
 extra_tools=""
 if [[ -f "$DOCS_FILE" ]]; then
@@ -187,9 +187,9 @@ probe_cask() {
   printf -- '- [ ] Any tool marked `verify manually`: confirm exact nixpkgs attribute or cask name.\n'
   printf -- '- [ ] macOS-only GUI apps: cask via nix-darwin Homebrew bridge; do not add to `home.packages`.\n'
 
-  printf '\nAfter review, save the resolved matrix as `docs/migration-package-ownership.md`.\n'
+  printf '\nAfter review, save the resolved matrix as `repo-docs/migration-package-ownership.md`.\n'
   printf 'Phase 6 reads only the reviewed file.\n'
 } > "$OUTPUT"
 
 printf '[generate-package-matrix] draft written: %s\n' "$OUTPUT"
-printf '[generate-package-matrix] resolve TBD rows, then save as docs/migration-package-ownership.md\n'
+printf '[generate-package-matrix] resolve TBD rows, then save as repo-docs/migration-package-ownership.md\n'

@@ -5,8 +5,7 @@ Use this repository as a worked example and reusable kit, not a managed service.
 ## Best Ways To Get Help
 
 - read `README.md` for the root repo layout
-- read `docs/ai/install-order.md` for the supported install order, selective pack recipes, and reinstall flow
-- read `packages/ai-universal-rules/README.md` and `packages/ai-universal-rules/QUICKSTART.md` for kit adoption
+- read `packages/ai-universal-rules/README.md` for kit adoption
 - read `docs/ai/external-repo-install.md` for the external-repo installer commands and overwrite rules
 - read `docs/ai/project-context.md` and `docs/ai/capabilities/` for the live root instantiation
 - inspect `docs/ai/catalog.md` and `packages/ai-universal-rules/docs/BROWSE.md` for generated indexes

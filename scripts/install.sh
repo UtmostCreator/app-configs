@@ -178,7 +178,7 @@ log "Install complete (host=$HOST_PROFILE, mode=$([[ "$DRY_RUN" == 1 ]] && echo 
 # The user environment is fully installed above. System-level settings (fish
 # login shell, trusted-users, GC timer) live in /etc/nixos and require an
 # explicit, privileged `nixos-rebuild`. We never run sudo unattended; instead we
-# detect what is missing and print exact next steps. See docs/nixos-rebuild.md.
+# detect what is missing and print exact next steps. See repo-docs/nixos-rebuild.md.
 if is_nixos; then
   step "NixOS system layer (live-state check)"
   # Check the LIVE activated system, not a specific config file — settings may
@@ -205,5 +205,5 @@ if is_nixos; then
   step "Maintenance"
   log "Update everything (brewup):  mise run update:apply"
   log "Safe cleanup (keep rollbacks): mise run cleanup:apply"
-  log "See docs/INSTALL.md and docs/nixos-rebuild.md."
+  log "See repo-docs/INSTALL.md and repo-docs/nixos-rebuild.md."
 fi

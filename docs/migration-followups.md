@@ -46,6 +46,20 @@ summary and unresolved entries land here.
 | `docs/ai/script-registry.json` references `scripts/ai/install-mandatory-tools.sh` which does not exist on disk | Generated mirror (per `docs/ai/script-registry.md`, source of truth is `tools/ai/install/script-registry.php`). Hand-editing a generated artifact is out of scope; the generator should be re-run. | Run the registry generator (`php tools/ai/...`) in a dedicated slice and commit the regenerated `script-registry.json`. |
 | Dual-boot activation on the live host is NOT done | This slice only added the opt-in `nix/modules/nixos/dual-boot.nix` module + read-only `scripts/detect-os-disks.sh`. No `/etc/nixos` edit, no `nixos-rebuild`, no `efibootmgr` boot-order change (boot/auth-sensitive, needs approval). The full step-by-step is now documented in `docs/nixos-rebuild.md` ("Dual-boot with Windows"). | Separate approved slice: import module in `/etc/nixos`, run `scripts/detect-os-disks.sh`, discover `windowsDeviceHandle` via EDK2 `map -c`, `nixos-rebuild switch`, then `efibootmgr -o` to make NixOS default. |
 
+## Open — staleness sweep of oldest install/config files (2026-06-02)
+
+Sweep of install/config files older than the repo median commit date (excluding
+AI files). Verified with `lychee` (0 broken links) and reference-existence
+checks. Most old files were confirmed current (linter configs are intentional
+downstream "reference baseline" per README; zsh docs/`home/dot_zshrc.tmpl` are
+still supported; Windows-native docs are out-of-scope-but-kept). Two genuine
+items remain, recorded here (no edits made — both are approval-gated/judgment):
+
+| Item | Why open | Unblock condition |
+|------|----------|-------------------|
+| `.husky/pre-commit` + `.husky/commit-msg` are dead config | Lefthook is the live hook engine (`.git/hooks/*` are lefthook-managed; `core.hooksPath` unset; husky never invoked). Already a documented deferred "separate hook cleanup" gate (`migration-implementation-plan.md` §1509) and `scripts/validate-config.sh` is built to flag `.husky/` rather than fail on it. | Approve the hook cleanup, then `git rm .husky/pre-commit .husky/commit-msg` and update the `.husky/` note in `scripts/validate-config.sh` + `docs/architecture/tool-ownership.md`. |
+| `docs/install-dev-tools.sh` content drift | Legacy macOS Homebrew reference. Still REFERENCED (parsed by `scripts/generate-package-matrix.sh` for the package list; presence-checked by `scripts/doctor.sh`), so not an orphan. But it lists `direnv` (repo dropped direnv per Phase 3) and only wires zsh, while the repo is now fish-first. No current doc tells users to run it. | Judgment call in a dedicated slice: drop `direnv` from `FORMULAE`/wiring and add fish wiring (or annotate as macOS/zsh-legacy reference), then re-verify `scripts/doctor.sh` + `scripts/generate-package-matrix.sh` output still match. |
+
 ## Resolved
 
 | Date | Issue | Resolution commit |

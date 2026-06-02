@@ -1,7 +1,7 @@
 # Tool ownership
 
 Canonical statement of which tool owns which concern in this repository.
-Companion to `new-architecture-todo-v2.md`. Companion audit docs:
+Companion to `docs/migration-implementation-plan.md`. Companion audit docs:
 `docs/migration-source-of-truth.md`, `docs/migration-package-ownership.md`,
 `docs/migration-decisions.md`.
 

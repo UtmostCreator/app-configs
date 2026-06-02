@@ -18,7 +18,7 @@ you need.
 | Persistent SSH agent (Linux / macOS / WSL) | [`unix/QUICKSTART.md`](unix/QUICKSTART.md) and [`unix/ssh-agent-setup.md`](unix/ssh-agent-setup.md) |
 | Persistent SSH agent (Windows native) | [`windows/QUICKSTART.md`](windows/QUICKSTART.md) (kept as-is; not maintained as part of this stack) |
 | Per-project VS Code workspace template | [`templates/vscode/`](templates/vscode/) |
-| Migration audit trail | [`../new-architecture-todo-v2.md`](../new-architecture-todo-v2.md) and `migration-*.md` |
+| Migration audit trail | [`migration-implementation-plan.md`](migration-implementation-plan.md) and `migration-*.md` |
 
 ## Convention
 

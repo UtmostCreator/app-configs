@@ -19,6 +19,9 @@
       ghostty # GPU terminal (macOS: Homebrew cask)
       vscode # VS Code (unfree; allowUnfree set in nix/lib/mkhome.nix)
       flameshot # screenshots with annotation
+      bruno # open-source API client (Linux + macOS; macOS also via cask)
+      # raycast / aerospace are macOS-only (meta.platforms = darwin); they are
+      # declared in nix/modules/darwin/homebrew.nix and must NOT be added here.
       # jetbrains.idea-community  # attr name varies by channel; verify with
       #                           # `nix search nixpkgs jetbrains` then enable.
       # Nerd fonts: add via fonts.fontconfig + a nerd-fonts.* package in a

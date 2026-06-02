@@ -11,8 +11,11 @@
     bats             # bats-core formula -> bats in nixpkgs
     delta            # git-delta formula -> delta in nixpkgs
     difftastic
+    code2prompt      # template-driven prompt/context generation (AI)
     colima           # lightweight container runtime (Docker daemon via VM)
     docker           # CLI only; daemon source is host-specific
+    docker-buildx    # docker buildx plugin (multi-arch builds)
+    files-to-prompt  # concatenate file sets with path headers (AI)
     gh
     gitleaks
     just
@@ -25,7 +28,10 @@
                      # use nodejs.org prebuilt binaries (stub ld-linux loader) and
                      # would compile from source; Nix supplies the same 22.x instead.
     p7zip
+    php              # PHP 8.4 (with extensions). Enables the AI workflow
+                     # validators in scripts/doctor.sh (previously optional).
     pnpm             # fast Node.js package manager (was: brew/corepack)
+    repomix          # package repository context for LLM prompts (AI)
     scc
     semgrep
     shellcheck

@@ -48,7 +48,7 @@
         "root:cli": 1,
         "root:exporter": 1,
         "root:generator": 1,
-        "root:opencode-agent": 10,
+        "root:opencode-agent": 11,
         "root:opencode-command": 18,
         "root:opencode-skill": 18,
         "root:php-reference": 3,
@@ -649,6 +649,14 @@
             "path": ".opencode/agents/reviewer.md",
             "runtime": "opencode",
             "description": "Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification"
+        },
+        {
+            "scope": "root",
+            "type": "opencode-agent",
+            "name": "super-implementer",
+            "path": ".opencode/agents/super-implementer.md",
+            "runtime": "opencode",
+            "description": "Use when a bounded implementation slice is clear and focused verification should happen in this repository"
         },
         {
             "scope": "root",

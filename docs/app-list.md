@@ -51,21 +51,31 @@ Git/dev: `gh`, `lazygit`, `delta` (git-delta), `difftastic` (difft),
 `neovim` (nvim), `ast-grep`.
 Lint/test/security: `shellcheck`, `shfmt`, `actionlint`, `lychee`, `bats`,
 `semgrep`, `gitleaks`, `scc`.
-Containers/runtime: `docker` (CLI), `colima`, `node` (nodejs_22, **Nix on
-NixOS** — see install-nixos.md), `pnpm`.
+Containers/runtime: `docker` (CLI), `docker-buildx`, `colima`,
+`node` (nodejs_22, **Nix on NixOS** — see install-nixos.md), `pnpm`.
 DB/API: `mariadb` (mysql client), `stripe-cli` (stripe).
+Language: `php` (8.4 with extensions — powers the AI workflow validators).
+AI context packers (now Nix-installed, not optional): `repomix`,
+`files-to-prompt`, `code2prompt`.
 Misc: `p7zip`, `lnav`, `watchexec`.
 
 Bootstrap-installed via `nix profile` (not in the modules): `chezmoi`,
 `mise`, `home-manager`, `lefthook`.
 
+## Shell
+
+Interactive shell is **fish** (config: `~/.config/fish/config.fish`).
+`~/.bashrc` auto-`exec`s into fish for interactive terminals, so you land in
+fish without changing the system login shell. Escape hatch: `NO_FISH=1 bash`.
+For the persistent NixOS login shell, see `docs/install-nixos.md` (system
+`configuration.nix` snippet).
+
 ## Optional / per-project (not auto-installed)
 
 - `mise run tools:optional:install` → `dive`, `fx`, `navi`, `glow`, `gum`
   (via aqua).
-- AI context packers via npm/cargo/uv: `repomix`, `files-to-prompt`,
-  `code2prompt`.
 - `direnv` is **DROPPED** (mise per-project env replaces it).
+- macOS-only, never installed on Linux: `duti` (default-app setter).
 
 ## Verify what is installed
 

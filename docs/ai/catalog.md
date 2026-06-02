@@ -28,7 +28,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 - `root / cli` - 1
 - `root / exporter` - 1
 - `root / generator` - 1
-- `root / opencode-agent` - 10
+- `root / opencode-agent` - 11
 - `root / opencode-command` - 18
 - `root / opencode-skill` - 18
 - `root / php-reference` - 3
@@ -97,6 +97,7 @@ Use the relevant adapter onboarding document first, then use this catalog when y
 |`opencode-agent`|repository-reviewer|`.opencode/agents/repository-reviewer.md`|Strict script-first diff reviewer using ai-search and validator evidence|
 |`opencode-agent`|researcher|`.opencode/agents/researcher.md`|Use for read-only repository grounding when scope, ownership, usage, contracts, tests, adapter parity, generated artifacts, permissions, or current changes need investigation before planning, implementation, or review|
 |`opencode-agent`|reviewer|`.opencode/agents/reviewer.md`|Use when reviewing a change set for correctness, regressions, policy fit, duplication, adapter drift, and missing verification|
+|`opencode-agent`|super-implementer|`.opencode/agents/super-implementer.md`|Use when a bounded implementation slice is clear and focused verification should happen in this repository|
 |`opencode-agent`|workflow-auditor|`.opencode/agents/workflow-auditor.md`|Use when reviewing AI workflow files, instruction drift, repo context drift, or unsupported workflow claims|
 |`opencode-command`|architecture-plan|`.opencode/commands/architecture-plan.md`|Use when producing a focused implementation plan for a medium or large change before implementation begins|
 |`opencode-command`|bug-regression|`.opencode/commands/bug-regression.md`|Use when fixing a bug, adding a regression test, or proving a minimal fix with direct evidence|

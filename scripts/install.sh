@@ -173,7 +173,45 @@ fi
 
 step "Done"
 log "Install complete (host=$HOST_PROFILE, mode=$([[ "$DRY_RUN" == 1 ]] && echo dry-run || echo apply))."
+
+# ── NixOS system-rebuild advisory (NOT run automatically — needs sudo) ───────
+# The user environment is fully installed above. System-level settings (fish
+# login shell, trusted-users, GC timer) live in /etc/nixos and require an
+# explicit, privileged `nixos-rebuild`. We never run sudo unattended; instead we
+# detect what is missing and print exact next steps. See docs/nixos-rebuild.md.
 if is_nixos; then
-  log "NixOS note: to make fish your login shell, see docs/install-nixos.md"
-  log "Keep things tidy with: bash scripts/update-all.sh   and   bash scripts/cleanup.sh"
+  step "NixOS system rebuild (manual, recommended)"
+  sys_cfg="/etc/nixos/configuration.nix"
+  need_rebuild=0
+  if [[ -r "$sys_cfg" ]]; then
+    grep -q 'users.users."\?utmostcreator"\?.shell.*fish\|programs.fish.enable' "$sys_cfg" \
+      || { warn "fish is not yet the system login shell"; need_rebuild=1; }
+    grep -q 'trusted-users' "$sys_cfg" \
+      || { warn "your user is not in nix.settings.trusted-users (auto-optimise warning)"; need_rebuild=1; }
+    grep -q 'nix.gc' "$sys_cfg" \
+      || { warn "no system-level nix.gc timer configured"; need_rebuild=1; }
+  else
+    warn "cannot read $sys_cfg (need root) — review it manually"
+    need_rebuild=1
+  fi
+
+  if [[ "$need_rebuild" == 1 ]]; then
+    log "To finish system setup, add the snippet from docs/nixos-rebuild.md to"
+    log "  $sys_cfg   then run:"
+    if [[ -f /etc/nixos/flake.nix ]]; then
+      log "    sudo nixos-rebuild switch --flake /etc/nixos#nixos"
+    else
+      log "    sudo nixos-rebuild switch"
+    fi
+    log "  (or: nh os switch /etc/nixos)"
+    log "Then open a NEW terminal (reboot only if a kernel/driver changed)."
+    log "Confirm readiness:  nixos-rebuild list-generations | head ; systemctl --failed"
+  else
+    log "System config already has fish/trusted-users/gc — no rebuild needed."
+  fi
+
+  step "Maintenance"
+  log "Update everything (brewup):  mise run update:apply"
+  log "Safe cleanup (keep rollbacks): mise run cleanup:apply"
+  log "See docs/INSTALL.md and docs/nixos-rebuild.md."
 fi

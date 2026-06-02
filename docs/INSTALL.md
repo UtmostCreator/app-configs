@@ -46,6 +46,57 @@ mise run install
 > prompts before applying. `install.sh` is the non-interactive, NixOS-aware
 > "set and forget" path.
 
+### What the next install looks like (timeline)
+
+On a **fresh machine**, one command does it all and you can walk away:
+
+```bash
+git clone <your-fork> ~/dotfiles && cd ~/dotfiles && bash scripts/install.sh
+```
+
+Expected wall-clock time (most of it is unattended download from the binary
+cache — the closure is ~7.7 GiB / ~300 binaries):
+
+| Phase | What happens | Typical time |
+| --- | --- | --- |
+| Nix present (NixOS) or install (other) | skipped on NixOS; ~2–4 min via Determinate elsewhere | 0–4 min |
+| Base tools (`nix profile install`) | chezmoi/mise/home-manager/lefthook | 1–3 min |
+| `nix flake check` | evaluate the flake | 10–60 s |
+| `chezmoi apply` | snapshot + write ~37 dotfiles | < 30 s |
+| `home-manager switch` | **fetch ~7.7 GiB closure from cache.nixos.org** + activate | **10–30 min** (network-bound) |
+| `mise install` | no-op on NixOS (runtimes from Nix) | < 10 s |
+| `lefthook` + ssh-agent + `doctor` | hooks + health check | < 30 s |
+| **Total (warm cache, good network)** | | **~15–35 min, unattended** |
+
+A **re-run on the same machine** (warm `/nix/store`) is mostly cache hits and
+finishes in **1–3 minutes**.
+
+### Is it truly "one click, walk away"?
+
+Yes for the **user environment** — `scripts/install.sh` needs no prompts and no
+`sudo`. The **only** manual step that needs you is the optional **system**
+rebuild (fish login shell, GC timer, trusted-users), because it requires `sudo`
+and edits `/etc/nixos`. The installer **detects** whether that is needed and
+prints the exact `sudo nixos-rebuild switch --flake /etc/nixos#nixos` command at
+the end. See `docs/nixos-rebuild.md`.
+
+### Complete-the-build steps (run after install on NixOS)
+
+1. `bash scripts/install.sh` — finishes the user environment (no sudo). ✅ done.
+2. **(recommended)** add the snippet from `docs/nixos-rebuild.md` to
+   `/etc/nixos/configuration.nix`, then:
+   ```bash
+   sudo nixos-rebuild switch --flake /etc/nixos#nixos     # or: nh os switch /etc/nixos
+   ```
+3. **Reboot only if** a kernel/driver/bootloader changed; otherwise just open a
+   new terminal (you'll land in fish).
+4. **Confirm readiness:**
+   ```bash
+   nixos-rebuild list-generations | head     # new generation is Current
+   systemctl --failed ; systemctl --user --failed
+   bash scripts/doctor.sh ; chezmoi verify
+   ```
+
 ## 2. Keep it updated — the `brewup` equivalent
 
 On macOS you ran a `brewup` function (update + upgrade + cleanup). The

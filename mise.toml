@@ -32,18 +32,30 @@ bash -n scripts/bootstrap.sh scripts/detect-host.sh scripts/snapshot-home.sh \
         scripts/validate-config.sh scripts/check-source-of-truth.sh \
         scripts/generate-package-matrix.sh scripts/doctor.sh \
         scripts/install.sh scripts/update-all.sh scripts/cleanup.sh \
-        scripts/readiness.sh scripts/system-setup.sh 2>/dev/null || \
+        scripts/readiness.sh scripts/system-setup.sh \
+        scripts/detect-os-disks.sh 2>/dev/null || \
   echo 'missing: one or more scripts not yet created (Phase 7)'
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck scripts/snapshot-home.sh scripts/validate-config.sh \
              scripts/check-source-of-truth.sh scripts/generate-package-matrix.sh \
              scripts/doctor.sh scripts/install.sh scripts/update-all.sh \
-             scripts/cleanup.sh scripts/readiness.sh scripts/system-setup.sh
+             scripts/cleanup.sh scripts/readiness.sh scripts/system-setup.sh \
+             scripts/detect-os-disks.sh
   for f in scripts/bootstrap.sh scripts/detect-host.sh; do
     [ -f "$f" ] && shellcheck "$f"
   done
 else
   echo 'missing: shellcheck (skip lint; install via Nix per Phase 6 matrix)'
+fi
+"""
+
+[tasks."test:bash"]
+description = "Run bats tests for shell scripts (deterministic, no live hardware)"
+run = """
+if command -v bats >/dev/null 2>&1; then
+  bats tests/bash
+else
+  echo 'missing: bats (install via Nix); skipping shell tests'
 fi
 """
 
@@ -206,6 +218,10 @@ run = "bash scripts/update-all.sh --apply --yes"
 [tasks.readiness]
 description = "Am I all set? Verify everything is installed + usable; reports what's left"
 run = "bash scripts/readiness.sh"
+
+[tasks."detect-os-disks"]
+description = "Read-only scan: which disk has Windows/Linux + suggested dual-boot config (no changes)"
+run = "bash scripts/detect-os-disks.sh"
 
 [tasks."system:setup"]
 description = "Report the NixOS system snippet (fish login shell + trusted-users + gc). Apply with: sudo bash scripts/system-setup.sh --apply"

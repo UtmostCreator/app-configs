@@ -44,7 +44,7 @@ summary and unresolved entries land here.
 | Item | Why open | Unblock condition |
 |------|----------|-------------------|
 | `docs/ai/script-registry.json` references `scripts/ai/install-mandatory-tools.sh` which does not exist on disk | Generated mirror (per `docs/ai/script-registry.md`, source of truth is `tools/ai/install/script-registry.php`). Hand-editing a generated artifact is out of scope; the generator should be re-run. | Run the registry generator (`php tools/ai/...`) in a dedicated slice and commit the regenerated `script-registry.json`. |
-| Dual-boot activation on the live host is NOT done | This slice only added the opt-in `nix/modules/nixos/dual-boot.nix` module + read-only `scripts/detect-os-disks.sh`. No `/etc/nixos` edit, no `nixos-rebuild`, no `efibootmgr` boot-order change (boot/auth-sensitive, needs approval). | Separate approved slice: import module in `/etc/nixos`, run `scripts/detect-os-disks.sh`, discover `windowsDeviceHandle` via EDK2 `map -c`, `nixos-rebuild switch`, then `efibootmgr -o` to make NixOS default. |
+| Dual-boot activation on the live host is NOT done | This slice only added the opt-in `nix/modules/nixos/dual-boot.nix` module + read-only `scripts/detect-os-disks.sh`. No `/etc/nixos` edit, no `nixos-rebuild`, no `efibootmgr` boot-order change (boot/auth-sensitive, needs approval). The full step-by-step is now documented in `docs/nixos-rebuild.md` ("Dual-boot with Windows"). | Separate approved slice: import module in `/etc/nixos`, run `scripts/detect-os-disks.sh`, discover `windowsDeviceHandle` via EDK2 `map -c`, `nixos-rebuild switch`, then `efibootmgr -o` to make NixOS default. |
 
 ## Resolved
 

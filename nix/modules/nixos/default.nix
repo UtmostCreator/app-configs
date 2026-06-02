@@ -1,0 +1,5 @@
+{
+  imports = [
+    ./dual-boot.nix
+  ];
+}

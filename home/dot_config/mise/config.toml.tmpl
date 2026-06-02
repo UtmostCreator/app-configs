@@ -1,2 +1,5 @@
 [tools]
-node = "22"
+# node is provided by Nix / Home Manager (nodejs_22 in nix/modules/home/dev.nix),
+# not by mise. On NixOS the mise core:node backend cannot run nodejs.org prebuilt
+# binaries (the ld-linux loader is a NixOS stub) and would compile node from
+# source. Pin per-project runtimes here only when Nix does not already supply them.

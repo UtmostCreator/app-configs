@@ -173,6 +173,42 @@ mise run tools:optional:install
 
 ---
 
+## Cross-platform install matrix (one-script goal)
+
+This maps each tool to **who installs it** so a single
+`bash scripts/bootstrap.sh --yes` (plus the NixOS rule below) installs the
+whole set on either OS. The owner of record is
+`docs/migration-package-ownership.md`; this table is the practical summary.
+
+| Tool / app | Linux (incl. NixOS) | macOS | Where declared |
+| --- | --- | --- | --- |
+| CLI tools (atuin, bat, btop, eza, fd, fzf, jq, yq, ripgrep(-all), starship, tldr, tmux, yazi, zoxide) | **Nix** | **Nix** | `nix/modules/home/cli.nix` |
+| fish shell | **Nix** | **Nix** | `nix/modules/home/cli.nix` |
+| dev tools (gh, lazygit, delta, difftastic, neovim, semgrep, shellcheck, shfmt, actionlint, lychee, bats, scc, watchexec, lnav, ast-grep, p7zip, mariadb client) | **Nix** | **Nix** | `nix/modules/home/dev.nix` |
+| node 22 runtime | **Nix** (`nodejs_22`) | mise pin OR Nix | `nix/modules/home/dev.nix` (NixOS rule) |
+| pnpm | **Nix** | **Nix** | `nix/modules/home/dev.nix` |
+| colima | **Nix** | **Nix**/Homebrew | `nix/modules/home/dev.nix` |
+| docker CLI | **Nix** (daemon = host) | **Nix** + colima | `nix/modules/home/dev.nix` |
+| stripe CLI | **Nix** (`stripe-cli`) | **Nix**/Homebrew | `nix/modules/home/dev.nix` |
+| Firefox | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
+| Ghostty | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
+| VS Code | **Nix** (`vscode`) | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
+| Flameshot | **Nix** | Homebrew cask | `gui.nix` (Linux) |
+| IntelliJ IDEA CE | Nix (`jetbrains.idea-community`, verify attr) | Homebrew cask | `gui.nix` (TODO) / `darwin/homebrew.nix` |
+| Bruno, Sequel Ace, BBEdit, BetterDisplay, AeroSpace, Karabiner, Ice, AltTab, Stats, NoTunes, LinearMouse | **macOS-only** (no Linux equivalent shipped) | Homebrew cask | `nix/modules/darwin/homebrew.nix` |
+| repomix, files-to-prompt, code2prompt | npm / uv / cargo (per-project, optional) | same | not in Nix; see "AI context packers" below |
+| dive, fx, navi, glow, gum | `mise run tools:optional:install` (aqua) | same | `mise.toml` optional task |
+| direnv | **DROPPED** (mise per-project env replaces it) | DROPPED | — |
+
+NixOS runtime rule (see `docs/install-nixos.md`): runtimes that mise would
+otherwise compile from source on NixOS (e.g. node) are provided by Nix and
+**re-applied with `home-manager switch`** instead of `mise install`.
+
+GUI on Linux is installed by the same `home-manager switch` because
+`nix/modules/home/gui.nix` (imported by `linux-desktop`) lists the
+Linux-installable apps. macOS GUI apps come from the nix-darwin Homebrew
+cask bridge. Either way it is one apply command per host.
+
 ## How to install everything
 
 > **Preferred path on every host (macOS / Linux desktop / Linux CLI / WSL2):**

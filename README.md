@@ -37,11 +37,43 @@ NixOS specifics: [`repo-docs/install-nixos.md`](repo-docs/install-nixos.md).
 System rebuild (`nixos-rebuild`, when & how): [`repo-docs/nixos-rebuild.md`](repo-docs/nixos-rebuild.md).
 Nix-specific bits & cross-distro replacements: [`repo-docs/nix-specific-and-replacements.md`](repo-docs/nix-specific-and-replacements.md).
 
+## Main commands (`sys-*`)
+
+After the first install, these `sys-*` commands are on your `PATH` (deployed
+from `home/dot_local/bin/`) and work from any shell, anywhere — the ergonomic
+day-to-day interface to the whole stack.
+
+**First-time setup — order matters (run top to bottom):**
+
+```bash
+sys-install              # 1. apps + CLI + dotfiles + hooks (unattended, no sudo, idempotent)
+sudo sys-setup --apply   # 2. NixOS only, once: SYSTEM layer (fish login shell, trusted-users,
+                         #    declarative GC) + nixos-rebuild switch. Preview without sudo: sys-setup
+exec fish                # 3. start a new shell (or open a new terminal) so the login shell applies
+sys-readiness            # 4. confirm — you are done when it prints ALL SET (exit 0)
+```
+
+`sys-readiness` tells you where you are: `ALL SET` = done; `system rebuild
+pending` = run step 2; `NOT READY` = run step 1. On non-NixOS hosts step 2 is a
+no-op and `sys-install` alone reaches `ALL SET`.
+
+**Day-to-day — order independent, run whenever:**
+
+```bash
+sys-update               # update everything (apps + CLI + dotfiles + hooks) — the brewup equivalent
+sys-cleanup              # de-dup Nix store + prune caches, keeping ALL rollback generations
+sys-cleanup --gc         # also remove aged generations (keeps recent rollbacks)
+```
+
+Each `sys-*` is a thin wrapper over a `scripts/*.sh` and has `mise run`
+equivalents (`mise run install` / `update:apply` / `cleanup:apply` / `readiness`).
+Full table and quick reference: [`repo-docs/INSTALL.md`](repo-docs/INSTALL.md).
+
 Keep it fresh (the `brewup` equivalent) and tidy:
 
 ```bash
-mise run update:apply     # update flake inputs + HM + chezmoi + mise, then safe cleanup
-mise run cleanup:apply    # reclaim disk without deleting rollback generations
+sys-update                # or: mise run update:apply
+sys-cleanup               # or: mise run cleanup:apply  (reclaim disk, keep rollbacks)
 ```
 Ownership rules and "why each tool": [`repo-docs/architecture/tool-ownership.md`](repo-docs/architecture/tool-ownership.md).
 
@@ -99,7 +131,8 @@ runtime behaviour:
 ## Verify your install
 
 ```bash
-bash scripts/doctor.sh
+sys-readiness              # "am I all set?" — prints ALL SET or what's left (read-only)
+bash scripts/doctor.sh     # or: mise run doctor
 bash scripts/validate-config.sh
 mise run repo:check
 ```

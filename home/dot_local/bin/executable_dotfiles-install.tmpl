@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Re-run the fully-automated, unattended dotfiles install.
+# Installed to ~/.local/bin by chezmoi; usable from any shell, anywhere.
+set -euo pipefail
+DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
+exec bash "$DOTFILES_DIR/scripts/install.sh" "$@"

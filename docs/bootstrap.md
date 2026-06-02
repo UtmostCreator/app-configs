@@ -3,6 +3,13 @@
 Cold-start procedure for the chezmoi + mise + Nix/Home Manager + nix-darwin
 + Lefthook stack.
 
+> **Prefer the automated path.** `bash scripts/install.sh` (alias `sys-install`)
+> is the fully-unattended, NixOS-aware installer; `docs/INSTALL.md` is the
+> canonical install + maintenance guide (with the `sys-readiness` /
+> `sys-update` / `sys-cleanup` / `sys-setup` commands). This file documents the
+> lower-level `bootstrap.sh` flow it builds on. On NixOS also read
+> `docs/install-nixos.md` and `docs/nixos-rebuild.md`.
+
 See `docs/architecture/tool-ownership.md` for why each tool owns what.
 
 ## Supported targets

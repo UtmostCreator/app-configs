@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# sys-install — re-run the fully-automated, unattended install of the whole
+# stack (Nix base tools, all applications + CLI via home-manager, dotfiles,
+# git hooks). Idempotent. Usable from any shell, anywhere.
+set -euo pipefail
+DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
+exec bash "$DOTFILES_DIR/scripts/install.sh" "$@"

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# sys-update — update everything installed by this stack: applications and CLI
+# tools (via nix flake update + home-manager switch + nix profile upgrade),
+# mise-managed tools, dotfiles (chezmoi), git hooks, then a safe cleanup.
+# The Linux/NixOS equivalent of macOS `brewup`. Usable from any shell, anywhere.
+set -euo pipefail
+DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
+exec bash "$DOTFILES_DIR/scripts/update-all.sh" --apply "$@"

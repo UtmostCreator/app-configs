@@ -57,13 +57,20 @@ if [[ "$MODE" == "apply" && "$ASSUME_YES" != 1 ]]; then
   [[ "$ans" == y || "$ans" == Y ]] || { echo "Aborted"; exit 1; }
 fi
 
-# 1. repo self-update (only if clean, to avoid clobbering local edits)
-step "git pull --ff-only (if clean)"
+# 1. repo self-update (only if clean AND an upstream is configured).
+# A missing upstream or offline remote must NOT abort the local-config update,
+# so this step is best-effort (warn, never fail).
+step "git pull --ff-only (if clean + upstream set)"
 if [[ -d "$REPO_ROOT/.git" ]]; then
-  if [[ -z "$(git -C "$REPO_ROOT" status --porcelain)" ]]; then
-    run git -C "$REPO_ROOT" pull --ff-only
-  else
+  if [[ -n "$(git -C "$REPO_ROOT" status --porcelain)" ]]; then
     warn "worktree dirty; skipping git pull (commit/stash first to update the repo)"
+  elif ! git -C "$REPO_ROOT" rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1; then
+    warn "no upstream tracking branch; skipping git pull (set one with: git branch --set-upstream-to=origin/main)"
+  elif [[ "$MODE" == "report" ]]; then
+    printf '   would run: git -C %s pull --ff-only\n' "$REPO_ROOT"
+  else
+    log "+ git pull --ff-only"
+    git -C "$REPO_ROOT" pull --ff-only || warn "git pull failed (offline or diverged); continuing with local config"
   fi
 fi
 

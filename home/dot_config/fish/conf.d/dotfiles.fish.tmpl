@@ -1,0 +1,39 @@
+{{- /*
+  Fish functions for the dotfiles maintenance scripts (install / update /
+  cleanup). chezmoi renders {{ .chezmoi.sourceDir }} to the absolute repo path
+  at apply time, so these work from any directory.
+
+  Auto-sourced by fish (conf.d). Provides:
+    df-install   -> scripts/install.sh           (re-run unattended install)
+    df-update    -> scripts/update-all.sh --apply (brewup equivalent)
+    df-cleanup   -> scripts/cleanup.sh --apply    (safe, keeps rollbacks)
+    df-cleanup-gc-> scripts/cleanup.sh --apply --gc
+    df-doctor    -> scripts/doctor.sh
+    dfcd         -> cd into the dotfiles repo
+*/ -}}
+# Resolve the dotfiles repo. chezmoi source is <repo>/home, so strip /home.
+set -gx DOTFILES_DIR {{ .chezmoi.sourceDir | trimSuffix "/home" }}
+
+function dfcd --description 'cd into the dotfiles repo'
+    cd "$DOTFILES_DIR"
+end
+
+function df-install --description 'Re-run the unattended dotfiles install'
+    bash "$DOTFILES_DIR/scripts/install.sh" $argv
+end
+
+function df-update --description 'Update everything (brewup equivalent)'
+    bash "$DOTFILES_DIR/scripts/update-all.sh" --apply $argv
+end
+
+function df-cleanup --description 'Safe cleanup (keeps all rollback generations)'
+    bash "$DOTFILES_DIR/scripts/cleanup.sh" --apply $argv
+end
+
+function df-cleanup-gc --description 'Cleanup + reclaim aged generations (keeps recent)'
+    bash "$DOTFILES_DIR/scripts/cleanup.sh" --apply --gc $argv
+end
+
+function df-doctor --description 'Run the dotfiles health check'
+    bash "$DOTFILES_DIR/scripts/doctor.sh" $argv
+end

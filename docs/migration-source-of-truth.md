@@ -23,7 +23,7 @@ Decision date: 2026-05-24
 | `~/.config/karabiner/karabiner.json` | only `configs/karabiner/karabiner.json` | **`configs/karabiner/karabiner.json`** | Single source. macOS-gated by `.chezmoiignore` in Phase 4. |
 | VS Code `settings.json` | `configs/vscode/user/settings.json` + `configs/vscode/user/settings.minimal.json` | **merge full + minimal via template** | Fold `settings.minimal.json` into a single `settings.json.tmpl` with `{{ if .minimal }}…{{ else }}…{{ end }}`. |
 | VS Code `keybindings.json` | only `configs/vscode/keybindings.json` | **`configs/vscode/keybindings.json`** | Single source. |
-| `~/.local/bin/git-branch-origin` | `scripts/git-branch-origin.sh`, `backup-sanitized/home/.local/bin/git-branch-origin` | **`scripts/git-branch-origin.sh`** | Repo copy is 424 lines vs 161 in backup; has more flags, --guess mode, exit codes, and is newer in git. Copy into `home/executable_dot_local/bin/git-branch-origin` for chezmoi to deploy with 0755. |
+| `~/.local/bin/git-branch-origin` | `scripts/git-branch-origin.sh`, `backup-sanitized/home/.local/bin/git-branch-origin` | **`scripts/git-branch-origin.sh`** | Repo copy is 424 lines vs 161 in backup; has more flags, --guess mode, exit codes, and is newer in git. Copy into `home/dot_local/bin/executable_git-branch-origin` for chezmoi to deploy with 0755. |
 
 ## SSH-agent helper disposition
 

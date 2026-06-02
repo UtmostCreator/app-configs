@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Update everything this dotfiles repo manages (the brewup equivalent).
+# Installed to ~/.local/bin by chezmoi; usable from any shell, anywhere.
+# Thin wrapper over <repo>/scripts/update-all.sh.
+set -euo pipefail
+DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
+exec bash "$DOTFILES_DIR/scripts/update-all.sh" --apply "$@"

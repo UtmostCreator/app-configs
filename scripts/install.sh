@@ -180,34 +180,26 @@ log "Install complete (host=$HOST_PROFILE, mode=$([[ "$DRY_RUN" == 1 ]] && echo 
 # explicit, privileged `nixos-rebuild`. We never run sudo unattended; instead we
 # detect what is missing and print exact next steps. See docs/nixos-rebuild.md.
 if is_nixos; then
-  step "NixOS system rebuild (manual, recommended)"
-  sys_cfg="/etc/nixos/configuration.nix"
+  step "NixOS system layer (live-state check)"
+  # Check the LIVE activated system, not a specific config file — settings may
+  # live in /etc/nixos/app-configs-extra.nix (written by sys-setup) rather than
+  # configuration.nix.
   need_rebuild=0
-  if [[ -r "$sys_cfg" ]]; then
-    grep -q 'users.users."\?utmostcreator"\?.shell.*fish\|programs.fish.enable' "$sys_cfg" \
-      || { warn "fish is not yet the system login shell"; need_rebuild=1; }
-    grep -q 'trusted-users' "$sys_cfg" \
-      || { warn "your user is not in nix.settings.trusted-users (auto-optimise warning)"; need_rebuild=1; }
-    grep -q 'nix.gc' "$sys_cfg" \
-      || { warn "no system-level nix.gc timer configured"; need_rebuild=1; }
-  else
-    warn "cannot read $sys_cfg (need root) — review it manually"
-    need_rebuild=1
-  fi
+  cur_shell="$(getent passwd "$(id -un)" | cut -d: -f7)"
+  [[ "$cur_shell" == *fish* ]] || { warn "fish is not yet the system login shell (now: $cur_shell)"; need_rebuild=1; }
+  nix show-config 2>/dev/null | grep -qE "trusted-users\s*=.*\b$(id -un)\b" \
+    || { warn "your user is not in nix trusted-users (auto-optimise warning)"; need_rebuild=1; }
+  { systemctl is-active nix-gc.timer >/dev/null 2>&1 || systemctl is-active nix-optimise.timer >/dev/null 2>&1; } \
+    || { warn "no active system-level nix.gc/optimise timer"; need_rebuild=1; }
 
   if [[ "$need_rebuild" == 1 ]]; then
-    log "To finish system setup, add the snippet from docs/nixos-rebuild.md to"
-    log "  $sys_cfg   then run:"
-    if [[ -f /etc/nixos/flake.nix ]]; then
-      log "    sudo nixos-rebuild switch --flake /etc/nixos#nixos"
-    else
-      log "    sudo nixos-rebuild switch"
-    fi
-    log "  (or: nh os switch /etc/nixos)"
+    log "To finish system setup, run the automated helper:"
+    log "    sudo bash $REPO_ROOT/scripts/system-setup.sh --apply   (alias: sudo sys-setup --apply)"
+    log "It writes /etc/nixos/app-configs-extra.nix, wires it in, and runs nixos-rebuild."
     log "Then open a NEW terminal (reboot only if a kernel/driver changed)."
-    log "Confirm readiness:  nixos-rebuild list-generations | head ; systemctl --failed"
+    log "Confirm:  sys-readiness   (or: nixos-rebuild list-generations | head ; systemctl --failed)"
   else
-    log "System config already has fish/trusted-users/gc — no rebuild needed."
+    log "System layer already active (fish login shell + trusted-users + GC timer). Nothing to do."
   fi
 
   step "Maintenance"

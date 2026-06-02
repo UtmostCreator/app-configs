@@ -34,6 +34,8 @@ bash scripts/bootstrap.sh --yes               # actually install + apply
 Install + maintenance guide: [`docs/INSTALL.md`](docs/INSTALL.md).
 Cold-start runbook: [`docs/bootstrap.md`](docs/bootstrap.md).
 NixOS specifics: [`docs/install-nixos.md`](docs/install-nixos.md).
+System rebuild (`nixos-rebuild`, when & how): [`docs/nixos-rebuild.md`](docs/nixos-rebuild.md).
+Nix-specific bits & cross-distro replacements: [`docs/nix-specific-and-replacements.md`](docs/nix-specific-and-replacements.md).
 
 Keep it fresh (the `brewup` equivalent) and tidy:
 

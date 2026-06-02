@@ -100,16 +100,46 @@ cp "$SNIPPET" "$MODULE" || fail "could not write $MODULE"
 rm -f "$SNIPPET"
 log "Wrote $MODULE"
 
-if ! grep -q "app-configs-extra.nix" "$SYS"; then
-  # Insert the import into the imports = [ ... ] list, or append a wrapper.
-  if grep -qE '^\s*imports\s*=\s*\[' "$SYS"; then
-    sed -i 's#\(imports\s*=\s*\[\)#\1 ./app-configs-extra.nix#' "$SYS" \
-      || fail "could not inject import"
-    log "Added ./app-configs-extra.nix to imports in $SYS"
-  else
-    fail "no 'imports = [ ... ]' found in $SYS; add 'imports = [ ./app-configs-extra.nix ];' manually then re-run"
+# Wire the module in. Strategy, most robust first:
+#   1. flake systems: add to the flake's `modules = [ ... ]` (clean, flake-native)
+#   2. else: add to configuration.nix `imports = [ ... ]` — handles BOTH the
+#      same-line form (`imports = [`) and the common multi-line form
+#      (`imports =\n  [ ...`) by inserting after the first `[` that follows
+#      an `imports =` token. Uses awk for multi-line safety (sed is line-based).
+FLAKE="/etc/nixos/flake.nix"
+wired=0
+
+if [[ -n "$FLAKE_ARG" && -f "$FLAKE" ]]; then
+  if grep -q "app-configs-extra.nix" "$FLAKE"; then
+    wired=1; log "flake already imports the module"
+  elif grep -qE 'modules\s*=\s*\[' "$FLAKE"; then
+    cp -a "$FLAKE" "${FLAKE}.bak-${STAMP}"
+    # Insert after the line containing `modules = [`.
+    awk '
+      done==0 && /modules[[:space:]]*=[[:space:]]*\[/ { print; print "        ./app-configs-extra.nix"; done=1; next }
+      { print }
+    ' "$FLAKE" > "${FLAKE}.tmp" && mv "${FLAKE}.tmp" "$FLAKE"
+    grep -q "app-configs-extra.nix" "$FLAKE" && { wired=1; log "Added ./app-configs-extra.nix to flake modules in $FLAKE (backup ${FLAKE}.bak-${STAMP})"; }
   fi
 fi
+
+if [[ "$wired" -eq 0 ]]; then
+  if grep -q "app-configs-extra.nix" "$SYS"; then
+    wired=1; log "configuration.nix already imports the module"
+  else
+    # Multi-line-safe: insert after the first '[' that opens the imports list.
+    awk '
+      done==0 && seen_imports==1 && /\[/ {
+        sub(/\[/, "[ ./app-configs-extra.nix"); done=1; seen_imports=0; print; next
+      }
+      /imports[[:space:]]*=/ { seen_imports=1 }
+      { print }
+    ' "$SYS" > "${SYS}.tmp" && mv "${SYS}.tmp" "$SYS"
+    grep -q "app-configs-extra.nix" "$SYS" && { wired=1; log "Added ./app-configs-extra.nix to imports in $SYS"; }
+  fi
+fi
+
+[[ "$wired" -eq 1 ]] || fail "could not wire app-configs-extra.nix into flake.nix or configuration.nix; add it to an imports/modules list manually then re-run"
 
 log "Running nixos-rebuild switch…"
 # shellcheck disable=SC2086

@@ -20,14 +20,27 @@ Manager** (CLI packages) + **nix-darwin + Homebrew casks** (macOS GUI) +
 git clone <your-fork-of-this-repo> ~/dotfiles
 cd ~/dotfiles
 
-cp home/personal.yaml.example home/.chezmoidata/personal.yaml
-$EDITOR home/.chezmoidata/personal.yaml      # name, email, hostProfile, gui
+# Option A — fully automated, unattended (recommended). NixOS-aware.
+bash scripts/install.sh                       # run it and walk away
+DRY_RUN=1 bash scripts/install.sh             # preview, mutate nothing
 
-bash scripts/bootstrap.sh                    # default: dry-run, no mutations
-bash scripts/bootstrap.sh --yes              # actually install + apply
+# Option B — manual, step-by-step with prompts
+cp home/personal.yaml.example home/.chezmoidata/personal.yaml
+$EDITOR home/.chezmoidata/personal.yaml       # name, email, hostProfile, gui
+bash scripts/bootstrap.sh                      # default: dry-run, no mutations
+bash scripts/bootstrap.sh --yes               # actually install + apply
 ```
 
-Full runbook: [`docs/bootstrap.md`](docs/bootstrap.md).
+Install + maintenance guide: [`docs/INSTALL.md`](docs/INSTALL.md).
+Cold-start runbook: [`docs/bootstrap.md`](docs/bootstrap.md).
+NixOS specifics: [`docs/install-nixos.md`](docs/install-nixos.md).
+
+Keep it fresh (the `brewup` equivalent) and tidy:
+
+```bash
+mise run update:apply     # update flake inputs + HM + chezmoi + mise, then safe cleanup
+mise run cleanup:apply    # reclaim disk without deleting rollback generations
+```
 Ownership rules and "why each tool": [`docs/architecture/tool-ownership.md`](docs/architecture/tool-ownership.md).
 
 ## Day-to-day

@@ -30,12 +30,14 @@ run = """
 set -e
 bash -n scripts/bootstrap.sh scripts/detect-host.sh scripts/snapshot-home.sh \
         scripts/validate-config.sh scripts/check-source-of-truth.sh \
-        scripts/generate-package-matrix.sh scripts/doctor.sh 2>/dev/null || \
+        scripts/generate-package-matrix.sh scripts/doctor.sh \
+        scripts/install.sh scripts/update-all.sh scripts/cleanup.sh 2>/dev/null || \
   echo 'missing: one or more scripts not yet created (Phase 7)'
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck scripts/snapshot-home.sh scripts/validate-config.sh \
              scripts/check-source-of-truth.sh scripts/generate-package-matrix.sh \
-             scripts/doctor.sh
+             scripts/doctor.sh scripts/install.sh scripts/update-all.sh \
+             scripts/cleanup.sh
   for f in scripts/bootstrap.sh scripts/detect-host.sh; do
     [ -f "$f" ] && shellcheck "$f"
   done
@@ -186,6 +188,32 @@ run = "mise run sync:dry-run"
 description = "Cold-start: scripts/bootstrap.sh (default dry-run)"
 run = "bash scripts/bootstrap.sh"
 
+# ─── One-shot install / update / cleanup (set-and-forget) ───────────────────
+
+[tasks.install]
+description = "Fully-automated unattended install (NixOS-aware). DRY_RUN=1 to preview."
+run = "bash scripts/install.sh"
+
+[tasks.update]
+description = "Update everything (flake inputs, HM, chezmoi, mise) + safe cleanup. Report-only; add -- --apply."
+run = "bash scripts/update-all.sh"
+
+[tasks."update:apply"]
+description = "Apply the full update unattended (brewup equivalent)"
+run = "bash scripts/update-all.sh --apply --yes"
+
+[tasks.cleanup]
+description = "Safe non-destructive cleanup (store optimise + cache prune). Report-only; add -- --apply."
+run = "bash scripts/cleanup.sh"
+
+[tasks."cleanup:apply"]
+description = "Run safe cleanup now (keeps all rollback generations)"
+run = "bash scripts/cleanup.sh --apply --yes"
+
+[tasks."cleanup:gc"]
+description = "Cleanup + reclaim aged generations older than KEEP_DAYS (default 14d; keeps recent)"
+run = "bash scripts/cleanup.sh --apply --yes --gc"
+
 # ─── Nix flake helpers ──────────────────────────────────────────────────────
 
 [tasks."nix:check"]
@@ -195,6 +223,22 @@ run = "nix flake check ./nix"
 [tasks."nix:show"]
 description = "Show flake outputs"
 run = "nix flake show ./nix"
+
+[tasks."nix:fmt"]
+description = "Format all Nix files (nixfmt RFC style)"
+run = "nixfmt nix/*.nix nix/**/*.nix"
+
+[tasks."nix:lint"]
+description = "Lint Nix config (statix + deadnix); warnings are advisory"
+run = """
+set -e
+echo '=== statix ==='
+if command -v statix >/dev/null 2>&1; then statix check nix/ || true; else echo 'missing: statix'; fi
+echo '=== deadnix ==='
+if command -v deadnix >/dev/null 2>&1; then deadnix nix/ || true; else echo 'missing: deadnix'; fi
+echo '=== nixfmt --check ==='
+if command -v nixfmt >/dev/null 2>&1; then nixfmt --check nix/*.nix nix/**/*.nix; else echo 'missing: nixfmt'; fi
+"""
 
 # ─── Optional convenience tools (opt-in) ────────────────────────────────────
 # Recommended terminal helpers. Not installed by default — run the task

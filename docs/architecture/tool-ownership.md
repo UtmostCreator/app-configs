@@ -31,9 +31,10 @@ Companion to `docs/migration-implementation-plan.md`. Companion audit docs:
 - Home Manager uses `home.packages = [ ... ]` only.  
   The **only** allowed `programs.<x>.enable` is `programs.home-manager.enable = true;`.
 - Home Manager must NOT create or manage any of:
-  `~/.zshrc`, `~/.gitconfig`, `~/.config/starship/starship.toml`,
-  `~/.config/mise/config.toml`, `~/.config/nvim`, `~/.config/ghostty`,
-  VS Code user settings.
+  `~/.zshrc`, `~/.config/fish/`, `~/.bashrc`, `~/.gitconfig`,
+  `~/.config/starship/starship.toml`, `~/.config/mise/config.toml`,
+  `~/.config/nvim`, `~/.config/ghostty`, `~/.local/bin`, VS Code user settings.
+  (All of these are chezmoi-managed.)
 - chezmoi must NOT install packages, switch Nix profiles, or run any
   orchestration.
 - bootstrap.sh runs ONCE per machine. `mise run sync` previews ongoing

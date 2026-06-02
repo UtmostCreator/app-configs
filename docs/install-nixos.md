@@ -183,17 +183,36 @@ Starship, Atuin, fzf, zoxide, yazi (`yy`), and mise all initialise for fish.
 - macOS-only bits (Herd PHP, Homebrew mysql-client, 1Password NPM token)
   are gated behind `{{ "{{" }} if eq .chezmoi.os "darwin" {{ "}}" }}` in the template.
 
-**Making fish your default login shell on NixOS** is a **system-level**
-change this repo does not own. Add to `/etc/nixos/configuration.nix`:
+**Switching into fish — two layers:**
 
-```nix
-programs.fish.enable = true;                 # registers fish as a valid shell
-users.users.<you>.shell = pkgs.fish;         # sets the login shell
-```
+1. **Immediate (repo-owned, already wired):** `~/.bashrc` (chezmoi template
+   `home/dot_bashrc.tmpl`) `exec`s into fish for **interactive** shells when
+   fish is on PATH and you are not already in fish. So a new terminal lands
+   in fish without any system change. Escape hatch: run `NO_FISH=1 bash` to
+   stay in bash (useful for scripts/tooling that expect bash).
 
-then `sudo nixos-rebuild switch`. Until then, start fish manually (`fish`)
-or set it as your terminal's default command. Do **not** `chsh` to a
-Nix-profile fish path on NixOS — use the system option above.
+2. **Persistent login shell (system-level, you apply once):** the real login
+   shell on NixOS is set in `/etc/nixos/configuration.nix`, not via `chsh`
+   (fish from the Nix profile is not in `/etc/shells`). Add:
+
+   ```nix
+   # /etc/nixos/configuration.nix
+   programs.fish.enable = true;                       # registers fish + /etc/shells
+   users.users.utmostcreator.shell = pkgs.fish;       # login shell = fish
+   ```
+
+   then:
+
+   ```bash
+   sudo nixos-rebuild switch
+   ```
+
+   After that, fish is the actual login shell and the `.bashrc` exec becomes a
+   no-op (bash is no longer the login shell). Until you run the rebuild, layer
+   1 already gives you fish in every interactive terminal.
+
+   Do **not** `chsh` to the Nix-profile fish path on NixOS — it is
+   non-persistent and points outside `/etc/shells`.
 
 ## Expected non-fatal `doctor.sh` warnings on NixOS
 

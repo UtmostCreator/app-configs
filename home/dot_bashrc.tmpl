@@ -1,0 +1,33 @@
+{{- /*
+  ~/.bashrc (chezmoi template).
+
+  Primary interactive shell is fish (see ~/.config/fish/config.fish). To get
+  there without changing the system login shell (required on NixOS, where the
+  login shell is set in /etc/nixos/configuration.nix and chsh is not
+  persistent), bash exec's into fish for interactive terminals.
+
+  Guards (all must hold to switch):
+    - interactive shell ($- contains i)
+    - fish is installed and on PATH
+    - not already inside fish (avoids infinite loop)
+    - not explicitly disabled via NO_FISH=1 (escape hatch: `NO_FISH=1 bash`)
+*/ -}}
+# ─── Auto-launch fish for interactive shells ────────────────────────────────
+if [[ $- == *i* ]] && [[ -z "${NO_FISH:-}" ]] && [[ -z "${INSIDE_FISH:-}" ]]; then
+    if command -v fish >/dev/null 2>&1; then
+        export INSIDE_FISH=1
+        exec fish
+    fi
+fi
+
+# ─── Fallback bash config (used when fish is unavailable or NO_FISH=1) ───────
+# User-local bin on PATH.
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
+
+{{ if eq .chezmoi.os "darwin" -}}
+# macOS: Laravel Herd SSL certificate for Node.js.
+export NODE_EXTRA_CA_CERTS="$HOME/Library/Application Support/Herd/config/valet/CA/LaravelValetCASelfSigned.pem"
+{{- end }}

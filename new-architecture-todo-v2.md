@@ -435,7 +435,7 @@ mkdir -p home/.chezmoidata
 mkdir -p home/dot_config/{atuin,btop,ghostty,mise,starship,nvim,karabiner}
 mkdir -p home/dot_config/Code/User
 mkdir -p "home/Library/Application Support/Code/User"
-mkdir -p home/executable_dot_local/bin
+mkdir -p home/dot_local/bin
 ```
 
 ### `home/.chezmoidata/personal.yaml.example` (committed)
@@ -499,7 +499,7 @@ cp <chosen-starship> home/dot_config/starship/starship.toml
 
 Executable:
 ```bash
-cp <chosen-git-branch-origin> home/executable_dot_local/bin/git-branch-origin
+cp <chosen-git-branch-origin> home/dot_local/bin/executable_git-branch-origin
 ```
 
 Bash fallback (only if kept):

@@ -56,15 +56,22 @@ if bash "$REPO_ROOT/scripts/validate-config.sh" >/dev/null 2>&1; then ok "valida
 
 rebuild_needed=0
 if is_nixos; then
-  hdr "NixOS system layer (needs sudo nixos-rebuild)"
-  sys="/etc/nixos/configuration.nix"
+  hdr "NixOS system layer (live state)"
+  # Check the LIVE, activated system — authoritative regardless of which file
+  # the settings live in (configuration.nix vs an imported module like
+  # /etc/nixos/app-configs-extra.nix written by sys-setup).
   cur_shell="$(getent passwd "$USER" | cut -d: -f7)"
-  if [[ "$cur_shell" == *fish* ]]; then ok "login shell is fish"
-  else note "login shell is $cur_shell, not fish — run: sys-setup (or see docs/nixos-rebuild.md)"; rebuild_needed=1; fi
-  if grep -q 'trusted-users' "$sys" 2>/dev/null; then ok "user in trusted-users"
-  else note "user not in nix.settings.trusted-users — run: sys-setup"; rebuild_needed=1; fi
-  if grep -q 'nix.gc' "$sys" 2>/dev/null; then ok "system GC timer configured"
-  else note "no system-level nix.gc — run: sys-setup"; rebuild_needed=1; fi
+  if [[ "$cur_shell" == *fish* ]]; then ok "login shell is fish ($cur_shell)"
+  else note "login shell is $cur_shell, not fish — run: sudo sys-setup --apply"; rebuild_needed=1; fi
+
+  if nix show-config 2>/dev/null | grep -qE "trusted-users\s*=.*\b${USER}\b"; then
+    ok "user in nix trusted-users"
+  else note "user not in nix trusted-users — run: sudo sys-setup --apply"; rebuild_needed=1; fi
+
+  if systemctl is-active nix-gc.timer >/dev/null 2>&1 \
+     || systemctl is-active nix-optimise.timer >/dev/null 2>&1; then
+    ok "system GC/optimise timer active"
+  else note "no active system GC timer — run: sudo sys-setup --apply"; rebuild_needed=1; fi
 fi
 
 hdr "Summary"

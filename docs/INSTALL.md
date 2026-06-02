@@ -16,13 +16,19 @@ sys-readiness        # or: bash scripts/readiness.sh   or: mise run readiness
 ```
 
 It verifies core tooling, all apps/CLI, dotfiles, git aliases, health checks,
-and the NixOS system layer, then prints a verdict:
+and the NixOS system layer. The system-layer check reads the **live activated
+system** (your actual login shell, `nix show-config` trusted-users, and the
+`nix-gc`/`nix-optimise` systemd timers) — not a specific config file — so it is
+accurate no matter whether settings live in `configuration.nix` or in the
+`app-configs-extra.nix` module that `sys-setup` writes. Verdict + exit code:
 
-- **ALL SET** (exit 0) — nothing to do.
-- **User environment READY, system rebuild pending** (exit 2) — apps + dotfiles
-  are done; the optional NixOS system layer (fish login shell, trusted-users,
-  GC timer) still needs a rebuild. Run **`sys-setup`** (below).
-- **NOT READY** (exit 1) — run `sys-install`.
+- **`ALL SET`** (exit 0) — **you are fully set up; nothing else to run.**
+- **`User environment READY, system rebuild pending`** (exit 2) — apps +
+  dotfiles done; the NixOS system layer (fish login shell, trusted-users, GC
+  timer) is not active yet. Run **`sudo sys-setup --apply`** (below).
+- **`NOT READY`** (exit 1) — a required tool/file is missing; run `sys-install`.
+
+You are **done** exactly when `sys-readiness` prints `ALL SET` and exits 0.
 
 ### Do I need `nixos-rebuild switch`?
 
@@ -50,6 +56,17 @@ sudo bash scripts/system-setup.sh --apply   # 2. system layer + nixos-rebuild (o
 exec fish                          # 3. (or open a new terminal)
 sys-readiness                      # 4. confirm: should print ALL SET
 ```
+
+Notes:
+- Every step is **idempotent** — safe to re-run; it only changes what's not
+  already in the desired state.
+- After step 2 succeeds you'll see `nix-gc.timer` / `nix-optimise.timer`
+  started and the `auto-optimise-store` warnings disappear (trusted-users took
+  effect). That is expected and means the system layer is active.
+- When step 4 prints `ALL SET`, **nothing else is needed.** Day-to-day you only
+  run `sys-update` (keep current) and `sys-cleanup` (reclaim disk).
+- A reboot is **not** required for this stack; it only matters if a later
+  change touches the kernel, drivers, or bootloader.
 
 ## 1. Install — one command, walk away
 

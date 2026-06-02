@@ -24,6 +24,8 @@
       "betterdisplay"
       "aerospace"
       "karabiner-elements"
+      "raycast"          # macOS-only launcher (no Linux build)
+      "flameshot"        # screenshots (Linux: nix gui.nix)
       # Optional — uncomment once verified with `brew search --casks <name>`:
       # "firefox"
       # "medis"

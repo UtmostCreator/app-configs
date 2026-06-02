@@ -3,7 +3,6 @@
 #
 # Enforces only v2 active rules. Does NOT:
 #  - flag Windows native files (they're explicitly deferred / untouched)
-#  - flag .husky/ (separate cleanup gate)
 #  - flag direnv unless Phase 3 explicitly dropped it (we did, so we flag it
 #    in nix/modules/home/* only; mentioning direnv in docs is fine)
 #
@@ -104,7 +103,7 @@ fi
 # We look for "| TBD" anywhere (cell value with surrounding pipes) rather than
 # the bare word TBD so checklist sentences like "Every TBD row resolved" don't
 # trip the rule.
-for f in docs/migration-source-of-truth.md docs/migration-package-ownership.md; do
+for f in repo-docs/migration-source-of-truth.md repo-docs/migration-package-ownership.md; do
   if [[ ! -f "$f" ]]; then
     err "audit doc missing: $f"
   elif grep -nE '\|[[:space:]]*TBD[[:space:]]*\|' "$f" >/dev/null 2>&1; then

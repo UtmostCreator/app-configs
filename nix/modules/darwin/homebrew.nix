@@ -3,7 +3,7 @@
   # Homebrew bridge for macOS GUI apps. nix-darwin manages the Brewfile so
   # casks become declarative without forcing every GUI app through Nix.
   #
-  # Cask names below come from docs/migration-package-ownership.md Phase 3
+  # Cask names below come from repo-docs/migration-package-ownership.md Phase 3
   # matrix. Verify with `brew search --casks <name>` on the Mac before
   # uncommenting any optional row.
   homebrew = {

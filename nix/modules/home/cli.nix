@@ -1,7 +1,7 @@
 { pkgs, ... }:
 {
   # CLI tools — used on every host (macOS / linux-desktop / linux-cli / wsl).
-  # Per docs/migration-package-ownership.md Phase 3 matrix.
+  # Per repo-docs/migration-package-ownership.md Phase 3 matrix.
   #
   # IMPORTANT: every nixpkgs attribute name below was decided based on the
   # matrix notes. Confirm with `nix search nixpkgs <name>` if you hit a

@@ -31,11 +31,11 @@ bash scripts/bootstrap.sh                      # default: dry-run, no mutations
 bash scripts/bootstrap.sh --yes               # actually install + apply
 ```
 
-Install + maintenance guide: [`docs/INSTALL.md`](docs/INSTALL.md).
-Cold-start runbook: [`docs/bootstrap.md`](docs/bootstrap.md).
-NixOS specifics: [`docs/install-nixos.md`](docs/install-nixos.md).
-System rebuild (`nixos-rebuild`, when & how): [`docs/nixos-rebuild.md`](docs/nixos-rebuild.md).
-Nix-specific bits & cross-distro replacements: [`docs/nix-specific-and-replacements.md`](docs/nix-specific-and-replacements.md).
+Install + maintenance guide: [`repo-docs/INSTALL.md`](repo-docs/INSTALL.md).
+Cold-start runbook: [`repo-docs/bootstrap.md`](repo-docs/bootstrap.md).
+NixOS specifics: [`repo-docs/install-nixos.md`](repo-docs/install-nixos.md).
+System rebuild (`nixos-rebuild`, when & how): [`repo-docs/nixos-rebuild.md`](repo-docs/nixos-rebuild.md).
+Nix-specific bits & cross-distro replacements: [`repo-docs/nix-specific-and-replacements.md`](repo-docs/nix-specific-and-replacements.md).
 
 Keep it fresh (the `brewup` equivalent) and tidy:
 
@@ -43,7 +43,7 @@ Keep it fresh (the `brewup` equivalent) and tidy:
 mise run update:apply     # update flake inputs + HM + chezmoi + mise, then safe cleanup
 mise run cleanup:apply    # reclaim disk without deleting rollback generations
 ```
-Ownership rules and "why each tool": [`docs/architecture/tool-ownership.md`](docs/architecture/tool-ownership.md).
+Ownership rules and "why each tool": [`repo-docs/architecture/tool-ownership.md`](repo-docs/architecture/tool-ownership.md).
 
 ## Day-to-day
 
@@ -82,10 +82,11 @@ mise run tools:optional:list
 | `mise.toml` | repo tasks. Tool versions are per-user in `home/dot_config/mise/config.toml.tmpl`. |
 | `.lefthook.yml` | git hooks: pre-commit (no-personal-yaml guard + shared-precommit) and pre-push (validate-config). |
 | `scripts/` | `bootstrap.sh`, `detect-host.sh`, `doctor.sh`, `snapshot-home.sh`, `validate-config.sh`, `uninstall.sh`, `test-bootstrap-docker.sh`, `check-source-of-truth.sh`, `generate-package-matrix.sh`, hooks under `scripts/hooks/`, and `scripts/unix/ssh-agent-setup.sh`. |
-| `docs/` | per-topic setup docs and the migration audit trail (`migration-*.md`). |
-| `docs/architecture/tool-ownership.md` | canonical statement of who owns what. |
-| `docs/bootstrap.md` | cold-start runbook + per-host notes + WSL2 caveats. |
-| `docs/templates/vscode/` | reusable per-project workspace template (`workspace-template.json`). |
+| `repo-docs/` | per-topic setup docs and the migration audit trail (`migration-*.md`). |
+| `docs/ai/` | AI workflow kit, auto-shipped by `awesome-ai-utmostcreator` (not maintained here). |
+| `repo-docs/architecture/tool-ownership.md` | canonical statement of who owns what. |
+| `repo-docs/bootstrap.md` | cold-start runbook + per-host notes + WSL2 caveats. |
+| `repo-docs/templates/vscode/` | reusable per-project workspace template (`workspace-template.json`). |
 
 ## Style configs (reference baseline)
 
@@ -115,6 +116,6 @@ under `~/.local/state/dotfiles-snapshots/`.
 
 ## Migration history
 
-See `docs/migration-implementation-plan.md` and `docs/migration-*.md` for the phased
+See `repo-docs/migration-implementation-plan.md` and `docs/migration-*.md` for the phased
 migration audit trail (source-of-truth matrix, package ownership matrix,
 pre-flight decisions).

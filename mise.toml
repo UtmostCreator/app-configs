@@ -270,7 +270,7 @@ if command -v nixfmt >/dev/null 2>&1; then nixfmt --check nix/*.nix nix/**/*.nix
 # below or `mise install aqua:wagoodman/dive` etc. on demand.
 #
 # Installed via aqua (prebuilt binaries; no host build deps required).
-# See docs/software-and-cli-tools.md for what each one does.
+# See repo-docs/software-and-cli-tools.md for what each one does.
 #
 # Where the pins land: a dedicated TOML at
 #   ~/.config/mise/conf.d/optional-tools.toml

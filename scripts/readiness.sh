@@ -81,7 +81,7 @@ if [[ "$err" -gt 0 ]]; then
   exit 1
 elif [[ "$rebuild_needed" == 1 ]]; then
   echo "  -> User environment READY. Optional system rebuild pending:"
-  echo "     run 'sys-setup' (or see docs/nixos-rebuild.md), then open a new terminal."
+  echo "     run 'sys-setup' (or see repo-docs/nixos-rebuild.md), then open a new terminal."
   exit 2
 else
   echo "  -> ALL SET. Everything installed and usable."

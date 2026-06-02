@@ -74,10 +74,12 @@ if [[ -d "$REPO_ROOT/.git" ]]; then
   fi
 fi
 
-# 2 + 3. refresh + validate flake inputs
+# 2 + 3. refresh + validate flake inputs.
+# NOTE: `nix flake update` takes the flake via --flake; positional args are
+# INPUT names (unlike `nix flake check` which takes a positional path).
 step "nix flake update + check"
 have nix || fail "nix not on PATH"
-run nix flake update "$REPO_ROOT/nix"
+run nix flake update --flake "$REPO_ROOT/nix"
 run nix flake check "$REPO_ROOT/nix"
 
 # 4. dotfiles

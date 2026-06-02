@@ -5,10 +5,16 @@
   BUILT IN, so we intentionally do NOT install zsh-autosuggestions /
   zsh-syntax-highlighting equivalents. Atuin replaces fish history search.
 
+  Parity notes vs. dot_zshrc.tmpl:
+    - brewup        -> replaced by `sys-update` (Nix-native, see conf.d/dotfiles.fish).
+    - zsh ZLE/bindkey/atuin-widget blocks -> handled by `atuin init fish`.
+    - LISTMAX / Oh My Zsh / p10k         -> zsh-only, no fish equivalent.
+
   This is a chezmoi template: macOS-only blocks are gated on
   {{ .chezmoi.os }}. conf.d/*.fish (e.g. ssh-agent.fish) is auto-sourced by
   fish and is NOT duplicated here.
 */ -}}
+
 # ─── Interactive guard ──────────────────────────────────────────────────────
 # Most of this only matters for interactive shells; keep non-interactive
 # (scripts, scp) startup fast and side-effect free.
@@ -22,42 +28,44 @@ end
 # fish_add_path is idempotent and prepends in front of the system path.
 fish_add_path -g $HOME/.local/bin
 
-# ─── Prompt: Starship ───────────────────────────────────────────────────────
+# ─── Environment flags ──────────────────────────────────────────────────────
+# Copilot CLI: enforce repo hook allowlists when available.
+set -gx COPILOT_STRICT_ALLOWLIST 1
+# Atuin: keep history search inline (no tmux popup).
+set -gx ATUIN_TMUX_POPUP false
+
+# ─── Tool integrations (init order matters) ─────────────────────────────────
+# Starship prompt — single config shared with zsh/bash.
 set -gx STARSHIP_CONFIG "$HOME/.config/starship/starship.toml"
 if type -q starship
     starship init fish | source
 end
 
-# ─── zoxide (smarter cd) ────────────────────────────────────────────────────
+# zoxide (smarter cd).
 if type -q zoxide
     zoxide init fish | source
 end
 
-# ─── fzf key bindings (Ctrl-R history, Ctrl-T files, Alt-C cd) ──────────────
-# Atuin owns Ctrl-R below; fzf still provides Ctrl-T / Alt-C.
+# fzf key bindings — Atuin owns Ctrl-R below; fzf still provides Ctrl-T / Alt-C.
 if type -q fzf
     fzf --fish | source
 end
 
-# ─── Atuin: searchable shell history (owns Ctrl-R / Up) ─────────────────────
-# Fish autosuggestions stay enabled; Atuin replaces the history *search* UI.
-set -gx ATUIN_TMUX_POPUP false
+# Atuin: searchable shell history (owns Ctrl-R / Up). Fish autosuggestions
+# stay enabled; Atuin replaces the history *search* UI.
 if type -q atuin
     atuin init fish | source
 end
 
-# ─── Copilot CLI: enforce repo hook allowlists when available ───────────────
-set -gx COPILOT_STRICT_ALLOWLIST 1
-
-# ─── mise (runtime/task manager) ────────────────────────────────────────────
-# On NixOS, runtimes such as node are provided by Nix (see
-# nix/modules/home/dev.nix) and mise must not compile them. mise still
+# mise (runtime/task manager). On NixOS, runtimes such as node are provided by
+# Nix (see nix/modules/home/dev.nix) and mise must not compile them. mise still
 # activates here for per-project tasks/tool shims that Nix does not supply.
 if type -q mise
     mise activate fish | source
 end
 
-# ─── Yazi wrapper: cd to the directory yazi exits in ────────────────────────
+# ─── Functions ──────────────────────────────────────────────────────────────
+# Navigation: yazi wrapper that cd's to the directory yazi exits in.
 function yy --description 'yazi, then cd to its exit directory'
     set -l tmp (mktemp -t "yazi-cwd.XXXXXX")
     yazi $argv --cwd-file="$tmp"
@@ -67,14 +75,20 @@ function yy --description 'yazi, then cd to its exit directory'
     rm -f -- "$tmp"
 end
 
-# ─── ripgrep helper: skip data/dumps/storage (from zshrc rggi) ──────────────
+# Search: ripgrep that skips data/dumps/storage (from zshrc rggi).
 function rggi --description 'ripgrep excluding sql/dump/seed/database/storage'
     rg --glob '!*.sql' --glob '!*.dump' --glob '!*.seed.*' \
        --glob '!database/**' --glob '!storage/**' $argv
 end
 
+# Dev: run a filtered Laravel test suite (from zshrc atest).
+function atest --description 'php artisan test --filter=<arg>'
+    php artisan test --filter=$argv[1]
+end
+
 {{ if eq .chezmoi.os "darwin" -}}
-# ─── macOS-only: Herd PHP + Homebrew mysql-client (ported from zshrc) ───────
+# ─── macOS only ──────────────────────────────────────────────────────────────
+# Herd PHP + Homebrew mysql-client on PATH (ported from zshrc).
 fish_add_path -g "$HOME/Library/Application Support/Herd/bin"
 fish_add_path -g /Applications/Herd.app/Contents/MacOS
 fish_add_path -g /opt/homebrew/opt/mysql-client/bin
@@ -82,9 +96,18 @@ set -gx HERD_PHP_84_INI_SCAN_DIR "$HOME/Library/Application Support/Herd/config/
 set -gx HERD_PHP_83_INI_SCAN_DIR "$HOME/Library/Application Support/Herd/config/php/83/"
 set -gx NODE_EXTRA_CA_CERTS "$HOME/Library/Application Support/Herd/config/valet/CA/LaravelValetCASelfSigned.pem"
 
-# 1Password-backed NPM token, only when already signed in (no startup prompt).
+# 1Password-backed integrations (all gated on `op` being signed in / present).
+# NPM token: load only when already signed in (no startup prompt).
 if type -q op; and op whoami >/dev/null 2>&1
     set -gx NPM_TOKEN (op item get 'GitHub NPM Token' --fields label=token --reveal 2>/dev/null)
+end
+
+# composer wrapper: inject GitHub OAuth from 1Password for the Herd composer.
+function composer --description 'composer via 1Password-injected GitHub OAuth'
+    op run --env-file="$HOME/.config/1password/composer.env" -- sh -c '
+    export COMPOSER_AUTH="{\"github-oauth\":{\"github.com\":\"$GITHUB_COMPOSER_TOKEN\"}}"
+    exec "$@"
+  ' sh "$HOME/Library/Application Support/Herd/bin/composer" $argv
 end
 
 function op-refresh --description 'sign into 1Password then reload fish config'

@@ -21,7 +21,11 @@ summary and unresolved entries land here.
 
 ## Open — non-blocking, before merge to `main`
 
-(none — C3, C4, C5 all resolved; see Resolved section)
+| Date | Item | Why deferred | Resolution path |
+| --- | --- | --- | --- |
+| 2026-06-03 | `sudo nixos-rebuild switch --flake /etc/nixos#nixos` could not be run by the agent | Non-interactive shell has no tty/askpass: `sudo: a terminal is required to read the password` (exit 1). Stable `brave` is already declared at `/etc/nixos/configuration.nix:101` and already installed (`brave 148.1.90.124`, generation 8 Current), so no Brave install is actually pending. | User runs `sudo nixos-rebuild switch --flake /etc/nixos#nixos` in an interactive terminal if a fresh system rebuild is desired. Not required for Brave. |
+
+(C3, C4, C5 all resolved; see Resolved section)
 
 ## Open — explicit deferrals (intentional, not bugs)
 

@@ -59,7 +59,9 @@ quick-terminal-size = 35%
 # ---------- Config management ----------
 keybind = cmd+shift+e=open_config
 keybind = cmd+shift+r=reload_config
-config-file = "local.ghostty"
+# Optional per-machine override. The leading "?" makes it non-fatal when the
+# file is absent (Ghostty skips it silently instead of erroring FileNotFound).
+config-file = "?local.ghostty"
 # ---------- Optional modern color pipeline ----------
 # Enable only if your TUIs are modern and you want a theme-coherent 16..255 palette.
 # Some legacy apps assume xterm's historical 256-color ordering.

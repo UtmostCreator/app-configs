@@ -22,11 +22,12 @@ build exists, never installed on Linux.
 | App | Linux | macOS | Notes |
 | --- | --- | --- | --- |
 | Ghostty | Nix(GUI-Linux) | cask | GPU terminal |
-| VS Code | Nix(GUI-Linux) | cask | `vscode` (unfree) |
-| Firefox | Nix(GUI-Linux) | cask (opt) | browser |
+| VS Code | Nix(GUI-Linux) `vscode` | cask `visual-studio-code` | single IDE on all systems |
+| Firefox | Nix(GUI-Linux) | cask | browser (parity: cask enabled) |
+| Brave | Nix(GUI-Linux) stable | cask `brave-browser@beta` | privacy browser; nixpkgs ships stable only |
 | Flameshot | Nix(GUI-Linux) | cask | screenshots |
 | Bruno | Nix(GUI-Linux) | cask | API client (Linux build exists) |
-| IntelliJ IDEA CE | Nix (verify attr) | cask | `jetbrains.idea-community` TODO |
+| IntelliJ IDEA CE | — (excluded) | — (excluded) | intentionally not shipped; VS Code is the IDE |
 | **Raycast** | **macOS-only** | cask | launcher — **not installed on Linux** |
 | **AeroSpace** | **macOS-only** | cask | tiling WM — **not installed on Linux** |
 | Sequel Ace | macOS-only | cask | MySQL GUI |

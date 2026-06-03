@@ -197,10 +197,12 @@ whole set on either OS. The owner of record is
 | stripe CLI | **Nix** (`stripe-cli`) | **Nix**/Homebrew | `nix/modules/home/dev.nix` |
 | Firefox | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
 | Ghostty | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
-| VS Code | **Nix** (`vscode`) | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
+| VS Code | **Nix** (`vscode`) | Homebrew cask `visual-studio-code` | `gui.nix` / `darwin/homebrew.nix` — single IDE on all systems |
 | Flameshot | **Nix** | Homebrew cask | `gui.nix` (Linux) |
-| IntelliJ IDEA CE | Nix (`jetbrains.idea-community`, verify attr) | Homebrew cask | `gui.nix` (TODO) / `darwin/homebrew.nix` |
-| Bruno, Sequel Ace, BBEdit, BetterDisplay, AeroSpace, Karabiner, Ice, AltTab, Stats, NoTunes, LinearMouse | **macOS-only** (no Linux equivalent shipped) | Homebrew cask | `nix/modules/darwin/homebrew.nix` |
+| Brave | **Nix** (stable) | Homebrew cask `brave-browser@beta` | `gui.nix` / `darwin/homebrew.nix` |
+| IntelliJ IDEA CE | **excluded** (not shipped) | **excluded** (not shipped) | intentionally dropped for now; VS Code is the IDE |
+| Bruno | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
+| Sequel Ace, BBEdit, BetterDisplay, AeroSpace, Karabiner, Ice, AltTab, Stats, NoTunes, LinearMouse | **macOS-only** (no Linux equivalent shipped) | Homebrew cask | `nix/modules/darwin/homebrew.nix` |
 | repomix, files-to-prompt, code2prompt | npm / uv / cargo (per-project, optional) | same | not in Nix; see "AI context packers" below |
 | dive, fx, navi, glow, gum | `mise run tools:optional:install` (aqua) | same | `mise.toml` optional task |
 | direnv | **DROPPED** (mise per-project env replaces it) | DROPPED | — |

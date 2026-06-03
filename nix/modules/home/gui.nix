@@ -16,14 +16,18 @@
     with pkgs;
     lib.optionals stdenv.isLinux [
       firefox # primary browser (macOS: Homebrew cask)
+      brave # privacy browser; nixpkgs ships STABLE only (no brave-beta attr).
+      #       macOS gets the beta channel via the brave-browser@beta cask in
+      #       nix/modules/darwin/homebrew.nix.
       ghostty # GPU terminal (macOS: Homebrew cask)
       vscode # VS Code (unfree; allowUnfree set in nix/lib/mkhome.nix)
       flameshot # screenshots with annotation
       bruno # open-source API client (Linux + macOS; macOS also via cask)
+      # IDE: VS Code is the single IDE shipped on all systems (see vscode above).
+      # IntelliJ IDEA intentionally excluded for now (was jetbrains.idea on Linux
+      # / intellij-idea-ce cask on macOS). Re-add in a future slice if needed.
       # raycast / aerospace are macOS-only (meta.platforms = darwin); they are
       # declared in nix/modules/darwin/homebrew.nix and must NOT be added here.
-      # jetbrains.idea-community  # attr name varies by channel; verify with
-      #                           # `nix search nixpkgs jetbrains` then enable.
       # Nerd fonts: add via fonts.fontconfig + a nerd-fonts.* package in a
       # separate slice if you want JetBrains Mono / Meslo managed by Nix.
     ];

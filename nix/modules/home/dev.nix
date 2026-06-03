@@ -36,6 +36,11 @@
     p7zip
     php              # PHP 8.4 (with extensions). Enables the AI workflow
                      # validators in scripts/doctor.sh (previously optional).
+    php84Packages.composer # Composer 2.x for PHP 8.4; on PATH on every host.
+                     # macOS keeps a Herd+1Password `composer` shell function
+                     # (fish/zsh) that shadows this binary; on Linux this IS
+                     # the active composer. Required by ai-verify.sh / ai-task.sh
+                     # and listed in docs/ai/repo-required-tools.md.
     pnpm             # fast Node.js package manager (was: brew/corepack)
     repomix          # package repository context for LLM prompts (AI)
     scc

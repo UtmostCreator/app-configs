@@ -377,7 +377,7 @@ Template (populate from your actual list):
 | PHP runtime | Runtime | mise | `home/dot_config/mise/config.toml` | Not Nix |
 | Node runtime | Runtime | mise | mise config | Not Nix |
 | `pnpm` | Node mgr | mise / corepack | mise config | Not Nix |
-| `composer` | Runtime tool | mise | mise config | |
+| `composer` | Runtime tool | **Nix** (`php84Packages.composer`) | `nix/modules/home/dev.nix` | On PATH on every host via `home-manager switch`; macOS Herd+1Password shell function shadows it. (Originally planned mise-owned, but mise never installed it.) |
 | Ghostty (terminal) | GUI | cask (macOS), Nix or manual (Linux), DROPPED (WSL) | `modules/darwin/homebrew.nix` / `modules/home/gui.nix` | |
 | Karabiner-Elements | GUI | cask | `modules/darwin/homebrew.nix` | macOS-only |
 | VS Code | GUI | cask (macOS), Nix or manual (Linux), Windows-side (WSL — not managed) | varies | |

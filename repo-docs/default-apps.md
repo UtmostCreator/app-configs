@@ -35,6 +35,31 @@ xdg-settings get default-web-browser        # GNOME web-browser default
 > source types to it is done explicitly in `defaultApplications`. This works for
 > "Open" defaults; some file managers may still show a "not associated" hint.
 
+## Brave + local dev servers
+
+Since Brave is the default browser/web handler here, a heads-up for local
+development: Brave Shields and per-site content settings can block or break a
+local server (e.g. `http://localhost:3000`, `http://app.test`,
+`http://*.localhost`), typically showing up as blocked scripts, mixed-content
+errors, or refused requests.
+
+If a local dev URL misbehaves, allow it explicitly:
+
+1. Open the per-site permissions page:
+
+   ```text
+   brave://settings/content/siteDetails
+   ```
+
+   (or click the Shields / lock icon in the address bar while on the dev URL).
+
+2. For the dev origin, set the needed permissions (e.g. allow JavaScript,
+   insecure content, cookies) and/or lower Brave Shields to **Down** for that
+   site only.
+
+This is a per-user runtime setting, not something this repo provisions — it is
+documented here so the default-browser choice does not surprise local dev work.
+
 ## macOS — TODO (not implemented)
 
 nix-darwin / home-manager have **no clean declarative default-app option** on

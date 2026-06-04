@@ -19,6 +19,10 @@
       brave # privacy browser; nixpkgs ships STABLE only (no brave-beta attr).
       #       macOS gets the beta channel via the brave-browser@beta cask in
       #       nix/modules/darwin/homebrew.nix.
+      #       Local dev note: Brave Shields can block local servers. If a
+      #       localhost / *.test / *.localhost dev URL misbehaves, allow it via
+      #       brave://settings/content/siteDetails (per-site permissions).
+      #       See repo-docs/default-apps.md ("Brave + local dev servers").
       ghostty # GPU terminal (macOS: Homebrew cask)
       vscode # VS Code (unfree; allowUnfree set in nix/lib/mkhome.nix)
       flameshot # screenshots with annotation

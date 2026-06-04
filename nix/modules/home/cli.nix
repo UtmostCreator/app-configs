@@ -18,6 +18,7 @@
                      # to satisfy the validate-config.sh invariant.
     fzf
     jq
+    lsof             # list open files/sockets (debugging, port owners)
     yq-go            # yq formula -> yq-go in nixpkgs
     ripgrep
     ripgrep-all      # binary: rga

@@ -35,11 +35,13 @@ Two reference designs:
 
 Work required:
 1. Add `sops-nix` flake input.
-2. Add `.sops.yaml` with age recipients (admin recovery key + per-host keys).
-3. Add a NixOS module under `nix/modules/nixos/` (system layer, wired via
+2. Add the helper CLIs `sops` + `ssh-to-age` to `dev.nix` (needed to create/edit
+   encrypted files and derive age recipients from SSH host keys).
+3. Add `.sops.yaml` with age recipients (admin recovery key + per-host keys).
+4. Add a NixOS module under `nix/modules/nixos/` (system layer, wired via
    `sys-setup` into `/etc/nixos`) — NOT Home Manager, since secret
    materialization to `/run/secrets` is a system concern.
-4. Document the age-key bootstrap (`ssh-to-age`) in a repo-doc.
+5. Document the age-key bootstrap (`ssh-to-age`) in a repo-doc.
 
 Risk: medium. Additive; nothing breaks if no secrets file exists (guard with
 `builtins.pathExists`, as both references do).
@@ -140,10 +142,26 @@ nix-config-pavlo's `lib/mksystem.nix` is the closest match (same `vars` +
 
 Today this repo has NO `nixosConfigurations` and the live system is a
 hand-edited `/etc/nixos`. Adopting `mkSystem` would let this repo own the NixOS
-system layer reproducibly (timezone, substituters, gnupg, sops all become
-first-class instead of `sys-setup` patches). Biggest architectural step; do as a
-dedicated slice. Optional companions seen in pavlo: `disko` (declarative
-partitioning) and `lanzaboote` (secure boot) — only if wanted.
+system layer reproducibly (timezone, substituters, gnupg, sops, browser-policies
+all become first-class instead of `sys-setup` patches). Biggest architectural
+step; do as a dedicated slice. Optional companions seen in pavlo: `disko`
+(declarative partitioning) and `lanzaboote` (secure boot, item #8) — only if
+wanted.
+
+**Adopt pavlo's `vars.hosts` data model alongside it.** nix-config-pavlo's
+`vars/default.nix` centralizes per-host metadata:
+
+```nix
+hosts = {
+  phoenix  = { system = "x86_64-linux"; role = "workstation"; signingPubkey = "ssh-ed25519 …"; };
+  openclaw = { system = "x86_64-linux"; role = "server"; };
+};
+```
+
+`mkSystem name {}` then reads `vars.hosts.${name}` for system/role/keys. This is
+the clean data model that powers one-line host definitions and per-host SSH
+signing (item #7) — copy it when doing this slice. Your repo already has the
+sibling `vars.profiles` for Home Manager, so this is a natural extension.
 
 ---
 
@@ -204,6 +222,28 @@ http://localhost:8384). To run it continuously, enable it as a service:
 Decide system-service vs user-service, then wire device IDs/folders (device IDs
 are not secret, but consider sops for any tokens).
 
+## 11. Extra CLI / utility tools (pavlo) — NEEDS-DECISION (cherry-pick)
+
+**Benefit 40 · Difficulty 10.**
+
+Useful tools from nix-config-pavlo's `packages.nix` worth cherry-picking into
+`cli.nix`/`dev.nix` (decide per tool; all low-effort package adds):
+
+| Tool | What it is | Note |
+| --- | --- | --- |
+| `nix-tree` | interactive nix store dependency browser | complements `nvd`/`nom` |
+| `nix-du` | what's taking space in the nix store (dot graph) | store cleanup |
+| `nix-top` | live view of running nix builds | build monitoring |
+| `bottom` (`btm`) | system monitor (TUI) | overlaps your `btop` — pick one |
+| `nmap` | network scanner | ad-hoc network debugging |
+| `normcap` | OCR screen-grab (select text from images) | nice QoL (GUI) |
+| `bitwarden-cli` (`bw`) | Bitwarden CLI | only if you use Bitwarden |
+| `typst` | modern LaTeX-alternative typesetting | docs/PDF authoring |
+
+Recommendation: `nix-tree`/`nix-du`/`nix-top` are the highest-fit (match your
+Nix-maintenance toolchain). `bottom` is redundant with `btop`. The rest are
+personal-taste.
+
 ---
 
 ## Already shipped (near-zero, done)
@@ -219,6 +259,13 @@ are not secret, but consider sops for any tokens).
 - **Git aliases**: `gd` (diff), `gcfp`/`fixprev` (commit --fixup HEAD), `grs`
   (reset --soft HEAD~) in `home/dot_gitconfig.tmpl`.
 - **syncthing** (package) under the personal profile (see item 10 to run it).
+- **navi**: interactive cheatsheet launcher in `cli.nix` (complements tldr).
+- **fish niceties**: vi keybindings + `GPG_TTY` + `fishPlugins.autopair` in
+  `config.fish.tmpl`/`cli.nix`. (fzf-fish deliberately skipped — would conflict
+  with the existing `fzf --fish` + Atuin Ctrl-T/Ctrl-R bindings.)
+- **browser-policies**: `nix/modules/nixos/browser-policies.nix` — opt-in
+  (`myConfig.browserPolicies.enable`) managed Brave/Chromium privacy + Brave
+  Search policies. BrowserSignin omitted (left to user / Brave Sync).
 
 ## Explicitly rejected (do not add)
 

@@ -12,7 +12,55 @@ This repo ships the supporting toolchain and a one-command helper:
 - Helper: `scripts/vicinae-extension.sh`, exposed as the `vicinae-ext` command
   (chezmoi `~/.local/bin/vicinae-ext`).
 
-There are two ways to install an extension.
+There are three ways to install an extension.
+
+## Path 0 — Declarative (Home Manager, shipped with the repo)
+
+The cleanest, reproducible path for **community Vicinae extensions**
+(`github:vicinaehq/extensions`): they are installed at build time via the
+official Vicinae Home-Manager module, so they ship with `home-manager switch`
+— no per-machine clicking.
+
+This repo wires it in `nix/modules/home/vicinae.nix` (`services.vicinae`):
+
+```nix
+services.vicinae.extensions =
+  with inputs.vicinae-extensions.packages.${pkgs.stdenv.hostPlatform.system};
+  [ vscode-recents ];
+```
+
+Already shipped this way:
+
+- **`vscode-recents`** (author *ShyAssassin*, "Visual Studio Code Recent
+  Projects") — intended for `Alt+E` in `nix/modules/home/gnome-keybindings.nix`.
+
+Extension attr names are the folder names under
+`github:vicinaehq/extensions/extensions/<name>`. Note: the Vicinae binary here
+comes from nixpkgs (`pkgs.vicinae`, Hydra-cached) — only the *extensions* and
+the *module* come from the Vicinae flakes, to avoid a source compile. See the
+notes in `nix/modules/home/vicinae.nix`.
+
+> **KNOWN ISSUE / FOLLOW-UP (vscode-recents entrypoint not registering).**
+> The `vscode-recents` extension is installed on disk
+> (`~/.local/share/vicinae/extensions/vicinae-extension-vscode-recents-0`,
+> symlinked to the nix store) but Vicinae **v0.21.3 (nixpkgs build) does not
+> register it as a launchable entrypoint/deeplink**. Every deeplink form tested
+> fails with `… does not refer to a valid entrypoint` (e.g.
+> `vicinae://launch/vscode-recents/open-recents`), and the
+> `vicinae://extensions/ShyAssassin/vscode-recents` form returns exit 0 but does
+> nothing ("not found in store"). Likely cause: version skew between the nixpkgs
+> server (0.21.3, `@vicinae/api` consumer) and the newer `vicinae-extensions`
+> flake build (`@vicinae/api ^0.20.4`), or the entrypoint index only populates
+> for store-installed extensions. **Workaround in place:** `Alt+E` currently
+> raise-or-launches VS Code itself (`vicinae app launch code`). **To resolve:**
+> either switch `services.vicinae.package` to the upstream `vicinae` flake build
+> (matches the extension API version, but triggers a source compile — see
+> `nix/modules/home/vicinae.nix`), or wait for a newer `pkgs.vicinae`, then
+> rebind `Alt+E` to the verified `vicinae://launch/<provider>/open-recents`
+> deeplink.
+
+Use Path A/B below for Raycast extensions not in the Vicinae community repo, or
+for development/debugging from source.
 
 ## Path A — Vicinae Store (easiest, no build)
 

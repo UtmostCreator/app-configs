@@ -1,5 +1,21 @@
 {
   "nodes": {
+    "flake-compat": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1767039857,
+        "narHash": "sha256-vNpUSpF5Nuw8xvDLj2KCwwksIbjua2LZCqhV1LNRDns=",
+        "owner": "NixOS",
+        "repo": "flake-compat",
+        "rev": "5edf11c44bc78a0d334f6334cdaf7d60d732daab",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "flake-compat",
+        "type": "github"
+      }
+    },
     "home-manager": {
       "inputs": {
         "nixpkgs": [
@@ -56,12 +72,60 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1772542754,
+        "narHash": "sha256-WGV2hy+VIeQsYXpsLjdr4GvHv5eECMISX1zKLTedhdg=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "8c809a146a140c5c8806f13399592dbcb1bb5dc4",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "home-manager": "home-manager",
         "nix-darwin": "nix-darwin",
         "nixpkgs": "nixpkgs",
-        "treefmt-nix": "treefmt-nix"
+        "treefmt-nix": "treefmt-nix",
+        "vicinae": "vicinae",
+        "vicinae-extensions": "vicinae-extensions"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "systems_2": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
       }
     },
     "treefmt-nix": {
@@ -81,6 +145,73 @@
       "original": {
         "owner": "numtide",
         "repo": "treefmt-nix",
+        "type": "github"
+      }
+    },
+    "vicinae": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2",
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1780765029,
+        "narHash": "sha256-26MaVeSWNeRXaeFDgVRaU2o0Ei38LtnbNqz07hlzbdY=",
+        "owner": "vicinaehq",
+        "repo": "vicinae",
+        "rev": "00088615c60281db48c6cd1b61374704eb51a315",
+        "type": "github"
+      },
+      "original": {
+        "owner": "vicinaehq",
+        "repo": "vicinae",
+        "type": "github"
+      }
+    },
+    "vicinae-extensions": {
+      "inputs": {
+        "flake-compat": "flake-compat",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
+        "systems": "systems_2",
+        "vicinae": "vicinae_2"
+      },
+      "locked": {
+        "lastModified": 1780352632,
+        "narHash": "sha256-p0nK1I0H4Zb/ExHnEC1wgpJJhC0RpgxWUsuwQetNM+Q=",
+        "owner": "vicinaehq",
+        "repo": "extensions",
+        "rev": "2c12a0b15f33fa9b6e2a29f91f7b1da3e7a80c3b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "vicinaehq",
+        "repo": "extensions",
+        "type": "github"
+      }
+    },
+    "vicinae_2": {
+      "inputs": {
+        "nixpkgs": [
+          "vicinae-extensions",
+          "nixpkgs"
+        ],
+        "systems": [
+          "vicinae-extensions",
+          "systems"
+        ]
+      },
+      "locked": {
+        "lastModified": 1780277152,
+        "narHash": "sha256-P3YrDLnggsMsSoiX/ox3CS6GkZtY37XQVon/QR6Agw8=",
+        "owner": "vicinaehq",
+        "repo": "vicinae",
+        "rev": "67290dff5b2191a6cb6dd78b31d623eeef3acdec",
+        "type": "github"
+      },
+      "original": {
+        "owner": "vicinaehq",
+        "repo": "vicinae",
         "type": "github"
       }
     }

@@ -246,6 +246,80 @@ personal-taste.
 
 ---
 
+## 12. Hyprland (Wayland tiling WM) vs GNOME+Vicinae — NEEDS-DECISION (deferred)
+
+**Benefit 70 · Difficulty 80.**
+
+Evaluated GNOME (Wayland) + Vicinae vs Hyprland + Vicinae specifically for a
+keyboard-driven window-resize + launcher workflow, optimised for long-term
+stability and maintainability. **Decision: stay on GNOME + Vicinae for now**
+(window resize is implemented via the Vicinae GNOME extension's D-Bus API +
+GNOME custom keybindings — see `nix/modules/home/gui.nix` resize script and
+`nix/modules/home/gnome-keybindings.nix`). Hyprland is deferred, not rejected.
+
+### Comparison (0–100; higher = better)
+
+| Axis | GNOME+Vicinae | Hyprland+Vicinae | Evidence |
+| --- | ---: | ---: | --- |
+| Resize capability / precision | 85 | 95 | GNOME proven live (75% w / full h / centered via `MoveResize`); Hyprland native `resizeactive`, no script |
+| Resize stability long-term | 55 | 90 | GNOME depends on 3rd-party ext pinned to shell-version 46–50; Hyprland uses its own stable dispatcher API |
+| Maintainability in THIS repo | 80 | 30 | GNOME already declarative in Home-Manager; Hyprland needs NixOS-level session config this repo doesn't own |
+| Vicinae compatibility | 85 | 75 | GNOME working (needs the ext); Hyprland drops the ext, uses native wlr-layer-shell path (unverified live) |
+| Migration effort / rollback | 90 | 40 | GNOME = status quo, trivially reversible; Hyprland = compositor swap, large blast radius |
+| Ecosystem maturity | 80 | 65 | GNOME very mature but extension-API churn; Hyprland resize core/stable but config format moves between versions |
+
+### Biggest long-term risk per approach
+
+- **GNOME:** `gnomeExtensions.vicinae` (`vicinae@dagimg-dot`) is pinned to GNOME
+  shell-version **46–50** (its `metadata.json`). On a GNOME **51+** upgrade it
+  stops loading until upstream republishes and nixpkgs catches up — taking
+  Vicinae window/clipboard integration **and** the resize keybinding down
+  together. Mitigation: delay GNOME major bumps until the extension's
+  `shell-version` includes the target release (see guardrail note in
+  `nix/modules/home/gnome-extensions.nix`); keep the resize script tolerant of
+  the D-Bus service being absent (it is).
+- **Hyprland:** lives at the **NixOS system layer this repo does not manage**
+  (only `homeConfigurations` in `flake.nix`; no `nixosConfigurations`). Adopting
+  it splits desktop config across two governance domains and means owning the
+  whole replacement desktop stack.
+
+### What you'd have to build/own to move to Hyprland (true cost)
+
+Depends on **item #6 (mkSystem + nixosConfigurations)** landing first.
+System layer: `programs.hyprland` + Wayland session, `xdg-desktop-portal-hyprland`,
+a polkit agent, login/greeter (greetd/tuigreet). Home-Manager layer (replacing
+what GNOME gives for free): waybar (bar), mako/dunst (notifications), hyprlock
+(lock), hypridle (idle), hyprpaper/swww (wallpaper), grim/slurp (screenshots;
+verify Flameshot on Hyprland), nm-applet/blueman + tray, `monitor=` output rules.
+Kept/simplified: launcher stays Vicinae; resize becomes native (delete the
+script + dconf keybinding + drop `gnomeExtensions.vicinae`/`gnome-extensions.nix`).
+
+### When to switch to Hyprland (move triggers)
+
+Move when **any** of these becomes true:
+
+- You adopt **item #6** and start owning the NixOS system layer anyway (Hyprland
+  then fits the new governance model instead of fighting it).
+- The `vicinae@dagimg-dot` extension becomes **chronically unmaintained** against
+  new GNOME releases (resize/clipboard break for an extended period after a bump).
+- Tiling / keyboard-driven window management becomes a **primary daily workflow**,
+  not just occasional resize — i.e. you want automatic tiling, per-workspace
+  layouts, vim-style focus movement (`Super+H/J/K/L`), and instant resize
+  (`Super+Shift+H/J/K/L`) as muscle memory.
+
+### Functionality Hyprland would add (why you'd want it)
+
+- Native, version-stable window resize/move with exact geometry (no extension,
+  no D-Bus shim, no script).
+- Real dynamic/manual tiling, per-workspace layouts, window rules.
+- Fully keyboard-driven window control (focus + move + resize + workspace).
+- Animations, blur, fine-grained per-output config — all declarative in one
+  `hyprland.conf`.
+- Lower long-term breakage on upgrades for the *window-management* piece
+  specifically (the part that's fragile under GNOME today).
+
+---
+
 ## Already shipped (near-zero, done)
 
 - **Binary caches**: `nix/modules/nixos/substituters.nix` (nix-community +
@@ -271,5 +345,6 @@ personal-taste.
 
 - `gen-commit` — low trust (tiny project). Use built-in/other tooling.
 - `ncdu` — replaced by `dust`.
-- All Hyprland/waybar/walker/stylix desktop stack, gaming, spicetify, tiled,
-  libresprite, p10k — out of scope (GNOME + fish here).
+- waybar/walker/stylix desktop stack, gaming, spicetify, tiled, libresprite,
+  p10k — out of scope (GNOME + fish here). (Hyprland itself was moved out of
+  this list and is now evaluated/deferred under item #12, not rejected.)

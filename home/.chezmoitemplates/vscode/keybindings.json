@@ -1,4 +1,6 @@
-// ~/Library/Application Support/Code/User/keybindings.json
+// VS Code keybindings (shared source for all platforms).
+// Rendered to ~/.config/Code/User/keybindings.json (Linux) and
+// ~/Library/Application Support/Code/User/keybindings.json (macOS).
 [
   /* =========================================================
      IMPORTANT (Coordination with your corrected Karabiner)

@@ -27,6 +27,9 @@
       vscode # VS Code (unfree; allowUnfree set in nix/lib/mkhome.nix)
       flameshot # screenshots with annotation
       bruno # open-source API client (Linux + macOS; macOS also via cask)
+      vicinae # native, fast, extensible desktop launcher (Linux-only;
+      #         meta.platforms = *-linux). The Linux counterpart to the
+      #         macOS-only raycast launcher below.
       # IDE: VS Code is the single IDE shipped on all systems (see vscode above).
       # IntelliJ IDEA intentionally excluded for now (was jetbrains.idea on Linux
       # / intellij-idea-ce cask on macOS). Re-add in a future slice if needed.

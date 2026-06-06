@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # system-setup.sh — automate the NixOS SYSTEM layer that standalone Home
-# Manager cannot set: fish as login shell, your user in trusted-users, and a
-# declarative non-destructive GC timer. Then runs `nixos-rebuild switch`.
+# Manager cannot set: fish as login shell, your user in trusted-users, a
+# declarative non-destructive GC timer, and the system time zone. Then runs
+# `nixos-rebuild switch`.
 #
 # Requires sudo (it edits /etc/nixos and rebuilds the system). It is:
 #   - idempotent: skips settings already present; safe to re-run
@@ -42,13 +43,18 @@ log "Target user: $USER_NAME"
 log "System config: $SYS"
 log "Rebuild cmd: nixos-rebuild switch ${FLAKE_ARG:-(non-flake)}"
 
+SYSTEM_TIMEZONE="${SYSTEM_TIMEZONE:-Europe/London}"
+cur_timezone="$(timedatectl 2>/dev/null | awk -F': ' '/Time zone/ { print $2 }' | awk '{ print $1 }')"
+[[ -n "$cur_timezone" ]] || cur_timezone="unknown"
+
 # Decide which settings are missing.
-need_fish=1; need_trusted=1; need_gc=1
+need_fish=1; need_trusted=1; need_gc=1; need_timezone=1
 grep -q "programs.fish.enable" "$SYS" && need_fish=0
 grep -q "trusted-users" "$SYS" && need_trusted=0
 grep -q "nix.gc" "$SYS" && need_gc=0
+[[ "$cur_timezone" == "$SYSTEM_TIMEZONE" ]] && need_timezone=0
 
-if (( need_fish == 0 && need_trusted == 0 && need_gc == 0 )); then
+if (( need_fish == 0 && need_trusted == 0 && need_gc == 0 && need_timezone == 0 )); then
   log "All recommended system settings already present."
   if [[ "$MODE" == "apply" ]]; then
     log "Running nixos-rebuild to ensure system is current…"
@@ -75,6 +81,13 @@ SNIPPET="$(mktemp)"
   (( need_gc == 1 ))      && {
     echo "  nix.gc = { automatic = true; dates = \"weekly\"; options = \"--delete-older-than 14d\"; };"
     echo "  nix.optimise.automatic = true;"
+  }
+  (( need_timezone == 1 )) && {
+    echo "  # Europe/London is the shipped default. mkForce makes this win over"
+    echo "  # the stock installer line in /etc/nixos/configuration.nix (often"
+    echo "  # America/New_York) without editing that file by hand. Override by"
+    echo "  # re-running with SYSTEM_TIMEZONE=Area/City if this host needs a different zone."
+    echo "  time.timeZone = lib.mkForce \"${SYSTEM_TIMEZONE}\";"
   }
   echo "}"
 } > "$SNIPPET"

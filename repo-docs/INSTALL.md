@@ -25,7 +25,8 @@ accurate no matter whether settings live in `configuration.nix` or in the
 - **`ALL SET`** (exit 0) — **you are fully set up; nothing else to run.**
 - **`User environment READY, system rebuild pending`** (exit 2) — apps +
   dotfiles done; the NixOS system layer (fish login shell, trusted-users, GC
-  timer) is not active yet. Run **`sudo sys-setup --apply`** (below).
+  timer, Europe/London time zone) is not active yet. Run
+  **`sudo sys-setup --apply`** (below).
 - **`NOT READY`** (exit 1) — a required tool/file is missing; run `sys-install`.
 
 You are **done** exactly when `sys-readiness` prints `ALL SET` and exits 0.
@@ -33,7 +34,7 @@ You are **done** exactly when `sys-readiness` prints `ALL SET` and exits 0.
 ### Do I need `nixos-rebuild switch`?
 
 Yes, **once**, only for the NixOS **system** layer (fish as login shell,
-trusted-users, declarative GC) — Home Manager cannot set these. Everything else
+trusted-users, declarative GC, Europe/London time zone) — Home Manager cannot set these. Everything else
 (every app, CLI tool, dotfile) is already applied by `sys-install`/`sys-update`
 without sudo. Automate the system step:
 
@@ -43,6 +44,9 @@ sudo sys-setup --apply      # or: sudo bash scripts/system-setup.sh --apply
 
 This idempotently writes `/etc/nixos/app-configs-extra.nix` (backing up your
 config first), imports it, and runs `nixos-rebuild switch --flake /etc/nixos#nixos`.
+It writes `time.timeZone = lib.mkForce "Europe/London";` so the shipped default
+wins over the stock installer line in `/etc/nixos/configuration.nix` without
+hand-editing that file.
 Preview first without sudo: `sys-setup` (report only). After it finishes, open a
 **new terminal** (you'll land in fish); reboot only if a kernel/driver changed.
 Details: `repo-docs/nixos-rebuild.md`.
@@ -134,7 +138,7 @@ finishes in **1–3 minutes**.
 
 Yes for the **user environment** — `scripts/install.sh` needs no prompts and no
 `sudo`. The **only** manual step that needs you is the optional **system**
-rebuild (fish login shell, GC timer, trusted-users), because it requires `sudo`
+rebuild (fish login shell, GC timer, trusted-users, Europe/London time zone), because it requires `sudo`
 and edits `/etc/nixos`. The installer **detects** whether that is needed and
 prints the exact `sudo nixos-rebuild switch --flake /etc/nixos#nixos` command at
 the end. See `repo-docs/nixos-rebuild.md`.

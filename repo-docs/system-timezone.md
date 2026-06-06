@@ -11,26 +11,64 @@ Home Manager or nix-darwin applies. The live system config is in `/etc/nixos`,
 so the module only takes effect once `/etc/nixos` imports it and you run a
 system rebuild.
 
-## Apply to the live host
+## Apply to the live host (automated)
 
 `/etc/nixos` is root-owned, so these steps need `sudo` (run them yourself; the
 AI tooling cannot supply a sudo password non-interactively).
 
-1. Import the module from `/etc/nixos`. Add this to `/etc/nixos/app-configs-extra.nix`
-   (the file already imported by `/etc/nixos/flake.nix`):
+Run the existing NixOS system-layer helper:
+
+```bash
+sudo sys-setup --apply
+```
+
+or from the repository checkout:
+
+```bash
+sudo bash scripts/system-setup.sh --apply
+```
+
+That helper writes `/etc/nixos/app-configs-extra.nix`, wires it into the system
+flake when needed, sets:
+
+```nix
+time.timeZone = lib.mkForce "Europe/London";
+```
+
+and runs:
+
+```bash
+sudo nixos-rebuild switch --flake /etc/nixos#nixos
+```
+
+`lib.mkForce` is intentional: the stock installer line in
+`/etc/nixos/configuration.nix` may still say `America/New_York`, but the shipped
+app-configs system module wins so the live system becomes Europe/London without
+hand-editing that file.
+
+Override for a one-off host:
+
+```bash
+SYSTEM_TIMEZONE=Europe/London sudo bash scripts/system-setup.sh --apply
+```
+
+## Manual module wiring (advanced)
+
+Import the module from `/etc/nixos`. Add this to `/etc/nixos/app-configs-extra.nix`
+(the file already imported by `/etc/nixos/flake.nix`):
 
    ```nix
    imports = [ /home/utmostcreator/Projects/app-configs/nix/modules/nixos ];
    ```
 
-   The module defaults `myConfig.timezone.name = "Europe/London"`, so no extra
-   option is needed. To override per host:
+The module defaults `myConfig.timezone.name = "Europe/London"`, so no extra
+option is needed. To override per host:
 
    ```nix
    myConfig.timezone.name = "Europe/London";
    ```
 
-2. Rebuild:
+Rebuild:
 
    ```bash
    sudo nixos-rebuild switch --flake /etc/nixos#nixos

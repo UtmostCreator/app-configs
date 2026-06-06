@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 {
   # GUI packages for Linux desktops. macOS gets GUI apps via nix-darwin
   # Homebrew casks (see nix/modules/darwin/homebrew.nix); this module is
@@ -37,6 +37,14 @@
       # declared in nix/modules/darwin/homebrew.nix and must NOT be added here.
       # Nerd fonts: add via fonts.fontconfig + a nerd-fonts.* package in a
       # separate slice if you want JetBrains Mono / Meslo managed by Nix.
+    ]
+    # Personal-only GUI apps. Installed ONLY when the host sets
+    # `myConfig.profile = "personal";` (see nix/modules/home/profile.nix) AND on
+    # Linux. Vesktop = Discord with Vencord built-in (the supported way to ship
+    # Vencord; the bare `vencord` attr is just a client-mod bundle, not an app).
+    ++ lib.optionals (stdenv.isLinux && config.myConfig.profile == "personal") [
+      vesktop # Discord + Vencord (https://github.com/Vendicated/Vencord)
+      telegram-desktop # Telegram
     ];
 
   # Start Vicinae's background server at login so `vicinae toggle` (or a GNOME

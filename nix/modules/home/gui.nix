@@ -45,6 +45,10 @@
     ++ lib.optionals (stdenv.isLinux && config.myConfig.profile == "personal") [
       vesktop # Discord + Vencord (https://github.com/Vendicated/Vencord)
       telegram-desktop # Telegram
+      syncthing # continuous file sync (https://syncthing.net). Ships the CLI +
+      #           Web UI (http://localhost:8384). Running it as a background
+      #           service is a system/user-service concern; see
+      #           repo-docs/future-upgrade-plan.md to enable services.syncthing.
     ];
 
   # Start Vicinae's background server at login so `vicinae toggle` (or a GNOME

@@ -14,7 +14,7 @@
     finder = {
       AppleShowAllExtensions = true;
       AppleShowAllFiles = true;
-      FXPreferredViewStyle = "Nlsv";  # column view list
+      FXPreferredViewStyle = "Nlsv"; # column view list
       ShowPathbar = true;
       ShowStatusBar = true;
     };

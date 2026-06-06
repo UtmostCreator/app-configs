@@ -11,25 +11,25 @@
 
     onActivation = {
       autoUpdate = true;
-      cleanup = "zap";   # removes any cask not declared here
+      cleanup = "zap"; # removes any cask not declared here
     };
 
     casks = [
       # Primary macOS GUI apps already in active use:
-      "brave-browser@beta"  # Brave Beta channel (Linux gets stable pkgs.brave in gui.nix)
+      "brave-browser@beta" # Brave Beta channel (Linux gets stable pkgs.brave in gui.nix)
       "ghostty"
       "bbedit"
       "bruno"
-      "visual-studio-code"  # VS Code — single IDE on all systems (Linux: vscode in gui.nix)
+      "visual-studio-code" # VS Code — single IDE on all systems (Linux: vscode in gui.nix)
       # IntelliJ IDEA intentionally excluded for now. Re-add "intellij-idea-ce"
       # in a future slice if needed.
       "sequel-ace"
       "betterdisplay"
       "aerospace"
       "karabiner-elements"
-      "raycast"          # macOS-only launcher (no Linux build)
-      "flameshot"        # screenshots (Linux: nix gui.nix)
-      "firefox"          # browser parity with Linux gui.nix (both platforms)
+      "raycast" # macOS-only launcher (no Linux build)
+      "flameshot" # screenshots (Linux: nix gui.nix)
+      "firefox" # browser parity with Linux gui.nix (both platforms)
       # Optional — uncomment once verified with `brew search --casks <name>`:
       # "medis"
       # "linearmouse"

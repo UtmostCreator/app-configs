@@ -147,13 +147,62 @@ partitioning) and `lanzaboote` (secure boot) — only if wanted.
 
 ---
 
-## 7. SSH-based git commit signing — NEEDS-DECISION
+## 7. SSH-based git commit signing — PLANNED
 
 **Benefit 40 · Difficulty 20.**
 
 nix-config-pavlo `modules/home/git.nix` signs commits with an SSH key
 (`gpg.format = "ssh"`, `signByDefault = true`, `allowed_signers` file). Cleaner
-than GPG signing. Worth considering alongside item 2.
+than GPG signing. Worth considering alongside item 2. Reference snippet:
+
+```nix
+programs.git.settings.gpg.ssh.allowedSignersFile =
+  "${config.xdg.configHome}/git/allowed_signers";
+programs.git.signing = { key = "~/.ssh/id_ed25519_<host>.pub"; signByDefault = true; format = "ssh"; };
+xdg.configFile."git/allowed_signers".text = "<email> <ssh-pubkey>\n";
+```
+
+Note: this repo manages gitconfig via chezmoi, so the signing config would go in
+`home/dot_gitconfig.tmpl` (+ an `allowed_signers` file), not a `programs.git`
+HM block (which would trip the package-only invariant).
+
+## 8. lanzaboote (UEFI Secure Boot) — PLANNED
+
+**Benefit 40 · Difficulty 65.**
+
+nix-config-pavlo uses `lanzaboote` (flake input + `lanzaboote.nixosModules.lanzaboote`)
+to sign the boot chain for UEFI Secure Boot. System layer; pairs with mkSystem
+(#6) since it only makes sense once this repo owns `/etc/nixos`. Requires
+enrolling keys (`sbctl`) and disabling the stock systemd-boot. Niche but high
+security value on hardware that supports it.
+
+## 9. llm-agents.nix (AI CLI bundle) — PLANNED
+
+**Benefit 60 · Difficulty 30.**
+
+nix-config-pavlo pulls a whole AI-CLI bundle from one flake input
+(`github:numtide/llm-agents.nix`): `claude-code`, `coderabbit-cli`, plus
+nixpkgs `gemini-cli`, `codex`, `ollama`. Strongly fits this repo's AI-workflow
+focus and complements the already-shipped `opencode`. Easy-ish: add the flake
+input and select packages into `dev.nix`. Decide which agents you actually want
+(avoid shipping all of them by default).
+
+## 10. syncthing as a running service — PLANNED (follow-up to shipped package)
+
+**Benefit 40 · Difficulty 30.**
+
+The `syncthing` *package* now ships under the personal profile (CLI + Web UI at
+http://localhost:8384). To run it continuously, enable it as a service:
+
+- NixOS system: `services.syncthing.enable = true;` (+ `user`, `dataDir`,
+  declarative `settings.folders`/`devices`). System layer → `nix/modules/nixos/`.
+- Or Home Manager user service: `services.syncthing.enable = true;` (would need a
+  HM services module; note the repo's package-only invariant only blocks
+  `programs.<x>.enable`, so a `services.syncthing` block is allowed if a HM
+  module is added).
+
+Decide system-service vs user-service, then wire device IDs/folders (device IDs
+are not secret, but consider sops for any tokens).
 
 ---
 
@@ -164,6 +213,12 @@ than GPG signing. Worth considering alongside item 2.
 - **Build diffs**: `nvd` + `nix-output-monitor` (`nom`) in `dev.nix`.
 - **CLI tools**: `onefetch`, `ffmpeg`, `yt-dlp`, `imagemagick`, `viu`, `entr`,
   `dust` (du replacement, chosen over ncdu) in `cli.nix`/`dev.nix`.
+- **treefmt-nix + flake checks**: `nix/treefmt.nix` + flake `formatter`/`checks`
+  (nixfmt). `nix fmt` formats the tree; `nix flake check` fails on unformatted
+  Nix. Tree formatted once on adoption.
+- **Git aliases**: `gd` (diff), `gcfp`/`fixprev` (commit --fixup HEAD), `grs`
+  (reset --soft HEAD~) in `home/dot_gitconfig.tmpl`.
+- **syncthing** (package) under the personal profile (see item 10 to run it).
 
 ## Explicitly rejected (do not add)
 

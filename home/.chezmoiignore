@@ -11,6 +11,17 @@ personal.yaml.example
 # from that into ~/.config/projects/config.yaml.
 projects.yaml.example
 
+# opencode writes runtime/plugin junk next to its config (node_modules,
+# package.json, lockfiles, .bak backups). We ship only opencode.jsonc; never
+# manage or clobber the generated files.
+.config/opencode/node_modules
+.config/opencode/node_modules/**
+.config/opencode/package.json
+.config/opencode/package-lock.json
+.config/opencode/bun.lock
+.config/opencode/.gitignore
+.config/opencode/*.bak-*
+
 {{- $hostProfile := default "linux-desktop" .hostProfile -}}
 {{- $gui := default false .gui -}}
 

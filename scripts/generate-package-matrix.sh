@@ -5,7 +5,7 @@
 # Read-only. Extracts candidate tool names from repo-docs/install-dev-tools.sh,
 # cross-references repo-docs/software-and-cli-tools.md, optionally probes
 # nixpkgs/Homebrew availability when those tools are present, and writes
-# a draft matrix at repo-docs/migration-package-ownership.draft.md with TBD
+# a draft matrix at repo-docs/archive/migration-package-ownership.draft.md with TBD
 # rows for human review. Never installs anything.
 #
 # Usage:
@@ -20,7 +20,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-OUTPUT="repo-docs/migration-package-ownership.draft.md"
+OUTPUT="repo-docs/archive/migration-package-ownership.draft.md"
 PROBE=1
 while [[ $# -gt 0 ]]; do
   case "$1" in

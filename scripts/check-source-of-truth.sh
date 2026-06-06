@@ -6,7 +6,7 @@
 #
 # Read-only. Inspects duplicate / overlapping config sources between
 # configs/, backup-sanitized/home/, and scripts/, then emits a draft
-# matrix at repo-docs/migration-source-of-truth.draft.md with TBD markers
+# matrix at repo-docs/archive/migration-source-of-truth.draft.md with TBD markers
 # for any pair that needs a human decision.
 #
 # Does NOT move, copy, or delete any file.
@@ -21,7 +21,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-OUTPUT="repo-docs/migration-source-of-truth.draft.md"
+OUTPUT="repo-docs/archive/migration-source-of-truth.draft.md"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --output)
@@ -139,7 +139,7 @@ inventory_listing() {
     "backup-sanitized/home/.config/ghostty/config"
 
   compare_pair "~/.local/bin/git-branch-origin" \
-    "scripts/git-branch-origin.sh" \
+    "home/dot_local/bin/executable_git-branch-origin" \
     "backup-sanitized/home/.local/bin/git-branch-origin"
 
   printf '\n## SSH-agent helper disposition (decide before Phase 2)\n\n'

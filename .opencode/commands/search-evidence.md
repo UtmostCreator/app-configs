@@ -9,26 +9,26 @@ Use this command to answer the user's evidence request without broad raw search.
 
 ```bash
 git status --short
-AI_OUTPUT=json bash scripts/ai/ai-search.sh changed "$ARGUMENTS" . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh staged "$ARGUMENTS" . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked "$ARGUMENTS" . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh changed "$ARGUMENTS" . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh staged "$ARGUMENTS" . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh tracked "$ARGUMENTS" . --fixed
 ```
 
 If changed/staged/tracked evidence is insufficient, escalate narrowly in this order:
 
 ```bash
-AI_OUTPUT=json bash scripts/ai/ai-search.sh docs "$ARGUMENTS" . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh tests "$ARGUMENTS" . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh schema "$ARGUMENTS" . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh docs "$ARGUMENTS" . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh tests "$ARGUMENTS" . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh schema "$ARGUMENTS" . --fixed
 ```
 
 Preview any cited file or line with:
 
 ```bash
-AI_OUTPUT=json bash scripts/ai/preview-file.sh <path> --around <line> --context 30
+AI_OUTPUT=json bash ops/ai/preview-file.sh <path> --around <line> --context 30
 ```
 
-Use `bash scripts/ai/query-usage.sh <symbol-or-path>` when the request asks for usage, impact, or duplication.
+Use `bash ops/ai/query-usage.sh <symbol-or-path>` when the request asks for usage, impact, or duplication.
 
 ## Return fields
 

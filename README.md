@@ -8,11 +8,11 @@ tasks) + **Nix / Home Manager** (CLI packages) + **nix-darwin + Homebrew casks**
 
 A clean machine can reach a working setup with one bootstrap script.
 
-> **Note on AI files.** Anything under `.opencode/`, `.github/`, `docs/ai/`,
-> `tools/ai/`, `packages/ai-universal-rules/`, and `scripts/ai/` is a local
-> mirror of the [AI Workflow Kit](https://github.com/UtmostCreator/awesome-ai-utmostcreator),
-> governed separately and not part of the dotfiles stack documented here. You
-> can ignore all of it for setup, updates, and daily use.
+> **Note on AI files.** The [AI Workflow Kit](https://github.com/UtmostCreator/awesome-ai-utmostcreator)
+> has been removed from this repo for now (only `.opencode/` agent/skill
+> definitions remain) and may be reinstalled later. It is governed separately
+> and is not part of the dotfiles stack documented here — ignore it for setup,
+> updates, and daily use.
 
 ## Scope
 
@@ -21,10 +21,9 @@ agent setup, CLI packages, GUI apps (where supported), the NixOS system layer
 (where applicable), the macOS user/system layer via nix-darwin + Homebrew, and
 the install / update / cleanup / validation commands.
 
-**This repo does not own:** the AI Workflow Kit source (see note above),
-generated artifacts under `docs/ai/generated/` (regenerated locally, gitignored),
-or any downstream project code. Native Windows is not supported; WSL2 is
-limited to Linux-style CLI/dev config.
+**This repo does not own:** the AI Workflow Kit source (see note above) or any
+downstream project code. Native Windows is not supported; WSL2 is limited to
+Linux-style CLI/dev config.
 
 ## Supported systems
 
@@ -53,8 +52,8 @@ Recommended (automated, NixOS-aware):
 ```bash
 git clone <your-fork-of-this-repo> ~/dotfiles
 cd ~/dotfiles
-DRY_RUN=1 bash scripts/install.sh     # preview only, mutates nothing
-bash scripts/install.sh               # install + apply
+DRY_RUN=1 bash ops/install.sh     # preview only, mutates nothing
+bash ops/install.sh               # install + apply
 exec fish                             # start a new shell so the login shell applies
 sys-readiness                         # confirm: prints ALL SET when fully configured
 ```
@@ -65,8 +64,8 @@ Manual mode (step-by-step with prompts) is documented in
 ```bash
 cp home/personal.yaml.example home/.chezmoidata/personal.yaml
 $EDITOR home/.chezmoidata/personal.yaml
-bash scripts/bootstrap.sh             # default: dry-run, no mutations
-bash scripts/bootstrap.sh --yes       # actually install + apply
+bash ops/bootstrap.sh             # default: dry-run, no mutations
+bash ops/bootstrap.sh --yes       # actually install + apply
 ```
 
 ## Personal configuration
@@ -112,7 +111,7 @@ override it in `personal.yaml` if your machine differs.
 
 ## First-time setup flow
 
-After `scripts/install.sh` (or `sys-install`) has run once, the `sys-*` command
+After `ops/install.sh` (or `sys-install`) has run once, the `sys-*` command
 wrappers are deployed to `~/.local/bin` (from `home/dot_local/bin/`) and work
 from any shell. They are **not** available before that first install.
 
@@ -142,7 +141,7 @@ rebuild pending` = run step 2; `NOT READY` = run step 1. On non-NixOS hosts step
 | `mise run doctor` | no | Local health check |
 | `mise run repo:check` | no | doctor + validator + (optional) nix flake check |
 
-Each `sys-*` is a thin wrapper over a `scripts/*.sh` with `mise run` equivalents
+Each `sys-*` is a thin wrapper over a `ops/*.sh` with `mise run` equivalents
 (`install` / `update:apply` / `cleanup:apply` / `readiness`). Optional CLI extras
 (dive / fx / navi / glow / gum): `mise run tools:optional:install` and
 `mise run tools:optional:list`.
@@ -151,18 +150,18 @@ Each `sys-*` is a thin wrapper over a `scripts/*.sh` with `mise run` equivalents
 
 | Command | Mutates system/home? | Notes |
 |---------|:--------------------:|-------|
-| `DRY_RUN=1 bash scripts/install.sh` | no | Preview install |
-| `bash scripts/install.sh` | yes | Installs and applies config |
-| `bash scripts/bootstrap.sh` | no | Dry-run by default |
-| `bash scripts/bootstrap.sh --yes` | yes | Installs and applies config |
+| `DRY_RUN=1 bash ops/install.sh` | no | Preview install |
+| `bash ops/install.sh` | yes | Installs and applies config |
+| `bash ops/bootstrap.sh` | no | Dry-run by default |
+| `bash ops/bootstrap.sh --yes` | yes | Installs and applies config |
 | `sys-readiness` | no | Read-only status check |
 | `sys-setup` | no | Preview NixOS system setup |
 | `sudo sys-setup --apply` | yes | Applies NixOS system config |
 | `sys-update` | yes | Updates configured tools and dotfiles |
 | `sys-cleanup` | yes | Safe cleanup (keeps rollbacks) |
 | `sys-cleanup --gc` | yes | Removes older generations |
-| `bash scripts/uninstall.sh` | no | Report only |
-| `bash scripts/uninstall.sh --apply` | yes | Applies uninstall actions |
+| `bash ops/uninstall.sh` | no | Report only |
+| `bash ops/uninstall.sh --apply` | yes | Applies uninstall actions |
 
 Before applying dotfiles, the scripts snapshot your home directory under
 `~/.local/state/dotfiles-snapshots/<UTC timestamp>/`. `uninstall.sh` never
@@ -189,7 +188,7 @@ Full rationale: [`repo-docs/architecture/tool-ownership.md`](repo-docs/architect
 |------|---------|
 | `home/` | chezmoi source tree for dotfiles and app configs. `home/personal.yaml.example` is committed; real `home/.chezmoidata/personal.yaml` is gitignored. |
 | `nix/` | Nix flake + Home Manager modules per host profile. `nix/flake.nix` exposes `homeConfigurations.{linux-desktop,linux-cli,wsl,macos}` and `darwinConfigurations.macos`. |
-| `scripts/` | Repo-owned install, setup, update, cleanup, validation, hooks (`scripts/hooks/`), project helpers (`scripts/projects/`), and Unix setup (`scripts/unix/`). **`scripts/ai/` is NOT ours** — it is the AI Workflow Kit mirror (see top note). |
+| `ops/` | Repo-owned install, setup, update, cleanup, validation, hooks (`ops/hooks/`), project helpers (`ops/projects/`), and Unix setup (`ops/unix/`). |
 | `repo-docs/` | Extended setup/maintenance docs. Historical migration notes under `repo-docs/migration-*.md`; completed one-off artifacts under `repo-docs/archive/`. |
 | `mise.toml` | Repo task definitions. Tool versions are per-user in `home/dot_config/mise/config.toml.tmpl`. |
 | `.lefthook.yml` | Git hook configuration. |
@@ -202,8 +201,8 @@ not runtime behaviour): `.editorconfig`, `.prettierrc.json`, `.eslintrc.json`,
 
 ```bash
 sys-readiness                  # "am I all set?" (read-only)
-bash scripts/doctor.sh         # or: mise run doctor
-bash scripts/validate-config.sh
+bash ops/doctor.sh         # or: mise run doctor
+bash ops/validate-config.sh
 mise run repo:check
 ```
 
@@ -212,15 +211,15 @@ A healthy setup passes readiness and repo validation.
 ## Uninstall
 
 ```bash
-bash scripts/uninstall.sh             # report only
-bash scripts/uninstall.sh --apply     # actually run
+bash ops/uninstall.sh             # report only
+bash ops/uninstall.sh --apply     # actually run
 ```
 
 ## Troubleshooting
 
 | Problem | Check |
 |---------|-------|
-| `sys-*` command not found | Run `bash scripts/install.sh`, then open a new shell |
+| `sys-*` command not found | Run `bash ops/install.sh`, then open a new shell |
 | Shell did not change to fish | Run `exec fish` or reopen the terminal |
 | Readiness says `system rebuild pending` | Run `sudo sys-setup --apply` (NixOS) |
 | Readiness says `NOT READY` | Run `sys-install`, then `sys-readiness` |

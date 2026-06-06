@@ -10,7 +10,7 @@ Two layers, two commands:
 
 | Layer | Owns | Apply with | In this repo? |
 | --- | --- | --- | --- |
-| User environment | CLI/GUI packages, dotfiles, fish/atuin/starship config | `home-manager switch --flake ./nix#linux-desktop` (automated by `scripts/install.sh`) | **Yes** (`nix/`) |
+| User environment | CLI/GUI packages, dotfiles, fish/atuin/starship config | `home-manager switch --flake ./nix#linux-desktop` (automated by `ops/install.sh`) | **Yes** (`nix/`) |
 | NixOS system | login shell, services, users, `nix.gc`, `trusted-users`, kernel, bootloader | `sudo nixos-rebuild switch` | **No** (`/etc/nixos/`) — you own it |
 
 > Why the split: a standalone Home Manager install (used here so the repo
@@ -55,7 +55,7 @@ nh os boot   /etc/nixos
 ## When is a system rebuild REQUIRED?
 
 Run `sudo nixos-rebuild switch` after editing `/etc/nixos/*` for any of these.
-The repo install (`scripts/install.sh`) does **not** do these automatically
+The repo install (`ops/install.sh`) does **not** do these automatically
 because they are system-level and need `sudo`:
 
 1. **Make fish the login shell** (recommended after install — see below).
@@ -139,15 +139,15 @@ already uses). Nothing here runs automatically — it is config you apply to
 
 - Module: `nix/modules/nixos/dual-boot.nix` (options under `myConfig.dualBoot`).
   Inert unless `enable = true`, so single-OS users can ignore it.
-- Detector: `scripts/detect-os-disks.sh` — scans disks live (read-only) and
+- Detector: `ops/detect-os-disks.sh` — scans disks live (read-only) and
   prints a suggested `myConfig.dualBoot` snippet. It never writes config and
   never touches the bootloader.
 
 ### 1. Detect what you have
 
 ```bash
-bash scripts/detect-os-disks.sh            # human report + suggested snippet
-AI_OUTPUT=json bash scripts/detect-os-disks.sh   # machine-readable
+bash ops/detect-os-disks.sh            # human report + suggested snippet
+AI_OUTPUT=json bash ops/detect-os-disks.sh   # machine-readable
 ```
 
 It reports, per physical disk, whether it holds Windows or Linux, marks the
@@ -210,7 +210,7 @@ default; `myConfig.dualBoot.timeout` (default 5s) controls the menu wait.
 
 ## Where this fits in the install flow
 
-1. `bash scripts/install.sh` — user env (packages + dotfiles + fish config).
+1. `bash ops/install.sh` — user env (packages + dotfiles + fish config).
    *Fully automated, no sudo.*
 2. **(optional, recommended)** edit `/etc/nixos/configuration.nix` with the
    snippet above and run `sudo nixos-rebuild switch` — makes fish the login

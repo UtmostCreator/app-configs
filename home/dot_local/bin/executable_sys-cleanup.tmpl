@@ -5,4 +5,4 @@
 # (older than KEEP_DAYS, default 14d; recent rollbacks kept). Any shell, anywhere.
 set -euo pipefail
 DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
-exec bash "$DOTFILES_DIR/scripts/cleanup.sh" --apply "$@"
+exec bash "$DOTFILES_DIR/ops/cleanup.sh" --apply "$@"

@@ -20,25 +20,25 @@ git status --short
 Search the smallest relevant surface before broad text search:
 
 ```bash
-AI_OUTPUT=json bash scripts/ai/ai-search.sh changed <query> . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh staged <query> . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh changed <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh staged <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh tracked <query> . --fixed
 ```
 
 If those do not answer the question, escalate by intent:
 
 ```bash
-AI_OUTPUT=json bash scripts/ai/ai-search.sh docs <query> . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh tests <query> . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh schema <query> . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh text <query> . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh struct <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh docs <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh tests <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh schema <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh text <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh struct <query> . --fixed
 ```
 
 Use `unsafe-all` only with explicit approval:
 
 ```bash
-AI_OUTPUT=json bash scripts/ai/ai-search.sh unsafe-all <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh unsafe-all <query> . --fixed
 ```
 
 ## File preview
@@ -46,8 +46,8 @@ AI_OUTPUT=json bash scripts/ai/ai-search.sh unsafe-all <query> . --fixed
 When a search result includes a file and line, inspect the exact context with:
 
 ```bash
-AI_OUTPUT=json bash scripts/ai/preview-file.sh <path> --around <line> --context 30
-AI_OUTPUT=json bash scripts/ai/preview-file.sh <path> --range A:B
+AI_OUTPUT=json bash ops/ai/preview-file.sh <path> --around <line> --context 30
+AI_OUTPUT=json bash ops/ai/preview-file.sh <path> --range A:B
 ```
 
 Do not use raw `cat`, `sed`, `awk`, `grep`, `rg`, `find`, `fd`, glob, or list for file reading or discovery unless the wrapper evidence is insufficient and approval is recorded.
@@ -57,7 +57,7 @@ Do not use raw `cat`, `sed`, `awk`, `grep`, `rg`, `find`, `fd`, glob, or list fo
 Before adding logic, changing a public contract, or claiming a symbol is unused, run:
 
 ```bash
-bash scripts/ai/query-usage.sh <symbol-or-path>
+bash ops/ai/query-usage.sh <symbol-or-path>
 ```
 
 Report the closest reuse candidate and whether overlap is roughly 75% or higher.
@@ -67,13 +67,13 @@ Report the closest reuse candidate and whether overlap is roughly 75% or higher.
 For behavior or wiring changes, prefer:
 
 ```bash
-bash scripts/ai/ai-verify.sh .
+bash ops/ai/ai-verify.sh .
 ```
 
 For `ai-search` or script-first wiring changes, also run:
 
 ```bash
-AI_OUTPUT=json bash scripts/ai/ai-search.sh doctor
+AI_OUTPUT=json bash ops/ai/ai-search.sh doctor
 php tools/ai/validate-ai-config.php
 php tools/ai/validate-ai-catalog.php
 php tools/ai/generate-ai-catalog.php --check

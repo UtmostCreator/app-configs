@@ -51,7 +51,7 @@ usually want only one.
 Use this when you just need to unblock the current task and do not want to
 touch any persistent state.
 
-The helper [`scripts/Setup-SshAgent.ps1`](scripts/Setup-SshAgent.ps1) starts
+The helper [`ops/Setup-SshAgent.ps1`](ops/Setup-SshAgent.ps1) starts
 Git's bundled `ssh-agent`, loads `~/.ssh/github.uc.ll5` with a `-t 28800`
 (8 hour) TTL, and exports `SSH_AUTH_SOCK` + `SSH_AGENT_PID` into the current
 shell.
@@ -86,7 +86,7 @@ Git Bash already does.
 
 ### 5.1 Enable the Windows OpenSSH agent service (admin)
 
-[`scripts/Enable-SshAgentService.ps1`](scripts/Enable-SshAgentService.ps1)
+[`ops/Enable-SshAgentService.ps1`](ops/Enable-SshAgentService.ps1)
 sets the service to start automatically and starts it.
 
 ```powershell
@@ -195,7 +195,7 @@ the current task.
 ## 9. Related files in this repo
 
 - [QUICKSTART.md](QUICKSTART.md) - copy-paste runbook (start here).
-- [scripts/Enable-SshAgentService.ps1](scripts/Enable-SshAgentService.ps1) - admin service enabler.
-- [scripts/Install-SshAgentProfileSnippet.ps1](scripts/Install-SshAgentProfileSnippet.ps1) - PowerShell profile snippet installer/remover.
-- [scripts/Setup-SshAgent.ps1](scripts/Setup-SshAgent.ps1) - per-session fallback when admin is unavailable.
+- [ops/Enable-SshAgentService.ps1](ops/Enable-SshAgentService.ps1) - admin service enabler.
+- [ops/Install-SshAgentProfileSnippet.ps1](ops/Install-SshAgentProfileSnippet.ps1) - PowerShell profile snippet installer/remover.
+- [ops/Setup-SshAgent.ps1](ops/Setup-SshAgent.ps1) - per-session fallback when admin is unavailable.
 - [README.md](README.md) - index for `docs/windows/`.

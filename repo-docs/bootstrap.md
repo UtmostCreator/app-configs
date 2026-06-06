@@ -3,7 +3,7 @@
 Cold-start procedure for the chezmoi + mise + Nix/Home Manager + nix-darwin
 + Lefthook stack.
 
-> **Prefer the automated path.** `bash scripts/install.sh` (alias `sys-install`)
+> **Prefer the automated path.** `bash ops/install.sh` (alias `sys-install`)
 > is the fully-unattended, NixOS-aware installer; `repo-docs/INSTALL.md` is the
 > canonical install + maintenance guide (with the `sys-readiness` /
 > `sys-update` / `sys-cleanup` / `sys-setup` commands). This file documents the
@@ -31,10 +31,10 @@ cp home/personal.yaml.example home/.chezmoidata/personal.yaml
 $EDITOR home/.chezmoidata/personal.yaml   # name, email, signingKey, hostProfile, gui
 
 # 2. Preview what bootstrap would do (no mutations)
-bash scripts/bootstrap.sh                 # equivalent to: --dry-run
+bash ops/bootstrap.sh                 # equivalent to: --dry-run
 
 # 3. Actually apply, after reviewing the preview
-bash scripts/bootstrap.sh --yes
+bash ops/bootstrap.sh --yes
 ```
 
 `--yes` is required to mutate. `CI=true` allows non-interactive apply on
@@ -42,13 +42,13 @@ runners.
 
 ## Per-host override
 
-`scripts/detect-host.sh` returns one of `macos`, `linux-desktop`,
+`ops/detect-host.sh` returns one of `macos`, `linux-desktop`,
 `linux-cli`, `wsl`. Override the linux fallback or pin a host:
 
 ```bash
-HOST_PROFILE=linux-cli bash scripts/bootstrap.sh
-HOST_PROFILE_DEFAULT=linux-cli bash scripts/bootstrap.sh
-HOST_PROFILE=wsl bash scripts/bootstrap.sh
+HOST_PROFILE=linux-cli bash ops/bootstrap.sh
+HOST_PROFILE_DEFAULT=linux-cli bash ops/bootstrap.sh
+HOST_PROFILE=wsl bash ops/bootstrap.sh
 ```
 
 ## After bootstrap (day-to-day)
@@ -80,7 +80,7 @@ Restore from one with `cp -a <snapshot>/. ~/`.
 - **Clipboard**: use `clip.exe` from the shell or rely on terminal
   integration. No automation here.
 - **Filesystem performance**: keep repos under `~/`, not `/mnt/c/`.
-- **WSL detection**: `scripts/detect-host.sh` checks `/proc/version` for
+- **WSL detection**: `ops/detect-host.sh` checks `/proc/version` for
   `microsoft|wsl`. Override with `HOST_PROFILE=wsl` if detection fails.
 
 ## Linux-cli / headless notes
@@ -128,8 +128,8 @@ mise run sync:apply
 ## Uninstall / handoff
 
 ```bash
-bash scripts/uninstall.sh             # report only
-bash scripts/uninstall.sh --apply     # actually run
+bash ops/uninstall.sh             # report only
+bash ops/uninstall.sh --apply     # actually run
 ```
 
 The report mode is safe to run any time and shows what would happen.
@@ -140,10 +140,10 @@ Nix itself is not removed; use the official Nix uninstaller for that.
 After bootstrap completes:
 
 ```bash
-bash scripts/doctor.sh
-bash scripts/validate-config.sh
+bash ops/doctor.sh
+bash ops/validate-config.sh
 mise run repo:check
 ```
 
-If anything is missing or red, re-read `scripts/bootstrap.sh` output for
+If anything is missing or red, re-read `ops/bootstrap.sh` output for
 the failed step, fix the host issue, and re-run.

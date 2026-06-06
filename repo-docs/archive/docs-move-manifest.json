@@ -6,7 +6,7 @@
       "docs/bootstrap.md",
       "docs/migration-followups.md",
       "docs/nixos-rebuild.md",
-      "scripts/install.sh"
+      "ops/install.sh"
     ],
     "kit_referrers": []
   },
@@ -74,8 +74,8 @@
       "docs/migration-package-ownership.draft.md",
       "docs/migration-package-ownership.md",
       "docs/migration-source-of-truth.md",
-      "scripts/doctor.sh",
-      "scripts/generate-package-matrix.sh"
+      "ops/doctor.sh",
+      "ops/generate-package-matrix.sh"
     ],
     "kit_referrers": [
       "docs/ai/repo-directory-map.json",
@@ -114,7 +114,7 @@
     "path": "docs/migration-decisions.md",
     "repo_referrers": [
       "docs/architecture/tool-ownership.md",
-      "scripts/doctor.sh"
+      "ops/doctor.sh"
     ],
     "kit_referrers": []
   },
@@ -145,7 +145,7 @@
     "repo_referrers": [
       "docs/migration-implementation-plan.md",
       "docs/migration-package-ownership.md",
-      "scripts/generate-package-matrix.sh"
+      "ops/generate-package-matrix.sh"
     ],
     "kit_referrers": []
   },
@@ -161,9 +161,9 @@
       "docs/software-and-cli-tools.md",
       "nix/modules/darwin/homebrew.nix",
       "nix/modules/home/cli.nix",
-      "scripts/doctor.sh",
-      "scripts/generate-package-matrix.sh",
-      "scripts/validate-config.sh"
+      "ops/doctor.sh",
+      "ops/generate-package-matrix.sh",
+      "ops/validate-config.sh"
     ],
     "kit_referrers": []
   },
@@ -172,7 +172,7 @@
     "repo_referrers": [
       "docs/migration-implementation-plan.md",
       "docs/migration-source-of-truth.md",
-      "scripts/check-source-of-truth.sh"
+      "ops/check-source-of-truth.sh"
     ],
     "kit_referrers": []
   },
@@ -183,9 +183,9 @@
       "docs/migration-audit-2026-05-24.md",
       "docs/migration-implementation-plan.md",
       "docs/migration-source-of-truth.draft.md",
-      "scripts/check-source-of-truth.sh",
-      "scripts/doctor.sh",
-      "scripts/validate-config.sh"
+      "ops/check-source-of-truth.sh",
+      "ops/doctor.sh",
+      "ops/validate-config.sh"
     ],
     "kit_referrers": []
   },
@@ -205,8 +205,8 @@
       "docs/bootstrap.md",
       "docs/migration-followups.md",
       "docs/shell-setup.md",
-      "scripts/install.sh",
-      "scripts/readiness.sh"
+      "ops/install.sh",
+      "ops/readiness.sh"
     ],
     "kit_referrers": []
   },
@@ -260,8 +260,8 @@
       "docs/migration-package-ownership.md",
       "mise.toml",
       "nix/modules/home/gui.nix",
-      "scripts/doctor.sh",
-      "scripts/generate-package-matrix.sh"
+      "ops/doctor.sh",
+      "ops/generate-package-matrix.sh"
     ],
     "kit_referrers": []
   },
@@ -317,7 +317,7 @@
     "repo_referrers": [
       "docs/migration-followups.md",
       "docs/migration-implementation-plan.md",
-      "scripts/doctor.sh"
+      "ops/doctor.sh"
     ],
     "kit_referrers": []
   },
@@ -335,17 +335,17 @@
     "kit_referrers": []
   },
   {
-    "path": "docs/windows/scripts/Enable-SshAgentService.ps1",
+    "path": "docs/windows/ops/Enable-SshAgentService.ps1",
     "repo_referrers": [],
     "kit_referrers": []
   },
   {
-    "path": "docs/windows/scripts/Install-SshAgentProfileSnippet.ps1",
+    "path": "docs/windows/ops/Install-SshAgentProfileSnippet.ps1",
     "repo_referrers": [],
     "kit_referrers": []
   },
   {
-    "path": "docs/windows/scripts/Setup-SshAgent.ps1",
+    "path": "docs/windows/ops/Setup-SshAgent.ps1",
     "repo_referrers": [
       "docs/windows/README.md"
     ],

@@ -10,15 +10,15 @@ permission:
     'git status*': allow
     'git diff*': allow
     'git log*': allow
-    'bash scripts/ai/ai-search.sh *': allow
-    'AI_OUTPUT=json bash scripts/ai/ai-search.sh *': allow
-    'env AI_OUTPUT=json bash scripts/ai/ai-search.sh *': allow
-    'bash scripts/ai/preview-file.sh *': allow
-    'AI_OUTPUT=json bash scripts/ai/preview-file.sh *': allow
-    'env AI_OUTPUT=json bash scripts/ai/preview-file.sh *': allow
-    'bash scripts/ai/query-usage.sh *': allow
-    'bash scripts/ai/git-forensics.sh *': allow
-    'bash scripts/ai/ai-diff-context.sh *': allow
+    'bash ops/ai/ai-search.sh *': allow
+    'AI_OUTPUT=json bash ops/ai/ai-search.sh *': allow
+    'env AI_OUTPUT=json bash ops/ai/ai-search.sh *': allow
+    'bash ops/ai/preview-file.sh *': allow
+    'AI_OUTPUT=json bash ops/ai/preview-file.sh *': allow
+    'env AI_OUTPUT=json bash ops/ai/preview-file.sh *': allow
+    'bash ops/ai/query-usage.sh *': allow
+    'bash ops/ai/git-forensics.sh *': allow
+    'bash ops/ai/ai-diff-context.sh *': allow
     'grep *': ask
     'rg *': ask
     'find *': ask
@@ -37,11 +37,11 @@ Never emit ad-hoc Python or shell edit scripts, inline patches, or mutation comm
 ## Mandatory sequence
 
 1. Run `git status --short`.
-2. Search changed evidence first: `AI_OUTPUT=json bash scripts/ai/ai-search.sh changed <query> . --fixed`.
+2. Search changed evidence first: `AI_OUTPUT=json bash ops/ai/ai-search.sh changed <query> . --fixed`.
 3. Search staged evidence next, then tracked evidence.
 4. Fall back to docs/tests/schema/text only when narrow evidence is insufficient.
-5. Preview cited files with `AI_OUTPUT=json bash scripts/ai/preview-file.sh <path> --around <line> --context 30` or `--range A:B`.
-6. Use `bash scripts/ai/query-usage.sh <symbol-or-path>` for usage, impact, or duplication questions.
+5. Preview cited files with `AI_OUTPUT=json bash ops/ai/preview-file.sh <path> --around <line> --context 30` or `--range A:B`.
+6. Use `bash ops/ai/query-usage.sh <symbol-or-path>` for usage, impact, or duplication questions.
 
 ## Output expectations
 

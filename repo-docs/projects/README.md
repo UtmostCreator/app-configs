@@ -11,14 +11,14 @@ sibling `home/projects.yaml.example` shows the schema with placeholders.
 
 | Task | Script | What it does |
 |------|--------|--------------|
-| `mise run projects:tmux` | `scripts/projects/tmux-master.sh` | Master workspace: log pane on top, one shell pane per project, second tmux window with each project's `service.start_cmd` running. |
-| `mise run projects:logs` | `scripts/projects/tmux-logs.sh` | N vertical panes, one tailing each project's `service.log` (the original 3-pane log viewer, scaled to whatever fits). |
-| `mise run projects:ssh` | `scripts/projects/tmux-ssh.sh` | N tmux panes, one `ssh <alias>` per entry under `ssh_workspace.hosts`. |
-| `mise run projects:repo -- <id>` | `scripts/projects/repo-checks.sh` | Per-repo git status snapshot for one project. |
-| `mise run projects:health` | `scripts/projects/health/run.sh` | Discover & run every `health/checks.d/*.sh`, pretty-print via `glow`. |
+| `mise run projects:tmux` | `ops/projects/tmux-master.sh` | Master workspace: log pane on top, one shell pane per project, second tmux window with each project's `service.start_cmd` running. |
+| `mise run projects:logs` | `ops/projects/tmux-logs.sh` | N vertical panes, one tailing each project's `service.log` (the original 3-pane log viewer, scaled to whatever fits). |
+| `mise run projects:ssh` | `ops/projects/tmux-ssh.sh` | N tmux panes, one `ssh <alias>` per entry under `ssh_workspace.hosts`. |
+| `mise run projects:repo -- <id>` | `ops/projects/repo-checks.sh` | Per-repo git status snapshot for one project. |
+| `mise run projects:health` | `ops/projects/health/run.sh` | Discover & run every `health/checks.d/*.sh`, pretty-print via `glow`. |
 | `mise run projects:health:json` | same, `--json` | Raw aggregate JSON for dashboards. |
-| `mise run projects:sync-main` | `scripts/projects/github/sync-main.sh` | Fetch + fast-forward `main` on every project. |
-| `mise run projects:pr-watch` | `scripts/projects/github/pr-watch.sh` | Poll GitHub for PR transitions on tracked repos. |
+| `mise run projects:sync-main` | `ops/projects/github/sync-main.sh` | Fetch + fast-forward `main` on every project. |
+| `mise run projects:pr-watch` | `ops/projects/github/pr-watch.sh` | Poll GitHub for PR transitions on tracked repos. |
 
 ## Setup (once per host)
 
@@ -131,13 +131,13 @@ The scripts have no hard-coded project ids — everything follows from the YAML.
 ## Writing a new health check
 
 Each check is a self-contained 5–15 line script under
-`scripts/projects/health/checks.d/`:
+`ops/projects/health/checks.d/`:
 
 ```bash
 #!/usr/bin/env bash
 set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=scripts/projects/health/lib.sh
+# shellcheck source=ops/projects/health/lib.sh
 source "$SCRIPT_DIR/../lib.sh"
 
 # Run for every project that lists "<check-id>" under health.checks

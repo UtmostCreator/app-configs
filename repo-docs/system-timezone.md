@@ -25,7 +25,7 @@ sudo sys-setup --apply
 or from the repository checkout:
 
 ```bash
-sudo bash scripts/system-setup.sh --apply
+sudo bash ops/system-setup.sh --apply
 ```
 
 That helper writes `/etc/nixos/app-configs-extra.nix`, wires it into the system
@@ -49,7 +49,7 @@ hand-editing that file.
 Override for a one-off host:
 
 ```bash
-SYSTEM_TIMEZONE=Europe/London sudo bash scripts/system-setup.sh --apply
+SYSTEM_TIMEZONE=Europe/London sudo bash ops/system-setup.sh --apply
 ```
 
 ## Manual module wiring (advanced)

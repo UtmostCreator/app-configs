@@ -20,29 +20,29 @@ function syscd --description 'cd into the dotfiles/system repo'
 end
 
 function sys-install --description 'Re-run the unattended full install (apps + config)'
-    bash "$DOTFILES_DIR/scripts/install.sh" $argv
+    bash "$DOTFILES_DIR/ops/install.sh" $argv
 end
 
 function sys-update --description 'Update all installed apps/CLI + config (brewup equivalent)'
-    bash "$DOTFILES_DIR/scripts/update-all.sh" --apply $argv
+    bash "$DOTFILES_DIR/ops/update-all.sh" --apply $argv
 end
 
 function sys-cleanup --description 'Safe cleanup of app store + caches (keeps all rollbacks)'
-    bash "$DOTFILES_DIR/scripts/cleanup.sh" --apply $argv
+    bash "$DOTFILES_DIR/ops/cleanup.sh" --apply $argv
 end
 
 function sys-cleanup-gc --description 'Cleanup + remove aged generations (keeps recent)'
-    bash "$DOTFILES_DIR/scripts/cleanup.sh" --apply --gc $argv
+    bash "$DOTFILES_DIR/ops/cleanup.sh" --apply --gc $argv
 end
 
 function sys-doctor --description 'Run the system/dotfiles health check'
-    bash "$DOTFILES_DIR/scripts/doctor.sh" $argv
+    bash "$DOTFILES_DIR/ops/doctor.sh" $argv
 end
 
 function sys-readiness --description 'Am I all set? Verify install + report whats left'
-    bash "$DOTFILES_DIR/scripts/readiness.sh" $argv
+    bash "$DOTFILES_DIR/ops/readiness.sh" $argv
 end
 
 function sys-setup --description 'NixOS system layer setup (fish shell + gc); add --apply with sudo'
-    bash "$DOTFILES_DIR/scripts/system-setup.sh" $argv
+    bash "$DOTFILES_DIR/ops/system-setup.sh" $argv
 end

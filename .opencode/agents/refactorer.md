@@ -16,7 +16,7 @@ permission:
     'app/**': allow
     'packages/**': allow
     'configs/**': allow
-    'scripts/**': allow
+    'ops/**': allow
     'tools/**': allow
     'tests/**': allow
     'docs/**': allow
@@ -70,11 +70,11 @@ permission:
     'git blame*': allow
     'git branch*': allow
     'git rev-parse*': allow
-    'bash scripts/ai/ai-search.sh *': allow
-    'bash scripts/ai/rg-code.sh *': allow
-    'bash scripts/ai/fd-files.sh *': allow
-    'bash scripts/ai/preview-file.sh *': allow
-    'bash scripts/ai/query-usage.sh *': allow
+    'bash ops/ai/ai-search.sh *': allow
+    'bash ops/ai/rg-code.sh *': allow
+    'bash ops/ai/fd-files.sh *': allow
+    'bash ops/ai/preview-file.sh *': allow
+    'bash ops/ai/query-usage.sh *': allow
     'php -l *': allow
     'vendor/bin/phpunit *': allow
     './vendor/bin/phpunit *': allow
@@ -103,7 +103,7 @@ Reduce duplication, simplify structure, improve naming, or increase maintainabil
 
 ## Shell Governance
 
-Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
+Treat `ops/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `ops/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
 When the active runtime supports repository hooks, these scripts must remain authoritative through `.github/hooks/tool-policy.json` and emit local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.
 When the runtime does not auto-load repository hooks, preserve the same boundary manually: stay inside the bash allowlist, prefer approved registry scripts, and do not claim automatic hook enforcement.
 

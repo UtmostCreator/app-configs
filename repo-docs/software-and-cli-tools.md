@@ -181,7 +181,7 @@ mise run tools:optional:install
 ## Cross-platform install matrix (one-script goal)
 
 This maps each tool to **who installs it** so a single
-`bash scripts/bootstrap.sh --yes` (plus the NixOS rule below) installs the
+`bash ops/bootstrap.sh --yes` (plus the NixOS rule below) installs the
 whole set on either OS. The owner of record is
 `repo-docs/migration-package-ownership.md`; this table is the practical summary.
 
@@ -221,7 +221,7 @@ cask bridge. Either way it is one apply command per host.
 > **Preferred path on every host (macOS / Linux desktop / Linux CLI / WSL2):**
 >
 > ```bash
-> bash scripts/bootstrap.sh --yes
+> bash ops/bootstrap.sh --yes
 > ```
 >
 > Bootstrap installs Nix, then `nix profile install chezmoi mise home-manager

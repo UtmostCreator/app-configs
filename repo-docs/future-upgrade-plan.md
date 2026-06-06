@@ -65,7 +65,7 @@ programs.nix-ld.enable = true;   # run dynamically-linked prebuilt binaries
 Why this is a PLAN item and not a near-zero package add: `programs.gnupg.agent`
 is a **NixOS system option**, and this repo's Home Manager modules enforce a
 "packages only / no `programs.<x>.enable`" invariant (see
-`scripts/validate-config.sh` #6). The correct home is a NixOS module under
+`ops/validate-config.sh` #6). The correct home is a NixOS module under
 `nix/modules/nixos/` applied via `sys-setup` — i.e. the same system layer that
 owns timezone/substituters. `nix-ld` is also worth adding there (lets non-Nix
 prebuilt binaries run, e.g. some language toolchains).

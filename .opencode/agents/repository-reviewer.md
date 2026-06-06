@@ -10,16 +10,16 @@ permission:
     'git status*': allow
     'git diff*': allow
     'git log*': allow
-    'bash scripts/ai/ai-search.sh *': allow
-    'AI_OUTPUT=json bash scripts/ai/ai-search.sh *': allow
-    'env AI_OUTPUT=json bash scripts/ai/ai-search.sh *': allow
-    'bash scripts/ai/preview-file.sh *': allow
-    'AI_OUTPUT=json bash scripts/ai/preview-file.sh *': allow
-    'env AI_OUTPUT=json bash scripts/ai/preview-file.sh *': allow
-    'bash scripts/ai/query-usage.sh *': allow
-    'bash scripts/ai/git-forensics.sh *': allow
-    'bash scripts/ai/ai-diff-context.sh *': allow
-    'bash scripts/ai/ai-verify.sh *': ask
+    'bash ops/ai/ai-search.sh *': allow
+    'AI_OUTPUT=json bash ops/ai/ai-search.sh *': allow
+    'env AI_OUTPUT=json bash ops/ai/ai-search.sh *': allow
+    'bash ops/ai/preview-file.sh *': allow
+    'AI_OUTPUT=json bash ops/ai/preview-file.sh *': allow
+    'env AI_OUTPUT=json bash ops/ai/preview-file.sh *': allow
+    'bash ops/ai/query-usage.sh *': allow
+    'bash ops/ai/git-forensics.sh *': allow
+    'bash ops/ai/ai-diff-context.sh *': allow
+    'bash ops/ai/ai-verify.sh *': ask
     'php tools/ai/validate-*.php *': allow
     'php tools/ai/generate-*.php --check*': allow
     'grep *': ask
@@ -38,10 +38,10 @@ Review diffs without editing. Prefer script evidence over raw shell. Do not read
 ## Mandatory sequence
 
 1. Run `git status --short` and `git diff`.
-2. Search changed evidence first, then staged, then tracked with `AI_OUTPUT=json bash scripts/ai/ai-search.sh <mode> <query> . --fixed`.
-3. Preview cited files with `AI_OUTPUT=json bash scripts/ai/preview-file.sh <path> --around <line> --context 30` or `--range A:B`.
-4. Use `bash scripts/ai/query-usage.sh <symbol-or-path>` before flagging duplication or usage risk.
-5. For AI wiring, run `AI_OUTPUT=json bash scripts/ai/ai-search.sh doctor` and the PHP validators when available.
+2. Search changed evidence first, then staged, then tracked with `AI_OUTPUT=json bash ops/ai/ai-search.sh <mode> <query> . --fixed`.
+3. Preview cited files with `AI_OUTPUT=json bash ops/ai/preview-file.sh <path> --around <line> --context 30` or `--range A:B`.
+4. Use `bash ops/ai/query-usage.sh <symbol-or-path>` before flagging duplication or usage risk.
+5. For AI wiring, run `AI_OUTPUT=json bash ops/ai/ai-search.sh doctor` and the PHP validators when available.
 
 ## Output expectations
 

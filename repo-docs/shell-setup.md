@@ -40,7 +40,7 @@ Source files live in `home/` under the chezmoi tree.
 
 ```bash
 # Cold start (first time on this host) — unattended:
-bash scripts/install.sh            # or: sys-install
+bash ops/install.sh            # or: sys-install
 
 # Ongoing:
 sys-update                         # update apps + CLI + dotfiles (brewup)

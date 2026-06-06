@@ -6,7 +6,7 @@ agent: repository-reviewer
 Run the narrow wiring checks first:
 
 ```bash
-AI_OUTPUT=json bash scripts/ai/ai-search.sh doctor
+AI_OUTPUT=json bash ops/ai/ai-search.sh doctor
 php tools/ai/validate-ai-config.php
 php tools/ai/validate-ai-catalog.php
 php tools/ai/generate-ai-catalog.php --check

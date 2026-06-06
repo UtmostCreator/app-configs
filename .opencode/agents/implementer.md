@@ -25,7 +25,7 @@ permission:
     'app/**': allow
     'packages/**': allow
     'configs/**': allow
-    'scripts/**': allow
+    'ops/**': allow
     'tools/**': allow
     'tests/**': allow
     'docs/**': allow
@@ -90,18 +90,18 @@ permission:
     'git rev-parse*': allow
     'git stash list*': allow
     'git stash show*': allow
-    'bash scripts/ai/ai-search.sh *': allow
-    'bash scripts/ai/rg-code.sh *': allow
-    'bash scripts/ai/fd-files.sh *': allow
-    'bash scripts/ai/preview-file.sh *': allow
-    'bash scripts/ai/query-usage.sh *': allow
-    'bash scripts/ai/git-forensics.sh *': allow
-    'bash scripts/ai/ai-verify.sh *': allow
-    'bash scripts/ai/ai-doc-check.sh --check*': allow
-    'bash scripts/ai/ai-file-freshness.sh *': allow
-    'bash scripts/ai/ai-install-coverage.sh *': allow
-    'bash scripts/ai/check-file-refs.sh *': allow
-    'bash scripts/ai/repo-tool-inventory.sh --check*': allow
+    'bash ops/ai/ai-search.sh *': allow
+    'bash ops/ai/rg-code.sh *': allow
+    'bash ops/ai/fd-files.sh *': allow
+    'bash ops/ai/preview-file.sh *': allow
+    'bash ops/ai/query-usage.sh *': allow
+    'bash ops/ai/git-forensics.sh *': allow
+    'bash ops/ai/ai-verify.sh *': allow
+    'bash ops/ai/ai-doc-check.sh --check*': allow
+    'bash ops/ai/ai-file-freshness.sh *': allow
+    'bash ops/ai/ai-install-coverage.sh *': allow
+    'bash ops/ai/check-file-refs.sh *': allow
+    'bash ops/ai/repo-tool-inventory.sh --check*': allow
     'php -l *': allow
     'vendor/bin/phpunit *': allow
     './vendor/bin/phpunit *': allow
@@ -134,7 +134,7 @@ Implement the agreed change, prove it with focused verification, and hand off a 
 
 ## Shell Governance
 
-Treat `scripts/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `scripts/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
+Treat `ops/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `ops/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
 When the active runtime supports repository hooks, these scripts must remain authoritative through `.github/hooks/tool-policy.json` and emit local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.
 When the runtime does not auto-load repository hooks, preserve the same boundary manually: stay inside the bash allowlist, prefer approved registry scripts, and do not claim automatic hook enforcement.
 

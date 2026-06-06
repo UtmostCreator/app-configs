@@ -12,6 +12,6 @@ Create a script inventory for `$ARGUMENTS` using repository-approved wrappers.
 Preferred command patterns:
 
 ```bash
-AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked "scripts/ai/" . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked "docs/ai/script-registry" . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh tracked "ops/ai/" . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh tracked "docs/ai/script-registry" . --fixed
 ```

@@ -1,0 +1,30 @@
+# nix/modules/nixos/substituters.nix
+#
+# Extra binary caches (substituters) for NixOS hosts. Pulling prebuilt binaries
+# from these caches avoids compiling large packages from source, which is the
+# single biggest rebuild-speed win on NixOS.
+#
+# This is a SYSTEM setting (nix.settings.*), so it only takes effect when this
+# module is imported by /etc/nixos and applied with `nixos-rebuild`. It is part
+# of nix/modules/nixos and is opt-in via the usual import (see
+# repo-docs/system-timezone.md for the wiring pattern; sys-setup can wire the
+# whole nix/modules/nixos set).
+#
+# Caches chosen for broad, trustworthy community coverage:
+#   - nix-community: huge general community cache (home-manager, many tools)
+#   - garnix.io:     CI cache used by many flakes (borrowed from nix-config-pavlo)
+# Add project-specific caches (e.g. hyprland) only if a host actually needs them.
+
+{ lib, ... }:
+{
+  nix.settings = {
+    extra-substituters = [
+      "https://nix-community.cachix.org"
+      "https://cache.garnix.io"
+    ];
+    extra-trusted-public-keys = [
+      "nix-community.cachix.org-1:mB9FSh9qf2dCimDSUo8Zy7bkq5CX+/rkCWyvRCYg3Fs="
+      "cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g="
+    ];
+  };
+}

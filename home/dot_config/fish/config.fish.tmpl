@@ -33,6 +33,13 @@ fish_add_path -g $HOME/.local/bin
 set -gx COPILOT_STRICT_ALLOWLIST 1
 # Atuin: keep history search inline (no tmux popup).
 set -gx ATUIN_TMUX_POPUP false
+# GPG: tell gpg/ssh which terminal to prompt on (pinentry-curses, gpg-agent).
+set -gx GPG_TTY (tty)
+
+# ─── Editing mode ────────────────────────────────────────────────────────────
+# Vi keybindings (borrowed from nix-config review). NOTE: Atuin owns Ctrl-R and
+# fzf owns Ctrl-T/Alt-C below; vi mode coexists with those widget bindings.
+fish_vi_key_bindings
 
 # ─── Tool integrations (init order matters) ─────────────────────────────────
 # Starship prompt — single config shared with zsh/bash.

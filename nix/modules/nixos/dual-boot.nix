@@ -156,8 +156,7 @@ in
         enable = true;
         configurationLimit = cfg.configurationLimit;
 
-        xbootldrMountPoint =
-          lib.mkIf (cfg.xbootldrMountPoint != null) cfg.xbootldrMountPoint;
+        xbootldrMountPoint = lib.mkIf (cfg.xbootldrMountPoint != null) cfg.xbootldrMountPoint;
 
         # Separate-disk Windows: expose the EDK2 UEFI Shell so the generated
         # Windows entry can chainload Bootmgfw.efi from the other ESP.

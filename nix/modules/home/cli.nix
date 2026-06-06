@@ -12,29 +12,31 @@
     btop
     eza
     fd
-    fish             # interactive shell (native autosuggestions + syntax
-                     # highlighting; config in ~/.config/fish/config.fish).
-                     # Added as a plain package, not programs.fish.enable,
-                     # to satisfy the validate-config.sh invariant.
+    fish
+    # interactive shell (native autosuggestions + syntax
+    # highlighting; config in ~/.config/fish/config.fish).
+    # Added as a plain package, not programs.fish.enable,
+    # to satisfy the validate-config.sh invariant.
     fzf
     jq
-    lsof             # list open files/sockets (debugging, port owners)
-    yq-go            # yq formula -> yq-go in nixpkgs
+    lsof # list open files/sockets (debugging, port owners)
+    yq-go # yq formula -> yq-go in nixpkgs
     ripgrep
-    ripgrep-all      # binary: rga
+    ripgrep-all # binary: rga
     starship
-    tealdeer         # tldr/tlrc alternative in nixpkgs (binary: tldr)
+    tealdeer # tldr/tlrc alternative in nixpkgs (binary: tldr)
     tmux
-    tree             # directory tree view (eza --tree also works)
+    tree # directory tree view (eza --tree also works)
     yazi
     zoxide
     # ── Media / files / disk (borrowed from nix-config review) ──
-    ffmpeg           # multimedia framework (transcode/convert)
-    yt-dlp           # audio/video downloader
-    imagemagick      # image manipulation (convert/mogrify)
-    viu              # terminal image viewer
-    entr             # run a command when files change
-    dust             # `du` replacement (du-dust; chosen over ncdu — larger,
-                     # more active community; binary: dust)
+    ffmpeg # multimedia framework (transcode/convert)
+    yt-dlp # audio/video downloader
+    imagemagick # image manipulation (convert/mogrify)
+    viu # terminal image viewer
+    entr # run a command when files change
+    dust
+    # `du` replacement (du-dust; chosen over ncdu — larger,
+    # more active community; binary: dust)
   ];
 }

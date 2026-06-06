@@ -73,7 +73,7 @@ if is_nixos; then
     ok "system GC/optimise timer active"
   else note "no active system GC timer — run: sudo sys-setup --apply"; rebuild_needed=1; fi
 
-  cur_timezone="$(timedatectl 2>/dev/null | awk -F': ' '/Time zone/ { print $2 }' | awk '{ print $1 }')"
+  cur_timezone="$(bash "$REPO_ROOT/scripts/detect-timezone.sh")"
   if [[ "$cur_timezone" == "Europe/London" ]]; then ok "system time zone is Europe/London"
   else note "system time zone is ${cur_timezone:-unknown}, not Europe/London — run: sudo sys-setup --apply"; rebuild_needed=1; fi
 fi

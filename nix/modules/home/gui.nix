@@ -38,4 +38,11 @@
       # Nerd fonts: add via fonts.fontconfig + a nerd-fonts.* package in a
       # separate slice if you want JetBrains Mono / Meslo managed by Nix.
     ];
+
+  # Start Vicinae's background server at login so `vicinae toggle` (or a GNOME
+  # keyboard shortcut bound to it) works immediately. The upstream desktop entry
+  # runs `vicinae server --replace`; it does not open the launcher window.
+  xdg.configFile."autostart/vicinae.desktop" = pkgs.lib.mkIf pkgs.stdenv.isLinux {
+    source = "${pkgs.vicinae}/share/applications/vicinae.desktop";
+  };
 }

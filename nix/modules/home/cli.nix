@@ -17,6 +17,12 @@
     # highlighting; config in ~/.config/fish/config.fish).
     # Added as a plain package, not programs.fish.enable,
     # to satisfy the validate-config.sh invariant.
+    # Fish plugin: autopair (auto-close brackets/quotes). Auto-loads via
+    # vendor_conf.d from the profile share dir; no config needed.
+    # NOTE: fzf-fish was intentionally NOT added — it would double-bind
+    # Ctrl-T/Alt-C, which are already owned by `fzf --fish` + Atuin in
+    # config.fish. Keeping one fzf integration avoids the conflict.
+    fishPlugins.autopair
     fzf
     jq
     lsof # list open files/sockets (debugging, port owners)
@@ -35,8 +41,11 @@
     imagemagick # image manipulation (convert/mogrify)
     viu # terminal image viewer
     entr # run a command when files change
+    # `du` replacement (du-dust; chosen over ncdu — larger, more active
+    # community; binary: dust)
     dust
-    # `du` replacement (du-dust; chosen over ncdu — larger,
-    # more active community; binary: dust)
+    # Interactive cheatsheet launcher (Ctrl-G); complements tldr/tealdeer
+    # (quick examples) — different tool, no overlap.
+    navi
   ];
 }

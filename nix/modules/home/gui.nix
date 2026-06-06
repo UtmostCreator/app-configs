@@ -30,6 +30,22 @@
       vicinae # native, fast, extensible desktop launcher (Linux-only;
       #         meta.platforms = *-linux). The Linux counterpart to the
       #         macOS-only raycast launcher below.
+      # Vicinae's GNOME Shell integration. WITHOUT this extension, Vicinae on
+      # GNOME Wayland cannot drive window management or read the system
+      # clipboard: its server logs "vicinae@dagimg-dot extension not installed"
+      # and "Falling back to dummy clipboard server", and the launcher window
+      # fails to render (shows only a placeholder icon). The extension is also
+      # enabled via dconf in nix/modules/home/gnome-extensions.nix; installing
+      # the package alone is not enough — GNOME must be told to load it.
+      gnomeExtensions.vicinae # UUID: vicinae@dagimg-dot
+      # Wayland clipboard CLI (wl-copy / wl-paste). Makes the system clipboard
+      # scriptable and gives copy-on-select a reliable backing on GNOME
+      # Wayland; also what most clipboard-managers/tools expect to be present.
+      wl-clipboard
+      # Provides `pactl` (PulseAudio/PipeWire control CLI). Vicinae logs
+      # "pactl not found, audio control will not work" without it; this is the
+      # CLI only — PipeWire itself is the system audio server.
+      pulseaudio
       # IDE: VS Code is the single IDE shipped on all systems (see vscode above).
       # IntelliJ IDEA intentionally excluded for now (was jetbrains.idea on Linux
       # / intellij-idea-ce cask on macOS). Re-add in a future slice if needed.

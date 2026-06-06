@@ -73,6 +73,185 @@
 	r7 = !git reflog --date=local | grep 'checkout: moving from' | awk '{print $NF}' | awk '!seen[$0]++' | head -n 7
 	r = "!f() {\n  n=${1#-}\n  [ -z \"$n\" ] && n=10\n  cur=\"$(git rev-parse --abbrev-ref HEAD 2>/dev/null)\"\n  git reflog --format=\"%gs\" |\n    awk \"/^checkout: moving from / { print \\$NF }\" |\n    awk \"!seen[\\$0]++\" |\n    head -n \"$n\" |\n    awk -v cur=\"$cur\" \"{ if (\\$0 == cur) printf \\\"\\033[1;33m%s\\033[0m\\n\\\", \\$0; else print }\"\n}; f"
 	lastfile = log -1 --format=\"%ad %h %an %s\" --
+
+	# =====================================================================
+	# Suggested aliases mined from the Git books library
+	# (Pickaxe, bisect, blame, reflog, stash, rebase, range-diff, etc.)
+	# Each group maps to an everyday workflow. Safe + read-mostly first.
+	# =====================================================================
+
+	# --- Find WHERE a string/line was introduced or removed (pickaxe -S) ---
+	# git pick "<string>" [path]  -> commits that add/remove that exact text
+	# Source: "Using Pickaxe", git log -S searches diffs, not just current file
+	pick   = log -S
+	# Same as pick but shows the patch so you SEE the change in each commit
+	pickp  = log -p -S
+	# Regex pickaxe (-G): commits whose diff lines match a regex (changed too)
+	pickg  = log -G
+	pickgp = log -p -G
+	# Pickaxe + readable word-diff for prose/config hunting
+	pickw  = log -p --word-diff -S
+
+	# --- Find WHEN/why a line changed: blame & line-log ---
+	# git praise <file>  -> who last touched each line (whitespace-ignored, moves followed)
+	praise = blame -w -C -C
+	# git linelog <start>,<end>:<file>  -> history of a line range (evolution)
+	# git linelog ':<func>:<file>'      -> history of a single function's body
+	# (git log -L accepts both forms; one alias covers both.)
+	linelog = log -L
+
+	# --- Bug hunting via bisect (binary search for the first bad commit) ---
+	bs   = bisect start
+	bg   = bisect good
+	bb   = bisect bad
+	bsk  = bisect skip
+	bsr  = bisect reset
+	# git bsrun <cmd> -> automate bisect: exit 0 = good, 1-127 = bad, 125 = skip
+	bsrun = bisect run
+
+	# --- Diff & file-change inspection ---
+	# Word-level diff (intra-line changes) for staged or working tree
+	dw   = diff --word-diff
+	dc   = diff --cached
+	dcw  = diff --cached --word-diff
+	# What changed: just the file names / name+status of a diff
+	# (dns also takes two refs: `git dns <A> <B>` lists files that differ)
+	dn   = diff --name-only
+	dns  = diff --name-status
+	# Compact stat summary of working-tree changes
+	dstat = diff --stat
+	# Show a commit/ref with full patch and decoration
+	sh   = show --stat -p
+	# git wt <ref> -> what changed in a commit, name-status only
+	wt   = whatchanged --name-status
+
+	# --- Committing helpers ---
+	amend  = commit --amend
+	# Stage everything tracked then amend without editing the message
+	amendall = commit -a --amend --no-edit
+	wip    = commit -am "WIP"
+	# Empty checkpoint commit to mark a spot (easy to drop later)
+	cempty = commit --allow-empty -m
+	# Interactive partial staging (add -p) then commit
+	addp   = add --patch
+
+	# --- Branching & switching (modern porcelain) ---
+	sw   = switch
+	swc  = switch -c
+	# git back -> jump to the previously checked-out branch (switch -)
+	back = switch -
+	# git recent -> branches sorted by most recent commit, with dates
+	recent = for-each-ref --sort=-committerdate refs/heads/ --format='%(committerdate:relative)%09%(refname:short)'
+	# git brgone -> prune remotes, then force-delete local branches whose
+	# upstream is gone (i.e. the remote branch was deleted/merged on GitHub).
+	# Uses branch -D, so it also drops un-pushed commits on those branches.
+	brgone = "!git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs -r git branch -D"
+
+	# --- Rebasing & autosquash (clean history) ---
+	# git ri <n>  -> interactive rebase of last n commits
+	ri   = "!f(){ git rebase -i HEAD~${1:-10}; }; f"
+	# Autosquash interactive rebase (consumes fixup!/squash! commits)
+	ria  = "!f(){ git rebase -i --autosquash HEAD~${1:-10}; }; f"
+	# git fixup <commit> -> create fixup! commit targeting <commit>
+	fixup = commit --fixup
+	# git squashc <commit> -> create squash! commit targeting <commit>
+	squashc = commit --squash
+	rc   = rebase --continue
+	rab  = rebase --abort
+	rsk  = rebase --skip
+	# git reonto <newbase> <upstream> <branch> -> transplant a branch
+	reonto = rebase --onto
+
+	# --- Stash (backpack) ---
+	# git stashp -> interactively choose hunks to stash (partial)
+	stashp = stash push -p
+	# git stashk -> stash but keep the index (staged changes) intact
+	stashk = stash push --keep-index
+	# git stashs [stash@{n}] -> show patch of a stash
+	stashs = stash show -p
+	# git stashb <name> -> turn a stash into a new branch (recovers conflicts)
+	stashb = stash branch
+	# NOTE: to stash untracked files with a message, use the pre-existing
+	# `ss` alias (stash push -u -m). No separate alias needed here.
+
+	# --- Reflog & recovery (time machine) ---
+	rl   = reflog
+	# git rld -> reflog with local timestamps (when did HEAD move?)
+	rld  = reflog --date=local
+	# git undohard -> jump HEAD back to a reflog entry: git undohard 'HEAD@{3}'
+	undohard = reset --hard
+	# git lostcommits -> dangling commits left after reset/rebase (recover work)
+	lostcommits = "!git fsck --no-reflogs --lost-found 2>/dev/null | awk '/commit/{print $3}' | xargs -r -n1 git --no-pager log -1 --oneline"
+
+	# --- Compare two versions of history (range-diff) ---
+	# git rdiff <base>..<old> <base>..<new> -> diff two patch series (post-rebase)
+	rdiff = range-diff
+
+	# --- Cleanup (working tree) ---
+	# Preview what clean would delete (untracked + ignored), then act
+	cleann = clean -dxn
+	cleanf = clean -dxf
+
+	# --- Bug-history reports (where bugs cluster) ---
+	# git deleted <pathspec> -> find the commit that DELETED a path
+	deleted = "!f(){ git log --diff-filter=D --oneline -- \"$1\"; }; f"
+	# git churn -> files changed most often (refactor / risk hotspots)
+	churn = "!git log --all --format=format: --name-only | grep -v '^$' | sort | uniq -c | sort -rn | head -n 25"
+
+	# =====================================================================
+	# Aliases powered by external tools this repo ships via nix
+	# (nix/modules/home/dev.nix + cli.nix): difftastic, lazygit, gh,
+	# onefetch, gitleaks, fzf, ripgrep, bat. Each guards on `command -v`
+	# so the config stays portable when a tool is absent.
+	# =====================================================================
+
+	# --- difftastic: syntax-aware STRUCTURAL diff (better than line diff) ---
+	# git dft [args]   -> working-tree diff rendered structurally
+	# git dfts         -> staged structural diff
+	# git dftlog [path]-> per-commit structural diff (uses GIT_EXTERNAL_DIFF)
+	# Falls back to plain git diff if difft is not installed.
+	dft    = "!f(){ if command -v difft >/dev/null 2>&1; then GIT_EXTERNAL_DIFF=difft git diff \"$@\"; else git diff \"$@\"; fi; }; f"
+	dfts   = "!f(){ if command -v difft >/dev/null 2>&1; then GIT_EXTERNAL_DIFF=difft git diff --cached \"$@\"; else git diff --cached \"$@\"; fi; }; f"
+	dftlog = "!f(){ if command -v difft >/dev/null 2>&1; then GIT_EXTERNAL_DIFF=difft git log -p --ext-diff \"$@\"; else git log -p \"$@\"; fi; }; f"
+	# git dftshow <ref> -> structural diff of a single commit
+	dftshow= "!f(){ if command -v difft >/dev/null 2>&1; then GIT_EXTERNAL_DIFF=difft git show --ext-diff \"$@\"; else git show \"$@\"; fi; }; f"
+
+	# --- lazygit: full-screen git TUI (staging, rebase, stash, log) ---
+	# git ui  -> launch lazygit in the current repo
+	ui   = "!f(){ command -v lazygit >/dev/null 2>&1 || { echo 'missing: lazygit (nix dev.nix)'; return 1; }; lazygit \"$@\"; }; f"
+
+	# --- gh (GitHub CLI): PR / issue / repo workflows from inside git ---
+	# These guard ONLY on tool presence; gh's own exit code (auth, etc.)
+	# is passed through so real errors are not masked by a fallback echo.
+	# git pr        -> create a PR; git prs -> list PRs; git prv -> view current PR
+	pr   = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh pr create \"$@\"; }; f"
+	prs  = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh pr list \"$@\"; }; f"
+	prv  = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh pr view --web \"$@\"; }; f"
+	prco = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh pr checkout \"$@\"; }; f"
+	# git prchecks -> CI status for the current branch's PR
+	prchecks = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh pr checks \"$@\"; }; f"
+	# git open -> open the repo's GitHub page in a browser
+	open = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh repo view --web \"$@\"; }; f"
+
+	# --- onefetch: at-a-glance repo summary (langs, churn, authors) ---
+	info = "!f(){ command -v onefetch >/dev/null 2>&1 || { echo 'missing: onefetch'; return 1; }; onefetch \"$@\"; }; f"
+
+	# --- gitleaks: scan for committed secrets before pushing ---
+	# git secrets       -> scan full history; git secretstaged -> scan staged only
+	secrets = "!f(){ command -v gitleaks >/dev/null 2>&1 || { echo 'missing: gitleaks'; return 1; }; gitleaks detect --verbose \"$@\"; }; f"
+	secretstaged = "!f(){ command -v gitleaks >/dev/null 2>&1 || { echo 'missing: gitleaks'; return 1; }; gitleaks protect --staged --verbose \"$@\"; }; f"
+
+	# --- fzf: interactive pickers over git objects ---
+	# git fco -> fuzzy-pick a branch and check it out
+	fco = "!f(){ command -v fzf >/dev/null 2>&1 || { echo 'missing: fzf'; return 1; }; b=$(git branch --all --color=never | sed 's/^[* ] //;s#^remotes/[^/]*/##' | grep -v '^HEAD' | sort -u | fzf) && git switch \"$(echo \"$b\" | sed 's/^ *//')\"; }; f"
+	# git fco-log -> fuzzy-browse commits, preview each with delta/diff
+	flog = "!f(){ command -v fzf >/dev/null 2>&1 || { echo 'missing: fzf'; return 1; }; git log --oneline --color=always \"$@\" | fzf --ansi --no-sort --preview 'git show --color=always {1}'; }; f"
+	# git fstash -> fuzzy-pick a stash and show it
+	fstash = "!f(){ command -v fzf >/dev/null 2>&1 || { echo 'missing: fzf'; return 1; }; git stash list | fzf --preview 'git stash show -p {1}' | sed 's/:.*//' | xargs -r git stash show -p; }; f"
+
+	# --- ripgrep: search the working tree fast (respects .gitignore) ---
+	# git rgrep <pattern> -> ripgrep across tracked files (falls back to git grep)
+	rgrep = "!f(){ if command -v rg >/dev/null 2>&1; then rg \"$@\"; else git grep -n \"$@\"; fi; }; f"
 [credential]
 	helper = store
 

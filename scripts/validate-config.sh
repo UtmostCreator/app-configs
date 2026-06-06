@@ -113,6 +113,23 @@ for f in repo-docs/migration-source-of-truth.md repo-docs/migration-package-owne
   fi
 done
 
+# 10. No untracked *.nix under nix/. Nix flakes evaluate ONLY git-tracked files
+# (`nix/flake.nix` is consumed via the git tree), so a new module that is on
+# disk but never `git add`-ed is invisible to evaluation. If that module is
+# imported, the build dies with "Path '...' is not tracked by Git"; if it is a
+# new flake input/module not yet imported it can still pass locally and break
+# in CI/a clean checkout. Either way it is a latent build break, so flag it.
+# Intent-to-add (`git add -N`) counts as tracked and is fine.
+if [[ -d nix ]]; then
+  untracked_nix="$(git ls-files --others --exclude-standard -- 'nix/**/*.nix' 'nix/*.nix' 2>/dev/null || true)"
+  if [[ -n "$untracked_nix" ]]; then
+    err "untracked *.nix under nix/ — flakes ignore untracked files; run 'git add' so evaluation can see them:"
+    printf '%s\n' "$untracked_nix" | sed 's/^/      /' >&2
+  else
+    ok "no untracked *.nix under nix/ (flake can see every module)"
+  fi
+fi
+
 echo
 if (( ERRORS > 0 )); then
   printf '[validate-config] %d invariant violation(s)\n' "$ERRORS" >&2

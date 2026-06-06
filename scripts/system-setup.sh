@@ -33,7 +33,9 @@ fail() { printf '[system-setup:error] %s\n' "$*" >&2; exit 1; }
 [[ -f /etc/NIXOS ]] || grep -qi '^ID=nixos' /etc/os-release 2>/dev/null \
   || fail "not NixOS — this script only applies to NixOS systems"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SYS="/etc/nixos/configuration.nix"
+MODULE="/etc/nixos/app-configs-extra.nix"
 [[ -f "$SYS" ]] || fail "$SYS not found"
 USER_NAME="${USER_NAME:-${SUDO_USER:-$USER}}"
 FLAKE_ARG=""
@@ -44,17 +46,40 @@ log "System config: $SYS"
 log "Rebuild cmd: nixos-rebuild switch ${FLAKE_ARG:-(non-flake)}"
 
 SYSTEM_TIMEZONE="${SYSTEM_TIMEZONE:-Europe/London}"
-cur_timezone="$(timedatectl 2>/dev/null | awk -F': ' '/Time zone/ { print $2 }' | awk '{ print $1 }')"
-[[ -n "$cur_timezone" ]] || cur_timezone="unknown"
+cur_timezone="$(bash "$SCRIPT_DIR/detect-timezone.sh")"
 
-# Decide which settings are missing.
+# Two distinct questions, kept separate to make re-runs idempotent:
+#
+#   need_*  = should this setting be WRITTEN into the module we own ($MODULE)?
+#             True when it is absent from the user's own configuration.nix ($SYS).
+#             We deliberately ignore $MODULE here: $MODULE is fully regenerated
+#             every run, so each managed setting must be re-emitted or it would be
+#             dropped. (This is the bug fix: previously timezone used a different
+#             source than fish/trusted/gc, so a re-run could omit and revert it.)
+#
+#   have_*  = is this setting ALREADY satisfied on the live system or in $MODULE?
+#             Used only for the "nothing to do" early exit.
+in_sys()    { grep -q "$1" "$SYS" 2>/dev/null; }
+in_module() { [[ -f "$MODULE" ]] && grep -q "$1" "$MODULE" 2>/dev/null; }
+
 need_fish=1; need_trusted=1; need_gc=1; need_timezone=1
-grep -q "programs.fish.enable" "$SYS" && need_fish=0
-grep -q "trusted-users" "$SYS" && need_trusted=0
-grep -q "nix.gc" "$SYS" && need_gc=0
-[[ "$cur_timezone" == "$SYSTEM_TIMEZONE" ]] && need_timezone=0
+in_sys "programs.fish.enable" && need_fish=0
+in_sys "trusted-users" && need_trusted=0
+in_sys "nix.gc" && need_gc=0
+# Timezone: only let configuration.nix own it if it ALREADY pins our target zone;
+# a stale `time.timeZone = "America/New_York"` must NOT suppress our module entry.
+if grep -q "time.timeZone\s*=\s*\"${SYSTEM_TIMEZONE}\"" "$SYS" 2>/dev/null; then
+  need_timezone=0
+fi
 
-if (( need_fish == 0 && need_trusted == 0 && need_gc == 0 && need_timezone == 0 )); then
+# Already fully applied? (live state or already in the module we manage)
+have_fish=0; have_trusted=0; have_gc=0; have_timezone=0
+{ in_sys "programs.fish.enable" || in_module "programs.fish.enable"; } && have_fish=1
+{ in_sys "trusted-users" || in_module "trusted-users"; } && have_trusted=1
+{ in_sys "nix.gc" || in_module "nix.gc"; } && have_gc=1
+{ [[ "$cur_timezone" == "$SYSTEM_TIMEZONE" ]] || in_module "time.timeZone"; } && have_timezone=1
+
+if (( have_fish == 1 && have_trusted == 1 && have_gc == 1 && have_timezone == 1 )); then
   log "All recommended system settings already present."
   if [[ "$MODE" == "apply" ]]; then
     log "Running nixos-rebuild to ensure system is current…"
@@ -65,7 +90,8 @@ if (( need_fish == 0 && need_trusted == 0 && need_gc == 0 && need_timezone == 0 
   exit 0
 fi
 
-# Build the snippet (only the missing parts).
+# Build the snippet. Every setting not owned by configuration.nix is (re)emitted
+# so the regenerated $MODULE is always complete and never drops a prior setting.
 SNIPPET="$(mktemp)"
 {
   echo ""
@@ -104,8 +130,8 @@ fi
 [[ "$(id -u)" -eq 0 ]] || fail "--apply needs root: sudo bash scripts/system-setup.sh --apply"
 
 # Write as a SEPARATE module to avoid mangling the user's configuration.nix,
-# and import it from configuration.nix if not already imported.
-MODULE="/etc/nixos/app-configs-extra.nix"
+# and import it from configuration.nix if not already imported. ($MODULE is
+# defined near the top alongside the detection logic.)
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 cp -a "$SYS" "${SYS}.bak-${STAMP}" || fail "backup failed"
 log "Backed up $SYS -> ${SYS}.bak-${STAMP}"

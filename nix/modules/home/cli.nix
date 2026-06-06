@@ -28,5 +28,13 @@
     tree             # directory tree view (eza --tree also works)
     yazi
     zoxide
+    # ── Media / files / disk (borrowed from nix-config review) ──
+    ffmpeg           # multimedia framework (transcode/convert)
+    yt-dlp           # audio/video downloader
+    imagemagick      # image manipulation (convert/mogrify)
+    viu              # terminal image viewer
+    entr             # run a command when files change
+    dust             # `du` replacement (du-dust; chosen over ncdu — larger,
+                     # more active community; binary: dust)
   ];
 }

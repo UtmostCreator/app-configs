@@ -22,6 +22,7 @@
     gitleaks
     just
     lazygit
+    onefetch         # git repository summary (languages, churn); binary: onefetch
     lnav
     lychee
     mariadb          # provides the `mysql` client; lighter than full mysql-client formula
@@ -29,6 +30,8 @@
     deadnix          # find unused Nix bindings
     nh               # friendlier home-manager/nixos-rebuild + GC wrapper
     nix-index        # nix-locate: which package provides a missing command
+    nix-output-monitor # `nom`: readable, structured build output (use with nh)
+    nvd              # nix version diff: shows what packages changed on rebuild
     nixfmt-rfc-style # canonical Nix formatter (RFC 166 style)
     statix           # Nix linter (anti-patterns, suggestions)
     neovim

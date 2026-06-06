@@ -54,8 +54,7 @@ cur_timezone="$(bash "$SCRIPT_DIR/detect-timezone.sh")"
 #             True when it is absent from the user's own configuration.nix ($SYS).
 #             We deliberately ignore $MODULE here: $MODULE is fully regenerated
 #             every run, so each managed setting must be re-emitted or it would be
-#             dropped. (This is the bug fix: previously timezone used a different
-#             source than fish/trusted/gc, so a re-run could omit and revert it.)
+#             dropped.
 #
 #   have_*  = is this setting ALREADY satisfied on the live system or in $MODULE?
 #             Used only for the "nothing to do" early exit.

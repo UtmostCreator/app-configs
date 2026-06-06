@@ -75,8 +75,7 @@ poll_repo() {
   local prs
   # statusCheckRollup gives us per-PR aggregated CI status without a
   # second API call; mergedAt lets us distinguish merge vs close on
-  # the next poll. (Codex P2a — previously all transitions fired
-  # pr_review_requested and ci_failed was unreachable.)
+  # the next poll.
   prs="$(gh pr list --repo "$repo" --state open \
     --json number,title,author,reviewDecision,mergeable,updatedAt,statusCheckRollup \
     2>/dev/null || echo '[]')"

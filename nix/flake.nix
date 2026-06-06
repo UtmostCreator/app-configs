@@ -13,6 +13,11 @@
       url = "github:LnL7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -21,11 +26,23 @@
       nixpkgs,
       home-manager,
       nix-darwin,
+      treefmt-nix,
       ...
     }:
     let
       vars = import ./vars/default.nix;
       mkHome = import ./lib/mkhome.nix { inherit inputs; };
+
+      # Formatter config (treefmt-nix), evaluated per supported system so
+      # `nix fmt` and `nix flake check` work on both Linux and macOS hosts.
+      formatterSystems = [
+        "x86_64-linux"
+        "aarch64-darwin"
+      ];
+      forAllSystems = nixpkgs.lib.genAttrs formatterSystems;
+      treefmtEval = forAllSystems (
+        system: treefmt-nix.lib.evalModule nixpkgs.legacyPackages.${system} ./treefmt.nix
+      );
 
       mkProfile =
         name:
@@ -39,6 +56,12 @@
         };
     in
     {
+      # `nix fmt` formats the tree; `nix flake check` verifies formatting.
+      formatter = forAllSystems (system: treefmtEval.${system}.config.build.wrapper);
+      checks = forAllSystems (system: {
+        formatting = treefmtEval.${system}.config.build.check self;
+      });
+
       homeConfigurations = {
         linux-desktop = mkProfile "linux-desktop";
         linux-cli = mkProfile "linux-cli";

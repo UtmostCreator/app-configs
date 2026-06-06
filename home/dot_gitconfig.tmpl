@@ -13,7 +13,13 @@
 	com = commit -m
 	hist = log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short
 	adog = log --all --decorate --oneline --graph
+	# fixup the previous commit for a later autosquash rebase
+	gcfp = commit --fixup HEAD
+	fixprev = commit --fixup HEAD
+	# undo the last commit but keep its changes staged
+	grs = reset --soft HEAD~
 	# diff
+	gd = diff
 	diffrom = cherry -v
 	diffromd = cherry -v develop
 	# alias listing

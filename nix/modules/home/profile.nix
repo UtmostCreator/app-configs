@@ -9,7 +9,10 @@
   # Default is "work", which ships nothing personal. This keeps personal chat
   # apps off shared/work machines unless explicitly opted in.
   options.myConfig.profile = lib.mkOption {
-    type = lib.types.enum [ "work" "personal" ];
+    type = lib.types.enum [
+      "work"
+      "personal"
+    ];
     default = "work";
     example = "personal";
     description = ''

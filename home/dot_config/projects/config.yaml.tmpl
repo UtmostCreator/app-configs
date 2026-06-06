@@ -4,7 +4,7 @@
   Do NOT use `toYaml .` here — that would leak personal.yaml fields
   (name, email, signingKey, hostProfile, gui) into a world-readable file.
 
-  scripts/projects/lib.sh reads this file via yq. If no projects.yaml
+  ops/projects/lib.sh reads this file via yq. If no projects.yaml
   exists yet, the stub keeps the file syntactically valid so
   `chezmoi diff` on a fresh clone does not fail.
 */ -}}

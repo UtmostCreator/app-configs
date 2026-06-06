@@ -1,7 +1,7 @@
 # Source-of-truth matrix (final)
 
 Reviewed copy of `repo-docs/migration-source-of-truth.draft.md`. Phase 2 reads only
-this file. Regenerate the draft via `bash scripts/check-source-of-truth.sh`.
+this file. Regenerate the draft via `bash ops/check-source-of-truth.sh`.
 
 Branch: `feat/dotfiles-migration`
 Decision date: 2026-05-24
@@ -23,7 +23,7 @@ Decision date: 2026-05-24
 | `~/.config/karabiner/karabiner.json` | only `configs/karabiner/karabiner.json` | **`configs/karabiner/karabiner.json`** | Single source. macOS-gated by `.chezmoiignore` in Phase 4. |
 | VS Code `settings.json` | `configs/vscode/user/settings.json` + `configs/vscode/user/settings.minimal.json` | **merge full + minimal via template** | Fold `settings.minimal.json` into a single `settings.json.tmpl` with `{{ if .minimal }}…{{ else }}…{{ end }}`. |
 | VS Code `keybindings.json` | only `configs/vscode/keybindings.json` | **`configs/vscode/keybindings.json`** | Single source. |
-| `~/.local/bin/git-branch-origin` | `scripts/git-branch-origin.sh`, `backup-sanitized/home/.local/bin/git-branch-origin` | **`scripts/git-branch-origin.sh`** | Repo copy is 424 lines vs 161 in backup; has more flags, --guess mode, exit codes, and is newer in git. Copy into `home/dot_local/bin/executable_git-branch-origin` for chezmoi to deploy with 0755. |
+| `~/.local/bin/git-branch-origin` | `ops/git-branch-origin.sh`, `backup-sanitized/home/.local/bin/git-branch-origin` | **`ops/git-branch-origin.sh`** | Repo copy is 424 lines vs 161 in backup; has more flags, --guess mode, exit codes, and is newer in git. Copy into `home/dot_local/bin/executable_git-branch-origin` for chezmoi to deploy with 0755. |
 
 ## SSH-agent helper disposition
 
@@ -32,7 +32,7 @@ Decision date: 2026-05-24
 | `configs/shell/ssh-agent/ssh-agent.sh` | **migrate to `home/dot_config/app-configs/ssh-agent.sh`** | Sourced from `~/.bashrc` / `~/.zshrc`. chezmoi-owned. |
 | `configs/shell/ssh-agent/ssh-agent.fish` | **migrate to `home/dot_config/fish/conf.d/ssh-agent.fish`** | Fish auto-loads everything in `conf.d/`. chezmoi-owned. |
 | `configs/shell/ssh-agent/README.md` | **migrate to `repo-docs/unix/ssh-agent-snippets.md`** | Keep as reference docs. |
-| `scripts/unix/ssh-agent-setup.sh` | **keep in place as bootstrap helper** | Bootstrap.sh + repo-docs/unix/QUICKSTART.md call it. Update its source paths in Phase 4 to point at `home/dot_config/app-configs/` and `home/dot_config/fish/conf.d/`. |
+| `ops/unix/ssh-agent-setup.sh` | **keep in place as bootstrap helper** | Bootstrap.sh + repo-docs/unix/QUICKSTART.md call it. Update its source paths in Phase 4 to point at `home/dot_config/app-configs/` and `home/dot_config/fish/conf.d/`. |
 
 ## Files with no duplicates (migrate directly)
 
@@ -79,9 +79,9 @@ become deletes:
 
 ## Validation
 
-- [x] `scripts/check-source-of-truth.sh` ran cleanly and emitted the draft.
+- [x] `ops/check-source-of-truth.sh` ran cleanly and emitted the draft.
 - [x] Every TBD row from the draft is resolved.
 - [x] Every `configs/` file has a disposition (migrate / merge / delete).
 - [x] Every `backup-sanitized/` file has a disposition.
 - [x] SSH-agent files all have an explicit owner.
-- [x] `scripts/git-branch-origin.sh` compared against backup copy before choosing.
+- [x] `ops/git-branch-origin.sh` compared against backup copy before choosing.

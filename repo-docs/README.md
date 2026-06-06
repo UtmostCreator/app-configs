@@ -33,6 +33,6 @@ the topic you need.
 
 ## Convention
 
-Setup docs assume you ran `bash scripts/bootstrap.sh --yes` once on the
+Setup docs assume you ran `bash ops/bootstrap.sh --yes` once on the
 host. Day-to-day, use `mise run sync` (preview) and `mise run sync:apply`
 (apply). See [`bootstrap.md`](bootstrap.md) for the full runbook.

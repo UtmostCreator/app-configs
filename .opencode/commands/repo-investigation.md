@@ -22,11 +22,11 @@ I run a read-first investigation workflow, gathering exact evidence before propo
 
 ## When Investigating
 
-1. Start with `scripts/ai/ai-search.sh text ...` for broad discovery.
-2. Use `scripts/ai/ai-search.sh files ...` or `fd-files.sh` for file discovery.
-3. Preview candidate files with `scripts/ai/preview-file.sh`.
-4. Use `scripts/ai/git-forensics.sh` for history tracing.
-5. Use `scripts/ai/gh-pr-context.sh`, GitHub MCP, or `gh` for PR and issue context.
+1. Start with `ops/ai/ai-search.sh text ...` for broad discovery.
+2. Use `ops/ai/ai-search.sh files ...` or `fd-files.sh` for file discovery.
+3. Preview candidate files with `ops/ai/preview-file.sh`.
+4. Use `ops/ai/git-forensics.sh` for history tracing.
+5. Use `ops/ai/gh-pr-context.sh`, GitHub MCP, or `gh` for PR and issue context.
 6. Prefer read-only work until root cause is identified.
 7. Summarize exact commands used, file paths, line ranges, commits, and confidence.
 8. Do not use destructive commands.

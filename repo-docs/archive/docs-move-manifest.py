@@ -33,7 +33,7 @@ def refs(path):
     return out
 
 def is_kit(f):
-    return (f.startswith(("docs/ai/", ".opencode/", "tools/ai/", "scripts/ai/",
+    return (f.startswith(("docs/ai/", ".opencode/", "tools/ai/", "ops/ai/",
             ".schemas/", ".github/")) or f in ("AGENTS.md", "PLACEHOLDERS.md", "llms.txt"))
 
 docs = list_docs()

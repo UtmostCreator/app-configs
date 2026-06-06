@@ -59,7 +59,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$beginMarker = '# --- ssh-agent 8h prompt (managed by repo-docs/windows/scripts/Install-SshAgentProfileSnippet.ps1) ---'
+$beginMarker = '# --- ssh-agent 8h prompt (managed by repo-docs/windows/ops/Install-SshAgentProfileSnippet.ps1) ---'
 $endMarker   = '# --- end ssh-agent 8h prompt ---'
 
 function New-SnippetBody {

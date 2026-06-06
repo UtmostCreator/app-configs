@@ -17,7 +17,7 @@ The Windows runbook lives at [`repo-docs/windows/QUICKSTART.md`](../windows/QUIC
 From a clone of this repo:
 
 ```bash
-bash scripts/unix/ssh-agent-setup.sh
+bash ops/unix/ssh-agent-setup.sh
 ```
 
 Then open a new terminal. Done.
@@ -27,13 +27,13 @@ separated, basenames under `~/.ssh/` or absolute paths):
 
 ```bash
 APP_CONFIGS_SSH_KEYS="github.uc.ll5 work_ed25519" \
-    bash scripts/unix/ssh-agent-setup.sh
+    bash ops/unix/ssh-agent-setup.sh
 ```
 
 To uninstall:
 
 ```bash
-bash scripts/unix/ssh-agent-setup.sh --remove
+bash ops/unix/ssh-agent-setup.sh --remove
 ```
 
 ---

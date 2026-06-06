@@ -27,9 +27,9 @@ home/dot_config/app-configs/
 home/dot_config/fish/conf.d/
     ssh-agent.fish               # fish loader (chezmoi-managed; auto-sourced)
 
-scripts/unix/
+ops/unix/
     ssh-agent-setup.sh           # idempotent installer (install / --remove);
-                                 # also re-used by scripts/bootstrap.sh step 8.
+                                 # also re-used by ops/bootstrap.sh step 8.
 
 docs/unix/
     QUICKSTART.md                # 1-command runbook
@@ -142,7 +142,7 @@ Set it in three places, in order of precedence:
 3. Via the installer's environment, which writes (1) for you:
    ```bash
    APP_CONFIGS_SSH_KEYS="github.uc.ll5 work" \
-       bash scripts/unix/ssh-agent-setup.sh
+       bash ops/unix/ssh-agent-setup.sh
    ```
 
 ## Idempotency rules
@@ -164,7 +164,7 @@ Set it in three places, in order of precedence:
 ## Rollback
 
 ```bash
-bash scripts/unix/ssh-agent-setup.sh --remove
+bash ops/unix/ssh-agent-setup.sh --remove
 ```
 
 Removes:

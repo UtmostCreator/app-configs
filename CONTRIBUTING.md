@@ -52,8 +52,8 @@ Run only the checks that match your change unless you touched shared generation 
 Run all checks end-to-end:
 
 ```bash
-bash scripts/doctor.sh           # local toolchain health check
-bash scripts/validate-config.sh  # architecture invariant guard
+bash ops/doctor.sh           # local toolchain health check
+bash ops/validate-config.sh  # architecture invariant guard
 mise run repo:check              # doctor + validator + optional nix flake check
 ```
 
@@ -65,19 +65,19 @@ mise run lint:shell        # bash -n + shellcheck on migration scripts
 mise run repo:validate     # invariant guard only
 ```
 
-The pre-commit hook (`scripts/hooks/pre-commit.sh`, wired via
+The pre-commit hook (`ops/hooks/pre-commit.sh`, wired via
 `.lefthook.yml`) runs:
 
 - merge-conflict marker detection on staged blobs
 - `php -l` lint for staged `.php` files (skipped if PHP is absent)
 - secret scan via `gitleaks` (or `trufflehog`, or skipped if neither is present)
 
-The pre-push hook runs `bash scripts/validate-config.sh`.
+The pre-push hook runs `bash ops/validate-config.sh`.
 
 ### Recommended local tools
 
 These are needed by the lint/test surfaces above. Owned by Home Manager
-(see `nix/modules/home/dev.nix`), so `bash scripts/bootstrap.sh --yes`
+(see `nix/modules/home/dev.nix`), so `bash ops/bootstrap.sh --yes`
 installs them. On macOS without Nix, `brew install <tool>` is the
 fallback.
 
@@ -111,7 +111,7 @@ php tools/ai/generate-ai-catalog.php
 Repomix context bundles are generated with:
 
 ```powershell
-bash scripts/ai/repomix-scc-router.sh all .
+bash ops/ai/repomix-scc-router.sh all .
 ```
 
 ## Pull Requests

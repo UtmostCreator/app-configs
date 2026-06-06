@@ -42,13 +42,13 @@ permission:
     'git blame*': allow
     'git branch*': allow
     'git rev-parse*': allow
-    'bash scripts/ai/ai-search.sh *': allow
-    'bash scripts/ai/rg-code.sh *': allow
-    'bash scripts/ai/fd-files.sh *': allow
-    'bash scripts/ai/preview-file.sh *': allow
-    'bash scripts/ai/query-usage.sh *': allow
-    'bash scripts/ai/git-forensics.sh *': allow
-    'bash scripts/ai/ai-doc-check.sh --check*': allow
+    'bash ops/ai/ai-search.sh *': allow
+    'bash ops/ai/rg-code.sh *': allow
+    'bash ops/ai/fd-files.sh *': allow
+    'bash ops/ai/preview-file.sh *': allow
+    'bash ops/ai/query-usage.sh *': allow
+    'bash ops/ai/git-forensics.sh *': allow
+    'bash ops/ai/ai-doc-check.sh --check*': allow
     'php tools/ai/validate-*.php *': allow
     'php tools/ai/generate-*.php --check*': allow
 ---

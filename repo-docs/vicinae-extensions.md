@@ -9,7 +9,7 @@ This repo ships the supporting toolchain and a one-command helper:
 
 - Runtime: `vicinae` (gui.nix) + `node`/`npm` (dev.nix `nodejs_22`) + `git`
   (common/packages.nix) — everything the Vicinae dev workflow needs.
-- Helper: `scripts/vicinae-extension.sh`, exposed as the `vicinae-ext` command
+- Helper: `ops/vicinae-extension.sh`, exposed as the `vicinae-ext` command
   (chezmoi `~/.local/bin/vicinae-ext`).
 
 There are three ways to install an extension.

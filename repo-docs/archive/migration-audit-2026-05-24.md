@@ -103,9 +103,9 @@ all real hosts.
 ## 3. Verification run (this turn)
 
 ```text
-bash scripts/validate-config.sh    -> all invariants pass
-bash scripts/doctor.sh             -> exits 0 (gitleaks now present via mise shims)
-bash scripts/bootstrap.sh --dry-run -> clean
+bash ops/validate-config.sh    -> all invariants pass
+bash ops/doctor.sh             -> exits 0 (gitleaks now present via mise shims)
+bash ops/bootstrap.sh --dry-run -> clean
 mise run repo:validate             -> pass
 mise run lint:shell                -> pass
 mise run tools:optional:list       -> all 5 binaries resolve

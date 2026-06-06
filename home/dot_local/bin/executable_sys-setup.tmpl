@@ -4,4 +4,4 @@
 # without --apply. Apply needs root:  sudo sys-setup --apply
 set -euo pipefail
 DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
-exec bash "$DOTFILES_DIR/scripts/system-setup.sh" "$@"
+exec bash "$DOTFILES_DIR/ops/system-setup.sh" "$@"

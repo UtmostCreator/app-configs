@@ -5,4 +5,4 @@
 # The Linux/NixOS equivalent of macOS `brewup`. Usable from any shell, anywhere.
 set -euo pipefail
 DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
-exec bash "$DOTFILES_DIR/scripts/update-all.sh" --apply "$@"
+exec bash "$DOTFILES_DIR/ops/update-all.sh" --apply "$@"

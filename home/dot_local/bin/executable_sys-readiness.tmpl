@@ -4,4 +4,4 @@
 # system rebuild. Read-only. Usable from any shell, anywhere.
 set -euo pipefail
 DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
-exec bash "$DOTFILES_DIR/scripts/readiness.sh" "$@"
+exec bash "$DOTFILES_DIR/ops/readiness.sh" "$@"

@@ -5,7 +5,7 @@ description: Use registered scripts with risk-based approvals and evidence.
 
 # AI Scripts Skill
 
-Use this skill when selecting or running repository scripts from `scripts/ai/`.
+Use this skill when selecting or running repository scripts from `ops/ai/`.
 
 ## Selection order
 
@@ -28,15 +28,15 @@ Ask before mutating or high-impact wrappers, including `ai-edit`, `ai-rollback`,
 
 ```bash
 git status --short
-AI_OUTPUT=json bash scripts/ai/ai-search.sh changed <query> . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh staged <query> . --fixed
-AI_OUTPUT=json bash scripts/ai/ai-search.sh tracked <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh changed <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh staged <query> . --fixed
+AI_OUTPUT=json bash ops/ai/ai-search.sh tracked <query> . --fixed
 ```
 
 Use `preview-file` for line-level context:
 
 ```bash
-AI_OUTPUT=json bash scripts/ai/preview-file.sh <path> --around <line> --context 30
+AI_OUTPUT=json bash ops/ai/preview-file.sh <path> --around <line> --context 30
 ```
 
 If runtime lacks `bash` or `php`, record the command as not run and keep claims bounded.

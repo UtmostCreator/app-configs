@@ -11,7 +11,7 @@ Verified host: **NixOS 26.11 (Zokor)**, `x86_64-linux`, host profile
 
 ## TL;DR — why you cannot just run `bootstrap.sh --yes`
 
-`scripts/bootstrap.sh` step 1 runs the **Determinate Systems Nix
+`ops/bootstrap.sh` step 1 runs the **Determinate Systems Nix
 installer**. On NixOS, Nix is owned by the OS (`/run/current-system/sw/bin/nix`),
 so that step is wrong and must be **skipped**. Run the remaining steps
 manually in the order below. Everything after step 1 works on NixOS with
@@ -46,7 +46,7 @@ nix flake check ./nix
 # 2. chezmoi: init + preview + snapshot + apply
 chezmoi init --source="$PWD"
 chezmoi diff
-bash scripts/snapshot-home.sh            # backs up $HOME files chezmoi manages
+bash ops/snapshot-home.sh            # backs up $HOME files chezmoi manages
 chezmoi apply                            # see "chezmoi TTY conflict" below if it aborts
 
 # 3. Home Manager (standalone) — installs ~40 CLI packages + node
@@ -60,11 +60,11 @@ mise install
 lefthook install
 
 # 6. ssh-agent helper (optional; installs a shell snippet)
-bash scripts/unix/ssh-agent-setup.sh
+bash ops/unix/ssh-agent-setup.sh
 
 # 7. health checks (must pass; php/code/repomix WARNs are expected and non-fatal)
-bash scripts/doctor.sh
-bash scripts/validate-config.sh
+bash ops/doctor.sh
+bash ops/validate-config.sh
 ```
 
 ## Failure modes on NixOS (and how each was resolved)
@@ -105,7 +105,7 @@ bash scripts/validate-config.sh
   shell (CI, automation, no TTY) it cannot prompt, so it aborts.
 - **Fix:** decide per file. To let the **repo source win** (overwrite the
   local edit), run `chezmoi apply --force`. The pre-apply snapshot
-  (`scripts/snapshot-home.sh`, written to
+  (`ops/snapshot-home.sh`, written to
   `~/.local/state/dotfiles-snapshots/<UTC>/`) preserves the old content for
   rollback. To **keep** a local edit, exclude that path or re-add it to the
   chezmoi source first.
@@ -189,7 +189,7 @@ Starship, Atuin, fzf, zoxide, yazi (`yy`), and mise all initialise for fish.
    `home/dot_bashrc.tmpl`) `exec`s into fish for **interactive** shells when
    fish is on PATH and you are not already in fish. So a new terminal lands
    in fish without any system change. Escape hatch: run `NO_FISH=1 bash` to
-   stay in bash (useful for scripts/tooling that expect bash).
+   stay in bash (useful for ops/tooling that expect bash).
 
 2. **Persistent login shell (system-level, you apply once):** the real login
    shell on NixOS is set in `/etc/nixos/configuration.nix`, not via `chsh`

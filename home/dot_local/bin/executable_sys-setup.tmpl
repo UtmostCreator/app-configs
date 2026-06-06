@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # sys-setup — apply the NixOS SYSTEM layer that Home Manager cannot: fish login
-# shell, trusted-users, declarative GC, then nixos-rebuild switch. Report-only
+# shell, trusted-users, declarative GC, Europe/London time zone, then nixos-rebuild switch. Report-only
 # without --apply. Apply needs root:  sudo sys-setup --apply
 set -euo pipefail
 DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"

@@ -55,7 +55,7 @@ fish is installed and is the interactive shell via the `.bashrc` exec, but the
 persistent *login* shell is set at the system level:
 
 ```bash
-sudo sys-setup --apply             # adds programs.fish.enable + login shell + GC, then nixos-rebuild
+sudo sys-setup --apply             # adds fish login shell + trusted-users + GC + Europe/London time zone, then nixos-rebuild
 ```
 
 See `repo-docs/nixos-rebuild.md` for what this does and `repo-docs/install-nixos.md` for

@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# vicinae-ext — set up a Raycast-compatible extension for Vicinae from source
+# (clone raycast/extensions, install deps + @vicinae/api, run `vici develop`).
+# Usable from any shell, anywhere. See repo-docs/vicinae-extensions.md.
+#   vicinae-ext --list
+#   vicinae-ext visual-studio-code-recent-projects
+#   vicinae-ext <name> --build
+set -euo pipefail
+DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
+exec bash "$DOTFILES_DIR/scripts/vicinae-extension.sh" "$@"

@@ -191,6 +191,9 @@ if is_nixos; then
     || { warn "your user is not in nix trusted-users (auto-optimise warning)"; need_rebuild=1; }
   { systemctl is-active nix-gc.timer >/dev/null 2>&1 || systemctl is-active nix-optimise.timer >/dev/null 2>&1; } \
     || { warn "no active system-level nix.gc/optimise timer"; need_rebuild=1; }
+  cur_timezone="$(timedatectl 2>/dev/null | awk -F': ' '/Time zone/ { print $2 }' | awk '{ print $1 }')"
+  [[ "$cur_timezone" == "Europe/London" ]] \
+    || { warn "system time zone is ${cur_timezone:-unknown}, not Europe/London"; need_rebuild=1; }
 
   if [[ "$need_rebuild" == 1 ]]; then
     log "To finish system setup, run the automated helper:"

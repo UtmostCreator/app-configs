@@ -1,0 +1,50 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugin": [
+    "@ex-machina/opencode-anthropic-auth@1.8.1",
+    "opencode-gemini-auth@1.4.10"
+  ],
+  "mcp": {
+    "jira": {
+      "type": "remote",
+      "url": "https://mcp.atlassian.com/v1/mcp",
+      "enabled": true
+    },
+    "github": {
+      "type": "remote",
+      "url": "https://api.githubcopilot.com/mcp",
+      "headers": {
+        "Authorization": "Bearer {env:GITHUB_PAT}"
+      },
+      "enabled": false
+    },
+    "gitlab": {
+      "type": "local",
+      "command": [
+        "glab",
+        "mcp",
+        "serve"
+      ],
+      "enabled": false
+    },
+    "terraform": {
+      "type": "local",
+      "command": [
+        "docker",
+        "run",
+        "-i",
+        "--rm",
+        "hashicorp/terraform-mcp-server"
+      ],
+      "enabled": false
+    },
+    "docker": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "docker-mcp"
+      ],
+      "enabled": false
+    }
+  }
+}

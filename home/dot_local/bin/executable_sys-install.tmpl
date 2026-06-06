@@ -4,4 +4,4 @@
 # git hooks). Idempotent. Usable from any shell, anywhere.
 set -euo pipefail
 DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
-exec bash "$DOTFILES_DIR/scripts/install.sh" "$@"
+exec bash "$DOTFILES_DIR/ops/install.sh" "$@"

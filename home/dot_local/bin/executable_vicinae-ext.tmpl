@@ -7,4 +7,4 @@
 #   vicinae-ext <name> --build
 set -euo pipefail
 DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
-exec bash "$DOTFILES_DIR/scripts/vicinae-extension.sh" "$@"
+exec bash "$DOTFILES_DIR/ops/vicinae-extension.sh" "$@"

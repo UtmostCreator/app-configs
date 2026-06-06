@@ -10,7 +10,7 @@ Tracking ledger: [`../scc-by-file.csv`](../scc-by-file.csv) (one `Status` checkb
 - `- [x]` — repo-bounded, audit complete (171 files, disposition recorded).
 - `- [-]` — **out of scope: AI-kit auto-shipped** by the `ai-universal-rules`
   package (288 files). Identified from `.ai-install-manifest.json` `files` map
-  plus kit roots (`docs/ai/`, `.opencode/`, `.schemas/`, `scripts/ai/`,
+  plus kit roots (`docs/ai/`, `.opencode/`, `.schemas/`, `ops/ai/`,
   `tools/ai/`, `.github/hooks/`, AI workflows, `AGENTS.md`, `PLACEHOLDERS.md`).
   These are never audited, edited, moved, or checked off here.
 
@@ -42,7 +42,7 @@ Evidence: `.gitignore` (lines 43-57), `docs/ai/generated/README.md`,
 | **A. Repo-owned docs** | `docs/*.md`, `docs/*.sh`, `docs/*.ps1`, `docs/architecture/`, `docs/projects/`, `docs/research/`, `docs/templates/`, `docs/unix/`, `docs/windows/` | This repo | **Candidate to move to `repo-docs/`** |
 | **B. AI-kit (foreign, auto-shipped)** | `docs/ai/**` (incl. capabilities, snippets, shared, schemas refs), `.opencode/**`, `AGENTS.md`, `PLACEHOLDERS.md`, `.ai-install-manifest.json` | Auto-shipped by another project (ai-universal-rules kit) | **OUT OF SCOPE.** Do NOT audit, edit, move, or check off. These are always shipped automatically and are not this repo's concern. Leave their CSV rows as `- [ ]`. |
 | **C. Generated (never committed)** | `docs/ai/generated/**`, `docs/generated/**` | Generators in `tools/ai/` | Out of scope to move; verify generator still produces them. |
-| **D. Repo source/config** | `home/**`, `nix/**`, `scripts/**`, `tools/**`, `tests/**`, `reference/**`, `.schemas/**`, root dotfiles/configs | This repo | Audit in place; not a `docs/` move target. |
+| **D. Repo source/config** | `home/**`, `nix/**`, `ops/**`, `tools/**`, `tests/**`, `reference/**`, `.schemas/**`, root dotfiles/configs | This repo | Audit in place; not a `docs/` move target. |
 
 > **Scope rule (Bucket B):** `docs/ai/` and other AI-kit files are auto-shipped
 > by another project and are out of this audit's scope entirely — we do not
@@ -69,7 +69,7 @@ Checkboxes flip `[ ]` -> `[x]` as each item completes. Tallies (update as we go)
 Verified against the upstream kit `UtmostCreator/awesome-ai-utmostcreator`
 (README, fetched 2026-06-02). The kit's "What Gets Installed" table installs
 exactly: `AGENTS.md`, `CLAUDE.md`, `.github/`, `.opencode/`, **`docs/ai/`**,
-`scripts/ai/`, `schemas/ai/` (-> `.schemas/` here), `policies/`. Its "Untracked
+`ops/ai/`, `schemas/ai/` (-> `.schemas/` here), `policies/`. Its "Untracked
 Folders" note says `docs/` is "Created by installer or self-install" but only
 the **`docs/ai/`** subtree is kit content.
 
@@ -93,16 +93,16 @@ receives the 41 repo-owned files, mirroring their sub-structure.
 | `docs/research/**` | `repo-docs/research/**` |
 | `docs/templates/**` | `repo-docs/templates/**` |
 | `docs/unix/**` | `repo-docs/unix/**` |
-| `docs/windows/**` (incl. `windows/scripts/*.ps1`) | `repo-docs/windows/**` |
+| `docs/windows/**` (incl. `windows/ops/*.ps1`) | `repo-docs/windows/**` |
 
 Mirroring the subtree keeps **intra-subtree relative links valid** (e.g.
-`docs/windows/ssh-agent-setup.md` links `scripts/Setup-SshAgent.ps1` relatively;
+`docs/windows/ssh-agent-setup.md` links `ops/Setup-SshAgent.ps1` relatively;
 that link survives a whole-subtree move). Only **absolute** `docs/...` strings
 elsewhere need rewriting.
 
 Dev-tool scripts (`docs/install-dev-tools.sh`, `verify-dev-tools-*.sh/ps1`,
 `repair-dev-tools-windows.ps1`) stay under `repo-docs/` (NOT moved to
-`scripts/`) so the rewrite set stays small and `generate-package-matrix.sh` /
+`ops/`) so the rewrite set stays small and `generate-package-matrix.sh` /
 `doctor.sh` only change a path prefix, not a directory concept.
 
 ### 3.2 Move-readiness tiers (from exhaustive manifest)
@@ -120,8 +120,8 @@ Snapshot: `repo-docs/docs-move-manifest.json`. Counts (2026-06-02):
 - [x] `docs/templates/vscode/workspace-example.json` -> `repo-docs/templates/vscode/workspace-example.json`
 - [x] `docs/windows/README.md` -> `repo-docs/windows/README.md`
 - [x] `docs/windows/ssh-agent-setup.md` -> `repo-docs/windows/ssh-agent-setup.md`
-- [x] `docs/windows/scripts/Enable-SshAgentService.ps1` -> `repo-docs/windows/scripts/Enable-SshAgentService.ps1`
-- [x] `docs/windows/scripts/Install-SshAgentProfileSnippet.ps1` -> `repo-docs/windows/scripts/Install-SshAgentProfileSnippet.ps1`
+- [x] `docs/windows/ops/Enable-SshAgentService.ps1` -> `repo-docs/windows/ops/Enable-SshAgentService.ps1`
+- [x] `docs/windows/ops/Install-SshAgentProfileSnippet.ps1` -> `repo-docs/windows/ops/Install-SshAgentProfileSnippet.ps1`
 
 **Tier 2 — repo-only inbound refs (27): move + rewrite repo-owned referrers.**
 
@@ -153,7 +153,7 @@ Referrers are all editable repo-owned files (see §3.3 rewrite set).
 - [x] `docs/unix/ssh-agent-snippets.md` -> `repo-docs/unix/ssh-agent-snippets.md`
 - [x] `docs/vscode-extensions.md` -> `repo-docs/vscode-extensions.md`
 - [x] `docs/windows/QUICKSTART.md` -> `repo-docs/windows/QUICKSTART.md`
-- [x] `docs/windows/scripts/Setup-SshAgent.ps1` -> `repo-docs/windows/scripts/Setup-SshAgent.ps1`
+- [x] `docs/windows/ops/Setup-SshAgent.ps1` -> `repo-docs/windows/ops/Setup-SshAgent.ps1`
 
 **Tier 3 — also referenced by auto-shipped AI-kit (5): kit ref goes stale.**
 
@@ -178,17 +178,17 @@ These are the ONLY files to edit. Grouped by risk:
 
 **Critical — functional script dependencies (break if not rewritten):**
 
-- [x] `scripts/doctor.sh` — reads `docs/software-and-cli-tools.md`,
+- [x] `ops/doctor.sh` — reads `docs/software-and-cli-tools.md`,
   `docs/vscode-extensions.md`, `docs/migration-{source-of-truth,package-ownership,decisions}.md`,
   `docs/install-dev-tools.sh` in its check loops.
-- [x] `scripts/validate-config.sh` — existence-checks
+- [x] `ops/validate-config.sh` — existence-checks
   `docs/migration-source-of-truth.md`, `docs/migration-package-ownership.md`.
-- [x] `scripts/check-source-of-truth.sh` — **writes** `docs/migration-source-of-truth.draft.md`;
+- [x] `ops/check-source-of-truth.sh` — **writes** `docs/migration-source-of-truth.draft.md`;
   reads `docs/templates/vscode`.
-- [x] `scripts/generate-package-matrix.sh` — parses `docs/install-dev-tools.sh`,
+- [x] `ops/generate-package-matrix.sh` — parses `docs/install-dev-tools.sh`,
   `docs/software-and-cli-tools.md`; **writes** `docs/migration-package-ownership.draft.md`.
-- [x] `scripts/install.sh` — references `docs/INSTALL.md`, `docs/nixos-rebuild.md` in messages.
-- [x] `scripts/readiness.sh` — references `docs/nixos-rebuild.md` in messages.
+- [x] `ops/install.sh` — references `docs/INSTALL.md`, `docs/nixos-rebuild.md` in messages.
+- [x] `ops/readiness.sh` — references `docs/nixos-rebuild.md` in messages.
 
 **Config / build:**
 
@@ -247,7 +247,7 @@ Mark `[x]` as each phase completes (sub-file checkboxes live in §3.2 / §3.3).
   links are rewritten — no separate stub created to avoid a move collision.)
 - [x] **M1 (Tier 1, 9 files):** `git mv` each (§3.2 Tier 1 list) — all 9 renamed,
   history preserved. No stale inbound refs. NOTE: `repo-docs/windows/README.md`
-  links `QUICKSTART.md` + `scripts/Setup-SshAgent.ps1` relatively — those Tier-2
+  links `QUICKSTART.md` + `ops/Setup-SshAgent.ps1` relatively — those Tier-2
   siblings still in `docs/windows/`; links restore when M2 moves them.
 - [x] **M2 (Tier 2, 27 files):** all 27 `git mv`'d. Rewrote 35 repo referrers
   (153 path rewrites) + 2 stale moved-DIR refs (`check-source-of-truth.sh`,
@@ -279,8 +279,8 @@ Mark `[x]` as each phase completes (sub-file checkboxes live in §3.2 / §3.3).
   paths (use the manifest to diff expected vs remaining).
 - `rg -l -F "docs/<movedfile>"` returns 0 outside `docs/ai/**`, dated archives,
   and intentional history notes.
-- Run functional scripts that read docs: `bash scripts/doctor.sh` (or its doc
-  loop), `bash scripts/validate-config.sh`, `bash scripts/generate-package-matrix.sh --dry-run` if supported.
+- Run functional scripts that read docs: `bash ops/doctor.sh` (or its doc
+  loop), `bash ops/validate-config.sh`, `bash ops/generate-package-matrix.sh --dry-run` if supported.
 - `lychee --offline repo-docs/**/*.md README.md` -> no new broken links.
 - Confirm **no `docs/ai/**` file modified**: `git status -- docs/ai` empty.
 
@@ -298,9 +298,9 @@ Nothing required by the repo is dropped — only relocated with references fixed
 For each file, in order, using repo-local tools (no raw `cat` on large/binary):
 
 1. **Locate & preview**
-   `AI_OUTPUT=json bash scripts/ai/preview-file.sh <path> --around <line> --context 30`
+   `AI_OUTPUT=json bash ops/ai/preview-file.sh <path> --around <line> --context 30`
 2. **Reference check (required?)**
-   `bash scripts/ai/ai-search.sh` or `rg -n "<basename>"` across repo.
+   `bash ops/ai/ai-search.sh` or `rg -n "<basename>"` across repo.
    Zero references + not an entrypoint + not user-facing => removal candidate.
 3. **Duplicate check (>=75% overlap rule, per AGENTS.md)**
    Search for sibling files with same role (e.g. two `keybindings.json`, two
@@ -331,7 +331,7 @@ Ordered by risk and cohesion. Audit only; moves are separate approved slices.
 | B3 | `.schemas/**` JSON schemas | ~15 | Validate; cross-check consumers |
 | ~~B4~~ | ~~`docs/ai/**` AI-kit docs~~ | — | **DROPPED — out of scope (auto-shipped, foreign)** |
 | ~~B5~~ | ~~`.opencode/**` agents/commands/skills~~ | — | **DROPPED — out of scope (auto-shipped, foreign)** |
-| B6 | `scripts/**` shell | ~50 | `bash -n` + ref check |
+| B6 | `ops/**` shell | ~50 | `bash -n` + ref check |
 | B7 | `tools/ai/**` PHP | ~70 | `php -l` + ref check |
 | B8 | `tests/**` | ~2 | Run suite |
 | B9 | `home/**` dotfiles/templates | ~40 | chezmoi render checks |
@@ -353,7 +353,7 @@ flagging rule. Each entry: file, finding, chosen disposition, evidence command.
   `home/Library/Application Support/Code/User/settings.json.tmpl` (both 5 lines).
 - `home/dot_config/ghostty/config.tmpl` and
   `home/Library/Application Support/com.mitchellh.ghostty/config.tmpl`.
-- `scripts/git-branch-origin.sh` and
+- `ops/git-branch-origin.sh` and
   `home/dot_local/bin/executable_git-branch-origin` (both 424 lines).
 
 These are flagged only; confirm overlap with `diff`/`rg` before merging.
@@ -362,6 +362,6 @@ These are flagged only; confirm overlap with `diff`/`rg` before merging.
 
 Run the smallest proof first, escalate only if needed:
 - syntax/parse check (`bash -n`, `php -l`, `jq`, schema validate)
-- repo doc/ref checks (`bash scripts/ai/ai-doc-check.sh`, `scripts/check-source-of-truth.sh`)
+- repo doc/ref checks (`bash ops/ai/ai-doc-check.sh`, `ops/check-source-of-truth.sh`)
 - focused tests where behavior changes
 Report executed vs recommended commands separately. Never claim unrun checks.

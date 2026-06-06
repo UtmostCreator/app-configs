@@ -2,7 +2,7 @@
 #
 # Copy this file to home/.chezmoidata/projects.yaml and fill in real
 # values. The real file is gitignored. The committed scripts under
-# scripts/projects/ read this via `bash scripts/projects/detect-project.sh`,
+# ops/projects/ read this via `bash ops/projects/detect-project.sh`,
 # which sources $HOME/.config/projects/config.yaml (chezmoi-rendered).
 #
 # Schema is intentionally flat: id -> definition. Add a project by
@@ -23,7 +23,7 @@ projects:
       pane: "cms-service"                       # tmux pane name for the dev server
       start_cmd: "npm run dev"                  # command to run in the service pane
       log: "~/work/cms/storage/logs/laravel.log"
-    # health.checks lists check-ids from scripts/projects/health/checks.d/
+    # health.checks lists check-ids from ops/projects/health/checks.d/
     # plus per-project overrides. Empty array = skipped.
     health:
       checks:

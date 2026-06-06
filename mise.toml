@@ -14,7 +14,7 @@
 
 [tasks.doctor]
 description = "Run repo health checks"
-run = "bash scripts/doctor.sh"
+run = "bash ops/doctor.sh"
 
 [tasks.diff]
 description = "Preview chezmoi changes (no mutation)"
@@ -28,20 +28,20 @@ run = "git diff --check"
 description = "Shell syntax + ShellCheck for migration scripts"
 run = """
 set -e
-bash -n scripts/bootstrap.sh scripts/detect-host.sh scripts/snapshot-home.sh \
-        scripts/validate-config.sh scripts/check-source-of-truth.sh \
-        scripts/generate-package-matrix.sh scripts/doctor.sh \
-        scripts/install.sh scripts/update-all.sh scripts/cleanup.sh \
-        scripts/readiness.sh scripts/system-setup.sh \
-        scripts/detect-os-disks.sh 2>/dev/null || \
+bash -n ops/bootstrap.sh ops/detect-host.sh ops/snapshot-home.sh \
+        ops/validate-config.sh ops/check-source-of-truth.sh \
+        ops/generate-package-matrix.sh ops/doctor.sh \
+        ops/install.sh ops/update-all.sh ops/cleanup.sh \
+        ops/readiness.sh ops/system-setup.sh \
+        ops/detect-os-disks.sh 2>/dev/null || \
   echo 'missing: one or more scripts not yet created (Phase 7)'
 if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck scripts/snapshot-home.sh scripts/validate-config.sh \
-             scripts/check-source-of-truth.sh scripts/generate-package-matrix.sh \
-             scripts/doctor.sh scripts/install.sh scripts/update-all.sh \
-             scripts/cleanup.sh scripts/readiness.sh scripts/system-setup.sh \
-             scripts/detect-os-disks.sh
-  for f in scripts/bootstrap.sh scripts/detect-host.sh; do
+  shellcheck ops/snapshot-home.sh ops/validate-config.sh \
+             ops/check-source-of-truth.sh ops/generate-package-matrix.sh \
+             ops/doctor.sh ops/install.sh ops/update-all.sh \
+             ops/cleanup.sh ops/readiness.sh ops/system-setup.sh \
+             ops/detect-os-disks.sh
+  for f in ops/bootstrap.sh ops/detect-host.sh; do
     [ -f "$f" ] && shellcheck "$f"
   done
 else
@@ -61,15 +61,15 @@ fi
 
 [tasks."repo:validate"]
 description = "Architecture invariant guard"
-run = "bash scripts/validate-config.sh"
+run = "bash ops/validate-config.sh"
 
 [tasks."repo:check"]
 description = "Combined config consistency check"
 run = """
 set -e
 git diff --check
-bash scripts/doctor.sh
-bash scripts/validate-config.sh
+bash ops/doctor.sh
+bash ops/validate-config.sh
 if command -v nix >/dev/null 2>&1 && [ -d nix ]; then
   nix flake check ./nix
 else
@@ -84,17 +84,17 @@ description = "Apply chezmoi changes only (no Nix/mise/lefthook side effects)"
 run = """
 set -e
 if ! command -v chezmoi >/dev/null 2>&1; then
-  echo 'missing: chezmoi (install via nix profile or scripts/bootstrap.sh --yes)'
+  echo 'missing: chezmoi (install via nix profile or ops/bootstrap.sh --yes)'
   exit 1
 fi
 chezmoi diff
 printf 'Apply chezmoi changes? [y/N] '
 read -r ans
 [ "$ans" = "y" ] || [ "$ans" = "Y" ] || { echo 'Aborted'; exit 1; }
-if [ -x scripts/snapshot-home.sh ]; then
-  bash scripts/snapshot-home.sh
+if [ -x ops/snapshot-home.sh ]; then
+  bash ops/snapshot-home.sh
 else
-  echo 'missing: scripts/snapshot-home.sh'
+  echo 'missing: ops/snapshot-home.sh'
   exit 1
 fi
 chezmoi apply
@@ -107,8 +107,8 @@ description = "Preview full sync (chezmoi + HM/darwin + mise + lefthook) without
 run = """
 set -e
 HOST="${HOST_PROFILE:-}"
-if [ -z "$HOST" ] && [ -x scripts/detect-host.sh ]; then
-  HOST="$(bash scripts/detect-host.sh 2>/dev/null || echo unknown)"
+if [ -z "$HOST" ] && [ -x ops/detect-host.sh ]; then
+  HOST="$(bash ops/detect-host.sh 2>/dev/null || echo unknown)"
 fi
 echo "=== Host: ${HOST:-unknown} ==="
 echo
@@ -151,8 +151,8 @@ description = "Apply full sync: snapshot + chezmoi + HM/darwin + mise + lefthook
 run = """
 set -e
 HOST="${HOST_PROFILE:-}"
-if [ -z "$HOST" ] && [ -x scripts/detect-host.sh ]; then
-  HOST="$(bash scripts/detect-host.sh)"
+if [ -z "$HOST" ] && [ -x ops/detect-host.sh ]; then
+  HOST="$(bash ops/detect-host.sh)"
 fi
 case "$HOST" in
   macos|linux-desktop|linux-cli|wsl) ;;
@@ -168,10 +168,10 @@ printf 'Apply full sync on host=%s? [y/N] ' "$HOST"
 read -r ans
 [ "$ans" = "y" ] || [ "$ans" = "Y" ] || { echo 'Aborted'; exit 1; }
 
-if [ -x scripts/snapshot-home.sh ]; then
-  bash scripts/snapshot-home.sh
+if [ -x ops/snapshot-home.sh ]; then
+  bash ops/snapshot-home.sh
 else
-  echo 'missing: scripts/snapshot-home.sh'; exit 1
+  echo 'missing: ops/snapshot-home.sh'; exit 1
 fi
 
 chezmoi apply
@@ -198,46 +198,46 @@ run = "mise run sync:dry-run"
 # ─── Bootstrap convenience ──────────────────────────────────────────────────
 
 [tasks.bootstrap]
-description = "Cold-start: scripts/bootstrap.sh (default dry-run)"
-run = "bash scripts/bootstrap.sh"
+description = "Cold-start: ops/bootstrap.sh (default dry-run)"
+run = "bash ops/bootstrap.sh"
 
 # ─── One-shot install / update / cleanup (set-and-forget) ───────────────────
 
 [tasks.install]
 description = "Fully-automated unattended install (NixOS-aware). DRY_RUN=1 to preview."
-run = "bash scripts/install.sh"
+run = "bash ops/install.sh"
 
 [tasks.update]
 description = "Update everything (flake inputs, HM, chezmoi, mise) + safe cleanup. Report-only; add -- --apply."
-run = "bash scripts/update-all.sh"
+run = "bash ops/update-all.sh"
 
 [tasks."update:apply"]
 description = "Apply the full update unattended (brewup equivalent)"
-run = "bash scripts/update-all.sh --apply --yes"
+run = "bash ops/update-all.sh --apply --yes"
 
 [tasks.readiness]
 description = "Am I all set? Verify everything is installed + usable; reports what's left"
-run = "bash scripts/readiness.sh"
+run = "bash ops/readiness.sh"
 
 [tasks."detect-os-disks"]
 description = "Read-only scan: which disk has Windows/Linux + suggested dual-boot config (no changes)"
-run = "bash scripts/detect-os-disks.sh"
+run = "bash ops/detect-os-disks.sh"
 
 [tasks."system:setup"]
-description = "Report the NixOS system snippet (fish login shell + trusted-users + gc). Apply with: sudo bash scripts/system-setup.sh --apply"
-run = "bash scripts/system-setup.sh"
+description = "Report the NixOS system snippet (fish login shell + trusted-users + gc). Apply with: sudo bash ops/system-setup.sh --apply"
+run = "bash ops/system-setup.sh"
 
 [tasks.cleanup]
 description = "Safe non-destructive cleanup (store optimise + cache prune). Report-only; add -- --apply."
-run = "bash scripts/cleanup.sh"
+run = "bash ops/cleanup.sh"
 
 [tasks."cleanup:apply"]
 description = "Run safe cleanup now (keeps all rollback generations)"
-run = "bash scripts/cleanup.sh --apply --yes"
+run = "bash ops/cleanup.sh --apply --yes"
 
 [tasks."cleanup:gc"]
 description = "Cleanup + reclaim aged generations older than KEEP_DAYS (default 14d; keeps recent)"
-run = "bash scripts/cleanup.sh --apply --yes --gc"
+run = "bash ops/cleanup.sh --apply --yes --gc"
 
 # ─── Nix flake helpers ──────────────────────────────────────────────────────
 
@@ -325,35 +325,35 @@ done
 
 [tasks."projects:tmux"]
 description = "Open the master tmux workspace (one pane per project + logs + services)"
-run = "bash scripts/projects/tmux-master.sh"
+run = "bash ops/projects/tmux-master.sh"
 
 [tasks."projects:logs"]
 description = "Open the N-pane log viewer for projects with service.log set"
-run = "bash scripts/projects/tmux-logs.sh"
+run = "bash ops/projects/tmux-logs.sh"
 
 [tasks."projects:ssh"]
 description = "Open one tmux pane per SSH host listed in projects.yaml"
-run = "bash scripts/projects/tmux-ssh.sh"
+run = "bash ops/projects/tmux-ssh.sh"
 
 [tasks."projects:repo"]
 description = "Run repo-checks for one project (usage: mise run projects:repo -- <project-id>)"
-run = "bash scripts/projects/repo-checks.sh"
+run = "bash ops/projects/repo-checks.sh"
 
 [tasks."projects:health"]
-description = "Run every check in scripts/projects/health/checks.d/ and pretty-print"
-run = "bash scripts/projects/health/run.sh"
+description = "Run every check in ops/projects/health/checks.d/ and pretty-print"
+run = "bash ops/projects/health/run.sh"
 
 [tasks."projects:health:json"]
 description = "Run health checks and emit raw JSON (for scripting / dashboards)"
-run = "bash scripts/projects/health/run.sh --json"
+run = "bash ops/projects/health/run.sh --json"
 
 [tasks."projects:sync-main"]
 description = "Fetch + fast-forward 'main' on every project (or one: -- <project-id>)"
-run = "bash scripts/projects/github/sync-main.sh"
+run = "bash ops/projects/github/sync-main.sh"
 
 [tasks."projects:pr-watch"]
 description = "Poll GitHub for PR transitions on tracked repos (--once for single poll)"
-run = "bash scripts/projects/github/pr-watch.sh"
+run = "bash ops/projects/github/pr-watch.sh"
 
 # ─── Optional AI/PHP tasks (out-of-scope for the dotfiles migration) ────────
 # Uncomment if you start editing AI/PHP workflow files in this branch.

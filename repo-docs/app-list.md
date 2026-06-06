@@ -5,7 +5,7 @@ Canonical list of every CLI tool and GUI app this repo installs, with the
 current host:
 
 ```bash
-bash scripts/bootstrap.sh --yes
+bash ops/bootstrap.sh --yes
 ```
 
 On **NixOS** run the NixOS-safe order instead (see `repo-docs/install-nixos.md`);
@@ -81,7 +81,7 @@ For the persistent NixOS login shell, see `repo-docs/install-nixos.md` (system
 ## Verify what is installed
 
 ```bash
-bash scripts/doctor.sh          # required + optional binaries
+bash ops/doctor.sh          # required + optional binaries
 home-manager generations        # current Nix closure
 command -v ghostty bruno flameshot code firefox fish tmux delta
 ```

@@ -12,7 +12,7 @@ NixOS handling.
 ## 0. "Am I all set?" — check in one command
 
 ```bash
-sys-readiness        # or: bash scripts/readiness.sh   or: mise run readiness
+sys-readiness        # or: bash ops/readiness.sh   or: mise run readiness
 ```
 
 It verifies core tooling, all apps/CLI, dotfiles, git aliases, health checks,
@@ -39,7 +39,7 @@ trusted-users, declarative GC, Europe/London time zone) — Home Manager cannot 
 without sudo. Automate the system step:
 
 ```bash
-sudo sys-setup --apply      # or: sudo bash scripts/system-setup.sh --apply
+sudo sys-setup --apply      # or: sudo bash ops/system-setup.sh --apply
 ```
 
 This idempotently writes `/etc/nixos/app-configs-extra.nix` (backing up your
@@ -55,8 +55,8 @@ Details: `repo-docs/nixos-rebuild.md`.
 
 ```bash
 git clone <your-fork> ~/dotfiles && cd ~/dotfiles
-bash scripts/install.sh            # 1. apps + CLI + dotfiles (unattended, no sudo)
-sudo bash scripts/system-setup.sh --apply   # 2. system layer + nixos-rebuild (once)
+bash ops/install.sh            # 1. apps + CLI + dotfiles (unattended, no sudo)
+sudo bash ops/system-setup.sh --apply   # 2. system layer + nixos-rebuild (once)
 exec fish                          # 3. (or open a new terminal)
 sys-readiness                      # 4. confirm: should print ALL SET
 ```
@@ -76,10 +76,10 @@ Notes:
 
 ```bash
 git clone <your-fork> ~/dotfiles && cd ~/dotfiles
-bash scripts/install.sh
+bash ops/install.sh
 ```
 
-`scripts/install.sh` is **fully unattended and idempotent**:
+`ops/install.sh` is **fully unattended and idempotent**:
 
 - Detects the host; on **NixOS** it uses the system Nix and **skips** the
   Determinate Systems installer (which would conflict).
@@ -95,8 +95,8 @@ bash scripts/install.sh
 Preview without mutating anything:
 
 ```bash
-DRY_RUN=1 bash scripts/install.sh
-HOST_PROFILE=linux-cli bash scripts/install.sh   # pin a profile
+DRY_RUN=1 bash ops/install.sh
+HOST_PROFILE=linux-cli bash ops/install.sh   # pin a profile
 ```
 
 Equivalent mise task:
@@ -105,7 +105,7 @@ Equivalent mise task:
 mise run install
 ```
 
-> Difference vs `scripts/bootstrap.sh`: bootstrap defaults to a dry-run and
+> Difference vs `ops/bootstrap.sh`: bootstrap defaults to a dry-run and
 > prompts before applying. `install.sh` is the non-interactive, NixOS-aware
 > "set and forget" path.
 
@@ -114,7 +114,7 @@ mise run install
 On a **fresh machine**, one command does it all and you can walk away:
 
 ```bash
-git clone <your-fork> ~/dotfiles && cd ~/dotfiles && bash scripts/install.sh
+git clone <your-fork> ~/dotfiles && cd ~/dotfiles && bash ops/install.sh
 ```
 
 Expected wall-clock time (most of it is unattended download from the binary
@@ -136,7 +136,7 @@ finishes in **1–3 minutes**.
 
 ### Is it truly "one click, walk away"?
 
-Yes for the **user environment** — `scripts/install.sh` needs no prompts and no
+Yes for the **user environment** — `ops/install.sh` needs no prompts and no
 `sudo`. The **only** manual step that needs you is the optional **system**
 rebuild (fish login shell, GC timer, trusted-users, Europe/London time zone), because it requires `sudo`
 and edits `/etc/nixos`. The installer **detects** whether that is needed and
@@ -145,7 +145,7 @@ the end. See `repo-docs/nixos-rebuild.md`.
 
 ### Complete-the-build steps (run after install on NixOS)
 
-1. `bash scripts/install.sh` — finishes the user environment (no sudo). ✅ done.
+1. `bash ops/install.sh` — finishes the user environment (no sudo). ✅ done.
 2. **(recommended)** add the snippet from `repo-docs/nixos-rebuild.md` to
    `/etc/nixos/configuration.nix`, then:
    ```bash
@@ -157,7 +157,7 @@ the end. See `repo-docs/nixos-rebuild.md`.
    ```bash
    nixos-rebuild list-generations | head     # new generation is Current
    systemctl --failed ; systemctl --user --failed
-   bash scripts/doctor.sh ; chezmoi verify
+   bash ops/doctor.sh ; chezmoi verify
    ```
 
 ## 2. Keep it updated — the `brewup` equivalent
@@ -170,7 +170,7 @@ mise run update            # report only: shows the full plan, mutates nothing
 mise run update:apply      # apply unattended (brewup equivalent)
 ```
 
-`scripts/update-all.sh` runs, in order:
+`ops/update-all.sh` runs, in order:
 
 1. `git pull --ff-only` (only if the worktree is clean)
 2. `nix flake update ./nix` then `nix flake check ./nix`
@@ -182,14 +182,14 @@ mise run update:apply      # apply unattended (brewup equivalent)
 8. safe cleanup (step 3 below) unless `NO_CLEANUP=1`
 
 ```bash
-bash scripts/update-all.sh --apply          # one confirmation prompt
-bash scripts/update-all.sh --apply --yes     # no prompt (cron/unattended)
-NO_CLEANUP=1 bash scripts/update-all.sh --apply
+bash ops/update-all.sh --apply          # one confirmation prompt
+bash ops/update-all.sh --apply --yes     # no prompt (cron/unattended)
+NO_CLEANUP=1 bash ops/update-all.sh --apply
 ```
 
 ## 3. Clean up safely (non-destructive by default)
 
-`scripts/cleanup.sh` reclaims disk **without destroying rollbacks**.
+`ops/cleanup.sh` reclaims disk **without destroying rollbacks**.
 
 ```bash
 mise run cleanup           # report only (shows store size + generation count)
@@ -205,7 +205,7 @@ mise run cleanup:gc        # SAFE + remove generations older than KEEP_DAYS (def
   generations **older than** the window, so recent rollbacks survive.
 
 ```bash
-KEEP_DAYS=30 bash scripts/cleanup.sh --apply --gc
+KEEP_DAYS=30 bash ops/cleanup.sh --apply --gc
 ```
 
 This script **never** runs `nix-collect-garbage -d` (delete all old
@@ -217,7 +217,7 @@ you are certain.
 `nix/modules/common/nix-settings.nix` declares scheduled GC
 (`nix.gc.automatic`, weekly, `--delete-older-than 7d`) and
 `auto-optimise-store`. On a **standalone Home Manager install on NixOS**, the
-system-wide GC timer is owned by the system config, not HM; `scripts/cleanup.sh`
+system-wide GC timer is owned by the system config, not HM; `ops/cleanup.sh`
 gives you an explicit, on-demand path regardless. To run GC declaratively at
 the system level on NixOS, add to `/etc/nixos/configuration.nix`:
 
@@ -234,7 +234,7 @@ then `sudo nixos-rebuild switch`.
 
 ```bash
 mise run repo:check        # git diff --check + doctor + validate + flake check
-bash scripts/doctor.sh
+bash ops/doctor.sh
 chezmoi verify             # all managed dotfiles match (exit 0)
 ```
 
@@ -265,8 +265,8 @@ Discipline that keeps the config maintainable (per Nix community guidance):
 ## 6. Uninstall / handoff
 
 ```bash
-bash scripts/uninstall.sh             # report only (safe any time)
-bash scripts/uninstall.sh --apply     # actually run
+bash ops/uninstall.sh             # report only (safe any time)
+bash ops/uninstall.sh --apply     # actually run
 ```
 
 Never removes Nix itself and never deletes snapshots under
@@ -290,8 +290,8 @@ applications + CLI tools + dotfiles**, not just dotfiles:
 
 | Goal | Command |
 | --- | --- |
-| Install everything, unattended | `sys-install` · `mise run install` · `bash scripts/install.sh` |
-| Preview install | `DRY_RUN=1 bash scripts/install.sh` |
+| Install everything, unattended | `sys-install` · `mise run install` · `bash ops/install.sh` |
+| Preview install | `DRY_RUN=1 bash ops/install.sh` |
 | Update everything (brewup) | `sys-update` · `mise run update:apply` |
 | Safe cleanup (keep rollbacks) | `sys-cleanup` · `mise run cleanup:apply` |
 | Reclaim aged generations | `sys-cleanup --gc` · `mise run cleanup:gc` |

@@ -28,7 +28,7 @@ Companion to `repo-docs/migration-implementation-plan.md`. Companion audit docs:
 ## Hard rules
 
 - `.chezmoiroot` at the repo root, containing exactly `home`.
-- Home Manager uses `home.packages = [ ... ]` only.  
+- Home Manager uses `home.packages = [ ... ]` only.
   The **only** allowed `programs.<x>.enable` is `programs.home-manager.enable = true;`.
 - Home Manager must NOT create or manage any of:
   `~/.zshrc`, `~/.config/fish/`, `~/.bashrc`, `~/.gitconfig`,
@@ -44,7 +44,7 @@ Companion to `repo-docs/migration-implementation-plan.md`. Companion audit docs:
 
 ## Validation
 
-`bash scripts/validate-config.sh` enforces the above (run automatically
+`bash ops/validate-config.sh` enforces the above (run automatically
 via Lefthook pre-push). It does not flag native Windows files because those
 are deferred / out-of-scope, not forbidden. (The legacy `.husky/` hook shims
 were removed; Lefthook is the sole hook engine.)

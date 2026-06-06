@@ -2,7 +2,7 @@
 
 Reviewed copy of `repo-docs/migration-package-ownership.draft.md`. Phase 6 reads
 only this file. Regenerate the draft via
-`bash scripts/generate-package-matrix.sh`.
+`bash ops/generate-package-matrix.sh`.
 
 Branch: `feat/dotfiles-migration`
 Decision date: 2026-05-24
@@ -43,7 +43,7 @@ manually verified** against <https://search.nixos.org/packages> and
 | `lazygit` | Nix | `nix/modules/home/dev.nix` | |
 | `lnav` | Nix | `nix/modules/home/dev.nix` | |
 | `lychee` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `lychee`. |
-| `mise` | nix-profile | `scripts/bootstrap.sh` | Chicken-and-egg. Not in Home Manager. |
+| `mise` | nix-profile | `ops/bootstrap.sh` | Chicken-and-egg. Not in Home Manager. |
 | `mysql-client` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `mariadb-client` (provides `mysql`) or `mysql_client` per channel — verify before commit. |
 | `neovim` | Nix | `nix/modules/home/dev.nix` | Config tree under chezmoi (`home/dot_config/nvim/`). |
 | `pnpm` | mise | `home/dot_config/mise/config.toml.tmpl` | Per project runtime; not Nix. |
@@ -133,7 +133,7 @@ Optional add when actually used:
 
 ## Validation
 
-- [x] Helper `scripts/generate-package-matrix.sh` runs cleanly (no probe needed).
+- [x] Helper `ops/generate-package-matrix.sh` runs cleanly (no probe needed).
 - [x] Every TBD row resolved.
 - [x] PHP, Node, pnpm: ownership is **mise** (not Nix).
 - [x] `direnv`: dropped with note above; reversible later.

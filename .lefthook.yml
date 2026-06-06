@@ -10,14 +10,14 @@ pre-commit:
           exit 1
         fi
     shared-precommit:
-      run: bash scripts/hooks/pre-commit.sh
+      run: bash ops/hooks/pre-commit.sh
 
 pre-push:
   commands:
     validate-config:
-      run: bash scripts/validate-config.sh
+      run: bash ops/validate-config.sh
 
 commit-msg:
   commands:
     shared-commit-msg:
-      run: bash scripts/hooks/commit-msg.sh {1}
+      run: bash ops/hooks/commit-msg.sh {1}

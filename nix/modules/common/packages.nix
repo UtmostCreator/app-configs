@@ -4,7 +4,7 @@
   # nix/modules/home/*. Per Phase 3 matrix:
   # - direnv intentionally absent (DROPPED in Phase 3; mise per-project env covers it)
   # - mise, chezmoi, home-manager, lefthook are nix-profile installed in
-  #   scripts/bootstrap.sh; never added here.
+  #   ops/bootstrap.sh; never added here.
   home.packages = with pkgs; [
     curl
     wget

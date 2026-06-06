@@ -9,7 +9,7 @@ Keychain).
 | `ssh-agent.sh`      | bash, zsh     | `~/.config/app-configs/ssh-agent.sh` (sourced from `~/.bashrc`/`~/.zshrc`) |
 | `ssh-agent.fish`    | fish          | `~/.config/fish/conf.d/ssh-agent.fish`     |
 
-Use `scripts/unix/ssh-agent-setup.sh` to install them idempotently. See
+Use `ops/unix/ssh-agent-setup.sh` to install them idempotently. See
 `repo-docs/unix/QUICKSTART.md` for the runbook.
 
 ## Configuring which keys to load

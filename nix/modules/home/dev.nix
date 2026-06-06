@@ -43,7 +43,7 @@
     p7zip
     php
     # PHP 8.4 (with extensions). Enables the AI workflow
-    # validators in scripts/doctor.sh.
+    # validators in ops/doctor.sh.
     php84Packages.composer # Composer 2.x for PHP 8.4; on PATH on every host.
     # macOS keeps a Herd+1Password `composer` shell function
     # (fish/zsh) that shadows this binary; on Linux this IS

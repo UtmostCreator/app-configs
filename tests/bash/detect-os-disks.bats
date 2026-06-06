@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# Tests for scripts/detect-os-disks.sh — the read-only NVMe/OS detector.
+# Tests for ops/detect-os-disks.sh — the read-only NVMe/OS detector.
 #
 # These are deterministic: they inject canned `lsblk -J` JSON and a pinned
 # current-disk via the script's testing seams, so they never touch real
@@ -9,7 +9,7 @@
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    SCRIPT="$REPO_ROOT/scripts/detect-os-disks.sh"
+    SCRIPT="$REPO_ROOT/ops/detect-os-disks.sh"
     [ -f "$SCRIPT" ]
 }
 

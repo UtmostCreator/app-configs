@@ -81,3 +81,18 @@ mise.local.toml
 # docs/ai/generated/repo-structure.* per the AI kit). Regenerate locally.
 /scc-by-file.csv
 /scc-by-file-new.csv
+
+# BEGIN ai-kit
+.ai/backups/
+.ai/logs/
+.ai-backups/
+.ai-logs/
+.ai/conflicts/
+.ai/templates-new/
+.ai/local-manifest.json
+.ai/install.lock
+.repomix-context/
+*.tmp
+*.bak
+docs/ai/generated/
+# END ai-kit

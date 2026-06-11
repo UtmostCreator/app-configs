@@ -200,6 +200,8 @@ whole set on either OS. The owner of record is
 | VS Code | **Nix** (`vscode`) | Homebrew cask `visual-studio-code` | `gui.nix` / `darwin/homebrew.nix` — single IDE on all systems |
 | Flameshot | **Nix** | Homebrew cask | `gui.nix` (Linux) |
 | Brave | **Nix** (stable) | Homebrew cask `brave-browser@beta` | `gui.nix` / `darwin/homebrew.nix` |
+| Obsidian | **Nix** (`obsidian`) | Homebrew cask `obsidian` | `gui.nix` / `darwin/homebrew.nix` |
+| USB audio diagnostics (`lsusb`, `aplay`, `speaker-test`, `wpctl`, `pavucontrol`) | **Nix** (`usbutils`, `alsa-utils`, `wireplumber`, `pavucontrol`) | system / optional | `gui.nix`; see `repo-docs/ora4-audio.md` |
 | IntelliJ IDEA CE | **excluded** (not shipped) | **excluded** (not shipped) | intentionally dropped for now; VS Code is the IDE |
 | Bruno | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
 | Sequel Ace, BBEdit, BetterDisplay, AeroSpace, Karabiner, Ice, AltTab, Stats, NoTunes, LinearMouse | **macOS-only** (no Linux equivalent shipped) | Homebrew cask | `nix/modules/darwin/homebrew.nix` |

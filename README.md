@@ -136,8 +136,10 @@ rebuild pending` = run step 2; `NOT READY` = run step 1. On non-NixOS hosts step
 | `sys-cleanup` | yes | De-dup Nix store + prune caches (keeps all rollbacks) |
 | `sys-cleanup --gc` | yes | Also remove aged generations (keeps recent rollbacks) |
 | `mise run sync` | no | Preview pending dotfile changes |
-| `mise run sync:apply` | yes | Snapshot `$HOME`, then apply chezmoi + HM/darwin + mise + lefthook |
+| `mise run sync:apply` | yes | Snapshot `$HOME`, then apply chezmoi + HM/darwin + mise + VS Code extensions + lefthook |
 | `mise run apply` | yes | chezmoi-only apply (no Nix/mise side effects) |
+| `mise run vscode:extensions:dry-run` | no | Preview missing curated VS Code extensions |
+| `mise run vscode:extensions` | yes | Install curated VS Code extensions |
 | `mise run doctor` | no | Local health check |
 | `mise run repo:check` | no | doctor + validator + (optional) nix flake check |
 

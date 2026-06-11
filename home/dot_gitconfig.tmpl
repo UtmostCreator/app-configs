@@ -276,6 +276,15 @@
 	email = {{ .email }}
 {{- if .signingKey }}
 	signingKey = {{ .signingKey }}
+
+[gpg]
+	format = ssh
+
+[commit]
+	gpgsign = true
+
+[tag]
+	gpgsign = true
 {{- end }}
 [includeIf "gitdir/i:{{ .chezmoi.homeDir }}/herd/"]
 	path = {{ .chezmoi.homeDir }}/.gitconfig-work

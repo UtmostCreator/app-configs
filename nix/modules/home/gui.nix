@@ -25,8 +25,15 @@
       #       See repo-docs/default-apps.md ("Brave + local dev servers").
       ghostty # GPU terminal (macOS: Homebrew cask)
       vscode # VS Code (unfree; allowUnfree set in nix/lib/mkhome.nix)
-      flameshot # screenshots with annotation
+      flameshot # screenshots with annotation; runs as a resident systemd user
+      #           service (see systemd.user.services.flameshot below) so global
+      #           hotkeys (F4 / Alt+Shift+S / Alt+P) capture reliably on Wayland.
       bruno # open-source API client (Linux + macOS; macOS also via cask)
+      obsidian # notes/knowledge base (unfree; macOS: Homebrew cask)
+      keepassxc # offline password manager. Toggled by Alt+1 (see
+      #           nix/modules/home/gnome-keybindings.nix). StartupWMClass is
+      #           `keepassxc` (lowercase), so the keybinding passes it explicitly.
+      #           macOS: add the keepassxc-org/tap or cask in a future slice.
       # The Vicinae launcher is provided by services.vicinae in
       # nix/modules/home/vicinae.nix (CLI on PATH, autostart, extensions).
       # The GNOME Shell integration extension below stays a package here.
@@ -39,6 +46,11 @@
       # enabled via dconf in nix/modules/home/gnome-extensions.nix; installing
       # the package alone is not enough — GNOME must be told to load it.
       gnomeExtensions.vicinae # UUID: vicinae@dagimg-dot
+      # GNOME Shell has no native tray/status area. AppIndicator/StatusNotifier
+      # support restores the top-bar tray so Flameshot's resident-service icon
+      # (and other tray apps) appear. Enabled via dconf in gnome-extensions.nix;
+      # installing the package alone is not enough — GNOME must load it.
+      gnomeExtensions.appindicator # UUID: appindicatorsupport@rgcjonas.gmail.com
       # Wayland clipboard CLI (wl-copy / wl-paste). Makes the system clipboard
       # scriptable and gives copy-on-select a reliable backing on GNOME
       # Wayland; also what most clipboard-managers/tools expect to be present.
@@ -47,6 +59,15 @@
       # "pactl not found, audio control will not work" without it; this is the
       # CLI only — PipeWire itself is the system audio server.
       pulseaudio
+      # USB speaker / PipeWire diagnostics for devices like Kanto ORA4:
+      #   usbutils    -> lsusb (prove USB audio device enumerates)
+      #   alsa-utils  -> aplay / speaker-test (ALSA card + sound test)
+      #   wireplumber -> wpctl (PipeWire default sink / mute / volume)
+      #   pavucontrol -> GUI mixer for moving app streams to the USB sink
+      usbutils
+      alsa-utils
+      wireplumber
+      pavucontrol
       # `gdbus` (from glib) — used by the vicinae-resize script below to call
       # the Vicinae GNOME extension's window-management D-Bus interface.
       glib
@@ -109,6 +130,9 @@
         new_w=$(( wa_w * pct / 100 ))
         new_x=$(( wa_x + (wa_w - new_w) / 2 ))   # centered
 
+        # MoveResize is ignored while Mutter still considers the window maximized.
+        gcall Unmaximize "$id" >/dev/null 2>&1 || true
+        sleep 0.15
         gcall MoveResize "$id" "$new_x" "$wa_y" "$new_w" "$wa_h" >/dev/null 2>&1 || true
       '')
       # Per-app TOGGLE helper bound to the app keybindings (see
@@ -128,7 +152,9 @@
       # Built on the Vicinae GNOME extension D-Bus interface
       # (org.gnome.Shell.Extensions.Windows: List, Activate, Minimize) — the same
       # Wayland-native (Mutter) path used elsewhere; falls back to
-      # `vicinae app launch` if the D-Bus service is unavailable.
+      # `vicinae app launch` if the D-Bus service is unavailable. Ghostty also
+      # has a direct executable fallback because its desktop entry can be absent
+      # from the active XDG application dirs even when the Nix package is on PATH.
       (writeShellScriptBin "vicinae-toggle-app" ''
         set -u
         app_id="''${1:-}"
@@ -147,7 +173,13 @@
             --object-path "$obj" --method "$iface.$1" "''${@:2}"
         }
 
-        launch() { exec vicinae app launch "$app_id"; }
+        launch() {
+          vicinae app launch "$app_id" && exit 0
+          if [ "$app_id" = "com.mitchellh.ghostty" ]; then
+            exec ${ghostty}/bin/ghostty --gtk-single-instance=true
+          fi
+          exit 1
+        }
 
         # Raw List() returns a gdbus tuple: ('[ ... json ... ]',). Strip the
         # tuple wrapper to get the inner JSON array, then query with jq.
@@ -216,7 +248,14 @@
   xdg.configFile."flameshot/flameshot.ini" = pkgs.lib.mkIf pkgs.stdenv.isLinux {
     text = ''
       [General]
-      disabledTrayIcon=true
+      # Tray icon ON: gives Flameshot a top-bar (notification-area) entry and,
+      # crucially, keeps the Flameshot capture daemon resident. On GNOME Wayland
+      # a COLD `flameshot gui` launched from a global hotkey gets its screen-grab
+      # portal request denied ("Only the focused app is allowed to show a system
+      # access dialog"). Running Flameshot as a resident service (see the
+      # systemd user service below) + tray icon avoids that cold-start path, so
+      # F4 / Alt+Shift+S / Alt+P all capture and copy reliably.
+      disabledTrayIcon=false
       showStartupLaunchMessage=false
       showHelp=false
       saveAfterCopy=false
@@ -228,4 +267,103 @@
       showDesktopNotification=true
     '';
   };
+
+  # Run Flameshot as a resident systemd user service so its capture daemon is
+  # already alive when a global screenshot hotkey fires. This is what makes
+  # `flameshot gui` reliable on GNOME Wayland from F4 / Alt+Shift+S / Alt+P:
+  # a cold launch from a hotkey is denied the screen-grab portal, but the
+  # already-running daemon owns the capture surface and copies to the clipboard.
+  # The service also provides the top-bar tray icon (disabledTrayIcon=false).
+  # Linux-only; flameshot is in the Linux GUI package list above.
+  systemd.user.services.flameshot = pkgs.lib.mkIf pkgs.stdenv.isLinux {
+    Unit = {
+      Description = "Flameshot screenshot daemon (resident for Wayland hotkey capture)";
+      # Start after the graphical session + tray are up so the icon attaches.
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      # `flameshot` with no subcommand runs the background daemon + tray.
+      ExecStart = "${pkgs.flameshot}/bin/flameshot";
+      Restart = "on-failure";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
+  # Kanto ORA4 high-quality audio, shipped declaratively so every Linux-desktop
+  # PC built from this repo gets the same best-real-world setup for the speaker.
+  #
+  # Hardware scan (cat /proc/asound/card<N>/stream0) shows the ORA4 enumerates as
+  # a USB AUDIO device on a FULL-SPEED (12 Mbit/s) link supporting 16/24-bit at
+  # 44.1/48/96 kHz, 2ch. On a full-speed link 24-bit/96kHz (~4.6 Mbit/s payload)
+  # sits at the edge of the bus and risks dropouts for NO audible gain on this
+  # DAC/driver pair, so the safe high-quality target is 24-bit / 48 kHz.
+  #
+  # This is a WirePlumber 0.5+ drop-in (SPA-JSON in wireplumber.conf.d/). It is
+  # MATCHED TO THE ORA4 BY NAME (node.name prefix), so machines without the
+  # speaker — and other audio devices on this machine — are unaffected.
+  #
+  # What it locks in:
+  #   - audio.format  = S24_3LE  -> stay 24-bit, don't silently drop to 16-bit
+  #   - audio.rate    = 48000    -> sweet spot for the full-speed link
+  #   - allowed-rates = 48000    -> avoid pointless 96k rate-switching/dropouts
+  #   - node.pause-on-idle = false -> don't clip the first moment of playback
+  #   - api.alsa.soft-mixer = true -> SOFTWARE volume (see below)
+  # Global resampler quality is left at the PipeWire default (already high); we
+  # intentionally keep this device-scoped rather than changing global audio.
+  #
+  # Why soft-mixer: the ORA4's hardware volume (PCM Playback Volume in
+  # /proc/asound/card<N>/usbmixer) is GAIN-ONLY, range 0..+16 dB, with
+  # Base Volume = 0 dB landing at ~54% on the PipeWire slider. Below ~54% the
+  # device has no attenuation headroom left, so the control collapses toward its
+  # min and the output falls off a cliff to silence — that is the "stops working
+  # below 50%" behaviour. Setting soft-mixer makes PipeWire attenuate digitally
+  # instead, giving smooth, linear, granular volume across the full 0-100% range
+  # with no dead zone. Tradeoff: digital attenuation at very low levels trims a
+  # few bits of headroom, but on a 24-bit stream this is inaudible.
+  #
+  # Verify after a rebuild + relog (or `systemctl --user restart wireplumber`):
+  #   pactl list sinks | grep -A6 -i kanto   # Sample Spec should read s24le 48000Hz
+  #   pw-metadata -n settings | grep -i ora   # rule presence
+  # See repo-docs/ora4-audio.md.
+  xdg.configFile."wireplumber/wireplumber.conf.d/51-kanto-ora4.conf" =
+    pkgs.lib.mkIf pkgs.stdenv.isLinux
+      {
+        text = ''
+          monitor.alsa.rules = [
+            {
+              # DEVICE-level: disable ACP for the ORA4. With api.alsa.use-acp =
+              # true (the default), ALSA Card Profile owns the mixer and re-exposes
+              # the gain-only HARDWARE volume, which OVERRIDES node-level
+              # soft-mixer (verified via pw-dump: device use-acp=true beat the
+              # node's soft-mixer=true and the sink kept HW_VOLUME_CTRL). Turning
+              # ACP off makes PipeWire use the plain ALSA path so soft-mixer wins.
+              matches = [
+                { device.name = "~alsa_card.usb-Kanto_Audio_ORA4_by_Kanto.*" }
+              ]
+              actions = {
+                update-props = {
+                  api.alsa.use-acp = false
+                }
+              }
+            }
+            {
+              # NODE-level: lock format and force SOFTWARE volume so granular
+              # volume below ~54% no longer falls off a cliff to silence.
+              matches = [
+                { node.name = "~alsa_output.usb-Kanto_Audio_ORA4_by_Kanto.*" }
+              ]
+              actions = {
+                update-props = {
+                  audio.format       = "S24_3LE"
+                  audio.rate         = 48000
+                  audio.allowed-rates = [ 48000 ]
+                  node.pause-on-idle = false
+                  api.alsa.soft-mixer = true
+                }
+              }
+            }
+          ]
+        '';
+      };
 }

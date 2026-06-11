@@ -13,6 +13,11 @@
   #     window-management + clipboard integration on GNOME Wayland. Without it
   #     the Vicinae server falls back to a "dummy" clipboard server and the
   #     launcher window fails to render. Package added in gui.nix.
+  #   - appindicatorsupport@rgcjonas.gmail.com
+  #     (gnomeExtensions.appindicator) — GNOME Shell has NO native status/tray
+  #     area. This extension restores the top-bar tray (notification area) so
+  #     Flameshot's tray icon (and other AppIndicator/StatusNotifier apps) show
+  #     up. Required for the Flameshot resident service's icon. Package in gui.nix.
   #
   # NOTE: GNOME loads newly enabled extensions at the start of a Shell
   # session. On Wayland (this host), the Shell cannot be hot-reloaded, so a
@@ -40,6 +45,7 @@
   dconf.settings = lib.mkIf pkgs.stdenv.isLinux {
     "org/gnome/shell" = {
       enabled-extensions = [
+        "appindicatorsupport@rgcjonas.gmail.com"
         "vicinae@dagimg-dot"
       ];
     };

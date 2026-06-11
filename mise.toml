@@ -32,15 +32,16 @@ bash -n ops/bootstrap.sh ops/detect-host.sh ops/snapshot-home.sh \
         ops/validate-config.sh ops/check-source-of-truth.sh \
         ops/generate-package-matrix.sh ops/doctor.sh \
         ops/install.sh ops/update-all.sh ops/cleanup.sh \
-        ops/readiness.sh ops/system-setup.sh \
+        ops/readiness.sh ops/system-setup.sh ops/vscode-extensions.sh \
         ops/detect-os-disks.sh 2>/dev/null || \
   echo 'missing: one or more scripts not yet created (Phase 7)'
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck ops/snapshot-home.sh ops/validate-config.sh \
-             ops/check-source-of-truth.sh ops/generate-package-matrix.sh \
-             ops/doctor.sh ops/install.sh ops/update-all.sh \
-             ops/cleanup.sh ops/readiness.sh ops/system-setup.sh \
-             ops/detect-os-disks.sh
+              ops/check-source-of-truth.sh ops/generate-package-matrix.sh \
+              ops/doctor.sh ops/install.sh ops/update-all.sh \
+              ops/cleanup.sh ops/readiness.sh ops/system-setup.sh \
+              ops/vscode-extensions.sh \
+              ops/detect-os-disks.sh
   for f in ops/bootstrap.sh ops/detect-host.sh; do
     [ -f "$f" ] && shellcheck "$f"
   done
@@ -143,6 +144,13 @@ else
   echo 'missing: mise'
 fi
 echo
+echo '=== VS Code extensions dry-run ==='
+if [ -x ops/vscode-extensions.sh ]; then
+  bash ops/vscode-extensions.sh --dry-run
+else
+  echo 'missing: ops/vscode-extensions.sh'
+fi
+echo
 echo 'Would run: lefthook install'
 """
 
@@ -188,8 +196,17 @@ case "$HOST" in
 esac
 
 mise install
+bash ops/vscode-extensions.sh
 lefthook install
 """
+
+[tasks."vscode:extensions"]
+description = "Install curated VS Code extensions shipped with this config"
+run = "bash ops/vscode-extensions.sh"
+
+[tasks."vscode:extensions:dry-run"]
+description = "Preview missing curated VS Code extensions"
+run = "bash ops/vscode-extensions.sh --dry-run"
 
 [tasks.sync]
 description = "Default safe sync preview (alias for sync:dry-run)"

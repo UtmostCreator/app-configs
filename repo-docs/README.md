@@ -25,6 +25,7 @@ the topic you need.
 | Shell prompt / zsh / starship | [`shell-setup.md`](shell-setup.md) |
 | Neovim | [`nvim-setup.md`](nvim-setup.md) |
 | Karabiner / keyboard remapping (macOS) | [`keyboard.md`](keyboard.md) |
+| Kanto ORA4 / USB audio validation | [`ora4-audio.md`](ora4-audio.md) |
 | VS Code extensions | [`vscode-extensions.md`](vscode-extensions.md) |
 | Persistent SSH agent (Linux / macOS / WSL) | [`unix/QUICKSTART.md`](unix/QUICKSTART.md) and [`unix/ssh-agent-setup.md`](unix/ssh-agent-setup.md) |
 | Persistent SSH agent (Windows native) | [`windows/QUICKSTART.md`](windows/QUICKSTART.md) (kept as-is; not maintained as part of this stack) |

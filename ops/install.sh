@@ -19,9 +19,10 @@
 #   5. chezmoi init + snapshot $HOME + chezmoi apply --force
 #   6. home-manager switch  OR  darwin-rebuild switch  (per host)
 #   7. mise trust + mise install   (runtimes come from Nix on NixOS; near no-op)
-#   8. lefthook install
-#   9. ssh-agent-setup.sh (non-WSL)
-#  10. doctor.sh (must pass)
+#   8. VS Code extensions (if code CLI is present)
+#   9. lefthook install
+#  10. ssh-agent-setup.sh (non-WSL)
+#  11. doctor.sh (must pass)
 #
 # Usage:
 #   bash ops/install.sh                 # full unattended install
@@ -143,7 +144,19 @@ run mise trust "$REPO_ROOT"
 # On NixOS runtimes come from Nix; this is typically "all tools are installed".
 run mise install
 
-# ── 8. lefthook ─────────────────────────────────────────────────────────────
+# ── 8. VS Code extensions ───────────────────────────────────────────────────
+step "VS Code extensions"
+if [[ -x "$REPO_ROOT/ops/vscode-extensions.sh" ]]; then
+  if [[ "$DRY_RUN" == 1 ]]; then
+    run bash "$REPO_ROOT/ops/vscode-extensions.sh" --dry-run
+  else
+    run bash "$REPO_ROOT/ops/vscode-extensions.sh"
+  fi
+else
+  warn "ops/vscode-extensions.sh missing or not executable; skipping"
+fi
+
+# ── 9. lefthook ─────────────────────────────────────────────────────────────
 step "lefthook (git hooks)"
 if [[ -d "$REPO_ROOT/.git" ]]; then
   run sh -c "cd '$REPO_ROOT' && lefthook install"
@@ -151,7 +164,7 @@ else
   warn "no .git dir; skipping lefthook install"
 fi
 
-# ── 9. ssh-agent helper (non-WSL) ───────────────────────────────────────────
+# ── 10. ssh-agent helper (non-WSL) ──────────────────────────────────────────
 step "ssh-agent helper"
 if [[ "$HOST_PROFILE" != "wsl" ]] && [[ -x "$REPO_ROOT/ops/unix/ssh-agent-setup.sh" ]]; then
   if [[ "$DRY_RUN" == 1 ]]; then
@@ -163,7 +176,7 @@ else
   log "skipped (WSL or helper absent)"
 fi
 
-# ── 10. doctor ──────────────────────────────────────────────────────────────
+# ── 11. doctor ──────────────────────────────────────────────────────────────
 step "doctor (health check)"
 if [[ "$DRY_RUN" == 1 ]]; then
   log "would: bash ops/doctor.sh"

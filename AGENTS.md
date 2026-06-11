@@ -3,13 +3,13 @@
 ## Project Summary
 
 - Project: `app-configs`
-- Type: `repository`
-- Summary: `AI workflow starter for app-configs`
-- Primary language: `unknown`
-- Primary runtime: `unknown`
-- Active paths: `.editorconfig,.eslintrc.json,.gitattributes,.gitignore,.husky,.lefthook.yml,.prettierrc.json,.schemas,.stylelintrc.json,CONTRIBUTING.md,README.md,SECURITY.md,SUPPORT.md,backup-sanitized,configs,docs,reference,scripts,tests,tools`
-- Inactive or legacy paths: `unknown`
-- Primary entrypoints: `README.md, docs/ai/project-context.md`
+- Type: `dotfiles-config-repo`
+- Summary: `Personal dev-environment manager (dotfiles, CLI, GUI, runtimes) via chezmoi + mise + Nix/Home Manager + nix-darwin/Homebrew + Lefthook`
+- Primary language: `Bash + Nix`
+- Primary runtime: `chezmoi + mise + Nix/Home Manager`
+- Active paths: `home, nix, ops, mise.toml, .lefthook.yml, tests, repo-docs, reference, README.md, AGENTS.md`
+- Inactive or legacy paths: `repo-docs/archive/, repo-docs/migration-*.md`
+- Primary entrypoints: `README.md, ops/install.sh, ops/bootstrap.sh, mise.toml, nix/flake.nix`
 
 ## Default Workflow
 
@@ -126,9 +126,9 @@ Minimum flow:
 
 ## Verification Rules
 
-- Primary verification command: `unknown`
-- Primary build command: `unknown`
-- Primary test command: `unknown`
+- Primary verification command: `bash ops/validate-config.sh`
+- Primary build command: `mise run repo:check`
+- Primary test command: `mise run test:bash`
 - Preferred narrow-first verification pattern: `start with the narrowest repo-local check and escalate only if needed`
 - Verification ladder: focused proof first -> affected layer tests second -> broader repository verification third -> build as a smoke check when relevant -> release-safety review only when risk warrants it.
 - Do not claim verification you did not run.
@@ -165,3 +165,11 @@ Minimum flow:
 - Do not silently widen permissions, scope, or behavior.
 - Do not delete files or reshape the module layout without approval.
 - Do not treat always-on instructions as a replacement for task entry points, staged agents, or enforcement hooks.
+
+<!-- BEGIN ai-kit -->
+AI kit instructions are installed for this repository. Keep your project-specific guidance outside this managed block.
+
+- Canonical project context: `docs/ai/project-context.md`
+- Workflow defaults: `docs/ai/workflow.md`
+- Execution protocol: `docs/ai/execution-protocol.md`
+<!-- END ai-kit -->

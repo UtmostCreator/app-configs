@@ -11,9 +11,17 @@ Workflow:
    `settings.json.tmpl` wrappers fold full vs minimal via the `.minimal`
    key in `home/.chezmoidata/personal.yaml`.
 
-2. Extensions themselves are installed via `code --install-extension`.
-   The bootstrap does **not** auto-install them; pick what you want from
-   the list below.
+2. Extensions themselves are installed by `ops/vscode-extensions.sh` during
+   `bash ops/bootstrap.sh --yes`, `bash ops/install.sh`, and
+   `mise run sync:apply` when the `code` CLI is available. The script is
+   idempotent and skips already-installed extensions.
+
+   You can also run it directly:
+
+   ```bash
+   mise run vscode:extensions:dry-run
+   mise run vscode:extensions
+   ```
 
 ## Export your current list
 
@@ -21,10 +29,11 @@ Workflow:
 code --list-extensions > /tmp/vscode-extensions.txt
 ```
 
-## Install the curated list
+## Curated list shipped by automation
 
-```bash
-xargs -L1 code --install-extension <<'EOF'
+`ops/vscode-extensions.sh` installs this list:
+
+```text
 alefragnani.bookmarks
 amiralizadeh9480.laravel-extra-intellisense
 anan.jetbrains-darcula-theme
@@ -84,7 +93,6 @@ unifiedjs.vscode-mdx
 usernamehw.errorlens
 vue.volar
 xdebug.php-debug
-EOF
 ```
 
 > The list intentionally omits `github.copilot*` because this repo uses

@@ -11,9 +11,10 @@
 #   4. chezmoi init + diff + apply             (snapshot first)
 #   5. home-manager switch  OR darwin-rebuild switch (per host)
 #   6. mise install
-#   7. lefthook install
-#   8. ops/unix/ssh-agent-setup.sh         (skipped on WSL)
-#   9. ops/doctor.sh                       (must pass)
+#   7. VS Code extensions (if code CLI is present)
+#   8. lefthook install
+#   9. ops/unix/ssh-agent-setup.sh         (skipped on WSL)
+#  10. ops/doctor.sh                       (must pass)
 #
 # Usage:
 #   bash ops/bootstrap.sh                  # dry-run, default
@@ -201,7 +202,16 @@ else
   mise install
 fi
 
-# ─── 7. lefthook install ────────────────────────────────────────────────────
+# ─── 7. VS Code extensions ──────────────────────────────────────────────────
+if [[ -x "$REPO_ROOT/ops/vscode-extensions.sh" ]]; then
+  if [[ "$MODE" == "dry-run" ]]; then
+    bash "$REPO_ROOT/ops/vscode-extensions.sh" --dry-run
+  else
+    bash "$REPO_ROOT/ops/vscode-extensions.sh"
+  fi
+fi
+
+# ─── 8. lefthook install ────────────────────────────────────────────────────
 if [[ -d "$REPO_ROOT/.git" ]]; then
   if [[ "$MODE" == "dry-run" ]]; then
     if command -v lefthook >/dev/null 2>&1; then
@@ -215,7 +225,7 @@ if [[ -d "$REPO_ROOT/.git" ]]; then
   fi
 fi
 
-# ─── 8. ssh-agent helper (Unix non-WSL) ─────────────────────────────────────
+# ─── 9. ssh-agent helper (Unix non-WSL) ─────────────────────────────────────
 if [[ "$HOST_PROFILE" != "wsl" ]] \
    && [[ -x "$REPO_ROOT/ops/unix/ssh-agent-setup.sh" ]]; then
   if [[ "$MODE" == "dry-run" ]]; then
@@ -225,7 +235,7 @@ if [[ "$HOST_PROFILE" != "wsl" ]] \
   fi
 fi
 
-# ─── 9. doctor (must pass) ──────────────────────────────────────────────────
+# ─── 10. doctor (must pass) ─────────────────────────────────────────────────
 if [[ -f "$REPO_ROOT/ops/doctor.sh" ]]; then
   log "Running doctor…"
   bash "$REPO_ROOT/ops/doctor.sh"

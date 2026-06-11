@@ -32,7 +32,9 @@ services.vicinae.extensions =
 Already shipped this way:
 
 - **`vscode-recents`** (author *ShyAssassin*, "Visual Studio Code Recent
-  Projects") — intended for `Alt+E` in `nix/modules/home/gnome-keybindings.nix`.
+  Projects") — intended for `Alt+E` once a working recent-projects entrypoint is
+  verified. `Alt+E` is intentionally unbound in
+  `nix/modules/home/gnome-keybindings.nix` until then.
 
 Extension attr names are the folder names under
 `github:vicinaehq/extensions/extensions/<name>`. Note: the Vicinae binary here
@@ -51,8 +53,8 @@ notes in `nix/modules/home/vicinae.nix`.
 > nothing ("not found in store"). Likely cause: version skew between the nixpkgs
 > server (0.21.3, `@vicinae/api` consumer) and the newer `vicinae-extensions`
 > flake build (`@vicinae/api ^0.20.4`), or the entrypoint index only populates
-> for store-installed extensions. **Workaround in place:** `Alt+E` currently
-> raise-or-launches VS Code itself (`vicinae app launch code`). **To resolve:**
+> for store-installed extensions. **No fallback binding is shipped:** `Alt+E`
+> must show recent projects when enabled, not toggle VS Code. **To resolve:**
 > either switch `services.vicinae.package` to the upstream `vicinae` flake build
 > (matches the extension API version, but triggers a source compile — see
 > `nix/modules/home/vicinae.nix`), or wait for a newer `pkgs.vicinae`, then

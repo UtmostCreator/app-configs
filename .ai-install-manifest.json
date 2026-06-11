@@ -1,0 +1,408 @@
+{
+    "schema_version": 1,
+    "installer_version": "0.2.0",
+    "installed_at": "2026-06-08T21:59:56+00:00",
+    "updated_at": "2026-06-08T22:52:13+00:00",
+    "profile": "custom",
+    "package": {
+        "name": "ai-universal-rules",
+        "distribution": "git-tag",
+        "source_repository": "UtmostCreator/app-configs",
+        "source_remote": "origin",
+        "source_ref": "unknown",
+        "source_commit": "unknown",
+        "installed_version": "unknown"
+    },
+    "packs": [
+        "base",
+        "adapter-opencode",
+        "optional-agents-opencode-pack"
+    ],
+    "files": {
+        "docs/ai/project-context.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/core/project-context.template.md",
+            "source_hash": "sha256:7c5bff882f79c87b572477f2225905e88c39cb2cc28b014dffade15be7278b61",
+            "installed_hash": "sha256:f4411c041442e9311b1ce97a56a99cfd08dc0692fd13409013b791f20198efce",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/project-context-placeholders.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/core/project-context.placeholders.md",
+            "source_hash": "sha256:46d75a1a75d6e48eb6bf4a09af1796c18de23a85e7bc7b6960cc9c9a1b08a503",
+            "installed_hash": "sha256:62dc92e79f2b73dc505fe00a0bf372b820b7076e6ca7ff70ee257864d68d043c",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/workflow.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/core/workflow.template.md",
+            "source_hash": "sha256:da9e5e7c32ceb06f986f7119e85296df6b41c016f0a43b4fc1765a96dec57fce",
+            "installed_hash": "sha256:da9e5e7c32ceb06f986f7119e85296df6b41c016f0a43b4fc1765a96dec57fce",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/execution-protocol.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/core/execution-protocol.template.md",
+            "source_hash": "sha256:0535feec3805474a08762723dae90ec8d022302d432917c50f8a32303eaaffd2",
+            "installed_hash": "sha256:0535feec3805474a08762723dae90ec8d022302d432917c50f8a32303eaaffd2",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/ai-file-standards.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/core/ai-file-standards.template.md",
+            "source_hash": "sha256:9b734a13faad34825a20bdaa791ead01440fc3e0cdfc137e7c976839ae4dc6e4",
+            "installed_hash": "sha256:a2d6c60cfd35c0b69d2b8830e4afb06d8e7389c4fc5cd10a159154c0633c5b8d",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/AI-GUARDRAILS.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/shared/guardrails/AI-GUARDRAILS.md",
+            "source_hash": "sha256:8e19dd76dc69d8b75808c9e1e76e24d5691ed063241df07bb1dab787d7281754",
+            "installed_hash": "sha256:8e19dd76dc69d8b75808c9e1e76e24d5691ed063241df07bb1dab787d7281754",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/generated-artifacts.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/core/generated-artifacts.template.md",
+            "source_hash": "sha256:bb2156e17edf50dd0f3502c0edd99d3239c599e6bb6ca1a9ecb6025cdce30779",
+            "installed_hash": "sha256:bb2156e17edf50dd0f3502c0edd99d3239c599e6bb6ca1a9ecb6025cdce30779",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/POST-INSTALL.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/core/POST-INSTALL.template.md",
+            "source_hash": "sha256:702b32515016cb7d93f2a2e5e6dafa0471a53ac93ab3c4f159d8f434a829c32e",
+            "installed_hash": "sha256:f46cba67c53b5ac446886920c3ff535d35d125380369c5114d35d915709450b2",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/project-stack.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/core/project-stack.template.md",
+            "source_hash": "sha256:b3f8c3d19d9b07257f242d10290adf7ce3b4f48ee5b45d4c5044cc5ba308ba0c",
+            "installed_hash": "sha256:dbc78e80f25516257f036685e39df054dc61da4ea2f0f33ce989015ce7dbc2f6",
+            "managed": true,
+            "merge_strategy": "skip-if-exists",
+            "required": true,
+            "ownership": "template",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/project/README.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/core/project/README.md",
+            "source_hash": "sha256:84e285200a2dadae1b28b833b4b1ceccc175aa9aca1edcb3e77ca2a9bb43b17c",
+            "installed_hash": "sha256:d1e2b6384bdb222d91a711fa8a6a558b89754fc49aca0ef608c842f23c3d0d13",
+            "managed": true,
+            "merge_strategy": "skip-if-exists",
+            "required": true,
+            "ownership": "template",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/project/project-interaction.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/core/project/project-interaction.md",
+            "source_hash": "sha256:215f0bcdef32498563b3ad429e24980a27c93907e5d89edde646ca950b66ee89",
+            "installed_hash": "sha256:099cec09dee691b2617b0e5eaa30261eab05a522894cb366cbd0a898aab02452",
+            "managed": true,
+            "merge_strategy": "skip-if-exists",
+            "required": true,
+            "ownership": "template",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/project/conventions.md": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/core/project/conventions.md",
+            "source_hash": "sha256:2ec192aa5a8ee91617a23810b20ba9dca0a7a74ab10e10b93d209e5bc36fafcf",
+            "installed_hash": "sha256:7b5a1b8c3d9695e4ee0e46165b10bcde3c064a56c1e138187f573922df8b72c1",
+            "managed": true,
+            "merge_strategy": "skip-if-exists",
+            "required": true,
+            "ownership": "template",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/capabilities/project-context": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/capabilities/project-context",
+            "source_hash": "sha256:4ae30b876e482a1a34556a0f4f6c5efe4d04ba1ed7fecae5c3f7e231082b96e9",
+            "installed_hash": "sha256:4ae30b876e482a1a34556a0f4f6c5efe4d04ba1ed7fecae5c3f7e231082b96e9",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/capabilities/verify-change": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/capabilities/verify-change",
+            "source_hash": "sha256:e27ade71728ea4b219f350411bbb7e57e483b2c0e44095ac7555b105df60e388",
+            "installed_hash": "sha256:e27ade71728ea4b219f350411bbb7e57e483b2c0e44095ac7555b105df60e388",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/capabilities/review-diff": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/capabilities/review-diff",
+            "source_hash": "sha256:f59acc5385089a4a3f6d1f1afb2c1de73dfbd4f7f9f2cd050c99e51073f962b9",
+            "installed_hash": "sha256:f59acc5385089a4a3f6d1f1afb2c1de73dfbd4f7f9f2cd050c99e51073f962b9",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "docs/ai/capabilities/evidence-first-execution": {
+            "pack": "base",
+            "source": "packages/ai-universal-rules/templates/capabilities/evidence-first-execution",
+            "source_hash": "sha256:09274953c301753616c6d6b924e7f63b50d34477db9ab33fd32ba561a55ad87e",
+            "installed_hash": "sha256:09274953c301753616c6d6b924e7f63b50d34477db9ab33fd32ba561a55ad87e",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "base",
+            "runtimes": [
+                "both"
+            ]
+        },
+        "opencode.jsonc": {
+            "pack": "adapter-opencode",
+            "source": "packages/ai-universal-rules/templates/core/opencode.json",
+            "source_hash": "sha256:8d7db0a3c0d1a76f337d9648b45daa970c8a255f25d8fa1cf4e7e4522286af31",
+            "installed_hash": "sha256:8d7db0a3c0d1a76f337d9648b45daa970c8a255f25d8fa1cf4e7e4522286af31",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "adapter-opencode",
+            "runtimes": [
+                "opencode"
+            ]
+        },
+        ".opencode/agents": {
+            "pack": "adapter-opencode",
+            "source": "packages/ai-universal-rules/templates/core/agents",
+            "source_hash": "sha256:ad1cf40c2edb2fe3acf82cbe50237c3218940dae033ea21b9b391484562de2a0",
+            "installed_hash": "sha256:c17b2b487bfe6aa7cb2ed711ba0fbe634e8eba1a0796b9e1b74c403770436392",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "adapter-opencode",
+            "runtimes": [
+                "opencode"
+            ]
+        },
+        ".opencode/skills": {
+            "pack": "adapter-opencode",
+            "source": "packages/ai-universal-rules/templates/workflows",
+            "source_hash": "sha256:90328e6024c2964f17d740411b8329a8003244a74c87825b522319014591c652",
+            "installed_hash": "sha256:c15203a4b28f1e5c35033c353b77713097e3a506a87999a31e0c3b439ab14a2f",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "adapter-opencode",
+            "runtimes": [
+                "opencode"
+            ]
+        },
+        ".opencode/commands": {
+            "pack": "adapter-opencode",
+            "source": "packages/ai-universal-rules/templates/commands",
+            "source_hash": "sha256:db01af38b7fd8be67d094965f23a3137078e5291bc0e9eebb5d0c99051e7b5da",
+            "installed_hash": "sha256:5d3d939938a8e3ac6170ba19c70de70ddcdedcd7a25c987afd8261d07a0508ee",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "adapter-opencode",
+            "runtimes": [
+                "opencode"
+            ]
+        },
+        ".opencode/skills/ai-search/SKILL.md": {
+            "pack": "adapter-opencode",
+            "source": "packages/ai-universal-rules/templates/skills/ai-search/SKILL.md",
+            "source_hash": "sha256:77f82bde01f4beeafe20d796a83c3e9bd037f8d86c738555d31a792ef2e02d48",
+            "installed_hash": "sha256:77f82bde01f4beeafe20d796a83c3e9bd037f8d86c738555d31a792ef2e02d48",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "adapter-opencode",
+            "runtimes": [
+                "opencode"
+            ]
+        },
+        ".opencode/skills/ai-scripts/SKILL.md": {
+            "pack": "adapter-opencode",
+            "source": "packages/ai-universal-rules/templates/skills/ai-scripts/SKILL.md",
+            "source_hash": "sha256:197d9560a4b7bed98d0d16174aa5e2bbd07fde6be78179f0219d3fc29c749e48",
+            "installed_hash": "sha256:197d9560a4b7bed98d0d16174aa5e2bbd07fde6be78179f0219d3fc29c749e48",
+            "managed": true,
+            "merge_strategy": "replace",
+            "required": true,
+            "ownership": "owned",
+            "component": "adapter-opencode",
+            "runtimes": [
+                "opencode"
+            ]
+        },
+        ".opencode/agents-optional": {
+            "pack": "optional-agents-opencode-pack",
+            "source": "packages/ai-universal-rules/templates/optional/agents",
+            "source_hash": "sha256:7c444dcb82dd56435c8b955b6b632cccbdd078e1a5cb05f47ddd96fd5c7d6fb7",
+            "installed_hash": "sha256:d9436ac7c2f5e2617e2fc2a665264982176532858a0f5f31ca0ed382e85ac25a",
+            "managed": true,
+            "merge_strategy": "skip-if-exists",
+            "required": true,
+            "ownership": "template",
+            "component": "optional-agents-opencode-pack",
+            "runtimes": [
+                "opencode"
+            ]
+        },
+        ".ai/project.yml": {
+            "pack": "project-values",
+            "source": ".ai/project.yml",
+            "source_hash": "generated",
+            "installed_hash": "sha256:cf04fd22404bd67bd924ede0e14116db5052392929fc9414a2be60da80a10b97",
+            "managed": true,
+            "merge_strategy": "skip-if-exists",
+            "required": false,
+            "ownership": "template",
+            "component": "project-values",
+            "runtimes": [
+                "both"
+            ]
+        }
+    },
+    "created_dirs": [
+        "docs/ai/capabilities/project-context",
+        "docs/ai/capabilities/verify-change",
+        "docs/ai/capabilities/review-diff",
+        "docs/ai/capabilities/evidence-first-execution",
+        ".opencode/agents",
+        ".opencode/skills",
+        ".opencode/commands"
+    ],
+    "pending_configuration": [
+        "Fill docs/ai/project-context.md",
+        "Run placeholder check via php tools/ai/ai.php placeholders"
+    ],
+    "migrations": {
+        "schemaVersion": 1,
+        "fromVersion": "unknown",
+        "targetVersion": "0.2.0",
+        "discovered": [],
+        "applied": []
+    },
+    "placeholders": {
+        "unresolved_required": [],
+        "unresolved_optional": [
+            "<CHANGE_REQUEST>",
+            "<CLAIM_BEING_PROVED>",
+            "<PLACEHOLDER_NAME>",
+            "<RISK_LEVEL>",
+            "<AFFECTED_PATHS>",
+            "<APPROVAL_REASON>",
+            "<PROPOSED_CHANGE_SUMMARY>",
+            "<NON_GOALS>",
+            "<ROLLBACK_PATH>",
+            "<SUCCESS_SIGNAL>",
+            "<VERIFICATION_PLAN>",
+            "<OPEN_QUESTIONS>",
+            "<FOCUSED_PROOF_COMMAND>",
+            "<PASS_FAIL_OR_OUTPUT>",
+            "<FOCUSED_PROOF_EXPLANATION>",
+            "<OPTIONAL_VERIFY_EXPLANATION>",
+            "<UNRUN_CHECKS_AND_REASON>",
+            "<RESIDUAL_RISK_NOTES>",
+            "<UNKNOWN>",
+            "<FILES_OR_COMMANDS_CHECKED>",
+            "<NEXT_STEP>",
+            "<FRONTEND_PATH_GLOB>",
+            "<TEST_PATH_GLOB>"
+        ],
+        "resolved_values_hash": "sha256:d2643476acc7512dfd6f69387715faf9064be5e106a7717cf5ec0ccebd5d312b"
+    }
+}

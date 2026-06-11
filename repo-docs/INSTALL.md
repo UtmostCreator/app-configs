@@ -280,11 +280,50 @@ applications + CLI tools + dotfiles**, not just dotfiles:
 
 | Command (PATH) | fish function | Does |
 | --- | --- | --- |
-| `sys-update` | `sys-update` | Update all apps/CLI + config (brewup equivalent) + safe cleanup |
+| `sys-install` | `sys-install` | Re-run the unattended full install (Nix base + all apps/CLI via home-manager + dotfiles + git hooks). Runs `home-manager switch`, so it APPLIES user-layer config like keybindings/layouts. |
+| `sys-update` | `sys-update` | Update all apps/CLI + config (brewup equivalent) + safe cleanup. Also runs `home-manager switch`, so it APPLIES user-layer config changes. |
 | `sys-cleanup` | `sys-cleanup` | De-dup Nix store + prune caches (keeps all rollbacks) |
 | `sys-cleanup --gc` | `sys-cleanup-gc` | + remove aged generations (keeps recent) |
-| `sys-install` | `sys-install` | Re-run the unattended full install |
+| `sudo sys-setup --apply` | — | Apply the NixOS SYSTEM layer Home Manager cannot: fish login shell, trusted-users, declarative GC, timezone, then `nixos-rebuild switch`. Run WITHOUT `--apply` (no sudo) for a report-only preview. Does NOT touch user-layer config. |
 | — | `sys-doctor` / `syscd` | Health check / cd into the repo |
+| — | `sys-readiness` | Report whether the system layer is active (login shell, trusted-users, GC timers) |
+
+### Which command applies what (important)
+
+- **User layer** (keybindings, keyboard layouts, GNOME extensions, app packages,
+  dotfiles): owned by **Home Manager + chezmoi**. Applied by **`sys-install`** or
+  **`sys-update`** (both run `home-manager switch` + `chezmoi apply`). A change to a
+  `nix/modules/home/*.nix` file is NOT live until one of these runs.
+- **System layer** (fish as login shell, `nix.settings.trusted-users`, GC timers,
+  timezone): owned by **`sudo sys-setup --apply`** (`nixos-rebuild`). This is a
+  separate, root-only layer and does NOT apply user-layer keybinding/layout changes.
+
+### Preferred order
+
+First-time or after pulling repo changes:
+
+```
+sys-install                 # or: sys-update   (applies user layer: apps, dotfiles, keybindings, layout)
+sudo sys-setup --apply      # only if the system layer changed (login shell / trusted-users / GC / timezone)
+sys-cleanup                 # optional: reclaim disk, keeps all rollbacks
+```
+
+Routine maintenance (the usual loop):
+
+```
+sys-update                  # update + apply everything in the user layer, then safe cleanup
+sys-cleanup --gc            # occasional deeper reclaim (removes aged generations, keeps recent)
+```
+
+Notes:
+
+- `sys-setup` is only needed when the **system layer** changed. Day-to-day app/dotfile/keybinding
+  work needs only `sys-install` / `sys-update`.
+- `sys-update` already runs a safe cleanup at the end, so a separate `sys-cleanup` is only for
+  extra disk reclaim.
+- After a change that adds/enables a **GNOME extension** or changes the **keyboard layout**, log
+  out and back in (GNOME Shell on Wayland cannot hot-reload extensions or fully reset input-source
+  runtime state).
 
 ## Quick reference
 

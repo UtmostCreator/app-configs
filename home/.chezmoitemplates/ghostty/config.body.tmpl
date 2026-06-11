@@ -40,6 +40,16 @@ window-inherit-font-size = true
 # ---------- Clipboard / safety ----------
 clipboard-paste-protection = true
 clipboard-trim-trailing-spaces = true
+# copy-on-select copies a normal terminal selection straight to the system
+# clipboard (works great in the shell). NOTE: inside a mouse-reporting TUI
+# (opencode, vim, tmux, htop, ...) a plain left-click drag is sent TO THE APP,
+# so Ghostty never sees a selection and copy-on-select cannot fire — the app
+# may show "copied" using its own buffer while the real clipboard is unchanged.
+# To copy real text out of such a TUI, hold SHIFT while selecting (Shift+LMB):
+# Shift bypasses mouse reporting so Ghostty does the selection and copies it.
+# clipboard-write is "allow" by default, so apps that emit OSC 52 can also
+# write the clipboard directly; whether a TUI does that on plain-click is up to
+# the app, not Ghostty.
 copy-on-select = clipboard
 confirm-close-surface = true
 # ---------- Search / notifications ----------

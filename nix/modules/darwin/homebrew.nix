@@ -20,6 +20,7 @@
       "ghostty"
       "bbedit"
       "bruno"
+      "obsidian" # Notes/knowledge base (Linux: obsidian in gui.nix)
       "visual-studio-code" # VS Code — single IDE on all systems (Linux: vscode in gui.nix)
       # IntelliJ IDEA intentionally excluded for now. Re-add "intellij-idea-ce"
       # in a future slice if needed.

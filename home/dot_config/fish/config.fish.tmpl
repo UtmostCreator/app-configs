@@ -41,6 +41,17 @@ set -gx GPG_TTY (tty)
 # fzf owns Ctrl-T/Alt-C below; vi mode coexists with those widget bindings.
 fish_vi_key_bindings
 
+# Emacs-style line jumps on top of vi mode. fish_vi_key_bindings does NOT bind
+# Ctrl-A / Ctrl-E (those are Emacs-mode defaults), so in vi mode Ctrl-A did
+# nothing — unlike Emacs-style line editors (e.g. opencode) where Ctrl-A jumps
+# to the start of the line. Re-add the muscle-memory shortcuts in every vi bind
+# mode (default/insert/visual) so they work regardless of the current mode:
+#   Ctrl-A -> beginning of line, Ctrl-E -> end of line.
+for mode in default insert visual
+    bind -M $mode \cA beginning-of-line
+    bind -M $mode \cE end-of-line
+end
+
 # ─── Tool integrations (init order matters) ─────────────────────────────────
 # Starship prompt — single config shared with zsh/bash.
 set -gx STARSHIP_CONFIG "$HOME/.config/starship/starship.toml"

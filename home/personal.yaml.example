@@ -9,6 +9,9 @@
 
 name: "Your Full Name"
 email: "you@example.com"
+# SSH signing public key (or path, e.g. ~/.ssh/id_ed25519.pub). When set, the
+# gitconfig enables SSH commit/tag signing (gpg.format=ssh, commit.gpgsign,
+# tag.gpgsign). Leave empty to disable signing entirely.
 signingKey: ""
 
 # Renders the minimal VS Code settings instead of the full set.

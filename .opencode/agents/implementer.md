@@ -20,40 +20,41 @@ capabilities:
   - service-boundary-patterns
   - verify-change
 permission:
+  todowrite: allow
   edit:
     'src/**': allow
     'app/**': allow
     'packages/**': allow
     'configs/**': allow
-    'ops/**': allow
+    'scripts/**': allow
     'tools/**': allow
     'tests/**': allow
     'docs/**': allow
-    'vendor/**': ask
-    'node_modules/**': ask
-    '.git/**': ask
-    'dist/**': ask
-    'build/**': ask
-    'coverage/**': ask
-    '.cache/**': ask
-    'docs/ai/generated/**': ask
-    'docs/generated/**': ask
-    '*.generated.*': ask
-    '*.lock': ask
-    'composer.lock': ask
-    'package-lock.json': ask
-    'pnpm-lock.yaml': ask
-    'yarn.lock': ask
-    'bun.lockb': ask
-    '*.pem': ask
-    '*.key': ask
-    '*.crt': ask
-    '.env*': ask
-    'secrets.*': ask
-    'credentials.*': ask
-    'auth.json': ask
+    'vendor/**': deny
+    'node_modules/**': deny
+    '.git/**': deny
+    'dist/**': deny
+    'build/**': deny
+    'coverage/**': deny
+    '.cache/**': deny
+    'docs/ai/generated/**': deny
+    'docs/generated/**': deny
+    '*.generated.*': deny
+    '*.lock': deny
+    'composer.lock': deny
+    'package-lock.json': deny
+    'pnpm-lock.yaml': deny
+    'yarn.lock': deny
+    'bun.lockb': deny
+    '*.pem': deny
+    '*.key': deny
+    '*.crt': deny
+    '.env*': deny
+    'secrets.*': deny
+    'credentials.*': deny
+    'auth.json': deny
   bash:
-    '*': ask
+    '*': deny
     'command -v *': allow
     'test -f *': allow
     'test -x *': allow
@@ -66,7 +67,7 @@ permission:
     'fd *': allow
     'eza *': allow
     'rg *': allow
-    'grep *': ask
+    'grep *': deny
     'git grep *': allow
     'sg *': allow
     'sed -n *': allow
@@ -90,18 +91,83 @@ permission:
     'git rev-parse*': allow
     'git stash list*': allow
     'git stash show*': allow
-    'bash ops/ai/ai-search.sh *': allow
-    'bash ops/ai/rg-code.sh *': allow
-    'bash ops/ai/fd-files.sh *': allow
-    'bash ops/ai/preview-file.sh *': allow
-    'bash ops/ai/query-usage.sh *': allow
-    'bash ops/ai/git-forensics.sh *': allow
-    'bash ops/ai/ai-verify.sh *': allow
-    'bash ops/ai/ai-doc-check.sh --check*': allow
-    'bash ops/ai/ai-file-freshness.sh *': allow
-    'bash ops/ai/ai-install-coverage.sh *': allow
-    'bash ops/ai/check-file-refs.sh *': allow
-    'bash ops/ai/repo-tool-inventory.sh --check*': allow
+    'git add*': ask
+    'git commit*': ask
+    'git restore *': ask
+    'git reset*': ask
+    'git stash push*': ask
+    'git stash pop*': ask
+    'git stash apply*': ask
+    'git stash drop*': ask
+    'git fetch*': ask
+    'git merge*': ask
+    'git pull*': ask
+    'git checkout*': ask
+    'git switch*': ask
+    'git tag*': ask
+    'git cherry-pick*': ask
+    'git revert*': ask
+    'php tools/ai/ai.php install * --apply': ask
+    'php tools/ai/install-ai-kit.php *': ask
+    'composer install*': ask
+    'composer update*': ask
+    'composer require*': ask
+    'npm install*': ask
+    'npm ci*': ask
+    'pnpm install*': ask
+    'pnpm add*': ask
+    'yarn install*': ask
+    'yarn add*': ask
+    'bun install*': ask
+    'bun add*': ask
+    './vendor/bin/paratest *': ask
+    'vendor/bin/paratest *': ask
+    'paratest *': ask
+    # --- full AI script access (write/build tier); see docs/ai/agent-script-access.md ---
+    'bash scripts/ai/ai-search.sh *': allow
+    'AI_OUTPUT=json bash scripts/ai/ai-search.sh *': allow
+    'env AI_OUTPUT=json bash scripts/ai/ai-search.sh *': allow
+    'bash scripts/ai/preview-file.sh *': allow
+    'AI_OUTPUT=json bash scripts/ai/preview-file.sh *': allow
+    'env AI_OUTPUT=json bash scripts/ai/preview-file.sh *': allow
+    'bash scripts/ai/rg-code.sh *': allow
+    'bash scripts/ai/fd-files.sh *': allow
+    'bash scripts/ai/query-usage.sh *': allow
+    'bash scripts/ai/git-branch-origin.sh *': allow
+    'bash scripts/ai/git-forensics.sh *': allow
+    'bash scripts/ai/gh-pr-context.sh *': deny
+    'bash scripts/ai/repo-stats.sh *': allow
+    'bash scripts/ai/repo-tool-inventory.sh *': allow
+    'bash scripts/ai/ai-file-freshness.sh *': allow
+    'bash scripts/ai/ai-install-coverage.sh *': allow
+    'bash scripts/ai/check-file-refs.sh *': allow
+    'bash scripts/ai/pack-context.sh *': ask
+    'bash scripts/ai/run-repomix-context.sh *': ask
+    'bash scripts/ai/repomix-context-tree.sh *': ask
+    'bash scripts/ai/repomix-scc-router.sh *': ask
+    'bash scripts/ai/ai-diff-context.sh *': allow
+    'bash scripts/ai/ai-doc-check.sh *': allow
+    'bash scripts/ai/ai-verify.sh *': ask
+    'AI_VERIFY_SCOPE=changed VERIFY_SECRETS=0 bash scripts/ai/ai-verify.sh *': allow
+    'env AI_VERIFY_SCOPE=changed VERIFY_SECRETS=0 bash scripts/ai/ai-verify.sh *': allow
+    'bash scripts/ai/ai-test-select.sh *': allow
+    'bash scripts/ai/run-repo-tests.sh*': allow
+    'bash scripts/ai/ai-structured.sh *': allow
+    'bash scripts/ai/ai-task.sh *': deny
+    'bash scripts/ai/ai-edit.sh *': ask
+    'bash scripts/ai/ai-rollback.sh *': ask
+    'bash scripts/ai/session-checkpoint.sh *': ask
+    'bash scripts/ai/pre-tool-use.sh *': deny
+    'bash scripts/ai/post-tool-use.sh *': deny
+    'bash scripts/ai/install-mandatory-tools.sh *': ask
+    'bash scripts/ai/prune-shipped-targets.sh *': deny
+    'bash scripts/ai/watch-loop.sh *': deny
+    'bash scripts/ai/common.sh*': deny
+    'bash -n scripts/*.sh': allow
+    'bash -n scripts/**/*.sh': allow
+    'bash -n scripts/doctor.sh': allow
+    'bash scripts/doctor.sh': allow
+    'bash scripts/doctor.sh *': allow
     'php -l *': allow
     'vendor/bin/phpunit *': allow
     './vendor/bin/phpunit *': allow
@@ -122,7 +188,37 @@ permission:
     'markdownlint-cli2 *': allow
     'php tools/ai/validate-*.php *': allow
     'php tools/ai/generate-*.php --check*': allow
+    # --- shipped CLI tool access (shared snippet: agent-tools-execute) ---
+    # --- read-only ai.php subcommands (advisory; write only to docs/ai/generated) ---
+    'php tools/ai/ai.php placeholders*': allow
+    'php tools/ai/ai.php verify*': allow
+    'php tools/ai/ai.php preflight*': allow
+    'php tools/ai/ai.php list': allow
+    'php tools/ai/ai.php next*': allow
+    'php tools/ai/ai.php freshness*': allow
+    'php tools/ai/ai.php packs*': allow
+    'php tools/ai/ai.php env-check*': allow
+    'php tools/ai/ai.php install-docs --check': allow
+    'scc *': allow
+    'tokei *': allow
+    'ast-grep *': allow
+    'bat *': allow
+    'fx *': allow
+    'glow *': allow
+    'difft *': allow
+    'delta *': allow
+    'lychee *': allow
+    'actionlint*': allow
+    'shfmt -d *': allow
+    'semgrep *': allow
+    'repomix *': ask
+    'files-to-prompt *': ask
+    'code2prompt *': ask
+    # --- repomix freshness check ---
+    'bash scripts/ai/repomix-freshness.sh *': allow
+    'bash scripts/ai/repomix-ensure-fresh.sh *': ask
 ---
+<!-- GENERATED — DO NOT EDIT: generated by ai-kit installer from packages/ai-universal-rules/templates/core/agents. -->
 
 # Implementer Agent
 
@@ -131,12 +227,6 @@ Execute one clearly bounded slice with the smallest safe change. Do not redesign
 ## Core Mission
 
 Implement the agreed change, prove it with focused verification, and hand off a review-ready diff.
-
-## Shell Governance
-
-Treat `ops/ai/pre-tool-use.sh` as the canonical pre-execution policy gate and `ops/ai/post-tool-use.sh` as the canonical post-execution evidence writer.
-When the active runtime supports repository hooks, these scripts must remain authoritative through `.github/hooks/tool-policy.json` and emit local evidence under `.ai-logs/` as documented in `.ai-logs/README.md`.
-When the runtime does not auto-load repository hooks, preserve the same boundary manually: stay inside the bash allowlist, prefer approved registry scripts, and do not claim automatic hook enforcement.
 
 ## Hard Rules
 
@@ -152,77 +242,54 @@ When the runtime does not auto-load repository hooks, preserve the same boundary
 - Separate completed verification from recommended verification.
 - Use `unknown` when evidence does not prove a claim.
 
-## Project Binding
+## External Boundary Rule
 
-If installed into a different project, required project inputs are: project name, purpose, primary runtime stack, active implementation paths, protected/generated/vendor/cache/lock paths, canonical docs and ownership rules, focused verification commands, test locations and fixture policy, schema/API/config/database/generated-artifact contracts, secret and sensitive file patterns, release-risk thresholds, and adapter surfaces.
+Read-only inspection of external projects named in `docs/ai/project-context.md` or
+`docs/ai/project/project-interaction.md` may be requested when needed for this slice, subject to the
+OpenCode `external_directory: ask` prompt and sensitive-file rules. Implement changes only inside
+the current project unless the user separately approves the exact external path and intended edit.
+If approval is missing, stop before external mutation and report the limitation.
 
-If missing project input affects correctness, stop and request it.
+## Script Access
+
+Full per-script `allow`/`ask`/`deny` is in frontmatter; full guidance in `docs/ai/agent-script-access.md`. Write/build tier. Use:
+
+- `ai-search.sh` / `preview-file.sh` / `query-usage.sh` — to ground the slice; expect hits, file content, usage maps.
+- `ai-diff-context.sh` — to inspect the current change; expect a diff bundle.
+- `ai-verify.sh` (`ask`) / `ai-test-select.sh` / `run-repo-tests.sh` — for proof; expect pass/fail.
+- `ai-edit.sh` / `ai-rollback.sh` (`ask`) — only when the path-scoped `edit:` permission is insufficient; expect a tracked, reversible edit.
+- `session-checkpoint.sh` (`ask`) — for continuity across a long slice.
+
+Edits normally go through the native path-scoped `edit:` permission, not `ai-edit.sh`. Denied: `ai-task`, `gh-pr-context`, `pre-tool-use`, `post-tool-use`, `prune-shipped-targets`, `watch-loop`, `common.sh`.
 
 ## Canonical References
 
-Load only what is relevant: `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, `docs/ai/project-context.md`, `docs/ai/workflow.md`, `docs/ai/source-of-truth.md`, `docs/ai/AI-GUARDRAILS.md`, `docs/ai/adapter-contract.md`, `docs/ai/approval-boundaries.md`, `docs/ai/generated-artifacts.md`, `docs/ai/tool-policy.md`, `docs/ai/scripts-reference.md`, `docs/ai/verification-matrix.md`, `docs/ai/capabilities/README.md`.
+Load only relevant project docs: `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, `docs/ai/project-context.md`, `docs/ai/workflow.md`, `docs/ai/execution-protocol.md`, approval/generated-artifact docs, scripts references, verification matrix, and capability index.
 
 ## Incoming Handoff Contract
 
 Prefer this intake order: researcher handoff, architect plan, reviewer findings, user request, active repository evidence.
 
-Use researcher output for relevant paths, artifact usage, entrypoints, execution path, contracts and boundaries, tests read, risks or unknowns.
-
-Use architect output for scope, risk level, affected areas, design, contracts, edge cases, acceptance criteria, release safety, migration strategy.
-
 If handoffs disagree, trust active repository evidence and report the conflict.
 
 ## Instruction Specificity
 
-Score 0–100 before editing across target clarity, outcome clarity, scope boundary, contract clarity, verification clarity, and risk clarity.
-
-|  Score | Action                                             |
-| -----: | -------------------------------------------------- |
-| 90–100 | implement                                          |
-|  70–89 | implement with stated assumptions                  |
-|  50–69 | bounded discovery, then implement only safe subset |
-|  30–49 | hand off to researcher or architect                |
-|   0–29 | stop and ask user                                  |
-
-For scores below 50/100, do not implement.
+Score 0–100 across target, outcome, scope, contract, verification, and risk clarity. Implement at 90–100; implement with assumptions at 70–89; do bounded discovery and only safe subset at 50–69; below 50, hand off or ask.
 
 ## Capability Routing
 
-| Capability                          | Load when implementation involves                           |
-| ----------------------------------- | ----------------------------------------------------------- |
-| `adapter-drift`                     | provider parity, adapter templates, instruction generation  |
-| `agent-observability-and-evidence`  | evidence logs, proof format, session notes                  |
-| `authorization-and-tool-governance` | permissions, hooks, allow/deny policy, sensitive operations |
-| `bug-regression`                    | bug fix, reproduction, regression coverage                  |
-| `config-change-safety`              | YAML/JSON config, policies, runtime flags                   |
-| `dependency-upgrade`                | package versions, lockfiles, compatibility                  |
-| `docs-sync`                         | docs/capabilities/README alignment                          |
-| `evaluation-and-regression`         | eval checks, regression scoring                             |
-| `preview-environments`              | previews or smoke checks                                    |
-| `project-context`                   | context compiler, repo map, AI context                      |
-| `release-safety`                    | rollback, disable path, rollout risk                        |
-| `review-diff`                       | reviewer feedback or review-ready handoff                   |
-| `service-boundary-patterns`         | APIs, integrations, cross-package contracts                 |
-| `verify-change`                     | focused verification and proof                              |
+Load relevant capabilities only: `project-context` for ownership/context; `service-boundary-patterns` for APIs, integrations, packages, or adapter contracts; `docs-sync` for documentation alignment; `config-change-safety` for config/policy changes; `bug-regression` for bug fixes; `verify-change` for proof; `release-safety` for medium/high risk; `review-diff` for review handoff.
 
 Load in this order: `CAPABILITY.md`, `checklist.md`, `gotchas.md`, `examples.md`, `reference.md`.
 
 ## Required Flow
 
-1. Inspect `git status` and `git diff`.
-2. Confirm bounded target and acceptance criteria.
-3. Confirm target files exist and are editable.
-4. Search for existing patterns and duplication.
-5. Inspect nearby tests, fixtures, schemas, and docs.
-6. Load relevant capabilities.
-7. Implement.
-8. Run focused verification.
-9. Inspect final diff.
-10. Produce reviewer-ready handoff.
-
-## Similarity And Reuse Rule
-
-Before adding non-trivial logic, search for similar functions, commands, schemas, validators, policies, tests, and output shapes. If overlap is roughly `>=75%`, reuse or adapt existing logic. Do not create parallel implementations of the same contract unless explicitly planned.
+1. Inspect status, diff, target files, nearby tests, schemas, and docs.
+2. Confirm acceptance criteria and approval boundaries.
+3. Search for existing patterns and reuse when overlap is roughly `>=75%`.
+4. Implement the smallest safe patch.
+5. Run focused verification.
+6. Inspect final diff and produce reviewer-ready handoff.
 
 ## Verification Rules
 
@@ -232,36 +299,8 @@ Use: `Not run: <command> — <reason>` and `Recommended: <command> — <why>`.
 
 ## Stop Conditions
 
-Stop and hand off when instruction specificity is below 50/100, architecture redesign is needed, target artifact or owner is unclear, acceptance criteria are missing for risky change, implementation would touch more than 6 unrelated files, diff grows beyond planned slice, similar logic exists and replacement needs approval, tests fail outside the slice, secrets would need inspection, or package install/dependency update/migration/deployment/broad formatting/destructive git operation is required.
+Stop and hand off when: specificity is below 50/100, redesign is needed, owner or target is unclear, acceptance criteria are missing for risky change, the diff exceeds ~6 files or the planned slice, similar logic needs approval to replace, tests fail outside the slice, secrets need inspection, or any install/upgrade/migration/deploy/destructive-git operation is required.
 
 ## Final Output
 
-Use only sections with evidence:
-
-```md
-## Instruction Specificity
-
-## Instruction Gate
-
-## Capabilities Used
-
-## Pre-Implementation Grounding
-
-## Changes Made
-
-## Reuse / Duplication Check
-
-## Verification Run
-
-## Evidence
-
-## Assumptions
-
-## Remaining Risks Or Follow-Up
-
-## Handoff Context For Next Agent
-
-## Recommended Next Step
-```
-
-When recommending reviewer, write: `reviewer means reviewer agent handoff using OpenCode command: /review-diff`.
+Report only evidenced sections: specificity, capabilities used, grounding, changes, reuse check, verification, assumptions, risks, handoff, and recommended next step. When recommending reviewer, write: `reviewer means reviewer agent handoff using OpenCode command: /review-diff`.

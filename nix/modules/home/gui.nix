@@ -266,6 +266,88 @@
           launch
         fi
       '')
+      # Recent-projects popup for VS Code, bound to Alt+E (see
+      # nix/modules/home/gnome-keybindings.nix). This is the NixOS/Linux stand-in
+      # for the Raycast "VS Code - Project Manager" extension, which is macOS-only
+      # and not reliable under Vicinae's Raycast-compat layer. Instead we read VS
+      # Code's own recently-opened list and render it through Vicinae's native
+      # `dmenu` list view (https://docs.vicinae.com/dmenu); selecting an entry
+      # opens that folder with `code <folder>`.
+      #
+      # Source of truth: VS Code persists recently-opened folders/workspaces in
+      # its globalStorage SQLite DB under the key
+      # `history.recentlyOpenedPathsList`. Newer builds may also mirror it into a
+      # shared-storage DB, so we read both (read-only) and de-duplicate, newest
+      # first. We use python3's stdlib sqlite3 because the `sqlite3` CLI is not a
+      # repo dependency; python3 is already on PATH via Nix.
+      (writeShellScriptBin "vscode-recent-projects" ''
+        set -euo pipefail
+
+        # Extract recent folders (newest first, de-duplicated) from VS Code's
+        # state DBs, then let the user pick one via Vicinae's dmenu popup.
+        selected="$(
+          ${pkgs.python3}/bin/python3 - <<'PY' | vicinae dmenu --navigation-title "VS Code" --placeholder "Open recent project…"
+        from pathlib import Path
+        import json
+        import sqlite3
+        import urllib.parse
+
+        home = Path.home()
+
+        # Read order = priority; first DB that yields an entry wins for ordering.
+        dbs = [
+            home / ".config/Code/User/globalStorage/state.vscdb",
+            home / ".config/Code - Insiders/User/globalStorage/state.vscdb",
+            home / ".config/VSCodium/User/globalStorage/state.vscdb",
+            home / ".vscode-shared/sharedStorage/state.vscdb",
+            home / ".vscode-insiders-shared/sharedStorage/state.vscdb",
+            home / ".vscodium-shared/sharedStorage/state.vscdb",
+        ]
+
+        def file_uri_to_path(uri):
+            if not uri or not uri.startswith("file://"):
+                return None
+            return urllib.parse.unquote(urllib.parse.urlparse(uri).path)
+
+        seen = set()
+
+        for db in dbs:
+            if not db.exists():
+                continue
+            try:
+                con = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+                rows = con.execute(
+                    "SELECT value FROM ItemTable "
+                    "WHERE key = 'history.recentlyOpenedPathsList'"
+                ).fetchall()
+                con.close()
+            except Exception:
+                continue
+
+            for (value,) in rows:
+                try:
+                    data = json.loads(value)
+                except Exception:
+                    continue
+                for entry in data.get("entries", []):
+                    path = None
+                    if "folderUri" in entry:
+                        path = file_uri_to_path(entry.get("folderUri"))
+                    elif "workspace" in entry:
+                        path = file_uri_to_path(entry["workspace"].get("configPath"))
+                    if path and path not in seen and Path(path).exists():
+                        seen.add(path)
+                        print(path)
+        PY
+        )"
+
+        # No selection (popup dismissed) -> do nothing.
+        [ -n "''${selected:-}" ] || exit 0
+
+        # Reuse an existing window for that folder if VS Code already has it open;
+        # `code` handles this itself. Launch detached so the hotkey returns.
+        exec ${vscode}/bin/code "$selected"
+      '')
       # IDE: VS Code is the single IDE shipped on all systems (see vscode above).
       # IntelliJ IDEA intentionally excluded for now (was jetbrains.idea on Linux
       # / intellij-idea-ce cask on macOS). Re-add in a future slice if needed.

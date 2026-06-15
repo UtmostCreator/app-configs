@@ -101,9 +101,20 @@ let
       command = "vicinae-toggle-app org.gnome.Nautilus";
       binding = "<Super>e";
     };
-    # Alt+E is intentionally unbound here until the Vicinae `vscode-recents`
-    # extension exposes a verified recent-projects entrypoint/deeplink. Do not
-    # repurpose Alt+E to toggle VS Code; it is reserved for recent projects.
+    # Alt+E -> VS Code recent-projects popup. Renders VS Code's own
+    # recently-opened folder list through Vicinae's native `dmenu` view; Enter
+    # opens the chosen folder with `code <folder>` (helper defined in gui.nix).
+    # This is the NixOS replacement for the macOS-only Raycast "VS Code - Project
+    # Manager" extension. Distinct from Alt+Shift+E, which toggles the VS Code
+    # window itself.
+    vscode-recents = {
+      name = "VS Code recent projects";
+      command = "vscode-recent-projects";
+      binding = "<Alt>e";
+      # ru layout: physical E emits Cyrillic_u (у), same key as the VS Code
+      # toggle (Alt+Shift+E) above.
+      cyrillic = "<Alt>Cyrillic_u";
+    };
     # Resize the focused window to 75% width / full height / centered, via the
     # Vicinae GNOME extension's D-Bus API (script defined in gui.nix).
     resize = {
@@ -192,6 +203,7 @@ in
   #   Alt+Shift+R  Telegram              (raise-or-launch; personal profile)
   #   Alt+Shift+D  Vesktop               (raise-or-launch; personal profile)
   #   Alt+Shift+E  VS Code               (raise-or-launch)
+  #   Alt+E        VS Code recent projects popup (Vicinae dmenu)
   #   Alt+Shift+O  Obsidian              (raise-or-launch)
   #   Alt+1        KeePassXC             (raise-or-launch)
   #   Super+E      Files (Nautilus)      (raise-or-launch; Win+E parity)

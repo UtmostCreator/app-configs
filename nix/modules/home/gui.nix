@@ -28,6 +28,12 @@
       flameshot # screenshots with annotation; runs as a resident systemd user
       #           service (see systemd.user.services.flameshot below) so global
       #           hotkeys (F4 / Alt+Shift+S / Alt+P) capture reliably on Wayland.
+      zenity # GTK list/dialog tool. Used by the `vscode-recent-projects` helper
+      #        (Alt+E) as a cross-compositor picker (GNOME/niri/Hyprland): it
+      #        draws a normal toplevel window, unlike layer-shell pickers
+      #        (fuzzel/wofi/rofi) which GNOME Mutter cannot display, and it
+      #        returns the selection on stdout, unlike `vicinae dmenu`. See that
+      #        helper below.
       bruno # open-source API client (Linux + macOS; macOS also via cask)
       obsidian # notes/knowledge base (unfree; macOS: Homebrew cask)
       keepassxc # offline password manager. Toggled by Alt+1 (see
@@ -269,10 +275,23 @@
       # Recent-projects popup for VS Code, bound to Alt+E (see
       # nix/modules/home/gnome-keybindings.nix). This is the NixOS/Linux stand-in
       # for the Raycast "VS Code - Project Manager" extension, which is macOS-only
-      # and not reliable under Vicinae's Raycast-compat layer. Instead we read VS
-      # Code's own recently-opened list and render it through Vicinae's native
-      # `dmenu` list view (https://docs.vicinae.com/dmenu); selecting an entry
-      # opens that folder with `code <folder>`.
+      # and not reliable under Vicinae's Raycast-compat layer. We read VS Code's
+      # own recently-opened list and render it through a small Wayland picker;
+      # selecting an entry opens that folder with `code <folder>`.
+      #
+      # Picker: `zenity --list` (GTK dialog). Chosen for cross-compositor
+      # portability — it renders a normal toplevel window, so it works on GNOME
+      # (Mutter), niri, and Hyprland alike. We deliberately do NOT use:
+      #   - `vicinae dmenu`: on Vicinae 0.21.3 it does not return the chosen
+      #     entry on captured (non-tty) stdout — it exits non-zero with empty
+      #     output and performs its own built-in action on Enter (a top-of-screen
+      #     toast), so `code` never ran.
+      #   - layer-shell pickers (fuzzel/wofi/rofi-wayland): they require the
+      #     wlr-layer-shell protocol, which GNOME Mutter does not implement, so
+      #     they fail on GNOME ("compositor is missing support for the Wayland
+      #     layer surface protocol").
+      # zenity --list prints the selected row to stdout and exits 0; cancel/close
+      # exits non-zero, which the caller treats as "do nothing".
       #
       # Source of truth: VS Code persists recently-opened folders/workspaces in
       # its globalStorage SQLite DB under the key
@@ -284,9 +303,11 @@
         set -euo pipefail
 
         # Extract recent folders (newest first, de-duplicated) from VS Code's
-        # state DBs, then let the user pick one via Vicinae's dmenu popup.
+        # state DBs, then let the user pick one via a zenity list dialog.
+        # `|| true` keeps `set -e` from aborting when the user cancels the dialog
+        # (zenity then exits non-zero); an empty selection is handled below.
         selected="$(
-          ${pkgs.python3}/bin/python3 - <<'PY' | vicinae dmenu --navigation-title "VS Code" --placeholder "Open recent project…"
+          ${pkgs.python3}/bin/python3 - <<'PY' | ${pkgs.zenity}/bin/zenity --list --title "VS Code" --text "Open recent project" --column "Project" --width 700 --height 500 || true
         from pathlib import Path
         import json
         import sqlite3

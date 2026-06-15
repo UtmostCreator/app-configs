@@ -507,12 +507,10 @@
   # The bind address stays at Syncthing's default 127.0.0.1:8384 (GUI is
   # loopback-only). Folder/device config remains user-owned in the Web UI; this
   # only manages the daemon lifecycle, not the synced folders.
-  services.syncthing =
-    pkgs.lib.mkIf (pkgs.stdenv.isLinux && config.myConfig.profile == "personal")
-      {
-        enable = true;
-        tray.enable = false;
-      };
+  services.syncthing = pkgs.lib.mkIf (pkgs.stdenv.isLinux && config.myConfig.profile == "personal") {
+    enable = true;
+    tray.enable = false;
+  };
 
   # Kanto ORA4 high-quality audio, shipped declaratively so every Linux-desktop
   # PC built from this repo gets the same best-real-world setup for the speaker.

@@ -33,7 +33,7 @@ bash -n ops/bootstrap.sh ops/detect-host.sh ops/snapshot-home.sh \
         ops/generate-package-matrix.sh ops/doctor.sh \
         ops/install.sh ops/update-all.sh ops/cleanup.sh \
         ops/readiness.sh ops/system-setup.sh ops/vscode-extensions.sh \
-        ops/detect-os-disks.sh 2>/dev/null || \
+        ops/detect-os-disks.sh ops/syncthing-obsidian-stignore.sh 2>/dev/null || \
   echo 'missing: one or more scripts not yet created (Phase 7)'
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck ops/snapshot-home.sh ops/validate-config.sh \
@@ -41,7 +41,7 @@ if command -v shellcheck >/dev/null 2>&1; then
               ops/doctor.sh ops/install.sh ops/update-all.sh \
               ops/cleanup.sh ops/readiness.sh ops/system-setup.sh \
               ops/vscode-extensions.sh \
-              ops/detect-os-disks.sh
+              ops/detect-os-disks.sh ops/syncthing-obsidian-stignore.sh
   for f in ops/bootstrap.sh ops/detect-host.sh; do
     [ -f "$f" ] && shellcheck "$f"
   done

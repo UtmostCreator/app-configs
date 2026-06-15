@@ -156,6 +156,23 @@ else
   warn "ops/vscode-extensions.sh missing or not executable; skipping"
 fi
 
+# ── 8b. Syncthing Obsidian .stignore (Linux personal profile) ───────────────
+# Stops Syncthing conflict spam in the Obsidian folder by installing the
+# repo-tracked .stignore. The helper is a safe no-op when the sync folder does
+# not exist yet (e.g. a fresh machine before Syncthing is configured), so this
+# step never blocks the install. Folder config stays user-owned in the Web UI.
+step "Syncthing Obsidian .stignore"
+if [[ -x "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" ]]; then
+  if [[ "$DRY_RUN" == 1 ]]; then
+    run bash "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh"
+  else
+    bash "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" --apply \
+      || warn "syncthing-obsidian-stignore returned non-zero (review)"
+  fi
+else
+  warn "ops/syncthing-obsidian-stignore.sh missing or not executable; skipping"
+fi
+
 # ── 9. lefthook ─────────────────────────────────────────────────────────────
 step "lefthook (git hooks)"
 if [[ -d "$REPO_ROOT/.git" ]]; then

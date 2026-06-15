@@ -73,7 +73,9 @@ for file in \
     repo-docs/vscode-extensions.md \
     .lefthook.yml \
     ops/hooks/pre-commit.sh \
-    ops/hooks/commit-msg.sh; do
+    ops/hooks/commit-msg.sh \
+    ops/syncthing-obsidian-stignore.sh \
+    reference/syncthing/obsidian.stignore; do
     check_file "$file"
 done
 

@@ -114,6 +114,20 @@ if have lefthook && [[ -d "$REPO_ROOT/.git" ]]; then
   run sh -c "cd '$REPO_ROOT' && lefthook install"
 fi
 
+# 8b. Syncthing Obsidian .stignore — refresh + sweep new conflicts.
+# Non-fatal and a safe no-op when the Obsidian sync folder is absent.
+step "Syncthing Obsidian .stignore"
+if [[ -x "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" ]]; then
+  if [[ "$MODE" == "apply" ]]; then
+    bash "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" --apply \
+      || warn "syncthing-obsidian-stignore returned non-zero"
+  else
+    log "would run: bash ops/syncthing-obsidian-stignore.sh --apply"
+  fi
+else
+  warn "ops/syncthing-obsidian-stignore.sh not found (skip)"
+fi
+
 # 9. cleanup (safe mode), unless disabled
 step "cleanup (safe)"
 if [[ "${NO_CLEANUP:-0}" == 1 ]]; then

@@ -209,6 +209,15 @@ in
   # guarded on isLinux so an accidental Darwin import is a no-op.
   dconf.settings = lib.mkIf pkgs.stdenv.isLinux (
     {
+      "org/gnome/desktop/interface" = {
+        # Disable all GNOME UI animations (window open/close/minimize, workspace
+        # and overview transitions). The app shortcuts above (Alt+Shift+<letter>)
+        # raise/minimize windows constantly; with animations on, each toggle
+        # plays a transition before the window settles, which makes rapid
+        # app-switching feel laggy. Off = instant, snappy focus changes.
+        enable-animations = false;
+      };
+
       "org/gnome/desktop/input-sources" = {
         # Keep English (US) as the default/current layout. GNOME uses source
         # index 0 on a fresh profile, and `current = 0` makes re-activation of

@@ -28,12 +28,6 @@
       flameshot # screenshots with annotation; runs as a resident systemd user
       #           service (see systemd.user.services.flameshot below) so global
       #           hotkeys (F4 / Alt+Shift+S / Alt+P) capture reliably on Wayland.
-      zenity # GTK list/dialog tool. Used by the `vscode-recent-projects` helper
-      #        (Alt+E) as a cross-compositor picker (GNOME/niri/Hyprland): it
-      #        draws a normal toplevel window, unlike layer-shell pickers
-      #        (fuzzel/wofi/rofi) which GNOME Mutter cannot display, and it
-      #        returns the selection on stdout, unlike `vicinae dmenu`. See that
-      #        helper below.
       bruno # open-source API client (Linux + macOS; macOS also via cask)
       obsidian # notes/knowledge base (unfree; macOS: Homebrew cask)
       keepassxc # offline password manager. Toggled by Alt+1 (see
@@ -275,23 +269,10 @@
       # Recent-projects popup for VS Code, bound to Alt+E (see
       # nix/modules/home/gnome-keybindings.nix). This is the NixOS/Linux stand-in
       # for the Raycast "VS Code - Project Manager" extension, which is macOS-only
-      # and not reliable under Vicinae's Raycast-compat layer. We read VS Code's
-      # own recently-opened list and render it through a small Wayland picker;
-      # selecting an entry opens that folder with `code <folder>`.
-      #
-      # Picker: `zenity --list` (GTK dialog). Chosen for cross-compositor
-      # portability — it renders a normal toplevel window, so it works on GNOME
-      # (Mutter), niri, and Hyprland alike. We deliberately do NOT use:
-      #   - `vicinae dmenu`: on Vicinae 0.21.3 it does not return the chosen
-      #     entry on captured (non-tty) stdout — it exits non-zero with empty
-      #     output and performs its own built-in action on Enter (a top-of-screen
-      #     toast), so `code` never ran.
-      #   - layer-shell pickers (fuzzel/wofi/rofi-wayland): they require the
-      #     wlr-layer-shell protocol, which GNOME Mutter does not implement, so
-      #     they fail on GNOME ("compositor is missing support for the Wayland
-      #     layer surface protocol").
-      # zenity --list prints the selected row to stdout and exits 0; cancel/close
-      # exits non-zero, which the caller treats as "do nothing".
+      # and not reliable under Vicinae's Raycast-compat layer. Instead we read VS
+      # Code's own recently-opened list and render it through Vicinae's native
+      # `dmenu` list view (https://docs.vicinae.com/dmenu); selecting an entry
+      # opens that folder with `code <folder>`.
       #
       # Source of truth: VS Code persists recently-opened folders/workspaces in
       # its globalStorage SQLite DB under the key
@@ -303,11 +284,9 @@
         set -euo pipefail
 
         # Extract recent folders (newest first, de-duplicated) from VS Code's
-        # state DBs, then let the user pick one via a zenity list dialog.
-        # `|| true` keeps `set -e` from aborting when the user cancels the dialog
-        # (zenity then exits non-zero); an empty selection is handled below.
+        # state DBs, then let the user pick one via Vicinae's dmenu popup.
         selected="$(
-          ${pkgs.python3}/bin/python3 - <<'PY' | ${pkgs.zenity}/bin/zenity --list --title "VS Code" --text "Open recent project" --column "Project" --width 700 --height 500 || true
+          ${pkgs.python3}/bin/python3 - <<'PY' | vicinae dmenu --navigation-title "VS Code" --placeholder "Open recent project…"
         from pathlib import Path
         import json
         import sqlite3
@@ -365,9 +344,47 @@
         # No selection (popup dismissed) -> do nothing.
         [ -n "''${selected:-}" ] || exit 0
 
-        # Reuse an existing window for that folder if VS Code already has it open;
-        # `code` handles this itself. Launch detached so the hotkey returns.
-        exec ${vscode}/bin/code "$selected"
+        # Open the folder. `code` reuses the existing VS Code instance and opens
+        # the folder INTO it, but on GNOME Wayland it does NOT raise/focus the
+        # window when VS Code was already running in the background. So we open
+        # the folder, then explicitly focus a VS Code window via the same
+        # Vicinae/Windows D-Bus API used by vicinae-toggle-app.
+        ${vscode}/bin/code "$selected" >/dev/null 2>&1 || true
+
+        dest="org.gnome.Shell"
+        obj="/org/gnome/Shell/Extensions/Windows"
+        iface="org.gnome.Shell.Extensions.Windows"
+        wm_class="code"
+        # VS Code window titles embed the folder name, e.g.
+        # "file - app-configs - Visual Studio Code". Match the selected project's
+        # basename so we focus the RIGHT window when several projects are open.
+        proj_name="$(${pkgs.coreutils}/bin/basename "$selected")"
+
+        # `code` may need a moment to (re)attach the folder to a window before a
+        # window of class `code` is listable/activatable. Poll briefly.
+        for _ in 1 2 3 4 5 6 7 8 9 10; do
+          raw="$(${glib}/bin/gdbus call --session --dest "$dest" \
+            --object-path "$obj" --method "$iface.List" 2>/dev/null || true)"
+          [ -n "$raw" ] || { sleep 0.3; continue; }
+          json="$(printf '%s' "$raw" | ${pkgs.gnused}/bin/sed -e "s/^(['\"]//" -e "s/['\"],)\$//")"
+          # Prefer the `code` window whose title contains the project name; else a
+          # focused `code` window; else the first `code` window.
+          win_id="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r --arg c "$wm_class" --arg n "$proj_name" '
+            [ .[] | select((.wm_class // "" | ascii_downcase) == ($c | ascii_downcase)) ]
+            | ( (map(select((.title // "") | contains($n))) | .[0].id)
+                // (map(select(.has_focus == true)) | .[0].id)
+                // .[0].id ) // empty' 2>/dev/null)"
+          if [ -n "$win_id" ]; then
+            ${glib}/bin/gdbus call --session --dest "$dest" \
+              --object-path "$obj" --method "$iface.Activate" "$win_id" \
+              >/dev/null 2>&1 || true
+            exit 0
+          fi
+          sleep 0.3
+        done
+        # D-Bus unavailable or no window yet -> `code` already did the open; exit
+        # cleanly so the hotkey never wedges.
+        exit 0
       '')
       # IDE: VS Code is the single IDE shipped on all systems (see vscode above).
       # IntelliJ IDEA intentionally excluded for now (was jetbrains.idea on Linux
@@ -384,10 +401,45 @@
     ++ lib.optionals (stdenv.isLinux && config.myConfig.profile == "personal") [
       vesktop # Discord + Vencord (https://github.com/Vendicated/Vencord)
       telegram-desktop # Telegram
-      syncthing # continuous file sync (https://syncthing.net). Ships the CLI +
-      #           Web UI (http://localhost:8384). Running it as a background
-      #           service is a system/user-service concern; see
-      #           repo-docs/future-upgrade-plan.md to enable services.syncthing.
+      syncthing # continuous file sync (https://syncthing.net). Runs as a HM
+      #           user service (services.syncthing below) so the Web UI at
+      #           http://127.0.0.1:8384 is live immediately on Linux. Driven via
+      #           the sync-start / sync-open / sync-stop helpers below.
+    ]
+    # Syncthing control helpers (Linux personal profile only — they manage the
+    # HM-declared `syncthing.service` user unit, see services.syncthing below).
+    #   sync-start  start the Syncthing user service (idempotent)
+    #   sync-open   ensure it is running, wait for the Web UI, then open it
+    #   sync-stop   stop the Syncthing user service
+    # The Web UI bind address is the Syncthing default 127.0.0.1:8384.
+    ++ lib.optionals (stdenv.isLinux && config.myConfig.profile == "personal") [
+      (writeShellScriptBin "sync-start" ''
+        set -euo pipefail
+        ${pkgs.systemd}/bin/systemctl --user start syncthing.service
+        echo "syncthing: started (Web UI at http://127.0.0.1:8384)"
+      '')
+      (writeShellScriptBin "sync-stop" ''
+        set -euo pipefail
+        ${pkgs.systemd}/bin/systemctl --user stop syncthing.service
+        echo "syncthing: stopped"
+      '')
+      (writeShellScriptBin "sync-open" ''
+        set -euo pipefail
+        url="http://127.0.0.1:8384/"
+        # Start the service if it is not already active (idempotent).
+        if ! ${pkgs.systemd}/bin/systemctl --user is-active --quiet syncthing.service; then
+          ${pkgs.systemd}/bin/systemctl --user start syncthing.service
+        fi
+        # Wait for the Web UI to accept connections before opening it, so a
+        # cold start does not open a "connection refused" tab (~15s max).
+        for _ in $(${pkgs.coreutils}/bin/seq 1 30); do
+          if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null "$url" 2>/dev/null; then
+            break
+          fi
+          sleep 0.5
+        done
+        exec ${pkgs.xdg-utils}/bin/xdg-open "$url"
+      '')
     ];
 
   # Flameshot configuration, managed declaratively so the screenshot keybindings
@@ -444,6 +496,23 @@
     };
     Install.WantedBy = [ "graphical-session.target" ];
   };
+
+  # Syncthing as a Home Manager user service so the Web UI at
+  # http://127.0.0.1:8384 is live immediately on Linux (personal profile only,
+  # matching the syncthing package gate above). This declares the
+  # `syncthing.service` user unit; the sync-start / sync-open / sync-stop helpers
+  # (see home.packages above) drive it via `systemctl --user`.
+  #
+  # tray = false: we drive it via the Web UI + the sync-* commands, no tray app.
+  # The bind address stays at Syncthing's default 127.0.0.1:8384 (GUI is
+  # loopback-only). Folder/device config remains user-owned in the Web UI; this
+  # only manages the daemon lifecycle, not the synced folders.
+  services.syncthing =
+    pkgs.lib.mkIf (pkgs.stdenv.isLinux && config.myConfig.profile == "personal")
+      {
+        enable = true;
+        tray.enable = false;
+      };
 
   # Kanto ORA4 high-quality audio, shipped declaratively so every Linux-desktop
   # PC built from this repo gets the same best-real-world setup for the speaker.

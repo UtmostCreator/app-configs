@@ -138,10 +138,22 @@
       # Per-app TOGGLE helper bound to the app keybindings (see
       # nix/modules/home/gnome-keybindings.nix). Behavior:
       #   - if a window of the app is FOCUSED (foreground)  -> minimize it (hide)
-      #   - else if a window of the app exists              -> activate/focus it
+      #   - else if a window of the app exists              -> activate/focus the
+      #                                                        MOST-RECENTLY-USED
+      #                                                        window of that app
       #   - else                                            -> launch it
       # This gives a true toggle (press to show, press again to hide) and never
       # spawns a duplicate instance.
+      #
+      # MRU stability: when an app has several windows (e.g. two VS Code projects
+      # projectA + projectB, each a separate top-level window), the activate path
+      # must return to the LAST one you actually used, not whichever happens to be
+      # first in the compositor's window list. The Vicinae/Windows D-Bus `List`
+      # method exposes no per-window last-focus timestamp, so we persist our own
+      # tiny MRU record per wm_class under $XDG_RUNTIME_DIR. Every invocation
+      # records the currently-focused window id (when it belongs to the target
+      # app), and every Activate updates it too. So: focus projectA, switch to the
+      # F1 browser, press Alt+Shift+E again -> projectA returns (not projectB).
       #
       # Usage: vicinae-toggle-app <app_id> [wm_class]
       #   app_id   = desktop-entry id (used to launch), e.g. brave-browser
@@ -181,6 +193,21 @@
           exit 1
         }
 
+        # Per-wm_class MRU state. Lives in the runtime dir (tmpfs, cleared on
+        # logout) so stale window ids never survive a session. One file per app,
+        # keyed by a sanitized wm_class, holding just the last-used window id.
+        state_dir="''${XDG_RUNTIME_DIR:-/tmp}/vicinae-toggle-app"
+        ${pkgs.coreutils}/bin/mkdir -p "$state_dir" 2>/dev/null || true
+        mru_key="$(printf '%s' "$wm_class" | ${pkgs.gnused}/bin/sed 's#[^A-Za-z0-9._-]#_#g')"
+        mru_file="$state_dir/$mru_key"
+
+        mru_read() {
+          [ -f "$mru_file" ] && ${pkgs.coreutils}/bin/cat "$mru_file" 2>/dev/null || true
+        }
+        mru_write() {
+          printf '%s' "$1" > "$mru_file" 2>/dev/null || true
+        }
+
         # Raw List() returns a gdbus tuple: ('[ ... json ... ]',). Strip the
         # tuple wrapper to get the inner JSON array, then query with jq.
         raw="$(gcall List 2>/dev/null || true)"
@@ -190,8 +217,12 @@
         fi
         json="$(printf '%s' "$raw" | ${pkgs.gnused}/bin/sed -e "s/^(['\"]//" -e "s/['\"],)\$//")"
 
-        # Case-insensitive match on wm_class. Prefer a focused window; otherwise
-        # any window of the app. jq emits the chosen window id (or empty).
+        # Case-insensitive match on wm_class. jq emits one window id per query
+        # (or empty):
+        #   focused_id = the app's currently-foreground window, if any
+        #   any_id     = the first matching window (fallback target)
+        #   ids        = newline-separated list of ALL matching window ids, used
+        #                to validate a remembered MRU id is still alive
         focused_id="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r --arg c "$wm_class" '
           [ .[] | select((.wm_class // "" | ascii_downcase) == ($c | ascii_downcase)) ]
           | (map(select(.has_focus == true)) | .[0].id) // empty' 2>/dev/null)"
@@ -200,13 +231,34 @@
           [ .[] | select((.wm_class // "" | ascii_downcase) == ($c | ascii_downcase)) ]
           | (.[0].id) // empty' 2>/dev/null)"
 
+        ids="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r --arg c "$wm_class" '
+          .[] | select((.wm_class // "" | ascii_downcase) == ($c | ascii_downcase)) | .id' 2>/dev/null)"
+
+        # Record MRU: whenever a window of this app is focused (about to be
+        # hidden or already in front), remember it as the one to restore next.
         if [ -n "$focused_id" ]; then
-          # App is in the foreground -> send it to the background.
+          mru_write "$focused_id"
+        fi
+
+        if [ -n "$focused_id" ]; then
+          # App is in the foreground -> send it to the background. The MRU is
+          # already recorded above, so re-pressing later returns to THIS window.
           gcall Minimize "$focused_id" >/dev/null 2>&1 || true
           exit 0
         elif [ -n "$any_id" ]; then
-          # App is running but not focused -> bring it forward.
-          gcall Activate "$any_id" >/dev/null 2>&1 && exit 0
+          # App is running but not focused -> bring forward the most-recently-used
+          # window if it still exists, otherwise the first matching window. This
+          # keeps multi-window apps (e.g. two VS Code projects) stable on the last
+          # project you used instead of jumping to whichever is first in the list.
+          target_id="$any_id"
+          mru_id="$(mru_read)"
+          if [ -n "$mru_id" ] && printf '%s\n' "$ids" | ${pkgs.gnugrep}/bin/grep -qxF "$mru_id"; then
+            target_id="$mru_id"
+          fi
+          if gcall Activate "$target_id" >/dev/null 2>&1; then
+            mru_write "$target_id"
+            exit 0
+          fi
           # If Activate failed for some reason, fall back to launch/focus.
           launch
         else
@@ -360,6 +412,30 @@
                   audio.allowed-rates = [ 48000 ]
                   node.pause-on-idle = false
                   api.alsa.soft-mixer = true
+                }
+              }
+            }
+            {
+              # NODE-level: give the NVIDIA GPU's HDMI/DisplayPort audio sink a
+              # friendly name. PipeWire labels HDMI sinks from the audio
+              # CONTROLLER name (e.g. "AD106M High Definition Audio Controller
+              # Digital Stereo (HDMI)"), NOT from the monitor's EDID. The monitor
+              # name (e.g. "DELL S3425DW") only lives in the kernel ELD
+              # (/proc/asound/card<N>/eld#0.0: monitor_name). Without this rule the
+              # DELL monitor's built-in speakers show up under an unrecognizable
+              # chipset name in GNOME Sound / pavucontrol, so they look "missing".
+              #
+              # Name-scoped to the NVIDIA HDMI output node prefix so other
+              # machines / non-HDMI devices are unaffected. If you swap monitors,
+              # update the description (read the current name from the ELD:
+              #   grep monitor_name /proc/asound/card*/eld#0.0).
+              matches = [
+                { node.name = "~alsa_output.pci-.*\\.hdmi.*" }
+              ]
+              actions = {
+                update-props = {
+                  node.description = "DELL S3425DW"
+                  node.nick        = "DELL S3425DW"
                 }
               }
             }

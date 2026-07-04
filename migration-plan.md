@@ -47,11 +47,14 @@ Resolved during read-only investigation (this session):
 - `nix/hosts/linux-desktop/home.nix:8-10` imports the three `gnome-*.nix` modules
   (confirms Phase 6 must drop these imports).
 - `.husky/` does **not** exist (the `migration-followups.md:64` husky cleanup entry is itself stale).
+- `docs/ai/MCP-BOUNDARIES.md` vs `docs/ai/package/operations/MCP-BOUNDARIES.md`:
+  confirmed **byte-identical** (`git diff --no-index`, exit clean, no output).
+  Dedup must happen at the generator/source that emits the `package/operations`
+  copy — never by hand-deleting either twin. See §7.
 
-`UNVERIFIED` (still route through GATE 0 before acting):
-
-- Whether `docs/ai/MCP-BOUNDARIES.md` and `docs/ai/package/operations/MCP-BOUNDARIES.md`
-  are byte-identical (top-level has no generated marker; package copy is under generated tree).
+`UNVERIFIED`: none remaining. The one candidate (MCP-BOUNDARIES byte-identical
+check) was confirmed during this slice — see "Resolved during read-only
+investigation" above.
 
 ---
 
@@ -94,26 +97,39 @@ Prove ownership and references before touching anything. Nothing here mutates th
 
 Confirm the verified facts still hold (already confirmed at plan time; re-check if drift suspected):
 
-- [ ] `rg -n 'programs\.\w+\.enable' ops/validate-config.sh` — rule 6 scope
+- [ ] `rg -n '# 6\.' ops/validate-config.sh` — rule 6 scope. Finds the rule 6
+      header at `validate-config.sh:69`; full check body is lines 69-79.
+      (The previous probe, `rg -n 'programs\.\w+\.enable' ...`, returns **0
+      hits**: the script's actual pattern is
+      `programs\.[A-Za-z0-9_-]+\.enable\s*=\s*true`, written as a
+      backslash-escaped string literal inside an `rg -P` invocation on
+      line 71 — a plain `\w+` search does not match that literal backslash
+      text.)
 - [ ] `rg -n 'git ls-files|--others|untracked' ops/validate-config.sh` — rule 10 gate
 - [ ] `rg -n 'nixosConfigurations' nix/flake.nix` — confirm none
 - [ ] `rg -n 'TBD|migration-source-of-truth|migration-package-ownership' ops/validate-config.sh` — rule 9
 
-Resolve the two `UNVERIFIED` items:
+Resolve the two `UNVERIFIED` items (both now closed — see "Resolved during
+read-only investigation" above):
 
-- [ ] MCP-BOUNDARIES dupe: compare `docs/ai/MCP-BOUNDARIES.md` vs
-      `docs/ai/package/operations/MCP-BOUNDARIES.md` (top-level is canonical; package
-      copy is under generated tree → fix at source, do not hand-delete)
-- [ ] `repo-docs/migration-implementation-plan.md`: `ai-search.sh text "migration-implementation-plan" . --fixed`
+- [x] MCP-BOUNDARIES dupe: compared `docs/ai/MCP-BOUNDARIES.md` vs
+      `docs/ai/package/operations/MCP-BOUNDARIES.md` — CONFIRMED byte-identical
+      (`git diff --no-index`, exit clean, no output). Top-level is canonical
+      (no marker); package copy is under generated tree → fix at
+      source/generator, do not hand-delete.
+- [x] `repo-docs/migration-implementation-plan.md`: confirmed actively
+      referenced by `repo-docs/README.md:33`, `repo-docs/architecture/tool-ownership.md:4`,
+      and `repo-docs/migration-followups.md` — NOT safe to delete; compress in
+      place only (see "Resolved during read-only investigation" above).
 
 ### Per-file delete gate (run for EACH Track A candidate — ALL must pass)
 
 - [ ] First 8 lines contain NO `GENERATED — DO NOT EDIT`
-      (`bash ops/ai/preview-file.sh <path> --range 1:8`)
+      (`bash scripts/ai/preview-file.sh <path> --range 1:8`)
 - [ ] Path is NOT under `.github/`, `.opencode/`, or `docs/ai/package/`
 - [ ] No template emits it
-      (`bash ops/ai/ai-search.sh text "<basename>" packages/ai-universal-rules/templates tools/ai/install`)
-- [ ] No live reference (`bash ops/ai/ai-search.sh text "<path>" . --fixed`)
+      (`bash scripts/ai/ai-search.sh text "<basename>" packages/ai-universal-rules/templates tools/ai/install`)
+- [ ] No live reference (`bash scripts/ai/ai-search.sh text "<path>" . --fixed`)
 - [ ] Not `migration-source-of-truth.md` or `migration-package-ownership.md` (rule 9)
 
 **Any check fails ⇒ DO NOT DELETE. Route to generator/source instead.**
@@ -128,15 +144,20 @@ Resolve the two `UNVERIFIED` items:
 Only delete things that passed every GATE 0 check.
 
 - [ ] Reference-check the candidate set:
-      `bash ops/ai/ai-search.sh text "repo-docs/archive" . --fixed`
+      `bash scripts/ai/ai-search.sh text "repo-docs/archive" . --fixed`
 - [ ] Extract any still-live decisions into `repo-docs/migration-decisions.md` /
       `repo-docs/architecture/tool-ownership.md` first
 - [ ] Delete confirmed-stale, marker-free archive docs (candidates):
-  - `repo-docs/archive/*draft*`
   - `repo-docs/archive/pr-body-2026-05-24.md`
   - `repo-docs/archive/migration-audit-2026-05-24.md`
   - `repo-docs/archive/file-audit-plan.md`
   - `repo-docs/archive/docs-move-manifest.{json,py}`
+  - **DO NOT DELETE** `repo-docs/archive/migration-source-of-truth.draft.md` and
+    `repo-docs/archive/migration-package-ownership.draft.md` — these are LIVE
+    OUTPUT targets of `ops/check-source-of-truth.sh:24` and
+    `ops/generate-package-matrix.sh:23` respectively (their `OUTPUT=` defaults).
+    Deleting them does not remove the producer; re-running either script just
+    re-creates the file. See §11A.
 - [ ] Only after a reference-check proves it stale: compress/archive
       `repo-docs/migration-implementation-plan.md` (1,729 lines)
 - [ ] Verify after each deletion:
@@ -299,8 +320,8 @@ and are the only immediate-safe deletes. Line counts from the scc dump.
 
 | Path | Lines | Status | Evidence | Action |
 |---|---:|---|---|---|
-| `repo-docs/archive/migration-source-of-truth.draft.md` | 89 | HAND-OWNED stale draft | superseded by non-draft in `repo-docs/` | Track A delete |
-| `repo-docs/archive/migration-package-ownership.draft.md` | 101 | HAND-OWNED stale draft | superseded by non-draft in `repo-docs/` | Track A delete |
+| `repo-docs/archive/migration-source-of-truth.draft.md` | 89 | HAND-OWNED but LIVE OUTPUT | generated by `ops/check-source-of-truth.sh:24` (`OUTPUT=` default); re-created on every run | **DO NOT DELETE** |
+| `repo-docs/archive/migration-package-ownership.draft.md` | 101 | HAND-OWNED but LIVE OUTPUT | generated by `ops/generate-package-matrix.sh:23` (`OUTPUT=` default); re-created on every run | **DO NOT DELETE** |
 | `repo-docs/archive/pr-body-2026-05-24.md` | 254 | HAND-OWNED dated | only self/archive refs | Track A delete |
 | `repo-docs/archive/migration-audit-2026-05-24.md` | 124 | HAND-OWNED dated | only self/archive refs | Track A delete |
 | `repo-docs/archive/file-audit-plan.md` | 367 | HAND-OWNED completed | move plan done (all `[x]`) | Track A delete |
@@ -319,6 +340,8 @@ and are the only immediate-safe deletes. Line counts from the scc dump.
 | `repo-docs/migration-decisions.md`, `migration-followups.md` | live decision/followup log |
 | `repo-docs/future-upgrade-plan.md` (350L) | referenced by live Nix comments (`gui.nix:88,235`, `gnome-extensions.nix:41`) |
 | `repo-docs/install-dev-tools.sh` (562L) | KEEP but STALE-CONTENT: still parsed by `ops/generate-package-matrix.sh` + presence-checked by `ops/doctor.sh` (not an orphan), yet lists dropped `direnv` and only wires zsh. Per `migration-followups.md:65`, fix in a dedicated slice — do NOT delete. |
+| `repo-docs/archive/migration-source-of-truth.draft.md` | live OUTPUT target of `ops/check-source-of-truth.sh:24`; deleting it does not stop the script from re-writing it |
+| `repo-docs/archive/migration-package-ownership.draft.md` | live OUTPUT target of `ops/generate-package-matrix.sh:23`; deleting it does not stop the script from re-writing it |
 
 **Cross-reference cleanup required after Track A deletes (or the docs go stale):**
 

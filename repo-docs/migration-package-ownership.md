@@ -138,9 +138,16 @@ Optional add when actually used:
 - [x] PHP, Node, pnpm: ownership is **mise** (not Nix).
 - [x] `direnv`: dropped with note above; reversible later.
 - [x] macOS GUI apps: cask-only.
-- [ ] Nix attribute names: must be verified against
-  <https://search.nixos.org/packages> before Phase 6 writes Nix code (any
-  row whose Nix attribute differs from the formula name is flagged in
-  "Notes").
-- [ ] Cask names: must be verified against `brew search --casks <name>` on
-  the macOS host before Phase 8 writes nix-darwin Homebrew bridge.
+- [x] Nix attribute names: verified against
+  <https://search.nixos.org/packages> — the Nix modules shipped
+  (`nix/modules/home/{cli,dev,gui,shell-packages}.nix`) and every attribute
+  name was confirmed present on `PATH` after `home-manager switch` (see
+  `repo-docs/migration-followups.md` Resolved rows dated 2026-06-01: "Full CLI
+  parity from `software-and-cli-tools.md`", "CLI/GUI parity...", "Complete app
+  list..."). Any row whose Nix attribute differs from the formula name stays
+  flagged in "Notes".
+- [ ] Cask names: **BLOCKED on macOS host** — must be verified against
+  `brew search --casks <name>` on an actual macOS machine before Phase 8
+  writes the nix-darwin Homebrew bridge. This Linux/NixOS host cannot run
+  `brew`; this is an environment blocker, not an abandoned TODO — unblock
+  condition: gain access to a macOS host.

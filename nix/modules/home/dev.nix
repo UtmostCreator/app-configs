@@ -16,6 +16,7 @@
     docker # CLI only; daemon source is host-specific
     docker-buildx # docker buildx plugin (multi-arch builds)
     files-to-prompt # concatenate file sets with path headers (AI)
+    claude-code # Anthropic Claude Code CLI; managed by Nix, not curl|bash
     opencode
     # AI coding agent CLI (Linux + aarch64-darwin). Shipped here
     # so it is reproducible instead of a hand-edited /etc/nixos line.

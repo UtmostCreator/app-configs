@@ -51,7 +51,7 @@ Search/files: `ripgrep` (rg), `ripgrep-all` (rga), `fd`, `bat`, `eza`,
 Git/dev: `gh`, `lazygit`, `delta` (git-delta), `difftastic` (difft),
 `neovim` (nvim), `ast-grep`.
 Lint/test/security: `shellcheck`, `shfmt`, `actionlint`, `lychee`, `bats`,
-`semgrep`, `gitleaks`, `scc`.
+`semgrep`, `gitleaks`, `trivy`, `osv-scanner`, `scc`.
 Containers/runtime: `docker` (CLI), `docker-buildx`, `colima`,
 `node` (nodejs_22, **Nix on NixOS** — see install-nixos.md), `pnpm`.
 DB/API: `mariadb` (mysql client), `stripe-cli` (stripe).

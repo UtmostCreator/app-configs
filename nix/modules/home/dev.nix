@@ -32,6 +32,7 @@
     #    AI_VERIFY_SCOPE=all in the AI verify scripts; not run by default) ──
     trivy # filesystem/container/IaC vulnerability scanning
     osv-scanner # dependency vulnerability scanning against the OSV database
+    composer-require-checker # verify composer.json declares every used symbol (VERIFY_FULL gate)
     # ── Nix config maintenance toolchain (keeps this flake disciplined) ──
     deadnix # find unused Nix bindings
     nh # friendlier home-manager/nixos-rebuild + GC wrapper

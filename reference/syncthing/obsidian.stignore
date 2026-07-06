@@ -1,49 +1,34 @@
-# Syncthing ignore rules for the Obsidian sync folder.
+# BEGIN app-configs syncthing obsidian ignore
+
+# Syncthing ignore rules for Obsidian metadata in any synced folder.
 #
 # WHY THIS EXISTS
-# Obsidian writes per-device UI/runtime state (open panes, cursor positions,
-# recent-files, the resolved plugin bundle) into `.obsidian/` and rewrites it
+# Obsidian writes per-device UI/runtime state into `.obsidian/` and rewrites it
 # constantly and independently on every machine. Syncing those files makes
-# Syncthing race against itself and spew `*.sync-conflict-*` files forever.
-# Ignoring the device-local state stops the conflicts at the source while still
-# syncing your actual notes and the *shared* plugin configuration.
+# Syncthing race against itself and spew conflict files forever. Ignoring every
+# `.obsidian/` folder keeps notes syncing while making Obsidian settings local.
 #
 # HOW SYNCTHING USES THIS FILE
-# Syncthing reads `.stignore` from the synced folder root. With the leading
+# Syncthing reads `.stignore` from each synced folder root. With the leading
 # `(?d)` flag, ignored files are ALSO deletable so a leftover conflict file on
-# one device does not get re-propagated. This file itself can be synced via the
-# `#include` mechanism, but the simplest robust setup is to install it on every
-# device (see ops/syncthing-obsidian-stignore.sh). Order matters: the first
-# matching pattern wins, so keep `!` un-ignore rules ABOVE the broad ignores.
+# one device does not get re-propagated. Install this managed block on every
+# configured Syncthing folder (see ops/syncthing-obsidian-stignore.sh).
 #
 # Patterns are relative to the folder root. `**` matches across directories.
 
+# --- Never sync Obsidian metadata folders anywhere in a Syncthing folder ----
+(?d).obsidian
+(?d).obsidian/**
+(?d)**/.obsidian
+(?d)**/.obsidian/**
+
 # --- Always drop any conflict files Syncthing already produced -------------
 (?d)**.sync-conflict-*
-
-# --- Keep genuinely shared, portable plugin config -------------------------
-# These are safe to sync: they are the same intent across devices.
-!**/.obsidian/app.json
-!**/.obsidian/appearance.json
-!**/.obsidian/hotkeys.json
-!**/.obsidian/community-plugins.json
-!**/.obsidian/themes/**
-!**/.obsidian/snippets/**
-
-# --- Ignore per-device Obsidian state (the conflict generators) ------------
-(?d)**/.obsidian/workspace.json
-(?d)**/.obsidian/workspace-mobile.json
-(?d)**/.obsidian/core-plugins.json
-(?d)**/.obsidian/core-plugins-migration.json
-(?d)**/.obsidian/graph.json
-# Per-device plugin runtime/state (cursor positions, recent files, caches) and
-# the compiled plugin bundles, which Obsidian re-fetches per device anyway.
-(?d)**/.obsidian/plugins/**/data.json
-(?d)**/.obsidian/plugins/**/cursor-positions.json
-(?d)**/.obsidian/plugins/**/main.js
-(?d)**/.obsidian/plugins/**/styles.css
-(?d)**/.obsidian/plugins/**/manifest.json
+(?d)**sync-conflict-*
+(?d)**data-sync-conflict.*
 
 # --- Common cross-tool noise ------------------------------------------------
 (?d)**/.DS_Store
 (?d)**/Thumbs.db
+
+# END app-configs syncthing obsidian ignore

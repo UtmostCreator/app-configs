@@ -28,6 +28,10 @@
     lnav
     lychee
     mariadb # provides the `mysql` client; lighter than full mysql-client formula
+    # ── Security / vulnerability scanning (opt-in via VERIFY_SECURITY=1 or
+    #    AI_VERIFY_SCOPE=all in the AI verify scripts; not run by default) ──
+    trivy # filesystem/container/IaC vulnerability scanning
+    osv-scanner # dependency vulnerability scanning against the OSV database
     # ── Nix config maintenance toolchain (keeps this flake disciplined) ──
     deadnix # find unused Nix bindings
     nh # friendlier home-manager/nixos-rebuild + GC wrapper

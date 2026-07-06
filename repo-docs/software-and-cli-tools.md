@@ -73,6 +73,8 @@ mise run tools:optional:install
 - **[watchexec](https://github.com/watchexec/watchexec)** - file-watch command loop for edit -> verify cycles
 - **[direnv](https://direnv.net/)** - auto-load per-directory environment variables
 - **[semgrep](https://semgrep.dev/)** - static analysis and security scanning
+- **[trivy](https://github.com/aquasecurity/trivy)** - filesystem/container/IaC vulnerability scanning (opt-in, `VERIFY_SECURITY=1`)
+- **[osv-scanner](https://github.com/google/osv-scanner)** - dependency vulnerability scanning against the OSV database (opt-in, `VERIFY_SECURITY=1`)
 - **[difftastic](https://github.com/Wilfred/difftastic)** - syntax-aware structural diffing for review
 - **[shellcheck](https://github.com/koalaman/shellcheck)** - shell linting for repo scripts and hooks
 - **[shfmt](https://github.com/mvdan/sh)** - shell formatting check for tracked scripts
@@ -189,7 +191,7 @@ whole set on either OS. The owner of record is
 | --- | --- | --- | --- |
 | CLI tools (atuin, bat, btop, eza, fd, fzf, jq, yq, ripgrep(-all), starship, tldr, tmux, yazi, zoxide) | **Nix** | **Nix** | `nix/modules/home/cli.nix` |
 | fish shell | **Nix** | **Nix** | `nix/modules/home/cli.nix` |
-| dev tools (gh, lazygit, delta, difftastic, neovim, semgrep, shellcheck, shfmt, actionlint, lychee, bats, scc, watchexec, lnav, ast-grep, p7zip, mariadb client) | **Nix** | **Nix** | `nix/modules/home/dev.nix` |
+| dev tools (gh, lazygit, delta, difftastic, neovim, semgrep, trivy, osv-scanner, shellcheck, shfmt, actionlint, lychee, bats, scc, watchexec, lnav, ast-grep, p7zip, mariadb client) | **Nix** | **Nix** | `nix/modules/home/dev.nix` |
 | node 22 runtime | **Nix** (`nodejs_22`) | mise pin OR Nix | `nix/modules/home/dev.nix` (NixOS rule) |
 | pnpm | **Nix** | **Nix** | `nix/modules/home/dev.nix` |
 | colima | **Nix** | **Nix**/Homebrew | `nix/modules/home/dev.nix` |
@@ -280,6 +282,8 @@ brew install pnpm
 brew install ripgrep
 brew install ripgrep-all
 brew install semgrep
+brew install trivy
+brew install osv-scanner
 brew install shellcheck
 brew install shfmt
 brew install starship

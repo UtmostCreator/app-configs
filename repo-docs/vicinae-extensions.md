@@ -21,10 +21,10 @@ The cleanest, reproducible path for **community Vicinae extensions**
 official Vicinae Home-Manager module, so they ship with `home-manager switch`
 — no per-machine clicking.
 
-This repo wires it in `nix/modules/home/vicinae.nix` (`services.vicinae`):
+This repo wires it in `nix/modules/home/vicinae.nix` (`programs.vicinae`):
 
 ```nix
-services.vicinae.extensions =
+programs.vicinae.extensions =
   with inputs.vicinae-extensions.packages.${pkgs.stdenv.hostPlatform.system};
   [ vscode-recents ];
 ```
@@ -55,7 +55,7 @@ notes in `nix/modules/home/vicinae.nix`.
 > flake build (`@vicinae/api ^0.20.4`), or the entrypoint index only populates
 > for store-installed extensions. **No fallback binding is shipped:** `Alt+E`
 > must show recent projects when enabled, not toggle VS Code. **To resolve:**
-> either switch `services.vicinae.package` to the upstream `vicinae` flake build
+> either switch `programs.vicinae.package` to the upstream `vicinae` flake build
 > (matches the extension API version, but triggers a source compile — see
 > `nix/modules/home/vicinae.nix`), or wait for a newer `pkgs.vicinae`, then
 > rebind `Alt+E` to the verified `vicinae://launch/<provider>/open-recents`

@@ -6,7 +6,7 @@
 }:
 {
   # Vicinae launcher, managed via its official Home-Manager module
-  # (services.vicinae, provided by the `vicinae` flake input and imported in
+  # (programs.vicinae, provided by the `vicinae` flake input and imported in
   # nix/hosts/linux-desktop/home.nix), with declarative extension installation.
   #
   # Why the module instead of just a package:
@@ -21,7 +21,7 @@
   # source. We deliberately do NOT use the `vicinae` flake's own build: for our
   # current lock it is a cache miss against vicinae.cachix.org and would trigger
   # a long C++/Qt source build. We still consume the flake's Home-Manager MODULE
-  # (services.vicinae) and the `vicinae-extensions` packages — only the binary
+  # (programs.vicinae) and the `vicinae-extensions` packages — only the binary
   # comes from nixpkgs. If you later want the newer upstream Vicinae, set
   # `package = inputs.vicinae.packages.${pkgs.stdenv.hostPlatform.system}.default`
   # and ensure vicinae.cachix.org actually has a matching build (else expect a
@@ -34,7 +34,7 @@
   # Linux-desktop only; guarded on isLinux so an accidental non-Linux import is
   # a no-op (Vicinae is Linux-only).
   config = lib.mkIf pkgs.stdenv.isLinux {
-    services.vicinae = {
+    programs.vicinae = {
       enable = true;
       # Hydra-cached nixpkgs build (no source compile). See note above.
       package = pkgs.vicinae;

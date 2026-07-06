@@ -20,7 +20,7 @@
     };
 
     # Vicinae launcher flake — we consume ONLY its Home-Manager module
-    # (services.vicinae) used by the linux-desktop host
+    # (programs.vicinae) used by the linux-desktop host
     # (nix/modules/home/vicinae.nix). The Vicinae BINARY comes from nixpkgs
     # (pkgs.vicinae, Hydra-cached) to avoid a source compile, so we do not rely
     # on the upstream flake's build or its Cachix cache. We still avoid
@@ -30,7 +30,7 @@
     vicinae.url = "github:vicinaehq/vicinae";
 
     # Community Vicinae extensions, installed declaratively via
-    # services.vicinae.extensions (e.g. vscode-recents). Light packages, so we
+    # programs.vicinae.extensions (e.g. vscode-recents). Light packages, so we
     # follow nixpkgs here for consistency with the rest of the flake.
     vicinae-extensions = {
       url = "github:vicinaehq/extensions";

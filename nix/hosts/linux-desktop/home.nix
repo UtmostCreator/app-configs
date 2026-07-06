@@ -8,7 +8,7 @@
     ../../modules/home/gnome-files.nix
     ../../modules/home/gnome-extensions.nix
     ../../modules/home/gnome-keybindings.nix
-    # Vicinae launcher via its official Home-Manager module (services.vicinae),
+    # Vicinae launcher via its official Home-Manager module (programs.vicinae),
     # plus our config + declarative extensions (nix/modules/home/vicinae.nix).
     inputs.vicinae.homeManagerModules.default
     ../../modules/home/vicinae.nix

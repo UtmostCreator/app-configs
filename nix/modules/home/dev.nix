@@ -9,6 +9,7 @@
     actionlint
     ast-grep
     bats # bats-core formula -> bats in nixpkgs
+    bun # JavaScript runtime and package manager
     delta # git-delta formula -> delta in nixpkgs
     difftastic
     code2prompt # template-driven prompt/context generation (AI)
@@ -56,12 +57,34 @@
     # the active composer. Required by ai-verify.sh / ai-task.sh
     # and listed in docs/ai/repo-required-tools.md.
     pnpm # fast Node.js package manager (was: brew/corepack)
+    promptfoo # LLM prompt/eval harness; golden-task CI gate + local eval runs (AI)
+    # Wrapper scripts elsewhere call `npx promptfoo@latest`; this Nix copy
+    # makes the CLI available offline/deterministically. The npm-only Phoenix
+    # CLIs (@arizeai/phoenix-cli, @arizeai/phoenix-mcp) are not in nixpkgs —
+    # install those via `mise run tools:observability:install`.
     repomix # package repository context for LLM prompts (AI)
+    python3Packages.lizard # per-function cyclomatic complexity analyzer (terryyin/lizard); binary: lizard
     scc
     semgrep
     shellcheck
     shfmt
     stripe-cli # Stripe CLI for local webhook testing (binary: stripe)
     watchexec
+    # ── Go development toolchain (for the ya-under-control Go rewrite) ──
+    #    Installed here so `home-manager switch` provisions the full stack
+    #    reproducibly across hosts. golangci-lint bundles staticcheck, govet,
+    #    errcheck, ineffassign and unused, so no standalone staticcheck is
+    #    listed. Enforced by ya-under-control/.lefthook.yml + CI.
+    go # Go toolchain: compiler, gofmt, go vet, go test, go mod, go fix
+    gopls # official Go language server (IDE intelligence, renames, code actions)
+    golangci-lint # unified lint runner (staticcheck/govet/errcheck/ineffassign/unused/...)
+    gofumpt # stricter, opinionated gofmt superset
+    gotools # goimports (import management) + other golang.org/x/tools binaries
+    govulncheck # reachability-aware vulnerability scanning (govulncheck ./...)
+    go-arch-lint # architecture dependency linter driven by .go-arch-lint.yml
+    delve # dlv: source-level Go debugger
+    gotestsum # readable test output + JUnit for CI
+    goreleaser # single static cross-platform binary release pipeline
+    mockgen # go.uber.org/mock generator (typed interface mocks)
   ];
 }

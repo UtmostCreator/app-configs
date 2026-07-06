@@ -157,11 +157,11 @@ else
 fi
 
 # ── 8b. Syncthing Obsidian .stignore (Linux personal profile) ───────────────
-# Stops Syncthing conflict spam in the Obsidian folder by installing the
-# repo-tracked .stignore. The helper is a safe no-op when the sync folder does
-# not exist yet (e.g. a fresh machine before Syncthing is configured), so this
-# step never blocks the install. Folder config stays user-owned in the Web UI.
-step "Syncthing Obsidian .stignore"
+# Stops Syncthing from syncing .obsidian folders by installing the repo-tracked
+# managed .stignore block into configured Syncthing folders. The helper is a
+# safe no-op when Syncthing folders do not exist yet, so this step never blocks
+# the install. Folder config stays user-owned in the Web UI.
+step "Syncthing Obsidian global .stignore"
 if [[ -x "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" ]]; then
   if [[ "$DRY_RUN" == 1 ]]; then
     run bash "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh"

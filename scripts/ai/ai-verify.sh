@@ -25,6 +25,10 @@ VERIFY_AUTHOR="${VERIFY_AUTHOR:-}"
 # is also set, so a verify run never dials production endpoints by accident.
 VERIFY_LINKS="${VERIFY_LINKS:-0}"
 VERIFY_LINKS_NETWORK="${VERIFY_LINKS_NETWORK:-0}"
+# Suggest mode: when set, ESLint additionally runs a non-blocking
+# --fix-dry-run --format json pass (advisory only; never fails the gate).
+# Off by default.
+VERIFY_SUGGEST="${VERIFY_SUGGEST:-0}"
 
 failures=0
 
@@ -101,26 +105,24 @@ branch_scoped_files() {
     } | sort -u
 }
 
-# Emit existing changed PHP files according to AI_VERIFY_SCOPE.
-# - branch: merge-base diff of the current branch + local work
-# - changed: local working-tree/staged/untracked work only
-# Returns no output for the project-wide scopes (ai/all), signalling callers to
-# run the PHP tools project-wide as before.
-scoped_php_files() {
-    local source_fn
-    case "$AI_VERIFY_SCOPE" in
-    branch) source_fn=branch ;;
-    changed) source_fn=changed ;;
-    *) return 0 ;;
-    esac
+# Emit existing files matching the given glob(s), scoped per $1 (branch|changed).
+# Any caller with mode "all" or "ai" should short-circuit before calling this
+# (see changed_files_for) rather than passing those modes in directly.
+scoped_files() {
+    local mode="${1:?mode required}"
+    shift
+    local globs=("$@")
 
     {
-        if [[ "$source_fn" == branch ]]; then
-            branch_scoped_files '*.php'
+        if [[ "$mode" == branch ]]; then
+            local g
+            for g in "${globs[@]}"; do
+                branch_scoped_files "$g"
+            done
         else
-            git diff --name-only --diff-filter=ACMRT -- '*.php'
-            git diff --cached --name-only --diff-filter=ACMRT -- '*.php'
-            git ls-files --others --exclude-standard -- '*.php'
+            git diff --name-only --diff-filter=ACMRT -- "${globs[@]}"
+            git diff --cached --name-only --diff-filter=ACMRT -- "${globs[@]}"
+            git ls-files --others --exclude-standard -- "${globs[@]}"
         fi
     } |
         sort -u |
@@ -129,6 +131,27 @@ scoped_php_files() {
             [[ -f "$f" ]] || continue
             printf '%s\n' "$f"
         done
+}
+
+# Emit existing files matching the given glob(s) according to AI_VERIFY_SCOPE:
+# - ai (default) / branch: merge-base diff of the current branch + local work
+# - changed: local working-tree/staged/untracked work only
+# Returns no output for the project-wide "all" scope, signalling callers to run
+# the tool project-wide instead of per-file.
+changed_files_for() {
+    local mode
+    case "$AI_VERIFY_SCOPE" in
+    all) return 0 ;;
+    changed) mode=changed ;;
+    *) mode=branch ;; # "ai" (default) and "branch" both resolve to branch-aware scoping
+    esac
+    scoped_files "$mode" "$@"
+}
+
+# Emit existing changed PHP files according to AI_VERIFY_SCOPE. Thin wrapper
+# kept for call-site readability; behavior is identical to changed_files_for.
+scoped_php_files() {
+    changed_files_for '*.php'
 }
 
 if [[ "${AI_VERIFY_TEST_MODE:-0}" == "1" ]]; then
@@ -162,6 +185,28 @@ run_step() {
     if ((rc != 0)); then
         echo "FAIL: $label failed (exit $rc)" >&2
         failures=$((failures + 1))
+    fi
+}
+
+# Same execution/guard/timeout behavior as run_step, but findings are advisory:
+# a non-zero exit is logged as a warning and never increments $failures. Use
+# for tools that report existing debt (e.g. composer-unused) rather than
+# regressions the gate should block on.
+run_step_advisory() {
+    local label="$1"
+    shift
+
+    echo "==> $label (advisory; findings do not fail the gate)"
+
+    local rc=0
+    if [[ "${VERIFY_GUARD:-1}" == "1" ]]; then
+        AI_GUARD_TIMEOUT="${AI_GUARD_TIMEOUT:-$VERIFY_TIMEOUT}" run_guarded "$label" "$@" || rc=$?
+    else
+        run_with_timeout "$VERIFY_TIMEOUT" "$@" || rc=$?
+    fi
+
+    if ((rc != 0)); then
+        log_warn "$label reported findings (exit $rc) - advisory only, not failing the gate"
     fi
 }
 
@@ -242,10 +287,22 @@ if command -v shfmt >/dev/null 2>&1; then
 fi
 
 if command -v actionlint >/dev/null 2>&1 && [[ -d .github/workflows ]]; then
-    run_step 'actionlint' actionlint
+    if [[ "$AI_VERIFY_SCOPE" == "all" ]]; then
+        run_step 'actionlint' actionlint
+    else
+        workflow_files=()
+        while IFS= read -r f; do
+            [[ -n "$f" ]] && workflow_files+=("$f")
+        done < <(changed_files_for '.github/workflows/*.yml' '.github/workflows/*.yaml')
+        if ((${#workflow_files[@]} > 0)); then
+            run_step "actionlint (${#workflow_files[@]} changed workflow file(s))" actionlint "${workflow_files[@]}"
+        else
+            log_warn "No changed workflow files in scope ($AI_VERIFY_SCOPE); skipping actionlint."
+        fi
+    fi
 fi
 
-if [[ "$VERIFY_LINKS" == "1" ]] && command -v lychee >/dev/null 2>&1; then
+if { [[ "$VERIFY_LINKS" == "1" ]] || [[ "$VERIFY_FULL" == "1" ]]; } && command -v lychee >/dev/null 2>&1; then
     if [[ -f scripts/run-link-check.sh ]]; then
         run_step 'bash scripts/run-link-check.sh' bash scripts/run-link-check.sh
     elif [[ "$VERIFY_LINKS_NETWORK" == "1" ]]; then
@@ -258,13 +315,43 @@ if [[ "$VERIFY_LINKS" == "1" ]] && command -v lychee >/dev/null 2>&1; then
         run_step 'lychee --offline README.md docs/**/*.md' lychee --offline README.md docs/**/*.md
     fi
 else
-    log_warn "Skipping link check. Use VERIFY_LINKS=1 (offline) or VERIFY_LINKS=1 VERIFY_LINKS_NETWORK=1 (network)."
+    log_warn "Skipping link check. Use VERIFY_LINKS=1 (offline), VERIFY_FULL=1 (offline, full gate), or VERIFY_LINKS=1 VERIFY_LINKS_NETWORK=1 (network)."
 fi
 
 if [[ -f composer.json ]]; then
+    # composer validate/audit only when composer.json/composer.lock are
+    # actually in scope (branch/changed), or unconditionally for AI_VERIFY_SCOPE=all.
+    composer_run=1
+    if [[ "$AI_VERIFY_SCOPE" != "all" ]]; then
+        composer_changed_files=()
+        while IFS= read -r f; do
+            [[ -n "$f" ]] && composer_changed_files+=("$f")
+        done < <(changed_files_for 'composer.json' 'composer.lock')
+        ((${#composer_changed_files[@]} > 0)) || composer_run=0
+    fi
+
     if command -v composer >/dev/null 2>&1; then
-        run_step 'composer validate --strict' composer validate --strict
-        run_step 'composer audit' composer audit
+        if ((composer_run)); then
+            run_step 'composer validate --strict' composer validate --strict
+            run_step 'composer audit' composer audit
+        else
+            log_warn "composer.json/composer.lock unchanged in scope ($AI_VERIFY_SCOPE); skipping composer validate/audit."
+        fi
+    fi
+
+    if [[ "$VERIFY_FULL" == "1" ]]; then
+        if command -v composer-require-checker >/dev/null 2>&1; then
+            run_step 'composer-require-checker check composer.json' composer-require-checker check composer.json
+        elif [[ -x vendor/bin/composer-require-checker ]]; then
+            run_step 'vendor/bin/composer-require-checker check composer.json' vendor/bin/composer-require-checker check composer.json
+        fi
+
+        # Advisory only: reports likely-unused composer dependencies without
+        # failing the gate (false positives are common for dynamically loaded
+        # packages/plugins).
+        if [[ -x vendor/bin/composer-unused ]]; then
+            run_step_advisory 'vendor/bin/composer-unused' vendor/bin/composer-unused
+        fi
     fi
 
     # Determine whether the PHP linters/analysers should be narrowed to the
@@ -272,30 +359,26 @@ if [[ -f composer.json ]]; then
     #
     # Default (including the "ai" scope): narrow to changed files. With no local
     # changes we fall back to files unique to the current feature branch via its
-    # merge-base (git-branch-origin.sh), so pint/phpstan/psalm never lint the
-    # whole project unless the caller explicitly asks with AI_VERIFY_SCOPE=all.
-    php_scoped=0
+    # merge-base (git-branch-origin.sh), so pint/phpstan/psalm/rector never lint
+    # the whole project unless the caller explicitly asks with AI_VERIFY_SCOPE=all.
+    php_scoped=1
+    [[ "$AI_VERIFY_SCOPE" == "all" ]] && php_scoped=0
     php_files=()
-    php_scope_source="$AI_VERIFY_SCOPE"
-    case "$AI_VERIFY_SCOPE" in
-    all)
-        # Explicit project-wide request: leave php_scoped=0 so the linters run
-        # across every file.
-        ;;
-    changed)
-        php_scoped=1
-        ;;
-    *)
-        # ai (default) and branch both resolve to branch-aware scoping.
-        php_scoped=1
-        php_scope_source="branch"
-        ;;
-    esac
 
     if ((php_scoped)); then
         while IFS= read -r f; do
             [[ -n "$f" ]] && php_files+=("$f")
-        done < <(AI_VERIFY_SCOPE="$php_scope_source" scoped_php_files)
+        done < <(scoped_php_files)
+    fi
+
+    # PHPStan/Psalm default to their human-readable console/table output; set
+    # AI_OUTPUT=json for machine-readable JSON findings instead (same toggle
+    # convention as scripts/ai/ai-search.sh and preview-file.sh).
+    phpstan_format_args=()
+    psalm_format_args=()
+    if [[ "${AI_OUTPUT:-}" == "json" ]]; then
+        phpstan_format_args=(--error-format=json)
+        psalm_format_args=(--output-format=json)
     fi
 
     if [[ -x vendor/bin/pint ]]; then
@@ -313,28 +396,44 @@ if [[ -f composer.json ]]; then
     if [[ -x vendor/bin/phpstan ]]; then
         if ((php_scoped)); then
             if ((${#php_files[@]} > 0)); then
-                run_step "vendor/bin/phpstan analyse (${#php_files[@]} changed file(s))" vendor/bin/phpstan analyse --memory-limit=1G "${php_files[@]}"
+                run_step "vendor/bin/phpstan analyse (${#php_files[@]} changed file(s))" vendor/bin/phpstan analyse --memory-limit=1G "${phpstan_format_args[@]}" "${php_files[@]}"
             else
                 log_warn "No changed PHP files in scope ($AI_VERIFY_SCOPE); skipping phpstan."
             fi
         else
-            run_step 'vendor/bin/phpstan analyse --memory-limit=1G' vendor/bin/phpstan analyse --memory-limit=1G
+            run_step 'vendor/bin/phpstan analyse --memory-limit=1G' vendor/bin/phpstan analyse --memory-limit=1G "${phpstan_format_args[@]}"
         fi
     fi
 
     if [[ -x vendor/bin/psalm ]]; then
         if ((php_scoped)); then
             if ((${#php_files[@]} > 0)); then
-                run_step "vendor/bin/psalm (${#php_files[@]} changed file(s))" vendor/bin/psalm --no-cache "${php_files[@]}"
+                run_step "vendor/bin/psalm (${#php_files[@]} changed file(s))" vendor/bin/psalm --no-cache "${psalm_format_args[@]}" "${php_files[@]}"
             else
                 log_warn "No changed PHP files in scope ($AI_VERIFY_SCOPE); skipping psalm."
             fi
         else
-            run_step 'vendor/bin/psalm --no-cache' vendor/bin/psalm --no-cache
+            run_step 'vendor/bin/psalm --no-cache' vendor/bin/psalm --no-cache "${psalm_format_args[@]}"
+        fi
+    fi
+
+    if [[ -x vendor/bin/rector ]]; then
+        if ((php_scoped)); then
+            if ((${#php_files[@]} > 0)); then
+                run_step "vendor/bin/rector process --dry-run (${#php_files[@]} changed file(s))" vendor/bin/rector process --dry-run "${php_files[@]}"
+            else
+                log_warn "No changed PHP files in scope ($AI_VERIFY_SCOPE); skipping rector."
+            fi
+        else
+            run_step 'vendor/bin/rector process --dry-run' vendor/bin/rector process --dry-run
         fi
     fi
 
     if [[ "$VERIFY_FULL" == "1" ]]; then
+        if [[ -x vendor/bin/deptrac ]]; then
+            run_step 'vendor/bin/deptrac analyse' vendor/bin/deptrac analyse
+        fi
+
         if [[ -x vendor/bin/phpunit ]]; then
             run_step 'vendor/bin/phpunit' vendor/bin/phpunit
         fi
@@ -349,10 +448,44 @@ fi
 
 if [[ -f package.json ]]; then
     if command -v pnpm >/dev/null 2>&1; then
+        # Determine whether ESLint/Biome (when invoked directly, i.e. no
+        # project-owned "lint" script) should be narrowed to changed
+        # JS/TS/Vue files. Same branch-aware default as the PHP scoping above.
+        js_scoped=1
+        [[ "$AI_VERIFY_SCOPE" == "all" ]] && js_scoped=0
+        js_files=()
+        if ((js_scoped)); then
+            while IFS= read -r f; do
+                [[ -n "$f" ]] && js_files+=("$f")
+            done < <(changed_files_for '*.js' '*.jsx' '*.ts' '*.tsx' '*.vue' '*.mjs' '*.cjs')
+        fi
+
         if has_package_script lint; then
+            # Project-owned lint script: respect it as-is, not narrowed here.
             run_step 'pnpm run lint' pnpm run lint
         elif has_package_dependency eslint; then
-            run_step 'pnpm exec eslint .' pnpm exec eslint .
+            if ((js_scoped)); then
+                if ((${#js_files[@]} > 0)); then
+                    run_step "pnpm exec eslint (${#js_files[@]} changed file(s))" pnpm exec eslint "${js_files[@]}"
+                else
+                    log_warn "No changed JS/TS/Vue files in scope ($AI_VERIFY_SCOPE); skipping eslint."
+                fi
+            else
+                run_step 'pnpm exec eslint .' pnpm exec eslint .
+            fi
+
+            # Suggest mode: non-blocking autofix preview as JSON. Off by
+            # default; set VERIFY_SUGGEST=1 to enable. Findings never fail
+            # the gate (run_step_advisory).
+            if [[ "$VERIFY_SUGGEST" == "1" ]]; then
+                if ((js_scoped)); then
+                    if ((${#js_files[@]} > 0)); then
+                        run_step_advisory 'pnpm exec eslint --fix-dry-run --format json (suggest mode)' pnpm exec eslint --fix-dry-run --format json "${js_files[@]}"
+                    fi
+                else
+                    run_step_advisory 'pnpm exec eslint --fix-dry-run --format json (suggest mode)' pnpm exec eslint --fix-dry-run --format json .
+                fi
+            fi
         fi
 
         if has_package_script typecheck; then
@@ -366,7 +499,17 @@ if [[ -f package.json ]]; then
         fi
 
         if has_package_dependency nuxt || has_package_dependency nuxi; then
-            run_step 'pnpm exec nuxi typecheck' pnpm exec nuxi typecheck
+            # Nuxt typechecks the whole project graph (no per-file mode), so
+            # only gate on WHETHER anything relevant changed, not which files.
+            if ((js_scoped)); then
+                if ((${#js_files[@]} > 0)); then
+                    run_step 'pnpm exec nuxi typecheck' pnpm exec nuxi typecheck
+                else
+                    log_warn "No changed JS/Vue/Nuxt files in scope ($AI_VERIFY_SCOPE); skipping nuxi typecheck."
+                fi
+            else
+                run_step 'pnpm exec nuxi typecheck' pnpm exec nuxi typecheck
+            fi
         fi
 
         if has_package_dependency @graphql-codegen/cli && [[ -f codegen.yml || -f codegen.yaml || -f codegen.ts ]]; then
@@ -378,11 +521,43 @@ if [[ -f package.json ]]; then
         fi
 
         if has_package_dependency biome; then
-            run_step 'pnpm exec biome check .' pnpm exec biome check .
+            if ((js_scoped)); then
+                if ((${#js_files[@]} > 0)); then
+                    run_step "pnpm exec biome check (${#js_files[@]} changed file(s))" pnpm exec biome check "${js_files[@]}"
+                else
+                    log_warn "No changed JS/TS/Vue files in scope ($AI_VERIFY_SCOPE); skipping biome."
+                fi
+            else
+                run_step 'pnpm exec biome check .' pnpm exec biome check .
+            fi
+        fi
+
+        # Vitest fast path: only the tests affected by files changed since the
+        # branch base. Off when VERIFY_FULL=1, where the full run below (or
+        # the project's own "test" script) already covers everything.
+        if [[ "$VERIFY_FULL" != "1" ]] && has_package_dependency vitest; then
+            vitest_base="$(resolve_branch_base || true)"
+            if [[ -n "$vitest_base" ]]; then
+                run_step "pnpm exec vitest run --changed $vitest_base" pnpm exec vitest run --changed "$vitest_base"
+            else
+                log_warn "Could not resolve a branch base for vitest --changed; skipping. Use VERIFY_FULL=1 for a full run."
+            fi
         fi
 
         if has_package_dependency knip; then
-            run_step 'pnpm exec knip' pnpm exec knip
+            if [[ "$VERIFY_FULL" == "1" ]]; then
+                run_step 'pnpm exec knip' pnpm exec knip
+            else
+                log_warn "Skipping knip (unused files/deps/exports). Use VERIFY_FULL=1 to run it."
+            fi
+        fi
+
+        if [[ "$VERIFY_FULL" == "1" ]] && has_package_dependency jscpd; then
+            run_step 'pnpm exec jscpd .' pnpm exec jscpd .
+        fi
+
+        if [[ "$VERIFY_FULL" == "1" ]] && has_package_dependency @playwright/test; then
+            run_step 'pnpm exec playwright test' pnpm exec playwright test
         fi
 
         if has_package_script test; then
@@ -419,16 +594,29 @@ else
     log_warn "Skipping secret scan. Use VERIFY_SECRETS=1 to enable gitleaks."
 fi
 
-if command -v trivy >/dev/null 2>&1; then
-    run_step 'trivy fs --scanners vuln,misconfig,secret .' trivy fs --scanners vuln,misconfig,secret .
-fi
+# Full security gate: broad, repo-wide scanners that are too slow/noisy to
+# run on every "ai"-scoped edit. Run before merge with VERIFY_FULL=1.
+if [[ "$VERIFY_FULL" == "1" ]]; then
+    if command -v trivy >/dev/null 2>&1; then
+        run_step 'trivy fs --scanners vuln,misconfig,secret .' trivy fs --scanners vuln,misconfig,secret .
+    fi
 
-if command -v semgrep >/dev/null 2>&1; then
-    run_step 'semgrep scan --config auto .' semgrep scan --config auto .
-fi
+    if command -v semgrep >/dev/null 2>&1; then
+        run_step 'semgrep scan --config auto .' semgrep scan --config auto .
+    fi
 
-if command -v osv-scanner >/dev/null 2>&1; then
-    run_step 'osv-scanner scan --lockfile=.' osv-scanner scan --lockfile=.
+    if command -v osv-scanner >/dev/null 2>&1; then
+        # NOTE: `--lockfile=.` is invalid (it treats "." as a single lockfile
+        # path, not a directory, and fails with "could not determine
+        # extractor"). `--recursive` scans the whole tree for lockfiles, which
+        # is what a project-wide full-gate scan is meant to do.
+        # `--allow-no-lockfiles` keeps a repo with no PHP/JS/etc. dependency
+        # manifests (like this one) from exiting non-zero just because there
+        # was nothing to scan.
+        run_step 'osv-scanner scan --recursive --allow-no-lockfiles .' osv-scanner scan --recursive --allow-no-lockfiles .
+    fi
+else
+    log_warn "Skipping trivy/semgrep/osv-scanner full security scan. Use VERIFY_FULL=1 to run them."
 fi
 
 if ((failures > 0)); then

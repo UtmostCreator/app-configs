@@ -1,9 +1,17 @@
-{ lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   # Base dconf path GNOME uses for user-defined ("custom") media-key shortcuts.
   # Each entry is a subpath holding name/command/binding keys, and the parent
   # `custom-keybindings` list must reference every subpath or GNOME ignores it.
   prefix = "org/gnome/settings-daemon/plugins/media-keys/custom-keybindings";
+  toggleApp = "${config.home.profileDirectory}/bin/vicinae-toggle-app";
+  flameshotArea = "${config.home.profileDirectory}/bin/flameshot-area";
+  flameshot = "${pkgs.flameshot}/bin/flameshot";
 
   # Declarative custom shortcuts. `command` is run by gnome-settings-daemon when
   # `binding` is pressed.
@@ -42,22 +50,24 @@ let
     ghostty = {
       name = "Ghostty terminal";
       # wm_class == app_id (com.mitchellh.ghostty), so no second arg needed.
-      command = "vicinae-toggle-app com.mitchellh.ghostty";
+      command = "${toggleApp} com.mitchellh.ghostty";
       binding = "<Alt><Shift>t";
       # ru layout: physical T emits Cyrillic_ie (е). See cyrillicTwins below.
       cyrillic = "<Alt><Shift>Cyrillic_ie";
     };
-    # F1 is GNOME's default "show help"; a custom media-key binding overrides it.
+    # Logical F1. keyd remaps the laptop media key to F1 at the system layer;
+    # keep the GNOME binding on F1 and use the same Vicinae raise-or-launch/MRU
+    # helper as the other app shortcuts.
     brave = {
       name = "Brave browser";
       # wm_class == app_id (brave-browser).
-      command = "vicinae-toggle-app brave-browser";
+      command = "${toggleApp} brave-browser";
       binding = "F1";
     };
     telegram = {
       name = "Telegram";
       # Telegram's wm_class differs from the desktop id; pass it explicitly.
-      command = "vicinae-toggle-app org.telegram.desktop org.telegram.desktop";
+      command = "${toggleApp} org.telegram.desktop org.telegram.desktop";
       binding = "<Alt><Shift>r";
       # ru layout: physical R emits Cyrillic_ka (к).
       cyrillic = "<Alt><Shift>Cyrillic_ka";
@@ -65,7 +75,7 @@ let
     vesktop = {
       name = "Vesktop";
       # wm_class == app_id (vesktop).
-      command = "vicinae-toggle-app vesktop";
+      command = "${toggleApp} vesktop";
       binding = "<Alt><Shift>d";
       # ru layout: physical D emits Cyrillic_ve (в).
       cyrillic = "<Alt><Shift>Cyrillic_ve";
@@ -73,7 +83,7 @@ let
     vscode = {
       name = "VS Code";
       # VS Code's wm_class is `code` (== app_id), confirmed live; no second arg.
-      command = "vicinae-toggle-app code";
+      command = "${toggleApp} code";
       binding = "<Alt><Shift>e";
       # ru layout: physical E emits Cyrillic_u (у).
       cyrillic = "<Alt><Shift>Cyrillic_u";
@@ -81,7 +91,7 @@ let
     obsidian = {
       name = "Obsidian";
       # wm_class == app_id (obsidian), so no second arg needed.
-      command = "vicinae-toggle-app obsidian";
+      command = "${toggleApp} obsidian";
       binding = "<Alt><Shift>o";
       # ru layout: physical O emits Cyrillic_shcha (щ).
       cyrillic = "<Alt><Shift>Cyrillic_shcha";
@@ -91,14 +101,14 @@ let
       # KeePassXC's StartupWMClass is `keepassxc` (lowercase) while its desktop
       # id is org.keepassxc.KeePassXC, so pass the wm_class explicitly (like VS
       # Code / Telegram). Package shipped in gui.nix.
-      command = "vicinae-toggle-app org.keepassxc.KeePassXC keepassxc";
+      command = "${toggleApp} org.keepassxc.KeePassXC keepassxc";
       binding = "<Alt>1";
     };
     nautilus = {
       name = "Files (Nautilus)";
       # GNOME Files: desktop id == StartupWMClass (org.gnome.Nautilus), so no
       # second arg needed. Super+E mirrors Windows' Win+E "open file explorer".
-      command = "vicinae-toggle-app org.gnome.Nautilus";
+      command = "${toggleApp} org.gnome.Nautilus";
       binding = "<Super>e";
     };
     # Alt+E -> VS Code recent-projects popup. Renders VS Code's own
@@ -118,8 +128,8 @@ let
     # Resize the focused window to 75% width / full height / centered, via the
     # Vicinae GNOME extension's D-Bus API (script defined in gui.nix).
     resize = {
-      name = "Resize window 75% (full height, centered)";
-      command = "vicinae-resize 75";
+      name = "Resize window 75% full height centered";
+      command = "${config.home.profileDirectory}/bin/vicinae-resize 75 100";
       binding = "<Alt><Shift>f";
       # ru layout: physical F emits Cyrillic_a (а).
       cyrillic = "<Alt><Shift>Cyrillic_a";
@@ -134,14 +144,25 @@ let
     # F4 — interactive area select, then copy to clipboard.
     flameshot-area = {
       name = "Screenshot: select area (Flameshot)";
-      command = "flameshot gui -c";
+      # Wrapper adds logging, a lock, and a short key-release delay so F4 opens
+      # the area selector instead of immediately aborting or double-launching.
+      command = flameshotArea;
       binding = "F4";
+    };
+    # Some Lenovo/Ideapad firmware paths still emit KEY_DASHBOARD for the
+    # physical F4 key even when Fn-lock is enabled. XKB exposes that as
+    # XF86LaunchB; bind it to the same wrapper so F4 works before/without the
+    # system-layer keyd fallback being rebuilt to dashboard=f4.
+    flameshot-area-dashboard = {
+      name = "Screenshot: select area (Flameshot dashboard key)";
+      command = flameshotArea;
+      binding = "XF86LaunchB";
     };
     # Alt+Shift+S — repeat the previously selected region (no new selection UI),
     # so the next shot stays within the same area.
     flameshot-last-region = {
       name = "Screenshot: repeat last region (Flameshot)";
-      command = "flameshot gui --last-region -c";
+      command = "${flameshot} gui --last-region -c";
       binding = "<Alt><Shift>s";
       # ru layout: physical S emits Cyrillic_yeru (ы).
       cyrillic = "<Alt><Shift>Cyrillic_yeru";
@@ -150,7 +171,7 @@ let
     # overlay (Flameshot's --pin).
     flameshot-pin = {
       name = "Screenshot: pin area to screen (Flameshot)";
-      command = "flameshot gui --pin";
+      command = "${flameshot} gui --pin";
       binding = "<Alt>p";
       # ru layout: physical P emits Cyrillic_ze (з).
       cyrillic = "<Alt>Cyrillic_ze";
@@ -270,6 +291,12 @@ in
 
       "org/gnome/settings-daemon/plugins/media-keys" = {
         custom-keybindings = customList;
+        # Do not use GNOME's built-in browser media-key action for F1: this host
+        # logged `Failed to grab accelerator for keybinding settings:www`.
+        www = [ ];
+        # Free F1 for the browser shortcut above. GNOME may seed Help as
+        # F1/Super+F1 depending on version/profile; keep it empty declaratively.
+        help = [ ];
       };
     }
     // shortcutSettings

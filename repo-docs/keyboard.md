@@ -1,4 +1,63 @@
-# Keyboard (macOS Karabiner profile)
+# Keyboard
+
+## Linux / NixOS: physical top-row function keys
+
+Source files:
+
+- System-layer setup: `nix/modules/nixos/keyd-f1-remap.nix`
+- User-layer GNOME shortcut: `nix/modules/home/gnome-keybindings.nix`
+
+Behavior:
+
+- The preferred fix is firmware/EC Fn-lock: Linux exposes
+  `/sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/fn_lock`, and the NixOS
+  module sets it to `1` so the top row emits function keys by default.
+- Fallbacks remain in keyd for hotkey/media mode: the physical top-row F1 key was
+  observed as `brightnessdown`, and physical top-row F4 as `dashboard`.
+- `keyd` remaps these fallback media keys before GNOME handles shortcuts.
+- GNOME binds logical `F1` to
+  `vicinae-toggle-app brave-browser`, which gives the same raise-or-launch / MRU
+  window behavior as the VS Code shortcut.
+- GNOME binds logical `F4` to `flameshot gui -c` for interactive area capture.
+
+Live NixOS wiring currently imports the copied module from `/etc/nixos`:
+
+```nix
+imports = [
+  ./hardware-configuration.nix
+  ./keyd-f1-remap.nix
+];
+```
+
+Verification commands:
+
+```bash
+systemctl status keyd --no-pager
+systemctl status ideapad-fn-lock --no-pager
+cat /etc/keyd/default.conf
+cat /sys/bus/platform/drivers/ideapad_acpi/VPC2004:00/fn_lock
+gsettings get org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/brave/ command
+```
+
+Expected evidence:
+
+```text
+[main]
+brightnessdown=f1
+dashboard=f4
+
+1
+
+'/home/utmostcreator/.nix-profile/bin/vicinae-toggle-app brave-browser'
+```
+
+Make a tested system generation permanent with:
+
+```bash
+sudo nixos-rebuild switch --flake /etc/nixos#nixos
+```
+
+## macOS Karabiner profile
 
 > Karabiner config source: `home/dot_config/karabiner/karabiner.json`
 > (chezmoi-managed, macOS-gated by `home/.chezmoiignore`).

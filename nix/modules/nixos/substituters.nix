@@ -17,7 +17,7 @@
 #
 # NOTE: vicinae.cachix.org is intentionally NOT added here. The linux-desktop
 # Home-Manager config uses the nixpkgs (Hydra-cached) `pkgs.vicinae` build via
-# services.vicinae.package, so no Vicinae Cachix is needed. Only add it if you
+# programs.vicinae.package, so no Vicinae Cachix is needed. Only add it if you
 # switch nix/modules/home/vicinae.nix to the upstream `vicinae` flake build AND
 # that cache has a matching prebuilt (otherwise it still compiles from source).
 

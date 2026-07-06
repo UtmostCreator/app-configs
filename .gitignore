@@ -96,3 +96,16 @@ mise.local.toml
 *.bak
 docs/ai/generated/
 # END ai-kit
+
+
+/node_modules/
+/.opencode/node_modules/
+/vendor/
+/dist/
+
+/.ai-logs/*
+!/.ai-logs/README.md
+
+/docs/ai/generated/logs/
+/docs/ai/generated/logs/verify-*/
+/docs/ai/generated/*.log

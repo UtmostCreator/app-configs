@@ -166,8 +166,8 @@ strings in code are:
 - tmux session defaults (`dev-workspace`, `dev-logs`, `remote-shells`)
   which are overridable via `tmux.*` in your YAML
 
-If you find a project name leaked into a tracked script, that is a bug
-— please file a follow-up row in `repo-docs/migration-followups.md`.
+If you find a project name leaked into a tracked script, that is a bug; fix it
+in the same bounded change or open a repository issue.
 
 ## What this replaces (relative to a personal scripts directory)
 

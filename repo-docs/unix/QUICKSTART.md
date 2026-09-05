@@ -10,8 +10,6 @@ Works on:
 - Linux desktop / server / WSL (bash, zsh, fish) — uses `keychain` if
   installed, otherwise a persistent shared `ssh-agent` socket
 
-The Windows runbook lives at [`repo-docs/windows/QUICKSTART.md`](../windows/QUICKSTART.md).
-
 ## TL;DR — one command
 
 From a clone of this repo:

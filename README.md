@@ -192,7 +192,7 @@ Full rationale: [`repo-docs/architecture/tool-ownership.md`](repo-docs/architect
 | `home/` | chezmoi source tree for dotfiles and app configs. `home/personal.yaml.example` is committed; real `home/.chezmoidata/personal.yaml` is gitignored. |
 | `nix/` | Nix flake + Home Manager modules per host profile. `nix/flake.nix` exposes `homeConfigurations.{linux-desktop,linux-cli,wsl,macos}` and `darwinConfigurations.macos`. |
 | `ops/` | Repo-owned install, setup, update, cleanup, validation, hooks (`ops/hooks/`), project helpers (`ops/projects/`), and Unix setup (`ops/unix/`). |
-| `repo-docs/` | Extended setup/maintenance docs. Historical migration notes under `repo-docs/migration-*.md`; completed one-off artifacts under `repo-docs/archive/`. |
+| `repo-docs/` | Extended setup, maintenance, and active planning documentation. |
 | `mise.toml` | Repo task definitions. Tool versions are per-user in `home/dot_config/mise/config.toml.tmpl`. |
 | `.lefthook.yml` | Git hook configuration. |
 
@@ -236,9 +236,3 @@ bash ops/uninstall.sh --apply     # actually run
 - NixOS specifics: [`repo-docs/install-nixos.md`](repo-docs/install-nixos.md)
 - System rebuild (`nixos-rebuild`, when & how): [`repo-docs/nixos-rebuild.md`](repo-docs/nixos-rebuild.md)
 - Nix-specific bits & cross-distro replacements: [`repo-docs/nix-specific-and-replacements.md`](repo-docs/nix-specific-and-replacements.md)
-
-## Historical notes
-
-Migration notes (`repo-docs/migration-*.md`) and archived one-off artifacts
-(`repo-docs/archive/`) are retained for audit/debugging only and are not
-required for normal use.

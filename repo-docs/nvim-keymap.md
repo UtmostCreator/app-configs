@@ -49,7 +49,6 @@ Additional conventions used in this document:
 | `repo-docs/nvim-defaults-plan.md` | Active plan. The authoritative statement of Strategy E, the option set, and the plugin list. | Present in repo. |
 | `repo-docs/nvim-keymap.md` | This file. Complete VS Code -> Neovim translation, by category. | This document. |
 | `repo-docs/nvim-cheatsheet.md` | One-page daily driver. The ~45 keys used every day. | Active. Print this for week 1-2. |
-| `repo-docs/nvim-migration-plan.md` | Superseded v3 migration plan. Historical context only. | Present, superseded. |
 | `home/.chezmoitemplates/vscode/keybindings.json` | Source of every VS Code key in this document. | Present in repo. |
 
 ## The 21 known conflicts at a glance

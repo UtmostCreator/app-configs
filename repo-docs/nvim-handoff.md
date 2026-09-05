@@ -83,24 +83,10 @@ Adding a chezmoi-managed tmux config requires explicit user approval (section 9)
 | `repo-docs/nvim-defaults-plan.md` | 715 | **ACTIVE PLAN**, Strategy E | Authoritative for architecture, phases, ownership, security, tests |
 | `repo-docs/nvim-keymap.md` | 1438 | Full VS Code -> Neovim translation, 693 typed rows, groups A-T | Authoritative for keymaps |
 | `repo-docs/nvim-cheatsheet.md` | 130 | Printable week 1-2 daily driver | For the human, not the agent |
-| `repo-docs/nvim-migration-plan.md` | 1516 | v3 parity plan | **SUPERSEDED** — partial validity, see below |
-| `repo-docs/nvim-correction-plan-v1.md` | 158 | Triage record | Reference only, do not re-litigate |
-| `repo-docs/nvim-correction-plan-v1-addition.md` | 687 | Triage record | Reference only, do not re-litigate |
-| `repo-docs/nvim-intellij-nvim-gpt-ver.md` | 680 | Triage record | Reference only, do not re-litigate |
 | `repo-docs/nvim-setup.md` | small | Describes the 81-line stub | **Stale** — update at cutover |
 
-### Partial validity of the superseded v3 plan
-
-`nvim-migration-plan.md` is superseded, but not worthless.
-
-| Section | Status |
-|---|---|
-| Keymap sections 7, 8, 10, 11, 12 | **Void** — replaced by Strategy E and `nvim-keymap.md` |
-| Ownership matrix | Still valid |
-| Security posture | Still valid |
-| Treesitter ownership | Still valid |
-| `NVIM_APPNAME` isolation design | Still valid |
-| Acceptance tests | Still valid |
+The superseded parity plans and triage drafts were removed after their accepted
+decisions were folded into the active plan and keymap reference.
 
 ### Conflict rule
 
@@ -109,10 +95,7 @@ Resolve disagreements in this order:
 1. Current code and git state
 2. `repo-docs/nvim-defaults-plan.md`
 3. `repo-docs/nvim-keymap.md`
-4. Everything else
-
-Superseded and triaged documents never override the active plan. Every item in the triaged
-documents carries a STATUS marker; honor it and move on.
+4. Current repository documentation
 
 ---
 
@@ -426,25 +409,7 @@ Notes:
 
 ---
 
-## 14. Environment And Tooling Limitations
-
-Observed in a previous session. Respect these to avoid wasted turns.
-
-| Limitation | Consequence |
-|---|---|
-| Bash composite commands are BLOCKED by policy | No `&&`, `;`, `\|\|`, `for` loops, or heredocs. Run one command per tool call |
-| `python3` heredocs are blocked | Do not script file generation through inline Python |
-| `tee` with a heredoc is blocked | Use the Write tool to create files |
-| `markdownlint-cli2` is NOT installed | Markdown lint has never been run on these documents |
-| `grep` is denied | Use `rg` |
-| Raw `cat` is discouraged | Use the Read tool or `scripts/ai/preview-file.sh` |
-| Writing files may require a subagent | Depends on the active tool policy |
-| Subagents have reported success without writing | **ALWAYS verify with `wc -l` after any write** |
-| Homoglyph hazard | A Cyrillic `a` (U+0430) was once smuggled into a keybinding in generated documents. Scan every new document for Cyrillic, Greek, and fullwidth characters |
-
----
-
-## 15. Open Questions For The User
+## 14. Open Questions For The User
 
 Unresolved. Raise these when the relevant phase approaches; do not decide them unilaterally.
 
@@ -459,7 +424,7 @@ Unresolved. Raise these when the relevant phase approaches; do not decide them u
 
 ---
 
-## 16. Change Log
+## 15. Change Log
 
 | Date | Change | Implementation status |
 |---|---|---|

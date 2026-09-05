@@ -62,10 +62,7 @@ for bin in php just code repomix scc bats actionlint shellcheck shfmt lychee jq 
     check_optional_bin "$bin"
 done
 
-# Core files — repo-owned only. doctor.sh must never require files this repo
-# does not own (e.g. the AI Workflow Kit: AGENTS.md, .opencode/**, docs/ai/**,
-# PLACEHOLDERS.md), since those are installed by an external project and may be
-# absent. AI-kit presence is reported as optional below.
+# Core files owned by this repository.
 echo "-- Core files --"
 for file in \
     README.md \
@@ -97,16 +94,6 @@ for file in \
     justfile \
     Justfile \
     repo-docs/install-dev-tools.sh; do
-    check_optional_file "$file"
-done
-
-echo "-- AI Workflow Kit (external, optional) --"
-# Installed/governed by awesome-ai-utmostcreator, not this repo. Reported only;
-# its absence is never a doctor failure.
-for file in \
-    AGENTS.md \
-    .opencode/opencode.json \
-    .github/copilot-instructions.md; do
     check_optional_file "$file"
 done
 

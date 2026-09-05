@@ -407,5 +407,4 @@ This plan is **read-only / planning**. Before writing code the implementer MUST:
   portals/audio-graphics modules,
   `nix/modules/home/hypr/{default.nix,hyprland.conf|settings}`; add
   `nixosConfigurations.linux-desktop`; re-scope rule 6; `git add` all new `*.nix`.
-- Flag every failed/blocked command per AGENTS.md; append unresolved items to
-  `repo-docs/migration-followups.md`.
+- Record failed or blocked verification in `repo-docs/migration-followups.md`.

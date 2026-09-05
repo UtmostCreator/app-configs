@@ -1,7 +1,4 @@
-# Dotfiles migration — pre-flight decisions
-
-Branch: `feat/dotfiles-migration`
-Baseline: 458 tracked files (see `/tmp/dotfiles-before.txt` for the live snapshot).
+# Configuration ownership decisions
 
 | Decision | Choice | Notes |
 |----------|--------|-------|
@@ -18,7 +15,3 @@ Baseline: 458 tracked files (see `/tmp/dotfiles-before.txt` for the live snapsho
 - Phase 6 uses `aarch64-darwin` for the macos profile.
 - Phase 7 `ops/detect-host.sh` returns `wsl` on this machine; bootstrap dry-runs validate the `wsl` profile first.
 - Phase 8 (nix-darwin) is deferred until a Mac is available; the macos profile must still evaluate (`nix flake check`) on Linux/WSL.
-
-## Open carry-over from policy work
-
-`.opencode/agents/implementer.md` and `.opencode/opencode.json` were widened to allow the migration commands. These edits are **policy/infrastructure**, not part of this migration. They will be committed separately at the end of this session under a dedicated commit on `main` or a `chore/opencode-policy` branch.

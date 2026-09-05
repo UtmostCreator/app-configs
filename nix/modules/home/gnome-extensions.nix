@@ -42,7 +42,7 @@
   #
   # Linux-desktop only (imported by nix/hosts/linux-desktop/home.nix) and
   # guarded on isLinux so an accidental Darwin import is a no-op.
-  dconf.settings = lib.mkIf pkgs.stdenv.isLinux {
+  dconf.settings = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     "org/gnome/shell" = {
       enabled-extensions = [
         "appindicatorsupport@rgcjonas.gmail.com"

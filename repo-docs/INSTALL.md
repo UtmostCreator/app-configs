@@ -181,6 +181,10 @@ mise run update:apply      # apply unattended (brewup equivalent)
 7. `lefthook install`
 8. safe cleanup (step 3 below) unless `NO_CLEANUP=1`
 
+An applied update ends with a version summary for Home Manager, the standalone
+Nix profile, and active mise tools. Changed packages are shown as
+`package: old => new`; unchanged layers are reported explicitly.
+
 ```bash
 bash ops/update-all.sh --apply          # one confirmation prompt
 bash ops/update-all.sh --apply --yes     # no prompt (cron/unattended)

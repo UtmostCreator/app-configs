@@ -40,14 +40,12 @@ extensions=(
   alefragnani.bookmarks
   amiralizadeh9480.laravel-extra-intellisense
   anan.jetbrains-darcula-theme
-  astro-build.astro-vscode
   austenc.tailwind-docs
   bmewburn.vscode-intelephense-client
   bradlc.vscode-tailwindcss
   christian-kohler.npm-intellisense
   christian-kohler.path-intellisense
   codingyu.laravel-goto-view
-  damms005.devdb
   davidanson.vscode-markdownlint
   dbaeumer.vscode-eslint
   devsense.phptools-vscode
@@ -73,11 +71,8 @@ extensions=(
   ms-playwright.playwright
   ms-vscode-remote.remote-containers
   ms-vscode-remote.remote-wsl
-  ms-vscode.powershell
   ms-vscode.test-adapter-converter
   ms-vscode.vscode-typescript-next
-  mtxr.sqltools
-  mtxr.sqltools-driver-mysql
   naumovs.color-highlight
   neilbrayfield.php-docblocker
   nuxtr.nuxtr-vscode
@@ -91,8 +86,6 @@ extensions=(
   sonarsource.sonarlint-vscode
   streetsidesoftware.code-spell-checker
   stylelint.vscode-stylelint
-  tyriar.lorem-ipsum
-  unifiedjs.vscode-mdx
   usernamehw.errorlens
   vue.volar
   xdebug.php-debug

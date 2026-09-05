@@ -11,7 +11,7 @@
   #
   # Linux-desktop only (imported by nix/hosts/linux-desktop/home.nix) and
   # guarded on isLinux so an accidental Darwin import is a no-op.
-  dconf.settings = lib.mkIf pkgs.stdenv.isLinux {
+  dconf.settings = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     # Nautilus (GNOME Files) — show dotfiles/dotfolders in the browser view.
     "org/gnome/nautilus/preferences" = {
       show-hidden-files = true;

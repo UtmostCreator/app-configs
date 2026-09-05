@@ -9,6 +9,7 @@
     curl
     wget
     git
+    universal-ctags
     unzip
     xz
     cacert

@@ -33,7 +33,7 @@
   #
   # Linux-desktop only; guarded on isLinux so an accidental non-Linux import is
   # a no-op (Vicinae is Linux-only).
-  config = lib.mkIf pkgs.stdenv.isLinux {
+  config = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     programs.vicinae = {
       enable = true;
       # Hydra-cached nixpkgs build (no source compile). See note above.

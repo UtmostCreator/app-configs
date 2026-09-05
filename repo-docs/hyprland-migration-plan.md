@@ -120,7 +120,7 @@ all of `nix/modules`, so the compositor's enable cannot live in `home/`. Its
 config ships from Home Manager. Re-scope rule 6 to `nix/modules/home/` only in the
 **same commit** as the new nixos module (Phase 1).
 
-**All Hyprland/Linux Nix pieces must be `lib.optionals stdenv.isLinux` no-ops** so
+**All Hyprland/Linux Nix pieces must be `lib.optionals stdenv.hostPlatform.isLinux` no-ops** so
 the Darwin (`darwinConfigurations.macos`) build still evaluates.
 
 ---
@@ -276,7 +276,7 @@ config-surface owner chosen. No decision → no Phase 1.
 ### Phase 7 — Validation & reconcile
 
 - [ ] Validator: hypr config present, no orphaned `gnome*` refs
-- [ ] All Hyprland/Linux pieces are `lib.optionals stdenv.isLinux` no-ops on Darwin
+- [ ] All Hyprland/Linux pieces are `lib.optionals stdenv.hostPlatform.isLinux` no-ops on Darwin
 - [ ] chezmoi reconciliation: confirm no file owned by both chezmoi and HM
 - [ ] `bash ops/validate-config.sh && mise run repo:check && mise run test:bash`
 - [ ] Update `repo-docs/migration-decisions.md` /
@@ -368,7 +368,7 @@ config-surface owner chosen. No decision → no Phase 1.
 | Upstream Hyprland flake without cache | long recompile + mesa mismatch on stable | prefer the nixpkgs binary; if flake, enable `hyprland.cachix.org`. Repo tracks **nixpkgs-unstable** (`flake.nix:5`), lowering — not removing — the mismatch motivation |
 | Electron/Chromium runs XWayland (blurry) | apps not native Wayland | `environment.sessionVariables.NIXOS_OZONE_WL = "1";` |
 | No Hyprland-native screenshot (unlike niri) | screenshot silently missing | ship grim + slurp + satty in Phase 5 |
-| Darwin host evaluates Hyprland/Linux modules | macOS build breaks | wrap Linux pieces in `lib.optionals stdenv.isLinux` |
+| Darwin host evaluates Hyprland/Linux modules | macOS build breaks | wrap Linux pieces in `lib.optionals stdenv.hostPlatform.isLinux` |
 | chezmoi + HM both own a hypr file | dual ownership | greenfield; keep hypr config HM-only (Phase 7 check) |
 | `programs.hyprland` auto-enables differ from expectation | missing portal/polkit/driver | confirm what the module wired (`BEST-PRACTICE` list is wiki-sourced, not repo-proven) |
 

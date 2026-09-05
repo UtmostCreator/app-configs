@@ -1,3 +1,7 @@
+{{- $useGitDelta := true -}}
+{{- if hasKey . "useGitDelta" -}}
+{{- $useGitDelta = .useGitDelta -}}
+{{- end -}}
 [alias]
 	# status
 	st = status
@@ -256,21 +260,28 @@
 	helper = store
 
 [core]
+{{- if $useGitDelta }}
 	pager = delta
+{{- end }}
 	editor = code --wait
 	excludesFile = {{ .chezmoi.homeDir }}/.gitignore_global
 
+{{- if $useGitDelta }}
 [delta]
 	navigate = true
 	line-numbers = true
 	side-by-side = true
 	syntax-theme = Monokai Extended
+{{- end }}
 
 [merge]
 	conflictstyle = zdiff3
 
+{{- if $useGitDelta }}
 [interactive]
 	diffFilter = delta --color-only
+{{- end }}
+{{- if and .name .email (ne .name "Your Full Name") (ne .email "you@example.com") }}
 [user]
 	name = {{ .name }}
 	email = {{ .email }}
@@ -285,6 +296,7 @@
 
 [tag]
 	gpgsign = true
+{{- end }}
 {{- end }}
 [includeIf "gitdir/i:{{ .chezmoi.homeDir }}/herd/"]
 	path = {{ .chezmoi.homeDir }}/.gitconfig-work

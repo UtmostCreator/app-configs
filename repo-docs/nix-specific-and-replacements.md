@@ -43,7 +43,7 @@ use the right name:
 | `difftastic` | `difft` | cargo `difftastic` | `difftastic` | |
 | `stripe-cli` | `stripe` | stripe apt repo | `stripe/stripe-cli/stripe` | |
 | `mariadb` (for client) | `mysql` | `mariadb-client` | `mysql-client` | we only want the client |
-| `nixfmt-rfc-style` | `nixfmt` | — (Nix only) | — | Nix formatter; N/A off Nix |
+| `nixfmt` | `nixfmt` | — (Nix only) | — | Nix formatter; N/A off Nix |
 | `nodejs_22` | `node` | nodesource / `mise` | `node@22` | **on NixOS provided by Nix**, not mise (see install-nixos.md) |
 
 ## 3. Nix-only tooling we added (no point off Nix)
@@ -55,7 +55,7 @@ would not have or need them:
 | --- | --- | --- |
 | `statix` | Lint Nix code | N/A (no Nix code) |
 | `deadnix` | Find dead Nix bindings | N/A |
-| `nixfmt-rfc-style` | Format Nix | N/A |
+| `nixfmt` | Format Nix | N/A |
 | `nix-index` (`nix-locate`) | Find which package ships a file | `apt-file search` / `dnf provides` / `pkgfile` |
 | `nh` | Friendlier `nixos-rebuild`/HM wrapper | N/A |
 

@@ -78,6 +78,7 @@ apps are owned through `nix-darwin` Homebrew bridge (`nix/modules/darwin/homebre
 | `files-to-prompt` | manual | — | `uv tool install files-to-prompt` per docs. |
 | `gh` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `gh`. |
 | `gitleaks` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `gitleaks`. |
+| `lizard` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `python3Packages.lizard` (top-level `lizard` does not exist); ships the `lizard` CLI. |
 | `p7zip` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `p7zip`. |
 | `repomix` | manual | — | `npm install -g repomix` per docs. |
 | `scc` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `scc`. |

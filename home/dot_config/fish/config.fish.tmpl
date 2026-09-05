@@ -52,6 +52,15 @@ for mode in default insert visual
     bind -M $mode \cE end-of-line
 end
 
+# Vi mode only assigns Ctrl-N to accept a Fish autosuggestion. Keep familiar
+# terminal keys available while typing. `forward-char-passive` explicitly does
+# not accept ghost text, so use the accepting motion for Right Arrow. Tab and
+# End accept a visible suggestion first, then retain completion/end-of-line
+# behavior when no suggestion exists.
+bind -M insert right forward-char
+bind -M insert tab accept-autosuggestion or complete
+bind -M insert end accept-autosuggestion or end-of-line
+
 # ─── Tool integrations (init order matters) ─────────────────────────────────
 # Starship prompt — single config shared with zsh/bash.
 set -gx STARSHIP_CONFIG "$HOME/.config/starship/starship.toml"

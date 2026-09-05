@@ -70,8 +70,9 @@ bash ops/bootstrap.sh --yes       # actually install + apply
 
 ## Personal configuration
 
-Create your local personal config before the manual path (the automated
-installer prompts for it if missing):
+Create your local personal config before the manual path. If it is missing,
+the automated installer seeds the example, but leaves Git identity unset until
+you replace the example name and email:
 
 ```bash
 cp home/personal.yaml.example home/.chezmoidata/personal.yaml

@@ -67,6 +67,8 @@ mise run tools:optional:install
 
 ### AI Workflow Critical Additions
 
+- **[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)** - plugin-based agent harness
+  (developer preview); install the pinned `dsh` CLI with `mise run tools:deepseek-harness:install`
 - **[repomix](https://github.com/yamadashy/repomix)** - package repository context for LLM prompts
 - **[files-to-prompt](https://github.com/simonw/files-to-prompt)** - concatenate targeted file sets with path headers
 - **[code2prompt](https://github.com/mufeedvh/code2prompt)** - template-driven prompt/context generation
@@ -82,6 +84,17 @@ mise run tools:optional:install
 - **[lychee](https://github.com/lycheeverse/lychee)** - Markdown and text link checking for repo docs
 - **[bats-core](https://github.com/bats-core/bats-core)** - shell test runner used by `tests/shell/`
 - **[yq](https://github.com/mikefarah/yq)** - YAML querying for Copilot command policy loading
+
+### LLM Observability / Eval Stack (Phoenix + promptfoo)
+
+- **[promptfoo](https://github.com/promptfoo/promptfoo)** - LLM prompt/eval harness and golden-task CI gate (via Nix, `nix/modules/home/dev.nix`)
+- **[@arizeai/phoenix-cli](https://www.npmjs.com/package/@arizeai/phoenix-cli)** - Arize Phoenix trace/span/dataset CLI (binaries `px`, `phoenix-cli`, `pxi`); npm-only, install via `mise run tools:observability:install`
+- **[@arizeai/phoenix-mcp](https://github.com/Arize-ai/phoenix/tree/main/js/packages/phoenix-mcp)** - stdio MCP server exposing a local Phoenix instance to agents; same mise task (consuming repos wire it through `npx` in `.mcp.json`)
+
+The Phoenix **server** itself is not packaged here — it runs as a local Docker container
+(`http://localhost:6006`; daemon managed by `nix/modules/nixos/docker.nix` on NixOS hosts).
+Wrapper scripts that drive this stack live in the consuming repo
+(`awesome-ai-utmostcreator/scripts/observability/`).
 
 ## Editors And Git
 
@@ -191,7 +204,7 @@ whole set on either OS. The owner of record is
 | --- | --- | --- | --- |
 | CLI tools (atuin, bat, btop, eza, fd, fzf, jq, yq, ripgrep(-all), starship, tldr, tmux, yazi, zoxide) | **Nix** | **Nix** | `nix/modules/home/cli.nix` |
 | fish shell | **Nix** | **Nix** | `nix/modules/home/cli.nix` |
-| dev tools (gh, lazygit, delta, difftastic, neovim, semgrep, trivy, osv-scanner, shellcheck, shfmt, actionlint, lychee, bats, scc, watchexec, lnav, ast-grep, p7zip, mariadb client) | **Nix** | **Nix** | `nix/modules/home/dev.nix` |
+| dev tools (gh, lazygit, delta, difftastic, neovim, semgrep, trivy, osv-scanner, shellcheck, shfmt, actionlint, lychee, bats, scc, lizard, watchexec, lnav, ast-grep, p7zip, mariadb client) | **Nix** | **Nix** | `nix/modules/home/dev.nix` |
 | node 22 runtime | **Nix** (`nodejs_22`) | mise pin OR Nix | `nix/modules/home/dev.nix` (NixOS rule) |
 | pnpm | **Nix** | **Nix** | `nix/modules/home/dev.nix` |
 | colima | **Nix** | **Nix**/Homebrew | `nix/modules/home/dev.nix` |

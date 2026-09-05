@@ -67,12 +67,12 @@ log "Host:  $HOST_PROFILE"
 log "NixOS: $(is_nixos && echo yes || echo no)"
 log "Mode:  $([[ "$DRY_RUN" == 1 ]] && echo dry-run || echo APPLY)"
 
-# Identity file must exist (chezmoi + flake need it). Create from example if
-# missing so the install can proceed unattended with placeholder values; the
-# user can refine later.
+# Personal data must exist (chezmoi + flake need it). Create it from the
+# example when missing so installation can proceed unattended. The Git template
+# treats the example identity as unset until the user replaces it.
 if [[ ! -f "$REPO_ROOT/home/.chezmoidata/personal.yaml" ]]; then
   if [[ -f "$REPO_ROOT/home/personal.yaml.example" ]]; then
-    warn "home/.chezmoidata/personal.yaml missing; seeding from example (edit later)."
+    warn "home/.chezmoidata/personal.yaml missing; seeding from example. Git identity remains unset until you edit it."
     run mkdir -p "$REPO_ROOT/home/.chezmoidata"
     [[ "$DRY_RUN" == 1 ]] || cp "$REPO_ROOT/home/personal.yaml.example" \
       "$REPO_ROOT/home/.chezmoidata/personal.yaml"

@@ -11,15 +11,12 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Local AI/runtime settings
+# Local analysis/runtime settings
 .gemini/
 .aider*
 .ai-logs/*
 !.ai-logs/README.md
-.copilot-logs/*
 .repomix-context/
-.ai-backups/
-.ai-tmp/
 
 # Dependency and build noise
 node_modules/
@@ -41,24 +38,8 @@ coverage/
 /composer.phar
 
 # Generated documentation outputs (regenerate locally; do not commit)
-# Keep only the README.md inside each generated folder to document the policy.
-/docs/ai/generated/*
-!/docs/ai/generated/README.md
-!/docs/ai/generated/task-context/
-/docs/ai/generated/task-context/*
-!/docs/ai/generated/task-context/latest.md
-!/docs/ai/generated/sessions/
-/docs/ai/generated/sessions/*
-!/docs/ai/generated/sessions/.gitkeep
 /docs/generated/*
 !/docs/generated/README.md
-
-# Timestamped generated verification logs (kept for legacy compatibility)
-/docs/ai/generated/logs/
-
-# Optional installed packs; source lives under packages/ai-universal-rules/templates/optional/
-.github/prompts-optional/
-.opencode/agents-optional/
 
 # Dotfiles migration — chezmoi private state
 # Real personal data and chezmoi runtime state must never be committed.
@@ -77,35 +58,9 @@ mise.local.toml
 # Dotfiles migration — chezmoi snapshot-home outputs (local recovery only)
 .dotfiles-snapshots/
 
-# Local repo-audit scratch (raw scc scans; canonical scc lives under
-# docs/ai/generated/repo-structure.* per the AI kit). Regenerate locally.
+# Local repo-audit scratch. Regenerate locally.
 /scc-by-file.csv
 /scc-by-file-new.csv
 
-# BEGIN ai-kit
-.ai/backups/
-.ai/logs/
-.ai-backups/
-.ai-logs/
-.ai/conflicts/
-.ai/templates-new/
-.ai/local-manifest.json
-.ai/install.lock
-.repomix-context/
-*.tmp
 *.bak
-docs/ai/generated/
-# END ai-kit
-
-
 /node_modules/
-/.opencode/node_modules/
-/vendor/
-/dist/
-
-/.ai-logs/*
-!/.ai-logs/README.md
-
-/docs/ai/generated/logs/
-/docs/ai/generated/logs/verify-*/
-/docs/ai/generated/*.log

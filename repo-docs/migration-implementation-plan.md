@@ -1486,7 +1486,6 @@ Cold-start procedure + per-OS notes.
 - [ ] `repo-docs/vscode-extensions.md` — note manual install or future `mise run sync` extension
 - [ ] `repo-docs/keyboard.md` — karabiner via chezmoi (macOS-gated)
 - [ ] Root `README.md` — new stack summary
-- [ ] `CONTRIBUTING.md` — Lefthook as intended hook runner; note `.husky/` remains until separate hook cleanup is approved, if applicable
 
 ### `ops/uninstall.sh` recovery helper
 Add a small recovery/handoff utility that documents and optionally performs safe local cleanup steps:

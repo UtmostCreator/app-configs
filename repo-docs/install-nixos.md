@@ -213,13 +213,9 @@ Starship, Atuin, fzf, zoxide, yazi (`yy`), and mise all initialise for fish.
 
 ## Expected non-fatal `doctor.sh` warnings on NixOS
 
-These are **optional** tools, not failures (`doctor.sh` still exits 0):
+These are **optional** files, not failures (`doctor.sh` still exits 0):
 
-- `php` — not pinned anywhere by design; only the AI-workflow validators
-  need it. Install a system php or skip the validators.
-- `repomix` — not in the Nix modules; optional.
-- `justfile` / `Justfile` / `.github/copilot-instructions.md` — optional
-  files this repo does not ship.
+- `justfile` / `Justfile` — optional task-runner files this repo does not ship.
 
 ## Rollback
 

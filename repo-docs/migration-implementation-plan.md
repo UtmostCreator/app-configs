@@ -704,14 +704,6 @@ bash ops/validate-config.sh
 if command -v nix >/dev/null 2>&1; then nix flake check ./nix; else echo "missing: nix (skip flake check)"; fi
 """
 
-# Optional, out-of-scope for the config architecture migration unless AI files are edited:
-# [tasks."ai:test:php"]
-# description = "Run repo AI/PHP tests"
-# run = "vendor/bin/phpunit tests/php || phpunit tests/php"
-#
-# [tasks."ai:repo:structure"]
-# description = "Regenerate AI repo structure doc"
-# run = "php tools/ai/generate-repo-structure.php"
 ```
 
 ## Validation

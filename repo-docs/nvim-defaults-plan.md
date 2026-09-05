@@ -5,10 +5,9 @@
 > modified as a result of this document. Every path, mapping and package name
 > below is a proposal awaiting explicit approval.
 
-This document is the **active** Neovim migration plan. It replaces the
-keymap-parity approach of v3 (`repo-docs/nvim-migration-plan.md`) with a
-defaults-first strategy: learn Neovim as Neovim, and add only what Neovim has no
-answer for.
+This document is the **active** Neovim migration plan. It replaces the retired
+keymap-parity approach with a defaults-first strategy: learn Neovim as Neovim,
+and add only what Neovim has no answer for.
 
 ### Relationship to other documents
 
@@ -17,13 +16,8 @@ answer for.
 | `repo-docs/nvim-defaults-plan.md` | This file. Active strategy, architecture, rollout. | **Active** | Everything strategic. Start here. |
 | `repo-docs/nvim-keymap.md` | Full VS Code -> Neovim translation, grouped by category. | Active, written in parallel | "What replaces the key I used to press?" |
 | `repo-docs/nvim-cheatsheet.md` | One-page daily driver reference. | Active, written in parallel | Printing and pinning next to the keyboard. |
-| `repo-docs/nvim-migration-plan.md` | v3 PhpStorm-keymap parity plan. | **Superseded, reference only** | Ownership matrix, security boundaries, acceptance tests. Ignore sections 7, 8, 10, 11, 12. |
-| `repo-docs/nvim-correction-plan-v1.md` | Triage of defects in the v1 plan. | Reference | Historical rationale for why v1 was discarded. |
-| `repo-docs/nvim-correction-plan-v1-addition.md` | Extended triage and research notes. | Reference | Deep detail on plugin selection tradeoffs. |
-| `repo-docs/nvim-intellij-nvim-gpt-ver.md` | Externally sourced IntelliJ-to-Neovim mapping draft. | Reference | Alternative mapping ideas; not authoritative. |
-
-Nothing in the superseded or reference documents overrides this file. Where they
-disagree, this file wins.
+The superseded parity plans and triage drafts were removed after their accepted
+decisions were incorporated here. This file is the strategy authority.
 
 ---
 

@@ -194,20 +194,9 @@ ssh-add -D       # drop all keys from the running agent
 keychain --clear # clear keychain cache; next shell will re-prompt
 ```
 
-## Comparison with the Windows runbook
-
-| Aspect              | Windows (`repo-docs/windows/QUICKSTART.md`)    | Unix (this doc)                                  |
-| ------------------- | ------------------------------------------ | ------------------------------------------------ |
-| Agent provider      | Windows OpenSSH service (`ssh-agent.exe`)   | launchd (macOS) / keychain or ssh-agent (Linux)  |
-| Re-prompt cadence   | 8 hours (emulated in PowerShell profile)    | Once per boot (Linux) / once ever (macOS)        |
-| Admin required      | Yes (one time, to enable the service)       | No                                               |
-| Git config tweak    | `core.sshCommand` must point at Windows ssh | None                                             |
-| Key persistence     | Until `ssh-add -D` or service restart       | Until reboot (Linux) / Keychain entry deletion (macOS) |
-
 ## See also
 
 - `repo-docs/shell-setup.md` — Zsh/Starship/Oh-My-Zsh baseline.
-- `repo-docs/windows/QUICKSTART.md` — Windows ssh-agent runbook.
 - [`man ssh_config`](https://man.openbsd.org/ssh_config) — full directive list.
 - [keychain upstream](https://www.funtoo.org/Keychain) — Funtoo's
   reference page.

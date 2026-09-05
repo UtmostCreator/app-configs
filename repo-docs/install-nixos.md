@@ -126,13 +126,10 @@ bash ops/validate-config.sh
 
 ### 5. `nix.package = pkgs.nix` in nix-settings.nix
 
-- **Context:** an uncommitted local edit adds `nix.package = pkgs.nix;` to
-  `nix/modules/common/nix-settings.nix`. On NixOS, standalone Home Manager
-  managing `nix.*` needs an explicit nix package or it can conflict with the
-  system Nix. This made the HM switch succeed.
-- **Status:** kept locally; decide whether to commit (it is harmless on
-  non-NixOS hosts but only strictly needed on NixOS). Logged in
-  `repo-docs/migration-followups.md`.
+- **Context:** standalone Home Manager managing `nix.*` on NixOS may need an
+  explicit Nix package to avoid conflicting with the system Nix.
+- **Status:** the current module does not set `nix.package`; add it only if a
+  supported NixOS host reproduces that conflict.
 
 ## Can NixOS use mise at all? (yes, with one rule)
 

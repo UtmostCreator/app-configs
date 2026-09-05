@@ -85,8 +85,7 @@ in
       php84Packages.composer # Composer 2.x for PHP 8.4; on PATH on every host.
       # macOS keeps a Herd+1Password `composer` shell function
       # (fish/zsh) that shadows this binary; on Linux this IS
-      # the active composer. Required by ai-verify.sh / ai-task.sh
-      # and listed in docs/ai/repo-required-tools.md.
+      # the active composer for project-local PHP work.
       pnpm # fast Node.js package manager (was: brew/corepack)
       promptfoo # LLM prompt/eval harness; golden-task CI gate + local eval runs (AI)
       # Wrapper scripts elsewhere call `npx promptfoo@latest`; this Nix copy

@@ -452,14 +452,3 @@ run = "bash ops/projects/github/sync-main.sh"
 [tasks."projects:pr-watch"]
 description = "Poll GitHub for PR transitions on tracked repos (--once for single poll)"
 run = "bash ops/projects/github/pr-watch.sh"
-
-# ─── Optional AI/PHP tasks (out-of-scope for the dotfiles migration) ────────
-# Uncomment if you start editing AI/PHP workflow files in this branch.
-#
-# [tasks."ai:test:php"]
-# description = "Run repo AI/PHP tests"
-# run = "vendor/bin/phpunit tests/php || phpunit tests/php"
-#
-# [tasks."ai:repo:structure"]
-# description = "Regenerate AI repo structure doc"
-# run = "php tools/ai/generate-repo-structure.php"

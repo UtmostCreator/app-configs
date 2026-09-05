@@ -6,7 +6,7 @@
 #
 # Read-only. Inspects duplicate / overlapping config sources between
 # configs/, backup-sanitized/home/, and ops/, then emits a draft
-# matrix at repo-docs/archive/migration-source-of-truth.draft.md with TBD markers
+# matrix under .ai-logs/migration/ with TBD markers
 # for any pair that needs a human decision.
 #
 # Does NOT move, copy, or delete any file.
@@ -21,7 +21,7 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-OUTPUT="repo-docs/archive/migration-source-of-truth.draft.md"
+OUTPUT=".ai-logs/migration/migration-source-of-truth.draft.md"
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --output)

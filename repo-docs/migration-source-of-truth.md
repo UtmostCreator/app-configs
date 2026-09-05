@@ -71,11 +71,11 @@ become deletes:
 - `configs/vscode/launch.json` (project-scoped)
 - `backup-sanitized/home/.local/bin/git-branch-origin` (loser of the pair)
 
-## Explicit non-deletes in Phase 2
+## Retained compatibility surface
 
-- Native Windows files (`docs/windows/`, `*.ps1`, `verify-dev-tools-gitbash.sh`): out of scope, untouched.
-- `.husky/`: deferred until Lefthook is confirmed installed and hook ownership is approved separately.
-- `repo-docs/install-dev-tools.sh`: retained as macOS reference until Phase 6 matrix parity is proven.
+- `.husky/` is gone; Lefthook is the sole hook owner.
+- `repo-docs/install-dev-tools.sh` remains a legacy macOS package-list input for
+  `ops/generate-package-matrix.sh` until that migration audit tooling is retired.
 
 ## Validation
 

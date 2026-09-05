@@ -1,0 +1,9 @@
+# Codex/AI and agent-harness state
+/.git
+/.agents
+/.claude
+/.codex
+/.github
+/.opencode
+/.yuc
+/node_modules

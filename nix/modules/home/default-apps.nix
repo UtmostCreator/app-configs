@@ -69,7 +69,7 @@ in
   #
   # Guarded on isLinux so an accidental import on Darwin is a no-op rather than
   # writing a Linux mimeapps.list into a macOS home.
-  xdg.mimeApps = lib.mkIf pkgs.stdenv.isLinux {
+  xdg.mimeApps = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     enable = true;
     defaultApplications = mkAssoc brave braveTypes // mkAssoc code codeTypes;
   };

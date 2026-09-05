@@ -38,6 +38,8 @@ for arg in "$@"; do
 done
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=ops/update-version-report.sh
+source "$REPO_ROOT/ops/update-version-report.sh"
 log()  { printf '[update-all:%s] %s\n' "$MODE" "$*"; }
 step() { printf '\n[update-all] ── %s ──\n' "$*"; }
 warn() { printf '[update-all:warn] %s\n' "$*" >&2; }
@@ -50,6 +52,16 @@ run()  {
 
 HOST_PROFILE="${HOST_PROFILE:-$(bash "$REPO_ROOT/ops/detect-host.sh" 2>/dev/null || echo linux-desktop)}"
 log "Repo: $REPO_ROOT   Host: $HOST_PROFILE"
+
+HOME_MANAGER_BEFORE=""
+NIX_PROFILE_BEFORE=""
+MISE_BEFORE=""
+MISE_CAPTURE_OK=0
+if [[ "$MODE" == "apply" ]]; then
+  HOME_MANAGER_BEFORE="$(profile_target "$HOME/.local/state/nix/profiles/home-manager")"
+  NIX_PROFILE_BEFORE="$(profile_target "$HOME/.nix-profile")"
+  if MISE_BEFORE="$(mise_versions)"; then MISE_CAPTURE_OK=1; fi
+fi
 
 if [[ "$MODE" == "apply" && "$ASSUME_YES" != 1 ]]; then
   printf 'Update everything (flake inputs, HM, chezmoi, mise) on host=%s? [y/N] ' "$HOST_PROFILE"
@@ -140,6 +152,21 @@ elif [[ -x "$REPO_ROOT/ops/cleanup.sh" ]]; then
   fi
 else
   warn "ops/cleanup.sh not found (skip)"
+fi
+
+if [[ "$MODE" == "apply" ]]; then
+  MISE_AFTER=""
+  if [[ "$MISE_CAPTURE_OK" == 1 ]] && MISE_AFTER="$(mise_versions)"; then
+    MISE_CAPTURE_OK=1
+  else
+    MISE_CAPTURE_OK=0
+  fi
+  step "Version changes (before => after)"
+  report_nix_changes "Home Manager packages" "$HOME_MANAGER_BEFORE" \
+    "$(profile_target "$HOME/.local/state/nix/profiles/home-manager")"
+  report_nix_changes "nix-profile packages" "$NIX_PROFILE_BEFORE" \
+    "$(profile_target "$HOME/.nix-profile")"
+  report_mise_changes "$MISE_BEFORE" "$MISE_AFTER" "$MISE_CAPTURE_OK"
 fi
 
 step "Done"

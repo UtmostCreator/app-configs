@@ -1,19 +1,4 @@
 { pkgs, config, ... }:
-let
-  androidStudioQuail = pkgs.callPackage (
-    import "${pkgs.path}/pkgs/applications/editors/android-studio/common.nix" {
-      channel = "stable";
-      pname = "android-studio";
-      version = "2026.1.1.10"; # Android Studio Quail 1 | 2026.1.1 Patch 2
-      sha256Hash = "sha256-+9PxFtEsrtck6o2g0s2ufnkRcPefKqESc+oPLSKiJNw=";
-      url = "https://edgedl.me.gvt1.com/android/studio/ide-zips/2026.1.1.10/android-studio-quail1-patch2-linux.tar.gz";
-    }
-  ) {
-    fontsConf = pkgs.makeFontsConf { fontDirectories = [ ]; };
-    inherit (pkgs) buildFHSEnv;
-    tiling_wm = false;
-  };
-in
 {
   # GUI packages for Linux desktops. macOS gets GUI apps via nix-darwin
   # Homebrew casks (see nix/modules/darwin/homebrew.nix); this module is
@@ -29,7 +14,7 @@ in
   # target platform with `nix search nixpkgs <name>`.
   home.packages =
     with pkgs;
-    lib.optionals stdenv.isLinux [
+    lib.optionals stdenv.hostPlatform.isLinux [
       firefox # primary browser (macOS: Homebrew cask)
       brave # privacy browser; nixpkgs ships STABLE only (no brave-beta attr).
       #       macOS gets the beta channel via the brave-browser@beta cask in
@@ -40,7 +25,7 @@ in
       #       See repo-docs/default-apps.md ("Brave + local dev servers").
       ghostty # GPU terminal (macOS: Homebrew cask)
       vscode # VS Code (unfree; allowUnfree set in nix/lib/mkhome.nix)
-      androidStudioQuail # Android Studio Quail 1 | 2026.1.1 Patch 2
+      android-studio # stable Android Studio from the public nixpkgs package
       flameshot # screenshots with annotation; runs as a resident systemd user
       #           service (see systemd.user.services.flameshot below) so global
       #           hotkeys (F4 / Alt+Shift+S / Alt+P) capture reliably on Wayland.
@@ -501,7 +486,7 @@ in
     # `myConfig.profile = "personal";` (see nix/modules/home/profile.nix) AND on
     # Linux. Vesktop = Discord with Vencord built-in (the supported way to ship
     # Vencord; the bare `vencord` attr is just a client-mod bundle, not an app).
-    ++ lib.optionals (stdenv.isLinux && config.myConfig.profile == "personal") [
+    ++ lib.optionals (stdenv.hostPlatform.isLinux && config.myConfig.profile == "personal") [
       vesktop # Discord + Vencord (https://github.com/Vendicated/Vencord)
       telegram-desktop # Telegram
       syncthing # continuous file sync (https://syncthing.net). Runs as a HM
@@ -515,7 +500,7 @@ in
     #   sync-open   ensure it is running, wait for the Web UI, then open it
     #   sync-stop   stop the Syncthing user service
     # The Web UI bind address is the Syncthing default 127.0.0.1:8384.
-    ++ lib.optionals (stdenv.isLinux && config.myConfig.profile == "personal") [
+    ++ lib.optionals (stdenv.hostPlatform.isLinux && config.myConfig.profile == "personal") [
       (writeShellScriptBin "sync-start" ''
         set -euo pipefail
         ${pkgs.systemd}/bin/systemctl --user start syncthing.service
@@ -555,7 +540,7 @@ in
   #   - showStartupLaunchMessage=false: no first-run popup.
   #   - contrastOpacity / uiColor: readable selection UI.
   # Linux-only; flameshot is in the Linux GUI package list above.
-  xdg.configFile."flameshot/flameshot.ini" = pkgs.lib.mkIf pkgs.stdenv.isLinux {
+  xdg.configFile."flameshot/flameshot.ini" = pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     text = ''
       [General]
       # Tray icon ON: gives Flameshot a top-bar (notification-area) entry and,
@@ -588,7 +573,7 @@ in
   # already-running daemon owns the capture surface and copies to the clipboard.
   # The service also provides the top-bar tray icon (disabledTrayIcon=false).
   # Linux-only; flameshot is in the Linux GUI package list above.
-  systemd.user.services.flameshot = pkgs.lib.mkIf pkgs.stdenv.isLinux {
+  systemd.user.services.flameshot = pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     Unit = {
       Description = "Flameshot screenshot daemon (resident for Wayland hotkey capture)";
       # Start after the graphical session + tray are up so the icon attaches.
@@ -606,7 +591,7 @@ in
   # Keep per-app window toggles stable for multi-window apps. The toggle helper
   # reads the tiny MRU files this service maintains, so Alt+Shift+E returns to
   # the last-used VS Code window instead of the first arbitrary `List()` match.
-  systemd.user.services.vicinae-focus-tracker = pkgs.lib.mkIf pkgs.stdenv.isLinux {
+  systemd.user.services.vicinae-focus-tracker = pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     Unit = {
       Description = "Track focused GNOME windows for Vicinae app toggles";
       After = [ "graphical-session.target" ];
@@ -630,10 +615,12 @@ in
   # The bind address stays at Syncthing's default 127.0.0.1:8384 (GUI is
   # loopback-only). Folder/device config remains user-owned in the Web UI; this
   # only manages the daemon lifecycle, not the synced folders.
-  services.syncthing = pkgs.lib.mkIf (pkgs.stdenv.isLinux && config.myConfig.profile == "personal") {
-    enable = true;
-    tray.enable = false;
-  };
+  services.syncthing =
+    pkgs.lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && config.myConfig.profile == "personal")
+      {
+        enable = true;
+        tray.enable = false;
+      };
 
   # Kanto ORA4 high-quality audio, shipped declaratively so every Linux-desktop
   # PC built from this repo gets the same best-real-world setup for the speaker.
@@ -672,7 +659,7 @@ in
   #   pw-metadata -n settings | grep -i ora   # rule presence
   # See repo-docs/ora4-audio.md.
   xdg.configFile."wireplumber/wireplumber.conf.d/51-kanto-ora4.conf" =
-    pkgs.lib.mkIf pkgs.stdenv.isLinux
+    pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux
       {
         text = ''
           monitor.alsa.rules = [

@@ -7,8 +7,7 @@ available in Git and is intentionally not duplicated here.
 
 | Item | Current evidence | Next action |
 | --- | --- | --- |
-| Legacy AI adapter surfaces | `.ai/`, `.github/`, `.opencode/`, `policies/`, `.vscode/settings.json`, and several root policy files still reference the removed AI kit. They include hooks and permission/security policy, so the broad cleanup request is not sufficient authorization to delete them. | Obtain explicit approval for the exact security/governance paths, then remove them together and rerun reference and hook checks. |
-| RestSift structural graph | `res refactor audit . --refresh-graph` cannot run because `codebase-memory-mcp` is absent. `res repo setup --check` proposes creating a RestSift skill under `.github/` and `.vscode/mcp.json`. | Decide whether RestSift should own those repository integration files; install/configure the graph provider only after that decision. |
+| RestSift structural graph | `.vscode/mcp.json` is installed, but `res refactor audit . --refresh-graph` cannot run because `codebase-memory-mcp` is absent from `PATH`. The optional generated `.github` skill was intentionally not retained. | Install `codebase-memory-mcp`, allow this repository root, then rerun the graph-backed audit. |
 | Legacy package audit helper | `repo-docs/install-dev-tools.sh` is used only by `ops/generate-package-matrix.sh` and still describes a zsh/Homebrew-era install flow. | Retire the helper and its validator dependencies in one focused change, or update it as a supported macOS fallback. |
 
 ## Product decisions

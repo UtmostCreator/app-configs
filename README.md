@@ -8,12 +8,6 @@ tasks) + **Nix / Home Manager** (CLI packages) + **nix-darwin + Homebrew casks**
 
 A clean machine can reach a working setup with one bootstrap script.
 
-> **Note on AI files.** The [AI Workflow Kit](https://github.com/UtmostCreator/awesome-ai-utmostcreator)
-> has been removed from this repo for now (only `.opencode/` agent/skill
-> definitions remain) and may be reinstalled later. It is governed separately
-> and is not part of the dotfiles stack documented here — ignore it for setup,
-> updates, and daily use.
-
 ## Scope
 
 **This repo owns:** personal dotfiles, shell/Git/editor/terminal config, SSH
@@ -21,9 +15,8 @@ agent setup, CLI packages, GUI apps (where supported), the NixOS system layer
 (where applicable), the macOS user/system layer via nix-darwin + Homebrew, and
 the install / update / cleanup / validation commands.
 
-**This repo does not own:** the AI Workflow Kit source (see note above) or any
-downstream project code. Native Windows is not supported; WSL2 is limited to
-Linux-style CLI/dev config.
+**This repo does not own:** downstream project code. Native Windows is not
+supported; WSL2 is limited to Linux-style CLI/dev config.
 
 ## Supported systems
 

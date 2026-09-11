@@ -3,11 +3,18 @@
 How this repo sets the OS "default app" for a file type or URL scheme, per
 platform. Goal: Brave for the web + PDFs, VS Code for source/text files.
 
-## Linux desktop — declarative (implemented)
+## Linux desktop — declared defaults with writable overrides (implemented)
 
 Linux uses **XDG MIME associations** (`~/.config/mimeapps.list`). home-manager's
-`xdg.mimeApps` owns that file, so defaults are reproducible instead of a manual
-GNOME "Default Applications" click-through.
+standard `xdg.mimeApps` module makes that file a read-only Nix-store link. That
+breaks GNOME's **Set as Default** action because GLib follows the link and tries
+to create its atomic-replacement file inside `/nix/store`.
+
+This repo instead has Home Manager link both XDG MIME locations to a writable
+file at `~/.local/state/home-manager/mimeapps.list`. Each activation re-applies
+the mappings declared below, while defaults added for other MIME types through
+GNOME remain intact. On migration, an existing `~/.config/mimeapps.list` is
+copied first so manual choices are preserved.
 
 - Module: `nix/modules/home/default-apps.nix`
 - Imported by: `nix/hosts/linux-desktop/home.nix` only (guarded on `isLinux`).
@@ -25,6 +32,8 @@ Current mapping:
 Verify after `home-manager switch`:
 
 ```bash
+readlink -e ~/.config/mimeapps.list
+# -> ~/.local/state/home-manager/mimeapps.list (a writable regular file)
 xdg-mime query default application/pdf      # -> brave-browser.desktop
 xdg-mime query default x-scheme-handler/https
 xdg-mime query default text/x-php           # -> code.desktop

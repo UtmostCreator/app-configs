@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Finish or inspect private Android access to DeepSeek Harness.
+set -euo pipefail
+
+port="${DSH_REMOTE_PORT:-3080}"
+
+command -v tailscale >/dev/null 2>&1 || {
+  printf 'Tailscale is not installed. On NixOS run: sudo sys-setup --apply\n' >&2
+  exit 69
+}
+
+if ! tailscale status >/dev/null 2>&1; then
+  printf 'Joining this PC to Tailscale (complete the browser sign-in if prompted)...\n'
+  tailscale up
+fi
+
+printf 'Configuring private HTTPS proxy to http://127.0.0.1:%s ...\n' "$port"
+tailscale serve --bg "$port"
+
+systemctl --user daemon-reload
+if systemctl --user is-active --quiet dsh-remote.service; then
+  printf 'dsh-remote.service is already running.\n'
+elif ss -ltn "sport = :$port" | grep -q LISTEN; then
+  printf 'Port %s is owned by an existing Harness process; leaving it untouched.\n' "$port"
+  printf 'When its agents are finished, run: systemctl --user start dsh-remote.service\n'
+else
+  systemctl --user enable --now dsh-remote.service
+fi
+
+printf '\nTailscale Serve status:\n'
+tailscale serve status
+
+tailnet_host="$(tailscale status --json | jq -r '.Self.DNSName // empty' | sed 's/\.$//')"
+token_url="$(journalctl --user-unit=dsh-remote.service --no-pager -o cat 2>/dev/null \
+  | sed -n 's#^dsh web: http://127\.0\.0\.1:[0-9][0-9]*/?token=\(.*\)$#\1#p' \
+  | tail -n 1)"
+printf '\nAndroid base URL: https://%s\n' "$tailnet_host"
+if [[ -n "$token_url" ]]; then
+  printf 'First-use URL:    https://%s/?token=%s\n' "$tailnet_host" "$token_url"
+else
+  printf 'The one-time first-use URL will appear after the managed Harness service starts.\n'
+  printf 'Retrieve it with: dsh-remote-status\n'
+fi

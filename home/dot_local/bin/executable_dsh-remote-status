@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Print health and the authority-bound Android onboarding URL without secrets
+# other than DSH's intentional, one-time browser launch token.
+set -euo pipefail
+
+port="${DSH_REMOTE_PORT:-3080}"
+tailnet_host="$(tailscale status --json 2>/dev/null \
+  | jq -r '.Self.DNSName // empty' | sed 's/\.$//')"
+
+systemctl --user status dsh-remote.service --no-pager || true
+printf '\nTailscale Serve:\n'
+tailscale serve status || true
+
+[[ -n "$tailnet_host" ]] || exit 1
+token="$(journalctl --user-unit=dsh-remote.service --no-pager -o cat 2>/dev/null \
+  | sed -n 's#^dsh web: http://127\.0\.0\.1:[0-9][0-9]*/?token=\(.*\)$#\1#p' \
+  | tail -n 1)"
+printf '\nAndroid base URL: https://%s\n' "$tailnet_host"
+if [[ -n "$token" ]]; then
+  printf 'First-use URL:    https://%s/?token=%s\n' "$tailnet_host" "$token"
+fi
+
+if ss -ltn "sport = :$port" | grep -q '127.0.0.1'; then
+  printf 'Harness listener: loopback-only on 127.0.0.1:%s\n' "$port"
+else
+  printf 'Harness listener: not detected on 127.0.0.1:%s\n' "$port" >&2
+  exit 1
+fi

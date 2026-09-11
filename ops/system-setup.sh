@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # system-setup.sh — automate the NixOS SYSTEM layer that standalone Home
 # Manager cannot set: fish as login shell, your user in trusted-users, a
-# declarative non-destructive GC timer, the system time zone, and the Docker
-# daemon (via this repo's nix/modules/nixos). Then runs `nixos-rebuild switch`.
+# declarative non-destructive GC timer, the system time zone, the Docker
+# daemon, and private Tailscale access. Then runs `nixos-rebuild switch`.
 #
 # Requires sudo (it edits /etc/nixos and rebuilds the system). It is:
 #   - idempotent: skips settings already present; safe to re-run
@@ -14,6 +14,7 @@
 #   sudo bash ops/system-setup.sh --apply    # apply + nixos-rebuild switch
 #   USER_NAME=youruser sudo bash ops/system-setup.sh --apply
 #   ENABLE_DOCKER=0 sudo bash ops/system-setup.sh --apply   # skip docker daemon
+#   ENABLE_TAILSCALE=0 sudo bash ops/system-setup.sh --apply # skip Tailscale
 #
 # Exit non-zero on failure. NixOS only.
 
@@ -64,6 +65,11 @@ DOCKER_MODULE_DST="/etc/nixos/${DOCKER_MODULE_NAME}"
 # for a host that must not run the daemon with: ENABLE_DOCKER=0 sudo sys-setup --apply
 ENABLE_DOCKER="${ENABLE_DOCKER:-1}"
 
+# Tailscale provides the private transport for loopback-only developer tools.
+# The daemon is enabled here; joining a tailnet and configuring `tailscale
+# serve` remain explicit, one-time user actions handled by dsh-remote-setup.
+ENABLE_TAILSCALE="${ENABLE_TAILSCALE:-1}"
+
 # Two distinct questions, kept separate to make re-runs idempotent:
 #
 #   need_*  = should this setting be WRITTEN into the module we own ($MODULE)?
@@ -94,9 +100,14 @@ if (( ENABLE_DOCKER == 1 )); then
   need_docker=1
   { in_sys "virtualisation.docker.enable" || in_sys "$DOCKER_MODULE_NAME"; } && need_docker=0
 fi
+need_tailscale=0
+if (( ENABLE_TAILSCALE == 1 )); then
+  need_tailscale=1
+  in_sys "services.tailscale.enable" && need_tailscale=0
+fi
 
 # Already fully applied? (live state or already in the module we manage)
-have_fish=0; have_trusted=0; have_gc=0; have_timezone=0; have_docker=1
+have_fish=0; have_trusted=0; have_gc=0; have_timezone=0; have_docker=1; have_tailscale=1
 { in_sys "programs.fish.enable" || in_module "programs.fish.enable"; } && have_fish=1
 { in_sys "trusted-users" || in_module "trusted-users"; } && have_trusted=1
 { in_sys "nix.gc" || in_module "nix.gc"; } && have_gc=1
@@ -111,8 +122,14 @@ if (( ENABLE_DOCKER == 1 )); then
     || { in_module "$DOCKER_MODULE_NAME" && in_module "myConfig.docker.enable" \
          && [[ -f "$DOCKER_MODULE_DST" ]]; }; } && have_docker=1
 fi
+if (( ENABLE_TAILSCALE == 1 )); then
+  have_tailscale=0
+  { systemctl is-active tailscaled >/dev/null 2>&1 \
+    || in_sys "services.tailscale.enable" \
+    || in_module "services.tailscale.enable"; } && have_tailscale=1
+fi
 
-if (( have_fish == 1 && have_trusted == 1 && have_gc == 1 && have_timezone == 1 && have_docker == 1 )); then
+if (( have_fish == 1 && have_trusted == 1 && have_gc == 1 && have_timezone == 1 && have_docker == 1 && have_tailscale == 1 )); then
   log "All recommended system settings already present."
   if [[ "$MODE" == "apply" ]]; then
     log "Running nixos-rebuild to ensure system is current…"
@@ -157,6 +174,12 @@ SNIPPET="$(mktemp)"
     echo "  # America/New_York) without editing that file by hand. Override by"
     echo "  # re-running with SYSTEM_TIMEZONE=Area/City if this host needs a different zone."
     echo "  time.timeZone = lib.mkForce \"${SYSTEM_TIMEZONE}\";"
+  }
+  (( need_tailscale == 1 )) && {
+    echo "  # Private remote access for loopback-only developer services."
+    echo "  services.tailscale.enable = true;"
+    echo "  # Keep user services available after logout and across headless boots."
+    echo "  users.users.\"${USER_NAME}\".linger = true;"
   }
   echo "}"
 } > "$SNIPPET"

@@ -16,6 +16,8 @@
 # SAFETY
 # - Dry-run by default. It changes nothing until you pass --apply.
 # - The .stignore install is idempotent and preserves non-managed rules.
+# - The managed block is kept first because Syncthing uses the first matching
+#   rule; this prevents older un-ignore rules from overriding these exclusions.
 # - Conflict-file deletion only ever targets known Syncthing conflict patterns.
 #
 # USAGE
@@ -126,15 +128,19 @@ while IFS= read -r FOLDER; do
   stignore_action="up-to-date"
   desired="$(mktemp)"
   if [[ -f "$DEST" ]]; then
+    preserved="$(mktemp)"
     awk -v begin="$BEGIN_MARKER" -v end="$END_MARKER" '
       $0 == begin { skip = 1; next }
       $0 == end { skip = 0; next }
-      !skip { print }
-    ' "$DEST" > "$desired"
-    if [[ -s "$desired" ]] && [[ "$(tail -c 1 "$desired")" != "" ]]; then
+      !skip && !content && /^[[:space:]]*$/ { next }
+      !skip { content = 1; print }
+    ' "$DEST" > "$preserved"
+    cat "$TEMPLATE" > "$desired"
+    if [[ -s "$preserved" ]]; then
       printf '\n' >> "$desired"
+      cat "$preserved" >> "$desired"
     fi
-    cat "$TEMPLATE" >> "$desired"
+    rm -f "$preserved"
     if ! cmp -s "$desired" "$DEST"; then
       stignore_action="update"
     fi

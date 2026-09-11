@@ -75,6 +75,7 @@ apps are owned through `nix-darwin` Homebrew bridge (`nix/modules/darwin/homebre
 | `ast-grep` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `ast-grep`. |
 | `code2prompt` | manual | — | Cargo install, per docs. |
 | `copilot` | DROPPED | — | Copilot CLI removed from install script intentionally; we use OpenCode. |
+| `claude` (Claude Code) | manual | — | Native installer into `~/.local/share/claude`; self-updates via `claude update`. Intentionally **not** Nix — a second copy breaks update detection. |
 | `files-to-prompt` | manual | — | `uv tool install files-to-prompt` per docs. |
 | `gh` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `gh`. |
 | `gitleaks` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `gitleaks`. |

@@ -67,6 +67,14 @@ mise run tools:optional:install
 
 ### AI Workflow Critical Additions
 
+- **[Claude Code](https://docs.claude.com/en/docs/claude-code)** - installed by its
+  own native installer into `~/.local/share/claude`, symlinked as
+  `~/.local/bin/claude`, and updated in place with `claude update`. It is
+  deliberately **not** in `nix/modules/home/dev.nix`: nixpkgs lags the release
+  channel, and a second copy on `PATH` makes `claude update` report
+  "Multiple installations found". Keep exactly one copy — if `npm -g ls` or
+  `~/.nix-profile/bin/claude` ever shows another, remove it
+  (`npm -g uninstall @anthropic-ai/claude-code`).
 - **[Codebase Memory MCP](https://github.com/DeusData/codebase-memory-mcp)** - pinned
   structural code graph MCP (`0.9.0`, UI-enabled release). Home Manager installs
   the CLI for editor stdio clients and keeps its loopback-only graph browser
@@ -235,6 +243,7 @@ whole set on either OS. The owner of record is
 | Bruno | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
 | Sequel Ace, BBEdit, BetterDisplay, AeroSpace, Karabiner, Ice, AltTab, Stats, NoTunes, LinearMouse | **macOS-only** (no Linux equivalent shipped) | Homebrew cask | `nix/modules/darwin/homebrew.nix` |
 | repomix, files-to-prompt, code2prompt | npm / uv / cargo (per-project, optional) | same | not in Nix; see "AI context packers" below |
+| Claude Code (`claude`) | **native installer** (`~/.local/bin/claude`, `claude update`) | same | not in Nix by design; see "AI Workflow Critical Additions" |
 | dive, fx, navi, glow, gum | `mise run tools:optional:install` (aqua) | same | `mise.toml` optional task |
 | direnv | **DROPPED** (mise per-project env replaces it) | DROPPED | — |
 

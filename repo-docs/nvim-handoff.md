@@ -222,7 +222,8 @@ Each tool owns exactly one layer. Never cross the boundary.
 
 `nix/modules/home/dev.nix` — neovim, gopls, delve, golangci-lint, gofumpt, gotools, govulncheck,
 gotestsum, php84, composer, nodejs_22, pnpm, lazygit, gh, delta, difftastic, ast-grep, semgrep,
-shellcheck, shfmt, actionlint, bats, nixfmt-rfc-style, statix, deadnix, opencode, claude-code.
+shellcheck, shfmt, actionlint, bats, nixfmt-rfc-style, statix, deadnix, opencode.
+(Claude Code is **not** in Nix — see "Claude Code" in `repo-docs/software-and-cli-tools.md`.)
 
 `nix/modules/home/cli.nix` — tmux and other CLI tools.
 

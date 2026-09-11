@@ -1,5 +1,49 @@
-{ pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 let
+  codebaseMemoryMcpVersion = "0.9.0";
+  codebaseMemoryMcpArtifact =
+    {
+      x86_64-linux = {
+        platform = "linux-amd64";
+        hash = "sha256-wwkBkhugJzjnWdmkY78gWi/jH9j+7UH7hO02TxgBXeo=";
+      };
+      aarch64-darwin = {
+        platform = "darwin-arm64";
+        hash = "sha256-WS+E5E1ejqua5xNOmbFUDOPCjoS2hCBPjznN5RYg0O4=";
+      };
+    }
+    .${pkgs.stdenv.hostPlatform.system};
+  codebaseMemoryMcp = pkgs.stdenvNoCC.mkDerivation {
+    pname = "codebase-memory-mcp-ui";
+    version = codebaseMemoryMcpVersion;
+    src = pkgs.fetchurl {
+      url = "https://github.com/DeusData/codebase-memory-mcp/releases/download/v${codebaseMemoryMcpVersion}/codebase-memory-mcp-ui-${codebaseMemoryMcpArtifact.platform}.tar.gz";
+      inherit (codebaseMemoryMcpArtifact) hash;
+    };
+    sourceRoot = ".";
+    dontStrip = true; # Preserve the UI assets embedded in the release binary.
+    installPhase = ''
+      runHook preInstall
+      install -Dm755 codebase-memory-mcp "$out/bin/codebase-memory-mcp"
+      runHook postInstall
+    '';
+  };
+  codebaseMemoryMcpUi = pkgs.writeShellScript "codebase-memory-mcp-ui-service" ''
+    set -euo pipefail
+    export CBM_ALLOWED_ROOT=${lib.escapeShellArg "${config.home.homeDirectory}/Projects"}
+
+    # The MCP transport is stdio and exits on EOF. Keep stdin open so the
+    # optional loopback-only graph UI remains available independently of an
+    # editor session. Editor-launched workers explicitly use --ui=false.
+    ${pkgs.coreutils}/bin/sleep infinity \
+      | ${codebaseMemoryMcp}/bin/codebase-memory-mcp --ui=true --port=9749
+  '';
+
   gremlinsVersion = "0.6.0";
   gremlinsArtifact =
     {
@@ -43,6 +87,7 @@ in
       delta # git-delta formula -> delta in nixpkgs
       difftastic
       code2prompt # template-driven prompt/context generation (AI)
+      codebaseMemoryMcp # structural code graph MCP + embedded browser UI
       colima # lightweight container runtime (Docker daemon via VM)
       docker # CLI only; daemon source is host-specific
       docker-buildx # docker buildx plugin (multi-arch builds)
@@ -122,4 +167,20 @@ in
     ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       pkgs.bubblewrap # bwrap: preferred Codex CLI Linux sandbox helper
     ];
+
+  # Keep the graph browser available at http://127.0.0.1:9749 even when no
+  # editor is open. MCP clients still use their own stdio worker and the shared
+  # ~/.cache/codebase-memory-mcp indexes; they disable UI to avoid port races.
+  systemd.user.services.codebase-memory-mcp-ui = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+    Unit = {
+      Description = "Codebase Memory MCP graph UI";
+      After = [ "default.target" ];
+    };
+    Service = {
+      ExecStart = codebaseMemoryMcpUi;
+      Restart = "always";
+      RestartSec = 5;
+    };
+    Install.WantedBy = [ "default.target" ];
+  };
 }

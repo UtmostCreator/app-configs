@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Start DeepSeek Harness on loopback and trust this machine's Tailscale HTTPS
+# hostname. Intended for the dsh-remote.service user unit.
+set -euo pipefail
+
+workspace="${DSH_REMOTE_WORKSPACE:-$HOME/Projects/advanced-gym}"
+port="${DSH_REMOTE_PORT:-3080}"
+
+[[ -d "$workspace" ]] || {
+  printf 'dsh-remote: workspace does not exist: %s\n' "$workspace" >&2
+  exit 66
+}
+command -v tailscale >/dev/null 2>&1 || {
+  printf 'dsh-remote: tailscale is not installed yet\n' >&2
+  exit 69
+}
+command -v jq >/dev/null 2>&1 || {
+  printf 'dsh-remote: jq is required\n' >&2
+  exit 69
+}
+
+tailnet_host="$(tailscale status --json 2>/dev/null \
+  | jq -r '.Self.DNSName // empty' | sed 's/\.$//')"
+[[ -n "$tailnet_host" ]] || {
+  printf 'dsh-remote: this machine has not joined a Tailscale tailnet yet\n' >&2
+  exit 75
+}
+
+if [[ -n "${DSH_REMOTE_BIN:-}" ]]; then
+  dsh_bin="$DSH_REMOTE_BIN"
+elif command -v mise >/dev/null 2>&1; then
+  dsh_bin="$(mise which dsh 2>/dev/null || true)"
+else
+  dsh_bin=""
+fi
+[[ -n "$dsh_bin" && -x "$dsh_bin" ]] || {
+  printf 'dsh-remote: dsh is missing; run mise run tools:deepseek-harness:install\n' >&2
+  exit 69
+}
+
+dsh_entry="$(readlink -f "$dsh_bin")"
+cd "$workspace"
+
+args=(web)
+# YUC's generated project patch adds its repository-local agent and skill roots
+# while preserving DSH's shipped and user-level presets (including yuc-codex).
+if [[ -f "$workspace/.dsh/yuc-agent-presets.cordis.patch.yml" ]]; then
+  args+=(--patch "$workspace/.dsh/yuc-agent-presets.cordis.patch.yml")
+fi
+args+=(
+  --host 127.0.0.1
+  --port "$port"
+  --trusted-host "$tailnet_host"
+  --no-open
+)
+exec node --expose-internals "$dsh_entry" "${args[@]}"

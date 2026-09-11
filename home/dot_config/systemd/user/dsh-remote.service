@@ -1,0 +1,18 @@
+[Unit]
+Description=DeepSeek Harness private remote Web UI
+Documentation=https://github.com/deepseek-ai/deepseek-harness
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/dsh-remote
+Restart=on-failure
+RestartSec=15
+
+# DSH remains on loopback. Tailscale Serve is the only network-facing proxy.
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

@@ -67,6 +67,11 @@ mise run tools:optional:install
 
 ### AI Workflow Critical Additions
 
+- **[Codebase Memory MCP](https://github.com/DeusData/codebase-memory-mcp)** - pinned
+  structural code graph MCP (`0.9.0`, UI-enabled release). Home Manager installs
+  the CLI for editor stdio clients and keeps its loopback-only graph browser
+  running as `codebase-memory-mcp-ui.service` at `http://127.0.0.1:9749` on
+  Linux. Both use the shared indexes under `~/.cache/codebase-memory-mcp`.
 - **[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)** - plugin-based agent harness
   (developer preview); install the pinned `dsh` CLI with `mise run tools:deepseek-harness:install`
 - **[repomix](https://github.com/yamadashy/repomix)** - package repository context for LLM prompts

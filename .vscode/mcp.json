@@ -3,7 +3,7 @@
     "codebase-memory-mcp": {
       "type": "stdio",
       "command": "codebase-memory-mcp",
-      "args": [],
+      "args": ["--ui=false"],
       "cwd": "${workspaceFolder}",
       "env": {
         "CBM_ALLOWED_ROOT": "${workspaceFolder}"

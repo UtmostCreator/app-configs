@@ -7,7 +7,6 @@ available in Git and is intentionally not duplicated here.
 
 | Item | Current evidence | Next action |
 | --- | --- | --- |
-| RestSift structural graph | `.vscode/mcp.json` is installed, but `res refactor audit . --refresh-graph` cannot run because `codebase-memory-mcp` is absent from `PATH`. The optional generated `.github` skill was intentionally not retained. | Install `codebase-memory-mcp`, allow this repository root, then rerun the graph-backed audit. |
 | Legacy package audit helper | `repo-docs/install-dev-tools.sh` is used only by `ops/generate-package-matrix.sh` and still describes a zsh/Homebrew-era install flow. | Retire the helper and its validator dependencies in one focused change, or update it as a supported macOS fallback. |
 
 ## Product decisions

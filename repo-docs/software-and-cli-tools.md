@@ -73,7 +73,16 @@ mise run tools:optional:install
   running as `codebase-memory-mcp-ui.service` at `http://127.0.0.1:9749` on
   Linux. Both use the shared indexes under `~/.cache/codebase-memory-mcp`.
 - **[DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)** - plugin-based agent harness
-  (developer preview); install the pinned `dsh` CLI with `mise run tools:deepseek-harness:install`
+  (developer preview); install the pinned `0.1.2-rc.1` CLI with `mise run tools:deepseek-harness:install`.
+  On the Node/Nix installation, start it from the target repository with
+  `node --expose-internals "$(readlink -f "$(command -v dsh)")" web`;
+  this release needs the Node flag for plugin resolution and live profile reload.
+  The UI listens on `http://127.0.0.1:3080` and opens an authenticated startup link.
+  Install the matching Codex bridge with
+  `dsh plugin --profile web add @deepseek-ai/dsh-subagent-codex@0.1.2-rc.1`
+  (its npm `latest` tag still points to an older release). Copy the shipped `ptc`
+  preset and enable its `tool-subagent-codex` row; enter the DeepSeek key in
+  **Settings → Models**, outside the repository.
 - **[repomix](https://github.com/yamadashy/repomix)** - package repository context for LLM prompts
 - **[files-to-prompt](https://github.com/simonw/files-to-prompt)** - concatenate targeted file sets with path headers
 - **[code2prompt](https://github.com/mufeedvh/code2prompt)** - template-driven prompt/context generation

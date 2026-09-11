@@ -76,6 +76,9 @@ if is_nixos; then
   cur_timezone="$(bash "$REPO_ROOT/ops/detect-timezone.sh")"
   if [[ "$cur_timezone" == "Europe/London" ]]; then ok "system time zone is Europe/London"
   else note "system time zone is ${cur_timezone:-unknown}, not Europe/London — run: sudo sys-setup --apply"; rebuild_needed=1; fi
+
+  if systemctl is-active tailscaled >/dev/null 2>&1; then ok "Tailscale daemon active"
+  else note "Tailscale daemon inactive — run: sudo sys-setup --apply"; rebuild_needed=1; fi
 fi
 
 hdr "Summary"

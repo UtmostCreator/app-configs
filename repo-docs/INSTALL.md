@@ -170,33 +170,89 @@ mise run update            # report only: shows the full plan, mutates nothing
 mise run update:apply      # apply unattended (brewup equivalent)
 ```
 
-`ops/update-all.sh` runs, in order:
+`ops/update-all.sh` runs as a transaction. **Nothing is mutated until every
+precondition passes**, and each phase reports one line instead of raw output:
 
-1. `git pull --ff-only` (only if the worktree is clean)
-2. `nix flake update ./nix` then `nix flake check ./nix`
-3. `chezmoi apply --force` (snapshots `$HOME` first)
-4. `home-manager switch` / `darwin-rebuild switch`
-5. `nix profile upgrade --all` (base tools)
-6. `mise upgrade`
-7. `lefthook install`
-8. safe cleanup (step 3 below) unless `NO_CLEANUP=1`
+| Phase | What it does |
+| --- | --- |
+| `PRECHECK` | canonical repo path, git worktree + upstream, required tools, free disk |
+| `SNAPSHOT` | `$HOME` dotfiles, `flake.lock`, current Home Manager generation, mise versions |
+| `APPLY` | `git pull --ff-only` · `nix flake update` + `check` · `chezmoi apply` · `home-manager switch` / `darwin-rebuild switch` · `nix profile upgrade` · `mise upgrade` · `lefthook install` · Syncthing ignores |
+| `VERIFY` | generation activated, no chezmoi drift, core commands on `PATH`, no failed user units, no missing mise tools |
+| `CLEANUP` | safe, non-destructive (section 3 below) unless `NO_CLEANUP=1` |
+| `SUMMARY` | package delta, warnings worth acting on, rollback handle, log path |
 
-An applied update ends with a version summary for Home Manager, the standalone
-Nix profile, and active mise tools. Changed packages are shown as
-`package: old => new`; unchanged layers are reported explicitly.
+A **dirty worktree aborts the run** before anything changes: updating on top of
+local edits mixes your changes, upstream commits and a new lock into one
+conflict. Commit, stash, or pass `--allow-dirty` to accept that deliberately.
+
+Command output goes to a per-run log under
+`~/.local/state/sys-update/runs/<timestamp>.log`; the terminal only shows raw
+text when a step fails or you pass `--verbose`.
 
 ```bash
-bash ops/update-all.sh --apply          # one confirmation prompt
-bash ops/update-all.sh --apply --yes     # no prompt (cron/unattended)
+sys-update                             # apply, with one confirmation prompt
+bash ops/update-all.sh                 # report only: the full plan, no mutation
+bash ops/update-all.sh --apply --yes   # no prompt (cron/unattended)
+bash ops/update-all.sh --apply --allow-dirty   # update with local changes
+bash ops/update-all.sh --apply --verbose       # mirror raw output too
 NO_CLEANUP=1 bash ops/update-all.sh --apply
 ```
+
+Useful flags: `--full-check` (`nix flake check --all-systems`, every platform
+rather than this host), `--force` (`chezmoi apply --force`, overwrite local
+edits to managed files), `--no-pull`, `--skip-verify`, `--gc` (also reclaim
+generations older than `KEEP_DAYS`).
+
+### What the package summary reports
+
+Only **top-level** packages — the ones you asked for — compared before and
+after, per manager:
+
+```text
+Home Manager
+  ↑ 12 upgraded   + 2 added   - 1 removed   (143 unchanged)
+
+  REMOVED
+    claude-code             2.1.263
+  UPGRADED
+    firefox                 155.0.1 → 156.0
+```
+
+Removals are listed first, because an unexpected disappearance matters more
+than a routine patch bump. Dependency/closure churn is deliberately *not*
+reported: it is noise in an answer to "what happened to my tools?".
+
+Package ownership is one-way, so nothing is managed twice:
+
+| Layer | Owns |
+| --- | --- |
+| Home Manager | applications and CLI packages declared in `nix/` |
+| `nix profile` | only the bootstrap tools installed from a flake by hand (`chezmoi`, `mise`, `lefthook`, …) |
+| mise | language runtimes and npm-only CLIs |
+
+`nix profile upgrade` is given the exact element names it owns, so
+`home-manager-path` — which Home Manager installs — is never asked to upgrade
+itself.
+
+### Undo an update
+
+Every applied run records a rollback handle (Home Manager generation,
+`flake.lock` backup, dotfiles snapshot):
+
+```bash
+sys-update rollback          # re-activate the previous generation + restore the lock
+```
+
+The dotfiles snapshot is *shown*, not auto-restored — the command prints the
+exact `cp -a <snapshot>/. ~/` to run if you want it back.
 
 ## 3. Clean up safely (non-destructive by default)
 
 `ops/cleanup.sh` reclaims disk **without destroying rollbacks**.
 
 ```bash
-mise run cleanup           # report only (shows store size + generation count)
+mise run cleanup           # report only (shows the plan + generation count)
 mise run cleanup:apply     # SAFE tier: store optimise + cache prune; keeps ALL generations
 mise run cleanup:gc        # SAFE + remove generations older than KEEP_DAYS (default 14d)
 ```

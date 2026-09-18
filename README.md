@@ -126,7 +126,10 @@ rebuild pending` = run step 2; `NOT READY` = run step 1. On non-NixOS hosts step
 | Command | Mutates? | Purpose |
 |---------|:--------:|---------|
 | `sys-readiness` | no | Check whether the host is fully configured |
-| `sys-update` | yes | Update apps, CLI packages, dotfiles, and hooks |
+| `sys-update` | yes | Update apps, CLI packages, dotfiles, and hooks (aborts on a dirty repo; `--allow-dirty` overrides) |
+| `sys-update rollback` | yes | Undo the last update: previous Home Manager generation + `flake.lock` |
+| `sys-update-log` | no | Read the log of the most recent update run |
+| `bash ops/update-all.sh` | no | Report-only: show the full update plan |
 | `sys-cleanup` | yes | De-dup Nix store + prune caches (keeps all rollbacks) |
 | `sys-cleanup --gc` | yes | Also remove aged generations (keeps recent rollbacks) |
 | `mise run sync` | no | Preview pending dotfile changes |
@@ -153,7 +156,9 @@ Each `sys-*` is a thin wrapper over a `ops/*.sh` with `mise run` equivalents
 | `sys-readiness` | no | Read-only status check |
 | `sys-setup` | no | Preview NixOS system setup |
 | `sudo sys-setup --apply` | yes | Applies NixOS system config |
-| `sys-update` | yes | Updates configured tools and dotfiles |
+| `bash ops/update-all.sh` | no | Report only: the update plan |
+| `sys-update` | yes | Updates configured tools and dotfiles (preflight must pass first) |
+| `sys-update rollback` | yes | Restores the previous generation + lock |
 | `sys-cleanup` | yes | Safe cleanup (keeps rollbacks) |
 | `sys-cleanup --gc` | yes | Removes older generations |
 | `bash ops/uninstall.sh` | no | Report only |

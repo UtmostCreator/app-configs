@@ -6,6 +6,8 @@
 
   Auto-sourced by fish (conf.d). Provides:
     sys-update    -> update all apps/CLI/dotfiles + safe cleanup (brewup)
+    sys-update rollback -> undo the last update (HM generation + flake.lock)
+    sys-update-log-> tail the log of the most recent update run
     sys-cleanup   -> de-dup store + prune caches (keeps rollbacks)
     sys-cleanup-gc-> + remove aged generations (keeps recent)
     sys-install   -> re-run unattended full install
@@ -25,6 +27,19 @@ end
 
 function sys-update --description 'Update all installed apps/CLI + config (brewup equivalent)'
     bash "$DOTFILES_DIR/ops/update-all.sh" --apply $argv
+end
+
+function sys-update-log --description 'Show the log of the most recent sys-update run'
+    set -l runs "$XDG_STATE_HOME"
+    test -n "$runs"; or set runs "$HOME/.local/state"
+    # Run ids are UTC timestamps, so a reverse sort is newest-first — and
+    # find never trips fish's "unmatched wildcard" error when there are none.
+    set -l latest (find "$runs/sys-update/runs" -maxdepth 1 -name '*.log' -type f 2>/dev/null | sort -r | head -1)
+    if test -z "$latest"
+        echo "no sys-update runs recorded yet"
+        return 1
+    end
+    less -R -- "$latest"
 end
 
 function sys-cleanup --description 'Safe cleanup of app store + caches (keeps all rollbacks)'

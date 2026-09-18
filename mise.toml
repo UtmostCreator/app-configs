@@ -31,12 +31,14 @@ set -e
 bash -n ops/bootstrap.sh ops/detect-host.sh ops/snapshot-home.sh \
         ops/validate-config.sh ops/check-source-of-truth.sh \
         ops/generate-package-matrix.sh ops/doctor.sh \
-        ops/install.sh ops/update-all.sh ops/cleanup.sh \
+        ops/install.sh ops/update-all.sh ops/update-version-report.sh \
+        ops/lib/update-facts.sh ops/lib/update-ui.sh ops/cleanup.sh \
         ops/readiness.sh ops/system-setup.sh ops/tailscale-setup.sh ops/vscode-extensions.sh \
         ops/detect-os-disks.sh ops/syncthing-obsidian-stignore.sh 2>/dev/null || \
   echo 'missing: one or more scripts not yet created (Phase 7)'
 if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck ops/snapshot-home.sh ops/validate-config.sh \
+  shellcheck -x ops/snapshot-home.sh ops/validate-config.sh \
+              ops/update-version-report.sh ops/lib/update-facts.sh ops/lib/update-ui.sh \
               ops/check-source-of-truth.sh ops/generate-package-matrix.sh \
               ops/doctor.sh ops/install.sh ops/update-all.sh \
               ops/cleanup.sh ops/readiness.sh ops/system-setup.sh \
@@ -232,6 +234,10 @@ run = "bash ops/update-all.sh"
 [tasks."update:apply"]
 description = "Apply the full update unattended (brewup equivalent)"
 run = "bash ops/update-all.sh --apply --yes"
+
+[tasks."update:rollback"]
+description = "Undo the last applied update (Home Manager generation + flake.lock)"
+run = "bash ops/update-all.sh rollback"
 
 [tasks.readiness]
 description = "Am I all set? Verify everything is installed + usable; reports what's left"

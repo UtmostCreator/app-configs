@@ -3,6 +3,10 @@
 # tools (via nix flake update + home-manager switch + nix profile upgrade),
 # mise-managed tools, dotfiles (chezmoi), git hooks, then a safe cleanup.
 # The Linux/NixOS equivalent of macOS `brewup`. Usable from any shell, anywhere.
+#
+# Preconditions are checked before anything is mutated (a dirty worktree stops
+# the run; --allow-dirty overrides). `sys-update rollback` undoes the last run.
+# See: bash ops/update-all.sh --help
 set -euo pipefail
 DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
 exec bash "$DOTFILES_DIR/ops/update-all.sh" --apply "$@"

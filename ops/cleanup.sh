@@ -8,7 +8,7 @@
 #     - nix store --optimise   (hard-link identical files; never deletes refs)
 #     - mise cache prune        (remove stale download cache)
 #     - npm cache verify        (integrity check + dedupe, non-destructive)
-#     - report Nix store size + Home Manager generation count
+#     - report reclaimed space + Home Manager generation count
 #
 #   AGED (opt-in, --gc):
 #     - nix-collect-garbage --delete-older-than <N>d
@@ -55,10 +55,21 @@ run()  {
   else log "+ $*"; "$@" || warn "step returned non-zero: $*"; fi
 }
 
-store_size() { du -sh /nix/store 2>/dev/null | awk '{print $1}'; }
+# Free space on the filesystem holding the store, in KiB. `df` answers
+# instantly; `du -sh /nix/store` walks tens of gigabytes to tell us the same
+# thing twice per run, and its answer is unchanged by hard-linking anyway.
+store_free_kb() { df -Pk /nix 2>/dev/null | awk 'NR==2 {print $4}'; }
+human_kb() {
+  awk -v kb="${1:-0}" 'BEGIN {
+    if (kb < 0) kb = -kb
+    split("KiB MiB GiB TiB", u, " "); i = 1
+    while (kb >= 1024 && i < 4) { kb /= 1024; i++ }
+    printf "%.1f %s", kb, u[i]
+  }'
+}
 
+FREE_BEFORE="$(store_free_kb)"
 log "KEEP_DAYS=$KEEP_DAYS   gc=$([[ $DO_GC == 1 ]] && echo on || echo off)"
-log "Nix store size (before): $(store_size)"
 if have home-manager; then
   log "Home Manager generations: $(home-manager generations 2>/dev/null | wc -l)"
 fi
@@ -109,6 +120,15 @@ else
 fi
 
 step "Done"
-log "Nix store size (after):  $(store_size)"
+FREE_AFTER="$(store_free_kb)"
+if [[ -n "${FREE_BEFORE:-}" && -n "${FREE_AFTER:-}" ]]; then
+  RECLAIMED_KB=$((FREE_AFTER - FREE_BEFORE))
+  # Only mention disk when it actually moved; "63G => 63G" is not news.
+  if (( RECLAIMED_KB > 1024 )); then
+    log "freed $(human_kb "$RECLAIMED_KB") on /nix"
+  else
+    log "no measurable space reclaimed ($(human_kb "$FREE_AFTER") free on /nix)"
+  fi
+fi
 [[ "$MODE" == "report" ]] && log "Report only. Re-run with --apply (add --gc to reclaim aged generations)."
 exit 0

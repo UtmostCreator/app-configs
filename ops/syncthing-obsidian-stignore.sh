@@ -204,6 +204,9 @@ elif [[ "$APPLY" -eq 0 ]]; then
   log "DRY-RUN (no changes). Re-run with --apply to install and sweep."
 else
   log "Done. Updated $changed_count folder(s); removed $removed_total conflict file(s)."
-  log "Restart/rescan in the Syncthing Web UI (http://127.0.0.1:8384) if it"
-  log "does not pick up the new .stignore automatically."
+  # The rescan advice only applies when a .stignore actually changed.
+  if [[ "$changed_count" -gt 0 ]]; then
+    log "Restart/rescan in the Syncthing Web UI (http://127.0.0.1:8384) if it"
+    log "does not pick up the new .stignore automatically."
+  fi
 fi

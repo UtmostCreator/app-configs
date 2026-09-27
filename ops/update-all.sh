@@ -350,6 +350,14 @@ lock_inputs() {
   jq -r '.nodes | to_entries[] | [.key, (.value.locked.rev // .value.locked.narHash // "")] | @tsv' "$1" 2>/dev/null
 }
 LOCK_BEFORE="$(lock_inputs "$REPO_ROOT/nix/flake.lock")"
+# Only a lock that matches HEAD is ours to commit afterwards; local edits to it
+# (possible under --allow-dirty) are the user's to keep or discard.
+LOCK_WAS_CLEAN=0
+if [[ "$GIT_STATE" != "no-repo" ]] \
+  && git -C "$REPO_ROOT" ls-files --error-unmatch nix/flake.lock >/dev/null 2>&1 \
+  && git -C "$REPO_ROOT" diff --quiet HEAD -- nix/flake.lock 2>/dev/null; then
+  LOCK_WAS_CLEAN=1
+fi
 if ui_run "flake inputs" nix flake update --flake "$REPO_ROOT/nix"; then
   if [[ "$MODE" == "apply" ]]; then
     LOCK_AFTER="$(lock_inputs "$REPO_ROOT/nix/flake.lock")"
@@ -388,7 +396,7 @@ fi
 # chezmoi -------------------------------------------------------------------
 if [[ "$STEP_FAILED" == 0 ]] && have chezmoi; then
   PENDING="$(chezmoi status 2>/dev/null | grep -c . || true)"
-  CHEZMOI_ARGS=(apply)
+  CHEZMOI_ARGS=(apply --no-tty)
   [[ "$CHEZMOI_FORCE" == 1 ]] && CHEZMOI_ARGS+=(--force)
   # The diff is recorded before the apply so the log always shows what changed.
   [[ "$MODE" == "apply" ]] && { ui_log_only ""; ui_log_only "\$ chezmoi diff"; chezmoi diff >> "${UI_LOG:-/dev/null}" 2>&1 || true; }
@@ -485,6 +493,23 @@ if [[ "$STEP_FAILED" == 1 ]]; then
   printf '\n%sUpdate failed.%s Full log: %s\n' "$UI_C_ERR" "$UI_C_OFF" "${RUN_LOG:-n/a}"
   [[ -n "$HM_GEN_BEFORE" ]] && printf '  Roll back with: sys-update rollback   (Home Manager generation %s)\n' "$HM_GEN_BEFORE"
   exit 1
+fi
+
+# commit the lock -----------------------------------------------------------
+# The update proved the new lock builds and activates. Leaving it uncommitted
+# would make the next run stop at the dirty-worktree gate on our own output.
+if [[ "$MODE" == "apply" && "$GIT_STATE" != "no-repo" ]] \
+  && ! git -C "$REPO_ROOT" diff --quiet HEAD -- nix/flake.lock 2>/dev/null; then
+  if [[ "$LOCK_WAS_CLEAN" != 1 ]]; then
+    ui_warn "flake.lock" "not committed (it had local edits before the update)"
+    ui_note warn git "flake.lock not committed: it had local edits before the update"
+  # --only commits the lock alone, whatever else is staged or modified.
+  elif ui_run "flake.lock" git -C "$REPO_ROOT" commit --only -m "chore(nix): update flake inputs" -- nix/flake.lock; then
+    ui_ok "flake.lock" "committed ($(git -C "$REPO_ROOT" rev-parse --short HEAD))"
+  else
+    ui_warn "flake.lock" "commit failed; the new lock is left uncommitted (see the run log)"
+    ui_note warn git "flake.lock not committed — commit it before the next sys-update"
+  fi
 fi
 
 # ── 5. VERIFY ───────────────────────────────────────────────────────────────

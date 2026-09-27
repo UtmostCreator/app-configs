@@ -101,3 +101,36 @@ setup() {
   [ ! -e "$BATS_TEST_TMPDIR/should-not-exist" ]
   [[ "$output" == *"touch"* ]]
 }
+
+@test "a captured step never waits on the terminal for input" {
+  # Output is hidden, so a prompt would be invisible: the step must see EOF.
+  run bash -c '
+    source "$1/ops/lib/update-ui.sh"; ui_init "$2"
+    echo typed | timeout 5 bash -c "
+      source \"\$0/ops/lib/update-ui.sh\"; ui_init \"\$1\"
+      ui_run prompt bash -c \"read -r ans; echo got=\\\$ans\"
+    " "$1" "$2"
+  ' _ "$REPO_ROOT" "$UI_LOG_FILE"
+  [ "$status" -ne 124 ]
+  ! grep -q "got=typed" "$UI_LOG_FILE"
+}
+
+@test "a long step shows it is still running and how to follow it" {
+  run bash -c '
+    source "$1/ops/lib/update-ui.sh"; ui_init "$2"
+    UI_PROGRESS=1 UI_TICK=0.2
+    ui_run "home-manager" sleep 1
+  ' _ "$REPO_ROOT" "$UI_LOG_FILE"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"home-manager"*"running"* ]]
+  [[ "$output" == *"tail -f "*"sys-update-step."* ]]
+}
+
+@test "progress is off when the output is not a terminal" {
+  run bash -c '
+    source "$1/ops/lib/update-ui.sh"; ui_init "$2"
+    UI_TICK=0.2
+    ui_run "home-manager" sleep 1
+  ' _ "$REPO_ROOT" "$UI_LOG_FILE"
+  [[ "$output" != *"running"* ]]
+}

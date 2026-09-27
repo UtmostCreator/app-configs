@@ -177,7 +177,7 @@ precondition passes**, and each phase reports one line instead of raw output:
 | --- | --- |
 | `PRECHECK` | canonical repo path, git worktree + upstream, required tools, free disk |
 | `SNAPSHOT` | `$HOME` dotfiles, `flake.lock`, current Home Manager generation, mise versions |
-| `APPLY` | `git pull --ff-only` · `nix flake update` + `check` · `chezmoi apply` · `home-manager switch` / `darwin-rebuild switch` · `nix profile upgrade` · `mise upgrade` · `lefthook install` · Syncthing ignores |
+| `APPLY` | `git pull --ff-only` · `nix flake update` + `check` · `chezmoi apply` · `home-manager switch` / `darwin-rebuild switch` · `nix profile upgrade` · `mise upgrade` · `lefthook install` · Syncthing ignores · commit the new `flake.lock` |
 | `VERIFY` | generation activated, no chezmoi drift, core commands on `PATH`, no failed user units, no missing mise tools |
 | `CLEANUP` | safe, non-destructive (section 3 below) unless `NO_CLEANUP=1` |
 | `SUMMARY` | package delta, warnings worth acting on, rollback handle, log path |
@@ -185,6 +185,9 @@ precondition passes**, and each phase reports one line instead of raw output:
 A **dirty worktree aborts the run** before anything changes: updating on top of
 local edits mixes your changes, upstream commits and a new lock into one
 conflict. Commit, stash, or pass `--allow-dirty` to accept that deliberately.
+Once the update has built and activated, the new `flake.lock` is committed
+on its own (`chore(nix): update flake inputs`), so the next run starts clean.
+A lock that already had local edits before the run is left for you to commit.
 
 Command output goes to a per-run log under
 `~/.local/state/sys-update/runs/<timestamp>.log`; the terminal only shows raw

@@ -16,6 +16,8 @@ UI_LOG=""            # run log, appended to by every step
 UI_LAST_LOG=""       # output of the most recent ui_run
 UI_VERBOSE=0
 UI_DRY_RUN=0
+UI_PROGRESS=0        # live "still running" line for captured steps (TTY only)
+UI_TICK=1            # seconds between progress redraws
 UI_COUNT_OK=0
 UI_COUNT_WARN=0
 UI_COUNT_ERR=0
@@ -35,6 +37,7 @@ ui_init() {
     : > "$UI_LOG" 2>/dev/null || UI_LOG=""
   fi
   UI_LAST_LOG="${UI_LAST_LOG:-}"
+  if [[ -t 1 ]]; then UI_PROGRESS=1; else UI_PROGRESS=0; fi
   if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then
     UI_C_OK=$'\033[32m'; UI_C_WARN=$'\033[33m'; UI_C_ERR=$'\033[31m'
     UI_C_DIM=$'\033[2m'; UI_C_BOLD=$'\033[1m'; UI_C_OFF=$'\033[0m'
@@ -74,25 +77,51 @@ ui_section() { printf '\n%s%s%s\n' "$UI_C_BOLD" "$1" "$UI_C_OFF"; ui_log_only "=
 #
 # Runs the command with its output captured. Returns the command's own status
 # so the caller decides whether that means ok, warn or error.
+#
+# The command gets no stdin: its output is hidden, so a prompt would wait
+# forever on input nobody can see. It fails on EOF instead and the step
+# reports it. On a terminal a live line shows the step is still running and
+# where to follow its output, so a long build never looks like a hang.
 ui_run() {
   local label="$1"; shift
   if [[ "$UI_DRY_RUN" == 1 ]]; then
     _ui_line "$UI_C_DIM" "·" "$label" "would run: $*"
     return 0
   fi
-  local tmp status=0
+  local tmp status=0 ticker=""
   tmp="$(mktemp "${TMPDIR:-/tmp}/sys-update-step.XXXXXX")"
   ui_log_only "" ; ui_log_only "\$ $*"
   if [[ "$UI_VERBOSE" == 1 ]]; then
-    "$@" 2>&1 | tee "$tmp"
+    "$@" 2>&1 < /dev/null | tee "$tmp"
     status="${PIPESTATUS[0]}"
   else
-    "$@" > "$tmp" 2>&1
+    if [[ "$UI_PROGRESS" == 1 ]]; then
+      _ui_progress "$label" "$tmp" & ticker=$!
+    fi
+    "$@" > "$tmp" 2>&1 < /dev/null
     status=$?
+    if [[ -n "$ticker" ]]; then
+      kill "$ticker" 2>/dev/null; wait "$ticker" 2>/dev/null
+      printf '\r\033[K'
+    fi
   fi
   [[ -n "$UI_LOG" ]] && cat "$tmp" >> "$UI_LOG"
   UI_LAST_LOG="$tmp"
   return "$status"
+}
+
+# _ui_progress <label> <capture> — redraws "… label  running m:ss" until
+# killed. The run log only gets a step's output once it finishes, so the hint
+# points at the live per-step capture instead.
+_ui_progress() {
+  local label="$1" log="$2" start=$SECONDS parent=$PPID elapsed
+  while kill -0 "$parent" 2>/dev/null; do
+    elapsed=$((SECONDS - start))
+    printf '\r\033[K  %s…%s %-*s %srunning %d:%02d · tail -f %s%s' \
+      "$UI_C_DIM" "$UI_C_OFF" "$UI_LABEL_WIDTH" "$label" \
+      "$UI_C_DIM" $((elapsed / 60)) $((elapsed % 60)) "$log" "$UI_C_OFF"
+    sleep "$UI_TICK"
+  done
 }
 
 # ui_note <severity> <source> <message> — queued for the end-of-run block.

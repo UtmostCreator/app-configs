@@ -12,6 +12,8 @@ setup() {
   export SYS_UPDATE_STATE_DIR="$HOME/.local/state/sys-update"
   export HOST_PROFILE=linux-desktop
   export STUB_LOG="$BATS_TEST_TMPDIR/calls.log"
+  # The updater commits the new lock; the fake $HOME has no git identity.
+  export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
   mkdir -p "$HOME/.local/state/nix/profiles" "$HOME/.nix-profile"
 
   # A previous Home Manager generation, so the rollback handle has something
@@ -63,9 +65,12 @@ STUB
 
 run_update() { run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup --skip-verify "$@"; }
 
-# An update rewrites flake.lock, so a second run in one test would otherwise
-# trip the dirty-worktree gate.
-reset_repo() { git -C "$FAKE" checkout -- .; : > "$STUB_LOG"; }
+# Put the lock back to "old" so the next run has an input to update again.
+reset_repo() {
+  git -C "$FAKE" reset -q --hard "$(git -C "$FAKE" rev-list --max-parents=0 HEAD)"
+  : > "$STUB_LOG"
+}
+commits() { git -C "$FAKE" rev-list --count HEAD; }
 
 @test "a clean run keeps raw command output off the terminal" {
   run_update
@@ -107,10 +112,15 @@ reset_repo() { git -C "$FAKE" checkout -- .; : > "$STUB_LOG"; }
 
 @test "chezmoi is applied without --force unless it is asked for" {
   run_update
-  ! grep -q 'chezmoi apply --force' "$STUB_LOG"
+  ! grep -q 'chezmoi apply.*--force' "$STUB_LOG"
   reset_repo
   run_update --force
-  grep -q 'chezmoi apply --force' "$STUB_LOG"
+  grep -q 'chezmoi apply.*--force' "$STUB_LOG"
+}
+
+@test "chezmoi never prompts: a hand-edited target fails the step instead" {
+  run_update
+  grep -q 'chezmoi apply --no-tty' "$STUB_LOG"
 }
 
 @test "the flake lock is only checked for this host unless --full-check" {
@@ -125,6 +135,51 @@ reset_repo() { git -C "$FAKE" checkout -- .; : > "$STUB_LOG"; }
   run_update
   [[ "$output" == *"flake inputs"* ]]
   [[ "$output" == *"1 input(s) updated"* ]]
+}
+
+@test "a successful update commits the new lock so the next run starts clean" {
+  run_update
+  [ "$status" -eq 0 ]
+  [ -z "$(git -C "$FAKE" status --porcelain)" ]
+  [ "$(git -C "$FAKE" log -1 --format=%s)" = "chore(nix): update flake inputs" ]
+  [ "$(git -C "$FAKE" diff --name-only HEAD~1 HEAD)" = "nix/flake.lock" ]
+  [[ "$output" == *"committed"* ]]
+
+  # the regression: a second run used to stop at the dirty-worktree gate
+  run_update
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"stopped before"* ]]
+  # nothing changed this time, so nothing new is committed
+  [ "$(commits)" -eq 2 ]
+}
+
+@test "a failed update leaves the lock uncommitted" {
+  cat > "$STUBS/home-manager" <<'STUB'
+#!/usr/bin/env bash
+exit 1
+STUB
+  chmod +x "$STUBS/home-manager"
+  run_update
+  [ "$status" -ne 0 ]
+  [ "$(commits)" -eq 1 ]
+}
+
+@test "--allow-dirty commits only the lock and leaves other changes alone" {
+  printf 'scratch\n' > "$FAKE/untracked"
+  printf 'edit\n' > "$FAKE/nix/flake.nix.note"
+  git -C "$FAKE" add nix/flake.nix.note
+  run_update --allow-dirty
+  [ "$status" -eq 0 ]
+  [ "$(git -C "$FAKE" diff --name-only HEAD~1 HEAD)" = "nix/flake.lock" ]
+  [ "$(git -C "$FAKE" status --porcelain)" = "$(printf 'A  nix/flake.nix.note\n?? untracked')" ]
+}
+
+@test "a lock that already had local edits is never committed for you" {
+  printf '{"nodes":{"nixpkgs":{"locked":{"rev":"mine"}}}}\n' > "$FAKE/nix/flake.lock"
+  run_update --allow-dirty
+  [ "$status" -eq 0 ]
+  [ "$(commits)" -eq 1 ]
+  [[ "$output" == *"not committed"* ]]
 }
 
 @test "a failing step stops the run and points at the rollback" {

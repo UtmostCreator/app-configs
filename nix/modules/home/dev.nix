@@ -65,9 +65,22 @@ let
       inherit (gremlinsArtifact) hash;
     };
     sourceRoot = ".";
+    # Mutants such as `i++` -> `i--` turn loops into unbounded allocators that
+    # grow for the whole timeout (5-9 GB each, several at once), which OOM-killed
+    # pushes and the desktop. A per-process address-space cap makes such a mutant
+    # die within seconds as "fatal error: out of memory" (reported KILLED); the
+    # full unmutated ya-under-control suite passes under it.
+    # GREMLINS_MAX_VMEM_KB overrides the cap for one run.
     installPhase = ''
       runHook preInstall
-      install -Dm755 gremlins "$out/bin/gremlins"
+      install -Dm755 gremlins "$out/libexec/gremlins"
+      mkdir -p "$out/bin"
+      cat > "$out/bin/gremlins" <<EOF
+      #!${pkgs.runtimeShell}
+      ulimit -v \''${GREMLINS_MAX_VMEM_KB:-4194304}
+      exec "$out/libexec/gremlins" "\$@"
+      EOF
+      chmod 755 "$out/bin/gremlins"
       runHook postInstall
     '';
   };
@@ -166,6 +179,15 @@ in
     ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       pkgs.bubblewrap # bwrap: preferred Codex CLI Linux sandbox helper
     ];
+
+  # Gremlins defaults to one worker per CPU; with a runaway mutant per worker the
+  # memory cap above still multiplies. Half the cores leaves the desktop usable.
+  # Read from $XDG_CONFIG_HOME/gremlins/gremlins/.gremlins.yaml; a repo-level
+  # .gremlins.yaml still overrides it.
+  xdg.configFile."gremlins/gremlins/.gremlins.yaml".text = ''
+    unleash:
+      workers: 8
+  '';
 
   # Keep the graph browser available at http://127.0.0.1:9749 even when no
   # editor is open. MCP clients still use their own stdio worker and the shared

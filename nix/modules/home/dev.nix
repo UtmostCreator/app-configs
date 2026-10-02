@@ -5,16 +5,16 @@
   ...
 }:
 let
-  codebaseMemoryMcpVersion = "0.9.0";
+  codebaseMemoryMcpVersion = "0.11.0";
   codebaseMemoryMcpArtifact =
     {
       x86_64-linux = {
         platform = "linux-amd64";
-        hash = "sha256-wwkBkhugJzjnWdmkY78gWi/jH9j+7UH7hO02TxgBXeo=";
+        hash = "sha256-AyszwYM5GaLR3mf/Y2f6bqRq7oaJyG7yI8iPrjtuRTY=";
       };
       aarch64-darwin = {
         platform = "darwin-arm64";
-        hash = "sha256-WS+E5E1ejqua5xNOmbFUDOPCjoS2hCBPjznN5RYg0O4=";
+        hash = "sha256-Te5/OLY3QOZ1HXp+1+sQKRwfKj6iQV9ZncaDcMoKLRg=";
       };
     }
     .${pkgs.stdenv.hostPlatform.system};

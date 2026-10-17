@@ -18,6 +18,9 @@
   #     area. This extension restores the top-bar tray (notification area) so
   #     Flameshot's tray icon (and other AppIndicator/StatusNotifier apps) show
   #     up. Required for the Flameshot resident service's icon. Package in gui.nix.
+  # Keep grand-theft-focus disabled: it activates any window requesting
+  # attention, including Telegram on incoming messages. App hotkeys already
+  # activate their target explicitly through the Vicinae window API.
   #
   # NOTE: GNOME loads newly enabled extensions at the start of a Shell
   # session. On Wayland (this host), the Shell cannot be hot-reloaded, so a

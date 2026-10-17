@@ -4,7 +4,7 @@
     "type": "command",
     "command": "~/.claude/statusline.sh",
     "padding": 2,
-    "refreshInterval": 30
+    "refreshInterval": 5
   },
   "subagentStatusLine": {
     "type": "command",

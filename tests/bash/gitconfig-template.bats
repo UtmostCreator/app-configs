@@ -70,3 +70,8 @@ render_gitconfig() {
     [ "$status" -eq 0 ]
     [ "$output" = "test@example.test" ]
 }
+
+@test "no plaintext credential store is configured" {
+    render_gitconfig '{"name":"Test User","email":"test@example.test","signingKey":""}'
+    ! grep -Eq '^[[:space:]]*helper[[:space:]]*=[[:space:]]*store' "$RENDERED"
+}

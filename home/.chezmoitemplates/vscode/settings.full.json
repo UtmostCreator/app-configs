@@ -263,10 +263,10 @@
   },
   // Language associations (Laravel / Statamic)
   "files.associations": {
+    "*.embeddedhtml": "html",
     "*.page-template": "vue",
     "*.layout-template": "vue",
     "*.vue": "vue",
-    "*.embeddedhtml": "html",
     "*.blade.php": "blade",
     "*.antlers.html": "html",
     "*.antlers.php": "php",
@@ -709,7 +709,7 @@
   // =========================================================
   // UI/UX & APPEARANCE
   // =========================================================
-  "workbench.colorTheme": "Default Dark+",
+  "workbench.colorTheme": "Dark+",
   "workbench.iconTheme": "material-icon-theme",
   "workbench.tree.indent": 16,
   "window.title": "${dirty}${activeEditorMedium}${separator}${rootName}",
@@ -946,6 +946,14 @@
   "editor.tokenColorCustomizations": {
     "textMateRules": []
   },
+  "yaml.disableSchemaDetection": [
+    "**/.github/workflows/*.yml",
+    "**/.github/workflows/*.yaml",
+    "**/.gitea/workflows/*.yml",
+    "**/.gitea/workflows/*.yaml",
+    "**/.forgejo/workflows/*.yml",
+    "**/.forgejo/workflows/*.yaml"
+  ],
   // (Optional) If you use Laravel Extra IntelliSense and want the right PHP runtime:
   // "laravelExtraIntellisense.phpCommand": "${env:HOME}/.config/herd/bin/php"
 }

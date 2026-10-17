@@ -53,7 +53,7 @@ printf '%s %s\n' "$tool" "\$*" >> "\$STUB_LOG"
 case "$tool \$*" in
   "nix flake update"*)    printf '{"nodes":{"nixpkgs":{"locked":{"rev":"new"}}}}\n' > "$FAKE/nix/flake.lock" ;;
   "nix flake check"*)     printf 'warning: The check omitted these incompatible systems: aarch64-darwin\n' >&2 ;;
-  "chezmoi status"*)      printf ' M dot_thing\n' ;;
+  "chezmoi status"*)      printf '%s\n' "\${CHEZMOI_STATUS:- M dot_thing}" ;;
   "home-manager switch"*) printf 'There are 394 unread and relevant news items.\n' ;;
 esac
 exit 0
@@ -121,6 +121,35 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
 @test "chezmoi never prompts: a hand-edited target fails the step instead" {
   run_update
   grep -q 'chezmoi apply --no-tty' "$STUB_LOG"
+}
+
+@test "a hand-edited managed file stops the update before anything is mutated" {
+  export CHEZMOI_STATUS='MM .config/Code/User/settings.json'
+  run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"stopped before"* ]]
+  [[ "$output" == *".config/Code/User/settings.json"* ]]
+  # names a way to inspect the edit and a way past it
+  [[ "$output" == *"chezmoi diff"* ]]
+  [[ "$output" == *"--force"* ]]
+  ! grep -q 'nix flake update' "$STUB_LOG"
+  ! grep -q 'chezmoi apply' "$STUB_LOG"
+  [ "$(commits)" -eq 1 ]
+}
+
+@test "a hand edit that already matches the repo is not a conflict" {
+  export CHEZMOI_STATUS='M  .config/Code/User/settings.json'
+  run_update
+  [ "$status" -eq 0 ]
+  grep -q 'chezmoi apply --no-tty' "$STUB_LOG"
+}
+
+@test "--force turns a hand-edited managed file into a warning and overwrites it" {
+  export CHEZMOI_STATUS='MM .config/Code/User/settings.json'
+  run_update --force
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"overwritten"* ]]
+  grep -q 'chezmoi apply --no-tty --force' "$STUB_LOG"
 }
 
 @test "the flake lock is only checked for this host unless --full-check" {

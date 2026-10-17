@@ -256,9 +256,6 @@
 	# --- ripgrep: search the working tree fast (respects .gitignore) ---
 	# git rgrep <pattern> -> ripgrep across tracked files (falls back to git grep)
 	rgrep = "!f(){ if command -v rg >/dev/null 2>&1; then rg \"$@\"; else git grep -n \"$@\"; fi; }; f"
-[credential]
-	helper = store
-
 [core]
 {{- if $useGitDelta }}
 	pager = delta

@@ -234,6 +234,26 @@ else
   ui_warn "tools" "missing: ${MISSING[*]} (run: sys-install)"
 fi
 
+# Hand-edited managed files. chezmoi asks before overwriting a target that
+# changed since it last wrote it, and with --no-tty that question ends in an
+# unexplained EOF halfway through the update. Ask it here instead, while
+# nothing has been mutated. The first status column is "changed since chezmoi
+# wrote it", the second "apply would change it"; only both together prompt.
+CHEZMOI_CONFLICTS=()
+if have chezmoi; then
+  mapfile -t CHEZMOI_CONFLICTS < <(chezmoi status 2>/dev/null | awk 'substr($0,1,1)=="M" && substr($0,2,1)!=" " {print substr($0,4)}')
+  if [[ "${#CHEZMOI_CONFLICTS[@]}" -eq 0 ]]; then
+    ui_ok "managed files" "no local edits"
+  elif [[ "$CHEZMOI_FORCE" == 1 ]]; then
+    ui_warn "managed files" "${#CHEZMOI_CONFLICTS[@]} hand-edited, will be overwritten (--force): ${CHEZMOI_CONFLICTS[*]}"
+    ui_note warn chezmoi "overwrote local edits to: ${CHEZMOI_CONFLICTS[*]}"
+  elif [[ "$MODE" == "apply" ]]; then
+    precheck_fail "managed files" "${#CHEZMOI_CONFLICTS[@]} edited since chezmoi wrote them: ${CHEZMOI_CONFLICTS[*]}"
+  else
+    ui_warn "managed files" "${#CHEZMOI_CONFLICTS[@]} edited since chezmoi wrote them: ${CHEZMOI_CONFLICTS[*]}"
+  fi
+fi
+
 # Disk. A Nix update that runs out of space mid-build is a bad afternoon.
 DISK_TARGET="/nix"; [[ -d "$DISK_TARGET" ]] || DISK_TARGET="$HOME"
 DISK_FREE_KB="$(df -Pk "$DISK_TARGET" 2>/dev/null | awk 'NR==2 {print $4}')"
@@ -257,6 +277,11 @@ if [[ "$PRECHECK_FAILED" == 1 ]]; then
     printf '             git -C %s commit -am "chore(config): local changes"\n' "$REPO_ROOT"
     printf '             git -C %s stash push -u -m "before sys-update"\n' "$REPO_ROOT"
     printf '  Override:  sys-update --allow-dirty\n\n'
+  fi
+  if [[ "${#CHEZMOI_CONFLICTS[@]}" -gt 0 && "$CHEZMOI_FORCE" != 1 ]]; then
+    printf '  Inspect:   chezmoi diff %s\n' "${CHEZMOI_CONFLICTS[@]/#/~/}"
+    printf '  Keep:      port the edit into the repo source, then: chezmoi apply %s\n' "${CHEZMOI_CONFLICTS[@]/#/~/}"
+    printf '  Discard:   sys-update --force   (the repo version wins)\n\n'
   fi
   exit 1
 fi

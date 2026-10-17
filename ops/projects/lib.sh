@@ -53,8 +53,10 @@ proj_yq() {
 }
 
 proj_ids() {
-  # List project ids in declaration order.
-  proj_yq '.projects | keys | .[]'
+  # List project ids in pane order. chezmoi's toYaml sorts map keys, so
+  # declaration order under `projects:` is lost; an explicit
+  # `project_order` list wins, falling back to the (sorted) keys.
+  proj_yq '(.project_order // (.projects | keys)) | .[]'
 }
 
 proj_field() {

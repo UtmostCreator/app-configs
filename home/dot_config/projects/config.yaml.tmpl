@@ -1,5 +1,5 @@
 {{/*
-  Renders only the projects/tmux/ssh_workspace/github/health subset of
+  Renders only the projects/project_order/tmux/ssh_workspace/github/health subset of
   home/.chezmoidata/projects.yaml into ~/.config/projects/config.yaml.
   Do NOT use `toYaml .` here — that would leak personal.yaml fields
   (name, email, signingKey, hostProfile, gui) into a world-readable file.
@@ -11,6 +11,9 @@
 {{- $cfg := dict -}}
 {{- if hasKey . "projects" -}}
 {{-   $_ := set $cfg "projects" .projects -}}
+{{- end -}}
+{{- if hasKey . "project_order" -}}
+{{-   $_ := set $cfg "project_order" .project_order -}}
 {{- end -}}
 {{- if hasKey . "tmux" -}}
 {{-   $_ := set $cfg "tmux" .tmux -}}

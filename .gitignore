@@ -64,3 +64,7 @@ mise.local.toml
 
 *.bak
 /node_modules/
+
+# Claude Code per-checkout state (local permissions, agent worktrees)
+.claude/settings.local.json
+.claude/worktrees/

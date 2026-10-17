@@ -87,16 +87,16 @@ _app_configs_ssh_linux_plain() {
         # shellcheck disable=SC1090
         . "$env_file" >/dev/null
     fi
-    if ! ssh-add -l >/dev/null 2>&1; then
-        case "$?" in
-            2)
-                # Agent unreachable. Start a fresh one and persist its env.
-                umask 077
-                ssh-agent -s >"$env_file"
-                # shellcheck disable=SC1090
-                . "$env_file" >/dev/null
-                ;;
-        esac
+    # Capture the status directly: inside `if ! ssh-add -l; then`, $? is the
+    # negated 0, so a dead agent was never detected. 2 = agent unreachable;
+    # 1 = reachable but no identities, which the key loading below handles.
+    local agent_status=0
+    ssh-add -l >/dev/null 2>&1 || agent_status=$?
+    if [ "$agent_status" -eq 2 ]; then
+        # Agent unreachable. Start a fresh one and persist its env.
+        (umask 077; ssh-agent -s >"$env_file")
+        # shellcheck disable=SC1090
+        . "$env_file" >/dev/null
     fi
     # Load any configured keys that aren't loaded yet.
     local loaded fp path

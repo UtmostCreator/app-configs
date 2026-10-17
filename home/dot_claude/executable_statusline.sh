@@ -9,7 +9,8 @@
 #          +A/-R · WT name · PR #184 approved
 #
 # Ctx % is real context-window usage; LONG marks crossing the fixed 200k
-# threshold. STATUSLINE_NOW (epoch seconds) pins the clock for tests.
+# threshold. RC leads line 1 while the session is connected to Remote Control.
+# STATUSLINE_NOW (epoch seconds) pins the clock for tests.
 # shellcheck disable=SC2154  # payload variables are assigned by the jq eval below
 set -euo pipefail
 
@@ -66,6 +67,7 @@ eval "$(jq -r --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
     | quota("five_hour") as $q5
     | quota("seven_day") as $q7
     | @sh "project_dir=\(.workspace.project_dir // .cwd // "")",
+      @sh "session_id=\(.session_id // "")",
       @sh "current_dir=\(.workspace.current_dir // .cwd // "")",
       @sh "model_name=\(.model.display_name // "unknown" | sub(" \\([^)]*context\\)$"; ""))",
       @sh "effort=\(.effort.level // "")",
@@ -81,6 +83,24 @@ eval "$(jq -r --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
       @sh "pr_number=\(.pr.number // "" | tostring)",
       @sh "pr_state=\(.pr.review_state // "")"
 ')"
+
+# Remote Control is not in the statusLine payload. Claude Code keeps a state
+# file per running session in <config>/sessions/<pid>.json and sets
+# bridgeSessionId there while the session is connected. That file is internal,
+# so any surprise (no dir, bad JSON, renamed field) just means no tag. When a
+# resume left several files for this session, the latest updatedAt wins.
+remote_control=""
+sessions_dir="${CLAUDE_CONFIG_DIR:-$HOME/.claude}/sessions"
+if [[ -n "$session_id" && -d "$sessions_dir" ]]; then
+    # grep narrows to this session's files; each is parsed on its own so one
+    # malformed file cannot hide the rest.
+    grep -lF -- "$session_id" "$sessions_dir"/*.json 2>/dev/null \
+        | while IFS= read -r f; do jq -c . "$f" 2>/dev/null || true; done \
+        | jq -e -s --arg id "$session_id" '
+            map(select(.sessionId == $id)) | sort_by(.updatedAt // 0) | last
+            | .bridgeSessionId // "" | length > 0' >/dev/null 2>&1 \
+        && remote_control="${GREEN}RC${NC}"
+fi
 
 # Project = the dir Claude was launched in; branch follows current_dir so a
 # worktree/`cd` elsewhere shows the branch actually being edited.
@@ -133,7 +153,7 @@ if [[ -n "$pr_number" ]]; then
 fi
 
 if (( ${COLUMNS:-999} < NARROW_BELOW )); then
-    line1=$(join " | " "$repo" "${BLUE}${model_name}${NC}${effort:+:$effort}" \
+    line1=$(join " | " "$remote_control" "$repo" "${BLUE}${model_name}${NC}${effort:+:$effort}" \
         "$ctx_short" "$q5" "$q7")
     line2=$(join " · " "$diff" "$wt_seg" "$pr_seg")
 else
@@ -141,7 +161,7 @@ else
     if [[ "$long" == true ]]; then
         ctx_long+=" · ${YELLOW}LONG${NC}"
     fi
-    line1=$(join " | " "$(join " " "$repo" "$diff")" \
+    line1=$(join " | " "$remote_control" "$(join " " "$repo" "$diff")" \
         "${BLUE}${model_name}${NC}${effort:+ · effort:$effort}" \
         "$ctx_long" "$(join " · " "$q5_long" "$q7_long")")
     line2=$(join " | " "$wt_seg" "$pr_seg")

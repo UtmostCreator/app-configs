@@ -17,6 +17,9 @@ setup() {
 
     export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
     export STATUSLINE_NOW=$NOW TZ=UTC COLUMNS=200
+    # Isolate from the real ~/.claude/sessions (Remote Control lookup).
+    export CLAUDE_CONFIG_DIR="$BATS_TEST_TMPDIR/claude"
+    mkdir -p "$CLAUDE_CONFIG_DIR/sessions"
     WORK="$BATS_TEST_TMPDIR"
     REPO="$WORK/advanced-gym"
     make_repo "$REPO" main
@@ -59,6 +62,16 @@ EXTRAS='{
     "worktree": {"name": "ui-redesign"},
     "pr": {"number": 184, "review_state": "approved"}
 }'
+
+# session_file <pid> <session-id> [bridge-session-id] [updated-at]: the state
+# file Claude Code keeps per running session; bridgeSessionId is set while the
+# session is connected to Remote Control.
+session_file() {
+    jq -n --argjson pid "$1" --arg id "$2" --arg bridge "${3:-}" --argjson at "${4:-1}" \
+        '{pid: $pid, sessionId: $id, kind: "interactive", status: "idle", updatedAt: $at}
+         + (if $bridge == "" then {} else {bridgeSessionId: $bridge} end)' \
+        >"$CLAUDE_CONFIG_DIR/sessions/$1.json"
+}
 
 # --- Main line ----------------------------------------------------------------
 
@@ -166,4 +179,57 @@ EXTRAS='{
     run bash -c "jq -n --arg c '$REPO' '{cwd: \$c, model: {display_name: \"Sonnet\"}}' | bash '$SCRIPT' | sed 's/\x1b\[[0-9;]*m//g'"
     [ "$status" -eq 0 ]
     [ "$output" = "advanced-gym ⎇ main | Sonnet | Ctx 0% · 0/200k" ]
+}
+
+# --- Remote Control -------------------------------------------------------------
+
+@test "remote control: a connected session is tagged RC at the start of line 1" {
+    session_file 111 other-session session_01Other
+    session_file 222 sess-1 session_01Abc
+    run statusline '{"session_id": "sess-1"}'
+    [ "$status" -eq 0 ]
+    [[ "${lines[0]}" == "RC | advanced-gym ⎇ main | Opus 5 | "* ]]
+}
+
+@test "remote control: narrow terminal keeps the tag" {
+    export COLUMNS=80
+    session_file 222 sess-1 session_01Abc
+    run statusline '{"session_id": "sess-1"}'
+    [ "$status" -eq 0 ]
+    [ "$output" = "RC | advanced-gym ⎇ main | Opus 5 | Ctx 55%" ]
+}
+
+@test "remote control: a session that is not connected has no tag" {
+    session_file 222 sess-1
+    run statusline '{"session_id": "sess-1"}'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+}
+
+@test "remote control: another session's connection does not tag this one" {
+    session_file 111 other-session session_01Other
+    run statusline '{"session_id": "sess-1"}'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+}
+
+@test "remote control: the most recently updated file for the session wins" {
+    session_file 111 sess-1 session_01Old 100   # stale file from before a resume
+    session_file 222 sess-1 "" 200
+    run statusline '{"session_id": "sess-1"}'
+    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    session_file 333 sess-1 session_01New 300
+    run statusline '{"session_id": "sess-1"}'
+    [[ "$output" == "RC | advanced-gym"* ]]
+}
+
+@test "remote control: unreadable session files and a missing dir are ignored" {
+    printf '{ not json' >"$CLAUDE_CONFIG_DIR/sessions/333.json"
+    run statusline '{"session_id": "sess-1"}'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    rm -rf "$CLAUDE_CONFIG_DIR/sessions"
+    run statusline '{"session_id": "sess-1"}'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main | "* ]]
 }

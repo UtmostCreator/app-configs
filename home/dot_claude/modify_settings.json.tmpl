@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# chezmoi modify_ script for ~/.claude/settings.json.
+#
+# Claude Code rewrites this file itself (key order, keys set via /config), so
+# a plain managed file made every such rewrite a chezmoi conflict prompt. Here
+# the current file arrives on stdin and the repo's keys are merged over it:
+# repo values win for the keys listed in .chezmoitemplates/claude/settings.json
+# (arrays such as hooks are replaced, not appended), everything else Claude Code
+# wrote is kept, and a same-content rewrite comes back unchanged.
+#
+# Removing a key from the repo does not remove it from the live file; delete it
+# there by hand.
+set -euo pipefail
+
+managed="$(cat <<'CLAUDE_SETTINGS_JSON'
+{{ template "claude/settings.json" . }}
+CLAUDE_SETTINGS_JSON
+)"
+current="$(cat)"
+
+if command -v jq >/dev/null 2>&1 && jq -e 'type == "object"' <<<"$current" >/dev/null 2>&1; then
+  jq --argjson managed "$managed" '. * $managed' <<<"$current"
+else
+  # First apply, no jq yet (bootstrap runs chezmoi before Home Manager), or an
+  # unreadable file: write the repo's settings as they are.
+  printf '%s\n' "$managed"
+fi

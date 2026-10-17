@@ -31,6 +31,15 @@ make_repo() {
     git -C "$1" -c user.name=t -c user.email=t@t commit -q --allow-empty -m init
 }
 
+# edit_tracked: commit a ten-line file, then change it so `git diff HEAD`
+# reports +3/-2 (two lines replaced, one appended).
+edit_tracked() {
+    seq 1 10 >"$REPO/f.txt"
+    git -C "$REPO" add f.txt
+    git -C "$REPO" -c user.name=t -c user.email=t@t commit -q -m f
+    { echo a; echo b; seq 3 10; echo c; } >"$REPO/f.txt"
+}
+
 # payload [override-json]: a 548k-token 1M-context Opus session in $REPO,
 # deep-merged with the override.
 payload() {
@@ -76,17 +85,56 @@ session_file() {
 # --- Main line ----------------------------------------------------------------
 
 @test "wide: dirty branch, diff, effort, real context %, LONG, 5h and 7d quota" {
-    touch "$REPO/untracked.txt"
+    edit_tracked
     run statusline "$FULL"
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 1 ]
-    [ "$output" = "advanced-gym ⎇ main* +428/-91 | Opus 5 · effort:high | Ctx 55% · 548k/1M · LONG | 5h 72% ↻1h24m · 7d 41% ↻Tue" ]
+    [ "$output" = "advanced-gym ⎇ main* +3/-2 | Opus 5 · effort:high | Ctx 55% · 548k/1M · LONG | 5h 72% ↻1h24m · 7d 41% ↻Tue" ]
 }
 
 @test "clean tree has no dirty marker and no diff segment when nothing changed" {
     run statusline '{"cost": {"total_lines_added": 0, "total_lines_removed": 0}}'
     [ "$status" -eq 0 ]
     [[ "$output" == "advanced-gym ⎇ main | Opus 5 | "* ]]
+}
+
+@test "diff is the live working tree against HEAD, not the session's edit counters" {
+    # The session counters claim edits, but the tree is clean: nothing to show.
+    run statusline "$FULL"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main | Opus 5 · effort:high | "* ]]
+    # Staged and unstaged changes both count; committing clears the segment.
+    edit_tracked
+    git -C "$REPO" add f.txt
+    echo d >>"$REPO/f.txt"
+    run statusline "$FULL"
+    [[ "$output" == "advanced-gym ⎇ main* +4/-2 | "* ]]
+    git -C "$REPO" -c user.name=t -c user.email=t@t commit -q -am edit
+    run statusline "$FULL"
+    [[ "$output" == "advanced-gym ⎇ main | Opus 5"* ]]
+}
+
+@test "untracked files mark the tree dirty but add no line counts" {
+    touch "$REPO/untracked.txt"
+    run statusline "$FULL"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main* | Opus 5"* ]]
+}
+
+@test "binary changes are skipped in the line counts" {
+    printf '\0\1' >"$REPO/b.bin"
+    git -C "$REPO" add b.bin
+    run statusline
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main* | Opus 5"* ]]
+}
+
+@test "outside a git repo the diff falls back to the session's edit counters" {
+    mkdir -p "$WORK/plain-dir"
+    run statusline "$(jq -n --arg d "$WORK/plain-dir" '{workspace: {project_dir: $d, current_dir: $d},
+        cost: {total_lines_added: 428, total_lines_removed: 91}}')"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "plain-dir +428/-91 | Opus 5 | "* ]]
 }
 
 @test "below 200k: no LONG, 200k window, optional fields absent" {
@@ -135,13 +183,13 @@ session_file() {
 }
 
 @test "narrow terminal: compact first line, diff/WT/PR on the second" {
-    touch "$REPO/untracked.txt"
+    edit_tracked
     export COLUMNS=80
     run statusline "$(jq -n --argjson a "$FULL" --argjson b "$EXTRAS" '$a * $b')"
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 2 ]
     [ "${lines[0]}" = "advanced-gym ⎇ main* | Opus 5:high | Ctx 55% | 5h 72% | 7d 41%" ]
-    [ "${lines[1]}" = "+428/-91 · WT ui-redesign · PR #184 approved" ]
+    [ "${lines[1]}" = "+3/-2 · WT ui-redesign · PR #184 approved" ]
 }
 
 @test "narrow terminal with nothing extra prints a single line" {

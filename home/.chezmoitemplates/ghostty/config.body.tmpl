@@ -66,6 +66,12 @@ macos-titlebar-style = native
 keybind = global:cmd+backquote=toggle_quick_terminal
 quick-terminal-position = top
 quick-terminal-size = 35%
+# ---------- Tabs ----------
+{{- if eq .chezmoi.os "linux" }}
+# Ctrl+T opens a new tab (Ghostty's Linux default is Ctrl+Shift+T; macOS keeps
+# Cmd+T). This shadows fzf's Ctrl+T file picker inside Ghostty.
+keybind = ctrl+t=new_tab
+{{- end }}
 # ---------- Config management ----------
 keybind = cmd+shift+e=open_config
 keybind = cmd+shift+r=reload_config

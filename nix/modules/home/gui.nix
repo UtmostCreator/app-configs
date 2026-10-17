@@ -52,6 +52,9 @@
       # (and other tray apps) appear. Enabled via dconf in gnome-extensions.nix;
       # installing the package alone is not enough — GNOME must load it.
       gnomeExtensions.appindicator # UUID: appindicatorsupport@rgcjonas.gmail.com
+      # Keep GNOME's focus-stealing prevention: grand-theft-focus also raises
+      # background apps on attention requests (e.g. incoming Telegram messages).
+      # App shortcuts explicitly activate their target via the Vicinae helper.
       # Wayland clipboard CLI (wl-copy / wl-paste). Makes the system clipboard
       # scriptable and gives copy-on-select a reliable backing on GNOME
       # Wayland; also what most clipboard-managers/tools expect to be present.
@@ -104,13 +107,17 @@
       '')
       # Window resize helper bound to a GNOME keybinding (Alt+Shift+F, see
       # nix/modules/home/gnome-keybindings.nix). Resizes the focused window to a
-      # percentage of the current monitor width and GNOME work-area height,
-      # centered horizontally. Implemented on top
-      # of the Vicinae GNOME extension's D-Bus interface
-      # (org.gnome.Shell.Extensions.Windows: GetFocusedWindowSync, MoveResize)
-      # which is the same Wayland-native (Mutter) path Vicinae itself
-      # uses — so it works on GNOME Wayland where wmctrl/xdotool do not. The
-      # extension is enabled in gnome-extensions.nix.
+      # percentage of the monitor it is on, centered horizontally. Monitor
+      # geometry comes from Mutter's DisplayConfig, so it follows resolution,
+      # scale and rotation changes (XWayland's xrandr did not). Resizing goes
+      # through the Vicinae GNOME extension's D-Bus interface
+      # (org.gnome.Shell.Extensions.Windows: GetFocusedWindowSync, MoveResize),
+      # the same Wayland-native (Mutter) path Vicinae itself uses, so it works on
+      # GNOME Wayland where wmctrl/xdotool do not. The extension is enabled in
+      # gnome-extensions.nix.
+      #
+      # Logic lives in scripts/vicinae-resize.sh (tested by
+      # tests/bash/vicinae-resize.bats); this wrapper pins its tools on PATH.
       #
       # Long-term-stability note: this depends on the vicinae@dagimg-dot
       # extension being loaded (GNOME shell-version gated; see the guardrail note
@@ -118,72 +125,19 @@
       # message) if the D-Bus service is absent, so a broken/disabled extension
       # never wedges the keybinding. Hyprland would replace this with a native
       # dispatcher — tracked in repo-docs/future-upgrade-plan.md item #12.
-      (writeShellScriptBin "vicinae-resize" ''
-        # Usage: vicinae-resize [WIDTH_PERCENT] [HEIGHT_PERCENT]   (default 75 100)
-        # Intentionally NOT using `set -e`/`pipefail`: the script guards every
-        # step explicitly and uses `grep | head` pipelines (head closing early
-        # would trip pipefail). Errors are handled by the empty-string checks
-        # below so a missing D-Bus service exits cleanly rather than aborting.
-        set -u
-        pct_w="''${1:-75}"
-        pct_h="''${2:-100}"
-
-        dest="org.gnome.Shell"
-        obj="/org/gnome/Shell/Extensions/Windows"
-        iface="org.gnome.Shell.Extensions.Windows"
-
-        gcall() {
-          ${glib}/bin/gdbus call --session --dest "$dest" \
-            --object-path "$obj" --method "$iface.$1" "''${@:2}"
-        }
-
-        # Graceful degradation: if the Vicinae extension D-Bus service is not on
-        # the bus (extension disabled or incompatible with the running GNOME),
-        # do nothing instead of erroring out the keybinding.
-        raw="$(gcall GetFocusedWindowSync 2>/dev/null || true)"
-        json="$(printf '%s' "$raw" | ${pkgs.gnused}/bin/sed -e "s/^(['\"]//" -e "s/['\"],)\$//")"
-        if [ -z "$json" ]; then
-          echo "vicinae-resize: window D-Bus service unavailable (is the Vicinae GNOME extension enabled?)" >&2
-          exit 0
-        fi
-
-        id="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r '.id // empty' 2>/dev/null)"
-        [ -n "$id" ] || { echo "vicinae-resize: no focused window" >&2; exit 0; }
-
-        win_x="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r '.x // 0' 2>/dev/null)"
-        win_y="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r '.y // 0' 2>/dev/null)"
-        win_w="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r '.width // 0' 2>/dev/null)"
-        win_h="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r '.height // 0' 2>/dev/null)"
-        center_x=$(( win_x + win_w / 2 ))
-        center_y=$(( win_y + win_h / 2 ))
-
-        mon_x=0; mon_y=0; mon_w=0; mon_h=0
-        while IFS= read -r line; do
-          if [[ "$line" =~ ^[^[:space:]]+[[:space:]]connected.*[[:space:]]([0-9]+)x([0-9]+)\+(-?[0-9]+)\+(-?[0-9]+) ]]; then
-            w="''${BASH_REMATCH[1]}"; h="''${BASH_REMATCH[2]}"
-            x="''${BASH_REMATCH[3]}"; y="''${BASH_REMATCH[4]}"
-            if [ "$mon_w" -eq 0 ] || { [ "$center_x" -ge "$x" ] && [ "$center_x" -lt $(( x + w )) ] && [ "$center_y" -ge "$y" ] && [ "$center_y" -lt $(( y + h )) ]; }; then
-              mon_x="$x"; mon_y="$y"; mon_w="$w"; mon_h="$h"
-            fi
-          fi
-        done < <(${pkgs.xrandr}/bin/xrandr --current 2>/dev/null || true)
-
-        [ "$mon_w" -gt 0 ] && [ "$mon_h" -gt 0 ] || { echo "vicinae-resize: could not read monitor geometry" >&2; exit 0; }
-
-        # GNOME's top panel is not represented in xrandr's raw monitor geometry.
-        # Keep windows below it so app tab/menu bars are not hidden. Override via
-        # VICINAE_RESIZE_TOP_MARGIN if the panel height changes.
-        top_margin="''${VICINAE_RESIZE_TOP_MARGIN:-32}"
-        work_y=$(( mon_y + top_margin ))
-        work_h=$(( mon_h - top_margin ))
-
-        new_w=$(( mon_w * pct_w / 100 ))
-        new_h=$(( work_h * pct_h / 100 ))
-        new_x=$(( mon_x + (mon_w - new_w) / 2 ))
-        new_y=$(( work_y + (work_h - new_h) / 2 ))
-
-        gcall MoveResize "$id" "$new_x" "$new_y" "$new_w" "$new_h" >/dev/null 2>&1 || true
-      '')
+      (writeShellScriptBin "vicinae-resize" (
+        ''
+          export PATH=${
+            lib.makeBinPath [
+              glib
+              jq
+              gnused
+              systemd
+            ]
+          }:$PATH
+        ''
+        + builtins.readFile ./scripts/vicinae-resize.sh
+      ))
       # Per-app TOGGLE helper bound to the app keybindings (see
       # nix/modules/home/gnome-keybindings.nix). Behavior:
       #   - if a window of the app is FOCUSED (foreground)  -> minimize it (hide)
@@ -212,148 +166,43 @@
       #
       # Built on the Vicinae GNOME extension D-Bus interface
       # (org.gnome.Shell.Extensions.Windows: List, Activate, Minimize) — the same
-      # Wayland-native (Mutter) path used elsewhere; falls back to
-      # `vicinae app launch` if the D-Bus service is unavailable. Ghostty also
+      # Wayland-native (Mutter) path used elsewhere. Launches only after a valid
+      # window list confirms the app has no windows. Ghostty also
       # has a direct executable fallback because its desktop entry can be absent
       # from the active XDG application dirs even when the Nix package is on PATH.
-      (writeShellScriptBin "vicinae-toggle-app" ''
-        set -u
-        app_id="''${1:-}"
-        wm_class="''${2:-$app_id}"
-        if [ -z "$app_id" ]; then
-          echo "usage: vicinae-toggle-app <app_id> [wm_class]" >&2
-          exit 2
-        fi
-
-        dest="org.gnome.Shell"
-        obj="/org/gnome/Shell/Extensions/Windows"
-        iface="org.gnome.Shell.Extensions.Windows"
-
-        gcall() {
-          ${glib}/bin/gdbus call --session --dest "$dest" \
-            --object-path "$obj" --method "$iface.$1" "''${@:2}"
-        }
-
-        launch() {
-          vicinae app launch "$app_id" && exit 0
-          if [ "$app_id" = "com.mitchellh.ghostty" ]; then
-            exec ${ghostty}/bin/ghostty --gtk-single-instance=true
-          fi
-          if [ "$app_id" = "brave-browser" ]; then
-            exec ${brave}/bin/brave
-          fi
-          exit 1
-        }
-
-        # Per-wm_class MRU state. Lives in the runtime dir (tmpfs, cleared on
-        # logout) so stale window ids never survive a session. One file per app,
-        # keyed by a sanitized wm_class, holding just the last-used window id.
-        state_dir="''${XDG_RUNTIME_DIR:-/tmp}/vicinae-toggle-app"
-        ${pkgs.coreutils}/bin/mkdir -p "$state_dir" 2>/dev/null || true
-        mru_key="$(printf '%s' "$wm_class" | ${pkgs.coreutils}/bin/tr '[:upper:]' '[:lower:]' | ${pkgs.gnused}/bin/sed 's#[^A-Za-z0-9._-]#_#g')"
-        mru_file="$state_dir/$mru_key"
-
-        mru_read() {
-          [ -f "$mru_file" ] && ${pkgs.coreutils}/bin/cat "$mru_file" 2>/dev/null || true
-        }
-        mru_write() {
-          printf '%s' "$1" > "$mru_file" 2>/dev/null || true
-        }
-
-        # Raw List() returns a gdbus tuple: ('[ ... json ... ]',). Strip the
-        # tuple wrapper to get the inner JSON array, then query with jq.
-        raw="$(gcall List 2>/dev/null || true)"
-        if [ -z "$raw" ]; then
-          # D-Bus unavailable — fall back to plain raise-or-launch.
-          launch
-        fi
-        json="$(printf '%s' "$raw" | ${pkgs.gnused}/bin/sed -e "s/^(['\"]//" -e "s/['\"],)\$//")"
-
-        # Case-insensitive match on wm_class. jq emits one window id per query
-        # (or empty):
-        #   focused_id = the app's currently-foreground window, if any
-        #   any_id     = the first matching window (fallback target)
-        #   ids        = newline-separated list of ALL matching window ids, used
-        #                to validate a remembered MRU id is still alive
-        focused_id="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r --arg c "$wm_class" '
-          [ .[] | select((.wm_class // "" | ascii_downcase) == ($c | ascii_downcase)) ]
-          | (map(select(.has_focus == true)) | .[0].id) // empty' 2>/dev/null)"
-
-        any_id="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r --arg c "$wm_class" '
-          [ .[] | select((.wm_class // "" | ascii_downcase) == ($c | ascii_downcase)) ]
-          | (.[0].id) // empty' 2>/dev/null)"
-
-        ids="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r --arg c "$wm_class" '
-          .[] | select((.wm_class // "" | ascii_downcase) == ($c | ascii_downcase)) | .id' 2>/dev/null)"
-
-        # Record MRU: whenever a window of this app is focused (about to be
-        # hidden or already in front), remember it as the one to restore next.
-        if [ -n "$focused_id" ]; then
-          mru_write "$focused_id"
-        fi
-
-        if [ -n "$focused_id" ]; then
-          # App is in the foreground -> send it to the background. The MRU is
-          # already recorded above, so re-pressing later returns to THIS window.
-          gcall Minimize "$focused_id" >/dev/null 2>&1 || true
-          exit 0
-        elif [ -n "$any_id" ]; then
-          # App is running but not focused -> bring forward the most-recently-used
-          # window if it still exists, otherwise the first matching window. This
-          # keeps multi-window apps (e.g. two VS Code projects) stable on the last
-          # project you used instead of jumping to whichever is first in the list.
-          target_id="$any_id"
-          mru_id="$(mru_read)"
-          if [ -n "$mru_id" ] && printf '%s\n' "$ids" | ${pkgs.gnugrep}/bin/grep -qxF "$mru_id"; then
-            target_id="$mru_id"
-          fi
-          if gcall Activate "$target_id" >/dev/null 2>&1; then
-            mru_write "$target_id"
-            exit 0
-          fi
-          # If Activate failed for some reason, fall back to launch/focus.
-          launch
-        else
-          # Not running -> launch a fresh instance.
-          launch
-        fi
-      '')
+      (writeShellScriptBin "vicinae-toggle-app" (
+        ''
+          export PATH=${
+            lib.makeBinPath [
+              glib
+              systemd
+              jq
+              coreutils
+              gnused
+              gnugrep
+              ghostty
+              brave
+            ]
+          }:$PATH
+        ''
+        + builtins.readFile ./scripts/vicinae-toggle-app.sh
+      ))
       # Background companion for vicinae-toggle-app. Polls the same Vicinae
       # window API and records the focused window id per wm_class, because the
       # D-Bus List() payload exposes has_focus but no last-focus timestamp.
-      (writeShellScriptBin "vicinae-focus-tracker" ''
-        set -u
-
-        dest="org.gnome.Shell"
-        obj="/org/gnome/Shell/Extensions/Windows"
-        iface="org.gnome.Shell.Extensions.Windows"
-        state_dir="''${XDG_RUNTIME_DIR:-/tmp}/vicinae-toggle-app"
-        ${pkgs.coreutils}/bin/mkdir -p "$state_dir" 2>/dev/null || true
-
-        gcall() {
-          ${glib}/bin/gdbus call --session --dest "$dest" \
-            --object-path "$obj" --method "$iface.$1" "''${@:2}"
-        }
-
-        while :; do
-          raw="$(gcall List 2>/dev/null || true)"
-          if [ -n "$raw" ]; then
-        json="$(printf '%s' "$raw" | ${pkgs.gnused}/bin/sed -e "s/^(['\"]//" -e "s/['\"],)\$//")"
-            focused="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r '
-              .[] | select(.has_focus == true) | [(.wm_class // ""), (.id | tostring)] | @tsv
-            ' 2>/dev/null | ${pkgs.coreutils}/bin/head -1)"
-            if [ -n "$focused" ]; then
-              wm_class="$(printf '%s' "$focused" | ${pkgs.coreutils}/bin/cut -f1)"
-              id="$(printf '%s' "$focused" | ${pkgs.coreutils}/bin/cut -f2)"
-              if [ -n "$wm_class" ] && [ -n "$id" ]; then
-                key="$(printf '%s' "$wm_class" | ${pkgs.coreutils}/bin/tr '[:upper:]' '[:lower:]' | ${pkgs.gnused}/bin/sed 's#[^A-Za-z0-9._-]#_#g')"
-                printf '%s' "$id" > "$state_dir/$key" 2>/dev/null || true
-              fi
-            fi
-          fi
-          sleep 0.25
-        done
-      '')
+      (writeShellScriptBin "vicinae-focus-tracker" (
+        ''
+          export PATH=${
+            lib.makeBinPath [
+              systemd
+              jq
+              coreutils
+              gnused
+            ]
+          }:$PATH
+        ''
+        + builtins.readFile ./scripts/vicinae-focus-tracker.sh
+      ))
       # Recent-projects popup for VS Code, bound to Alt+E (see
       # nix/modules/home/gnome-keybindings.nix). This is the NixOS/Linux stand-in
       # for the Raycast "VS Code - Project Manager" extension, which is macOS-only
@@ -451,10 +300,8 @@
         # `code` may need a moment to (re)attach the folder to a window before a
         # window of class `code` is listable/activatable. Poll briefly.
         for _ in 1 2 3 4 5 6 7 8 9 10; do
-          raw="$(${glib}/bin/gdbus call --session --dest "$dest" \
-            --object-path "$obj" --method "$iface.List" 2>/dev/null || true)"
-          [ -n "$raw" ] || { sleep 0.3; continue; }
-        json="$(printf '%s' "$raw" | ${pkgs.gnused}/bin/sed -e "s/^(['\"]//" -e "s/['\"],)\$//")"
+          raw="$(${pkgs.systemd}/bin/busctl --user --json=short call "$dest" "$obj" "$iface" List 2>/dev/null)" || raw=""
+          json="$(printf '%s' "$raw" | ${pkgs.jq}/bin/jq -ce '.data[0] | fromjson | select(type == "array")' 2>/dev/null)" || { sleep 0.3; continue; }
           # Prefer the `code` window whose title contains the project name; else a
           # focused `code` window; else the first `code` window.
           win_id="$(printf '%s' "$json" | ${pkgs.jq}/bin/jq -r --arg c "$wm_class" --arg n "$proj_name" '

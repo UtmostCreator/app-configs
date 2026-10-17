@@ -6,8 +6,12 @@
 # which sources $HOME/.config/projects/config.yaml (chezmoi-rendered).
 #
 # Schema is intentionally flat: id -> definition. Add a project by
-# adding a key under `projects:`. Order in this file controls the
-# pane order in the tmux master layout.
+# adding a key under `projects:` and its id to `project_order:`.
+# `project_order` controls the pane order in the tmux master layout;
+# key order under `projects:` does NOT (chezmoi's toYaml sorts map keys).
+# Without `project_order`, panes follow the ids alphabetically.
+
+project_order: [cms, frontend, api, components, payments]
 
 projects:
   # Each id is a short slug used as the mise task suffix
@@ -83,12 +87,12 @@ projects:
 # │                        │ right.bottom (rest)                   │
 # └────────────────────────┴───────────────────────────────────────┘
 #
-# Pane assignment to projects (by index in projects: above):
-#   primary    = projects[0]   (top-left, main repo)
-#   secondary  = projects[1]   (top-right)
-#   tertiary   = projects[2]   (middle-right)
-#   bottom_left  = projects[3] (bottom-left, below primary)
-#   bottom_right = projects[4] (bottom-right, below tertiary)
+# Pane assignment to projects (by index in project_order: above):
+#   primary    = project_order[0]   (top-left, main repo)
+#   secondary  = project_order[1]   (top-right)
+#   tertiary   = project_order[2]   (middle-right)
+#   bottom_left  = project_order[3] (bottom-left, below primary)
+#   bottom_right = project_order[4] (bottom-right, below tertiary)
 #
 # Override per-host by editing this file.
 tmux:

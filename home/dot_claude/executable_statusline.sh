@@ -3,6 +3,7 @@
 # (see `statusLine` in settings.json). Field reference:
 # https://code.claude.com/docs/en/statusline#available-data
 #
+# +A/-R is the live `git diff HEAD` line count (session edit counters outside git).
 # Wide:    project ⎇ branch* +A/-R | Model · effort:high | Ctx 55% · 548k/1M · LONG | 5h 72% ↻1h24m · 7d 41% ↻Tue
 #          WT name | PR #184 approved                            (only when either exists)
 # Narrow:  project ⎇ branch* | Model:high | Ctx 55% | 5h 72% | 7d 41%    (COLUMNS < 120)
@@ -121,6 +122,13 @@ if [[ -n "$branch" ]]; then
     if [[ -n "$(git --no-optional-locks -C "$current_dir" status --porcelain 2>/dev/null || true)" ]]; then
         repo+="${YELLOW}*${NC}"
     fi
+    # +A/-R is the working tree against HEAD (staged and unstaged; binary
+    # files and untracked files add no lines), read on every run so commits
+    # and edits made outside this session show up. The payload's cost
+    # counters only count this session's own edits, so they stay the
+    # fallback for a directory that is not a git repository.
+    read -r added removed < <(git --no-optional-locks -C "$current_dir" diff HEAD --numstat 2>/dev/null \
+        | awk '$1 != "-" { a += $1; r += $2 } END { print a + 0, r + 0 }')
 fi
 
 diff=""

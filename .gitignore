@@ -39,6 +39,7 @@ coverage/
 
 # Generated documentation outputs (regenerate locally; do not commit)
 !/docs/
+!/scripts/
 /docs/generated/*
 !/docs/generated/README.md
 

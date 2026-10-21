@@ -1,0 +1,77 @@
+# Reference inventory transcribed from the visible Raycast screenshot.
+# Suggested repository location: reference/raycast/shortcuts.yaml
+# This is NOT a native Raycast import/export format.
+# The displayed shortcuts are Raycast's effective bindings. Karabiner-Elements
+# remaps keyboard input to provide a Windows-like keyboard experience, so the
+# physical keys pressed may differ. See the Karabiner configuration for that
+# translation; do not treat these as raw physical-key mappings.
+
+schema_version: 1
+source: "Raycast settings"
+notes:
+  - "Hotkeys are displayed as interpreted by Raycast after any Karabiner-Elements remapping."
+  - "For restoring Raycast settings, use Raycast's native export; this YAML is an auditable reference."
+karabiner:
+  windows_like_keyboard_remapping: true
+  configuration: "~/.config/karabiner/karabiner.json"
+  comment: "Karabiner-Elements provides Windows-like keyboard behavior; Raycast shows the resulting logical shortcuts, not necessarily the physical key combinations."
+
+applications:
+  - name: Bruno
+    shortcut: {display: "⌥ ⇧ B", modifiers: [option, shift], key: B}
+  - name: VPN
+    shortcut: {display: "⌥ ⇧ V", modifiers: [option, shift], key: V}
+  - name: DBeaver
+    shortcut: {display: "⌥ ⇧ D", modifiers: [option, shift], key: D}
+  - name: Finder
+    shortcut: {display: "⌥ 2", modifiers: [option], key: "2"}
+  - name: Firefox
+    shortcut: {display: "⌥ F1", modifiers: [option], key: F1}
+  - name: Ghostty
+    shortcut: {display: "⌥ ⇧ T", modifiers: [option, shift], key: T}
+  - name: Karabiner-Elements
+    shortcut: {display: "⌥ K", modifiers: [option], key: K}
+  - name: Messenger
+    shortcut: {display: "⌥ ⇧ R", modifiers: [option, shift], key: R}
+  - name: Obsidian
+    shortcut: {display: "⌃ ⌥ O", modifiers: [control, option], key: O}
+  - name: Visual Studio Code
+    shortcut: {display: "⌥ ⇧ E", modifiers: [option, shift], key: E}
+
+commands:
+  - name: Clipboard History
+    shortcut: {display: "⌥ V", modifiers: [option], key: V}
+  - name: Search Files
+    shortcut: {display: "⌥ T", modifiers: [option], key: T}
+  - name: Search Recent Projects
+    shortcut: {display: "⌥ E", modifiers: [option], key: E}
+  - name: Center Three Fourths
+    shortcut: {display: "⌥ ⇧ F", modifiers: [option, shift], key: F}
+  - name: Maximize
+    shortcut: {display: "⌘ ↑", modifiers: [command], key: up}
+
+quicklinks:
+  - name: bs
+    alias: null
+    shortcut: {display: "⌥ ⇧ S", modifiers: [option, shift], key: S}
+  - name: CP
+    alias: cp
+    shortcut: null
+  - name: Create Quicklink
+    alias: null
+    shortcut: {display: "⌥ F13", modifiers: [option], key: F13}
+  - name: Export Quicklinks
+    alias: null
+    shortcut: null
+  - name: GH Example PRs
+    alias: example_prs
+    shortcut: {display: "⌃ ⌥ ⇧ ⌘ ←", modifiers: [control, option, shift, command], key: left}
+  - name: Import Quicklinks
+    alias: null
+    shortcut: null
+  - name: Example web search
+    alias: ws
+    shortcut: null
+  - name: Example personal search
+    alias: wsm
+    shortcut: null

@@ -9,6 +9,11 @@ fi
 
 msg="$(head -n 1 "$msg_file")"
 
+# Messages git generates itself are not authored subjects.
+if [[ "$msg" =~ ^(Merge|Revert|Rebase)\  || "$msg" =~ ^(fixup|squash|amend)!\  ]]; then
+    exit 0
+fi
+
 if [[ "$msg" =~ ^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?:\ .+ ]]; then
     exit 0
 fi

@@ -1,0 +1,10 @@
+/environments/local.yml
+/environments/*.private.yml
+.env
+.env.*
+*.pem
+*.key
+*.token
+/responses/
+/logs/
+*.log

@@ -1,0 +1,20 @@
+name: Local
+variables:
+  - name: baseUrl
+    value: https://api.example.test/api
+  - name: api_key
+    secret: true
+  - name: environment_kind
+    value: local
+  - name: allow_mutations
+    value: "false"
+  - name: item_id
+    value: ITEM-001
+  - name: item_date
+    value: ""
+  - name: currency_code
+    value: region-a
+  - name: quantity
+    value: "1"
+  - name: customer_email
+    value: user@example.com

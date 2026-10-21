@@ -1,0 +1,48 @@
+info:
+  name: Create record
+  type: http
+  seq: 1
+  tags:
+    - guarded
+    - mutation
+http:
+  method: POST
+  url: "{{baseUrl}}/records"
+  auth: inherit
+  headers:
+    - { name: Content-Type, value: application/json }
+  body:
+    type: json
+    data: |-
+      {
+        "itemId": "{{item_id}}",
+        "date": "{{item_date}}",
+        "currency": "{{item_currency}}",
+        "quantity": {{quantity}},
+        "customerEmail": "{{customer_email}}"
+      }
+runtime:
+  scripts:
+    - type: before-request
+      code: |
+        const kind = String(bru.getEnvVar("environment_kind") || "");
+        if (!["local", "test", "staging"].includes(kind)) {
+          throw new Error("Blocked: environment_kind must be local, test, or staging.");
+        }
+        if (bru.getEnvVar("allow_mutations") !== "true") {
+          throw new Error("Blocked: allow_mutations must be exactly \"true\".");
+        }
+    - type: tests
+      code: |
+        test("record is created", function() {
+          expect(res.status).to.equal(201);
+          expect(res.body).to.have.property("id");
+        });
+docs: |
+  Mutating request. Runs only when the environment is marked local, test or staging
+  and allow_mutations is explicitly "true". Never run against production.
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

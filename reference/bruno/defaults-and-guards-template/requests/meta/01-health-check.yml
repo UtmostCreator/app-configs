@@ -1,0 +1,50 @@
+info:
+  name: Health check
+  type: http
+  seq: 1
+  tags:
+    - health
+    - read-only
+http:
+  method: GET
+  url: "{{baseUrl}}/metadata/currencies"
+  auth: inherit
+runtime:
+  assertions:
+    - expression: res.status
+      operator: eq
+      value: "200"
+      description: API accepted the request.
+    - expression: res.body
+      operator: isArray
+      description: Reference data is returned as a collection.
+  scripts:
+    - type: before-request
+      code: |
+        const baseUrl = String(bru.getEnvVar("baseUrl") || "").trim();
+        if (!baseUrl) {
+          throw new Error("Set baseUrl in your local environment.");
+        }
+        if (baseUrl.includes(".invalid")) {
+          throw new Error("baseUrl is still the placeholder host. Configure your own host.");
+        }
+        if (!/\/api\/?$/.test(baseUrl)) {
+          throw new Error("baseUrl must end with /api.");
+        }
+        if (!String(bru.getEnvVar("api_key") || "").trim()) {
+          throw new Error("Set api_key in Bruno secret storage.");
+        }
+    - type: tests
+      code: |
+        test("returns a non-empty collection", function() {
+          expect(res.status).to.equal(200);
+          expect(res.body).to.be.an("array");
+          expect(res.body.length).to.be.greaterThan(0);
+        });
+docs: |
+  Connectivity and key check. A 200 response proves the host and API key are accepted.
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

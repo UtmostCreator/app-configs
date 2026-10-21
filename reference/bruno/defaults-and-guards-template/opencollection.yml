@@ -1,0 +1,35 @@
+opencollection: 1.0.0
+info:
+  name: Example API (defaults and guards)
+  description: Generic Bruno collection showing layered defaults, placeholder-host guards and mutation gates.
+request:
+  headers:
+    - name: X-API-Key
+      value: "{{api_key}}"
+      description: Inherited by every request in the collection.
+  scripts:
+    - type: before-request
+      code: |
+        const env = (name) => String(bru.getEnvVar(name) ?? "").trim();
+        const isYmd = (value) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+        const ymd = (date) => date.toISOString().slice(0, 10);
+
+        // Fill only missing or invalid values. Valid environment values win.
+        if (!isYmd(env("item_date"))) {
+          bru.setVar("item_date", ymd(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)));
+        }
+
+        const currencyByLocale = { "region-a": "CUR-A", "region-b": "CUR-B", "region-c": "CUR-C" };
+        const locale = env("currency_code") in currencyByLocale ? env("currency_code") : "region-a";
+        bru.setVar("currency_code", locale);
+        bru.setVar("item_currency", currencyByLocale[locale]);
+
+        if (!/^[1-9]\d*$/.test(env("quantity"))) {
+          bru.setVar("quantity", "1");
+        }
+      
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

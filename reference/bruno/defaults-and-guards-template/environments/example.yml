@@ -1,0 +1,23 @@
+name: Example
+variables:
+  - name: baseUrl
+    value: https://api.example.invalid/api
+    description: Non-routable placeholder. Replace locally with a host ending in /api.
+  - name: api_key
+    secret: true
+  - name: environment_kind
+    value: unset
+    description: One of local, test, staging to allow guarded mutations.
+  - name: allow_mutations
+    value: "false"
+  - name: item_id
+    value: ITEM-001
+  - name: item_date
+    value: ""
+    description: Leave empty for the dynamic default (today + 3 days).
+  - name: currency_code
+    value: region-a
+  - name: quantity
+    value: "1"
+  - name: customer_email
+    value: user@example.com

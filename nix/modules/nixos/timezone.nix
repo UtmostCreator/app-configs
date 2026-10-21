@@ -9,7 +9,7 @@
 # This repo is primarily Home Manager + nix-darwin; the live NixOS system config
 # lives in /etc/nixos. To ship this default to the live host, import this module
 # from /etc/nixos (e.g. via app-configs-extra.nix). See
-# repo-docs/system-timezone.md for the exact wiring + apply steps.
+# docs/guides/system-timezone.md for the exact wiring + apply steps.
 #
 # Reproducible: contains zero host-specific values. Fully overridable per host
 # via `myConfig.timezone.name`.

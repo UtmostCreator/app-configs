@@ -47,5 +47,9 @@
     # Interactive cheatsheet launcher (Ctrl-G); complements tldr/tealdeer
     # (quick examples) — different tool, no overlap.
     navi
+    # ── Productivity / text (from macOS tools audit) ──
+    sd # sed-style find/replace (binary: sd)
+    parallel # GNU parallel for shell job fan-out
+    glow # render Markdown in the terminal
   ];
 }

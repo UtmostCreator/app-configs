@@ -93,10 +93,13 @@ in
   #   mise, chezmoi, home-manager, lefthook (bootstrap-installed via nix profile)
   home.packages =
     (with pkgs; [
+      act # run GitHub Actions workflows locally
       actionlint
       ast-grep
+      tree-sitter # parser generator/CLI for grammar development
       bats # bats-core formula -> bats in nixpkgs
       bun # JavaScript runtime and package manager
+      uv # Python package/project manager (see mise for pinned runtimes)
       delta # git-delta formula -> delta in nixpkgs
       difftastic
       code2prompt # template-driven prompt/context generation (AI)
@@ -115,7 +118,6 @@ in
       onefetch # git repository summary (languages, churn); binary: onefetch
       lnav
       lychee
-      mariadb # provides the `mysql` client; lighter than full mysql-client formula
       markdownlint-cli # Markdown style linter; binary: markdownlint
       # ── Security / vulnerability scanning (opt-in via VERIFY_SECURITY=1 or
       #    AI_VERIFY_SCOPE=all in the AI verify scripts; not run by default) ──
@@ -178,7 +180,12 @@ in
     ])
     ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       pkgs.bubblewrap # bwrap: preferred Codex CLI Linux sandbox helper
-    ];
+      pkgs.mariadb # provides the `mysql` client; lighter than full mysql-client formula
+    ]
+    # On macOS the `mysql` client comes from Homebrew `mysql-client`
+    # (nix/modules/darwin/homebrew.nix), so skip mariadb there to avoid two
+    # `mysql` binaries competing on PATH.
+    ;
 
   # Gremlins defaults to one worker per CPU; with a runaway mutant per worker the
   # memory cap above still multiplies. Half the cores leaves the desktop usable.

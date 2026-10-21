@@ -18,7 +18,7 @@
 # Usage:
 #   bash ops/unix/ssh-agent-setup.sh             # install
 #   bash ops/unix/ssh-agent-setup.sh --remove    # uninstall
-#   APP_CONFIGS_SSH_KEYS="github.uc.ll5 work" \
+#   APP_CONFIGS_SSH_KEYS="<github-key> work" \
 #       bash ops/unix/ssh-agent-setup.sh         # set default key list
 
 set -euo pipefail

@@ -452,6 +452,24 @@ if [[ "$STEP_FAILED" == 0 ]]; then
   fi
 fi
 
+# homebrew ------------------------------------------------------------------
+# nix-darwin no longer upgrades Homebrew (autoUpdate/upgrade = false), so this
+# is the only place formulae and casks get upgraded. A failure warns rather
+# than blocking the later steps.
+if [[ "$STEP_FAILED" == 0 && "$HOST_PROFILE" == "macos" ]]; then
+  if have brew; then
+    if ui_run "brew update" brew update && ui_run "brew upgrade" brew upgrade --formula \
+       && ui_run "brew cask upgrade" brew upgrade --cask; then
+      ui_scan_warnings
+      [[ "$MODE" == "apply" ]] && ui_ok "homebrew" "formulae and casks upgraded"
+    else
+      ui_warn "homebrew" "upgrade returned non-zero (see the run log)"
+    fi
+  else
+    ui_skip "homebrew" "brew not on PATH"
+  fi
+fi
+
 # nix profile ---------------------------------------------------------------
 # Only elements this profile genuinely owns: `home-manager-path` is installed
 # by Home Manager and cannot be upgraded here, so asking is just noise.

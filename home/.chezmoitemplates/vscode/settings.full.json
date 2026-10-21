@@ -251,7 +251,7 @@
   "explorer.decorations.badges": true,
   "explorer.decorations.colors": true,
   "explorer.openEditors.visible": 1, // Hide redundant Open Editors (tabs are source of truth)
-  // File nesting (reduce noise for Laravel/Statamic)
+  // File nesting (reduce noise for Laravel)
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
@@ -261,15 +261,13 @@
     "vite.config.*": "vitest.config.*, tsconfig*.json",
     ".env": ".env.*, .env.example"
   },
-  // Language associations (Laravel / Statamic)
+  // Language associations (Laravel )
   "files.associations": {
     "*.embeddedhtml": "html",
     "*.page-template": "vue",
     "*.layout-template": "vue",
     "*.vue": "vue",
     "*.blade.php": "blade",
-    "*.antlers.html": "html",
-    "*.antlers.php": "php",
     "*.env": "dotenv",
     ".env*": "dotenv",
     "*.php": "php",
@@ -387,12 +385,6 @@
     "editor.formatOnSave": false
   },
   "yaml.format.singleQuote": true,
-  "yaml.schemas": {
-    "https://raw.githubusercontent.com/Konafets/statamic-blueprint-validation/main/statamic.blueprint.schema.json": [
-      "resources/blueprints/**/*.yaml",
-      "content/blueprints/**/*.yaml"
-    ]
-  },
   // --- HTML: Prettier formatter ---
   "[html]": {
     "editor.tabSize": 4,
@@ -554,8 +546,8 @@
   "sonarlint.automaticAnalysis": false,
   "sonarlint.connectedMode.connections.sonarcloud": [
     {
-      "organizationKey": "rabbies-trail-burners",
-      "connectionId": "rabbies-trail-burners",
+      "organizationKey": "COMPANY_NAME_PLACEHOLDER",
+      "connectionId": "COMPANY_NAME_PLACEHOLDER",
       "region": "EU"
     }
   ],

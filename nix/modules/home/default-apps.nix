@@ -100,7 +100,7 @@ in
   #
   # This module is imported ONLY by the linux-desktop host. macOS has no clean
   # declarative default-app mechanism in nix-darwin/home-manager; the duti-based
-  # approach is documented as a TODO in repo-docs/default-apps.md.
+  # approach is documented as a TODO in docs/reference/default-apps.md.
   #
   # Guarded on isLinux so an accidental import on Darwin is a no-op rather than
   # writing a Linux mimeapps.list into a macOS home.

@@ -1,46 +1,76 @@
 { ... }:
 {
-  # Homebrew bridge for macOS GUI apps. nix-darwin manages the Brewfile so
-  # casks become declarative without forcing every GUI app through Nix.
+  # macOS Homebrew package declarations.
   #
-  # Cask names below come from repo-docs/migration-package-ownership.md Phase 3
-  # matrix. Verify with `brew search --casks <name>` on the Mac before
-  # uncommenting any optional row.
+  # Ownership:
+  # - Nix / Home Manager: cross-platform CLI tools and runtimes.
+  # - Homebrew: macOS applications, fonts and selected host-specific tools.
+  # - chezmoi: application configuration and user dotfiles.
+  #
+  # Keep one installation owner per package. Verify cask names with
+  # `brew info --cask <name>` before adding new rows.
   homebrew = {
     enable = true;
 
     onActivation = {
-      autoUpdate = true;
-      cleanup = "zap"; # removes any cask not declared here
+      # Routine darwin-rebuild stays predictable. Homebrew upgrades run from
+      # `sys-update` (ops/update-all.sh), not from every rebuild.
+      autoUpdate = false;
+      upgrade = false;
+
+      # "none" keeps unlisted packages. "zap" would uninstall every undeclared
+      # cask and its data. Switch only after the inventory is reconciled.
+      cleanup = "none";
     };
 
     casks = [
-      # Primary macOS GUI apps already in active use:
-      "brave-browser@beta" # Brave Beta channel (Linux gets stable pkgs.brave in gui.nix)
-      "ghostty"
-      "bbedit"
+      # ── Browsers ──────────────────────────────────────────
+      "brave-browser@beta"
+      "firefox"
+
+      # ── Development applications ─────────────────────────
       "bruno"
-      "obsidian" # Notes/knowledge base (Linux: obsidian in gui.nix)
-      "visual-studio-code" # VS Code — single IDE on all systems (Linux: vscode in gui.nix)
-      # IntelliJ IDEA intentionally excluded for now. Re-add "intellij-idea-ce"
-      # in a future slice if needed.
+      "ghostty"
+      # "postman"
       "sequel-ace"
-      "betterdisplay"
+      "visual-studio-code"
+
+      # ── AI and authentication CLIs ───────────────────────
+      "1password-cli"
+      "copilot-cli"
+
+      # ── Knowledge and productivity ───────────────────────
+      "obsidian"
+      "raycast"
+
+      # ── Windows, keyboard and input ──────────────────────
       "aerospace"
+      "alt-tab"
+      "betterdisplay"
       "karabiner-elements"
-      "raycast" # macOS-only launcher (no Linux build)
-      "flameshot" # screenshots (Linux: nix gui.nix)
-      "firefox" # browser parity with Linux gui.nix (both platforms)
-      # Optional — uncomment once verified with `brew search --casks <name>`:
-      # "medis"
-      # "linearmouse"
-      # "notunes"
+      "linearmouse"
+
+      # ── Menu bar and system utilities ────────────────────
+      "flameshot"
+      "jordanbaird-ice@beta"
+      "notunes"
+      "stats"
+
+      # ── Fonts ────────────────────────────────────────────
+      "font-jetbrains-mono-nerd-font"
+      "font-meslo-lg-nerd-font"
     ];
 
+    # Homebrew-owned tools that need macOS integration. Prefer Home Manager
+    # for cross-platform CLIs.
     brews = [
-      # macOS-only formulae not satisfied by nixpkgs cleanly.
-      # Confirm before enabling:
-      # "colima"
+      # Needs cliPluginsExtraDirs in ~/.docker/config.json to find Compose.
+      # Check with `docker compose version`.
+      "docker-compose"
+      # Provides the macOS `mysql` client. Nix mariadb is Linux-only (dev.nix).
+      "mysql-client"
+      # Sets default macOS app handlers.
+      "duti"
     ];
   };
 }

@@ -22,7 +22,7 @@
       #       Local dev note: Brave Shields can block local servers. If a
       #       localhost / *.test / *.localhost dev URL misbehaves, allow it via
       #       brave://settings/content/siteDetails (per-site permissions).
-      #       See repo-docs/default-apps.md ("Brave + local dev servers").
+      #       See docs/reference/default-apps.md ("Brave + local dev servers").
       ghostty # GPU terminal (macOS: Homebrew cask)
       vscode # VS Code (unfree; allowUnfree set in nix/lib/mkhome.nix)
       android-studio # stable Android Studio from the public nixpkgs package
@@ -124,7 +124,7 @@
       # in gnome-extensions.nix). The script degrades gracefully (exits 0 with a
       # message) if the D-Bus service is absent, so a broken/disabled extension
       # never wedges the keybinding. Hyprland would replace this with a native
-      # dispatcher — tracked in repo-docs/future-upgrade-plan.md item #12.
+      # dispatcher — tracked in docs/plans/future-upgrades.md item #12.
       (writeShellScriptBin "vicinae-resize" (
         ''
           export PATH=${
@@ -504,7 +504,7 @@
   # Verify after a rebuild + relog (or `systemctl --user restart wireplumber`):
   #   pactl list sinks | grep -A6 -i kanto   # Sample Spec should read s24le 48000Hz
   #   pw-metadata -n settings | grep -i ora   # rule presence
-  # See repo-docs/ora4-audio.md.
+  # See docs/reference/ora4-audio.md.
   xdg.configFile."wireplumber/wireplumber.conf.d/51-kanto-ora4.conf" =
     pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux
       {

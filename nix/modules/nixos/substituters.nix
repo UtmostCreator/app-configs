@@ -7,7 +7,7 @@
 # This is a SYSTEM setting (nix.settings.*), so it only takes effect when this
 # module is imported by /etc/nixos and applied with `nixos-rebuild`. It is part
 # of nix/modules/nixos and is opt-in via the usual import (see
-# repo-docs/system-timezone.md for the wiring pattern; sys-setup can wire the
+# docs/guides/system-timezone.md for the wiring pattern; sys-setup can wire the
 # whole nix/modules/nixos set).
 #
 # Caches chosen for broad, trustworthy community coverage:

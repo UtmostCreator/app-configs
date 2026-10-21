@@ -1,0 +1,5 @@
+2026-09-03T09:42:18.417Z [FRONTEND-NPM] ERROR TypeError: Build failed
+2026-09-03T09:42:18.418Z [FRONTEND-NPM]     at compile (/workspace/src/build.js:21:9)
+2026-09-03T09:42:18.419Z [FRONTEND-NPM] Caused by: missing route
+2026-09-03T09:42:18.420Z [FRONTEND-NPM]     at load (/workspace/node_modules/pkg/index.js:4:2)
+2026-09-03T09:42:19.000Z [FRONTEND-NPM] INFO rebuilding

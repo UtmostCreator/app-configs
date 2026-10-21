@@ -41,7 +41,7 @@
   # The `vicinae-resize` script degrades gracefully if the D-Bus service is gone,
   # so a stale extension never wedges the keybinding — it just no-ops.
   # The longer-term alternative (Hyprland, native resize, no extension) is
-  # evaluated in repo-docs/future-upgrade-plan.md item #12.
+  # evaluated in docs/plans/future-upgrades.md item #12.
   #
   # Linux-desktop only (imported by nix/hosts/linux-desktop/home.nix) and
   # guarded on isLinux so an accidental Darwin import is a no-op.

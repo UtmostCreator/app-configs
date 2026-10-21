@@ -188,19 +188,11 @@
   // YAML specifics (as in your config)
   // =========================
   "yaml.format.singleQuote": true,
-  "yaml.schemas": {
-    "https://raw.githubusercontent.com/Konafets/statamic-blueprint-validation/main/statamic.blueprint.schema.json": [
-      "resources/blueprints/**/*.yaml",
-      "content/blueprints/**/*.yaml"
-    ]
-  },
   // =========================
   // File type mapping used by formatter/linter toolchain
   // =========================
   "files.associations": {
     "*.blade.php": "blade",
-    "*.antlers.html": "html",
-    "*.antlers.php": "php",
     "*.stub": "php",
     ".env*": "dotenv"
   },

@@ -1,0 +1,28 @@
+# Colima VM profile "default". Only non-default settings are kept.
+# Machine-generated fields (gateway, interface, hostAddresses) are left to Colima.
+cpu: 2
+disk: 100
+memory: 2
+arch: aarch64
+runtime: docker
+modelRunner: docker
+hostname: colima
+kubernetes:
+  enabled: false
+autoActivate: true
+network:
+  address: false
+  mode: shared
+  preferredRoute: false
+  hostAddresses: false
+forwardAgent: false
+vmType: vz
+portForwarder: ssh
+rosetta: false
+binfmt: true
+nestedVirtualization: false
+mountType: virtiofs
+mountInotify: false
+rootDisk: 20
+sshConfig: true
+env: {}

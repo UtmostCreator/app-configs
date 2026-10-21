@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.local.litellm-copilot</string>
+
+    <key>ProgramArguments</key>
+    <array>
+      <string>/bin/bash</string>
+      <string>-lc</string>
+      <string>{{ .chezmoi.homeDir }}/.config/litellm-copilot/scripts/start.sh</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>{{ .chezmoi.homeDir }}/.config/litellm-copilot/logs/litellm.out.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>{{ .chezmoi.homeDir }}/.config/litellm-copilot/logs/litellm.err.log</string>
+  </dict>
+</plist>

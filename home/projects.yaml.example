@@ -104,7 +104,7 @@ tmux:
     secondary_percent: 25
     tertiary_percent: 30
 
-# SSH workspace (tmux-ssh.sh) — N panes, one per entry below.
+# SSH workspace (tmux/ssh.sh) — N panes, one per entry below.
 # Each value is an alias from your ~/.ssh/config.
 ssh_workspace:
   session: "remote-shells"

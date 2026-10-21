@@ -1,0 +1,28 @@
+{
+  "profile": "work",
+  "description": "Chromium browser extensions for the work profile. Install by ID; disabled entries were inactive in the source inventory.",
+  "extensions": [
+    { "name": "1Password – Password Manager", "id": "aeblfdkhhhdcdjpifhhbdiojplfjncoa", "version": "8.12.42.36", "enabled": true },
+    { "name": "CLUT: Cycle Last Used Tabs", "id": "cobieddmkhhnbeldhncnfcgcaccmehgn", "version": "2.1", "enabled": true,
+      "shortcuts": [
+        { "command": "Quick switch", "suggested": "Alt+W", "shortcut": "⌘S" },
+        { "command": "Normal switch backward", "suggested": "Alt+S", "shortcut": null },
+        { "command": "Normal switch forward", "suggested": "Alt+Shift+S", "shortcut": null }
+      ]
+    },
+    { "name": "Datalayer Checker", "id": "ffljdddodmkedhkcjhpmdajhjdbkogke", "version": "3.0.4", "enabled": false },
+    { "name": "Fake Filler", "id": "bnjjngeaknajbdcgpfkgnonkmififhfo", "version": "4.1.0", "enabled": false,
+      "shortcuts": [
+        { "command": "Fill all inputs", "shortcut": "⇧⌘F" },
+        { "command": "Fill this form", "shortcut": null },
+        { "command": "Fill this input", "shortcut": null }
+      ]
+    },
+    { "name": "GoFullPage - Full Page Screen Capture", "id": "fdpohaocaechififmbbbbbknoalclacl", "version": "8.9", "enabled": false },
+    { "name": "OneTab", "id": "chphlpgkkbolifaimnlloiipkdnihall", "version": "2.24", "enabled": true },
+    { "name": "Pomodoro Chrome Extension", "id": "iccjkhpkdhdhjiaocipcegfeoclioejn", "version": "2.2.6", "enabled": false },
+    { "name": "Tampermonkey", "id": "dhdgffkkebhmkfjojejmpbldmpobfkfo", "version": "5.5.1", "enabled": true },
+    { "name": "uBlock Origin", "id": "jcokkipkhhgiakinbnnplhkdbjbgcgpe", "version": "1.75.0", "enabled": true },
+    { "name": "Vue.js devtools", "id": "nhdogjmejiglipccpnnnanhbledajbpd", "version": "7.7.7", "enabled": true }
+  ]
+}

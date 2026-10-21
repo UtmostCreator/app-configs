@@ -1,0 +1,17 @@
+title = "app-configs gitleaks config"
+
+[extend]
+useDefault = true
+
+# Known false positives: VS Code keybinding "key" fields, the public PHP PPA
+# signing-key fingerprint, and prose/placeholder text in docs.
+[allowlist]
+description = "Known false positives"
+regexTarget = "line"
+regexes = [
+  '''"key":\s*"''',
+  '''PHP_PPA_KEY_FINGERPRINT=''',
+  '''REDACTED''',
+  '''secrets, `AI_''',
+  '''authenticated boundary -> ''',
+]

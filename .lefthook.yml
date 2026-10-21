@@ -16,6 +16,14 @@ pre-push:
   commands:
     validate-config:
       run: bash ops/validate-config.sh
+    shared-prepush:
+      use_stdin: true
+      run: bash ops/hooks/pre-push.sh
+
+post-merge:
+  commands:
+    drift-hints:
+      run: bash ops/hooks/post-merge.sh
 
 commit-msg:
   commands:

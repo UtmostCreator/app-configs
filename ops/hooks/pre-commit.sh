@@ -9,6 +9,14 @@ echo "[hook] pre-commit checks"
 staged_files="$(git diff --cached --name-only --diff-filter=ACM || true)"
 
 if [[ -n "$staged_files" ]]; then
+    # Real env files hold secrets; examples/templates are fine.
+    env_files="$(grep -E '(^|/)\.env(\.[^/]+)?$' <<<"$staged_files" | grep -vE '\.(example|sample|template|tmpl)$' || true)"
+    if [[ -n "$env_files" ]]; then
+        echo "[hook] env file staged (use a .env.example instead):"
+        echo "$env_files"
+        exit 1
+    fi
+
     while IFS= read -r file; do
         [[ -n "$file" ]] || continue
         if git show ":$file" | rg -n '^(<<<<<<<|=======|>>>>>>>)' >/dev/null 2>&1; then

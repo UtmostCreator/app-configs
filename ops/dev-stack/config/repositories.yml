@@ -1,0 +1,10 @@
+profiles:
+  internal:
+    repos:
+      - example-app
+
+repositories:
+  example-app:
+    folder: example-app
+    url: git@github.com:example-org/example-app.git
+    branch: main

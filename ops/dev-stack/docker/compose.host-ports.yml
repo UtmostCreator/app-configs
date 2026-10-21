@@ -1,0 +1,9 @@
+services:
+
+  mariadb:
+    ports:
+      - "127.0.0.1:${MARIADB_HOST_PORT:-3306}:3306"
+
+  redis:
+    ports:
+      - "127.0.0.1:${REDIS_HOST_PORT:-6380}:6379"

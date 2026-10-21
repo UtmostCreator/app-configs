@@ -1,0 +1,19 @@
+# Local secrets - never commit
+.env
+.env.*
+!.env.example
+.npmrc
+/docker/secrets/*.txt
+!/docker/secrets/.gitkeep
+
+# Local editor and OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Runtime output
+*.log
+artifacts/
+docs/generated/
+docker/.env

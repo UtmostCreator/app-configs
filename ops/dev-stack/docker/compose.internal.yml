@@ -1,0 +1,63 @@
+x-php-cli: &php-cli
+  context: images
+  dockerfile: php-cli/Dockerfile
+
+x-app-env: &app-env
+  DB_PASSWORD: ${EXAMPLE_APP_DB_PASSWORD:?set EXAMPLE_APP_DB_PASSWORD in .env}
+
+x-app: &app
+  extends:
+    file: compose.common.yml
+    service: php
+  build: *php-cli
+  image: example-dev/php-cli:8.3
+  profiles: [internal]
+  volumes:
+    - ../../example-app:/var/www/html
+    - composer-cache:/tmp/composer/cache
+    - ./images/php.ini:/etc/php/8.3/cli/conf.d/99-local.ini:ro
+  environment: *app-env
+  depends_on:
+    mariadb:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  networks:
+    - devstack-apps
+    - devstack-data
+
+services:
+  app:
+    <<: *app
+    command: ['php', 'artisan', 'serve', '--host=0.0.0.0', '--port=80', '--no-reload']
+    environment:
+      <<: *app-env
+      APP_ENV: local
+      PHP_CLI_SERVER_WORKERS: '4'
+    healthcheck:
+      test: ['CMD', 'php', '-r', "$$s = @fsockopen('127.0.0.1', 80); exit($$s ? 0 : 1);"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  app-nginx:
+    extends:
+      file: compose.common.yml
+      service: nginx
+    profiles: [internal]
+    ports:
+      - '127.0.0.1:${EXAMPLE_APP_PORT:-8080}:80'
+    volumes:
+      - ./nginx/example-app.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - devstack-apps
+      - devstack-ingress
+
+  app-queue:
+    <<: *app
+    profiles: [workers]
+    command: ['php', 'artisan', 'queue:work', '--tries=3', '--sleep=3', '--timeout=90']

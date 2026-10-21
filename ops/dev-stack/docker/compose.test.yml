@@ -1,0 +1,75 @@
+services:
+
+  mariadb-test:
+    extends:
+      file: compose.common.yml
+      service: infra
+    image: mariadb:10.11@sha256:7f22313fc130a377a44999965bcb0a08dd5b21e8502824c1b864f792f9bc66ab
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set MARIADB_ROOT_PASSWORD in .env}
+      EXAMPLE_APP_DB_PASSWORD: ${EXAMPLE_APP_DB_PASSWORD:?set EXAMPLE_APP_DB_PASSWORD in .env}
+      EXAMPLE_APP_TEST_DB_PASSWORD: ${EXAMPLE_APP_TEST_DB_PASSWORD:?set EXAMPLE_APP_TEST_DB_PASSWORD in .env}
+    volumes:
+      - mariadb-test-data:/var/lib/mysql
+      - ./mariadb/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - devstack-test
+
+  app-tests:
+    extends:
+      file: compose.common.yml
+      service: php
+    image: example-dev/php-cli:8.3
+    profiles: [test]
+    working_dir: /var/www/html
+    environment:
+      APP_ENV: testing
+      # Throwaway key that only exists for the isolated test run.
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: mysql
+      DB_HOST: mariadb-test
+      DB_PORT: 3306
+      DB_DATABASE: example_app_test
+      DB_USERNAME: example_app_test
+      DB_PASSWORD: ${EXAMPLE_APP_TEST_DB_PASSWORD:?set EXAMPLE_APP_TEST_DB_PASSWORD in .env}
+      CACHE_STORE: array
+      CACHE_DRIVER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+      MAIL_MAILER: array
+      FILESYSTEM_DISK: local
+    volumes:
+      - ../../example-app:/workspace:ro
+      - ./images/php.ini:/etc/php/8.3/cli/conf.d/99-local.ini:ro
+    tmpfs:
+      - /var/www/html:uid=${LOCAL_UID:-1000},gid=${LOCAL_GID:-1000},mode=1775
+    networks:
+      - devstack-test
+    depends_on:
+      mariadb-test:
+        condition: service_healthy
+    command:
+      - sh
+      - -ec
+      - |
+        tar -C /workspace --exclude=./.git --exclude=./node_modules --exclude=./storage --exclude=./.phpunit.result.cache -cf - . | tar -C /var/www/html -xf -
+        mkdir -p /var/www/html/storage/app/public /var/www/html/storage/framework/cache/data /var/www/html/storage/framework/sessions /var/www/html/storage/framework/testing /var/www/html/storage/framework/views /var/www/html/storage/logs
+        rm -f /var/www/html/.env /var/www/html/.env.testing
+        if php artisan list --raw | grep -qx 'test'; then
+          php artisan test --no-interaction --order-by=random
+        else
+          php ./vendor/bin/phpunit --configuration phpunit.xml --order-by=random
+        fi
+
+networks:
+  devstack-test:
+    internal: true
+
+volumes:
+  mariadb-test-data:

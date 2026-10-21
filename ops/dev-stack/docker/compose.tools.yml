@@ -1,0 +1,48 @@
+services:
+
+  composer:
+    extends:
+      file: compose.common.yml
+      service: tools
+    image: example-dev/php-cli:8.3
+    profiles: [tools]
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /workspace/example-app
+    environment:
+      HOME: /tmp
+      COMPOSER_HOME: /tmp/composer
+      GIT_CONFIG_COUNT: "1"
+      GIT_CONFIG_KEY_0: safe.directory
+      GIT_CONFIG_VALUE_0: /workspace/example-app
+    volumes:
+      - ../../example-app:/workspace/example-app
+      - composer-cache:/tmp/composer/cache
+    networks:
+      - tools-egress
+
+  node:
+    extends:
+      file: compose.common.yml
+      service: tools
+    image: node:22.22.2-bookworm-slim@sha256:9f6d5975c7dca860947d3915877f85607946403fc55349f39b4bc3688448bb6e
+    profiles: [tools]
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    working_dir: /workspace
+    environment:
+      HOME: /tmp
+      npm_config_cache: /tmp/.npm
+      NPM_CONFIG_USERCONFIG: /run/secrets/npmrc
+    secrets:
+      - npmrc
+    volumes:
+      - ../../example-app:/workspace/example-app
+    networks:
+      - tools-egress
+
+networks:
+  tools-egress:
+    driver: bridge
+
+secrets:
+  npmrc:
+    file: ${DEVSTACK_NPMRC_FILE:-/dev/null}

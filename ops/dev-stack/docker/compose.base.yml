@@ -1,0 +1,54 @@
+services:
+
+  mariadb:
+    extends:
+      file: compose.common.yml
+      service: infra
+    image: mariadb:10.11@sha256:7f22313fc130a377a44999965bcb0a08dd5b21e8502824c1b864f792f9bc66ab
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?set MARIADB_ROOT_PASSWORD in .env}
+      EXAMPLE_APP_DB_PASSWORD: ${EXAMPLE_APP_DB_PASSWORD:?set EXAMPLE_APP_DB_PASSWORD in .env}
+      EXAMPLE_APP_TEST_DB_PASSWORD: ${EXAMPLE_APP_TEST_DB_PASSWORD:?set EXAMPLE_APP_TEST_DB_PASSWORD in .env}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./mariadb/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    networks:
+      - devstack-data
+
+  redis:
+    extends:
+      file: compose.common.yml
+      service: infra
+    image: redis:7.4-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - devstack-data
+
+networks:
+  devstack-apps:
+    driver: bridge
+    internal: true
+  devstack-data:
+    driver: bridge
+    internal: true
+  devstack-ingress:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.enable_ip_masquerade: "false"
+
+volumes:
+  mariadb-data:
+  redis-data:
+  composer-cache:

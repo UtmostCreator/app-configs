@@ -1,0 +1,8 @@
+Error log report
+Scanned 1 file(s), 2 event(s); matched 1 event(s) in 1 group(s).
+Noise suppression: repository rules on (5 rules, 0 event(s) ignored); CLI ignores: 0 rule(s), 0 event(s) ignored.
+
+test/fixtures/laravel.log [laravel]
+  [01]  ERROR  586507684ea8  ×1  lines 2-4
+        Upstream request failed
+        frame: /srv/app/public/index.php:20

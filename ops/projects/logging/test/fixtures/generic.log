@@ -1,0 +1,7 @@
+startup preamble
+2026-09-03 09:00:00 INFO ready on port 3001
+2026-09-03 09:01:00 ERROR operation failed code 500
+  detail continued here
+  at run (/srv/app/src/index.js:7:3)
+Fatal error: Uncaught RuntimeException: terminal failure
+  at /srv/app/src/final.php:12

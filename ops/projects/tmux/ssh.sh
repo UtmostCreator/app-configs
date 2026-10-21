@@ -8,13 +8,13 @@
 # home/.chezmoidata/projects.yaml (gitignored).
 #
 # Usage:
-#   bash ops/projects/tmux-ssh.sh [--detached] [--force]
+#   bash ops/projects/tmux/ssh.sh [--detached] [--force]
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=ops/projects/lib.sh
-source "$SCRIPT_DIR/lib.sh"
+source "$SCRIPT_DIR/../lib.sh"
 
 DETACHED=0
 FORCE=0

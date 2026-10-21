@@ -1,0 +1,4 @@
+[2026-09-03 09:42:18] local.INFO: Request completed {"request_id":"req-123","status":200}
+[2026-09-03 09:42:19] local.ERROR: Upstream request failed {"trace_id":"trace-456"}
+#0 /srv/app/vendor/laravel/framework/src/Illuminate/Routing/Router.php(800): dispatch()
+#1 /srv/app/public/index.php(20): handleRequest()

@@ -5,7 +5,7 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
 ## Primary Development Stack
 
 - **Terminal:** Ghostty + tmux
-- **Shell:** fish (primary; native autosuggestions + highlighting) + Starship + Atuin. zsh + Oh My Zsh still supported. See `repo-docs/shell-setup.md`.
+- **Shell:** fish (primary; native autosuggestions + highlighting) + Starship + Atuin. zsh + Oh My Zsh still supported. See `docs/guides/shell-setup.md`.
 - **Navigation/Search:** fzf, fd, ripgrep, ripgrep-all, zoxide, Yazi
 - **Editor:** Neovim (lazy.nvim) + BBEdit
 - **Git:** lazygit + delta
@@ -33,7 +33,7 @@ My daily macOS setup for full-stack development, terminal workflows, containers,
   - only for the zsh path; fish uses its built-ins
 
 > Previously used: Zsh as primary, [Powerlevel10k](https://github.com/romkatv/powerlevel10k).
-> Shell config + how to switch: `repo-docs/shell-setup.md`.
+> Shell config + how to switch: `docs/guides/shell-setup.md`.
 
 ## Navigation And CLI Workflow
 
@@ -238,7 +238,7 @@ whole set on either OS. The owner of record is
 | Flameshot | **Nix** | Homebrew cask | `gui.nix` (Linux) |
 | Brave | **Nix** (stable) | Homebrew cask `brave-browser@beta` | `gui.nix` / `darwin/homebrew.nix` |
 | Obsidian | **Nix** (`obsidian`) | Homebrew cask `obsidian` | `gui.nix` / `darwin/homebrew.nix` |
-| USB audio diagnostics (`lsusb`, `aplay`, `speaker-test`, `wpctl`, `pavucontrol`) | **Nix** (`usbutils`, `alsa-utils`, `wireplumber`, `pavucontrol`) | system / optional | `gui.nix`; see `repo-docs/ora4-audio.md` |
+| USB audio diagnostics (`lsusb`, `aplay`, `speaker-test`, `wpctl`, `pavucontrol`) | **Nix** (`usbutils`, `alsa-utils`, `wireplumber`, `pavucontrol`) | system / optional | `gui.nix`; see `docs/reference/ora4-audio.md` |
 | IntelliJ IDEA CE | **excluded** (not shipped) | **excluded** (not shipped) | intentionally dropped for now; VS Code is the IDE |
 | Bruno | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
 | Sequel Ace, BBEdit, BetterDisplay, AeroSpace, Karabiner, Ice, AltTab, Stats, NoTunes, LinearMouse | **macOS-only** (no Linux equivalent shipped) | Homebrew cask | `nix/modules/darwin/homebrew.nix` |
@@ -247,7 +247,7 @@ whole set on either OS. The owner of record is
 | dive, fx, navi, glow, gum | `mise run tools:optional:install` (aqua) | same | `mise.toml` optional task |
 | direnv | **DROPPED** (mise per-project env replaces it) | DROPPED | — |
 
-NixOS runtime rule (see `repo-docs/install-nixos.md`): runtimes that mise would
+NixOS runtime rule (see `docs/platforms/nixos/install.md`): runtimes that mise would
 otherwise compile from source on NixOS (e.g. node) are provided by Nix and
 **re-applied with `home-manager switch`** instead of `mise install`.
 
@@ -268,7 +268,7 @@ cask bridge. Either way it is one apply command per host.
 > lefthook`, validates the flake, runs chezmoi apply, runs `home-manager switch`
 > (or `darwin-rebuild switch` on macOS), then `mise install` and
 > `lefthook install`. Daily updates go through `mise run sync` (preview) and
-> `mise run sync:apply` (mutate). See [`bootstrap.md`](bootstrap.md) and
+> `mise run sync:apply` (mutate). See [`bootstrap.md`](../docs/getting-started/bootstrap.md) and
 > [`migration-package-ownership.md`](migration-package-ownership.md) for the
 > per-tool owner.
 >

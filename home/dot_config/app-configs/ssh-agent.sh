@@ -14,7 +14,7 @@
 # Configuration:
 #   Override the keys to load by exporting APP_CONFIGS_SSH_KEYS before
 #   sourcing, e.g. in ~/.zshrc *before* this file:
-#     export APP_CONFIGS_SSH_KEYS="github.uc.ll5 work_ed25519"
+#     export APP_CONFIGS_SSH_KEYS="<github-key> <work-key>"
 #   Paths are resolved against $HOME/.ssh/.
 #
 # Source this file from ~/.bashrc or ~/.zshrc:
@@ -29,7 +29,7 @@ esac
 
 # Resolve keys to load. Default to a single conventional key name; users
 # override via APP_CONFIGS_SSH_KEYS.
-: "${APP_CONFIGS_SSH_KEYS:=github.uc.ll5}"
+: "${APP_CONFIGS_SSH_KEYS:=id_ed25519}"
 
 _app_configs_ssh_uname="$(uname -s 2>/dev/null || echo unknown)"
 

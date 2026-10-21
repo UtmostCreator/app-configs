@@ -4,7 +4,7 @@
 # .fish file in conf.d on shell start.
 #
 # Configure keys with:
-#   set -Ux APP_CONFIGS_SSH_KEYS github.uc.ll5 work_ed25519
+#   set -Ux APP_CONFIGS_SSH_KEYS <github-key> <work-key>
 # (universal variable, persists across sessions). Paths are resolved
 # against $HOME/.ssh/.
 
@@ -13,7 +13,7 @@ if not status is-interactive
 end
 
 if not set -q APP_CONFIGS_SSH_KEYS
-    set -g APP_CONFIGS_SSH_KEYS github.uc.ll5
+    set -g APP_CONFIGS_SSH_KEYS id_ed25519
 end
 
 function __app_configs_ssh_key_paths

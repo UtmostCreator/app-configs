@@ -44,8 +44,8 @@ cd "$workspace"
 args=(web)
 # YUC's generated project patch adds its repository-local agent and skill roots
 # while preserving DSH's shipped and user-level presets (including yuc-codex).
-if [[ -f "$workspace/.dsh/yuc-agent-presets.cordis.patch.yml" ]]; then
-  args+=(--patch "$workspace/.dsh/yuc-agent-presets.cordis.patch.yml")
+if [[ -f "$workspace/.dsh/agent-presets.patch.yml" ]]; then
+  args+=(--patch "$workspace/.dsh/agent-presets.patch.yml")
 fi
 args+=(
   --host 127.0.0.1

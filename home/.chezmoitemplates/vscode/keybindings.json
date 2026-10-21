@@ -22,6 +22,12 @@
     "command": "editor.action.clipboardCopyAction",
     "when": "editorTextFocus && !terminalFocus"
   },
+  /* Copy in non-editor contexts: Copilot chat, file explorer, search panel, etc. */
+  {
+    "key": "ctrl+c",
+    "command": "execCopy",
+    "when": "!editorTextFocus && !terminalFocus"
+  },
   {
     "key": "ctrl+x",
     "command": "editor.action.clipboardCutAction",
@@ -150,7 +156,7 @@
   {
     "key": "ctrl+shift+backspace",
     "command": "workbench.action.navigateToLastEditLocation",
-    "when": "!terminalFocus"
+    "when": "editorTextFocus && !terminalFocus"
   },
   // Jump to older position in change list (like Vim g;)
   {
@@ -487,27 +493,29 @@
     "command": "cursorWordRight",
     "when": "inputFocus && !editorTextFocus && !terminalFocus"
   },
-  /* Word delete (Windows style) */
+  /* Word delete (Windows style) — editor */
+  /* Excludes searchInputBoxFocus so VS Code's built-in default (textInputFocus) */
+  /* handles the search panel input via its own internal routing */
   {
     "key": "ctrl+backspace",
     "command": "deleteWordLeft",
-    "when": "editorTextFocus && !terminalFocus && !editorReadonly"
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly && !searchInputBoxFocus"
   },
   {
     "key": "ctrl+delete",
     "command": "deleteWordRight",
-    "when": "editorTextFocus && !terminalFocus && !editorReadonly"
+    "when": "editorTextFocus && !terminalFocus && !editorReadonly && !searchInputBoxFocus"
   },
-  /* Word delete in Chat/Input contexts (for consistency with navigation) */
+  /* Word delete in other input contexts (Copilot chat, quick open, etc.) */
   {
     "key": "ctrl+backspace",
     "command": "deleteWordLeft",
-    "when": "inputFocus && !editorTextFocus && !terminalFocus"
+    "when": "inputFocus && !editorTextFocus && !terminalFocus && !searchInputBoxFocus"
   },
   {
     "key": "ctrl+delete",
     "command": "deleteWordRight",
-    "when": "inputFocus && !editorTextFocus && !terminalFocus"
+    "when": "inputFocus && !editorTextFocus && !terminalFocus && !searchInputBoxFocus"
   },
   /* Toggle case (JetBrains: Ctrl+Shift+U) */
   {
@@ -599,7 +607,7 @@
     "when": "editorTextFocus && !terminalFocus && !editorReadonly"
   },
   {
-    "key": "ctrl+alt+c",
+    "key": "ctrl+alt+shift+c",
     "command": "editor.action.codeAction",
     "args": {
       "kind": "refactor.extract.constant"
@@ -834,11 +842,11 @@
     "when": "filesExplorerFocus && !inputFocus"
   },
   /* Explicit Explorer F2 rename (safety / consistency) */
-  {
-    "key": "shift+f6",
-    "command": "renameFile",
-    "when": "filesExplorerFocus && !inputFocus"
-  },
+  // {
+  //   "key": "shift+f6",
+  //   "command": "renameFile",
+  //   "when": "filesExplorerFocus && !inputFocus"
+  // },
   // Clipboard + Select All for input boxes (Explorer rename, Find/Replace inputs, etc.)
   {
     "key": "ctrl+a",
@@ -924,14 +932,24 @@
   },
   {
     "key": "f2",
-    "command": "editor.action.marker.nextInFiles",
-    "when": "!terminalFocus"
+    "command": "workbench.action.debug.continue",
+    "when": "editorTextFocus && !terminalFocus"
   },
   {
-    "key": "shift+f2",
-    "command": "editor.action.marker.prevInFiles",
-    "when": "!terminalFocus"
+    "key": "f3",
+    "command": "workbench.action.debug.stepOver",
+    "when": "inDebugMode"
   },
+  // {
+  //   "key": "f2",
+  //   "command": "editor.action.marker.nextInFiles",
+  //   "when": "!terminalFocus"
+  // },
+  // {
+  //   "key": "shift+f2",
+  //   "command": "editor.action.marker.prevInFiles",
+  //   "when": "!terminalFocus"
+  // },
   {
     "key": "alt+up",
     "command": "-editor.action.moveLinesUpAction",
@@ -1134,4 +1152,55 @@
     "command": "workbench.action.closeOtherGroups",
     "when": "!terminalFocus"
   },
+  /* Suppress comment-line in chat so Ctrl+/ can reach the context picker */
+  {
+    "key": "ctrl+/",
+    "command": "-editor.action.commentLine",
+    "when": "chatInputFocus"
+  },
+  {
+    "key": "alt+]",
+    "command": "editor.action.inlineSuggest.showNext",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "alt+[",
+    "command": "editor.action.inlineSuggest.showPrevious",
+    "when": "editorTextFocus && !terminalFocus"
+  },
+  {
+    "key": "ctrl+alt+c",
+    "command": "github.copilot.completions.toggle"
+  },
+  {
+    "key": "ctrl+alt+;",
+    "command": "editor.action.inlineSuggest.trigger",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+alt+'",
+    "command": "editor.action.inlineSuggest.hide",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+; t",
+    "command": "editor.action.inlineSuggest.trigger",
+    "when": "editorTextFocus"
+  },
+  {
+    "key": "ctrl+; n",
+    "command": "editor.action.inlineSuggest.showNext",
+    "when": "editorTextFocus && inlineSuggestionVisible"
+  },
+  {
+    "key": "ctrl+; p",
+    "command": "editor.action.inlineSuggest.showPrevious",
+    "when": "editorTextFocus && inlineSuggestionVisible"
+  },
+  {
+    "key": "ctrl+; h",
+    "command": "editor.action.inlineSuggest.hide",
+    "when": "editorTextFocus && inlineSuggestionVisible"
+  },
+  /* Copilot Chat: Ctrl+/ = open context/attach picker */
 ]

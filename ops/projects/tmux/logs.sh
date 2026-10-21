@@ -6,20 +6,20 @@
 #
 # Modes:
 #   default       — start a dedicated tmux session and attach
-#   --inline      — replace the current pane (used by tmux-master.sh)
+#   --inline      — replace the current pane (used by tmux/master.sh)
 #   --detached    — start the session in the background
 #   --force       — kill any existing session of the same name first
 #
 # Usage:
-#   bash ops/projects/tmux-logs.sh
-#   bash ops/projects/tmux-logs.sh --detached
-#   bash ops/projects/tmux-logs.sh --inline
+#   bash ops/projects/tmux/logs.sh
+#   bash ops/projects/tmux/logs.sh --detached
+#   bash ops/projects/tmux/logs.sh --inline
 
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=ops/projects/lib.sh
-source "$SCRIPT_DIR/lib.sh"
+source "$SCRIPT_DIR/../lib.sh"
 
 DETACHED=0
 FORCE=0

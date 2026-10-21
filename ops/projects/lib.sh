@@ -61,7 +61,7 @@ proj_ids() {
 
 proj_field() {
   # proj_field <id> <dotted.path>
-  # Example: proj_field cms dir   →  ~/work/cms
+  # Example: proj_field app dir   →  ~/work/app
   local id="$1"
   local path="$2"
   [[ -z "$id" || -z "$path" ]] && return 1

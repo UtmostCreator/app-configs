@@ -1,0 +1,56 @@
+{
+  "$schema": "https://lnav.org/schemas/format-v1.schema.json",
+  "backend_npm_log": {
+    "title": "backend npm",
+    "description": "Timestamped backend and Frontend development output",
+    "file-pattern": "/(?:backend|web-frontend)-npm(?:-[^/]*)?\\.log$",
+    "regex": {
+      "levelled": {
+        "pattern": "^(?<timestamp>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z) \\[(?<source>BACKEND-NPM|FRONTEND-NPM)\\] (?<level>(?i:TRACE|DEBUG|INFO|NOTICE|WARN|WARNING|ERROR|CRITICAL|FATAL))(?:[ :]+)(?<body>.*)$"
+      },
+      "standard": {
+        "pattern": "^(?<timestamp>[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z) \\[(?<source>BACKEND-NPM|FRONTEND-NPM)\\] (?!(?i:TRACE|DEBUG|INFO|NOTICE|WARN|WARNING|ERROR|CRITICAL|FATAL)(?:[ :]+))(?<body>.*)$"
+      },
+      "legacy_marker": {
+        "pattern": "^\\[(?<timestamp>[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2})\\] (?<body>.*)$"
+      }
+    },
+    "timestamp-format": [
+      "%Y-%m-%dT%H:%M:%S.%LZ",
+      "%Y-%m-%d %H:%M:%S"
+    ],
+    "convert-to-local-time": true,
+    "level-field": "level",
+    "body-field": "body",
+    "ordered-by-time": true,
+    "multiline": true,
+    "value": {
+      "source": {
+        "kind": "string",
+        "identifier": true
+      },
+      "level": {
+        "kind": "string"
+      },
+      "body": {
+        "kind": "string"
+      }
+    },
+    "sample": [
+      {
+        "line": "2026-09-03T09:42:18.381Z [BACKEND-NPM] INFO development server ready",
+        "level": "info"
+      },
+      {
+        "line": "2026-09-03T09:42:18.417Z [FRONTEND-NPM] ERROR Build failed for route /region-a",
+        "level": "error"
+      },
+      {
+        "line": "2026-09-03T09:42:18.419Z [FRONTEND-NPM] Frontend dev server listening on http://localhost:3001"
+      },
+      {
+        "line": "[2026-09-03 09:42:00] starting web-frontend (legacy entry)"
+      }
+    ]
+  }
+}

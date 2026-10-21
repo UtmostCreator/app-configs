@@ -21,6 +21,6 @@ for id in $(proj_health_for_each_project process); do
     proj_emit ok "$id" "process '$leading' is running"
   else
     proj_emit fail "$id" "process '$leading' not found" \
-      "open the services window: bash ops/projects/tmux-master.sh --detached"
+      "open the services window: bash ops/projects/tmux/master.sh --detached"
   fi
 done

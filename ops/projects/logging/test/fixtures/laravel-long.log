@@ -1,0 +1,9 @@
+preamble from a previous rotation
+[2026-09-03 10:00:00] production.ERROR: RuntimeException: Checkout failed for request {"request_id":"req-111","trace_id":"01234567-89ab-4cde-8fab-0123456789ab"}
+#0 /srv/app/vendor/framework/Router.php(800): dispatch()
+#1 /srv/app/app/Actions/Checkout.php(42): run()
+#2 /srv/app/public/index.php(20): handle()
+[2026-09-03 10:01:00] production.ERROR: RuntimeException: Checkout failed for request {"request_id":"req-222","trace_id":"11234567-89ab-4cde-8fab-0123456789ab"}
+#0 /srv/app/vendor/framework/Router.php(800): dispatch()
+#1 /srv/app/app/Actions/Checkout.php(42): run()
+#2 /srv/app/public/index.php(20): handle()

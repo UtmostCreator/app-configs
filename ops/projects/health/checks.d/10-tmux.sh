@@ -14,5 +14,5 @@ if command -v tmux >/dev/null 2>&1 && tmux has-session -t "$SESSION" 2>/dev/null
   proj_emit ok "$SECTION" "session '$SESSION' is running"
 else
   proj_emit fail "$SECTION" "session '$SESSION' is not running" \
-    "bash ops/projects/tmux-master.sh --detached"
+    "bash ops/projects/tmux/master.sh --detached"
 fi

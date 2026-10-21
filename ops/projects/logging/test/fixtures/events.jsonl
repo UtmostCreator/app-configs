@@ -1,0 +1,2 @@
+{"timestamp":"2026-09-03T09:00:00+01:00","level":"ERROR","message":"Worker failed","context":{"job_id":"job-123"},"exception":{"type":"WorkerException"},"stack":"WorkerException: Worker failed\n    at run (/srv/app/src/worker.js:18:4)"}
+{"timestamp":"2026-09-03T08:10:00Z","level":"INFO","message":"Worker ready"}

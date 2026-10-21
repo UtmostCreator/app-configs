@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Per-repo health-and-context check. Used by tmux-master.sh when it
+# Per-repo health-and-context check. Used by tmux/master.sh when it
 # opens each project pane.
 #
 # Prints, for the given project id:

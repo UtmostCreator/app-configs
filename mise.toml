@@ -442,15 +442,35 @@ run = "dsh-remote-status"
 
 [tasks."projects:tmux"]
 description = "Open the master tmux workspace (one pane per project + logs + services)"
-run = "bash ops/projects/tmux-master.sh"
+run = "bash ops/projects/tmux/master.sh"
+
+[tasks."projects:tmux:stop"]
+description = "Stop the tmux workspace and its services"
+run = "bash ops/projects/workspace/stop.sh"
+
+[tasks."projects:tmux:restart"]
+description = "Stop the master tmux workspace, wait for shutdown, and open it again"
+run = "bash ops/projects/workspace/restart.sh"
+
+[tasks."projects:verify"]
+description = "Verify tmux, Herd, Redis, backend, integration, frontend and logs"
+run = "bash ops/projects/health/verify-workspace.sh"
+
+[tasks."projects:frontend:restart"]
+description = "Restart only the frontend dev pane/process"
+run = "bash ops/projects/workspace/frontend/restart.sh"
+
+[tasks."projects:components:local"]
+description = "Pack ui-components and install it into web-frontend (usage: -- apply|refresh|watch|rollback|status [--start-dev])"
+run = "bash ops/projects/workspace/components-local.sh"
 
 [tasks."projects:logs"]
 description = "Open the N-pane log viewer for projects with service.log set"
-run = "bash ops/projects/tmux-logs.sh"
+run = "bash ops/projects/tmux/logs.sh"
 
 [tasks."projects:ssh"]
 description = "Open one tmux pane per SSH host listed in projects.yaml"
-run = "bash ops/projects/tmux-ssh.sh"
+run = "bash ops/projects/tmux/ssh.sh"
 
 [tasks."projects:repo"]
 description = "Run repo-checks for one project (usage: mise run projects:repo -- <project-id>)"

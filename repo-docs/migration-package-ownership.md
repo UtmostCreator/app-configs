@@ -53,7 +53,7 @@ manually verified** against <https://search.nixos.org/packages> and
 | `shellcheck` | Nix | `nix/modules/home/dev.nix` | |
 | `shfmt` | Nix | `nix/modules/home/dev.nix` | |
 | `starship` | Nix | `nix/modules/home/cli.nix` | Config via chezmoi. |
-| `stripe/stripe-cli/stripe` | manual | — | Stripe CLI installs via official script or `brew install stripe/stripe-cli/stripe`; not in nixpkgs at time of writing. Phase 6 documents in `repo-docs/bootstrap.md` only. |
+| `stripe/stripe-cli/stripe` | manual | — | Stripe CLI installs via official script or `brew install stripe/stripe-cli/stripe`; not in nixpkgs at time of writing. Phase 6 documents in `docs/getting-started/bootstrap.md` only. |
 | `tlrc` | Nix | `nix/modules/home/cli.nix` | nixpkgs attribute is `tlrc`; alternative `tealdeer` if missing. |
 | `tmux` | Nix | `nix/modules/home/cli.nix` | |
 | `watchexec` | Nix | `nix/modules/home/dev.nix` | |
@@ -144,7 +144,7 @@ Optional add when actually used:
   <https://search.nixos.org/packages> — the Nix modules shipped
   (`nix/modules/home/{cli,dev,gui,shell-packages}.nix`) and every attribute
   name was confirmed present on `PATH` after `home-manager switch` (see
-  `repo-docs/migration-followups.md` Resolved rows dated 2026-06-01: "Full CLI
+  `docs/plans/migration/followups.md` Resolved rows dated 2026-06-01: "Full CLI
   parity from `software-and-cli-tools.md`", "CLI/GUI parity...", "Complete app
   list..."). Any row whose Nix attribute differs from the formula name stays
   flagged in "Notes".

@@ -1,0 +1,201 @@
+# Project orchestrator
+
+Generic tmux + health + GitHub PR helpers for N sibling project repos.
+
+Everything is config-driven — there are no project names in any tracked
+script. Real per-host values live in `home/.chezmoidata/projects.yaml`
+(gitignored). The committed example at `home/personal.yaml.example`'s
+sibling `home/projects.yaml.example` shows the schema with placeholders.
+
+## What it gives you
+
+| Task | Script | What it does |
+|------|--------|--------------|
+| `mise run projects:tmux` | `ops/projects/tmux/master.sh` | Master workspace (fixed 5-pane layout, percentage model). Configured via `WS_*` variables in `ops/projects/workspace/config.sh`, not `config.yaml`. |
+| `mise run projects:logs` | `ops/projects/tmux/logs.sh` | N vertical panes, one tailing each project's `service.log` (the original 3-pane log viewer, scaled to whatever fits). |
+| `mise run projects:ssh` | `ops/projects/tmux/ssh.sh` | N tmux panes, one `ssh <alias>` per entry under `ssh_workspace.hosts`. |
+| `mise run projects:repo -- <id>` | `ops/projects/repo-checks.sh` | Per-repo git status snapshot for one project. |
+| `mise run projects:health` | `ops/projects/health/run.sh` | Discover & run every `health/checks.d/*.sh`, pretty-print via `glow`. |
+| `mise run projects:health:json` | same, `--json` | Raw aggregate JSON for dashboards. |
+| `mise run projects:sync-main` | `ops/projects/github/sync-main.sh` | Fetch + fast-forward `main` on every project. |
+| `mise run projects:pr-watch` | `ops/projects/github/pr-watch.sh` | Poll GitHub for PR transitions on tracked repos. |
+
+## Setup (once per host)
+
+```bash
+# 1. Drop a real config in place (gitignored)
+cp home/projects.yaml.example home/.chezmoidata/projects.yaml
+$EDITOR home/.chezmoidata/projects.yaml
+
+# 2. Render it into ~/.config/projects/config.yaml
+chezmoi apply        # or: mise run sync:apply
+```
+
+That's it. Every script below reads `~/.config/projects/config.yaml` via `yq`.
+
+## Schema
+
+`home/.chezmoidata/projects.yaml`:
+
+```yaml
+projects:
+  <id>:                       # short slug (app, frontend, api, ...)
+    name: "human label"
+    dir: "~/work/<id>"        # absolute or tilde path
+    repo_url: "git@github.com:org/<id>.git"   # for sync-main + pr-watch
+    pane_label: "ID-UPPER"    # tmux pane title
+    branch_pattern: ""        # optional regex; empty = no auto-checkout
+    service:                  # optional; omit for non-service projects
+      pane: "<id>-service"
+      start_cmd: "npm run dev"
+      log: "~/work/<id>/storage/logs/dev.log"
+    health:
+      checks: [http, process] # check ids from health/checks.d/
+      http_url: "http://<id>.local/up"
+
+tmux:
+  master_session: "dev-workspace"
+  log_session: "dev-logs"
+  layout:
+    log_percent: 25
+    primary_percent: 50
+    secondary_percent: 25
+    tertiary_percent: 30
+
+ssh_workspace:
+  session: "remote-shells"
+  hosts: [test-host, poc-host]
+
+github:
+  pr_watch:
+    enabled: true
+    interval_seconds: 20
+    include_repos: [org/<id>]
+    events:
+      pr_opened:           { enabled: true }
+      pr_review_requested: { enabled: true }
+      pr_merged:           { enabled: true }
+      ci_failed:           { enabled: true }
+
+health:
+  retries:
+    http_tries: 5
+    http_sleep_seconds: 2
+```
+
+## Tmux master layout
+
+Order in the YAML controls pane assignment:
+
+```
+┌────────────────────────────────────────────────────────┐
+│             logs pane (log_percent of height)          │
+│         tails each project's service.log               │
+├────────────────────────┬───────────────────────────────┤
+│ projects[0] PRIMARY    │ projects[1] SECONDARY         │
+│   + repo-checks        │                               │
+│   + branch_pattern     │                               │
+│     auto-checkout      ├───────────────────────────────┤
+│                        │ projects[2] TERTIARY          │
+├────────────────────────┼───────────────────────────────┤
+│ projects[3] BOTTOM_L   │ projects[4] BOTTOM_R          │
+└────────────────────────┴───────────────────────────────┘
+
+second window: "services" — one pane per project with service.start_cmd
+```
+
+Fewer than 5 projects → the layout collapses (only the panes that have a project assigned are created).
+
+## Adding / removing a project
+
+Adding:
+
+```bash
+$EDITOR home/.chezmoidata/projects.yaml
+# add a `<new-id>:` block under `projects:` with at minimum: name, dir, repo_url, pane_label
+chezmoi apply         # re-renders ~/.config/projects/config.yaml
+mise run projects:tmux --force   # restart workspace
+```
+
+Removing:
+
+```bash
+$EDITOR home/.chezmoidata/projects.yaml
+# delete the `<id>:` block
+chezmoi apply
+mise run projects:tmux --force
+```
+
+The scripts have no hard-coded project ids — everything follows from the YAML.
+
+## Writing a new health check
+
+Each check is a self-contained 5–15 line script under
+`ops/projects/health/checks.d/`:
+
+```bash
+#!/usr/bin/env bash
+set -uo pipefail
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=ops/projects/health/lib.sh
+source "$SCRIPT_DIR/../lib.sh"
+
+# Run for every project that lists "<check-id>" under health.checks
+for id in $(proj_health_for_each_project disk-space); do
+  dir="$(proj_expand_path "$(proj_field "$id" dir)")"
+  PROJ_CHECK_NAME="${id}-disk"
+  if [[ "$(df -P "$dir" | awk 'NR==2 {print $5}' | tr -d %)" -lt 90 ]]; then
+    proj_emit ok "$id" "disk under 90%"
+  else
+    proj_emit fail "$id" "disk over 90%" "df -h $dir"
+  fi
+done
+```
+
+Add the check id (e.g. `disk-space`) under `health.checks` on any
+project in your `projects.yaml` to enable it. No registry, no wiring.
+
+## Anonymisation contract
+
+The committed source tree contains zero real project names, ssh
+hostnames, repo URLs, or owner identities. The only project-shaped
+strings in code are:
+
+- check ids in `health/checks.d/*.sh` (these are intentional category
+  names — `http`, `process`, `tmux` — not project names)
+- tmux session defaults (`dev-workspace`, `dev-logs`, `remote-shells`)
+  which are overridable via `tmux.*` in your YAML
+
+If you find a project name leaked into a tracked script, that is a bug; fix it
+in the same bounded change or open a repository issue.
+
+## Not ported
+
+- VPN-specific DNS workarounds (tied to one corporate VPN)
+- Site uptime checks and SSH-environment launchers with hard-coded host names
+- Compatibility wrapper scripts
+
+## Workspace launcher (`ws`)
+
+`home/dot_ws.zsh.tmpl` installs `~/.ws.zsh` (sourced by `.zshrc`) with the aliases below.
+Scripts live in `ops/projects/{workspace,tmux,health,logging}/` and read `workspace/config.sh` (`WS_*`, overridable).
+Project names are generic placeholders (`backend`, `web-frontend`, `integration`,
+`ui-components`, `payments`); edit `workspace/config.sh` to match your checkouts.
+
+| Alias | Script | Purpose |
+|---|---|---|
+| `ws` | `tmux/master.sh` | Open the tmux workspace, pull/check repos, start services, verify |
+| `ws-restart` / `ws-stop` | `workspace/restart.sh` / `workspace/stop.sh` | Stop, refresh and reopen / stop only |
+| `ws-verify` | `health/verify-workspace.sh` | Verify tmux, Herd, Redis, services, endpoints, logs |
+| `ws-health` / `ws-health-once` | `health/monitor.sh` | Live dashboard with sounds / one snapshot |
+| `ws-fix` | `workspace/fix.sh` | Interactive fixer for failed health checks |
+| `ws-stack` / `ws-stop-stack` | `workspace/stack/{start,stop}.sh` | Herd, Colima, Redis, backend dev server |
+| `ws-frontend` / `ws-stop-frontend` | `workspace/frontend/{start,stop}.sh` | Frontend dev server (netlify dev) |
+| `ws-frontend-restart` | `workspace/frontend/restart.sh` | Restart only the frontend pane |
+| `ws-frontend-debug` | `workspace/frontend/debug.sh` | Standalone start/stop/status/logs |
+| `ws-components-local` | `workspace/components-local.sh` | `apply`/`refresh`/`watch`/`rollback`/`status`, `--start-dev` |
+| `ws-logs` / `ws-stop-logs` | `logging/watch/watch.sh` | Backend log watcher; npm output is captured continuously to `~/logs` |
+| `log-workspace` | `logging/watch/run.sh` | lnav investigation workspace (see `logging/README.md`) |
+| `log-errors` | `logging/errors/run.sh` | Error report over log files |
+
+Not ported: VPN/DNS workarounds, site uptime checks and SSH-environment launchers.

@@ -1,6 +1,6 @@
 {
   // =========================================================
-  // PROJECT: headless-cms (Laravel + Statamic + Vue)
+  // PROJECT: headless-cms (Laravel + Vue)
   // =========================================================
   // =========================================================
   // PHP & LARAVEL CONFIGURATION
@@ -86,12 +86,10 @@
     "**/storage/logs/**": true
   },
   // =========================================================
-  // FILE ASSOCIATIONS (Laravel + Statamic)
+  // FILE ASSOCIATIONS (Laravel)
   // =========================================================
   "files.associations": {
     "*.blade.php": "blade",
-    "*.antlers.html": "html",
-    "*.antlers.php": "php",
     "*.env": "dotenv",
     ".env*": "dotenv",
     "*.stub": "php"
@@ -101,15 +99,8 @@
     "vue": "html"
   },
   // =========================================================
-  // FRAMEWORK-SPECIFIC (Statamic + Tailwind)
+  // FRAMEWORK-SPECIFIC (Tailwind)
   // =========================================================
-  // Statamic Blueprint validation
-  "yaml.schemas": {
-    "https://raw.githubusercontent.com/Konafets/statamic-blueprint-validation/main/statamic.blueprint.schema.json": [
-      "resources/blueprints/**/*.yaml",
-      "content/blueprints/**/*.yaml"
-    ]
-  },
   // Tailwind CSS IntelliSense
   "tailwindCSS.includeLanguages": {
     "blade": "html",

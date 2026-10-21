@@ -89,8 +89,8 @@ function yy() {
     rm -f -- "$tmp"
 }
 
-# CMS dev workspace (source ~/scripts)
-source ~/scripts.zsh
+# Dev workspace launcher aliases (ws, ws-restart, ws-verify, ...)
+[ -f ~/.ws.zsh ] && source ~/.ws.zsh
 
 export ATUIN_TMUX_POPUP=false
 # shellcheck disable=SC2034,SC2153,SC2086,SC2155
@@ -353,17 +353,19 @@ rggi() {
 
 brewup() {
   local formulae=(
-    atuin bat btop colima docker docker-compose eza fd fzf git-delta just
-    lazygit lnav mise mysql-client neovim pnpm ripgrep ripgrep-all starship
-    tldr tmux yazi zoxide zsh-autosuggestions zsh-syntax-highlighting copilot-cli
-    ast-grep
+    atuin bat btop colima docker docker-compose eza fd fzf git git-delta just
+        gh go lazygit lnav mise mysql-client neovim pnpm ripgrep ripgrep-all starship
+    tldr tmux yazi zoxide zsh-autosuggestions zsh-syntax-highlighting
+    ast-grep jq repomix
+    act actionlint bats-core docker-buildx duti gawk gitleaks glow lizard-analyzer lychee
+    p7zip parallel scc sd semgrep shfmt tree universal-ctags uv yq
   )
 
   local casks=(
-    aerospace bruno firefox flameshot
+    1password-cli aerospace bbedit betterdisplay bruno copilot-cli firefox flameshot
     font-jetbrains-mono-nerd-font font-meslo-lg-nerd-font ghostty
-    jordanbaird-ice linearmouse notunes sequel-ace stats
-    intellij-idea-ce alt-tab visual-studio-code
+    jordanbaird-ice@beta linearmouse notunes postman sequel-ace stats
+    visual-studio-code intellij-idea-ce alt-tab claude-code
   )
 
   local installed_formulae=()

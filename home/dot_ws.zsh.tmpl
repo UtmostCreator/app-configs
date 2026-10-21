@@ -1,0 +1,139 @@
+# Workspace launcher aliases (sourced from ~/.zshrc).
+#
+# Type `ws` to open the tmux dev workspace: panes are created, repos are
+# checked and updated, services start, logs are captured, and verification runs
+# before the git workflow. Scripts live in ops/projects/ of the app-configs repo.
+#
+#   ws                  open the full tmux workspace (ops/projects/tmux/master.sh)
+#   ws-restart          stop the workspace, refresh repo state, open it again
+#   ws-stop             stop the tmux workspace
+#   ws-verify           verify tmux, Herd, Redis, backend, integration, frontend, logs
+#   ws-logs             run the backend log watcher
+#   ws-stack            start Herd, Colima, Redis and the backend npm dev server
+#   ws-frontend         start the web-frontend dev server (netlify dev)
+#   ws-frontend-restart restart only the frontend pane/process
+#   ws-frontend-debug   start/stop/status/logs helper for standalone frontend debugging
+#   ws-components-local pack ui-components and install the tarball into web-frontend
+#                       (apply | refresh | watch | rollback | status; --start-dev)
+#   ws-health           live health dashboard   ws-health-once  single snapshot
+#   ws-fix              interactive fix picker for health failures
+#   log-workspace       persistent lnav log investigation workspace
+#   log-errors          error report over log files/directories
+#   kill-logs           stop log capture/watch processes
+
+WS_PROJECTS_DIR="${WS_PROJECTS_DIR:-{{ joinPath .chezmoi.sourceDir ".." "ops" "projects" }}}"
+WS_LOGGING_DIR="$WS_PROJECTS_DIR/logging"
+WS_HEALTH_DIR="$WS_PROJECTS_DIR/health"
+
+alias ws="bash $WS_PROJECTS_DIR/tmux/master.sh"
+alias ws-start="bash $WS_PROJECTS_DIR/tmux/master.sh"
+alias ws-restart="bash $WS_PROJECTS_DIR/workspace/restart.sh"
+alias ws-stop="bash $WS_PROJECTS_DIR/workspace/stop.sh"
+alias ws-verify="bash $WS_HEALTH_DIR/verify-workspace.sh"
+alias ws-logs="bash $WS_LOGGING_DIR/watch/watch.sh"
+alias ws-stop-logs="bash $WS_LOGGING_DIR/watch/stop-watch.sh"
+alias ws-stack="bash $WS_PROJECTS_DIR/workspace/stack/start.sh"
+alias ws-stop-stack="bash $WS_PROJECTS_DIR/workspace/stack/stop.sh"
+alias ws-frontend="bash $WS_PROJECTS_DIR/workspace/frontend/start.sh"
+alias ws-stop-frontend="bash $WS_PROJECTS_DIR/workspace/frontend/stop.sh"
+alias ws-frontend-restart="bash $WS_PROJECTS_DIR/workspace/frontend/restart.sh"
+alias ws-frontend-debug="bash $WS_PROJECTS_DIR/workspace/frontend/debug.sh"
+alias ws-components-local="bash $WS_PROJECTS_DIR/workspace/components-local.sh"
+alias ws-health-raw="bash $WS_HEALTH_DIR/monitor.sh"
+alias ws-fix="bash $WS_PROJECTS_DIR/workspace/fix.sh"
+alias log-workspace="bash $WS_LOGGING_DIR/watch/run.sh"
+alias log-errors="bash $WS_LOGGING_DIR/errors/run.sh"
+alias kill-logs="bash $WS_LOGGING_DIR/kill-logs.sh"
+
+unalias ws-health 2>/dev/null || true
+ws-health() {
+    # Live markdown health dashboard.
+    # refresh controls redraw frequency; check_every controls expensive check frequency.
+    local refresh="${WS_HEALTH_MD_REFRESH:-20}"
+    local check_every="${WS_HEALTH_CHECK_EVERY:-1}"
+    local sound_debounce="${WS_HEALTH_SOUND_DEBOUNCE:-5}"
+    local rendered=""
+    local health_json=""
+    local health_status="unknown"
+    local health_rc=0
+    local last_health_status=""
+    local now_ts=0
+    local last_sound_ts=0
+    local sound_cmd=""
+    local sound_ok=""
+    local sound_fail=""
+    local cycle=0
+
+    if [[ ! "$check_every" =~ ^[0-9]+$ ]] || (( check_every < 1 )); then
+        check_every=1
+    fi
+
+    if command -v afplay >/dev/null 2>&1; then
+        sound_cmd="afplay"
+        sound_ok="/System/Library/Sounds/Ping.aiff"
+        sound_fail="/System/Library/Sounds/Basso.aiff"
+    elif command -v paplay >/dev/null 2>&1; then
+        sound_cmd="paplay"
+        sound_ok="/usr/share/sounds/freedesktop/stereo/complete.oga"
+        sound_fail="/usr/share/sounds/freedesktop/stereo/dialog-error.oga"
+    fi
+
+    while true; do
+        ((cycle+=1))
+        if (( (cycle - 1) % check_every == 0 )) || [[ -z "$rendered" ]]; then
+            health_json="$(bash "$WS_HEALTH_DIR/monitor.sh" --json 2>/dev/null)"
+            health_rc=$?
+
+            if [[ -z "${health_json//[[:space:]]/}" ]] || ! jq -e '.overall.status' >/dev/null 2>&1 <<<"$health_json"; then
+                health_status="fail"
+                rendered="# Workspace Health\n\n- Status: **HALTED**\n- Cause: health check command returned invalid or empty JSON\n- Updated: $(date '+%Y-%m-%d %H:%M:%S')\n\n## Notes\n- Live health data is unavailable right now.\n- This view intentionally does **not** keep stale OK output.\n- Last command exit code: $health_rc\n- Run: bash $WS_HEALTH_DIR/monitor.sh --json\n"
+            else
+                health_status="$(jq -r '.overall.status // "unknown"' <<<"$health_json")"
+                rendered="$(printf "%s\n" "$health_json" | bash "$WS_HEALTH_DIR/pretty.sh")"
+            fi
+
+            if [[ "$health_status" != "$last_health_status" ]]; then
+                now_ts="$(date +%s)"
+                if (( now_ts - last_sound_ts >= sound_debounce )); then
+                    if [[ "$health_status" == "ok" ]]; then
+                        if [[ -n "$sound_cmd" && -f "$sound_ok" ]]; then
+                            "$sound_cmd" "$sound_ok" >/dev/null 2>&1 &
+                        else
+                            printf '\a'
+                        fi
+                    else
+                        if [[ -n "$sound_cmd" && -f "$sound_fail" ]]; then
+                            "$sound_cmd" "$sound_fail" >/dev/null 2>&1 &
+                        else
+                            printf '\a'
+                        fi
+                    fi
+                    last_sound_ts="$now_ts"
+                fi
+                last_health_status="$health_status"
+            fi
+        fi
+
+        if [[ -n "$rendered" ]]; then
+            clear
+            if command -v glow >/dev/null 2>&1; then
+                printf "%s\n" "$rendered" | glow - -w 0 -n
+            else
+                printf "%s\n" "$rendered"
+            fi
+            printf "\nupdated: %s | refresh: %ss | health-check cadence: every %s cycles (~%ss) | Ctrl+C to stop\n" "$(date +%H:%M:%S)" "$refresh" "$check_every" "$((refresh * check_every))"
+        fi
+        sleep "$refresh"
+    done
+}
+
+ws-health-once() {
+    if command -v glow >/dev/null 2>&1; then
+        bash "$WS_HEALTH_DIR/monitor.sh" --json 2>/dev/null \
+            | bash "$WS_HEALTH_DIR/pretty.sh" \
+            | glow - -w 0 -n
+    else
+        bash "$WS_HEALTH_DIR/monitor.sh" --json 2>/dev/null \
+            | bash "$WS_HEALTH_DIR/pretty.sh"
+    fi
+}

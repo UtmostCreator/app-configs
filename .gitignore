@@ -38,8 +38,12 @@ coverage/
 /composer.phar
 
 # Generated documentation outputs (regenerate locally; do not commit)
+!/docs/
 /docs/generated/*
 !/docs/generated/README.md
+
+# AI verification run logs (ephemeral; not reproducible documentation)
+/docs/ai/generated/
 
 # Dotfiles migration — chezmoi private state
 # Real personal data and chezmoi runtime state must never be committed.

@@ -52,7 +52,7 @@ sys-readiness                         # confirm: prints ALL SET when fully confi
 ```
 
 Manual mode (step-by-step with prompts) is documented in
-[`repo-docs/bootstrap.md`](repo-docs/bootstrap.md):
+[`docs/getting-started/bootstrap.md`](docs/getting-started/bootstrap.md):
 
 ```bash
 cp home/personal.yaml.example home/.chezmoidata/personal.yaml
@@ -181,7 +181,7 @@ removes Nix itself and never deletes those snapshots.
 | Lefthook | Git hooks (no-personal-yaml guard + validate-config) |
 | shell scripts | Bootstrap, setup, update, cleanup, validation |
 
-Full rationale: [`repo-docs/architecture/tool-ownership.md`](repo-docs/architecture/tool-ownership.md).
+Full rationale: [`docs/architecture/tool-ownership.md`](docs/architecture/tool-ownership.md).
 
 ## Repository layout
 
@@ -190,7 +190,8 @@ Full rationale: [`repo-docs/architecture/tool-ownership.md`](repo-docs/architect
 | `home/` | chezmoi source tree for dotfiles and app configs. `home/personal.yaml.example` is committed; real `home/.chezmoidata/personal.yaml` is gitignored. |
 | `nix/` | Nix flake + Home Manager modules per host profile. `nix/flake.nix` exposes `homeConfigurations.{linux-desktop,linux-cli,wsl,macos}` and `darwinConfigurations.macos`. |
 | `ops/` | Repo-owned install, setup, update, cleanup, validation, hooks (`ops/hooks/`), project helpers (`ops/projects/`), and Unix setup (`ops/unix/`). |
-| `repo-docs/` | Extended setup, maintenance, and active planning documentation. |
+| `docs/` | Canonical documentation: getting started, guides, reference, plans, research. Start at `docs/index.md`. |
+| `repo-docs/` | Legacy docs still read by `ops/` scripts (`doctor`, `validate-config`, package-matrix helpers). Moves once those scripts are updated. |
 | `mise.toml` | Repo task definitions. Tool versions are per-user in `home/dot_config/mise/config.toml.tmpl`. |
 | `.lefthook.yml` | Git hook configuration. |
 
@@ -229,8 +230,8 @@ bash ops/uninstall.sh --apply     # actually run
 
 ## Extended documentation
 
-- Install + maintenance guide: [`repo-docs/INSTALL.md`](repo-docs/INSTALL.md)
-- Cold-start runbook: [`repo-docs/bootstrap.md`](repo-docs/bootstrap.md)
-- NixOS specifics: [`repo-docs/install-nixos.md`](repo-docs/install-nixos.md)
-- System rebuild (`nixos-rebuild`, when & how): [`repo-docs/nixos-rebuild.md`](repo-docs/nixos-rebuild.md)
-- Nix-specific bits & cross-distro replacements: [`repo-docs/nix-specific-and-replacements.md`](repo-docs/nix-specific-and-replacements.md)
+- Install + maintenance guide: [`docs/getting-started/install.md`](docs/getting-started/install.md)
+- Cold-start runbook: [`docs/getting-started/bootstrap.md`](docs/getting-started/bootstrap.md)
+- NixOS specifics: [`docs/platforms/nixos/install.md`](docs/platforms/nixos/install.md)
+- System rebuild (`nixos-rebuild`, when & how): [`docs/platforms/nixos/rebuild.md`](docs/platforms/nixos/rebuild.md)
+- Nix-specific bits & cross-distro replacements: [`docs/reference/nix-package-replacements.md`](docs/reference/nix-package-replacements.md)

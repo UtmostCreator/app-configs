@@ -31,8 +31,8 @@ Decision date: 2026-05-24
 |------|-------------|--------|
 | `configs/shell/ssh-agent/ssh-agent.sh` | **migrate to `home/dot_config/app-configs/ssh-agent.sh`** | Sourced from `~/.bashrc` / `~/.zshrc`. chezmoi-owned. |
 | `configs/shell/ssh-agent/ssh-agent.fish` | **migrate to `home/dot_config/fish/conf.d/ssh-agent.fish`** | Fish auto-loads everything in `conf.d/`. chezmoi-owned. |
-| `configs/shell/ssh-agent/README.md` | **migrate to `repo-docs/unix/ssh-agent-snippets.md`** | Keep as reference docs. |
-| `ops/unix/ssh-agent-setup.sh` | **keep in place as bootstrap helper** | Bootstrap.sh + repo-docs/unix/QUICKSTART.md call it. Update its source paths in Phase 4 to point at `home/dot_config/app-configs/` and `home/dot_config/fish/conf.d/`. |
+| `configs/shell/ssh-agent/README.md` | **migrate to `docs/reference/ssh-agent-snippets.md`** | Keep as reference docs. |
+| `ops/unix/ssh-agent-setup.sh` | **keep in place as bootstrap helper** | Bootstrap.sh + docs/getting-started/unix-quickstart.md call it. Update its source paths in Phase 4 to point at `home/dot_config/app-configs/` and `home/dot_config/fish/conf.d/`. |
 
 ## Files with no duplicates (migrate directly)
 

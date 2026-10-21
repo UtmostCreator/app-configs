@@ -6,7 +6,7 @@
 # Why from source: extensions installed from a store are pre-bundled and cannot
 # be debugged/rebuilt. Building from source gives you a development build you
 # control. For ready-to-use extensions, prefer the in-app Store (see
-# repo-docs/vicinae-extensions.md).
+# docs/reference/vicinae-extensions.md).
 #
 # What it does (idempotent):
 #   1. Verifies vicinae + node + npm + git are present.

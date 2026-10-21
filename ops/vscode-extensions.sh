@@ -40,21 +40,23 @@ extensions=(
   alefragnani.bookmarks
   amiralizadeh9480.laravel-extra-intellisense
   anan.jetbrains-darcula-theme
+  anthropic.claude-code
   austenc.tailwind-docs
   bmewburn.vscode-intelephense-client
   bradlc.vscode-tailwindcss
+  bruno-api-client.bruno
   christian-kohler.npm-intellisense
   christian-kohler.path-intellisense
   codingyu.laravel-goto-view
   davidanson.vscode-markdownlint
   dbaeumer.vscode-eslint
-  devsense.phptools-vscode
   docker.docker
   dotenv.dotenv-vscode
   eamodio.gitlens
   ecmel.vscode-html-css
   editorconfig.editorconfig
   esbenp.prettier-vscode
+  firsttris.vscode-jest-runner
   formulahendry.auto-close-tag
   github.vscode-github-actions
   github.vscode-pull-request-github
@@ -76,6 +78,7 @@ extensions=(
   naumovs.color-highlight
   neilbrayfield.php-docblocker
   nuxtr.nuxtr-vscode
+  onecentlin.laravel-blade
   open-southeners.laravel-pint
   pkief.material-icon-theme
   pranaygp.vscode-css-peek
@@ -86,9 +89,13 @@ extensions=(
   sonarsource.sonarlint-vscode
   streetsidesoftware.code-spell-checker
   stylelint.vscode-stylelint
+  tamasfe.even-better-toml
+  tyriar.lorem-ipsum
+  unifiedjs.vscode-mdx
   usernamehw.errorlens
   vue.volar
   xdebug.php-debug
+  xyz.local-history
 )
 
 if ! code_bin="$(find_code)"; then

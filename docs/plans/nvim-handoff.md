@@ -55,7 +55,6 @@ tmux is actively consumed by repository automation:
 | Consumer | Path |
 |---|---|
 | Project session manager | `ops/projects/tmux/master.sh` |
-| Log pane driver | `ops/projects/tmux/logs.sh` |
 | SSH session driver | `ops/projects/tmux/ssh.sh` |
 | Shared library | `ops/projects/lib.sh` |
 | Health check | `ops/projects/health/checks.d/10-tmux.sh` |

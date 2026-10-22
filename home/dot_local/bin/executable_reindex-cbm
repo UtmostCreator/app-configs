@@ -44,7 +44,7 @@ raw_paths=""
 offset=0
 
 while :; do
-    response="$(codebase-memory-mcp cli --quiet --json list_projects --format json --detail stats --limit 500 --offset "$offset")" || {
+    response="$(codebase-memory-mcp cli --quiet --json list_projects --format json --detail stats --limit 500 --offset "$offset" </dev/null)" || {
         echo "Could not list Codebase Memory projects." >&2
         exit 1
     }

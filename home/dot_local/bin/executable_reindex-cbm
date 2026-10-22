@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+
+set -u -o pipefail
+
+usage() {
+    cat <<'EOF'
+Usage: reindex-cbm [--all] [--dry-run]
+
+Select one available Codebase Memory repository to re-index.
+
+  --all      Re-index every available repository.
+  --dry-run  Show the selected repositories without indexing them.
+
+Requires: codebase-memory-mcp, jq; fzf unless --all is given.
+EOF
+}
+
+all=0
+dry_run=0
+while (( $# > 0 )); do
+    case "$1" in
+        --all) all=1 ;;
+        --dry-run) dry_run=1 ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            usage >&2
+            exit 2
+            ;;
+    esac
+    shift
+done
+
+for tool in codebase-memory-mcp jq; do
+    if ! command -v "$tool" >/dev/null 2>&1; then
+        echo "$tool is not installed or not on PATH." >&2
+        exit 1
+    fi
+done
+
+raw_paths=""
+offset=0
+
+while :; do
+    response="$(codebase-memory-mcp cli --quiet --json list_projects --format json --detail stats --limit 500 --offset "$offset")" || {
+        echo "Could not list Codebase Memory projects." >&2
+        exit 1
+    }
+
+    page_paths="$(printf '%s' "$response" | jq -er '.content[0].text | fromjson | .projects[].root_path')" || {
+        echo "Could not parse Codebase Memory project paths." >&2
+        exit 1
+    }
+    raw_paths="${raw_paths}${page_paths}"$'\n'
+
+    has_more="$(printf '%s' "$response" | jq -r '.content[0].text | fromjson | .has_more')" || exit 1
+    returned="$(printf '%s' "$response" | jq -er '.content[0].text | fromjson | .returned')" || exit 1
+    [[ "$has_more" == "true" ]] || break
+    # Guard against an endless loop if the server reports more pages but returns none.
+    (( returned > 0 )) || break
+    (( offset += returned ))
+done
+
+available=()
+skipped=()
+while IFS= read -r repository; do
+    [[ -n "$repository" ]] || continue
+    if [[ -d "$repository" ]]; then
+        available+=("$repository")
+    else
+        skipped+=("$repository")
+    fi
+done < <(printf '%s' "$raw_paths" | sort -u)
+
+if (( ${#available[@]} == 0 )); then
+    echo "No available Codebase Memory repositories to update." >&2
+    exit 1
+fi
+
+if (( all )); then
+    planned=("${available[@]}")
+else
+    if ! command -v fzf >/dev/null 2>&1; then
+        echo "fzf is required to select a repository; use --all to re-index every repository." >&2
+        exit 127
+    fi
+
+    selected="$(printf '%s\n' "${available[@]}" | fzf --height 40% --border --no-multi --prompt 'Re-index CBM > ')" || exit 0
+    planned=("$selected")
+fi
+
+printf 'Planned updates (%d):\n' "${#planned[@]}"
+printf '  %s\n' "${planned[@]}"
+
+if (( ${#skipped[@]} > 0 )); then
+    printf '\nSkipped missing repositories (%d):\n' "${#skipped[@]}" >&2
+    printf '  %s\n' "${skipped[@]}" >&2
+fi
+
+if (( dry_run )); then
+    printf '\nDry run: no repositories were indexed.\n'
+    exit 0
+fi
+
+successful=()
+failed=()
+for repository in "${planned[@]}"; do
+    printf '\nIndexing: %s\n' "$repository"
+    if codebase-memory-mcp cli --progress index_repository --repo-path "$repository"; then
+        successful+=("$repository")
+    else
+        failed+=("$repository")
+    fi
+done
+
+printf '\nSuccessfully updated (%d):\n' "${#successful[@]}"
+if (( ${#successful[@]} > 0 )); then
+    printf '  %s\n' "${successful[@]}"
+fi
+
+if (( ${#failed[@]} > 0 )); then
+    printf '\nFailed updates (%d):\n' "${#failed[@]}" >&2
+    printf '  %s\n' "${failed[@]}" >&2
+    exit 1
+fi

@@ -7,7 +7,7 @@ priority: P0
 mode: read-only
 status: active
 owner: platform
-updated: 2026-10-21
+updated: 2026-10-22
 tags: [apache, access-log, requests-per-minute, status-codes, top-ips, user-agent, baseline]
 symptoms: [traffic spike, 5xx spike, slow responses, suspicious requests]
 steps: [TRF-01, TRF-02, TRF-03, TRF-04, TRF-05, TRF-06]
@@ -27,6 +27,8 @@ APACHE_LOG=/var/log/apache2/access.log
 RB=docs/runbooks/shared/commands
 ```
 
+All steps follow the [shared execution and evidence gates](../shared/recovery-evidence.md#execution-and-evidence-gates). Record unknown results and missing evidence once in the incident record; unknown evidence permits further diagnosis but never satisfies attribution, approval, recovery or closure.
+
 ## Steps
 
 [TRF-01](#trf-01) · [TRF-02](#trf-02) · [TRF-03](#trf-03) · [TRF-04](#trf-04) · [TRF-05](#trf-05) · [TRF-06](#trf-06)
@@ -42,14 +44,15 @@ RB=docs/runbooks/shared/commands
 ### Commands
 
 ```bash
-"$RB"/apache/request-rate.sh "$APACHE_LOG" | tail -n 60
+# Whole selected file; choose explicit UTC bounds for incident/baseline comparisons.
+"$RB"/apache/request-rate.sh "$APACHE_LOG"
 # Limit to a window with a timestamp regex:
 WINDOW='13/Oct/2026:08:(1[7-9]|2[0-9])' "$RB"/apache/request-rate.sh "$APACHE_LOG"
 # Baseline: run against a rotated log from a comparable quiet period
 "$RB"/apache/request-rate.sh /var/log/apache2/access.log.2.gz | sort -k2 -nr | head -5
 ```
 
-**Expected output:** `YYYY-MM-DD HH:MM  count` per minute.
+**Expected output:** `YYYY-MM-DDTHH:MMZ count`, sorted chronologically in UTC. Missing minutes are omitted. Prefer paired `START_UTC` / `END_UTC` for equal baseline and incident intervals. See [counting rules](../shared/debugging-method.md#make-counts-reproducible).
 
 ### Decision
 
@@ -60,8 +63,6 @@ WINDOW='13/Oct/2026:08:(1[7-9]|2[0-9])' "$RB"/apache/request-rate.sh "$APACHE_LO
 | No baseline exists                                                       | Use the closest comparable period and record the limitation; [RB-02/TRF-02](#trf-02)        |
 | Requests per minute rose several-fold but visitor-facing traffic did not | Backend calls per visitor grew (fan-out). [RB-08/DEP-01](08-service-dependencies.md#dep-01) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** Peak requests/minute, baseline requests/minute, window.
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
@@ -70,7 +71,7 @@ WINDOW='13/Oct/2026:08:(1[7-9]|2[0-9])' "$RB"/apache/request-rate.sh "$APACHE_LO
 
 **Analyse HTTP status distribution**
 
-- **Objective:** See whether errors, redirects or 200s dominate. A window can be ~98% HTTP 200 with zero 5xx logged and still be unhealthy: requests that time out upstream never complete in Apache, so they do not appear as 5xx. Judge health by latency, saturation and application errors too.
+- **Objective:** See whether errors, redirects or 200s dominate. A window can be ~98% HTTP 200 with zero 5xx logged and still be unhealthy: an upstream timeout may be followed by a backend success, and in-flight or killed requests may be missing from the selected evidence. Judge health by latency, saturation and application errors too.
 - **Mode:** Read-only
 - **Preconditions:** Time window and sources validated ([RB-01](../foundations/01-evidence-attribution.md))
 
@@ -87,8 +88,6 @@ WINDOW='13/Oct/2026:08:(1[7-9]|2[0-9])' "$RB"/apache/request-rate.sh "$APACHE_LO
 | 5xx elevated                                      | [RB-02/TRF-05](#trf-05)                                                                                 |
 | Mostly 200 but latency or GraphQL errors reported | [RB-02/TRF-05](#trf-05); inspect response time and application-level errors (HTTP 200 can carry errors) |
 | Distribution normal                               | [RB-02/TRF-03](#trf-03)                                                                                 |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Counts and percentages per status class.
 
@@ -120,8 +119,6 @@ awk -F'"' '{print $6}' "$APACHE_LOG" | sort | uniq -c | sort -nr | head -15
 | A few dynamic API endpoints account for most requests        | [RB-02/TRF-04](#trf-04) and [RB-08/DEP-01](08-service-dependencies.md#dep-01)                                          |
 | GraphQL dominates                                            | Identify operations via application-level logging or APM (the access log cannot); [RB-04/APP-03](04-laravel.md#app-03) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** Top 20 of each dimension with counts and share.
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
@@ -149,8 +146,6 @@ grep -E "(wp-login|\.env|/\.git|phpmyadmin)" "$APACHE_LOG" | awk '{print $1}' | 
 | Legitimate API fan-out (GraphQL, navigation, localisation) | [RB-08/DEP-01](08-service-dependencies.md#dep-01) |
 | Nothing unusual                                            | [RB-02/TRF-05](#trf-05)                           |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** Dynamic route ranking and any suspicious signatures.
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
@@ -168,8 +163,8 @@ grep -E "(wp-login|\.env|/\.git|phpmyadmin)" "$APACHE_LOG" | awk '{print $1}' | 
 ```bash
 # Requests per minute vs 5xx per minute
 awk '$9 ~ /^5/ {print substr($4,2,17)}' "$APACHE_LOG" | sort | uniq -c | tail -n 30
-# If the log format includes %D (microseconds), list the slowest requests:
-# awk '{print $NF, $7}' "$APACHE_LOG" | sort -nr | head
+# Inspect existing latency fields only after verifying their positions and units.
+# Standard combined format has no duration; $NF is not a reliable duration field.
 ```
 
 ### Decision
@@ -181,9 +176,7 @@ awk '$9 ~ /^5/ {print substr($4,2,17)}' "$APACHE_LOG" | sort | uniq -c | tail -n
 | Traffic is first-party generated | [RB-08/DEP-01](08-service-dependencies.md#dep-01)                  |
 | No overlap                       | Record negative correlation; continue with [RB-02/TRF-06](#trf-06) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
-**Evidence to record:** Timeline of requests vs errors with overlap judgement.
+**Evidence to record:** Timeline of requests vs errors with overlap judgement, request IDs where available, and latency sample counts/units. Without shared IDs, record time overlap as correlation. Follow [timing rules](../shared/debugging-method.md#align-request-time-log-arrival-and-correlation) and [latency checks](../shared/debugging-method.md#measure-latency-and-resource-pressure).
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
 
@@ -209,8 +202,6 @@ awk '$9 ~ /^5/ {print substr($4,2,17)}' "$APACHE_LOG" | sort | uniq -c | tail -n
 | Capacity pressure             | [RB-03/CAP-01](03-apache-capacity.md#cap-01)      |
 | Application-generated traffic | [RB-08/DEP-01](08-service-dependencies.md#dep-01) |
 | Nothing actionable            | [RB-00/INC-05](../00-incident-intake.md#inc-05)   |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Chosen route and the evidence behind it.
 

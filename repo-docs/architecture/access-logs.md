@@ -4,6 +4,8 @@ Goal: Identify abnormal traffic, aggressive clients, suspicious requests, expens
 
 Execution model: Start at Step 0. Each step explains how to interpret the command results and which step to execute next. Return to earlier steps when new evidence changes the investigation.
 
+> For the maintained incident workflow, start with the [runbook router](../../docs/runbooks/README.md), [evidence validation](../../docs/runbooks/foundations/01-evidence-attribution.md) and [systematic debugging reference](../../docs/runbooks/shared/debugging-method.md). This guide provides an additional Apache walkthrough.
+
 ## Workflow overview
 
 Branches can skip forward or return to earlier steps according to the findings.
@@ -97,7 +99,7 @@ Only trust this extraction if the request came through the expected ALB and its 
 
 ### 1.3 Set up reusable log parsing
 
-This function ensures subsequent steps use the same client-IP strategy, exclude ALB health checks, and group URLs without query-string differences.
+This function ensures subsequent steps use the same client-IP strategy, retain health checks for attribution, and group URLs without query-string differences.
 
 Run it once in your shell.
 
@@ -110,8 +112,8 @@ apache_rows() {
   awk -F'"' -v mode="$CLIENT_MODE" '
     BEGIN { OFS="\t" }
 
-    # Exclude health checks
-    $6 == "ELB-HealthChecker/2.0" { next }
+    # Keep health checks until peer, route and expected behaviour are verified.
+    # A user agent alone is not trusted attribution.
 
     {
       split($1, prefix, /[[:space:]]+/)
@@ -490,6 +492,7 @@ awk -F'[][]' '
     print substr($2, 1, 17)
   }
 ' "$LOG" \
+  | sort \
   | uniq -c \
   | tail -n 30
 ```
@@ -503,7 +506,7 @@ Example:
  1520 21/Oct/2026:19:33
 ```
 
-This assumes log entries are chronological; `uniq -c` groups consecutive identical minute values.
+Sort before `uniq -c` so nonadjacent records from the same minute are counted together. Apache logs can arrive out of timestamp order: default `%t` is receipt time, while writing happens later. This display sorts `DD/Mon/YYYY` lexically, so `tail` is not a reliable latest-window selector across date boundaries. Select a validated interval first or parse timestamps into UTC before chronological sorting.
 
 ### 10.2 Identify endpoints generating server errors
 
@@ -565,6 +568,6 @@ Do not block an IP or change rate limits solely from one command result. Correla
 | Application errors or resource exhaustion | Step 10                         |
 | Investigation inconclusive                | Step 10, then revisit Steps 3–8 |
 
-Corrections incorporated from the original commands: accurate parsing of the quoted Apache request and user-agent fields; trusted-proxy-aware XFF selection; query-string normalisation; correctly escaped static-asset filtering; exclusion of ALB health checks; and support for IPv6 in live-connection analysis.
+Corrections incorporated from the original commands: accurate parsing of the quoted Apache request and user-agent fields; trusted-proxy-aware XFF selection; query-string normalisation; correctly escaped static-asset filtering; verification of ALB health checks before exclusion; and support for IPv6 in live-connection analysis.
 
 Scope: Read-only diagnostics on the configured Apache log. Results cover the selected file and its time range, not automatically all rotated logs, other Apache virtual hosts, CDN requests, or requests rejected before reaching Apache.

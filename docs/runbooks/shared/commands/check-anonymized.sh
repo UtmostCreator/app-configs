@@ -13,7 +13,7 @@ while IFS= read -r line; do report "IP address: $line"; done < <(
   grep -vE ':(127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.[0-9]+|198\.51\.100\.[0-9]+|203\.0\.113\.[0-9]+)$' || true)
 
 # Hostnames with common TLDs that are not placeholders or well-known public documentation hosts
-allow='(^|\.)(example\.(com|org|net|test)|netlify\.com|apache\.org|nuxt\.com\.dev|laravel\.com|redis\.io|github\.com|shellcheck\.net)$'
+allow='(^|\.)(example\.(com|org|net|test)|netlify\.com|apache\.org|kernel\.org|php\.net|w3\.org|nuxt\.com\.dev|laravel\.com|redis\.io|github\.com|shellcheck\.net)$'
 while IFS= read -r hit; do
   host=${hit##*:}
   [[ "$host" =~ $allow ]] || report "hostname: $hit"

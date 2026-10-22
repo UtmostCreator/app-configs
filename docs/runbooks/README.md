@@ -5,7 +5,7 @@ type: index
 domain: incident-response
 status: active
 owner: platform
-updated: 2026-10-21
+updated: 2026-10-22
 tags: [runbooks, index, router, ubuntu, apache, netlify, access-logs, incident-response]
 symptoms: [504, AH00161, oom-kill, traffic spike, high load, cache stampede]
 ---
@@ -48,13 +48,13 @@ Modular, cross-linked runbooks for investigating incidents on an Ubuntu web serv
 | RB-08 | [Frontend and backend service dependencies, checkout](diagnostics/08-service-dependencies.md) | P1       | 5     | read-only          |
 | RB-09 | [Deployment, environment and configuration drift](diagnostics/09-deployment-drift.md)         | P1       | 5     | read-only          |
 | RB-10 | [Safe mitigation, recovery and rollback](response/10-mitigation-recovery.md)                  | P0       | 6     | changes production |
-| RB-11 | [Regression validation and post-incident review](response/11-validation-review.md)            | P1       | 6     | read-only          |
+| RB-11 | [Regression validation and post-incident review](response/11-validation-review.md)            | P1       | 6     | passive evidence / isolated staging tests |
 
 P0 is required for core triage and recovery; P1 is specialised investigation or validation.
 
 ## Rules
 
-- **RB-00 to RB-09 are read-only.** Configuration edits, cache clears, restarts, WAF changes and token rotation belong to [RB-10](response/10-mitigation-recovery.md) behind approval and rollback. Credential exposure is escalated to the incident owner immediately; authorisation must never delay notification.
+- **RB-00 to RB-09 use passive inspection by default.** Configuration edits, cache clears, restarts, WAF changes and token rotation belong to [RB-10](response/10-mitigation-recovery.md) behind approval and rollback. Credential exposure is escalated to the incident owner immediately; authorisation must never delay notification.
 - **Evidence before conclusions.** Verify host, UTC window, retention and proxy attribution ([RB-01](foundations/01-evidence-attribution.md)) first. "No log matches" is not "no event".
 - **One owner per domain.** A step hands off to a specialist step and records where to return; the caller keeps its context.
 - **Hypotheses stay hypotheses.** A cache clear or deploy that _precedes_ a failure is a causal hypothesis until controlled evidence shows it caused it.
@@ -69,7 +69,9 @@ RB-03/CAP-03 -> RB-04/APP-01 -> RB-04/APP-03 -> RB-06/CCH-03 -> RB-06/CCH-05
         return -> RB-04/APP-04 -> RB-03/CAP-05 -> RB-10/MIT-01 -> RB-11/VAL-06
 ```
 
-Every step uses the same contract: Objective, Mode, Preconditions, Commands, Expected output, Decision table, If unknown, Evidence to record, Return. Step headings are just the ID (`## CAP-03`), so anchors (`#cap-03`) stay stable when titles change.
+Apply the shared [execution and evidence gates](shared/recovery-evidence.md#execution-and-evidence-gates) at every handoff. Unknown evidence can route to further diagnosis, but cannot satisfy an approval, attribution, recovery or closure gate.
+
+Every step uses the same contract: Objective, Mode, Preconditions, Commands, Expected output, Decision table, Evidence to record, Return. Shared unknown-result handling is stated once per runbook; specialised unknown branches remain beside their step. Step headings are just the ID (`## CAP-03`), so anchors (`#cap-03`) stay stable when titles change.
 
 ## Worked routes
 
@@ -77,7 +79,7 @@ Every step uses the same contract: Objective, Mode, Preconditions, Commands, Exp
 
 **B. Morning Netlify 504s** — [RB-00/INC-04](00-incident-intake.md#inc-04) → [RB-05/NET-01](diagnostics/05-netlify-ssr-cdn.md#net-01) → [RB-05/NET-02](diagnostics/05-netlify-ssr-cdn.md#net-02) → [RB-05/NET-04](diagnostics/05-netlify-ssr-cdn.md#net-04) → [RB-08/DEP-01](diagnostics/08-service-dependencies.md#dep-01) → [RB-06/CCH-03](diagnostics/06-cache-invalidation.md#cch-03) → [RB-06/CCH-05](diagnostics/06-cache-invalidation.md#cch-05) → [RB-09/CFG-01](diagnostics/09-deployment-drift.md#cfg-01) → [RB-10/MIT-01](response/10-mitigation-recovery.md#mit-01) → [RB-11/VAL-02](response/11-validation-review.md#val-02)
 
-**C. Someone proposes blocking a user agent** — [RB-02/TRF-03](diagnostics/02-apache-traffic.md#trf-03) → [RB-07/SEC-02](diagnostics/07-traffic-security.md#sec-02) → [RB-07/SEC-03](diagnostics/07-traffic-security.md#sec-03) → [RB-08/DEP-01](diagnostics/08-service-dependencies.md#dep-01) → [RB-08/DEP-03](diagnostics/08-service-dependencies.md#dep-03) → reject a blanket block via [RB-10/MIT-01](response/10-mitigation-recovery.md#mit-01), or if abuse is independently verified: [RB-07/SEC-04](diagnostics/07-traffic-security.md#sec-04) → [RB-10/MIT-02](response/10-mitigation-recovery.md#mit-02) → [RB-11/VAL-03](response/11-validation-review.md#val-03)
+**C. Someone proposes blocking a user agent** — [RB-02/TRF-03](diagnostics/02-apache-traffic.md#trf-03) → [RB-07/SEC-02](diagnostics/07-traffic-security.md#sec-02) → [RB-07/SEC-03](diagnostics/07-traffic-security.md#sec-03) → [RB-08/DEP-01](diagnostics/08-service-dependencies.md#dep-01) → [RB-08/DEP-03](diagnostics/08-service-dependencies.md#dep-03) → reject a blanket block via [RB-10/MIT-01](response/10-mitigation-recovery.md#mit-01), or if abuse is independently verified: [RB-07/SEC-04](diagnostics/07-traffic-security.md#sec-04) → [RB-10/MIT-01](response/10-mitigation-recovery.md#mit-01) → complete the approval, preparation and monitored application sequence → [RB-11/VAL-03](response/11-validation-review.md#val-03)
 
 ## Common wrong conclusions
 
@@ -97,13 +99,16 @@ Every step uses the same contract: Objective, Mode, Preconditions, Commands, Exp
 | `cache:clear` only removes prefixed keys                         | With a Redis store the framework flush runs `FLUSHDB` on the selected database ([RB-06/CCH-01](diagnostics/06-cache-invalidation.md#cch-01))                         |
 | Restarting Apache fixed the memory problem                       | If the same PHP memory failure follows each restart, the cause is the workload ([RB-03/CAP-06](diagnostics/03-apache-capacity.md#cap-06))                            |
 | Plenty of free RAM now means no OOM happened                     | A later snapshot does not describe the failure moment ([RB-03](diagnostics/03-apache-capacity.md))                                                                   |
-| A drop in completed SSR requests means fewer visitors            | Slow requests complete later; durations are logged at completion ([RB-05/NET-02](diagnostics/05-netlify-ssr-cdn.md#net-02))                                          |
+| A drop in completed SSR requests means fewer visitors            | Verify timestamp semantics and pending work; completed-request volume alone cannot establish visitor demand ([RB-05/NET-02](diagnostics/05-netlify-ssr-cdn.md#net-02))                                          |
 | A platform log query with no later errors means no errors        | The CLI returns a limited batch: shorten the window and recount ([RB-01/EVD-03](foundations/01-evidence-attribution.md#evd-03))                                      |
 | The environment flag is true, so caching is on                   | The flag may be evaluated at build time ([RB-09/CFG-03](diagnostics/09-deployment-drift.md#cfg-03))                                                                  |
 | A token in a query string is fine if the endpoint is internal    | It is written to access and application logs: treat as exposed ([RB-07/SEC-01](diagnostics/07-traffic-security.md#sec-01))                                           |
 
 ## Shared material
 
+- [Technical review corrections and acceptance evidence](shared/technical-review-status.md) — local checks versus required deployed-service validation
+- [Recovery evidence and execution gates](shared/recovery-evidence.md) · [Isolated single-flight protocol](shared/single-flight-validation.md)
+- [Systematic debugging and reliable log analysis](shared/debugging-method.md) — hypotheses, parser checks, shell failures, timing and performance measurements
 - [Service map](shared/service-map.md) · [Thresholds](shared/thresholds.md) · [Evidence schema](shared/evidence-schema.md)
 - [Netlify log queries](shared/netlify-log-queries.md) — truncation-safe log retrieval and observability reading rules
 - [Command helpers](shared/commands/README.md) — read-only scripts for Apache, Linux, Netlify and Laravel logs

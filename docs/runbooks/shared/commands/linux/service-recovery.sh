@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
-# Did the service come back by itself after a kill, and how long was it down? Read-only.
-# Usage: service-recovery.sh [UNIT=apache2] [SINCE="6 hours ago"]
+# Current policy and historical journal are separate evidence sources.
+# Usage: service-recovery.sh [UNIT=apache2] [SINCE="6 hours ago"] [UNTIL="now"]
 set -euo pipefail
 unit=${1:-apache2}
-since=${2:-"6 hours ago"}
-echo "== restart policy =="; systemctl show "$unit" -p Restart -p RestartUSec -p ActiveEnterTimestamp -p NRestarts 2>/dev/null || echo "systemctl unavailable"
-echo "== unit journal (start/stop/exit) =="
-journalctl -u "$unit" --no-pager --since "$since" 2>/dev/null |
-  grep -Ei 'started|stopped|failed|main process exited|killed|unclean|deactivated' | tail -n 20 || echo "No matching journal entries since: $since"
-echo "A long gap between the kill and the next start with Restart=no means nothing restarted the service."
+since=${2:-'6 hours ago'}
+until=${3:-now}
+echo '== current policy (does not establish policy at incident time) =='
+systemctl show "$unit" -p Restart -p RestartUSec -p ActiveEnterTimestamp -p NRestarts
+echo '== historical unit journal (start/stop/exit) =='
+data=$(journalctl -u "$unit" --utc --no-pager --since "$since" --until "$until")
+printf '%s\n' "$data" | awk 'tolower($0) ~ /started|stopped|failed|main process exited|killed|unclean|deactivated/ {print; n++}
+  END {if (!n) print "No matching records returned; verify permissions and retention"}' | tail -n 20
+echo 'A gap does not establish why recovery failed. Correlate historical policy, boot ID, deploys, timers and monitoring.'

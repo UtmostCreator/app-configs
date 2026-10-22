@@ -7,7 +7,7 @@ priority: P0
 mode: read-only
 status: active
 owner: platform
-updated: 2026-10-21
+updated: 2026-10-22
 tags:
   [
     apache,
@@ -53,6 +53,8 @@ RB=docs/runbooks/shared/commands
 LARAVEL_LOG=/var/www/<app>/storage/logs/laravel.log
 ```
 
+All steps follow the [shared execution and evidence gates](../shared/recovery-evidence.md#execution-and-evidence-gates). Record unknown results and missing evidence once in the incident record; unknown evidence permits further diagnosis but never satisfies attribution, approval, recovery or closure.
+
 ## Steps
 
 [CAP-01](#cap-01) · [CAP-02](#cap-02) · [CAP-03](#cap-03) · [CAP-04](#cap-04) · [CAP-05](#cap-05) · [CAP-06](#cap-06) · [CAP-07](#cap-07)
@@ -79,11 +81,39 @@ LARAVEL_LOG=/var/www/<app>/storage/logs/laravel.log
 | Resources healthy now but incident is historical       | [RB-03/CAP-03](#cap-03)                     |
 | Healthy and incident is ongoing                        | [RB-02/TRF-01](02-apache-traffic.md#trf-01) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** Free/available memory, swap, load average, top RSS processes, Apache process count.
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
+
+### Classify the constrained resource
+
+Prefer existing incident-window monitoring or retained `sar`/`sadf` data for historical events. Do not install collectors or enable profiling during passive triage. Optional commands below read current state; unavailable tools or permissions leave that signal unknown.
+
+```bash
+# Current interval samples; first vmstat report is since boot.
+vmstat 1 5
+pidstat -u -r -d -p <worker-pid> 1 5
+iostat -xz 1 5
+df -h /var/www /var/log
+df -i /var/www /var/log
+ss -s
+# Historical samples only when collection was already enabled; validate timezone/date/retention.
+sar -u -r -q -f /var/log/sysstat/sa<DD> -s <HH:MM:SS> -e <HH:MM:SS>
+# For an already identified process; permissions may require an authorised privileged read:
+sudo cat /proc/<worker-pid>/smaps_rollup
+sudo cat /proc/<worker-pid>/limits
+```
+
+| Classification | Supporting measurement | Avoid inferring |
+| --- | --- | --- |
+| CPU saturation / throttling | Busy CPU plus runnable queue or cgroup throttling deltas; per-process CPU samples | Load alone proves CPU saturation |
+| Memory exhaustion | Effective cgroup/host limit, pressure/reclaim, PSS/private range, OOM events/counter deltas | Current free memory disproves past OOM |
+| IO stalls / storage exhaustion | Device latency/queue and process IO wait, free blocks and inodes | High device utilisation alone proves the bottleneck |
+| Worker/thread exhaustion | Busy/idle workers and cap, queue depth, PHP-FPM pool status/slow log if already enabled | Connection count equals busy PHP workers |
+| Connection exhaustion | File-descriptor use vs process limits, backlog/retransmit or pool-connection metrics | Many open sockets imply abusive users |
+| Upstream dependency latency | Parent-linked slow spans, database sessions/lock waits, dependency-pool waits | Adding local workers fixes a slow dependency |
+
+Record the source, interval, clock, metric and limitation for the chosen class before changing capacity. Use existing DB slow-query/session/lock telemetry and read-only DBA-approved views; enabling logs, `perf`, eBPF or debugger attachment requires an execution review. If worker status is missing, worker utilisation is unknown. Inspect the actual PHP handler using [RB-04](04-laravel.md#app-01).
 
 ## CAP-02
 
@@ -98,12 +128,12 @@ LARAVEL_LOG=/var/www/<app>/storage/logs/laravel.log
 ```bash
 "$RB"/apache/worker-capacity.sh
 # Live worker state, if mod_status is enabled locally:
-curl -s http://127.0.0.1/server-status?auto | grep -E "BusyWorkers|IdleWorkers|Scoreboard"
+curl --connect-timeout 3 --max-time 15 -sS http://127.0.0.1/server-status?auto | grep -E "BusyWorkers|IdleWorkers|Scoreboard"
 # Established connections vs worker cap (connections are not busy PHP requests, but show pressure):
 "$RB"/linux/connections.sh 443
 ```
 
-**Expected output:** MPM name, configured limits (`MaxRequestWorkers`, `MaxConnectionsPerChild`, `KeepAliveTimeout`, `Timeout`), PHP handler, average Apache RSS, estimated safe worker count. RSS includes shared pages, so multiplying RSS by the worker count overstates real RAM; use it as a rough bound.
+**Expected output:** Current on-disk MPM/run configuration and modules, per-process RSS, host memory, and current service cgroup/limits. These may differ from the configuration loaded by running processes or used during the incident. A failed section leaves its evidence unknown. No worker limit is calculated. Apply the [capacity model](../shared/thresholds.md#capacity-model-for-apache-prefork), using loaded child PSS/private memory and the effective cgroup ceiling. Event/worker MPM and PHP-FPM need separate thread/pool models.
 
 ### Decision
 
@@ -115,9 +145,7 @@ curl -s http://127.0.0.1/server-status?auto | grep -E "BusyWorkers|IdleWorkers|S
 | Workers at cap, memory has headroom                                      | [RB-03/CAP-03](#cap-03) to confirm the saturation signature                                                                                                                             |
 | Cannot read worker data                                                  | [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03)                                                                                                                        |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
-**Evidence to record:** MPM, cap, average RSS, estimated memory at full concurrency.
+**Evidence to record:** MPM, effective process/thread cap and its source, loaded-child memory range and measurement method, cgroup/host ceiling, other-service budget, headroom, and uncertainty. Record no safe limit if these are missing.
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
 
@@ -180,8 +208,6 @@ php -i | grep -E "^memory_limit"; grep -rn memory_limit /etc/php/*/apache2/php.i
 | Single requests exhaust PHP memory                    | [RB-04/APP-01](04-laravel.md#app-01)                                                |
 | Saturation without memory pressure (slow upstream)    | [RB-08/DEP-01](08-service-dependencies.md#dep-01)                                   |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** Failing layer, memory per request vs per worker, concurrency at failure time.
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
@@ -197,7 +223,7 @@ php -i | grep -E "^memory_limit"; grep -rn memory_limit /etc/php/*/apache2/php.i
 ### Commands
 
 ```bash
-crontab -l 2>/dev/null; sudo crontab -l 2>/dev/null
+crontab -l; sudo crontab -l
 systemctl list-timers --all --no-pager | head -20
 sudo grep -E "CRON|artisan" /var/log/syslog | grep -E "<HH:MM>" | head -20
 "$RB"/apache/request-rate.sh /var/log/apache2/access.log | tail -n 30
@@ -213,8 +239,6 @@ grep -E "^\[2026-10-13 0[0-3]:" "$LARAVEL_LOG" | cut -c1-17 | uniq -c | head -20
 | A scheduled job or cache clear precedes the failure                                             | [RB-06/CCH-01](06-cache-invalidation.md#cch-01); treat as a hypothesis until controlled evidence exists |
 | A burst of requests precedes it                                                                 | [RB-02/TRF-03](02-apache-traffic.md#trf-03)                                                             |
 | Application work is heavy per request                                                           | [RB-04/APP-03](04-laravel.md#app-03)                                                                    |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Timeline aligning jobs, request rate and resource peaks.
 
@@ -240,13 +264,11 @@ grep -E "^\[2026-10-13 0[0-3]:" "$LARAVEL_LOG" | cut -c1-17 | uniq -c | head -20
 
 | Result                                                        | Next                                                                                                                                                            |
 | ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Down for a long gap, restart policy is `no` or no alert fired | Monitoring and recovery gap: record for [RB-10/MIT-01](../response/10-mitigation-recovery.md#mit-01); add availability alerting and an automatic restart policy |
+| Historical journal/monitor evidence verifies downtime and the policy/alerting in effect then | Monitoring and recovery gap: record for [RB-10/MIT-01](../response/10-mitigation-recovery.md#mit-01); add availability alerting and an automatic restart policy |
 | Same memory failure recurs after each graceful restart        | The cause is in the workload, not stale processes: [RB-04/APP-01](04-laravel.md#app-01)                                                                         |
 | Recovered quickly by itself                                   | [RB-03/CAP-07](#cap-07)                                                                                                                                         |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
-**Evidence to record:** Kill time, next start time (downtime), restart policy, whether an alert fired.
+**Evidence to record:** Historical kill and next start times, journal retention/boot coverage, actual availability-monitor downtime, and policy/alert evidence at the event time. Current policy alone cannot establish the past recovery configuration.
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
 
@@ -272,8 +294,6 @@ grep -E "^\[2026-10-13 0[0-3]:" "$LARAVEL_LOG" | cut -c1-17 | uniq -c | head -20
 | Cache regeneration load               | [RB-06/CCH-01](06-cache-invalidation.md#cch-01)              |
 | Safe capacity mitigation required     | [RB-10/MIT-01](../response/10-mitigation-recovery.md#mit-01) |
 | Findings recorded and nothing further | [RB-00/INC-05](../00-incident-intake.md#inc-05)              |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Chosen route and supporting evidence.
 

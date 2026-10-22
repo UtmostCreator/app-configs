@@ -5,7 +5,7 @@ type: incident-evidence
 domain: incident-history
 status: template
 owner: platform
-updated: 2026-10-21
+updated: 2026-10-22
 tags: [incident, template, conclusions]
 symptoms: []
 ---
@@ -16,6 +16,8 @@ symptoms: []
 
 State what is supported, what is not, and what remains open.
 
+- **Recovery decision:** `<recovery matrix link, pass/fail/unknown per signal, observation interval, any incident-owner risk acceptance>`
+- **Regression evidence:** `<isolated test report; unresolved cases and owners>`
 - **Supported:** `<claims with OBS/HYP ids>`
 - **Not established:** `<claims that remain hypotheses>`
 - **Follow-ups:** `<owner, due date>`

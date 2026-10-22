@@ -7,7 +7,7 @@ priority: P1
 mode: read-only
 status: active
 owner: platform
-updated: 2026-10-21
+updated: 2026-10-22
 tags: [security, waf, bot, user-agent, secrets, credential-rotation, rate-limit, abuse, query-string-secret, fail-open, token-header, purge-endpoint]
 symptoms: [suspected bot traffic, exposed secret, credential leak, request to block a user-agent, token in URL, unauthenticated purge]
 steps: [SEC-01, SEC-02, SEC-03, SEC-04, SEC-05, SEC-06]
@@ -28,6 +28,8 @@ RB=docs/runbooks/shared/commands
 APP_DIR=/var/www/<app>
 ```
 
+All steps follow the [shared execution and evidence gates](../shared/recovery-evidence.md#execution-and-evidence-gates). Record unknown results and missing evidence once in the incident record; unknown evidence permits further diagnosis but never satisfies attribution, approval, recovery or closure.
+
 ## Steps
 
 [SEC-01](#sec-01) · [SEC-02](#sec-02) · [SEC-03](#sec-03) · [SEC-04](#sec-04) · [SEC-05](#sec-05) · [SEC-06](#sec-06)
@@ -44,8 +46,8 @@ APP_DIR=/var/www/<app>
 
 ```bash
 # Count, never print, occurrences. Secrets in query strings land in access logs:
-sudo zgrep -hcE "[?&](token|key|secret|api_key|password)=" /var/log/apache2/access.log* 2>/dev/null
-grep -rIlE "[?&](token|key|secret)=" "$APP_DIR/storage/logs" 2>/dev/null | head
+sudo zgrep -hcE "[?&](token|key|secret|api_key|password)=" /var/log/apache2/access.log*
+grep -rIlE "[?&](token|key|secret)=" "$APP_DIR/storage/logs" | head
 git log --all --oneline -S"<token-prefix>" | head   # history search; avoid printing the value
 # Also check notes, exported log copies and chat paste for the same value.
 ```
@@ -58,11 +60,15 @@ git log --all --oneline -S"<token-prefix>" | head   # history search; avoid prin
 | Credential only in logs sent to a restricted store | Still rotate: assume anyone with log access has it |
 | No exposure found | [RB-07/SEC-02](#sec-02) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** What type of credential, where exposed, exposure window, who was notified (no values). Note what the credential can do (for example purge a whole CDN on demand recreates the incident).
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
+
+### Credential exposure containment
+
+Notify the incident owner promptly, preserve a restricted evidence copy, identify credential privileges and exposure interval, and find dependent callers before rotation. Through [RB-10/MIT-01](../response/10-mitigation-recovery.md#mit-01), authorise a coordinated server/caller credential change, revoke the exposed value, confirm the replacement works and the revoked/missing/empty values fail closed, and restrict/redact exported logs and notes without destroying required evidence. Never paste a secret into a ticket or shell argument to prove a match. Inspect prior use for unauthorised operations and record scope/unknowns. Rollback must not restore a compromised credential.
+
+For client attribution, include the [proxy trust acceptance tests](../foundations/01-evidence-attribution.md#proxy-trust-acceptance); forwarding headers and user agents alone cannot authorise a block or identify a caller.
 
 ## SEC-02
 
@@ -87,8 +93,6 @@ host <ip>
 | Behaviour consistent with abuse (probing, credential stuffing, scraping beyond norms) | [RB-07/SEC-03](#sec-03) |
 | Attribution unreliable (proxy addresses) | [RB-01/EVD-04](../foundations/01-evidence-attribution.md#evd-04) |
 | Traffic looks like normal first-party behaviour | [RB-08/DEP-04](08-service-dependencies.md#dep-04) |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Clients, behaviour, verified attribution status.
 
@@ -116,8 +120,6 @@ awk -F'"' '$6 ~ /<ua-substring>/ {split($2,a," "); print a[2]}' "$APACHE_LOG" | 
 | Requests match known server-side rendering or integration paths | [RB-08/DEP-01](08-service-dependencies.md#dep-01); do not apply a blanket block |
 | No legitimate dependency | [RB-07/SEC-04](#sec-04) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** Paths hit by the user agent and the first-party owner of each.
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
@@ -142,8 +144,6 @@ awk -F'"' '$6 ~ /<ua-substring>/ {split($2,a," "); print a[2]}' "$APACHE_LOG" | 
 | --- | --- |
 | Scoped control identified (rate limit, path rule, IP set with verified attribution) | [RB-07/SEC-06](#sec-06) |
 | Only a blanket control would work | Reject; escalate to the incident owner with the dependency evidence from [RB-08/DEP-03](08-service-dependencies.md#dep-03) |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Proposed control, scope, expected false positives.
 
@@ -174,8 +174,6 @@ grep -rnE "token !== |getQuery\(event\)\.token|getHeader\(event" server/api | he
 | Credential is accepted from the query string | Plan a header-based credential and rotation shipped together: [RB-10/MIT-02](../response/10-mitigation-recovery.md#mit-02) |
 | All endpoints reject missing credentials | [RB-07/SEC-06](#sec-06) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** Per endpoint: how the credential is read, behaviour when missing.
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
@@ -199,8 +197,6 @@ grep -rnE "token !== |getQuery\(event\)\.token|getHeader\(event" server/api | he
 | Result | Next |
 | --- | --- |
 | Change proposed | [RB-10/MIT-02](../response/10-mitigation-recovery.md#mit-02), then [RB-11/VAL-03](../response/11-validation-review.md#val-03) |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Change request reference.
 

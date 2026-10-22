@@ -5,7 +5,7 @@ type: reference
 domain: validation
 status: template
 owner: platform
-updated: 2026-10-21
+updated: 2026-10-22
 tags: [thresholds, baseline, acceptance, latency, error-rate, memory]
 symptoms: [what is normal, is it recovered]
 ---
@@ -14,7 +14,7 @@ symptoms: [what is normal, is it recovered]
 
 > [Runbook index](../README.md) · Used by [RB-02/TRF-01](../diagnostics/02-apache-traffic.md#trf-01) and [RB-11/VAL-05](../response/11-validation-review.md#val-05)
 
-Starting values only. Replace them with measured baselines for your service and record the date they were measured.
+Templates only; none of these values establishes recovery without complete measurements in the [recovery matrix](recovery-evidence.md#recovery-measurement-matrix). Set an observation duration and rollback trigger for each signal. Starting values only. Replace them with measured baselines for your service and record the date they were measured.
 
 | Signal | Healthy | Investigate | Incident |
 | --- | --- | --- | --- |
@@ -29,9 +29,19 @@ Starting values only. Replace them with measured baselines for your service and 
 
 ## Capacity model for Apache prefork
 
-`safe_max_workers ≈ (available_memory - reserved_for_os_and_other_services) / average_apache_php_rss`
+A prefork planning model is:
 
-Use [`worker-capacity.sh`](commands/apache/worker-capacity.sh) to compute it. Never raise `MaxRequestWorkers` above this without a measured reason; see [RB-03/CAP-02](../diagnostics/03-apache-capacity.md#cap-02).
+`child_budget = effective_memory_ceiling - other_services_peak - OS_headroom - Apache_shared_and_master_overhead`
+
+`candidate_children <= child_budget / measured_loaded_child_private_memory`
+
+This is a candidate for load testing, not an automatic safe limit. Determine the effective ceiling from host capacity and applicable service/container/ancestor cgroup limits, using the lowest applicable bound. Do not subtract already-consumed memory twice. Host `MemAvailable` is current headroom, not a replacement for a whole-service budget.
+
+Measure a range of loaded child private memory/PSS over representative expensive requests and concurrency. Include the master/shared allocation once, account for variance and growth, and verify actual total memory at load. RSS includes shared mappings; averaging master, idle and busy process RSS can both hide peaks and double-count shared pages. PSS apportions shared mappings and requires care as process counts change. Reserve measured peak budgets for PHP-FPM, databases, Redis and other services; inspect cgroup `memory.events` and OOM evidence.
+
+[`worker-capacity.sh`](commands/apache/worker-capacity.sh) reports current observations only. It cannot certify a worker cap. For event/worker MPM, `MaxRequestWorkers` limits threads; model thread/process overhead and the independent PHP-FPM pool. Verify the effective running MPM/config, test under representative load, set rollback limits, and apply changes through [RB-10](../response/10-mitigation-recovery.md). Missing measurements mean no defensible numeric recommendation.
+
+See [Apache MaxRequestWorkers](https://httpd.apache.org/docs/2.4/mod/mpm_common.html#maxrequestworkers) and the [Linux cgroup memory controller](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html#memory).
 
 ## Baselines
 

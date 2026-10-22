@@ -7,7 +7,7 @@ priority: P0
 mode: read-only
 status: active
 owner: platform
-updated: 2026-10-21
+updated: 2026-10-22
 tags:
   [
     laravel,
@@ -49,6 +49,8 @@ LARAVEL_LOG=/var/www/<app>/storage/logs/laravel.log
 RB=docs/runbooks/shared/commands
 ```
 
+All steps follow the [shared execution and evidence gates](../shared/recovery-evidence.md#execution-and-evidence-gates). Record unknown results and missing evidence once in the incident record; unknown evidence permits further diagnosis but never satisfies attribution, approval, recovery or closure.
+
 ## Steps
 
 [APP-01](#app-01) · [APP-02](#app-02) · [APP-03](#app-03) · [APP-04](#app-04) · [APP-05](#app-05)
@@ -77,11 +79,17 @@ sudo grep -c "Allowed memory size" /var/log/apache2/error.log
 | Other exceptions dominate          | [RB-04/APP-02](#app-02)                      |
 | No exceptions but failures persist | [RB-03/CAP-04](03-apache-capacity.md#cap-04) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** Exception counts by class and message prefix, first and last occurrence.
 
 **Return:** [RB-03/CAP-05](03-apache-capacity.md#cap-05) or the calling runbook
+
+### Identify the failing PHP runtime
+
+Distinguish Apache-module requests, PHP-FPM pool requests, queue workers and scheduled CLI jobs using existing process/unit, route, stack and deployment evidence. Their memory limits, INI overrides, timeouts and restart lifecycles can differ. `php -i` and `php --ini` normally describe the CLI SAPI; they do not establish the effective Apache/FPM configuration.
+
+Record the runtime's `PHP_SAPI`, PHP version, loaded/scanned INI files, effective `memory_limit`, pool/vhost/per-directory overrides and request/queue timeouts from **existing restricted runtime telemetry**, tied to a request/worker ID and deployed revision. Inspect corresponding pool/vhost artifacts as supporting evidence, not proof of loaded values. No effective telemetry means unknown; do not create a public `phpinfo()` page. Adding a diagnostic endpoint or booting a framework command goes through the execution/change gates. See [PHP configuration changes](https://www.php.net/manual/en/configuration.changes.php).
+
+Correlate an exception header and multiline trace to its request/trace ID, worker PID, queue job ID or scheduled invocation. A worker can serve many requests; PID/time overlap alone is provisional. Classify secondary exception-handler failures separately. The text error helper uses approximate message-prefix grouping with digits normalised; it can merge distinct failures or split one exception family. Preserve a sanitised representative event and prefer structured exception class, route/operation and error code when those fields already exist.
 
 ## APP-02
 
@@ -106,8 +114,6 @@ sed -n '<N>,<N+25>p' "$LARAVEL_LOG"
 | Failures cluster in GraphQL, navigation, structures or content APIs | [RB-04/APP-03](#app-03)                           |
 | Failures cluster in an external call                                | [RB-08/DEP-02](08-service-dependencies.md#dep-02) |
 | Failures cluster in cache code                                      | [RB-06/CCH-03](06-cache-invalidation.md#cch-03)   |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Top components and representative stack trace (secrets removed).
 
@@ -135,13 +141,11 @@ grep -rn "graphql" /var/www/<app>/config | head
 | ---------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
 | Navigation or structure traversal is expensive                                                                   | [RB-04/APP-04](#app-04)                                                                                                           |
 | GraphQL repeatedly executes identical work                                                                       | [RB-06/CCH-05](06-cache-invalidation.md#cch-05)                                                                                   |
-| Backend failures are swallowed or never logged (handler returns an error response without logging the exception) | Observability gap: record it; failures will look like slow requests. [RB-10/MIT-03](../response/10-mitigation-recovery.md#mit-03) |
+| Backend failures are swallowed or never logged (handler returns an error response without logging the exception) | Observability gap: record it; failures will look like slow requests. [RB-10/MIT-01](../response/10-mitigation-recovery.md#mit-01) |
 | GraphQL returns HTTP 200 with an `errors` field                                                                  | Treat as failure; check whether such responses are cached ([RB-06/CCH-04](06-cache-invalidation.md#cch-04))                       |
 | Heavy work follows a scheduled cache clear                                                                       | [RB-06/CCH-01](06-cache-invalidation.md#cch-01)                                                                                   |
 | Backend processing is normal                                                                                     | Return to [RB-03/CAP-05](03-apache-capacity.md#cap-05)                                                                            |
 | A fix has been identified                                                                                        | [RB-10/MIT-01](../response/10-mitigation-recovery.md#mit-01)                                                                      |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Most expensive endpoints and whether work is repeated.
 
@@ -159,8 +163,8 @@ grep -rn "graphql" /var/www/<app>/config | head
 
 ```bash
 # Use existing observability (APM, slow-query log) rather than enabling new logging in production:
-sudo grep -c "Query_time" /var/log/mysql/mysql-slow.log 2>/dev/null
-sudo mysqldumpslow -s t -t 10 /var/log/mysql/mysql-slow.log 2>/dev/null
+sudo grep -c "Query_time" /var/log/mysql/mysql-slow.log
+sudo mysqldumpslow -s t -t 10 /var/log/mysql/mysql-slow.log
 ```
 
 ### Decision
@@ -170,8 +174,6 @@ sudo mysqldumpslow -s t -t 10 /var/log/mysql/mysql-slow.log 2>/dev/null
 | N+1 or repeated identical computation | [RB-06/CCH-05](06-cache-invalidation.md#cch-05)        |
 | Slow synchronous external dependency  | [RB-08/DEP-02](08-service-dependencies.md#dep-02)      |
 | Nothing expensive found               | Return to [RB-03/CAP-05](03-apache-capacity.md#cap-05) |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Top slow queries or repeated operations with counts.
 
@@ -199,8 +201,6 @@ sudo mysqldumpslow -s t -t 10 /var/log/mysql/mysql-slow.log 2>/dev/null
 | External-service failure               | [RB-08/DEP-02](08-service-dependencies.md#dep-02)            |
 | Measured findings explain capacity use | [RB-03/CAP-05](03-apache-capacity.md#cap-05)                 |
 | Fix identified                         | [RB-10/MIT-01](../response/10-mitigation-recovery.md#mit-01) |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Chosen route and measurements.
 

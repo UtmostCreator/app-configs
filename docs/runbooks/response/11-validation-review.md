@@ -4,10 +4,10 @@ title: Regression validation and post-incident review
 type: runbook
 domain: validation
 priority: P1
-mode: read-only
+mode: passive-and-isolated-tests
 status: active
 owner: platform
-updated: 2026-10-21
+updated: 2026-10-22
 tags: [validation, regression, post-incident, review, acceptance, baseline, follow-up]
 symptoms: [verify recovery, close incident, write review]
 steps: [VAL-01, VAL-02, VAL-03, VAL-04, VAL-05, VAL-06]
@@ -16,15 +16,17 @@ related: [RB-00, RB-06, RB-08, RB-10]
 
 # RB-11 — Regression validation and post-incident review
 
-> [Runbook index](../README.md) · Priority P1 · Mode: read-only
+> [Runbook index](../README.md) · Priority P1 · Mode: passive evidence and isolated staging tests
 
-Prove recovery and capture the review. Close an incident only through [RB-11/VAL-06](#val-06).
+Measure recovery using the [evidence matrix](../shared/recovery-evidence.md#recovery-measurement-matrix) and capture the review. Missing critical measurements remain unknown. Close an incident only through [RB-11/VAL-06](#val-06).
 
 ## Variables
 
 ```bash
 RB=docs/runbooks/shared/commands
 ```
+
+All steps follow the [shared execution and evidence gates](../shared/recovery-evidence.md#execution-and-evidence-gates). Record unknown results and missing evidence once in the incident record; unknown evidence permits further diagnosis but never satisfies attribution, approval, recovery or closure.
 
 ## Steps
 
@@ -36,23 +38,27 @@ RB=docs/runbooks/shared/commands
 
 - **Objective:** Confirm that the service is healthy by measurement.
 - **Mode:** Read-only
-- **Preconditions:** Time window and sources validated ([RB-01](../foundations/01-evidence-attribution.md))
+- **Preconditions:** Target, execution mode and evidence window validated ([RB-01](../foundations/01-evidence-attribution.md))
 
 ### Commands
 
 ```bash
+# Select an explicit post-change UTC window and complete evidence files first.
+export START_UTC=2026-10-13T08:20:00Z END_UTC=2026-10-13T08:25:00Z
+"$RB"/apache/request-rate.sh /var/log/apache2/access.log
 "$RB"/apache/status-distribution.sh /var/log/apache2/access.log
-"$RB"/linux/memory-snapshot.sh
+# Only on an existing format with duration_us=%D; otherwise use existing APM/edge latency.
+"$RB"/apache/latency-summary.sh /var/log/apache2/access.log
+"$RB"/linux/memory-snapshot.sh # Current state only; obtain interval pressure/OOM metrics separately.
 ```
 
 ### Decision
 
 | Result | Next |
 | --- | --- |
-| Within [thresholds](../shared/thresholds.md) | [RB-11/VAL-02](#val-02) |
+| Every required signal has a complete measurement within agreed [thresholds](../shared/thresholds.md) | [RB-11/VAL-02](#val-02) |
+| Critical signal missing / unknown | Keep recovery unverified; obtain the missing measurement or record an explicit incident-owner risk acceptance |
 | Out of thresholds | [RB-00/INC-04](../00-incident-intake.md#inc-04) |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Error rate, latency, memory and load vs baseline.
 
@@ -63,19 +69,20 @@ RB=docs/runbooks/shared/commands
 **Run cache correctness, concurrency and failure-handling tests**
 
 - **Objective:** Demonstrate behaviour under cache clear, concurrent misses and upstream failure.
-- **Mode:** Read-only
-- **Preconditions:** Time window and sources validated ([RB-01](../foundations/01-evidence-attribution.md))
+- **Mode:** Active isolated staging experiment; offline evidence verification is passive
+- **Preconditions:** Target, execution mode and evidence window validated ([RB-01](../foundations/01-evidence-attribution.md))
 
 ### Commands
 
+Follow the [isolated single-flight protocol](../shared/single-flight-validation.md). It requires an application-specific barrier/latch harness, two identified instances, a unique cold key, independently counted upstream attempts and correct results for every caller. Do not substitute request-path counts or HTTP success for these measurements.
+
 ```bash
-# Run in non-production. Example: concurrent requests against one cold key
-seq 50 | xargs -P25 -I{} curl -s -o /dev/null -w "%{http_code} %{time_total}\n" "https://<staging-site>/<hot-path>" | sort | uniq -c
-# Then count how many identical upstream fetches the backend saw (expect one per key):
-WINDOW='<timestamp regex>' docs/runbooks/shared/commands/apache/top-paths.sh /var/log/apache2/access.log 5
+# Offline validation of the complete staging ledger; does not send requests:
+python3 "$RB"/verify-single-flight.py cold-key-events.jsonl \
+  --run-id synthetic-run --key-hash synthetic-key --requests 100
 ```
 
-**Expected output:** Priority test matrix: missing or empty token returns 401 (P0); old query-string token rejected after the header migration (P0); no unconditional production cache flush in the schedule (P0); 100 simultaneous misses cause one coordinated upstream fetch for the same key (P1); two function instances see the same cached value and invalidation (P1); every invalidation key generated by the backend matches a key the frontend stores (P1); entry-saved plus revision-saved does not cause repeated whole-site purges (P1); a GraphQL 200 response containing an `errors` field is not cached (P1); a failed redirects fetch does not cache an empty list (P1); legacy asset URLs and normal pages route correctly without unnecessary backend work (P1); concurrent cold rebuilds of navigation and URL maps reuse one result (P2).
+**Expected output:** One actual upstream attempt and cache publication for 100 verified concurrent misses across at least two instances; all callers receive the expected value. Complete warm-read, invalidation, expiry, failure, authentication and routing cases from the protocol. If the harness or complete upstream ledger is missing, mark the case unresolved.
 
 ### Decision
 
@@ -84,9 +91,7 @@ WINDOW='<timestamp regex>' docs/runbooks/shared/commands/apache/top-paths.sh /va
 | Passes | [RB-11/VAL-03](#val-03) |
 | Fails | [RB-06/CCH-05](../diagnostics/06-cache-invalidation.md#cch-05) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
-**Evidence to record:** Test inputs and results.
+**Evidence to record:** Revision, cache/lock scope, namespace/key hash, barrier/latch evidence, instance and caller IDs, upstream ledger reconciliation, value assertions, timeout/retry counts and cleanup result.
 
 **Return:** [RB-00/INC-05](../00-incident-intake.md#inc-05)
 
@@ -95,14 +100,14 @@ WINDOW='<timestamp regex>' docs/runbooks/shared/commands/apache/top-paths.sh /va
 **Check authentication, rate limiting and legitimate-user access**
 
 - **Objective:** Verify protective controls do not block legitimate users.
-- **Mode:** Read-only
-- **Preconditions:** Time window and sources validated ([RB-01](../foundations/01-evidence-attribution.md))
+- **Mode:** Active validation in isolated staging; production probes only at reviewed safe endpoints
+- **Preconditions:** Target, execution mode and evidence window validated ([RB-01](../foundations/01-evidence-attribution.md))
 
 ### Commands
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" https://<site>/<public-path>
-curl -s -o /dev/null -w "%{http_code}\n" https://<site>/<protected-path>
+curl --connect-timeout 3 --max-time 15 -sS -o /dev/null -w "%{http_code}\n" https://<site>/<public-path>
+curl --connect-timeout 3 --max-time 15 -sS -o /dev/null -w "%{http_code}\n" https://<site>/<protected-path>
 ```
 
 ### Decision
@@ -110,11 +115,9 @@ curl -s -o /dev/null -w "%{http_code}\n" https://<site>/<protected-path>
 | Result | Next |
 | --- | --- |
 | Public access works, protected paths protected | [RB-11/VAL-04](#val-04) |
-| False positives found | [RB-10/MIT-06](10-mitigation-recovery.md#mit-06) |
+| False positives found | [RB-10/MIT-01](10-mitigation-recovery.md#mit-01) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
-**Evidence to record:** Per-path status and any false positives.
+**Evidence to record:** Per-path expected status **and semantics**: authenticated principal/role, denied protected operation, no side effects on rejected requests, correct authorised payload/action, missing/empty/invalid/revoked credentials rejected, rate-limit response and permitted-user behaviour. A redirect to a login page, cached 200, or custom error payload can make status-only checks misleading. Exercise state-changing operations only in isolated staging. Include the [proxy spoofing cases](../foundations/01-evidence-attribution.md#proxy-trust-acceptance) after trust changes.
 
 **Return:** [RB-00/INC-05](../00-incident-intake.md#inc-05)
 
@@ -123,8 +126,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://<site>/<protected-path>
 **Verify frontend, CMS and checkout end-to-end journeys**
 
 - **Objective:** Run the critical journeys.
-- **Mode:** Read-only
-- **Preconditions:** Time window and sources validated ([RB-01](../foundations/01-evidence-attribution.md))
+- **Mode:** Active validation in isolated staging; production probes only at reviewed safe endpoints
+- **Preconditions:** Target, execution mode and evidence window validated ([RB-01](../foundations/01-evidence-attribution.md))
 
 ### Commands
 
@@ -139,8 +142,6 @@ curl -s -o /dev/null -w "%{http_code}\n" https://<site>/<protected-path>
 | Journeys pass | [RB-11/VAL-05](#val-05) |
 | A journey fails | [RB-08/DEP-02](../diagnostics/08-service-dependencies.md#dep-02) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** Journey results.
 
 **Return:** [RB-00/INC-05](../00-incident-intake.md#inc-05)
@@ -151,7 +152,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://<site>/<protected-path>
 
 - **Objective:** Make the acceptance decision explicit.
 - **Mode:** Read-only
-- **Preconditions:** Time window and sources validated ([RB-01](../foundations/01-evidence-attribution.md))
+- **Preconditions:** Target, execution mode and evidence window validated ([RB-01](../foundations/01-evidence-attribution.md))
 
 ### Commands
 
@@ -163,12 +164,10 @@ curl -s -o /dev/null -w "%{http_code}\n" https://<site>/<protected-path>
 
 | Result | Next |
 | --- | --- |
-| Accepted | [RB-11/VAL-06](#val-06) |
+| All required rows pass, or the incident owner records a qualified decision with explicit gaps | [RB-11/VAL-06](#val-06) |
 | Not accepted | [RB-00/INC-04](../00-incident-intake.md#inc-04) |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
-**Evidence to record:** Baseline vs after table and decision.
+**Evidence to record:** Completed [measurement matrix](../shared/recovery-evidence.md#recovery-measurement-matrix), per-signal pass/fail/unknown, observation duration, rollback triggers and any incident-owner risk acceptance.
 
 **Return:** [RB-00/INC-05](../00-incident-intake.md#inc-05)
 
@@ -177,8 +176,8 @@ curl -s -o /dev/null -w "%{http_code}\n" https://<site>/<protected-path>
 **Record outcomes, unresolved hypotheses and follow-ups**
 
 - **Objective:** Archive evidence and close.
-- **Mode:** Read-only
-- **Preconditions:** Time window and sources validated ([RB-01](../foundations/01-evidence-attribution.md))
+- **Mode:** Local documentation/evidence write; no production changes
+- **Preconditions:** Target, execution mode and evidence window validated ([RB-01](../foundations/01-evidence-attribution.md))
 
 ### Commands
 
@@ -190,9 +189,7 @@ curl -s -o /dev/null -w "%{http_code}\n" https://<site>/<protected-path>
 
 | Result | Next |
 | --- | --- |
-| Archived | [RB-00/INC-05](../00-incident-intake.md#inc-05) to close |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
+| Recovery decision is supported and evidence archived | [RB-00/INC-05](../00-incident-intake.md#inc-05) to close |
 
 **Evidence to record:** Link to the [incident archive](../incidents/README.md) entry.
 

@@ -14,7 +14,7 @@ symptoms: [what happened before, similar past incident]
 
 > [Runbook index](../README.md) · Written from [RB-11/VAL-06](../response/11-validation-review.md#val-06)
 
-Historical evidence is archived by event and evidence type. It is **not** rewritten as definitive root-cause statements: each claim carries a status from the [evidence schema](../shared/evidence-schema.md) (`observation`, `hypothesis`, `confirmed`, `rejected`, `unverifiable`).
+Historical evidence is archived by event and evidence type. It is **not** rewritten as definitive root-cause statements: new records separate `kind` and `assessment` under the [evidence schema](../shared/evidence-schema.md). Historical records retain their original legacy statuses; use the documented mapping without upgrading their claims.
 
 ## Index
 

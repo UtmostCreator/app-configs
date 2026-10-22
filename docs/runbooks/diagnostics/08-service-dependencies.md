@@ -7,7 +7,7 @@ priority: P1
 mode: read-only
 status: active
 owner: platform
-updated: 2026-10-21
+updated: 2026-10-22
 tags:
   [
     dependencies,
@@ -50,6 +50,8 @@ SITE=https://<site>
 RB=docs/runbooks/shared/commands
 ```
 
+All steps follow the [shared execution and evidence gates](../shared/recovery-evidence.md#execution-and-evidence-gates). Record unknown results and missing evidence once in the incident record; unknown evidence permits further diagnosis but never satisfies attribution, approval, recovery or closure.
+
 ## Steps
 
 [DEP-01](#dep-01) · [DEP-02](#dep-02) · [DEP-03](#dep-03) · [DEP-04](#dep-04) · [DEP-05](#dep-05)
@@ -58,7 +60,7 @@ RB=docs/runbooks/shared/commands
 
 **Trace browser to SSR to CMS API request chains**
 
-- **Objective:** List the backend calls one page view triggers. Compare backend call volume with visitor volume: if backend calls multiply while visitors do not, the frontend is amplifying (uncached fan-out) rather than receiving more users.
+- **Objective:** List parent-linked backend calls for one page view. More backend traffic with stable visitor volume suggests retries or fan-out; verify the request chain before assigning the cause.
 - **Mode:** Read-only
 - **Preconditions:** Time window and sources validated ([RB-01](../foundations/01-evidence-attribution.md))
 
@@ -66,9 +68,11 @@ RB=docs/runbooks/shared/commands
 
 ```bash
 # Use browser devtools (Network tab) for one representative page, or:
-curl -s -o /dev/null -w "%{time_total}s\n" "$SITE/<path>"
-# Count backend requests during a single render by timestamp window:
-awk '$4 ~ /<HH:MM:SS>/ {print $7}' /var/log/apache2/access.log | cut -d? -f1 | sort | uniq -c | sort -nr | head
+# Optional active probe only after endpoint/side-effect review; otherwise use existing telemetry:
+# curl --connect-timeout 3 --max-time 15 -sS -o /dev/null -w "%{time_total}s\n" "$SITE/<path>"
+# Use existing trace/parent IDs to enumerate the render's backend spans.
+# A timestamp window alone includes unrelated renders and cannot count this render's calls.
+# Record missing correlation as unknown; see the shared request-correlation contract.
 ```
 
 ### Decision
@@ -79,9 +83,7 @@ awk '$4 ~ /<HH:MM:SS>/ {print $7}' /var/log/apache2/access.log | cut -d? -f1 | s
 | Calls are first-party and expected              | [RB-08/DEP-04](#dep-04)                         |
 | Asset URLs trigger backend calls                | [RB-05/NET-05](05-netlify-ssr-cdn.md#net-05)    |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
-**Evidence to record:** Request chain for a sample page with counts and timings.
+**Evidence to record:** Linked trace/parent IDs, service identity, retries, cache-key hash and per-render backend spans with timings; record sampling and missing propagation. See the [correlation contract](../shared/recovery-evidence.md#request-correlation).
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
 
@@ -97,7 +99,8 @@ awk '$4 ~ /<HH:MM:SS>/ {print $7}' /var/log/apache2/access.log | cut -d? -f1 | s
 
 ```bash
 # Exercise each journey in a test or staging environment; in production only use read-only requests:
-curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" "$SITE/<region-or-nav-endpoint>"
+# Optional active probe only after endpoint/side-effect review; otherwise use existing telemetry:
+# curl --connect-timeout 3 --max-time 15 -sS -o /dev/null -w "%{http_code} %{time_total}s\n" "$SITE/<region-or-nav-endpoint>"
 ```
 
 ### Decision
@@ -108,11 +111,13 @@ curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" "$SITE/<region-or-nav-en
 | Checkout calls are made by the browser directly to the checkout origin, or through a frontend proxy route | Record which; it differs between branches, so verify against the deployed revision ([RB-09/CFG-02](09-deployment-drift.md#cfg-02)) |
 | All dependencies healthy                                                                                  | [RB-08/DEP-03](#dep-03)                                                                                                            |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** Journey, endpoints it needs, status and latency of each.
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
+
+### Network and connection timing
+
+Prefer existing DNS, TLS, TCP retransmission, socket/pool and upstream span metrics for the incident window. Distinguish name-resolution delay, connect/TLS setup, time to first byte and full body time. Only after reviewing the endpoint's side effects, a bounded active probe can record `curl -w` fields `time_namelookup`, `time_connect`, `time_appconnect`, `time_starttransfer`, `time_total` alongside status and transport exit code. TLS connection reuse changes the interpretation; one synthetic request does not describe the visitor population. No DNS/TLS sample means that phase remains unknown.
 
 ## DEP-03
 
@@ -135,8 +140,6 @@ curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" "$SITE/<region-or-nav-en
 | Critical flow would break | Reject the blanket control; [RB-10/MIT-01](../response/10-mitigation-recovery.md#mit-01) for a safer option such as a shared-secret header the frontend sends, with a rule that blocks only requests lacking it (platform functions have no fixed egress addresses, so address allow-lists are unreliable) |
 | No critical impact        | [RB-08/DEP-05](#dep-05)                                                                                                                                                                                                                                                                                    |
 
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
-
 **Evidence to record:** Impact statement per journey.
 
 **Return:** [RB-00/INC-04](../00-incident-intake.md#inc-04)
@@ -152,22 +155,22 @@ curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" "$SITE/<region-or-nav-en
 ### Commands
 
 ```bash
-# Compare SSR invocation count in the window with backend requests from the same user agent:
+# Compare log-record volume with backend traffic as a lead only (records are not invocations):
 docs/runbooks/shared/commands/netlify/window-counts.sh server 5 <start-utc>
 WINDOW='<timestamp regex>' "$RB"/apache/top-paths.sh /var/log/apache2/access.log 10
 awk -F'"' '$6 ~ /^node/ {c++} END {print c " node requests"}' /var/log/apache2/access.log
-# Roughly matching volumes support "first-party SSR"; capture the forwarded-for header to confirm (a logging change: RB-10/MIT-01).
+# Matching volumes and user agents cannot authenticate callers. Use trusted trace propagation
+# and an independently verified service identity; propose instrumentation via RB-10/MIT-01.
 ```
 
 ### Decision
 
 | Result                                              | Next                                                                                 |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Volumes match first-party SSR                       | Not abuse; return to [RB-02/TRF-06](02-apache-traffic.md#trf-06)                     |
+| Trusted identity and linked request chain verify first-party calls | Return to [RB-02/TRF-06](02-apache-traffic.md#trf-06) with attribution evidence |
+| Volumes match but identity or parentage is unverified | Keep attribution unknown; follow the [correlation contract](../shared/recovery-evidence.md#request-correlation) |
 | Volumes do not match or source ranges are unrelated | [RB-07/SEC-02](07-traffic-security.md#sec-02)                                        |
 | Cannot tell without the real client address         | Needs a logging change: [RB-10/MIT-01](../response/10-mitigation-recovery.md#mit-01) |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Attribution decision with evidence.
 
@@ -194,8 +197,6 @@ awk -F'"' '$6 ~ /^node/ {c++} END {print c " node requests"}' /var/log/apache2/a
 | Backend content or GraphQL | [RB-04/APP-03](04-laravel.md#app-03)                         |
 | Caching                    | [RB-06/CCH-03](06-cache-invalidation.md#cch-03)              |
 | Mitigation needed          | [RB-10/MIT-01](../response/10-mitigation-recovery.md#mit-01) |
-
-**If the result is unknown:** Record the result as "not determined" and continue with the next branch; do not rule the hypothesis out. If evidence is missing, use [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03).
 
 **Evidence to record:** Chosen route.
 

@@ -12,7 +12,6 @@ sibling `home/projects.yaml.example` shows the schema with placeholders.
 | Task | Script | What it does |
 |------|--------|--------------|
 | `mise run projects:tmux` | `ops/projects/tmux/master.sh` | Master workspace (fixed 5-pane layout, percentage model). Configured via `WS_*` variables in `ops/projects/workspace/config.sh`, not `config.yaml`. |
-| `mise run projects:logs` | `ops/projects/tmux/logs.sh` | N vertical panes, one tailing each project's `service.log` (the original 3-pane log viewer, scaled to whatever fits). |
 | `mise run projects:ssh` | `ops/projects/tmux/ssh.sh` | N tmux panes, one `ssh <alias>` per entry under `ssh_workspace.hosts`. |
 | `mise run projects:repo -- <id>` | `ops/projects/repo-checks.sh` | Per-repo git status snapshot for one project. |
 | `mise run projects:health` | `ops/projects/health/run.sh` | Discover & run every `health/checks.d/*.sh`, pretty-print via `glow`. |

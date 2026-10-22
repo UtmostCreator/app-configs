@@ -464,10 +464,6 @@ run = "bash ops/projects/workspace/frontend/restart.sh"
 description = "Pack ui-components and install it into web-frontend (usage: -- apply|refresh|watch|rollback|status [--start-dev])"
 run = "bash ops/projects/workspace/components-local.sh"
 
-[tasks."projects:logs"]
-description = "Open the N-pane log viewer for projects with service.log set"
-run = "bash ops/projects/tmux/logs.sh"
-
 [tasks."projects:ssh"]
 description = "Open one tmux pane per SSH host listed in projects.yaml"
 run = "bash ops/projects/tmux/ssh.sh"

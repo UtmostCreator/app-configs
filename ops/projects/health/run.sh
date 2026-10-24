@@ -55,14 +55,35 @@ fi
 
 # Run every check, collect JSON lines.
 TMP="$(mktemp)"
-trap 'rm -f "$TMP"' EXIT
+CHECK_TMP=''
+trap 'rm -f "$TMP"; [[ -z "$CHECK_TMP" ]] || rm -f "$CHECK_TMP"' EXIT
 for chk in "$CHECKS_DIR"/*.sh; do
   [[ -f "$chk" ]] || continue
-  bash "$chk" >>"$TMP" 2>/dev/null || true
+  CHECK_TMP=$(mktemp)
+  if bash "$chk" >"$CHECK_TMP" 2>/dev/null; then check_status=0; else check_status=$?; fi
+  # A check must produce at least one well-formed record and exit successfully.
+  # Invalid output is discarded rather than partially accepted as healthy.
+  if (( check_status == 0 )) && jq -es '
+    length > 0 and all(.[];
+      type == "object" and
+      (.name | type == "string" and length > 0) and
+      (.section | type == "string") and
+      (.note | type == "string") and
+      (.status == "ok" or .status == "warn" or .status == "fail"))
+    ' "$CHECK_TMP" >/dev/null 2>&1; then
+    cat "$CHECK_TMP" >>"$TMP"
+  else
+    PROJ_CHECK_NAME="$(basename "$chk")" proj_emit fail "checks" \
+      "check failed, emitted no records, or emitted invalid records (exit $check_status)" >>"$TMP"
+  fi
+  rm -f "$CHECK_TMP"
 done
+if [[ ! -s "$TMP" ]]; then
+  PROJ_CHECK_NAME="check-discovery" proj_emit fail "checks" "no checks produced results" >>"$TMP"
+fi
 
 # Aggregate.
-AGG="$(jq -nc --slurpfile checks <(jq -nc 'inputs' <"$TMP" 2>/dev/null || echo '[]') '
+if ! AGG="$(jq -nc --slurpfile checks "$TMP" '
   ($checks | flatten) as $all |
   ($all | map(select(.status == "ok"))   | length) as $ok |
   ($all | map(select(.status == "fail")) | length) as $fail |
@@ -76,7 +97,9 @@ AGG="$(jq -nc --slurpfile checks <(jq -nc 'inputs' <"$TMP" 2>/dev/null || echo '
       warned: $warn
     }
   }
-')"
+')"; then
+  proj_fail "could not aggregate health results"
+fi
 
 # Exit-code contract (documented at the top of this file):
 #   0 — all ok, or warn-only (no checks have status == fail)
@@ -99,6 +122,8 @@ final_exit() {
 case "$MODE" in
   json)
     printf '%s\n' "$AGG"
+    final_exit
+    exit
     ;;
   quiet)
     final_exit

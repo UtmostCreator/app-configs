@@ -24,6 +24,9 @@
 	grs = reset --soft HEAD~
 	# diff
 	gd = diff
+	# Review staged changes and check unstaged changes for whitespace errors
+	ds = diff --staged
+	checkdiff = diff --check
 	diffrom = cherry -v
 	diffromd = cherry -v develop
 	# alias listing
@@ -52,11 +55,20 @@
 	# --- Undo kit (time turner + rollback saves) ---
 	unstage = restore --staged .
 	discard = restore .
+	# Explicit file operations: git rs|rsst|rsp -- <path>
+	# rs/rsp discard unstaged edits; rsst keeps edits in the working tree
+	rs      = restore
+	rsst    = restore --staged
+	rsp     = restore --patch
 	oops    = commit --amend --no-edit
 	uncommit= reset --soft HEAD~1
 	# --- Stash / backpack management ---
 	sl    = stash list
 	ss    = stash push -u -m
+	# git sst "message" [-- <path>]: tracked changes only
+	sst   = stash push -m
+	# git ssu "message" [-- <path>]: also include untracked files (same as ss)
+	ssu   = stash push -u -m
 	sp    = stash pop
 	sa    = stash apply
 	# --- Conflict triage (boss fight utilities) ---
@@ -146,10 +158,9 @@
 	back = switch -
 	# git recent -> branches sorted by most recent commit, with dates
 	recent = for-each-ref --sort=-committerdate refs/heads/ --format='%(committerdate:relative)%09%(refname:short)'
-	# git brgone -> prune remotes, then force-delete local branches whose
-	# upstream is gone (i.e. the remote branch was deleted/merged on GitHub).
-	# Uses branch -D, so it also drops un-pushed commits on those branches.
-	brgone = "!git fetch -p && git branch -vv | awk '/: gone]/{print $1}' | xargs -r git branch -D"
+	# git brgone -> preview local branches whose upstream is gone.
+	# Run git fetch --prune first; review candidates before git branch -d.
+	brgone = "!git branch --no-color -vv | grep ': gone]' || true"
 
 	# --- Rebasing & autosquash (clean history) ---
 	# git ri <n>  -> interactive rebase of last n commits

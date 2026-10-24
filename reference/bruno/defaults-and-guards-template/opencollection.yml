@@ -19,10 +19,10 @@ request:
           bru.setVar("item_date", ymd(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)));
         }
 
-        const currencyByLocale = { "region-a": "CUR-A", "region-b": "CUR-B", "region-c": "CUR-C" };
-        const locale = env("currency_code") in currencyByLocale ? env("currency_code") : "region-a";
-        bru.setVar("currency_code", locale);
-        bru.setVar("item_currency", currencyByLocale[locale]);
+        const currencyByRegion = { "region-a": "CUR-A", "region-b": "CUR-B", "region-c": "CUR-C" };
+        const regionCode = env("currency_code") in currencyByRegion ? env("currency_code") : "region-a";
+        bru.setVar("currency_code", regionCode);
+        bru.setVar("item_currency", currencyByRegion[regionCode]);
 
         if (!/^[1-9]\d*$/.test(env("quantity"))) {
           bru.setVar("quantity", "1");

@@ -38,18 +38,18 @@
     },
     "sample": [
       {
-        "line": "2026-09-03T09:42:18.381Z [BACKEND-NPM] INFO development server ready",
+        "line": "2001-01-15T09:42:18.381Z [BACKEND-NPM] INFO development server ready",
         "level": "info"
       },
       {
-        "line": "2026-09-03T09:42:18.417Z [FRONTEND-NPM] ERROR Build failed for route /region-a",
+        "line": "2001-01-15T09:42:18.417Z [FRONTEND-NPM] ERROR Build failed for route /example/region",
         "level": "error"
       },
       {
-        "line": "2026-09-03T09:42:18.419Z [FRONTEND-NPM] Frontend dev server listening on http://localhost:3001"
+        "line": "2001-01-15T09:42:18.419Z [FRONTEND-NPM] Frontend dev server listening on http://localhost:3001"
       },
       {
-        "line": "[2026-09-03 09:42:00] starting web-frontend (legacy entry)"
+        "line": "[2001-01-15 09:42:00] starting web-frontend (legacy entry)"
       }
     ]
   }

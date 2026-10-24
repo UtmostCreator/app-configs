@@ -758,7 +758,7 @@ fi
 
 # Detect the actual port the frontend / Frontend process is listening on.
 # Falls back to the expected default if process detection finds nothing.
-# Tests /region-a on the detected port and requires HTTP 200.
+# Tests the root path on the detected port and requires HTTP 200.
 _FE_DEFAULT_PORT="$WS_FRONTEND_PORT"
 _FE_PID_LIST=()
 if [[ -n "$_FRONTEND_PID" ]]; then
@@ -825,7 +825,7 @@ if [[ -z "$_FE_DETECTED_PORT" && ${#_FE_PID_LIST[@]} -gt 0 ]]; then
 fi
 
 _FE_PORT="$_FE_DEFAULT_PORT"
-_FE_URL="http://localhost:${_FE_PORT}/region-a"
+_FE_URL="http://localhost:${_FE_PORT}/"
 _FE_PORT_NOTE=""
 if [[ -n "$_FE_DETECTED_PORT" && "$_FE_DETECTED_PORT" != "$_FE_DEFAULT_PORT" ]]; then
     _FE_PORT_NOTE=" (detected internal listener ${_FE_DETECTED_PORT}; health check uses public frontend port ${_FE_DEFAULT_PORT})"
@@ -863,7 +863,7 @@ _section "Endpoint response checks (10s)"
 _EP_TIMEOUT="10"
 _EP_INTEGRATION_URL="https://integration.test/login/system"
 _EP_BACKEND_LOGIN_URL="https://backend.test/cp/auth/login"
-_EP_FRONTEND_URL="http://localhost:${WS_FRONTEND_PORT}/region-a"
+_EP_FRONTEND_URL="http://localhost:${WS_FRONTEND_PORT}/"
 
 _EP_CODE="$(curl -ksSo /dev/null -w '%{http_code}' --max-time "$_EP_TIMEOUT" "$_EP_INTEGRATION_URL" 2>/dev/null || true)"
 if [[ "$_EP_CODE" == "200" ]]; then

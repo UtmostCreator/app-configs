@@ -127,6 +127,14 @@ mise run projects:tmux --force
 
 The scripts have no hard-coded project ids — everything follows from the YAML.
 
+## Health result contract
+
+Each discovered check must exit successfully and emit at least one JSON object with a nonempty `name`, string `section` and `note`, and `status` equal to `ok`, `warn` or `fail`. Empty, malformed or invalid output, a nonzero check exit, or discovering no checks produces an explicit failure. JSON, quiet and pretty modes return 1 for failures and 0 for success or warnings. Warnings remain visible as `overall.status: warn`; they are not verified health.
+
+For a project managed by a system service, set `projects.<id>.service.unit` to its exact unit, for example `example.service`. The process check then uses that identity without falling back to executable matching. An active unit establishes unit activity; application readiness still needs appropriate evidence. Without a configured unit, a matching executable produces `warn` because an unrelated project may use the same executable; no match produces `fail`. HTTP checks require an explicitly configured endpoint whose side effects have been reviewed.
+
+Isolated regression checks: `PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s ops/projects/health -p 'test_health.py' -v`. These use mock services and temporary check directories.
+
 ## Writing a new health check
 
 Each check is a self-contained 5–15 line script under

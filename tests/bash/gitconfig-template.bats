@@ -75,3 +75,39 @@ render_gitconfig() {
     render_gitconfig '{"name":"Test User","email":"test@example.test","signingKey":""}'
     ! grep -Eq '^[[:space:]]*helper[[:space:]]*=[[:space:]]*store' "$RENDERED"
 }
+
+@test "brgone previews gone upstreams without deleting branches or unique commits" {
+    render_gitconfig '{"name":"Test User","email":"test@example.test","signingKey":"","useGitDelta":false}'
+    local repo="$BATS_TEST_TMPDIR/repo"
+    git init -q -b main "$repo"
+    git -C "$repo" config user.name "Test User"
+    git -C "$repo" config user.email "test@example.test"
+    git -C "$repo" -c commit.gpgsign=false commit -q --allow-empty -m initial
+    git -C "$repo" switch -q -c retired
+    git -C "$repo" -c commit.gpgsign=false commit -q --allow-empty -m unique
+    git -C "$repo" switch -q main
+    # A missing remote path also ensures preview does not need a fetch.
+    git -C "$repo" remote add origin "$BATS_TEST_TMPDIR/missing-remote"
+    git -C "$repo" config branch.retired.remote origin
+    git -C "$repo" config branch.retired.merge refs/heads/retired
+    git -C "$repo" config branch.main.remote origin
+    git -C "$repo" config branch.main.merge refs/heads/main
+    local before
+    before="$(git -C "$repo" show-ref)"
+
+    run git -C "$repo" -c "include.path=$RENDERED" brgone
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"[origin/retired: gone]"* ]]
+    [[ "$output" == *"[origin/main: gone]"* ]]
+    [ "$(git -C "$repo" show-ref)" = "$before" ]
+}
+
+@test "brgone succeeds with no gone upstreams" {
+    render_gitconfig '{"name":"Test User","email":"test@example.test","signingKey":"","useGitDelta":false}'
+    local repo="$BATS_TEST_TMPDIR/repo"
+    git init -q -b main "$repo"
+
+    run git -C "$repo" -c "include.path=$RENDERED" brgone
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}

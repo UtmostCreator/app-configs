@@ -5,7 +5,7 @@ type: reference
 domain: evidence
 status: active
 owner: platform
-updated: 2026-10-22
+updated: undated
 tags: [debugging, hypotheses, logs, shell, awk, performance, baseline]
 symptoms: [inconclusive investigation, misleading counts, missing evidence]
 ---
@@ -27,6 +27,10 @@ For each hypothesis, record a prediction and a result that would contradict it. 
 5. Refine the explanation and repeat. Reproduce and reduce a failing case in an isolated environment with sanitised inputs before testing a fix.
 
 Do not replay production writes, clear caches, or inject failures as a diagnostic shortcut. Experiments that change production follow [RB-10](../response/10-mitigation-recovery.md). Recovery after a restart supports a mitigation; it does not establish the original cause. Keep the causal conclusion separate from the recovery result.
+
+## Minimise round trips
+
+Every pasted round should answer a set of questions, not one. Follow the [fast path](fast-path.md): prior art and supplied exports before production, whole interval before windows, one pass producing several aggregates, and a printed header, window, denominator and exit status per block. Redact identifiers rather than meaning: template numeric/UUID/email path segments and classify user agents and peers instead of hashing paths, which can hide useful route classes and cost a round to reverse. Record each round's verdict in the incident's [command review](../incidents/_template/command-review.md).
 
 ## Make counts reproducible
 

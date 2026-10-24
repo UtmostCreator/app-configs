@@ -7,7 +7,7 @@ priority: P0
 mode: read-only
 status: active
 owner: platform
-updated: 2026-10-22
+updated: undated
 tags: [apache, access-log, requests-per-minute, status-codes, top-ips, user-agent, baseline]
 symptoms: [traffic spike, 5xx spike, slow responses, suspicious requests]
 steps: [TRF-01, TRF-02, TRF-03, TRF-04, TRF-05, TRF-06]
@@ -47,7 +47,7 @@ All steps follow the [shared execution and evidence gates](../shared/recovery-ev
 # Whole selected file; choose explicit UTC bounds for incident/baseline comparisons.
 "$RB"/apache/request-rate.sh "$APACHE_LOG"
 # Limit to a window with a timestamp regex:
-WINDOW='13/Oct/2026:08:(1[7-9]|2[0-9])' "$RB"/apache/request-rate.sh "$APACHE_LOG"
+WINDOW='[0-9]{2}/[A-Za-z]{3}/[0-9]{4}:08:' "$RB"/apache/request-rate.sh "$APACHE_LOG"
 # Baseline: run against a rotated log from a comparable quiet period
 "$RB"/apache/request-rate.sh /var/log/apache2/access.log.2.gz | sort -k2 -nr | head -5
 ```
@@ -134,6 +134,10 @@ awk -F'"' '{print $6}' "$APACHE_LOG" | sort | uniq -c | sort -nr | head -15
 ### Commands
 
 ```bash
+# Per-minute endpoint classes plus first-party agent share: separates own SSR fan-out from external load.
+START_UTC=<start> END_UTC=<end> UA_MATCH='^node$' \
+  ROUTE_CLASSES='gql=^/graphql$;region=/region$;locurl=localized-urls;redir=netlify-redirects;nav=/navigation/' \
+  "$RB"/apache/route-mix.sh "$APACHE_LOG"
 "$RB"/apache/top-paths.sh "$APACHE_LOG" 40 | grep -Ev "\.(css|js|png|jpe?g|webp|svg|woff2?)$"
 grep -E "(wp-login|\.env|/\.git|phpmyadmin)" "$APACHE_LOG" | awk '{print $1}' | sort | uniq -c | sort -nr | head
 ```
@@ -144,6 +148,7 @@ grep -E "(wp-login|\.env|/\.git|phpmyadmin)" "$APACHE_LOG" | awk '{print $1}' | 
 | ---------------------------------------------------------- | ------------------------------------------------- |
 | Probing for secrets or admin paths                         | [RB-07/SEC-02](07-traffic-security.md#sec-02)     |
 | Legitimate API fan-out (GraphQL, navigation, localisation) | [RB-08/DEP-01](08-service-dependencies.md#dep-01) |
+| A once-per-instance endpoint jumps from ~0 while the first-party agent share stays high | Cold SSR instances or emptied caches: [RB-06/CCH-03](06-cache-invalidation.md#cch-03); never block the first-party agent |
 | Nothing unusual                                            | [RB-02/TRF-05](#trf-05)                           |
 
 **Evidence to record:** Dynamic route ranking and any suspicious signatures.

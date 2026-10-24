@@ -20,7 +20,7 @@ def load(name, path):
 single_flight = load('single_flight', COMMANDS / 'verify-single-flight.py')
 
 
-def access(stamp='13/Oct/2026:08:20:00 +0000', status=200, path='/graphql?token=secret', suffix=''):
+def access(stamp='15/Jan/2001:08:20:00 +0000', status=200, path='/example/api?token=secret', suffix=''):
     return f'192.0.2.1 - - [{stamp}] "POST {path} HTTP/1.1" {status} 4 "-" "agent with \\"quoted\\" text"{suffix}\n'
 
 
@@ -46,21 +46,21 @@ class Helpers(unittest.TestCase):
         p.chmod(0o755)
 
     def test_utc_window_and_chronological_buckets(self):
-        self.log.write_text(access('01/Nov/2026:00:00:00 +0000')
-                            + access('31/Oct/2026:23:59:00 +0000')
-                            + access('01/Nov/2026:00:59:00 +0100'))
+        self.log.write_text(access('16/Jan/2001:00:00:00 +0000')
+                            + access('15/Jan/2001:23:59:00 +0000')
+                            + access('16/Jan/2001:00:59:00 +0100'))
         result = self.run_helper('apache/request-rate.sh', self.log)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.splitlines(), ['2026-10-31T23:59Z 2', '2026-11-01T00:00Z 1'])
+        self.assertEqual(result.stdout.splitlines(), ['2001-01-15T23:59Z 2', '2001-01-16T00:00Z 1'])
         result = self.run_helper('apache/status-distribution.sh', self.log,
-                                 START_UTC='2026-10-31T23:59:00Z', END_UTC='2026-11-01T00:00:00Z')
+                                 START_UTC='2001-01-15T23:59:00Z', END_UTC='2001-01-16T00:00:00Z')
         self.assertEqual(result.stdout.strip(), '200 2 100.00%')
 
     def test_all_access_helpers_handle_empty_and_bad_filters(self):
         for script in ['request-rate', 'status-distribution', 'top-clients', 'top-paths', 'method-by-path']:
             with self.subTest(script=script):
                 self.log.write_text(access())
-                extra = ['/graphql'] if script == 'method-by-path' else []
+                extra = ['/example/api'] if script == 'method-by-path' else []
                 invalid = self.run_helper(f'apache/{script}.sh', self.log, *extra, WINDOW='[')
                 self.assertNotEqual(invalid.returncode, 0)
                 self.assertEqual(invalid.stdout, '')
@@ -88,9 +88,9 @@ class Helpers(unittest.TestCase):
         self.log.write_bytes(gzip.compress(access().encode()))
         paths = self.run_helper('apache/top-paths.sh', self.log)
         self.assertEqual(paths.returncode, 0, paths.stderr)
-        self.assertIn('100.0%  /graphql', paths.stdout)
+        self.assertIn('100.0%  /example/api', paths.stdout)
         self.assertNotIn('secret', paths.stdout)
-        methods = self.run_helper('apache/method-by-path.sh', self.log, '/graphql')
+        methods = self.run_helper('apache/method-by-path.sh', self.log, '/example/api')
         self.assertEqual(methods.stdout.strip(), '1 POST 200')
         self.assertNotEqual(self.run_helper('apache/top-paths.sh', self.log, 0).returncode, 0)
 
@@ -104,7 +104,7 @@ class Helpers(unittest.TestCase):
         self.assertNotEqual(self.run_helper('apache/latency-summary.sh', self.log).returncode, 0)
 
     def test_error_summary_continues_without_memory_failure(self):
-        self.log.write_text('[Tue Oct 13] AH00161 worker limit\n[Tue Oct 13] resuming normal operations\n')
+        self.log.write_text('[Mon Jan 15] AH00161 worker limit\n[Mon Jan 15] resuming normal operations\n')
         result = self.run_helper('apache/error-log-summary.sh', self.log)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('restarts / shutdowns', result.stdout)
@@ -114,9 +114,9 @@ class Helpers(unittest.TestCase):
         self.assertNotEqual(self.run_helper('apache/error-log-summary.sh', self.log, WINDOW='[').returncode, 0)
 
     def test_laravel_counts_headers_once_and_honours_window(self):
-        self.log.write_text('[2026-10-13 08:20:00] production.ERROR: Failure 123\n'
+        self.log.write_text('[2001-01-15 08:20:00] production.ERROR: Failure 123\n'
                             '#0 traceback production.ERROR: secondary\n'
-                            '[2026-10-13 08:21:00] production.ERROR: Failure 456\n')
+                            '[2001-01-15 08:21:00] production.ERROR: Failure 456\n')
         result = self.run_helper('laravel/error-summary.sh', self.log, WINDOW='08:20:')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.strip(), '1 Failure N')
@@ -128,21 +128,21 @@ class Helpers(unittest.TestCase):
         self.mock('netlify', '''printf '%s\\n' "$*" > "$CAPTURE"
 printf '%s\\n' '{"message":"a"}' '{"message":"b"}' ''')
         capture = self.root / 'args'
-        result = self.run_helper('netlify/window-counts.sh', 'server', 5, '2026-10-13T08:20:00Z',
+        result = self.run_helper('netlify/window-counts.sh', 'server', 5, '2001-01-15T08:20:00Z',
                                  CAPTURE=str(capture), NETLIFY_LOG_CAP='2')
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('2 log_records', result.stdout)
         self.assertIn('possibly_truncated=true', result.stdout)
-        self.assertIn('--until 2026-10-13T08:20:05Z', capture.read_text())
+        self.assertIn('--until 2001-01-15T08:20:05Z', capture.read_text())
         self.mock('netlify', "echo 'permission denied' >&2; exit 7")
-        result = self.run_helper('netlify/window-counts.sh', 'server', 5, '2026-10-13T08:20:00Z')
+        result = self.run_helper('netlify/window-counts.sh', 'server', 5, '2001-01-15T08:20:00Z')
         self.assertEqual(result.returncode, 7)
         self.assertEqual(result.stdout, '')
         self.assertIn('permission denied', result.stderr)
         self.mock('netlify', "echo 'not json'")
-        self.assertNotEqual(self.run_helper('netlify/window-counts.sh', 'server', 5, '2026-10-13T08:20:00Z').returncode, 0)
+        self.assertNotEqual(self.run_helper('netlify/window-counts.sh', 'server', 5, '2001-01-15T08:20:00Z').returncode, 0)
         self.assertNotEqual(self.run_helper('netlify/window-counts.sh', 'server', 5).returncode, 0)
-        self.assertNotEqual(self.run_helper('netlify/window-counts.sh', 'server', 0, '2026-10-13T08:20:00Z').returncode, 0)
+        self.assertNotEqual(self.run_helper('netlify/window-counts.sh', 'server', 0, '2001-01-15T08:20:00Z').returncode, 0)
 
     def test_linux_failures_do_not_report_healthy(self):
         self.mock('ss', 'echo denied >&2; exit 9')
@@ -173,19 +173,19 @@ printf '%s\\n' '{"message":"a"}' '{"message":"b"}' ''')
         self.assertEqual(self.run_helper('apache/worker-capacity.sh').returncode, 8)
 
     def test_utc_conversion_across_dst(self):
-        self.log.write_text(access('25/Oct/2026:01:30:00 +0100')
-                            + access('25/Oct/2026:01:30:00 +0000')
-                            + access('29/Mar/2026:02:30:00 +0100')
-                            + access('29/Mar/2026:01:30:00 +0000'))
+        self.log.write_text(access('28/Oct/2001:01:30:00 +0100')
+                            + access('28/Oct/2001:01:30:00 +0000')
+                            + access('25/Mar/2001:02:30:00 +0100')
+                            + access('25/Mar/2001:01:30:00 +0000'))
         result = self.run_helper('apache/request-rate.sh', self.log)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(result.stdout.splitlines(), ['2026-03-29T01:30Z 2',
-                                                     '2026-10-25T00:30Z 1', '2026-10-25T01:30Z 1'])
+        self.assertEqual(result.stdout.splitlines(), ['2001-03-25T01:30Z 2',
+                                                     '2001-10-28T00:30Z 1', '2001-10-28T01:30Z 1'])
 
     def test_combined_log_with_rotations(self):
         self.log.write_text(access())
         rotation = self.root / 'log.1.gz'
-        rotation.write_bytes(gzip.compress(access('13/Oct/2026:08:19:00 +0000').encode()))
+        rotation.write_bytes(gzip.compress(access('15/Jan/2001:08:19:00 +0000').encode()))
         rows = []
         for path in (self.log, rotation):
             result = self.run_helper('apache/request-rate.sh', path)
@@ -194,7 +194,7 @@ printf '%s\\n' '{"message":"a"}' '{"message":"b"}' ''')
         self.assertEqual(sum(int(row.split()[1]) for row in rows), 2)
 
     def test_british_summer_and_winter_date_examples(self):
-        for date, expected in [('2026-10-13', '08:17:00Z'), ('2026-12-13', '09:17:00Z')]:
+        for date, expected in [('2001-01-15', '08:17:00Z'), ('2001-12-13', '09:17:00Z')]:
             result = subprocess.run(['date', '-u', '-d', f'TZ="Europe/London" {date} 09:17', '+%H:%M:%SZ'],
                                     text=True, capture_output=True, check=True)
             self.assertEqual(result.stdout.strip(), expected)
@@ -204,7 +204,7 @@ class SingleFlight(unittest.TestCase):
     def events(self):
         base = {'run_id': 'run', 'key_hash': 'key'}
         def event(kind, time, **fields):
-            return {**base, 'event': kind, 'utc': f'2026-10-13T08:20:0{time}Z', **fields}
+            return {**base, 'event': kind, 'utc': f'2001-01-15T08:20:0{time}Z', **fields}
         return [event('upstream_start', 1, fetch_id='fetch'),
                 event('cache_miss', 0, request_id='a', instance_id='one'),
                 event('cache_miss', 2, request_id='b', instance_id='two'),
@@ -213,21 +213,29 @@ class SingleFlight(unittest.TestCase):
                 event('client_result', 5, request_id='a', ok=True, value_hash='value'),
                 event('client_result', 5, request_id='b', ok=True, value_hash='value')]
 
+    def origin_events(self):
+        base = {'run_id': 'run', 'key_hash': 'key', 'source': 'mock-origin'}
+        return [{**base, 'event': 'origin_attempt', 'utc': '2001-01-15T08:20:01Z',
+                 'finished_utc': '2001-01-15T08:20:03Z', 'fetch_id': 'fetch',
+                 'ok': True, 'value_hash': 'value'},
+                {**base, 'event': 'origin_ledger_complete', 'utc': '2001-01-15T08:20:06Z',
+                 'complete': True, 'attempt_count': 1}]
+
     def test_valid_ledger(self):
-        self.assertIn('PASS', single_flight.verify(self.events(), 'run', 'key', 2))
+        self.assertIn('PASS', single_flight.verify(self.events(), 'run', 'key', 2, self.origin_events()))
 
     def test_duplicate_upstream_wrong_value_missing_caller_and_warm_call_fail(self):
         variants = []
         events = self.events(); events.append(events[0].copy()); variants.append(events)
         events = self.events(); events[-1]['value_hash'] = 'wrong'; variants.append(events)
         events = self.events(); events.pop(); variants.append(events)
-        events = self.events(); events[2]['utc'] = '2026-10-13T08:20:06Z'; variants.append(events)
+        events = self.events(); events[2]['utc'] = '2001-01-15T08:20:06Z'; variants.append(events)
         events = self.events(); events[2]['instance_id'] = 'one'; variants.append(events)
         events = self.events(); events[2]['key_hash'] = 'different'; variants.append(events)
         for events in variants:
             with self.subTest(events=events):
                 with self.assertRaises(ValueError):
-                    single_flight.verify(events, 'run', 'key', 2)
+                    single_flight.verify(events, 'run', 'key', 2, self.origin_events())
 
 
 if __name__ == '__main__':

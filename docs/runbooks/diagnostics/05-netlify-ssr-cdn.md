@@ -7,7 +7,7 @@ priority: P0
 mode: read-only
 status: active
 owner: platform
-updated: 2026-10-22
+updated: undated
 tags: [netlify, ssr, cdn, 504, functions, nuxt, cache-status, latency, truncation, sample-windows, timeout, static-assets, route-rules]
 symptoms: [504, 502, 503, SSR timeout, slow pages, legacy images failing, 30 second timeouts, static asset 504, log query returns 100 records]
 steps: [NET-01, NET-02, NET-03, NET-04, NET-05, NET-06, NET-07]
@@ -73,7 +73,7 @@ jq -r 'select(.status>=500) | [.status,.path] | @tsv' traffic-metrics.jsonl | so
 
 **Sample short windows around onset to size the change**
 
-- **Objective:** Compare function activity just before, at and after onset with short windows, because log queries return a limited batch and long windows are truncated.
+- **Objective:** Compare verified function invocations and validated duration distributions before, at and after onset. Application log queries locate evidence and detect possible truncation; their record counts do not measure function activity.
 - **Mode:** Read-only
 - **Preconditions:** Time window and sources validated ([RB-01](../foundations/01-evidence-attribution.md))
 
@@ -91,11 +91,11 @@ docs/runbooks/shared/commands/netlify/window-counts.sh server 5 <T-30s> <T> <T+6
 
 | Result | Next |
 | --- | --- |
-| Activity multiplied and durations jumped (for example over 20x more completions, most over 5 s) | [RB-05/NET-03](#net-03) |
-| Counts hit the cap | Shorten windows and repeat; do not conclude "no errors later" from a truncated batch |
-| No change in activity | [RB-05/NET-04](#net-04) |
+| Verified invocations increased and comparable validated durations rose, with matching deploy/function/window coverage | [RB-05/NET-03](#net-03) |
+| Application log-record counts hit the verified cap | Shorten windows and repeat; do not conclude "no errors later" from a truncated batch |
+| Verified invocation counts and comparable duration samples show no change, with matching coverage | [RB-05/NET-04](#net-04) |
 
-**If the result is unknown:** Record "unverifiable" and use a log drain or exported observability data.
+**If the result is unknown:** Missing invocation counts, units, duration semantics or comparable coverage is unresolved. Record "unverifiable" and use platform invocation metrics or a validated log-drain/observability export; low application log-record counts cannot establish no activity change.
 
 **Evidence to record:** Table: UTC interval, log records, verified invocation count, duration sample count and longest duration, export schema, timestamp meaning, filters and completeness. Compute a start from duration only when the timestamp is verified completion time.
 

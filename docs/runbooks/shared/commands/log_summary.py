@@ -37,22 +37,65 @@ def access_time(value):
         '%Y-%m-%d %H:%M:%S %z').astimezone(timezone.utc)
 
 
-def lines(path):
+def lines(path, max_bytes, max_line_bytes):
     with Path(path).open('rb') as probe:
         compressed = probe.read(2) == b'\x1f\x8b'
     opener = gzip.open if compressed else open
-    with opener(path, 'rt', encoding='utf-8', errors='strict') as stream:
-        yield from stream
+    # Bound decompressed data and each allocation, including gzip expansion.
+    with opener(path, 'rb') as stream:
+        consumed = 0
+        while True:
+            line = stream.readline(min(max_line_bytes, max_bytes - consumed) + 1)
+            if not line:
+                break
+            consumed += len(line)
+            if consumed > max_bytes:
+                raise ValueError('decompressed input byte limit exceeded; no aggregate emitted')
+            if len(line) > max_line_bytes:
+                raise ValueError('line byte limit exceeded; no aggregate emitted')
+            yield line.decode('utf-8', errors='strict')
+
+
+def route_classes(spec, ua):
+    """Parse ROUTE_CLASSES='name=regex;name=regex' (first match wins, unmatched paths count as other)."""
+    classes, seen = [], {'total', 'other', 'ua_match'}
+    for item in filter(None, (part.strip() for part in spec.split(';'))):
+        name, sep, pattern = item.partition('=')
+        if not sep or not re.fullmatch(r'[a-z][a-z0-9_-]{0,31}', name) or name in seen or not pattern:
+            raise ValueError('ROUTE_CLASSES entries must be unique name=regex pairs (reserved: total, other, ua_match)')
+        seen.add(name)
+        try:
+            classes.append((name, re.compile(pattern)))
+        except re.error:
+            raise ValueError('invalid ROUTE_CLASSES regular expression') from None
+    if not classes:
+        raise ValueError('route-mix requires ROUTE_CLASSES, for example gql=^/graphql$;redir=netlify-redirects')
+    try:
+        return classes, re.compile(ua) if ua else None
+    except re.error:
+        raise ValueError('invalid UA_MATCH regular expression') from None
+
+
+def limit(name, default, ceiling):
+    value = int(os.environ.get(name, default))
+    if not 1 <= value <= ceiling:
+        raise ValueError(f'{name} must be between 1 and {ceiling}')
+    return value
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('mode', choices=['request-rate', 'status-distribution', 'top-clients',
                                        'top-paths', 'method-by-path', 'latency-summary',
-                                       'error-log-summary', 'laravel-errors'])
+                                       'error-log-summary', 'laravel-errors', 'route-mix'])
     parser.add_argument('log')
     parser.add_argument('extra', nargs='?')
     args = parser.parse_args()
+    max_bytes = limit('LOG_MAX_BYTES', 64 * 1024 * 1024, 256 * 1024 * 1024)
+    max_line = limit('LOG_MAX_LINE_BYTES', 256 * 1024, 1024 * 1024)
+    max_records = limit('LOG_MAX_RECORDS', 500000, 2000000)
+    max_keys = limit('LOG_MAX_KEYS', 50000, 200000)
+    max_durations = limit('LOG_MAX_DURATIONS', 100000, 500000)
     top = 20
     if args.mode in ('top-clients', 'top-paths', 'laravel-errors') and args.extra:
         top = int(args.extra)
@@ -67,14 +110,22 @@ def main():
         raise ValueError('provide both START_UTC and END_UTC with start < end')
     if start and args.mode in ('error-log-summary', 'laravel-errors'):
         raise ValueError('UTC bounds are supported only for Apache access logs; use WINDOW for these logs')
+    classes, ua_match = [], None
+    if args.mode == 'route-mix':
+        classes, ua_match = route_classes(os.environ.get('ROUTE_CLASSES', ''), os.environ.get('UA_MATCH'))
     counts = Counter()
     durations = {'all': [], 'success': [], 'error': []}
     restarts = deque(maxlen=15)
     raw = selected = rejected = errors = 0
     error_header = re.compile(r'^\[([^]]+)\] [\w.-]+\.(ERROR|CRITICAL|ALERT|EMERGENCY): (.*)')
     event_header = re.compile(r'^\[\d{4}-\d{2}-\d{2}[^]]*\] [\w.-]+\.\w+:')
-    for line in lines(args.log):
+    for line in lines(args.log, max_bytes, max_line):
         raw += 1
+        if raw > max_records:
+            raise ValueError('record limit exceeded; no aggregate emitted')
+        # The previous iteration can add at most one key; fail before output.
+        if len(counts) > max_keys:
+            raise ValueError('distinct aggregation key limit exceeded; no aggregate emitted')
         if args.mode == 'laravel-errors':
             # Only event headers count. Multiline traces remain available in the source file.
             if not event_header.match(line):
@@ -114,7 +165,7 @@ def main():
         selected += 1
         parts = request.split()
         valid_request = len(parts) == 3 and parts[2].startswith('HTTP/')
-        if args.mode in ('top-paths', 'method-by-path') and not valid_request:
+        if args.mode in ('top-paths', 'method-by-path', 'route-mix') and not valid_request:
             rejected += 1
             continue
         if args.mode == 'request-rate':
@@ -128,17 +179,28 @@ def main():
         elif args.mode == 'method-by-path':
             if parts[1].split('?', 1)[0] == args.extra:
                 counts[parts[0] + ' ' + status] += 1
+        elif args.mode == 'route-mix':
+            path = parts[1].split('?', 1)[0]
+            minute = dt.strftime('%Y-%m-%dT%H:%MZ')
+            counts[minute, 'total'] += 1
+            counts[minute, next((name for name, rule in classes if rule.search(path)), 'other')] += 1
+            if ua_match and ua_match.search(_agent):
+                counts[minute, 'ua_match'] += 1
         elif args.mode == 'latency-summary':
             timing = re.search(r'(?:^|\s)duration_us=(\d+)(?=\s|$)', suffix)
             if not timing:
                 rejected += 1
                 continue
             duration = int(timing[1]) / 1000
+            if len(durations['all']) >= max_durations:
+                raise ValueError('duration sample limit exceeded; no aggregate emitted')
             durations['all'].append(duration)
             if 200 <= int(status) < 400:
                 durations['success'].append(duration)
             elif int(status) >= 400:
                 durations['error'].append(duration)
+    if len(counts) > max_keys:
+        raise ValueError('distinct aggregation key limit exceeded; no aggregate emitted')
     print(f'raw_lines={raw} selected_records={selected} rejected_records={rejected}', file=sys.stderr)
     if rejected:
         raise ValueError('unparsable records or missing required fields; no aggregate emitted')
@@ -151,6 +213,10 @@ def main():
             print(count, key)
         print('== restarts / shutdowns ==')
         print('\n'.join(restarts) if restarts else 'No matching restart records')
+    elif args.mode == 'route-mix':
+        columns = ['total'] + [name for name, _rule in classes] + ['other'] + (['ua_match'] if ua_match else [])
+        for minute in sorted({key[0] for key in counts}):
+            print(minute, ' '.join(f'{column}={counts[minute, column]}' for column in columns))
     elif args.mode == 'latency-summary':
         for group, values in durations.items():
             values.sort()

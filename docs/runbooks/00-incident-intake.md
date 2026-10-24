@@ -7,7 +7,7 @@ priority: P0
 mode: read-only
 status: active
 owner: platform
-updated: 2026-10-22
+updated: undated
 tags: [intake, triage, router, on-call, severity]
 symptoms: [any incident, unknown cause, customer report]
 steps: [INC-01, INC-02, INC-03, INC-04, INC-05]
@@ -43,20 +43,24 @@ For a severe ongoing incident, split volatile-evidence preservation and mitigati
 ### Commands
 
 ```bash
-# Record answers in the incident notes; no commands required.
-# Optional active probe: use only an endpoint verified to avoid writes or expensive rebuilds.
-# curl --connect-timeout 3 --max-time 15 -sS -o /dev/null -w "%{http_code} %{time_total}s\n" https://<site>/<health-or-home-path>
+# Record answers in the incident notes; no production commands required.
+# Use existing monitor observations; active probing requires the INC-03 review.
 # External uptime monitor: note timeout rate, p50 and p95 against the monitor's timeout ceiling.
+# Prior art (FP-0): same signature, route or symptom already archived?
+grep -rniE '<signature or route>' docs/runbooks/incidents --include='*.md' | cut -c1-160
 ```
+
+Copy from the error-tracker issue before any server command: transaction/culprit route, URL path, first/last seen, event count, release, runtime SAPI, server name, trace ID and the last breadcrumbs. Analyse exports already attached to the ticket offline first. Start the [action ledger](incidents/_template/actions.md) now: every restart, reload, block, cache clear or config edit already made, with UTC time and actor role. See the [fast path](shared/fast-path.md) for the one-paste bundle that follows.
 
 ### Decision
 
 | Result                                     | Next                                                                                                         |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Service, environment and impact identified | [RB-00/INC-02](#inc-02)                                                                                      |
+| Archive or error tracker already names the route or pattern | [RB-00/INC-02](#inc-02), then the matching [fast path discriminator](shared/fast-path.md#fp-2--one-discriminator-per-symptom) instead of window sampling |
 | Cannot tell which environment is affected  | Check the [service map](shared/service-map.md), then repeat; if still unclear escalate to the incident owner |
 
-**Evidence to record:** Service name, environment, user-visible impact, who reported it and how, external monitor timeout rate and p50/p95.
+**Evidence to record:** Service name, environment, user-visible impact, who reported it and how, external monitor timeout rate and p50/p95, matching archive entries, error-tracker fields, actions already taken.
 
 **Return:** [RB-00/INC-05](#inc-05)
 
@@ -66,7 +70,7 @@ For a severe ongoing incident, split volatile-evidence preservation and mitigati
 
 - **Objective:** Fix the investigation window so every later query uses the same UTC bounds.
 - **Mode:** Read-only
-- **Preconditions:** Time window and sources validated ([RB-01](foundations/01-evidence-attribution.md))
+- **Preconditions:** Initial report with candidate event times and source identities; establish provisional UTC bounds here, then validate source clocks through [RB-01/EVD-02](foundations/01-evidence-attribution.md#evd-02). Unknown zones remain explicit.
 
 ### Commands
 
@@ -98,7 +102,8 @@ timedatectl | grep -E "Time zone|System clock"
 
 ```bash
 uptime
-curl -sS -o /dev/null -w "%{http_code} %{time_total}s\n" https://<site>/<health-or-home-path>
+# Read existing uptime/APM/edge monitors for this incident window.
+# Do not default to homepage or SSR requests. No reviewed safe endpoint => active probing unavailable.
 ```
 
 ### Decision
@@ -108,8 +113,18 @@ curl -sS -o /dev/null -w "%{http_code} %{time_total}s\n" https://<site>/<health-
 | Ongoing and customer-impacting                  | Continue to [RB-00/INC-04](#inc-04); keep [RB-10/MIT-01](response/10-mitigation-recovery.md#mit-01) in mind for fast mitigation |
 | Resolved or intermittent                        | [RB-00/INC-04](#inc-04); collect volatile evidence first via [RB-01/EVD-03](foundations/01-evidence-attribution.md#evd-03)      |
 | Service has been down for hours with no restart | [RB-03/CAP-06](diagnostics/03-apache-capacity.md#cap-06); nothing may have restarted it and no alert may have fired             |
+| Existing monitors unavailable and no reviewed safe endpoint | Record ongoing state as unknown; continue passive diagnosis and escalate the monitoring gap |
 
-**Evidence to record:** Ongoing yes/no, current error rate and latency.
+An active probe is optional and requires an explicit execution review before invocation: record the exact health endpoint, authorisation, bounded frequency, known side effects and expected cost. A homepage is not a fallback. After review only, use the bounded command below with the reviewed URL; do not send authentication secrets on the command line.
+
+```bash
+# REVIEWED_HEALTH_URL must be the exact endpoint recorded in the execution review.
+: "${REVIEWED_HEALTH_URL:?No reviewed safe endpoint; active probing unavailable}"
+curl --connect-timeout 3 --max-time 15 --retry 0 -sS -o /dev/null \
+  -w "%{http_code} %{time_total}s\n" "$REVIEWED_HEALTH_URL"
+```
+
+**Evidence to record:** Ongoing yes/no/unknown, existing monitor interval, current error rate and latency; any probe review, timeout, side effects and result. A curl error or timeout is a failed observation, not a healthy HTTP result.
 
 **Return:** [RB-00/INC-05](#inc-05)
 
@@ -134,7 +149,8 @@ curl -sS -o /dev/null -w "%{http_code} %{time_total}s\n" https://<site>/<health-
 | HTTP 502/503/504, SSR timeouts, CDN errors                        | [RB-05/NET-01](diagnostics/05-netlify-ssr-cdn.md#net-01)                                                                                |
 | OOM kill, `AH00161`, worker cap, host memory or CPU pressure      | [RB-03/CAP-01](diagnostics/03-apache-capacity.md#cap-01)                                                                                |
 | Traffic anomaly, unexpected request volume                        | [RB-02/TRF-01](diagnostics/02-apache-traffic.md#trf-01)                                                                                 |
-| PHP/Laravel exceptions, `Allowed memory size`                     | [RB-04/APP-01](diagnostics/04-laravel.md#app-01)                                                                                        |
+| PHP/Laravel exceptions, `Allowed memory size`                     | [RB-04/APP-01](diagnostics/04-laravel.md#app-01) (start with `fatal-correlate.py`, not window sampling)                                  |
+| Surge or saturation where an attack is suspected                  | [RB-02/TRF-04](diagnostics/02-apache-traffic.md#trf-04) (`route-mix.sh` with first-party agent share) before any block                 |
 | Repeated upstream fetches, stale or missing content after a purge | [RB-06/CCH-01](diagnostics/06-cache-invalidation.md#cch-01)                                                                             |
 | Exposed credential or secret                                      | [RB-07/SEC-01](diagnostics/07-traffic-security.md#sec-01) (notify the incident owner immediately; do not wait for approval to escalate) |
 | Checkout or frontend journey broken                               | [RB-08/DEP-03](diagnostics/08-service-dependencies.md#dep-03)                                                                           |

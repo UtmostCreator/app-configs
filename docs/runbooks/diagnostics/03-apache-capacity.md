@@ -7,7 +7,7 @@ priority: P0
 mode: read-only
 status: active
 owner: platform
-updated: 2026-10-22
+updated: undated
 tags:
   [
     apache,
@@ -71,7 +71,12 @@ All steps follow the [shared execution and evidence gates](../shared/recovery-ev
 
 ```bash
 "$RB"/linux/memory-snapshot.sh
+# Or the one-paste bundle: adds MPM/limits, process states, listen backlog, OOM and unit journal, log coverage.
+sudo bash "$RB"/linux/incident-bundle.sh '<incident start>' '<now>'
+ss -Hltn '( sport = :80 )'   # LISTEN Recv-Q > 0: connections waiting for a worker now
 ```
+
+During saturation always bound status-page probes (`curl -m 5 …/server-status?auto`); without a timeout they hang.
 
 ### Decision
 
@@ -127,8 +132,11 @@ Record the source, interval, clock, metric and limitation for the chosen class b
 
 ```bash
 "$RB"/apache/worker-capacity.sh
-# Live worker state, if mod_status is enabled locally:
-curl --connect-timeout 3 --max-time 15 -sS http://127.0.0.1/server-status?auto | grep -E "BusyWorkers|IdleWorkers|Scoreboard"
+# Prefer existing collected worker metrics. Optional active status request only after
+# verifying this exact local endpoint maps to mod_status, is restricted and has
+# known acceptable side effects/cost; record execution review under the shared gate.
+# Do not enable mod_status or fall back to an application route during triage.
+# curl --connect-timeout 3 --max-time 15 --retry 0 -sS http://127.0.0.1/server-status?auto | grep -E "BusyWorkers|IdleWorkers|Scoreboard"
 # Established connections vs worker cap (connections are not busy PHP requests, but show pressure):
 "$RB"/linux/connections.sh 443
 ```
@@ -160,7 +168,9 @@ curl --connect-timeout 3 --max-time 15 -sS http://127.0.0.1/server-status?auto |
 ### Commands
 
 ```bash
-"$RB"/linux/oom-events.sh "60 minutes ago"
+: "${START_UTC:?Set the recorded incident UTC start}"
+: "${END_UTC:?Set the recorded incident UTC end}"
+"$RB"/linux/oom-events.sh "$START_UTC" "$END_UTC"
 "$RB"/apache/error-log-summary.sh "$APACHE_ERR"
 sudo grep -Ei 'MaxRequestWorkers|Allowed memory size|AH00161' "$APACHE_ERR" | tail -n 50
 ```
@@ -228,7 +238,7 @@ systemctl list-timers --all --no-pager | head -20
 sudo grep -E "CRON|artisan" /var/log/syslog | grep -E "<HH:MM>" | head -20
 "$RB"/apache/request-rate.sh /var/log/apache2/access.log | tail -n 30
 # Heavy background jobs on the same host just before the incident (log volume is a quick proxy):
-grep -E "^\[2026-10-13 0[0-3]:" "$LARAVEL_LOG" | cut -c1-17 | uniq -c | head -20
+grep -E "^\[<date> 0[0-3]:" "$LARAVEL_LOG" | cut -c1-17 | uniq -c | head -20
 ```
 
 ### Decision
@@ -255,7 +265,9 @@ grep -E "^\[2026-10-13 0[0-3]:" "$LARAVEL_LOG" | cut -c1-17 | uniq -c | head -20
 ### Commands
 
 ```bash
-"$RB"/linux/service-recovery.sh apache2 "12 hours ago"
+: "${START_UTC:?Set the recorded incident UTC start}"
+: "${END_UTC:?Set the recorded incident UTC end}"
+"$RB"/linux/service-recovery.sh apache2 "$START_UTC" "$END_UTC"
 # Restarts do not clear a PHP memory problem: compare errors before and after each restart.
 "$RB"/apache/error-log-summary.sh "$APACHE_ERR"
 ```

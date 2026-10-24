@@ -7,7 +7,7 @@ priority: P0
 mode: read-only
 status: active
 owner: platform
-updated: 2026-10-22
+updated: undated
 tags:
   [
     laravel,
@@ -66,20 +66,27 @@ All steps follow the [shared execution and evidence gates](../shared/recovery-ev
 ### Commands
 
 ```bash
+# One run: fatal lines -> requests (PID + sub-second burst), first allocation sites, join to the access-log
+# 5xx received 0-30 s earlier, templated routes, caller classes, hourly table and route status by day.
+sudo python3 -I "$RB"/apache/fatal-correlate.py --error-offset +0000 \
+  --error-log /var/log/apache2/error.log.1 \
+  --access-log /var/log/apache2/access.log.2.gz --access-log /var/log/apache2/access.log.1
 "$RB"/laravel/error-summary.sh "$LARAVEL_LOG" 20
-"$RB"/apache/error-log-summary.sh /var/log/apache2/error.log   # memory exhaustion grouped by source location
-sudo grep -c "Allowed memory size" /var/log/apache2/error.log
 ```
+
+Pick rotations from the bundle's log inventory ([fast path FP-1](../shared/fast-path.md#fp-1--one-paste-context-bundle)); add adjacent rotations to bound onset in the same run. Expected output and reading rules: [fast path](../shared/fast-path.md#memory-failures-correlate-fatal-bursts-with-access-failures). Under `mod_php`, memory fatals reach the Apache error log and the error tracker; whether the application log also records them depends on the release's error handling, so a zero count in `laravel.log` is a sink gap, not absence.
 
 ### Decision
 
 | Result                             | Next                                         |
 | ---------------------------------- | -------------------------------------------- |
 | Memory exhaustion errors           | [RB-04/APP-02](#app-02)                      |
+| Fatals join one route (`joined` ≈ `requests`) | [RB-04/APP-03](#app-03) with that route; skip window sampling |
+| Many fatals unmatched              | Workload is not an Apache request (CLI, queue, other vhost) or coverage differs: [RB-01/EVD-03](../foundations/01-evidence-attribution.md#evd-03) |
 | Other exceptions dominate          | [RB-04/APP-02](#app-02)                      |
 | No exceptions but failures persist | [RB-03/CAP-04](03-apache-capacity.md#cap-04) |
 
-**Evidence to record:** Exception counts by class and message prefix, first and last occurrence.
+**Evidence to record:** Exception counts by class and message prefix, first and last occurrence. If exception messages carry request payloads, personal data or tokens, record the group count only and escalate through [RB-07/SEC-01](07-traffic-security.md#sec-01); do not copy the values into notes or exports.
 
 **Return:** [RB-03/CAP-05](03-apache-capacity.md#cap-05) or the calling runbook
 
@@ -102,10 +109,17 @@ Correlate an exception header and multiline trace to its request/trace ID, worke
 ### Commands
 
 ```bash
-grep -n "ERROR" "$LARAVEL_LOG" | tail -n 20
+# Message signatures per hour (digits normalised) answer "what changed" in one pass:
+for h in 00 01 02 03 04 05 06 07 08 09 10 11 12; do
+  printf '== %s\n' "$h"
+  grep -E "^\[<YYYY-MM-DD> $h:" "$LARAVEL_LOG" | grep -E '\.(ERROR|CRITICAL|ALERT|EMERGENCY):' |
+    sed -E 's/^\[[^]]+\] [a-z]+\.[A-Z]+: //' | cut -c1-70 | sed -E 's/[0-9]+/N/g' | sort | uniq -c | sort -nr | head -n 5
+done
 # Show a stack trace around a line number from above:
 sed -n '<N>,<N+25>p' "$LARAVEL_LOG"
 ```
+
+Prefer the error tracker's stack, release and breadcrumbs for one representative event over reading raw traces on the server.
 
 ### Decision
 
@@ -176,6 +190,17 @@ sudo mysqldumpslow -s t -t 10 /var/log/mysql/mysql-slow.log
 | Nothing expensive found               | Return to [RB-03/CAP-05](03-apache-capacity.md#cap-05) |
 
 **Evidence to record:** Top slow queries or repeated operations with counts.
+
+### Reproduce one request locally
+
+When one route owns the failures, reproduce a **single cold request** in an isolated working copy before any load test ([fast path FP-3](../shared/fast-path.md#fp-3--reproduce-one-request-then-stop)). Match the release's package versions (`vendor/composer/installed.json` on the release, `composer show <package>` locally), use disposable cache and data services, and send PHP errors to the terminal so the same run shows the fatal:
+
+```bash
+php -d memory_limit=512M -d log_errors=1 -d error_log=/dev/stderr -S 127.0.0.1:8010 -t public public/index.php
+curl -sS -m 60 -o /dev/null -w 'http=%{http_code} duration=%{time_total}s bytes=%{size_download}\n' 'http://127.0.0.1:8010/<route>'
+```
+
+Add phase checkpoints (`memory_get_usage(true)`, `memory_get_peak_usage(true)`, elapsed) around the handler's stages, compare one warm request, and use a higher limit only to measure the peak. `php -S` serves one request at a time: do not point a concurrency tool at it.
 
 **Return:** [RB-03/CAP-05](03-apache-capacity.md#cap-05) or the calling runbook
 

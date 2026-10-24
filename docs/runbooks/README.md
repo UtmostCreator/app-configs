@@ -5,14 +5,14 @@ type: index
 domain: incident-response
 status: active
 owner: platform
-updated: 2026-10-22
+updated: undated
 tags: [runbooks, index, router, ubuntu, apache, netlify, access-logs, incident-response]
 symptoms: [504, AH00161, oom-kill, traffic spike, high load, cache stampede]
 ---
 
 # Incident runbooks
 
-Modular, cross-linked runbooks for investigating incidents on an Ubuntu web server (Apache, PHP/Laravel), a Netlify SSR frontend, and the access/error logs between them. Start at [RB-00](00-incident-intake.md) or use the symptom router below. Search by `id`, `tags` or `symptoms` in each file's frontmatter (for example `grep -rl "AH00161" docs/runbooks`).
+Modular, cross-linked runbooks for investigating a web server, an SSR frontend and the access/error logs between them. Start at [RB-00](00-incident-intake.md) or use the symptom router below. Before the first production command, run the [fast path](shared/fast-path.md) prior-art check. Search by `id`, `tags` or `symptoms` in each file's frontmatter (for example `grep -rl "AH00161" docs/runbooks`).
 
 ## Symptom router
 
@@ -31,9 +31,13 @@ Modular, cross-linked runbooks for investigating incidents on an Ubuntu web serv
 | Verify recovery or close the incident                      | [RB-11/VAL-01](response/11-validation-review.md#val-01)       |
 | Service stayed down for hours with no restart or alert     | [RB-03/CAP-06](diagnostics/03-apache-capacity.md#cap-06)      |
 | Purge or cache-clear storms, `removed: []`                 | [RB-06/CCH-07](diagnostics/06-cache-invalidation.md#cch-07)   |
+| Error tracker or archive already names a route or pattern  | [Fast path FP-2](shared/fast-path.md#fp-2--one-discriminator-per-symptom) |
+| "Is it a DDoS?" with a load balancer in front              | [Fast path FP-2](shared/fast-path.md#fp-2--one-discriminator-per-symptom), then [RB-02/TRF-04](diagnostics/02-apache-traffic.md#trf-04) |
 | Not sure where to start                                    | [RB-00/INC-01](00-incident-intake.md#inc-01)                  |
 
 ## Catalogue
+
+For installed Ubuntu tools, pressure/cgroup measurements, bounded sampling and optional historical collection, use [Practical evidence capture on Ubuntu servers](shared/ubuntu-evidence.md).
 
 | ID    | Runbook                                                                                       | Priority | Steps | Mode               |
 | ----- | --------------------------------------------------------------------------------------------- | -------- | ----- | ------------------ |
@@ -59,6 +63,7 @@ P0 is required for core triage and recovery; P1 is specialised investigation or 
 - **One owner per domain.** A step hands off to a specialist step and records where to return; the caller keeps its context.
 - **Hypotheses stay hypotheses.** A cache clear or deploy that _precedes_ a failure is a causal hypothesis until controlled evidence shows it caused it.
 - **No secrets in notes.** Record counts, locations and key names, never values.
+- **Fewest round trips.** Prior art and local exports first; one paste per question set; whole interval before windows; route templates and caller classes instead of hashes ([fast path](shared/fast-path.md)). Every closed incident records response metrics in a [command review](incidents/_template/command-review.md); severe, misdiagnosed, recurring or long (> 10 rounds) investigations get the full round-by-round review.
 
 ## Navigation model
 
@@ -75,11 +80,13 @@ Every step uses the same contract: Objective, Mode, Preconditions, Commands, Exp
 
 ## Worked routes
 
-**A. Overnight Apache outage** — [RB-00/INC-01](00-incident-intake.md#inc-01) → [RB-03/CAP-01](diagnostics/03-apache-capacity.md#cap-01) → [RB-03/CAP-03](diagnostics/03-apache-capacity.md#cap-03) → [RB-04/APP-01](diagnostics/04-laravel.md#app-01) → [RB-06/CCH-01](diagnostics/06-cache-invalidation.md#cch-01) → [RB-06/CCH-05](diagnostics/06-cache-invalidation.md#cch-05) → [RB-10/MIT-01](response/10-mitigation-recovery.md#mit-01) → [RB-11/VAL-02](response/11-validation-review.md#val-02)
+**A. PHP memory failure on an export route** — [fast path](shared/fast-path.md) → [RB-04/APP-01](diagnostics/04-laravel.md#app-01) → [RB-04/APP-03](diagnostics/04-laravel.md#app-03) → [RB-04/APP-04](diagnostics/04-laravel.md#app-04) → [RB-10/MIT-01](response/10-mitigation-recovery.md#mit-01). Exercise: [fictional incident](incidents/example/conclusions.md).
 
 **B. Morning Netlify 504s** — [RB-00/INC-04](00-incident-intake.md#inc-04) → [RB-05/NET-01](diagnostics/05-netlify-ssr-cdn.md#net-01) → [RB-05/NET-02](diagnostics/05-netlify-ssr-cdn.md#net-02) → [RB-05/NET-04](diagnostics/05-netlify-ssr-cdn.md#net-04) → [RB-08/DEP-01](diagnostics/08-service-dependencies.md#dep-01) → [RB-06/CCH-03](diagnostics/06-cache-invalidation.md#cch-03) → [RB-06/CCH-05](diagnostics/06-cache-invalidation.md#cch-05) → [RB-09/CFG-01](diagnostics/09-deployment-drift.md#cfg-01) → [RB-10/MIT-01](response/10-mitigation-recovery.md#mit-01) → [RB-11/VAL-02](response/11-validation-review.md#val-02)
 
 **C. Someone proposes blocking a user agent** — [RB-02/TRF-03](diagnostics/02-apache-traffic.md#trf-03) → [RB-07/SEC-02](diagnostics/07-traffic-security.md#sec-02) → [RB-07/SEC-03](diagnostics/07-traffic-security.md#sec-03) → [RB-08/DEP-01](diagnostics/08-service-dependencies.md#dep-01) → [RB-08/DEP-03](diagnostics/08-service-dependencies.md#dep-03) → reject a blanket block via [RB-10/MIT-01](response/10-mitigation-recovery.md#mit-01), or if abuse is independently verified: [RB-07/SEC-04](diagnostics/07-traffic-security.md#sec-04) → [RB-10/MIT-01](response/10-mitigation-recovery.md#mit-01) → complete the approval, preparation and monitored application sequence → [RB-11/VAL-03](response/11-validation-review.md#val-03)
+
+**D. PHP `Allowed memory size` on a route** — [fast path FP-0](shared/fast-path.md#fp-0--prior-art-no-production-access) → [FP-1](shared/fast-path.md#fp-1--one-paste-context-bundle) → [RB-04/APP-01](diagnostics/04-laravel.md#app-01) (`fatal-correlate.py`) → [RB-04/APP-03](diagnostics/04-laravel.md#app-03) → [RB-04/APP-04](diagnostics/04-laravel.md#app-04) (one-request reproduction) → [RB-10/MIT-01](response/10-mitigation-recovery.md#mit-01). See the [fictional exercise](incidents/example/conclusions.md).
 
 ## Common wrong conclusions
 
@@ -102,6 +109,10 @@ Every step uses the same contract: Objective, Mode, Preconditions, Commands, Exp
 | A drop in completed SSR requests means fewer visitors            | Verify timestamp semantics and pending work; completed-request volume alone cannot establish visitor demand ([RB-05/NET-02](diagnostics/05-netlify-ssr-cdn.md#net-02))                                          |
 | A platform log query with no later errors means no errors        | The CLI returns a limited batch: shorten the window and recount ([RB-01/EVD-03](foundations/01-evidence-attribution.md#evd-03))                                      |
 | The environment flag is true, so caching is on                   | The flag may be evaluated at build time ([RB-09/CFG-03](diagnostics/09-deployment-drift.md#cfg-03))                                                                  |
+| No memory fatal in `laravel.log` means none happened             | Under `mod_php` fatals reach the Apache error log and error tracker; the application log depends on the release ([RB-04/APP-01](diagnostics/04-laravel.md#app-01)) |
+| Two fatal lines with one PID are one request                     | PIDs are reused; group by PID **and** a sub-second burst, then join to access 5xx with a gap window ([fast path](shared/fast-path.md#memory-failures-correlate-fatal-bursts-with-access-failures)) |
+| Hashing paths keeps the analysis anonymous and useful            | It can hide useful route classes and cost a round to reverse; template identifiers instead |
+| Zero origin 5xx means the backend is fine                        | Edge 504s at ~30 s with origin 200s mean queueing; check listen backlog and worker states ([RB-03/CAP-01](diagnostics/03-apache-capacity.md#cap-01)) |
 | A token in a query string is fine if the endpoint is internal    | It is written to access and application logs: treat as exposed ([RB-07/SEC-01](diagnostics/07-traffic-security.md#sec-01))                                           |
 
 ## Shared material
@@ -111,6 +122,7 @@ Every step uses the same contract: Objective, Mode, Preconditions, Commands, Exp
 - [Systematic debugging and reliable log analysis](shared/debugging-method.md) — hypotheses, parser checks, shell failures, timing and performance measurements
 - [Service map](shared/service-map.md) · [Thresholds](shared/thresholds.md) · [Evidence schema](shared/evidence-schema.md)
 - [Netlify log queries](shared/netlify-log-queries.md) — truncation-safe log retrieval and observability reading rules
+- [Fast path](shared/fast-path.md) — fewer round trips: prior art, one-paste bundle, one discriminating command per symptom, do-not-run list
 - [Command helpers](shared/commands/README.md) — read-only scripts for Apache, Linux, Netlify and Laravel logs
 - [Incident archive](incidents/README.md) — historical evidence by event; never rewritten as definitive root causes
 

@@ -5,7 +5,7 @@ type: incident-evidence
 domain: incident-history
 status: template
 owner: platform
-updated: 2026-10-21
+updated: undated
 tags: [incident, template, actions]
 symptoms: []
 ---

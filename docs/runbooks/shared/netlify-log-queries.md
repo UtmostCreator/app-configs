@@ -5,7 +5,7 @@ type: reference
 domain: netlify
 status: active
 owner: platform
-updated: 2026-10-22
+updated: undated
 tags: [netlify, logs, cli, truncation, observability, 504, functions, timestamps, sampling]
 symptoms: [log query returns 100 records, no errors later in window, 100% errors in export]
 ---
@@ -20,10 +20,12 @@ Queries retrieve existing logs; local evidence exports must be access-controlled
 
 ```bash
 # CLI application log records only; not HTTP or invocation metrics.
+# START_UTC and END_UTC are recorded incident bounds, not copied example dates.
+: "${START_UTC:?Set recorded UTC start}" "${END_UTC:?Set recorded UTC end}"
 netlify logs --source functions --function <function> \
-  --since 2026-10-13T08:16:30Z --until 2026-10-13T08:16:35Z --json
+  --since "$START_UTC" --until "$END_UTC" --json
 
-docs/runbooks/shared/commands/netlify/window-counts.sh <function> 5 2026-10-13T08:16:30Z
+docs/runbooks/shared/commands/netlify/window-counts.sh <function> 5 "$START_UTC"
 ```
 
 ## Schema-specific metrics
@@ -35,7 +37,7 @@ docs/runbooks/shared/commands/netlify/window-counts.sh <function> 5 2026-10-13T0
 | Regular-function Log Drain | Function records; request ID is not automatically a unique invocation ID; verify adapter/provider semantics before deduplicating |
 | Platform invocation metrics | Invocation count for the selected deploy/function/interval, with the platform's coverage |
 
-[Netlify's Log Drain schema](https://docs.netlify.com/manage/monitoring/log-drains/) distinguishes traffic fields (`url`, `status_code`, `duration`) from function fields (`path`, `function_name`, `status_code`, `duration`). Traffic duration is documented in milliseconds; verify function-duration units with the exporter before conversion. Edge records use a different layout and are not accepted by the regular-function adapter.
+[Netlify's Log Drain schema](https://docs.netlify.com/manage/monitoring/log-drains/) distinguishes traffic fields (`url`, `status_code`, `duration`) from function fields (`path`, `function_name`, `status_code`, `duration`). Traffic duration is documented in milliseconds; verify function-duration units with the exporter before conversion. Edge records use a different layout and are not accepted by the regular-function adapter. The legacy `standard` type does not reliably distinguish regular from background functions; the adapter rejects it as unresolved. Obtain independent export/deploy evidence establishing type before choosing a schema-specific adapter; do not relabel legacy rows just to make validation pass.
 
 Prepare bounded, unfiltered, access-controlled exports of **one** schema for the incident window. Normalise with the checked adapters; do not apply them to CLI application log output. The subshell stops on adapter failure; discard any partial output after failure. Empty output is unknown, not a zero-traffic proof. Raw exports remain restricted because URLs/messages can contain secrets.
 
@@ -45,7 +47,8 @@ Prepare bounded, unfiltered, access-controlled exports of **one** schema for the
   RB=docs/runbooks/shared/commands
   jq -ce -f "$RB/netlify/traffic-metrics.jq" selected-traffic-drain.jsonl > traffic-metrics.jsonl
   test -s traffic-metrics.jsonl
-  # Query only after successful normalisation. The adapter removes query strings/fragments.
+  # Optional: --argjson public_path_segments '["payments"]' retains only reviewed route names.
+  # Query only after successful normalisation. Identifiers are redacted by default.
   jq -r 'select(.status >= 500) | [.status,.path] | @tsv' traffic-metrics.jsonl | sort | uniq -c | sort -nr | sed -n '1,30p'
 )
 ```
@@ -61,6 +64,16 @@ Prepare bounded, unfiltered, access-controlled exports of **one** schema for the
   jq -r 'select(.duration_ms > 5000) | [.duration_ms,.path,.request_id] | @tsv' function-metrics.jsonl | sort -nr | sed -n '1,20p'
 )
 ```
+
+### URL and report privacy policy
+
+The traffic adapter extracts pathname from absolute HTTP(S) URLs; authority (including user information and hostname), query and fragment are discarded. It accepts a deliberately conservative ASCII DNS/IPv4 authority and escaped ASCII pathname subset, with optional port 1–65535. Relative URLs, malformed escapes, controls, whitespace, backslashes, IPv6 literals and other unsupported spellings stop conversion rather than disappearing from counts. A rejected export needs a reviewed adapter extension; do not skip failed rows. The function adapter requires an absolute pathname rather than a URL.
+
+Both adapters replace **every nonempty path segment** with `:redacted` by default. This covers short IDs, account names and encoded secrets without guessing token patterns. To retain known public route names, pass an explicitly reviewed list such as `--argjson public_path_segments '["payments","health"]'`. Review list entries as literal public names; never whitelist tenant IDs, tokens or user-supplied values. Normalised outputs include `path_policy` to identify this grouping. Redaction merges distinct routes: it does not preserve endpoint identity or replace application route templates. Keep restricted raw evidence for deeper analysis. Request IDs, timestamps and function names still need sharing review; these adapters do not certify arbitrary exports as safe for unrestricted disclosure.
+
+### Resource bounds and provenance
+
+Adapters process one JSON object at a time; a single enormous record can still consume memory. Before conversion, select exports with documented byte/record-size limits. The downstream `sort` commands may spill to disk and aggregate the entire selected file; limit export size and provide an access-controlled temporary directory with a disk budget. If that budget or export coverage cannot be established, report metrics unavailable and select a smaller documented window or an existing provider aggregation. Shortening the window changes the population; record it. Never truncate input silently or mistake sampled counts for complete-window metrics.
 
 The normalised `.status` and `.duration_ms` names are this repository's adapter output, not native CLI fields. Duplicate rows can repeat duration for the same request; select a verified terminal/invocation population before calculating distributions. These adapters validate field types, not retention, date bounds, deploy identity, completeness, or one-record-per-request semantics. Preserve that provenance separately.
 
@@ -80,7 +93,7 @@ The normalised `.status` and `.duration_ms` names are this repository's adapter 
 
 ## Sampling method
 
-Pick windows at `T-30s`, `T`, `T+60s`, `T+90s` around onset, 5 s each. Record records, over-5-s count and longest duration. These are samples, not total traffic.
+Pick windows at `T-30s`, `T`, `T+60s`, `T+90s` around recorded onset, 5 s each. Keep application log-record counts separate from verified platform invocation counts and validated terminal-duration samples. Compare intervals only with matching deploy/function identity, duration units, timestamp semantics and coverage. Record over-5-s sample count and longest duration only when duration evidence is valid. Missing invocation or duration evidence is unresolved. These are samples, not total traffic.
 
 ## Export schema and completeness
 

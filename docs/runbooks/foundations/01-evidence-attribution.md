@@ -7,7 +7,7 @@ priority: P0
 mode: read-only
 status: active
 owner: platform
-updated: 2026-10-22
+updated: undated
 tags: [logs, utc, timezone, rotation, proxy, x-forwarded-for, remoteip, attribution]
 symptoms: [no log matches, missing logs, wrong client ip, timezone mismatch]
 steps: [EVD-01, EVD-02, EVD-03, EVD-04, EVD-05]
@@ -67,16 +67,16 @@ sudo apache2ctl -S 2>&1 | head -20   # vhosts, log targets
 
 - **Objective:** Make every timestamp comparable. Platform logs (Z suffix) and server logs (+0000) are both UTC; do not subtract another hour when comparing them. Local-time screenshots and monitors are the usual source of off-by-one-hour errors.
 - **Mode:** Read-only
-- **Preconditions:** Time window and sources validated ([RB-01](01-evidence-attribution.md))
+- **Preconditions:** Candidate sources identified in EVD-01 and provisional event times from INC-02; this step establishes validated UTC bounds rather than requiring them in advance.
 
 ### Commands
 
 ```bash
 timedatectl | grep "Time zone"
-# Apache access logs carry an explicit offset, e.g. [13/Oct/2026:03:05:12 +0000]
+# Apache access logs carry an explicit offset, e.g. [DD/Mon/YYYY:HH:MM:SS +0000]
 sudo head -n 1 "$APACHE_LOG"; sudo tail -n 1 "$APACHE_LOG"
 # Platform timestamps ending in Z are UTC. Convert local times (watch daylight-saving offsets) explicitly:
-date -u -d 'TZ="Europe/London" 2026-10-13 09:17' +"%Y-%m-%dT%H:%M:%SZ"
+date -u -d 'TZ="Europe/London" <local-date> <local-time>' +"%Y-%m-%dT%H:%M:%SZ"
 ```
 
 ### Decision

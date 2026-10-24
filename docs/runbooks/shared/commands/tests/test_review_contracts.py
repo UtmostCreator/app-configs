@@ -23,7 +23,7 @@ class ReviewContracts(unittest.TestCase):
 
     def test_traffic_and_function_schemas_do_not_accept_cli_records(self):
         traffic = dict(log_type='traffic', status_code=504, duration=6000,
-                       url='https://example.com/page?token=private', request_id='request', timestamp='2026-10-13T08:20:00Z')
+                       url='https://example.com/page?token=private', request_id='request', timestamp='2001-01-15T08:20:00Z')
         result = self.adapter('traffic', [traffic])
         self.assertEqual(result.returncode, 0, result.stderr)
         row = json.loads(result.stdout)
@@ -46,7 +46,7 @@ class ReviewContracts(unittest.TestCase):
             env = {**os.environ, 'PATH': tmp + os.pathsep + os.environ['PATH']}
             env.pop('NETLIFY_LOG_CAP', None)
             result = subprocess.run(['bash', str(COMMANDS / 'netlify/window-counts.sh'), 'server', '5',
-                                     '2026-10-13T08:20:00Z'], env=env, text=True, capture_output=True)
+                                     '2001-01-15T08:20:00Z'], env=env, text=True, capture_output=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertIn('3 log_records', result.stdout)
             self.assertNotIn('invocations', result.stdout)
@@ -80,9 +80,9 @@ class ReviewContracts(unittest.TestCase):
             root = Path(tmp)
             (root / 'response').mkdir()
             target = root / 'response/10-mitigation-recovery.md'
-            target.write_text('---\nid: RB-10\ntitle: mitigation\ntype: runbook\nstatus: active\nupdated: 2026-10-22\n---\n## MIT-04\n')
+            target.write_text('---\nid: RB-10\ntitle: mitigation\ntype: runbook\nstatus: active\nupdated: undated\n---\n## MIT-04\n')
             source = root / 'source.md'
-            source.write_text('---\nid: RB-TEST\ntitle: source\ntype: runbook\nstatus: active\nupdated: 2026-10-22\n---\n'
+            source.write_text('---\nid: RB-TEST\ntitle: source\ntype: runbook\nstatus: active\nupdated: undated\n---\n'
                               '[apply](response/10-mitigation-recovery.md#mit-04)\n[missing](#absent)\n')
             result = subprocess.run(['bash', str(COMMANDS / 'validate-runbook-links.sh'), tmp],
                                     text=True, capture_output=True, timeout=10)
@@ -97,35 +97,11 @@ class ReviewContracts(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_rollback_restores_previous_configuration(self):
-        # Execute only the documented filesystem inverse against temporary directories.
         text = (RUNBOOKS / 'response/10-mitigation-recovery.md').read_text()
-        command = 'sudo rsync -ac --delete "$CHANGE_DIR/apache2/" /etc/apache2/'
-        self.assertIn(command, text)
-        with tempfile.TemporaryDirectory() as tmp:
-            root = Path(tmp)
-            live = root / 'live'; live.mkdir()
-            (live / 'available').mkdir(); (live / 'enabled').mkdir()
-            (live / 'available/original.conf').write_text('original\n')
-            (live / 'available/original.conf').chmod(0o640)
-            (live / 'enabled/original.conf').symlink_to('../available/original.conf')
-            change = root / 'change'; change.mkdir()
-            shutil.copytree(live, change / 'apache2', symlinks=True)
-            original_stat = (live / 'available/original.conf').stat()
-            (live / 'available/original.conf').write_text('modified\n')
-            os.utime(live / 'available/original.conf', ns=(original_stat.st_atime_ns, original_stat.st_mtime_ns))
-            (live / 'available/original.conf').chmod(0o600)
-            (live / 'enabled/original.conf').unlink()
-            (live / 'introduced.conf').write_text('new\n')
-            inverse = command.replace('sudo ', '').replace('/etc/apache2/', '"$LIVE_DIR/"')
-            env = {**os.environ, 'CHANGE_DIR': str(change), 'LIVE_DIR': str(live)}
-            subprocess.run(['bash', '-euc', inverse], env=env, check=True, capture_output=True)
-            check = subprocess.run(['rsync', '-acni', '--delete', str(change / 'apache2') + '/', str(live) + '/'],
-                                   text=True, capture_output=True, check=True)
-            self.assertEqual(check.stdout, '')
-            self.assertEqual((live / 'available/original.conf').read_text(), 'original\n')
-            self.assertEqual((live / 'available/original.conf').stat().st_mode & 0o777, 0o640)
-            self.assertEqual(os.readlink(live / 'enabled/original.conf'), '../available/original.conf')
-            self.assertFalse((live / 'introduced.conf').exists())
+        self.assertIn('scoped-config-rollback.py" restore "$CHANGE_DIR/apache.json"', text)
+        self.assertNotIn('rsync -ac --delete', text)
+        self.assertIn('exclusive edit', text)
+        # Filesystem restoration, xattrs and drift are exercised in test_scoped_rollback.py.
 
     def test_php_sapi_and_worker_metric_unknowns_are_explicit(self):
         application = (RUNBOOKS / 'diagnostics/04-laravel.md').read_text()

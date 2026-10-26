@@ -38,6 +38,10 @@ Library
 Library/**
 .config/karabiner
 .config/karabiner/**
+# On Linux, Home Manager owns flameshot.ini (nix/modules/home/gui.nix: tray +
+# resident daemon for Wayland hotkeys); the chezmoi copy is for macOS only.
+.config/flameshot
+.config/flameshot/**
 {{- end }}
 
 {{- if eq .chezmoi.os "darwin" }}

@@ -182,10 +182,10 @@ in
       pkgs.bubblewrap # bwrap: preferred Codex CLI Linux sandbox helper
       pkgs.mariadb # provides the `mysql` client; lighter than full mysql-client formula
     ]
-    # On macOS the `mysql` client comes from Homebrew `mysql-client`
-    # (nix/modules/darwin/homebrew.nix), so skip mariadb there to avoid two
-    # `mysql` binaries competing on PATH.
-    ;
+  # On macOS the `mysql` client comes from Homebrew `mysql-client`
+  # (nix/modules/darwin/homebrew.nix), so skip mariadb there to avoid two
+  # `mysql` binaries competing on PATH.
+  ;
 
   # Gremlins defaults to one worker per CPU; with a runaway mutant per worker the
   # memory cap above still multiplies. Half the cores leaves the desktop usable.

@@ -4,6 +4,12 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
+    # TEMPORARY: last nixpkgs rev before patchelf 0.15.2 -> 0.19.2, which breaks
+    # uncached builds that patch prebuilt binaries (semgrep-core aborts, the
+    # OpenClaw node runtime segfaults). Only the packages named in
+    # nix/overlays/default.nix and profileOverlays below come from here.
+    nixpkgs-last-good.url = "github:NixOS/nixpkgs/f20cd90e28fe0403873f473b29e42662cd86e8c4";
+
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -36,6 +42,16 @@
       url = "github:vicinaehq/extensions";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # OpenClaw gateway (Telegram bot) — we consume its Home-Manager module
+    # (programs.openclaw) and overlay (pkgs.openclaw, pkgs.openclawRuntimePlugins)
+    # for the linux-desktop host (nix/modules/home/openclaw.nix). The overlay
+    # builds against our nixpkgs, so follow it instead of locking a second copy.
+    nix-openclaw = {
+      url = "github:openclaw/nix-openclaw";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.home-manager.follows = "home-manager";
+    };
   };
 
   outputs =
@@ -62,6 +78,33 @@
         system: treefmt-nix.lib.evalModule nixpkgs.legacyPackages.${system} ./treefmt.nix
       );
 
+      # Per-profile extra overlays. nix-openclaw's overlay adds top-level
+      # attrs (openclaw, qmd, ...), so only the profile that uses it gets it.
+      # TEMPORARY: the OpenClaw stack is built from nixpkgs-last-good (see the
+      # input) and only the attrs the HM module reads are re-exported. Swap
+      # back to `[ inputs.nix-openclaw.overlays.default ]` once
+      # `nix build ./nix#homeConfigurations.linux-desktop.activationPackage`
+      # builds with it on current nixpkgs.
+      openclawFromLastGood =
+        _final: prev:
+        let
+          pinned = import inputs.nixpkgs-last-good {
+            inherit (prev.stdenv.hostPlatform) system;
+            overlays = [ inputs.nix-openclaw.overlays.default ];
+          };
+        in
+        {
+          inherit (pinned)
+            openclaw
+            openclaw-gateway
+            openclawPackages
+            openclawRuntimePlugins
+            ;
+        };
+      profileOverlays = {
+        linux-desktop = [ openclawFromLastGood ];
+      };
+
       mkProfile =
         name:
         let
@@ -71,6 +114,7 @@
           inherit (profile) system homeDirectory stateVersion;
           username = vars.username;
           modules = [ (./hosts + "/${name}/home.nix") ];
+          overlays = profileOverlays.${name} or [ ];
         };
     in
     {

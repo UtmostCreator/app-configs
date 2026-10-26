@@ -6,6 +6,7 @@
   homeDirectory,
   stateVersion,
   modules,
+  overlays ? [ ],
   extraSpecialArgs ? { },
 }:
 
@@ -13,7 +14,7 @@ let
   pkgs = import inputs.nixpkgs {
     inherit system;
     config.allowUnfree = true;
-    overlays = [ (import ../overlays) ];
+    overlays = [ (import ../overlays { inherit inputs; }) ] ++ overlays;
   };
 in
 inputs.home-manager.lib.homeManagerConfiguration {

@@ -16,6 +16,7 @@ the topic you need.
 | Karabiner / keyboard remapping (macOS) | [`keyboard.md`](reference/keyboard.md) |
 | Microsoft Teams not sending or reactions reverting (macOS) | [`teams-troubleshooting.md`](guides/teams-troubleshooting.md) |
 | macOS disk cleanup: what is safe to clear and how to check | [`macos-cleanup.md`](guides/macos-cleanup.md) |
+| OpenClaw Telegram bot: secrets, pairing, service (Linux desktop) | [`openclaw-telegram.md`](guides/openclaw-telegram.md) |
 | Kanto ORA4 / USB audio validation | [`ora4-audio.md`](reference/ora4-audio.md) |
 | VS Code extensions | [`vscode-extensions.md`](../repo-docs/vscode-extensions.md) |
 | Persistent SSH agent (Linux / macOS / WSL) | [`unix/QUICKSTART.md`](getting-started/unix-quickstart.md) and [`unix/ssh-agent-setup.md`](guides/ssh-agent-setup.md) |

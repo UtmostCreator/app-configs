@@ -19,6 +19,45 @@ let
   claudeShim = pkgs.writeShellScriptBin "claude" ''
     exec ${home}/.local/bin/claude "$@"
   '';
+
+  # Chat-selectable models, mirroring the Codex and Claude routes in
+  # glyphbrace's assets/models.yaml (Copilot-only models are left out: the bot
+  # has no Copilot login). Each alias doubles as a Telegram command: a
+  # standalone `/claude` switches the current chat to that model. Defaults
+  # for the whole bot are under agents.defaults.model below; the full guide
+  # is the /model_guide skill (openclaw-skills/model-guide/SKILL.md).
+  chatModels = {
+    "openai/gpt-6.1-sol" = {
+      alias = "gpt";
+      menu = "GPT-6.1 Sol, default, medium";
+      thinking = "medium";
+    };
+    "openai/gpt-6-luna" = {
+      alias = "luna";
+      menu = "GPT-6 Luna, lighter and faster";
+    };
+    "openai/gpt-6-astra" = {
+      alias = "astra";
+      menu = "GPT-6 Astra, previous default";
+    };
+    "anthropic/claude-sonnet-5-5" = {
+      alias = "claude";
+      menu = "Claude Sonnet 5.5, Claude default, medium";
+      thinking = "medium";
+    };
+    "anthropic/claude-opus-5-5" = {
+      alias = "opus";
+      menu = "Claude Opus 5.5, deeper reasoning";
+    };
+    "anthropic/claude-fable-5-1" = {
+      alias = "fable";
+      menu = "Claude Fable 5.1, top tier";
+    };
+    "anthropic/claude-haiku-5-5" = {
+      alias = "haiku";
+      menu = "Claude Haiku 5.5, fastest and cheapest";
+    };
+  };
 in
 {
   # OpenClaw gateway (github:openclaw/openclaw) talking to Telegram, via the
@@ -35,9 +74,9 @@ in
   # approved locally (`openclaw pairing approve telegram <code>`), so no
   # Telegram user IDs are committed here. Groups are disabled.
   #
-  # Models: GPT-6 Astra via ChatGPT subscription OAuth (OpenClaw runtime) is
-  # primary; Claude Opus via the local Claude Code login is the fallback and is
-  # selectable with /models.
+  # Models: GPT-6.1 Sol via ChatGPT subscription OAuth (OpenClaw runtime) is
+  # primary; Claude Sonnet 5.5 via the local Claude Code login is the
+  # fallback. Every model in `chatModels` is selectable per chat by alias.
   #
   # Personal Linux machines only.
   config = lib.mkIf (pkgs.stdenv.hostPlatform.isLinux && config.myConfig.profile == "personal") {
@@ -54,6 +93,16 @@ in
 
       # On by default upstream but needs a Google Places API key we don't set.
       bundledPlugins.goplaces.enable = false;
+
+      # `/model_guide` in Telegram: every chat model with its alias, limits
+      # and when to use it. Keep it in sync with `chatModels` above.
+      skills = [
+        {
+          name = "model-guide";
+          mode = "copy";
+          source = "${./openclaw-skills/model-guide}";
+        }
+      ];
 
       config = {
         secrets.providers.gatewaytoken = {
@@ -81,17 +130,32 @@ in
           dmPolicy = "pairing";
           groupPolicy = "disabled";
           configWrites = false;
+          # Menu entries only; the model aliases below implement them.
+          customCommands = lib.mapAttrsToList (_: m: {
+            command = m.alias;
+            description = m.menu;
+          }) chatModels;
         };
 
         agents.defaults = {
           model = {
-            primary = "openai/gpt-6-astra";
-            fallbacks = [ "anthropic/claude-opus-5-5" ];
+            primary = "openai/gpt-6.1-sol";
+            fallbacks = [ "anthropic/claude-sonnet-5-5" ];
           };
-          models = {
-            "openai/gpt-6-astra".agentRuntime.id = "openclaw";
-            "anthropic/claude-opus-5-5".agentRuntime.id = "claude-cli";
-          };
+          models =
+            lib.mapAttrs (
+              _: m:
+              {
+                inherit (m) alias;
+              }
+              // lib.optionalAttrs (m ? thinking) { params.thinking = m.thinking; }
+            ) chatModels
+            // {
+              # Runtime per provider, so any Claude or GPT model picked from
+              # /models also runs on the matching subscription login.
+              "openai/*".agentRuntime.id = "openclaw";
+              "anthropic/*".agentRuntime.id = "claude-cli";
+            };
           # Without an explicit policy, Nix mode (no doctor migration) treats
           # the `models` keys as a legacy allowlist; allow both providers.
           modelPolicy.allow = [

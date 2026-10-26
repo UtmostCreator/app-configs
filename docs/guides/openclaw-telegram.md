@@ -6,8 +6,10 @@ answers you in Telegram. This repo installs it through the official
 
 - Module: `nix/modules/home/openclaw.nix` (linux-desktop, `personal` profile)
 - Service: `openclaw-gateway` (systemd user unit)
-- Models: GPT-6 Astra (`openai/gpt-6-astra`, ChatGPT subscription) first, then
-  Claude Opus (`anthropic/claude-opus-5-5`) through your local Claude Code login
+- Models: GPT-6.1 Sol (`openai/gpt-6.1-sol`, ChatGPT subscription) first, then
+  Claude Sonnet 5.5 (`anthropic/claude-sonnet-5-5`) through your local Claude
+  Code login. Both default to medium thinking. Five more models can be picked
+  per chat; see [Models](#models).
 - Access: Telegram DMs use pairing, and groups are disabled
 
 ## What lives where
@@ -56,7 +58,7 @@ systemctl --user status openclaw-gateway
 
 ### 4. Sign in to the models
 
-GPT-6 Astra uses your ChatGPT subscription. Sign in with a device code. If you
+The GPT models use your ChatGPT subscription. Sign in with a device code. If you
 are already logged in to the Codex CLI, it imports that login:
 
 ```sh
@@ -74,15 +76,15 @@ Check it with:
 claude auth status --text
 ```
 
-Then confirm that both models answer:
+Then confirm that both defaults answer:
 
 ```sh
 openclaw models list
-openclaw agent --agent main --session-id smoke --model openai/gpt-6-astra --message "Reply: pong"
-openclaw agent --agent main --session-id smoke --model anthropic/claude-opus-5-5 --message "Reply: pong"
+openclaw agent --agent main --session-id smoke --model openai/gpt-6.1-sol --message "Reply: pong"
+openclaw agent --agent main --session-id smoke --model anthropic/claude-sonnet-5-5 --message "Reply: pong"
 ```
 
-GPT-6 Astra runs on OpenClaw's own runtime, not the Codex harness. OpenClaw
+The GPT models run on OpenClaw's own runtime, not the Codex harness. OpenClaw
 2026.10.7 rejects a Nix-loaded Codex plugin; details are in `openclaw.nix`.
 
 ### 5. Pair your Telegram account
@@ -105,8 +107,36 @@ Only approved senders can talk to the bot.
 | Logs | `journalctl --user -u openclaw-gateway -f` or `tail -f /tmp/openclaw/openclaw-gateway.log` |
 | Restart (for example after rotating a token) | `systemctl --user restart openclaw-gateway` |
 | Health | `openclaw gateway status` / `openclaw doctor` |
-| Switch model from Telegram | `/models` |
+| Switch this chat's model | `/gpt`, `/claude` and the others under [Models](#models) |
+| Full model guide in Telegram | `/model_guide` |
+| Check which model is answering | `/status`, or `openclaw sessions` on the desktop |
 | Web control UI | `openclaw dashboard` |
+
+## Models
+
+Send a model command on its own to switch the current chat. The choice stays
+until you switch again; `/model default` returns to the bot default. `/think
+<level>` changes thinking for the chat.
+
+| Command | Model | Notes |
+|---------|-------|-------|
+| `/gpt` | `openai/gpt-6.1-sol` | Bot default, thinking medium |
+| `/luna` | `openai/gpt-6-luna` | Lighter and faster GPT |
+| `/astra` | `openai/gpt-6-astra` | Previous default |
+| `/claude` | `anthropic/claude-sonnet-5-5` | Claude default and bot fallback, thinking medium |
+| `/opus` | `anthropic/claude-opus-5-5` | Deeper reasoning |
+| `/fable` | `anthropic/claude-fable-5-1` | Top tier |
+| `/haiku` | `anthropic/claude-haiku-5-5` | Fastest and cheapest |
+
+The list follows the Codex and Claude routes in glyphbrace
+`assets/models.yaml`. Copilot-only models are left out because the bot has no
+Copilot login. To add or change a model, edit `chatModels` in `openclaw.nix`
+and the matching entry in
+`nix/modules/home/openclaw-skills/model-guide/SKILL.md`, which is the text
+`/model_guide` sends.
+
+Changing the default does not move a chat that already has a model selected.
+If `/status` says the chat is pinned, send `/model default`.
 
 ## Changing config
 

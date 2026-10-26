@@ -12,6 +12,12 @@
     # plus our config + declarative extensions (nix/modules/home/vicinae.nix).
     inputs.vicinae.homeManagerModules.default
     ../../modules/home/vicinae.nix
+    # OpenClaw Telegram gateway via the official nix-openclaw HM module. Its
+    # overlay (pkgs.openclaw) is added for this profile in flake.nix, not via
+    # nixpkgs.overlays, which would re-import nixpkgs without allowUnfree.
+    # Secrets stay in ~/.secrets/openclaw/.
+    inputs.nix-openclaw.homeManagerModules.openclaw
+    ../../modules/home/openclaw.nix
   ];
 
   # Personal machine: pull in personal-only GUI apps (Vesktop, Telegram,

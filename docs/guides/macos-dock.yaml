@@ -1,0 +1,25 @@
+macos_dock:
+  apps:
+    - Finder
+    - System Settings
+    - Activity Monitor
+    - 1Password
+    - Ghostty
+    - Visual Studio Code
+    - Brave Browser
+    - Firefox
+    - Microsoft Teams
+    - Bruno
+    - DBeaver Community Edition
+    - Sequel Ace
+    - Obsidian
+    - Laravel Herd
+    - VPN
+    - TablePlus
+    - Karabiner-Elements
+    - Calendar
+    - QuickTime Player
+
+  separator:
+    - Document Stack
+    - Trash

@@ -12,6 +12,7 @@ the topic you need.
 | Understanding who owns what tool | [`architecture/tool-ownership.md`](architecture/tool-ownership.md) |
 | Listing every dev CLI tool | [`software-and-cli-tools.md`](../repo-docs/software-and-cli-tools.md) |
 | Shell prompt / zsh / starship | [`shell-setup.md`](guides/shell-setup.md) |
+| 1Password vault secrets: `op` references and the composer wrapper | [`1password-vault-secrets.md`](guides/1password-vault-secrets.md) |
 | Neovim | [`nvim-setup.md`](reference/nvim/setup.md) |
 | Karabiner / keyboard remapping (macOS) | [`keyboard.md`](reference/keyboard.md) |
 | Microsoft Teams not sending or reactions reverting (macOS) | [`teams-troubleshooting.md`](guides/teams-troubleshooting.md) |

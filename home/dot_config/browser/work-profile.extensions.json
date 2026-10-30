@@ -21,7 +21,13 @@
     { "name": "GoFullPage - Full Page Screen Capture", "id": "fdpohaocaechififmbbbbbknoalclacl", "version": "8.9", "enabled": false },
     { "name": "OneTab", "id": "chphlpgkkbolifaimnlloiipkdnihall", "version": "2.24", "enabled": true },
     { "name": "Pomodoro Chrome Extension", "id": "iccjkhpkdhdhjiaocipcegfeoclioejn", "version": "2.2.6", "enabled": false },
-    { "name": "Tampermonkey", "id": "dhdgffkkebhmkfjojejmpbldmpobfkfo", "version": "5.5.1", "enabled": true },
+    { "name": "Tampermonkey", "id": "dhdgffkkebhmkfjojejmpbldmpobfkfo", "version": "5.5.1", "enabled": true,
+      "userscripts": [
+        "tampermonkey/jira-highlight-comments.user.js",
+        "tampermonkey/github-releases-sorter.user.js",
+        "tampermonkey/github-switchable-date-formats.user.js"
+      ]
+    },
     { "name": "uBlock Origin", "id": "jcokkipkhhgiakinbnnplhkdbjbgcgpe", "version": "1.75.0", "enabled": true },
     { "name": "Vue.js devtools", "id": "nhdogjmejiglipccpnnnanhbledajbpd", "version": "7.7.7", "enabled": true }
   ]

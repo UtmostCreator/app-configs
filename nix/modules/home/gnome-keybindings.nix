@@ -228,6 +228,7 @@ in
   #   Alt+Shift+O  Obsidian              (raise-or-launch)
   #   Alt+1        KeePassXC             (raise-or-launch)
   #   Super+E      Files (Nautilus)      (raise-or-launch; Win+E parity)
+  #   Super+D      Show desktop / restore windows (Win+D parity)
   #   Alt+Shift+F  Resize focused window to 75% width / full height / centered
   #   F4           Screenshot: select area (GNOME, -> clipboard)
   #   Alt+Shift+S  Screenshot: repeat last region (Flameshot, -> clipboard)
@@ -281,6 +282,12 @@ in
       };
 
       "org/gnome/desktop/wm/keybindings" = {
+        # Native show-desktop toggles all windows out of the way, then restores
+        # them on the next press. Include the physical D key on the ru layout.
+        show-desktop = [
+          "<Super>d"
+          "<Super>Cyrillic_ve"
+        ];
         # Disable GNOME's own Super+Space input-source shortcuts so they do not
         # double-bind against the XKB `grp:win_space_toggle` option above (which
         # owns layout switching). Leaving these empty avoids two grabs on the

@@ -15,8 +15,8 @@
   home.packages =
     with pkgs;
     lib.optionals stdenv.hostPlatform.isLinux [
-      firefox # primary browser (macOS: Homebrew cask)
-      brave # privacy browser; nixpkgs ships STABLE only (no brave-beta attr).
+      firefox # alternate browser (macOS: Homebrew cask)
+      brave # default browser; official stable release via our overlay.
       #       macOS gets the beta channel via the brave-browser@beta cask in
       #       nix/modules/darwin/homebrew.nix.
       #       Local dev note: Brave Shields can block local servers. If a

@@ -120,9 +120,27 @@
     {
       # `nix fmt` formats the tree; `nix flake check` verifies formatting.
       formatter = forAllSystems (system: treefmtEval.${system}.config.build.wrapper);
-      checks = forAllSystems (system: {
-        formatting = treefmtEval.${system}.config.build.check self;
-      });
+      checks = forAllSystems (
+        system:
+        {
+          formatting = treefmtEval.${system}.config.build.check self;
+        }
+        // nixpkgs.lib.mapAttrs' (
+          name: profile:
+          nixpkgs.lib.nameValuePair "home-${name}" (
+            # Force evaluation of each matching profile, without building every
+            # host's closure or making --all-systems require remote builders.
+            nixpkgs.legacyPackages.${system}.writeText "home-${name}-evaluation" (
+              builtins.unsafeDiscardStringContext self.homeConfigurations.${name}.activationPackage.drvPath
+            )
+          )
+        ) (nixpkgs.lib.filterAttrs (_: profile: profile.system == system) vars.profiles)
+        // nixpkgs.lib.optionalAttrs (system == vars.profiles.macos.system) {
+          darwin-macos = nixpkgs.legacyPackages.${system}.writeText "darwin-macos-evaluation" (
+            builtins.unsafeDiscardStringContext self.darwinConfigurations.macos.system.drvPath
+          );
+        }
+      );
 
       homeConfigurations = {
         linux-desktop = mkProfile "linux-desktop";
@@ -139,10 +157,23 @@
           ./hosts/macos/darwin.nix
           home-manager.darwinModules.home-manager
           {
+            nixpkgs.config.allowUnfree = true;
+            nixpkgs.overlays = [ (import ./overlays { inherit inputs; }) ];
+            system.primaryUser = vars.username;
             users.users.${vars.username}.home = vars.profiles.macos.homeDirectory;
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
-            home-manager.users.${vars.username} = import ./hosts/macos/home.nix;
+            home-manager.extraSpecialArgs = {
+              inherit inputs;
+              username = vars.username;
+            };
+            home-manager.users.${vars.username} = {
+              imports = [ ./hosts/macos/home.nix ];
+              home = {
+                username = vars.username;
+                inherit (vars.profiles.macos) homeDirectory stateVersion;
+              };
+            };
           }
         ];
       };

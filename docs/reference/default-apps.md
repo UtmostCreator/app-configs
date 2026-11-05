@@ -69,33 +69,37 @@ If a local dev URL misbehaves, allow it explicitly:
 This is a per-user runtime setting, not something this repo provisions — it is
 documented here so the default-browser choice does not surprise local dev work.
 
-## macOS — TODO (not implemented)
+## macOS — Brave Beta on every activation
 
-nix-darwin / home-manager have **no clean declarative default-app option** on
-macOS. Defaults live in Launch Services and are normally set imperatively with
-[`duti`](https://github.com/moretension/duti) (UTI-based) or `defaultbrowser`.
+Homebrew installs `brave-browser@beta` and `duti`. The user Home Manager
+activation in `nix/modules/home/default-browser-macos.nix` registers
+`/Applications/Brave Browser Beta.app` with Launch Services, then uses `duti`
+to set `com.brave.Browser.beta` for HTTP, HTTPS, HTML, XHTML and PDF. It checks
+the resulting HTML handler. This runs on each `darwin-rebuild switch` and on
+standalone macOS Home Manager activation (after installing the cask and duti).
+The activation fails if the app is absent or setting a handler fails.
 
-Planned approach for a future slice (not shipped yet):
+```bash
+duti -d public.html  # com.brave.Browser.beta
+duti -d com.adobe.pdf
+```
 
-1. Add `duti` (already noted macOS-only in `docs/reference/app-catalog.md`).
-2. Set handlers by bundle id + UTI, e.g.:
+## Linux Brave package and updates
 
-   ```bash
-   # Browser + web schemes -> Brave
-   duti -s com.brave.Browser public.html      all
-   duti -s com.brave.Browser http             all
-   duti -s com.brave.Browser https            all
-   # PDFs -> Brave
-   duti -s com.brave.Browser com.adobe.pdf    all
-   # Source/text -> VS Code
-   duti -s com.microsoft.VSCode public.plain-text all
-   duti -s com.microsoft.VSCode public.source-code all
-   ```
+Nixpkgs removed Brave in November 2026 because there were no committers among
+its maintainers to unblock security issues. The repository now packages the
+official stable `.deb` using the Nixpkgs wrapper adapted in
+`nix/packages/brave/`. `release.json` pins the version, official GitHub asset
+URLs and SHA-256 digests. `sys-update` refreshes this lock from Brave's latest
+stable GitHub release before checking and building the host configuration.
+Nix verifies the binary digest during the build. A successful update commits
+both release locks; rollback restores both.
 
-3. Run those once (e.g. a nix-darwin `system.activationScripts` block or a
-   `mise` task). This is imperative state, so it is **out of scope** for the
-   declarative `xdg.mimeApps` module above and tracked here as a follow-up.
+`nix flake check` now evaluates the matching Home Manager profiles, and
+`sys-update` builds the selected host closure before applying dotfiles. A
+future incompatible package update stops before activation. Arbitrary upstream
+changes can still fail a build; this prevents this Brave removal from recurring
+and catches other package failures before applying configuration.
 
-> Bundle ids: Brave Beta cask installs `com.brave.Browser.beta`; the stable
-> Brave is `com.brave.Browser`. Confirm with
-> `osascript -e 'id of app "Brave Browser Beta"'` before wiring duti.
+The original Linux defaults were introduced in commit `26951c2`; commit
+`b6040de` made the MIME file writable while reapplying declared defaults.

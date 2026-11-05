@@ -24,7 +24,7 @@ build exists, never installed on Linux.
 | Ghostty | Nix(GUI-Linux) | cask | GPU terminal |
 | VS Code | Nix(GUI-Linux) `vscode` | cask `visual-studio-code` | single IDE on all systems |
 | Firefox | Nix(GUI-Linux) | cask | browser (parity: cask enabled) |
-| Brave | Nix(GUI-Linux) stable | cask `brave-browser@beta` | privacy browser; nixpkgs ships stable only |
+| Brave | Nix(GUI-Linux) official stable | cask `brave-browser@beta` | default browser; official release packaged by this repo |
 | Flameshot | Nix(GUI-Linux) | cask | screenshots |
 | Bruno | Nix(GUI-Linux) | cask | API client (Linux build exists) |
 | IntelliJ IDEA CE | — (excluded) | — (excluded) | intentionally not shipped; VS Code is the IDE |

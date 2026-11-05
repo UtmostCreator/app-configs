@@ -6,6 +6,13 @@
 - VS Code keybindings: `home/.chezmoitemplates/vscode/keybindings.json`
 - Raycast hotkeys, quicklinks and commands (auditable reference, not a native import): `reference/raycast/shortcuts.yaml`. Raycast shows post-remap logical shortcuts, so read it alongside the Karabiner config. Restore Raycast settings from its native export, not this file.
 
+## Linux / NixOS: show desktop
+
+Press **Win+D** to hide all normal windows and show the desktop. Press it
+again to restore them to their previous state. This uses GNOME's native
+`show-desktop` binding and works with both the English and Russian layouts.
+Managed in `nix/modules/home/gnome-keybindings.nix`.
+
 ## Linux / NixOS: physical top-row function keys
 
 Source files:

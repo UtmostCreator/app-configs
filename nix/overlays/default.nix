@@ -1,5 +1,9 @@
 { inputs }:
 final: prev: {
+  # Brave was removed from nixpkgs in November 2026. Keep the official Linux
+  # release under repository ownership; sys-update refreshes its release lock.
+  brave = final.callPackage ../packages/brave { };
+
   # TEMPORARY pin (2026-10-26): semgrep-core 1.180.0 in nixpkgs-unstable 674a202
   # aborts in fixupPhase (patchelf 0.19.2 assertion `splitIndex == -1`), and
   # Hydra has no cached build. Take semgrep from the `nixpkgs-last-good` input.

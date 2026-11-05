@@ -98,9 +98,8 @@ in
   # this must not use xdg.mimeApps: that module intentionally generates a
   # read-only store link, which prevents GNOME from changing defaults.
   #
-  # This module is imported ONLY by the linux-desktop host. macOS has no clean
-  # declarative default-app mechanism in nix-darwin/home-manager; the duti-based
-  # approach is documented as a TODO in docs/reference/default-apps.md.
+  # This module is imported ONLY by the linux-desktop host. macOS uses the
+  # user activation in default-browser-macos.nix (Brave Beta via duti).
   #
   # Guarded on isLinux so an accidental import on Darwin is a no-op rather than
   # writing a Linux mimeapps.list into a macOS home.

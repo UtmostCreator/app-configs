@@ -53,6 +53,7 @@ printf '%s %s\n' "$tool" "\$*" >> "\$STUB_LOG"
 case "$tool \$*" in
   "nix flake update"*)    printf '{"nodes":{"nixpkgs":{"locked":{"rev":"new"}}}}\n' > "$FAKE/nix/flake.lock" ;;
   "nix flake check"*)     printf 'warning: The check omitted these incompatible systems: aarch64-darwin\n' >&2 ;;
+  "nix build"*)          [[ "\${FAIL_HOST_BUILD:-0}" == 1 ]] && exit 1 ;;
   "chezmoi status"*)      printf '%s\n' "\${CHEZMOI_STATUS:- M dot_thing}" ;;
   "home-manager switch"*) printf 'There are 394 unread and relevant news items.\n' ;;
 esac
@@ -166,6 +167,31 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
   [[ "$output" == *"1 input(s) updated"* ]]
 }
 
+@test "the host closure builds before dotfiles are applied" {
+  run_update
+  [ "$status" -eq 0 ]
+  build_line="$(grep -n 'nix build --no-link.*homeConfigurations.linux-desktop.activationPackage' "$STUB_LOG" | cut -d: -f1)"
+  apply_line="$(grep -n 'chezmoi apply' "$STUB_LOG" | cut -d: -f1)"
+  [ "$build_line" -lt "$apply_line" ]
+}
+
+@test "a failed host build leaves dotfiles and the active generation untouched" {
+  export FAIL_HOST_BUILD=1
+  run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"host build"* ]]
+  ! grep -q 'chezmoi apply\|home-manager switch\|mise upgrade' "$STUB_LOG"
+  [ "$(commits)" -eq 1 ]
+}
+
+@test "macOS builds the darwin system before activation" {
+  export HOST_PROFILE=macos
+  cp "$STUBS/home-manager" "$STUBS/darwin-rebuild"
+  run_update
+  [ "$status" -eq 0 ]
+  grep -q 'nix build --no-link.*darwinConfigurations.macos.system' "$STUB_LOG"
+}
+
 @test "a successful update commits the new lock so the next run starts clean" {
   run_update
   [ "$status" -eq 0 ]
@@ -180,6 +206,49 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
   [[ "$output" != *"stopped before"* ]]
   # nothing changed this time, so nothing new is committed
   [ "$(commits)" -eq 2 ]
+}
+
+prepare_brave_lock() {
+  mkdir -p "$FAKE/nix/packages/brave"
+  cp "$REPO_ROOT/nix/packages/brave/release.json" "$FAKE/nix/packages/brave/"
+  cat > "$FAKE/ops/update-brave.sh" <<'STUB'
+#!/usr/bin/env bash
+[[ "${FAIL_BRAVE_UPDATE:-0}" == 1 ]] && exit 1
+root="$(cd "$(dirname "$0")/.." && pwd)"
+jq '.version = "999.0.0"' "$root/nix/packages/brave/release.json" > "$root/nix/packages/brave/release.json.tmp"
+mv "$root/nix/packages/brave/release.json.tmp" "$root/nix/packages/brave/release.json"
+STUB
+  git -C "$FAKE" add nix/packages/brave/release.json ops/update-brave.sh
+  git -C "$FAKE" commit -q -m 'add browser lock fixture'
+}
+
+@test "Brave updates are committed with the flake lock and the next run stays clean" {
+  prepare_brave_lock
+  run_update
+  [ "$status" -eq 0 ]
+  [ -z "$(git -C "$FAKE" status --porcelain)" ]
+  git -C "$FAKE" diff --name-only HEAD~1 HEAD | grep -q 'nix/packages/brave/release.json'
+  run_update
+  [ "$status" -eq 0 ]
+  [ -z "$(git -C "$FAKE" status --porcelain)" ]
+}
+
+@test "rollback restores both the browser release and flake lock" {
+  prepare_brave_lock
+  run_update
+  [ "$status" -eq 0 ]
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" rollback --yes
+  [ "$status" -eq 0 ]
+  cmp "$REPO_ROOT/nix/packages/brave/release.json" "$FAKE/nix/packages/brave/release.json"
+  grep -q '"rev":"old"' "$FAKE/nix/flake.lock"
+}
+
+@test "Brave metadata failure stops before configuration is applied" {
+  prepare_brave_lock
+  export FAIL_BRAVE_UPDATE=1
+  run_update
+  [ "$status" -ne 0 ]
+  ! grep -q 'nix build\|chezmoi apply\|home-manager switch' "$STUB_LOG"
 }
 
 @test "a failed update leaves the lock uncommitted" {

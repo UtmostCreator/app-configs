@@ -236,7 +236,7 @@ whole set on either OS. The owner of record is
 | Ghostty | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
 | VS Code | **Nix** (`vscode`) | Homebrew cask `visual-studio-code` | `gui.nix` / `darwin/homebrew.nix` — single IDE on all systems |
 | Flameshot | **Nix** | Homebrew cask | `gui.nix` (Linux) |
-| Brave | **Nix** (stable) | Homebrew cask `brave-browser@beta` | `gui.nix` / `darwin/homebrew.nix` |
+| Brave | **Nix** (official stable, repo package) | Homebrew cask `brave-browser@beta` | `gui.nix` / `darwin/homebrew.nix` |
 | Obsidian | **Nix** (`obsidian`) | Homebrew cask `obsidian` | `gui.nix` / `darwin/homebrew.nix` |
 | USB audio diagnostics (`lsusb`, `aplay`, `speaker-test`, `wpctl`, `pavucontrol`) | **Nix** (`usbutils`, `alsa-utils`, `wireplumber`, `pavucontrol`) | system / optional | `gui.nix`; see `docs/reference/ora4-audio.md` |
 | IntelliJ IDEA CE | **excluded** (not shipped) | **excluded** (not shipped) | intentionally dropped for now; VS Code is the IDE |

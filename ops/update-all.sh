@@ -111,6 +111,8 @@ do_rollback() {
   gen="$(meta_get "$meta" hm_gen_before)"
   hm_path="$(meta_get "$meta" hm_path_before)"
   lock="$(meta_get "$meta" flake_lock_backup)"
+  local brave_backup
+  brave_backup="$(meta_get "$meta" brave_release_backup)"
   snapshot="$(meta_get "$meta" snapshot_dir)"
 
   ui_init "" 0
@@ -146,6 +148,14 @@ do_rollback() {
     fi
   else
     ui_skip "flake.lock" "no backup recorded"
+  fi
+
+  if [[ -n "$brave_backup" && -f "$brave_backup" ]]; then
+    if cp "$brave_backup" "$REPO_ROOT/nix/packages/brave/release.json"; then
+      ui_ok "Brave release" "restored"
+    else
+      ui_err "Brave release" "restore failed"; failed=1
+    fi
   fi
 
   if [[ -n "$snapshot" && -d "$snapshot" ]]; then
@@ -223,6 +233,7 @@ fi
 # Required tools. In report mode a missing tool is information, not a failure:
 # the point of a report is to show what the update would do.
 REQUIRED=(git nix chezmoi)
+[[ "$HOST_PROFILE" == linux-desktop && -f "$REPO_ROOT/nix/packages/brave/release.json" ]] && REQUIRED+=(curl jq)
 if [[ "$HOST_PROFILE" == "macos" ]]; then REQUIRED+=(darwin-rebuild); else REQUIRED+=(home-manager); fi
 MISSING=()
 for t in "${REQUIRED[@]}"; do have "$t" || MISSING+=("$t"); done
@@ -322,6 +333,14 @@ if [[ "$MODE" == "apply" ]]; then
     fi
   fi
 
+  if [[ -f "$REPO_ROOT/nix/packages/brave/release.json" ]]; then
+    if cp "$REPO_ROOT/nix/packages/brave/release.json" "$RUN_DIR/$RUN_ID.brave.json"; then
+      meta_put brave_release_backup "$RUN_DIR/$RUN_ID.brave.json"
+    else
+      ui_err "Brave release" "backup failed"; exit 1
+    fi
+  fi
+
   if [[ -x "$REPO_ROOT/ops/snapshot-home.sh" ]]; then
     if ui_run "dotfiles" bash "$REPO_ROOT/ops/snapshot-home.sh"; then
       SNAPSHOT_DIR="$(grep -oE '/[^ ]*dotfiles-snapshots/[0-9TZ]+' "$UI_LAST_LOG" | head -1)"
@@ -341,7 +360,7 @@ if [[ "$MODE" == "apply" ]]; then
   mapfile -t OLD_RUNS < <(find "$RUN_DIR" -maxdepth 1 -name '*.meta' -type f 2>/dev/null \
     | LC_ALL=C sort -r | tail -n "+$((KEEP_RUNS + 1))")
   for old_meta in ${OLD_RUNS[@]+"${OLD_RUNS[@]}"}; do
-    rm -f "${old_meta%.meta}".{log,meta,flake.lock}
+    rm -f "${old_meta%.meta}".{log,meta,flake.lock,brave.json}
   done
 fi
 
@@ -378,9 +397,11 @@ LOCK_BEFORE="$(lock_inputs "$REPO_ROOT/nix/flake.lock")"
 # Only a lock that matches HEAD is ours to commit afterwards; local edits to it
 # (possible under --allow-dirty) are the user's to keep or discard.
 LOCK_WAS_CLEAN=0
+UPDATE_FILES=(nix/flake.lock)
+[[ -f "$REPO_ROOT/nix/packages/brave/release.json" ]] && UPDATE_FILES+=(nix/packages/brave/release.json)
 if [[ "$GIT_STATE" != "no-repo" ]] \
   && git -C "$REPO_ROOT" ls-files --error-unmatch nix/flake.lock >/dev/null 2>&1 \
-  && git -C "$REPO_ROOT" diff --quiet HEAD -- nix/flake.lock 2>/dev/null; then
+  && git -C "$REPO_ROOT" diff --quiet HEAD -- "${UPDATE_FILES[@]}" 2>/dev/null; then
   LOCK_WAS_CLEAN=1
 fi
 if ui_run "flake inputs" nix flake update --flake "$REPO_ROOT/nix"; then
@@ -399,6 +420,17 @@ else
   step_fail "flake inputs" "nix flake update failed"
 fi
 
+# Linux Brave is packaged here because nixpkgs no longer provides it. Refresh
+# the binary lock alongside flake inputs so browser security updates continue.
+if [[ "$STEP_FAILED" == 0 && "$HOST_PROFILE" == linux-desktop ]] \
+  && [[ -f "$REPO_ROOT/nix/packages/brave/release.json" ]]; then
+  if ui_run "Brave release" bash "$REPO_ROOT/ops/update-brave.sh"; then
+    [[ "$MODE" == apply ]] && ui_ok "Brave release" "official stable release checked"
+  else
+    step_fail "Brave release" "could not verify the latest official release — nothing was applied"
+  fi
+fi
+
 # flake check ---------------------------------------------------------------
 if [[ "$STEP_FAILED" == 0 ]]; then
   CHECK_ARGS=("$REPO_ROOT/nix")
@@ -415,6 +447,21 @@ if [[ "$STEP_FAILED" == 0 ]]; then
     fi
   else
     step_fail "flake check" "the updated lock does not evaluate — nothing was applied"
+  fi
+fi
+
+# Build the actual host closure before applying dotfiles or activating it.
+# flake check alone does not validate arbitrary homeConfigurations outputs.
+if [[ "$STEP_FAILED" == 0 ]]; then
+  if [[ "$HOST_PROFILE" == macos ]]; then
+    BUILD_TARGET="darwinConfigurations.macos.system"
+  else
+    BUILD_TARGET="homeConfigurations.$HOST_PROFILE.activationPackage"
+  fi
+  if ui_run "host build" nix build --no-link "$REPO_ROOT/nix#$BUILD_TARGET"; then
+    [[ "$MODE" == apply ]] && ui_ok "host build" "$HOST_PROFILE ready to activate"
+  else
+    step_fail "host build" "build failed — dotfiles and active generation were not changed"
   fi
 fi
 
@@ -542,12 +589,12 @@ fi
 # The update proved the new lock builds and activates. Leaving it uncommitted
 # would make the next run stop at the dirty-worktree gate on our own output.
 if [[ "$MODE" == "apply" && "$GIT_STATE" != "no-repo" ]] \
-  && ! git -C "$REPO_ROOT" diff --quiet HEAD -- nix/flake.lock 2>/dev/null; then
+  && ! git -C "$REPO_ROOT" diff --quiet HEAD -- "${UPDATE_FILES[@]}" 2>/dev/null; then
   if [[ "$LOCK_WAS_CLEAN" != 1 ]]; then
     ui_warn "flake.lock" "not committed (it had local edits before the update)"
     ui_note warn git "flake.lock not committed: it had local edits before the update"
   # --only commits the lock alone, whatever else is staged or modified.
-  elif ui_run "flake.lock" git -C "$REPO_ROOT" commit --only -m "chore(nix): update flake inputs" -- nix/flake.lock; then
+  elif ui_run "flake.lock" git -C "$REPO_ROOT" commit --only -m "chore(nix): update flake inputs" -- "${UPDATE_FILES[@]}"; then
     ui_ok "flake.lock" "committed ($(git -C "$REPO_ROOT" rev-parse --short HEAD))"
   else
     ui_warn "flake.lock" "commit failed; the new lock is left uncommitted (see the run log)"
@@ -577,6 +624,20 @@ if [[ "$MODE" == "apply" && "$DO_VERIFY" == 1 ]]; then
     if chezmoi verify >/dev/null 2>&1; then ui_ok "managed files" "no drift"
     else ui_warn "managed files" "chezmoi reports drift (run: chezmoi diff)"
          ui_note warn chezmoi "managed files drifted after apply — run: chezmoi diff"; fi
+  fi
+
+  if [[ "$HOST_PROFILE" == linux-desktop ]]; then
+    BROWSER_DEFAULTS_OK=1
+    for mime in x-scheme-handler/http x-scheme-handler/https text/html application/pdf; do
+      [[ "$(xdg-mime query default "$mime" 2>/dev/null)" == brave-browser.desktop ]] || BROWSER_DEFAULTS_OK=0
+    done
+    if [[ "$BROWSER_DEFAULTS_OK" == 1 ]] && brave --version >/dev/null 2>&1; then
+      ui_ok "default browser" "Brave (HTTP, HTTPS, HTML, PDF)"
+    else
+      ui_err "default browser" "Brave is unavailable or its default associations did not apply"
+      printf '\nUpdate verification failed. Full log: %s\n' "$RUN_LOG"
+      exit 1
+    fi
   fi
 
   VERIFY_MISSING=()

@@ -5,41 +5,14 @@
   ...
 }:
 let
-  codebaseMemoryMcpVersion = "0.12.1";
-  codebaseMemoryMcpArtifact =
-    {
-      x86_64-linux = {
-        platform = "linux-amd64";
-        hash = "sha256-hFMBUUXwcsG5sBnL3QLOqMxvGMxeEWA23SCZJjHGOMc=";
-      };
-      aarch64-darwin = {
-        platform = "darwin-arm64";
-        hash = "sha256-m/y+OEFLR5aaPh0cGZn1NXQJOHyG+j0kIhtUWCZ2YNI=";
-      };
-    }
-    .${pkgs.stdenv.hostPlatform.system};
-  codebaseMemoryMcp = pkgs.stdenvNoCC.mkDerivation {
-    pname = "codebase-memory-mcp-ui";
-    version = codebaseMemoryMcpVersion;
-    src = pkgs.fetchurl {
-      url = "https://github.com/DeusData/codebase-memory-mcp/releases/download/v${codebaseMemoryMcpVersion}/codebase-memory-mcp-ui-${codebaseMemoryMcpArtifact.platform}.tar.gz";
-      inherit (codebaseMemoryMcpArtifact) hash;
-    };
-    sourceRoot = ".";
-    dontStrip = true; # Preserve the UI assets embedded in the release binary.
-    installPhase = ''
-      runHook preInstall
-      install -Dm755 codebase-memory-mcp "$out/bin/codebase-memory-mcp"
-      runHook postInstall
-    '';
-  };
+  codebaseMemoryMcp = pkgs.callPackage ../../packages/codebase-memory-mcp { };
   codebaseMemoryMcpUi = pkgs.writeShellScript "codebase-memory-mcp-ui-service" ''
     set -euo pipefail
     export CBM_ALLOWED_ROOT=${lib.escapeShellArg "${config.home.homeDirectory}/Projects"}
 
     # The MCP transport is stdio and exits on EOF. Keep stdin open so the
     # optional loopback-only graph UI remains available independently of an
-    # editor session. Editor-launched workers explicitly use --ui=false.
+    # editor session. Clients must not pass --ui=false: it disables the shared UI.
     ${pkgs.coreutils}/bin/sleep infinity \
       | ${codebaseMemoryMcp}/bin/codebase-memory-mcp --ui=true --port=9749
   '';
@@ -198,17 +171,75 @@ in
 
   # Keep the graph browser available at http://127.0.0.1:9749 even when no
   # editor is open. MCP clients still use their own stdio worker and the shared
-  # ~/.cache/codebase-memory-mcp indexes; they disable UI to avoid port races.
+  # ~/.cache/codebase-memory-mcp indexes and inherit the daemon UI setting.
   systemd.user.services.codebase-memory-mcp-ui = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     Unit = {
       Description = "Codebase Memory MCP graph UI";
-      After = [ "default.target" ];
     };
     Service = {
       ExecStart = codebaseMemoryMcpUi;
+      ExecStartPost = "${pkgs.curl}/bin/curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 --max-time 30 http://127.0.0.1:9749/ --output /dev/null";
       Restart = "always";
       RestartSec = 5;
     };
     Install.WantedBy = [ "default.target" ];
   };
+
+  # UI flags mutate shared daemon configuration. Recover if an older client
+  # disables it or the listener disappears while the stdio process stays alive.
+  systemd.user.services.codebase-memory-mcp-health = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+    Unit.Description = "Check Codebase Memory MCP dashboard";
+    Service = {
+      Type = "oneshot";
+      ExecStart = pkgs.writeShellScript "codebase-memory-mcp-health" ''
+        ${pkgs.curl}/bin/curl --fail --silent --max-time 10 http://127.0.0.1:9749/ --output /dev/null \
+          || ${pkgs.systemd}/bin/systemctl --user restart codebase-memory-mcp-ui.service
+      '';
+    };
+  };
+  systemd.user.timers.codebase-memory-mcp-health = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+    Unit.Description = "Keep Codebase Memory MCP dashboard available";
+    Timer = {
+      OnStartupSec = "2min";
+      OnUnitActiveSec = "2min";
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
+
+  systemd.user.services.codebase-memory-mcp-update = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+    Unit = {
+      Description = "Update Codebase Memory MCP from the latest verified stable release";
+      Wants = [ "network-online.target" ];
+      After = [ "network-online.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      Environment = "PATH=${
+        lib.makeBinPath [
+          pkgs.bash
+          pkgs.coreutils
+          pkgs.curl
+          pkgs.diffutils
+          pkgs.git
+          pkgs.gnugrep
+          pkgs.jq
+          pkgs.nix
+          pkgs.systemd
+          pkgs.util-linux
+        ]
+      }:${config.home.profileDirectory}/bin";
+      ExecStart = "${pkgs.bash}/bin/bash ${config.home.homeDirectory}/Projects/app-configs/ops/update-codebase-memory-mcp.sh --apply";
+      TimeoutStartSec = "30min";
+    };
+  };
+  systemd.user.timers.codebase-memory-mcp-update = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+    Unit.Description = "Weekly Codebase Memory MCP stable updates";
+    Timer = {
+      OnCalendar = "Mon *-*-* 10:00:00";
+      Persistent = true;
+      RandomizedDelaySec = "15min";
+    };
+    Install.WantedBy = [ "timers.target" ];
+  };
+
 }

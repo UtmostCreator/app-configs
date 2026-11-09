@@ -4,6 +4,7 @@
   imports = [
     ./cli.nix
     ./dev.nix
+    ./ai-cli-updates.nix # hourly Claude Code + Codex self-updates (Linux)
     ./shell-packages.nix
     ./profile.nix # declares myConfig.profile (read by gui.nix). Option only;
     #               installs nothing unless a host sets it to "personal".

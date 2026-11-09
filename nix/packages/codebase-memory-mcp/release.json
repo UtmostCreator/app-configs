@@ -1,0 +1,13 @@
+{
+  "version": "0.12.1",
+  "archives": {
+    "x86_64-linux": {
+      "url": "https://github.com/DeusData/codebase-memory-mcp/releases/download/v0.12.1/codebase-memory-mcp-ui-linux-amd64.tar.gz",
+      "hash": "8453015145f072c1b9b019cbdd02cea8cc6f18cc5e116036dd20992631c638c7"
+    },
+    "aarch64-darwin": {
+      "url": "https://github.com/DeusData/codebase-memory-mcp/releases/download/v0.12.1/codebase-memory-mcp-ui-darwin-arm64.tar.gz",
+      "hash": "9bfcbe38414b47969a3e1d1c1999f5357409387c86fa3d24221b5458267660d2"
+    }
+  }
+}

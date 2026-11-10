@@ -2,10 +2,11 @@
 
 # app-configs
 
-**Reproducible development environments across NixOS, Linux, macOS and WSL2.**
+**Reproducible dotfiles and development environment for NixOS, Linux, macOS and WSL2.**
 
-Opinionated dotfiles, declarative packages, runtimes and system maintenance,
-managed through chezmoi, Nix / Home Manager, mise and nix-darwin.
+Declarative packages, runtimes, Homebrew apps and system maintenance, built on
+Nix flakes, Home Manager, nix-darwin, chezmoi and mise, with a fish shell
+setup, Lefthook Git hooks and Bats-tested scripts.
 
 [Quick start](#quick-start) · [Systems](#supported-systems) ·
 [Architecture](#how-it-fits-together) · [Commands](#commands) ·

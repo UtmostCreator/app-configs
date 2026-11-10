@@ -65,7 +65,7 @@ proj_field() {
   local id="$1"
   local path="$2"
   [[ -z "$id" || -z "$path" ]] && return 1
-  proj_yq ".projects.\"$id\".$path // empty"
+  proj_yq ".projects.\"$id\".$path // \"\""
 }
 
 proj_field_default() {
@@ -92,7 +92,7 @@ proj_tmux_session() {
   # Render a tmux session name from config or fall back to a default.
   local key="$1" default="$2"
   local value
-  value="$(proj_yq ".tmux.${key} // empty")"
+  value="$(proj_yq ".tmux.${key} // \"\"")"
   [[ -z "$value" || "$value" == "null" ]] && value="$default"
   printf '%s\n' "$value"
 }
@@ -101,7 +101,7 @@ proj_layout_percent() {
   # Read a percentage out of tmux.layout.<key>; default if missing.
   local key="$1" default="$2"
   local value
-  value="$(proj_yq ".tmux.layout.${key} // empty")"
+  value="$(proj_yq ".tmux.layout.${key} // \"\"")"
   if [[ -z "$value" || "$value" == "null" ]]; then
     printf '%s\n' "$default"
   else

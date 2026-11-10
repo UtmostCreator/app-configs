@@ -40,6 +40,8 @@
       "copilot-cli"
 
       # ── Knowledge and productivity ───────────────────────
+      # Optional live call/meeting summarizer.
+      "granola"
       "obsidian"
       "raycast"
 

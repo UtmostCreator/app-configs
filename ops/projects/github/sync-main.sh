@@ -20,7 +20,7 @@ sync_one() {
   dir="$(proj_field "$id" dir)"
   [[ -z "$dir" ]] && { proj_log "skip $id (no dir)"; return 0; }
   dir="$(proj_expand_path "$dir")"
-  if [[ ! -d "$dir/.git" ]]; then
+  if [[ ! -e "$dir/.git" ]]; then
     proj_log "skip $id (no .git at $dir)"
     return 0
   fi

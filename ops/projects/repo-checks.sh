@@ -35,7 +35,7 @@ cd "$DIR" || proj_fail "cannot enter $DIR"
 printf '== %s ==\n' "$LABEL"
 printf 'dir: %s\n' "$DIR"
 
-if [[ ! -d .git ]]; then
+if [[ ! -e .git ]]; then
   printf '[warn] not a git repository\n'
   exit 0
 fi

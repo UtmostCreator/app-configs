@@ -75,7 +75,7 @@ else
 fi
 
 # Lefthook hooks.
-if command -v lefthook >/dev/null 2>&1 && [[ -d "$REPO_ROOT/.git" ]]; then
+if command -v lefthook >/dev/null 2>&1 && [[ -e "$REPO_ROOT/.git" ]]; then
   log "lefthook: would run 'lefthook uninstall' from $REPO_ROOT."
 fi
 
@@ -113,7 +113,7 @@ fi
 set -e
 command -v chezmoi >/dev/null 2>&1 && chezmoi forget || true
 command -v home-manager >/dev/null 2>&1 && home-manager uninstall || true
-if command -v lefthook >/dev/null 2>&1 && [[ -d "$REPO_ROOT/.git" ]]; then
+if command -v lefthook >/dev/null 2>&1 && [[ -e "$REPO_ROOT/.git" ]]; then
   ( cd "$REPO_ROOT" && lefthook uninstall ) || true
 fi
 echo

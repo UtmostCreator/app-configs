@@ -658,6 +658,14 @@ if [[ "$MODE" == "apply" && "$DO_VERIFY" == 1 ]]; then
     else ui_warn "user services" "failed: $FAILED_UNITS"
          ui_note warn systemd "failed user units: $FAILED_UNITS (systemctl --user status <unit>)"; fi
   fi
+
+  # How long until Claude Code / Codex need an interactive login again, so it
+  # happens at home rather than failing while away (nix/modules/home/ai-cli-updates.nix).
+  if have ai-auth-status; then
+    if AI_AUTH="$(ai-auth-status --summary 2>/dev/null)"; then ui_ok "AI logins" "$AI_AUTH"
+    else ui_warn "AI logins" "${AI_AUTH:-status unknown}"
+         ui_note warn ai-auth "${AI_AUTH:-AI CLI login status unknown} — log in again before you travel (run: ai-auth-status)"; fi
+  fi
 fi
 
 # ── 6. CLEANUP ──────────────────────────────────────────────────────────────

@@ -314,3 +314,26 @@ STUB
   [ "$status" -ne 0 ]
   [[ "$output" == *"no recorded run"* ]]
 }
+
+@test "verification says how long until the AI CLIs need a new login" {
+  cat > "$STUBS/ai-auth-status" <<'STUB'
+#!/usr/bin/env bash
+[[ "$1" == --summary ]] || exit 2
+echo "Claude ${CLAUDE_DAYS}d left · Codex signed in"
+(( CLAUDE_DAYS >= 7 ))
+STUB
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$STUBS/systemctl"
+  chmod +x "$STUBS/ai-auth-status" "$STUBS/systemctl"
+  verify_run() { run env PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli CLAUDE_DAYS="$1" \
+    bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup; }
+
+  verify_run 23
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"AI logins"*"Claude 23d left · Codex signed in"* ]]
+
+  reset_repo
+  verify_run 3
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"AI logins"*"Claude 3d left"* ]]
+  [[ "$output" == *"log in again before you travel"* ]]
+}

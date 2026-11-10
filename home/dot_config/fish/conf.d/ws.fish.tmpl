@@ -1,0 +1,92 @@
+{{- /*
+  Fish equivalents of the ws-* workspace commands in ~/.ws.zsh
+  (home/dot_ws.zsh.tmpl). Keep the two lists in sync;
+  tests/bash/ws-shell-parity.bats fails if they drift.
+*/ -}}
+# Dev workspace launcher commands (ws, ws-restart, ws-verify, ...).
+# See ~/.ws.zsh for what each one does.
+set -q WS_PROJECTS_DIR; or set -gx WS_PROJECTS_DIR {{ joinPath .chezmoi.sourceDir ".." "ops" "projects" | quote }}
+
+function ws
+    bash "$WS_PROJECTS_DIR/tmux/master.sh" $argv
+end
+
+function ws-start
+    bash "$WS_PROJECTS_DIR/tmux/master.sh" $argv
+end
+
+function ws-restart
+    bash "$WS_PROJECTS_DIR/workspace/restart.sh" $argv
+end
+
+function ws-stop
+    bash "$WS_PROJECTS_DIR/workspace/stop.sh" $argv
+end
+
+function ws-verify
+    bash "$WS_PROJECTS_DIR/health/verify-workspace.sh" $argv
+end
+
+function ws-logs
+    bash "$WS_PROJECTS_DIR/logging/watch/watch.sh" $argv
+end
+
+function ws-stop-logs
+    bash "$WS_PROJECTS_DIR/logging/watch/stop-watch.sh" $argv
+end
+
+function ws-stack
+    bash "$WS_PROJECTS_DIR/workspace/stack/start.sh" $argv
+end
+
+function ws-stop-stack
+    bash "$WS_PROJECTS_DIR/workspace/stack/stop.sh" $argv
+end
+
+function ws-frontend
+    bash "$WS_PROJECTS_DIR/workspace/frontend/start.sh" $argv
+end
+
+function ws-stop-frontend
+    bash "$WS_PROJECTS_DIR/workspace/frontend/stop.sh" $argv
+end
+
+function ws-frontend-restart
+    bash "$WS_PROJECTS_DIR/workspace/frontend/restart.sh" $argv
+end
+
+function ws-frontend-debug
+    bash "$WS_PROJECTS_DIR/workspace/frontend/debug.sh" $argv
+end
+
+function ws-components-local
+    bash "$WS_PROJECTS_DIR/workspace/components-local.sh" $argv
+end
+
+function ws-health-raw
+    bash "$WS_PROJECTS_DIR/health/monitor.sh" $argv
+end
+
+function ws-fix
+    bash "$WS_PROJECTS_DIR/workspace/fix.sh" $argv
+end
+
+function log-workspace
+    bash "$WS_PROJECTS_DIR/logging/watch/run.sh" $argv
+end
+
+function log-errors
+    bash "$WS_PROJECTS_DIR/logging/errors/run.sh" $argv
+end
+
+function kill-logs
+    bash "$WS_PROJECTS_DIR/logging/kill-logs.sh" $argv
+end
+
+function ws-health
+    bash "$WS_PROJECTS_DIR/health/dashboard.sh" $argv
+end
+
+function ws-health-once
+    bash "$WS_PROJECTS_DIR/health/dashboard.sh" --once $argv
+end

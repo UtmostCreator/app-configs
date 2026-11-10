@@ -1,237 +1,202 @@
+<div align="center">
+
 # app-configs
 
-Personal development environment for macOS, Linux, NixOS, and limited WSL2. It
-manages dotfiles, shell configuration, CLI tools, GUI apps, runtimes, and
-host-specific setup through **chezmoi** (dotfiles) + **mise** (runtimes &
-tasks) + **Nix / Home Manager** (CLI packages) + **nix-darwin + Homebrew casks**
-(macOS GUI) + **Lefthook** (git hooks).
+**Reproducible development environments across NixOS, Linux, macOS and WSL2.**
 
-A clean machine can reach a working setup with one bootstrap script.
+Opinionated dotfiles, declarative packages, runtimes and system maintenance,
+managed through chezmoi, Nix / Home Manager, mise and nix-darwin.
 
-## Scope
+[Quick start](#quick-start) · [Systems](#supported-systems) ·
+[Architecture](#how-it-fits-together) · [Commands](#commands) ·
+[Recovery](#recovery) · [Docs](#documentation)
 
-**This repo owns:** personal dotfiles, shell/Git/editor/terminal config, SSH
-agent setup, CLI packages, GUI apps (where supported), the NixOS system layer
-(where applicable), the macOS user/system layer via nix-darwin + Homebrew, and
-the install / update / cleanup / validation commands.
+</div>
 
-**This repo does not own:** downstream project code. Native Windows is not
-supported; WSL2 is limited to Linux-style CLI/dev config.
+> [!WARNING]
+> This is a personal configuration. The automated installer applies changes by
+> default and overwrites existing dotfiles with `chezmoi apply --force`, after
+> snapshotting the files it is about to replace. Preview first with `DRY_RUN=1`.
 
-## Supported systems
+## What it provides
 
-| System | Status | Coverage |
-|--------|--------|----------|
-| macOS (Apple Silicon by default) | Supported | Home Manager + nix-darwin + Homebrew casks |
-| Linux desktop | Supported | Home Manager standalone + GUI module |
-| Linux CLI / headless | Supported | CLI/dev only (no GUI) |
-| WSL2 | Partial | CLI/dev only, no Windows-side management |
-| Windows native | Not supported | Use WSL2 instead |
-
-## Prerequisites
-
-Required before cloning:
-
-- Git, Bash, and internet access
-- `sudo` access — only for the NixOS system layer (`sys-setup --apply`)
-
-The installer bootstraps or verifies the rest as needed: chezmoi, mise, Nix,
-Home Manager, nix-darwin (macOS), and Homebrew (macOS, if enabled).
+- **One entry point for a clean machine.** `ops/install.sh` bootstraps Nix,
+  Home Manager, chezmoi and mise, applies everything, and is safe to re-run.
+- **One owner per concern.** Dotfiles, CLI packages, runtimes, macOS apps,
+  the NixOS system layer and Git hooks each belong to exactly one tool.
+- **Separate preview and apply paths.** Install, update, system setup, cleanup
+  and uninstall each have a mode that only reports what would change.
+- **Recovery points.** Managed files are snapshotted before every apply, and
+  `sys-update rollback` restores the previous Home Manager generation and
+  `flake.lock`.
+- **Checks that say where you stand.** `sys-readiness`, `ops/doctor.sh`,
+  `ops/validate-config.sh`, Bats tests and Git hooks (secret scan, identity
+  guard, config validation).
 
 ## Quick start
 
-Recommended (automated, NixOS-aware):
+Requires Git, Bash and internet access. `sudo` is needed only for the NixOS
+system layer. The installer bootstraps or verifies everything else.
 
 ```bash
-git clone <your-fork-of-this-repo> ~/dotfiles
-cd ~/dotfiles
-DRY_RUN=1 bash ops/install.sh     # preview only, mutates nothing
-bash ops/install.sh               # install + apply
-exec fish                             # start a new shell so the login shell applies
-sys-readiness                         # confirm: prints ALL SET when fully configured
+git clone https://github.com/UtmostCreator/app-configs.git ~/app-configs
+cd ~/app-configs
+DRY_RUN=1 bash ops/install.sh   # preview: prints the plan, changes nothing
+bash ops/install.sh             # install + apply (unattended, no sudo, idempotent)
+sudo sys-setup --apply          # NixOS only, once: login shell, trusted-users, GC, rebuild
+exec fish                       # start a new shell so the login shell applies
+sys-readiness                   # done when it prints ALL SET
 ```
 
-Manual mode (step-by-step with prompts) is documented in
-[`docs/getting-started/bootstrap.md`](docs/getting-started/bootstrap.md):
+`sys-readiness` reports `ALL SET` (done), `system rebuild pending` (run
+`sudo sys-setup --apply`) or `NOT READY` (re-run the installer). The `sys-*`
+commands exist in `~/.local/bin` only after the first install.
+
+If `home/.chezmoidata/personal.yaml` is missing, the installer seeds it from
+the example and leaves Git identity unset until you edit it.
+
+<details>
+<summary><strong>Manual mode: step by step, dry-run by default</strong></summary>
 
 ```bash
+mkdir -p home/.chezmoidata
 cp home/personal.yaml.example home/.chezmoidata/personal.yaml
 $EDITOR home/.chezmoidata/personal.yaml
-bash ops/bootstrap.sh             # default: dry-run, no mutations
-bash ops/bootstrap.sh --yes       # actually install + apply
+bash ops/bootstrap.sh           # dry-run, no mutations
+bash ops/bootstrap.sh --yes     # install + apply
 ```
-
-## Personal configuration
-
-Create your local personal config before the manual path. If it is missing,
-the automated installer seeds the example, but leaves Git identity unset until
-you replace the example name and email:
-
-```bash
-cp home/personal.yaml.example home/.chezmoidata/personal.yaml
-$EDITOR home/.chezmoidata/personal.yaml
-```
-
-Example:
 
 ```yaml
 name: "Your Full Name"
 email: "you@example.com"
-signingKey: ""          # optional git signing key
-minimal: false          # true = minimal VS Code settings
-useGitDelta: true       # git-delta in .gitconfig
-hostProfile: "linux-desktop"
-gui: true               # GUI configs (ghostty, etc.)
+signingKey: ""                  # optional git signing key
+minimal: false                  # true = minimal VS Code settings
+useGitDelta: true               # git-delta in .gitconfig
+hostProfile: "linux-desktop"    # see Supported systems
+gui: true                       # GUI configs (ghostty, etc.)
 ```
 
-`home/.chezmoidata/personal.yaml` is gitignored and **must never be committed**.
-Do not commit real names/emails not meant to be public, SSH keys, API tokens,
-or machine-specific secrets — only the `home/personal.yaml.example` template is
-tracked.
+`personal.yaml` is gitignored and must never be committed; a pre-commit hook
+rejects it. Full runbook: [`bootstrap.md`](docs/getting-started/bootstrap.md).
 
-## Host profiles
+</details>
 
-Set `hostProfile` in `personal.yaml` to one of:
+## Supported systems
 
-| Profile | Use case | GUI default | Nix mode |
-|---------|----------|-------------|----------|
-| `macos` | macOS desktop/laptop | yes (+ Karabiner) | nix-darwin + Home Manager |
-| `linux-desktop` | Linux desktop (primary Linux target) | yes | Home Manager standalone |
-| `linux-cli` | Headless Linux / CLI server | no | Home Manager standalone |
-| `wsl` | WSL2 CLI/dev | no | Home Manager standalone |
+| System | `hostProfile` | Nix layer | GUI default |
+|--------|---------------|-----------|:-----------:|
+| NixOS (daily driver) | `linux-desktop` | Home Manager standalone + `sys-setup` system layer | yes |
+| Other Linux desktop | `linux-desktop` | Home Manager standalone | yes |
+| Linux CLI / headless | `linux-cli` | Home Manager standalone | no |
+| macOS (Apple Silicon) | `macos` | nix-darwin + Home Manager + Homebrew casks | yes |
+| WSL2 | `wsl` | Home Manager standalone, no Windows-side management | no |
 
-`gui` defaults to true on `macos`/`linux-desktop` and false on `linux-cli`/`wsl`;
-override it in `personal.yaml` if your machine differs.
+Native Windows is not supported; use WSL2. Override `gui` in `personal.yaml`
+when a machine differs from its profile's default.
 
-## First-time setup flow
+## How it fits together
 
-After `ops/install.sh` (or `sys-install`) has run once, the `sys-*` command
-wrappers are deployed to `~/.local/bin` (from `home/dot_local/bin/`) and work
-from any shell. They are **not** available before that first install.
+The tools own parallel concerns; they are not a pipeline.
 
-```bash
-sys-install              # 1. apps + CLI + dotfiles + hooks (unattended, no sudo, idempotent)
-sudo sys-setup --apply   # 2. NixOS only, once: SYSTEM layer (fish login shell, trusted-users,
-                         #    declarative GC) + nixos-rebuild switch. Preview without sudo: sys-setup
-exec fish                # 3. start a new shell so the login shell applies
-sys-readiness            # 4. confirm — done when it prints ALL SET (exit 0)
+```mermaid
+flowchart TB
+  ops["ops/*.sh · sys-* commands<br/>install · update · cleanup · readiness"]
+  ops --> chezmoi["chezmoi<br/>dotfiles and templates"]
+  ops --> hm["Nix flake + Home Manager<br/>CLI packages, user services"]
+  ops --> mise["mise<br/>runtimes and repo tasks"]
+  ops --> darwin["nix-darwin + Homebrew<br/>macOS system and GUI apps"]
+  ops --> nixos["sys-setup<br/>NixOS system layer"]
+  lefthook["Lefthook<br/>secret scan, identity guard, validation"] -. guards commits .-> ops
 ```
 
-`sys-readiness` always tells you where you stand: `ALL SET` = done; `system
-rebuild pending` = run step 2; `NOT READY` = run step 1. On non-NixOS hosts step
-2 is a no-op and `sys-install` alone reaches `ALL SET`.
+Rationale and boundaries: [`tool-ownership.md`](docs/architecture/tool-ownership.md).
 
-## Daily commands
+## Commands
 
-| Command | Mutates? | Purpose |
-|---------|:--------:|---------|
-| `sys-readiness` | no | Check whether the host is fully configured |
-| `sys-update` | yes | Update apps, CLI packages, dotfiles, and hooks (aborts on a dirty repo; `--allow-dirty` overrides) |
-| `sys-update rollback` | yes | Undo the last update: previous Home Manager generation + `flake.lock` |
-| `sys-update-log` | no | Read the log of the most recent update run |
-| `bash ops/update-all.sh` | no | Report-only: show the full update plan |
-| `sys-cleanup` | yes | De-dup Nix store + prune caches (keeps all rollbacks) |
-| `sys-cleanup --gc` | yes | Also remove aged generations (keeps recent rollbacks) |
-| `mise run sync` | no | Preview pending dotfile changes |
-| `mise run sync:apply` | yes | Snapshot `$HOME`, then apply chezmoi + HM/darwin + mise + VS Code extensions + lefthook |
-| `mise run apply` | yes | chezmoi-only apply (no Nix/mise side effects) |
-| `mise run vscode:extensions:dry-run` | no | Preview missing curated VS Code extensions |
-| `mise run vscode:extensions` | yes | Install curated VS Code extensions |
-| `mise run doctor` | no | Local health check |
-| `mise run repo:check` | no | doctor + validator + (optional) nix flake check |
+| Command | Changes things? | What it does |
+|---------|:---------------:|--------------|
+| `sys-readiness` | no | Is this host fully configured? |
+| `bash ops/update-all.sh` | no | Report the full update plan |
+| `sys-update` | **yes** | Update apps, CLI packages, dotfiles and hooks |
+| `sys-update rollback` | **yes** | Restore the previous Home Manager generation + `flake.lock` |
+| `sys-update-log` | no | Show the last update run's log (fish) |
+| `sys-setup` / `sudo sys-setup --apply` | no / **yes** | Preview / apply the NixOS system layer and rebuild |
+| `sys-cleanup` | **yes** | De-dup the Nix store and prune caches; keeps all rollbacks |
+| `sys-cleanup --gc` | **yes** | Also remove aged generations; keeps recent rollbacks |
+| `mise run sync` / `sync:apply` | no / **yes** | Preview / snapshot + apply chezmoi, HM/darwin, mise, VS Code extensions, Lefthook |
+| `mise run apply` | **yes** | chezmoi only, no Nix or mise side effects |
+| `mise run doctor` / `repo:check` | no | Health check / doctor + validator + optional flake check |
+| `bash ops/uninstall.sh [--apply]` | no / **yes** | Report / remove; never removes Nix or snapshots |
 
-Each `sys-*` is a thin wrapper over a `ops/*.sh` with `mise run` equivalents
-(`install` / `update:apply` / `cleanup:apply` / `readiness`). Optional CLI extras
-(dive / fx / navi / glow / gum): `mise run tools:optional:install` and
-`mise run tools:optional:list`.
+Each `sys-*` command wraps an `ops/*.sh` script and has a `mise run` equivalent
+(`install`, `update:apply`, `cleanup:apply`, `readiness`). Optional extras
+(dive, fx, navi, glow, gum): `mise run tools:optional:install`.
 
-## Safety model
+`sys-readiness` is opinionated: on NixOS it also expects fish as the login
+shell, a system GC timer, the `Europe/London` time zone and Tailscale.
 
-| Command | Mutates system/home? | Notes |
-|---------|:--------------------:|-------|
-| `DRY_RUN=1 bash ops/install.sh` | no | Preview install |
-| `bash ops/install.sh` | yes | Installs and applies config |
-| `bash ops/bootstrap.sh` | no | Dry-run by default |
-| `bash ops/bootstrap.sh --yes` | yes | Installs and applies config |
-| `sys-readiness` | no | Read-only status check |
-| `sys-setup` | no | Preview NixOS system setup |
-| `sudo sys-setup --apply` | yes | Applies NixOS system config |
-| `bash ops/update-all.sh` | no | Report only: the update plan |
-| `sys-update` | yes | Updates configured tools and dotfiles (preflight must pass first) |
-| `sys-update rollback` | yes | Restores the previous generation + lock |
-| `sys-cleanup` | yes | Safe cleanup (keeps rollbacks) |
-| `sys-cleanup --gc` | yes | Removes older generations |
-| `bash ops/uninstall.sh` | no | Report only |
-| `bash ops/uninstall.sh --apply` | yes | Applies uninstall actions |
+## Recovery
 
-Before applying dotfiles, the scripts snapshot your home directory under
-`~/.local/state/dotfiles-snapshots/<UTC timestamp>/`. `uninstall.sh` never
-removes Nix itself and never deletes those snapshots.
+What the safety net covers, and what it does not:
 
-## Tool ownership
-
-| Tool | Owns |
-|------|------|
-| chezmoi | Dotfiles and templated home-directory files |
-| Nix flake | Host definitions and package modules |
-| Home Manager | CLI packages, shell tools, user services |
-| nix-darwin | macOS system-level configuration |
-| Homebrew | macOS GUI apps and casks |
-| mise | Runtime versions and repo tasks |
-| Lefthook | Git hooks (no-personal-yaml guard + validate-config) |
-| shell scripts | Bootstrap, setup, update, cleanup, validation |
-
-Full rationale: [`docs/architecture/tool-ownership.md`](docs/architecture/tool-ownership.md).
+- **Snapshots cover chezmoi-managed files only**, copied to
+  `~/.local/state/dotfiles-snapshots/<UTC timestamp>/` with a `MANIFEST.txt`.
+  They are not a backup of `$HOME`. Restore by hand:
+  `cp -a <snapshot>/. ~/`.
+- **`sys-update` refuses to start** on a dirty worktree (`--allow-dirty`
+  overrides) or when a managed file was edited by hand: port the edit into
+  `home/`, or let the repo win with `--force`.
+- **`sys-update rollback`** restores the previous Home Manager generation and
+  `flake.lock`, and prints the snapshot path for dotfiles, which you restore
+  manually.
+- **Cleanup keeps rollbacks.** `sys-cleanup` never removes generations;
+  `--gc` removes only those older than `KEEP_DAYS`.
 
 ## Repository layout
 
+<details>
+<summary><strong>Directories and root config files</strong></summary>
+
 | Path | Purpose |
 |------|---------|
-| `home/` | chezmoi source tree for dotfiles and app configs. `home/personal.yaml.example` is committed; real `home/.chezmoidata/personal.yaml` is gitignored. |
-| `nix/` | Nix flake + Home Manager modules per host profile. `nix/flake.nix` exposes `homeConfigurations.{linux-desktop,linux-cli,wsl,macos}` and `darwinConfigurations.macos`. |
-| `ops/` | Repo-owned install, setup, update, cleanup, validation, hooks (`ops/hooks/`), project helpers (`ops/projects/`), and Unix setup (`ops/unix/`). |
-| `docs/` | Canonical documentation: getting started, guides, reference, plans, research. Start at `docs/index.md`. |
-| `repo-docs/` | Legacy docs still read by `ops/` scripts (`doctor`, `validate-config`, package-matrix helpers). Moves once those scripts are updated. |
-| `mise.toml` | Repo task definitions. Tool versions are per-user in `home/dot_config/mise/config.toml.tmpl`. |
-| `.lefthook.yml` | Git hook configuration. |
+| `home/` | chezmoi source tree. `personal.yaml.example` is tracked; the real `.chezmoidata/personal.yaml` is gitignored. |
+| `nix/` | Flake and Home Manager modules. Exposes `homeConfigurations.{linux-desktop,linux-cli,wsl,macos}` and `darwinConfigurations.macos`. |
+| `ops/` | Install, setup, update, cleanup and validation scripts, Git hooks (`ops/hooks/`), project helpers. |
+| `tests/bash/` | Bats suites for the `ops/` scripts. |
+| `docs/` | Canonical documentation. Start at [`docs/index.md`](docs/index.md). |
+| `repo-docs/` | Legacy docs still read by `ops/` scripts; moves once those are updated. |
+| `mise.toml` / `.lefthook.yml` | Repo tasks / Git hooks. Per-user tool versions live in `home/dot_config/mise/config.toml.tmpl`. |
 
-Style/reference configs that ship for downstream projects (formatting rules,
-not runtime behaviour): `.editorconfig`, `.prettierrc.json`, `.eslintrc.json`,
-`.stylelintrc.json`, and `.gitattributes` (LF/CRLF policy).
+`.editorconfig`, `.prettierrc`, `.eslintrc.json`, `.stylelintrc.json` and
+`.gitattributes` are style references for downstream projects, not runtime
+behaviour.
 
-## Validation
-
-```bash
-sys-readiness                  # "am I all set?" (read-only)
-bash ops/doctor.sh         # or: mise run doctor
-bash ops/validate-config.sh
-mise run repo:check
-```
-
-A healthy setup passes readiness and repo validation.
-
-## Uninstall
-
-```bash
-bash ops/uninstall.sh             # report only
-bash ops/uninstall.sh --apply     # actually run
-```
+</details>
 
 ## Troubleshooting
 
-| Problem | Check |
-|---------|-------|
+<details>
+<summary><strong>Common problems</strong></summary>
+
+| Problem | Fix |
+|---------|-----|
 | `sys-*` command not found | Run `bash ops/install.sh`, then open a new shell |
-| Shell did not change to fish | Run `exec fish` or reopen the terminal |
-| Readiness says `system rebuild pending` | Run `sudo sys-setup --apply` (NixOS) |
-| Readiness says `NOT READY` | Run `sys-install`, then `sys-readiness` |
-| macOS GUI apps missing | Check Homebrew / nix-darwin setup |
-| WSL2 GUI missing | Expected; WSL2 is CLI/dev only |
+| Shell did not change to fish | `exec fish`, or reopen the terminal; on NixOS run `sudo sys-setup --apply` |
+| Readiness says `system rebuild pending` | `sudo sys-setup --apply` (NixOS) |
+| Readiness says `NOT READY` | Re-run `sys-install`, then `sys-readiness` |
+| `sys-update` stops on hand-edited files | Port the edit into `home/`, or `sys-update --force` to discard it |
+| macOS GUI apps missing | Check the Homebrew / nix-darwin setup |
+| WSL2 GUI missing | Expected; WSL2 is CLI only |
 
-## Extended documentation
+</details>
 
-- Install + maintenance guide: [`docs/getting-started/install.md`](docs/getting-started/install.md)
-- Cold-start runbook: [`docs/getting-started/bootstrap.md`](docs/getting-started/bootstrap.md)
-- NixOS specifics: [`docs/platforms/nixos/install.md`](docs/platforms/nixos/install.md)
-- System rebuild (`nixos-rebuild`, when & how): [`docs/platforms/nixos/rebuild.md`](docs/platforms/nixos/rebuild.md)
-- Nix-specific bits & cross-distro replacements: [`docs/reference/nix-package-replacements.md`](docs/reference/nix-package-replacements.md)
+## Documentation
+
+| Read | For |
+|------|-----|
+| [`docs/index.md`](docs/index.md) | The documentation map, by task |
+| [`install.md`](docs/getting-started/install.md) | Install and maintenance guide |
+| [`bootstrap.md`](docs/getting-started/bootstrap.md) | Cold-start runbook |
+| [`nixos/install.md`](docs/platforms/nixos/install.md) · [`rebuild.md`](docs/platforms/nixos/rebuild.md) | NixOS specifics; when and how to run `nixos-rebuild` |
+| [`nix-package-replacements.md`](docs/reference/nix-package-replacements.md) | Nix-specific packages and cross-distro replacements |
+| [`SECURITY.md`](SECURITY.md) | Reporting a security issue |

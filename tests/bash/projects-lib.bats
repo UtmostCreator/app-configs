@@ -44,3 +44,21 @@ EOF
 @test "config template passes project_order through to the rendered file" {
     grep -q 'hasKey . "project_order"' "$REPO_ROOT/home/dot_config/projects/config.yaml.tmpl"
 }
+
+field() {
+    bash -c '. "$1/ops/projects/lib.sh"; proj_field "$2" "$3"' _ "$REPO_ROOT" "$1" "$2"
+}
+
+@test "proj_field reads a present key and is empty for a missing one" {
+    cat >"$PROJECTS_CONFIG" <<'EOF2'
+projects:
+  api: {dir: ~/a}
+EOF2
+    run field api dir
+    [ "$status" -eq 0 ]
+    [ "$output" = "~/a" ]
+
+    run field api missing
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}

@@ -40,7 +40,7 @@ case "$REPO_KEY" in
     ;;
 esac
 
-if [[ ! -d "$REPO_DIR/.git" ]]; then
+if [[ ! -e "$REPO_DIR/.git" ]]; then
   echo "[$REPO_NAME] repository not found at $REPO_DIR"
   exit 1
 fi

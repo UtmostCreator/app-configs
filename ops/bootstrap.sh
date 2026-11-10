@@ -212,7 +212,7 @@ if [[ -x "$REPO_ROOT/ops/vscode-extensions.sh" ]]; then
 fi
 
 # ─── 8. lefthook install ────────────────────────────────────────────────────
-if [[ -d "$REPO_ROOT/.git" ]]; then
+if [[ -e "$REPO_ROOT/.git" ]]; then
   if [[ "$MODE" == "dry-run" ]]; then
     if command -v lefthook >/dev/null 2>&1; then
       log "would: lefthook install"

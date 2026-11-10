@@ -555,7 +555,7 @@ if [[ "$STEP_FAILED" == 0 ]]; then
 fi
 
 # hooks ---------------------------------------------------------------------
-if [[ "$STEP_FAILED" == 0 ]] && have lefthook && [[ -d "$REPO_ROOT/.git" ]]; then
+if [[ "$STEP_FAILED" == 0 ]] && have lefthook && [[ -e "$REPO_ROOT/.git" ]]; then
   if ui_run "git hooks" sh -c "cd '$REPO_ROOT' && lefthook install"; then
     [[ "$MODE" == "apply" ]] && ui_ok "git hooks" "synced"
   else

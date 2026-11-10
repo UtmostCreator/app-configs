@@ -175,10 +175,10 @@ fi
 
 # ── 9. lefthook ─────────────────────────────────────────────────────────────
 step "lefthook (git hooks)"
-if [[ -d "$REPO_ROOT/.git" ]]; then
+if [[ -e "$REPO_ROOT/.git" ]]; then
   run sh -c "cd '$REPO_ROOT' && lefthook install"
 else
-  warn "no .git dir; skipping lefthook install"
+  warn "not a git checkout; skipping lefthook install"
 fi
 
 # ── 10. ssh-agent helper (non-WSL) ──────────────────────────────────────────

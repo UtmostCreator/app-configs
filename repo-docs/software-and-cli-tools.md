@@ -239,6 +239,7 @@ whole set on either OS. The owner of record is
 | Brave | **Nix** (official stable, repo package) | Homebrew cask `brave-browser@beta` | `gui.nix` / `darwin/homebrew.nix` |
 | Obsidian | **Nix** (`obsidian`) | Homebrew cask `obsidian` | `gui.nix` / `darwin/homebrew.nix` |
 | USB audio diagnostics (`lsusb`, `aplay`, `speaker-test`, `wpctl`, `pavucontrol`) | **Nix** (`usbutils`, `alsa-utils`, `wireplumber`, `pavucontrol`) | system / optional | `gui.nix`; see `docs/reference/ora4-audio.md` |
+| QDirStat, Double Commander, LocalSend, Czkawka | **Nix** (`qdirstat`, `doublecmd`, `localsend`, `czkawka`) | casks `grandperspective`, `nimble-commander`, `localsend` | `gui.nix` / `darwin/homebrew.nix`; options and paid alternatives in `docs/reference/app-options.yaml` |
 | IntelliJ IDEA CE | **excluded** (not shipped) | **excluded** (not shipped) | intentionally dropped for now; VS Code is the IDE |
 | Bruno | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
 | Sequel Ace, BBEdit, BetterDisplay, AeroSpace, Karabiner, Ice, AltTab, Stats, NoTunes, LinearMouse | **macOS-only** (no Linux equivalent shipped) | Homebrew cask | `nix/modules/darwin/homebrew.nix` |

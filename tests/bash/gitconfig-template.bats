@@ -111,3 +111,54 @@ render_gitconfig() {
     [ "$status" -eq 0 ]
     [ -z "$output" ]
 }
+
+@test "credential helper list is reset to empty" {
+    render_gitconfig '{"name":"Test User","email":"test@example.test","signingKey":""}'
+
+    run git config --file "$RENDERED" --get-all credential.helper
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
+
+@test "system-level credential helper is not called (osxkeychain prompts)" {
+    render_gitconfig '{"name":"Test User","email":"test@example.test","signingKey":""}'
+    local marker="$BATS_TEST_TMPDIR/helper-called"
+    local helper="$BATS_TEST_TMPDIR/fake-helper"
+    local system="$BATS_TEST_TMPDIR/system-gitconfig"
+    printf '#!/bin/sh\ntouch "%s"\n' "$marker" >"$helper"
+    chmod +x "$helper"
+    printf '[credential]\n\thelper = %s\n' "$helper" >"$system"
+    local input='protocol=https
+host=example.test
+'
+
+    # Control: without the managed global config the system helper runs.
+    GIT_CONFIG_SYSTEM="$system" GIT_CONFIG_GLOBAL=/dev/null GIT_TERMINAL_PROMPT=0 \
+        GIT_ASKPASS= SSH_ASKPASS= git credential fill <<<"$input" >/dev/null 2>&1 || true
+    [ -f "$marker" ]
+    rm -f "$marker"
+
+    GIT_CONFIG_SYSTEM="$system" GIT_CONFIG_GLOBAL="$RENDERED" GIT_TERMINAL_PROMPT=0 \
+        GIT_ASKPASS= SSH_ASKPASS= git credential fill <<<"$input" >/dev/null 2>&1 || true
+    [ ! -f "$marker" ]
+}
+
+@test "GitHub HTTPS URLs are rewritten to SSH" {
+    render_gitconfig '{"name":"Test User","email":"test@example.test","signingKey":""}'
+
+    run env GIT_CONFIG_SYSTEM=/dev/null GIT_CONFIG_GLOBAL="$RENDERED" \
+        git ls-remote --get-url https://github.com/owner/repo.git
+    [ "$status" -eq 0 ]
+    [ "$output" = "git@github.com:owner/repo.git" ]
+}
+
+@test "non-GitHub HTTPS URLs are left alone" {
+    render_gitconfig '{"name":"Test User","email":"test@example.test","signingKey":""}'
+
+    for url in https://gitlab.com/owner/repo.git https://gist.github.com/abc.git; do
+        run env GIT_CONFIG_SYSTEM=/dev/null GIT_CONFIG_GLOBAL="$RENDERED" \
+            git ls-remote --get-url "$url"
+        [ "$status" -eq 0 ]
+        [ "$output" = "$url" ]
+    done
+}

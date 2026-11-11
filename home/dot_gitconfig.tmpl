@@ -285,6 +285,22 @@
 [merge]
 	conflictstyle = zdiff3
 
+# SSH-only GitHub auth. An empty helper resets the helper list, so a
+# system-level helper (Homebrew Git's osxkeychain, which raised repeated
+# Keychain prompts after app updates) is never called. SSH key passphrases
+# still use the Keychain via ssh-add (dot_config/app-configs/ssh-agent.sh).
+# Helpers defined after this line or per URL (credential.<url>.helper) still
+# apply.
+[credential]
+	helper =
+
+# Send GitHub HTTPS Git URLs over SSH, so clones pasted as https:// never need
+# a password or token. Only matches https://github.com/ (not gist.github.com,
+# not the REST API). Public clones such as lazy.nvim plugins also go over SSH,
+# so they need a loaded key that GitHub knows.
+[url "git@github.com:"]
+	insteadOf = https://github.com/
+
 {{- if $useGitDelta }}
 [interactive]
 	diffFilter = delta --color-only

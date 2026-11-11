@@ -1,0 +1,247 @@
+# App options catalog: every candidate we reviewed, free or paid, per OS.
+#
+# This file is documentation only. Nothing reads it at build time. The install
+# owners stay the same:
+#   linux: nix/modules/home/gui.nix (Home Manager, linux-desktop host)
+#   macos: nix/modules/darwin/homebrew.nix (nix-darwin Homebrew casks)
+#   android: manual (not managed by this repo)
+#
+# Field meanings
+#   license   free     = no payment for full use (open source or freeware)
+#             freemium = usable free tier; some features need payment
+#             paid     = payment needed after a trial (one-time or subscription)
+#   status    installed   = declared in this repo; Nix or Homebrew installs it
+#             built-in    = ships with the OS or desktop; no declaration needed
+#             alternative = strong option, not installed (use it instead of
+#                           the installed pick if you prefer it)
+#             paid-option = worth paying for; install manually if you want it
+#             rejected    = reviewed and not recommended (see note)
+#   install   exact nixpkgs attribute or Homebrew cask/formula token
+#
+# Verified 2026-11-11: nixpkgs attributes against the pinned flake inputs,
+# cask tokens against https://formulae.brew.sh/api/cask/<token>.json.
+# Prices are left out on purpose because they change; check the vendor site.
+
+file_managers:
+  - name: Double Commander
+    license: free # GPL-2.0+
+    linux: { status: installed, install: doublecmd }
+    macos:
+      status: rejected
+      install: double-commander
+      note: Homebrew cask is disabled. Only a manual upstream .dmg would work,
+        which our unattended Homebrew setup cannot install.
+    why: Dual-pane, tabs, multi-rename, folder compare, SFTP. The strongest free
+      graphical file manager on Linux; keeps Nautilus for GNOME integration.
+
+  - name: Nimble Commander
+    license: free # GPL-3.0, open source since 2022
+    linux: { status: rejected, note: macOS only }
+    macos: { status: installed, install: nimble-commander }
+    why: Native, fast, keyboard-driven dual-pane manager with SFTP/FTP/WebDAV,
+      batch rename and archive browsing. Best free Finder replacement.
+
+  - name: Marta
+    license: free # freeware, closed source
+    linux: { status: rejected, note: macOS only }
+    macos:
+      status: alternative
+      install: marta
+      note: Configurable through a DSL and Lua plugins, but releases have been
+        rare since 0.8.x. Prefer Nimble Commander for an actively developed app.
+
+  - name: Yazi
+    license: free # MIT
+    linux: { status: installed, install: yazi }
+    macos: { status: installed, install: yazi }
+    why: Terminal file manager, already in nix/modules/home/cli.nix.
+
+  - name: Nautilus (GNOME Files)
+    license: free
+    linux: { status: built-in }
+    macos: { status: rejected, note: Linux only }
+
+  - name: Finder
+    license: free
+    linux: { status: rejected, note: macOS only }
+    macos: { status: built-in }
+
+  - name: ForkLift 4
+    license: paid # licence with a year of updates
+    linux: { status: rejected, note: macOS only }
+    macos:
+      status: paid-option
+      install: forklift
+      note: Best paid Finder replacement. Adds folder sync, remote editing
+        and S3/Backblaze/Google Drive on top of what Nimble Commander offers.
+
+  - name: Commander One
+    license: freemium # PRO pack unlocks FTP/SFTP, archives, themes
+    linux: { status: rejected, note: macOS only }
+    macos:
+      status: rejected
+      install: commander-one
+      note: The free tier lacks the remote and archive features that Nimble
+        Commander gives for free.
+
+  - name: Path Finder
+    license: paid # subscription
+    linux: { status: rejected, note: macOS only }
+    macos:
+      status: rejected
+      install: path-finder
+      note: Powerful but subscription-only. ForkLift covers the same ground.
+
+  - name: QSpace Pro
+    license: paid
+    linux: { status: rejected, note: macOS only }
+    macos: { status: rejected, install: qspace-pro, note: Multi-pane viewer; niche. }
+
+disk_analysers:
+  - name: QDirStat
+    license: free # GPL-2.0+
+    linux: { status: installed, install: qdirstat }
+    macos:
+      status: alternative
+      install: qdirstat
+      note: Community macOS port (needs macOS 13+). Choose it for a TreeSize/
+        WinDirStat-style tree on the Mac.
+    why: Directory tree with size bars, file-type stats, treemap and cleanup
+      actions. Closest match to TreeSize/WinDirStat.
+
+  - name: GrandPerspective
+    license: free # GPL-2.0; the Mac App Store build is a paid convenience copy
+    linux: { status: rejected, note: macOS only }
+    macos: { status: installed, install: grandperspective }
+    why: Maintained since 2005, current releases, treemap view. Chosen over
+      OpenDisk for track record. Needs macOS 14+.
+
+  - name: OpenDisk
+    license: free # MIT
+    linux: { status: rejected, note: macOS only }
+    macos:
+      status: alternative
+      install: opendisk
+      note: Newer DaisyDisk-style sunburst with a delete queue. Its speed claims
+        are developer-reported. Needs macOS 14+.
+
+  - name: MacDirStat
+    license: free # open source
+    linux: { status: rejected, note: macOS only }
+    macos:
+      status: rejected
+      install: macdirstat
+      note: Read-only and early (0.x); needs macOS 15+.
+
+  - name: Baobab (Disk Usage Analyzer)
+    license: free # GPL-2.0+
+    linux: { status: built-in, install: baobab, note: Ships with the GNOME desktop. }
+    macos: { status: rejected, note: Linux only }
+
+  - name: dust / gdu / ncdu
+    license: free
+    linux: { status: installed, install: dust, note: gdu and ncdu are alternatives. }
+    macos: { status: installed, install: dust }
+
+  - name: DaisyDisk
+    license: paid # one-time licence
+    linux: { status: rejected, note: macOS only }
+    macos:
+      status: paid-option
+      install: daisydisk
+      note: Most polished Mac analyser; its admin scan shows hidden system
+        space. GrandPerspective covers the core job for free.
+
+  - name: OmniDiskSweeper
+    license: free
+    linux: { status: rejected, note: macOS only }
+    macos: { status: rejected, install: omnidisksweeper, note: Plain list, no visualisation; few updates. }
+
+  - name: Disk Inventory X
+    license: free
+    linux: { status: rejected, note: macOS only }
+    macos: { status: rejected, install: disk-inventory-x, note: Homebrew cask disabled; unmaintained. }
+
+file_transfer:
+  - name: LocalSend
+    license: free # Apache-2.0
+    linux:
+      status: installed
+      install: localsend
+      note: Receiving needs TCP+UDP port 53317 open in the NixOS firewall
+        (system config, not Home Manager). For example, set
+        `programs.localsend.enable = true;` in /etc/nixos. Sending works without it.
+    macos: { status: installed, install: localsend }
+    android: { status: alternative, note: F-Droid or Google Play. }
+    why: AirDrop-style transfer between Linux, macOS, Android, iOS and Windows
+      on the local network. No account, no cloud.
+
+  - name: Syncthing
+    license: free # MPL-2.0
+    linux: { status: installed, install: syncthing, note: Personal profile only. }
+    macos: { status: alternative, install: syncthing-app }
+    android:
+      status: alternative
+      note: Use the maintained Syncthing-Fork. The official Android app was
+        archived in December 2024.
+    why: Continuous folder sync. Not a backup, because deletions propagate.
+
+  - name: KDE Connect / GSConnect
+    license: free
+    linux: { status: alternative, note: GSConnect is the GNOME Shell version. }
+    macos: { status: rejected, note: macOS build is still beta. }
+    android: { status: alternative }
+
+  - name: Transmit 5
+    license: paid
+    linux: { status: rejected, note: macOS only }
+    macos:
+      status: paid-option
+      install: transmit
+      note: Best Mac SFTP/S3 client. Nimble Commander or ForkLift cover most
+        remote file work.
+
+duplicate_finders:
+  - name: Czkawka / Krokiet
+    license: free # MIT
+    linux:
+      status: installed
+      install: czkawka
+      note: The package ships krokiet (Slint GUI, recommended), czkawka_gui
+        (GTK, legacy) and czkawka_cli.
+    macos:
+      status: alternative
+      install: czkawka
+      note: Homebrew formula, not a cask. Not added until the GUI is tested on
+        the Mac.
+    why: Duplicates, similar images and videos, empty folders, big files and
+      broken symlinks. Fast, multithreaded.
+
+backup:
+  - name: Restic / Kopia
+    license: free
+    linux: { status: alternative, install: restic }
+    macos: { status: alternative, install: restic }
+    note: Encrypted, versioned backups. Pick one and choose a backup target
+      before adding it here. Linux GUIs are pika-backup (Borg) and vorta.
+
+android:
+  # Not managed by this repo. Recorded so the paid/free choice is documented.
+  - name: MiXplorer
+    license: freemium # free on the official site/XDA; Play Store "Silver" is paid
+    android: { status: alternative }
+  - name: Solid Explorer
+    license: paid # trial, then one-time
+    android: { status: paid-option }
+  - name: Material Files
+    license: free # GPL-3.0
+    android: { status: alternative }
+  - name: Termux
+    license: free
+    android: { status: alternative, note: Install from F-Droid or GitHub; the Play build lags. }
+  - name: Obtainium
+    license: free
+    android: { status: alternative }
+  - name: Tasker
+    license: paid
+    android: { status: paid-option, note: Try Samsung Modes and Routines first. }

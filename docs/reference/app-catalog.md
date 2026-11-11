@@ -27,6 +27,10 @@ build exists, never installed on Linux.
 | Brave | Nix(GUI-Linux) official stable | cask `brave-browser@beta` | default browser; official release packaged by this repo |
 | Flameshot | Nix(GUI-Linux) | cask | screenshots |
 | Bruno | Nix(GUI-Linux) | cask | API client (Linux build exists) |
+| QDirStat / GrandPerspective | Nix(GUI-Linux) `qdirstat` | cask `grandperspective` | disk usage analyser (Linux also has GNOME Baobab) |
+| Double Commander / Nimble Commander | Nix(GUI-Linux) `doublecmd` | cask `nimble-commander` | dual-pane file manager |
+| LocalSend | Nix(GUI-Linux) | cask | LAN file transfer; Linux receive needs port 53317 open |
+| Czkawka / Krokiet | Nix(GUI-Linux) `czkawka` | — (formula exists, untested) | duplicate and similar-file finder |
 | IntelliJ IDEA CE | — (excluded) | — (excluded) | intentionally not shipped; VS Code is the IDE |
 | **Raycast** | **macOS-only** | cask | launcher — **not installed on Linux** |
 | **AeroSpace** | **macOS-only** | cask | tiling WM — **not installed on Linux** |
@@ -35,6 +39,11 @@ build exists, never installed on Linux.
 | BetterDisplay | macOS-only | cask | display control |
 | Karabiner-Elements | macOS-only | cask | keyboard remap |
 | Ice / AltTab / Stats / NoTunes / LinearMouse | macOS-only | cask (opt) | menu-bar/UX utilities |
+
+Every reviewed option for file management, disk analysis, transfer and
+duplicate finding, including **paid** ones (ForkLift, DaisyDisk, Transmit,
+Path Finder, ...), is in [`app-options.yaml`](app-options.yaml) with a
+free/freemium/paid label per OS and the reason it was picked or skipped.
 
 > **Why Raycast and AeroSpace are not on this Linux PC:** their nixpkgs
 > packages declare `meta.platforms = [ aarch64-darwin x86_64-darwin ]` only.

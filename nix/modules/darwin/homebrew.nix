@@ -52,6 +52,13 @@
       "karabiner-elements"
       "linearmouse"
 
+      # ── Files, storage and transfer ──────────────────────
+      # Free picks from docs/reference/app-options.yaml (paid options such
+      # as ForkLift and DaisyDisk are listed there, not installed).
+      "grandperspective" # disk usage treemap (macOS 14+)
+      "localsend" # LAN file transfer to Linux/Android/iOS
+      "nimble-commander" # dual-pane file manager
+
       # ── Menu bar and system utilities ────────────────────
       "flameshot"
       "jordanbaird-ice@beta"

@@ -35,6 +35,14 @@
       #           nix/modules/home/gnome-keybindings.nix). StartupWMClass is
       #           `keepassxc` (lowercase), so the keybinding passes it explicitly.
       #           macOS: add the keepassxc-org/tap or cask in a future slice.
+      # Files, storage and transfer. Free picks from
+      # docs/reference/app-options.yaml (paid alternatives are listed there).
+      # Baobab already ships with GNOME, so it is not declared here.
+      qdirstat # TreeSize/WinDirStat-style disk usage tree + treemap
+      doublecmd # dual-pane file manager (multi-rename, compare, SFTP)
+      localsend # LAN file transfer (macOS: cask). Receiving needs TCP+UDP
+      #           53317 open in the NixOS firewall (system config).
+      czkawka # duplicate/similar files; ships the `krokiet` GUI + czkawka_cli
       # The Vicinae launcher is provided by programs.vicinae in
       # nix/modules/home/vicinae.nix (CLI on PATH, autostart, extensions).
       # The GNOME Shell integration extension below stays a package here.

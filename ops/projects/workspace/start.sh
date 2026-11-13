@@ -7,8 +7,6 @@ source "$SCRIPT_DIR/config.sh"
 
 CONTAINER_NAME="$WS_REDIS_CONTAINER_NAME"
 WS_DIR="$WS_BACKEND_APP_DIR"
-COLIMA_LOG_DIR="$HOME/logs/colima"
-COLIMA_LOG_FILE="$COLIMA_LOG_DIR/colima-$(date +%F).log"
 
 docker_cli_hint() {
     if command -v brew >/dev/null 2>&1 && brew list --versions docker >/dev/null 2>&1; then
@@ -26,18 +24,8 @@ if ! command -v docker >/dev/null 2>&1; then
     exit 1
 fi
 
-# Restart Colima with explicit resources and VZ; keep a persistent command log.
-mkdir -p "$COLIMA_LOG_DIR"
-echo "Restarting Colima (cpu=2, memory=2GiB, vm-type=vz)..."
-{
-    printf '[%s] colima stop\n' "$(date '+%Y-%m-%d %H:%M:%S')"
-    colima stop
-} >>"$COLIMA_LOG_FILE" 2>&1 || true
-{
-    printf '[%s] colima start --cpu 2 --memory 2 --vm-type vz\n' "$(date '+%Y-%m-%d %H:%M:%S')"
-    colima start --cpu 2 --memory 2 --vm-type vz
-} >>"$COLIMA_LOG_FILE" 2>&1
-echo "Colima logs: $COLIMA_LOG_FILE"
+# Docker daemon: Colima VM on macOS, the running daemon elsewhere (WSL2).
+ws_ensure_docker
 
 # Ensure Redis container exists
 if ! docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then

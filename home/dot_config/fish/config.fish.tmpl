@@ -122,22 +122,34 @@ fish_add_path -g /opt/homebrew/opt/mysql-client/bin
 set -gx HERD_PHP_84_INI_SCAN_DIR "$HOME/Library/Application Support/Herd/config/php/84/"
 set -gx HERD_PHP_83_INI_SCAN_DIR "$HOME/Library/Application Support/Herd/config/php/83/"
 set -gx NODE_EXTRA_CA_CERTS "$HOME/Library/Application Support/Herd/config/valet/CA/LaravelValetCASelfSigned.pem"
+{{ end -}}
 
-# 1Password-backed integrations (all gated on `op` being signed in / present).
+# ─── 1Password-backed integrations (macOS and Linux/WSL2) ───────────────────
+# `op` comes from the Homebrew cask on macOS and from Nix on Linux (dev.nix).
 # NPM token: load only when already signed in (no startup prompt).
 if type -q op; and op whoami >/dev/null 2>&1
     set -gx NPM_TOKEN (op item get 'GitHub NPM Token' --fields label=token --reveal 2>/dev/null)
 end
 
-# composer wrapper: inject GitHub OAuth from 1Password for the Herd composer.
-function composer --description 'composer via 1Password-injected GitHub OAuth'
-    op run --env-file="$HOME/.config/1password/composer.env" -- sh -c '
+# composer wrapper: inject GitHub OAuth from 1Password. macOS wraps Herd's
+# composer; Linux/WSL2 wraps the Nix one. Without op or the env file it runs
+# composer unchanged.
+function composer --description 'composer with 1Password-injected GitHub OAuth when available'
+{{- if eq .chezmoi.os "darwin" }}
+    set -l real "$HOME/Library/Application Support/Herd/bin/composer"
+{{- else }}
+    set -l real (command -s composer)
+{{- end }}
+    if type -q op; and test -r "$HOME/.config/1password/composer.env"
+        op run --env-file="$HOME/.config/1password/composer.env" -- sh -c '
     export COMPOSER_AUTH="{\"github-oauth\":{\"github.com\":\"$GITHUB_COMPOSER_TOKEN\"}}"
     exec "$@"
-  ' sh "$HOME/Library/Application Support/Herd/bin/composer" $argv
+  ' sh "$real" $argv
+    else
+        $real $argv
+    end
 end
 
 function op-refresh --description 'sign into 1Password then reload fish config'
     op signin; and source "$HOME/.config/fish/config.fish"
 end
-{{- end }}

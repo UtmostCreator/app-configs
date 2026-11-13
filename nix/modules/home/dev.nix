@@ -154,6 +154,14 @@ in
     ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       pkgs.bubblewrap # bwrap: preferred Codex CLI Linux sandbox helper
       pkgs.mariadb # provides the `mysql` client; lighter than full mysql-client formula
+      # CLIs that macOS gets from Homebrew casks (darwin/homebrew.nix), so
+      # Linux and WSL2 match: `op` (NPM_TOKEN, composer wrapper, op-refresh in
+      # fish/zsh) and the GitHub Copilot CLI (`copilot`). Both unfree.
+      pkgs._1password-cli
+      pkgs.github-copilot-cli
+      # One ssh-agent per boot, passphrase asked once (conf.d/ssh-agent.fish
+      # prefers keychain; macOS uses the system Keychain instead).
+      pkgs.keychain
     ]
   # On macOS the `mysql` client comes from Homebrew `mysql-client`
   # (nix/modules/darwin/homebrew.nix), so skip mariadb there to avoid two

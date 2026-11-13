@@ -62,6 +62,14 @@ case "$HOST_PROFILE" in
   macos|linux-desktop|linux-cli|wsl) ;;
   *) fail "unsupported HOST_PROFILE: $HOST_PROFILE" ;;
 esac
+# Home Manager builds for the username in nix/vars/default.nix. A different
+# login user (common on WSL, where the distro asks for a new name) would only
+# fail later inside home-manager switch, so stop here with the fix.
+nix_user="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$REPO_ROOT/nix/vars/default.nix")"
+login_user="${USER:-$(id -un)}"
+if [[ -n "$nix_user" && "$login_user" != "$nix_user" ]]; then
+  fail "login user '$login_user' does not match username '$nix_user' in nix/vars/default.nix. Log in as '$nix_user' (WSL: create that user and set it as [user] default in /etc/wsl.conf), or change username and homeDirectory there."
+fi
 log "Repo:  $REPO_ROOT"
 log "Host:  $HOST_PROFILE"
 log "NixOS: $(is_nixos && echo yes || echo no)"
@@ -72,10 +80,10 @@ log "Mode:  $([[ "$DRY_RUN" == 1 ]] && echo dry-run || echo APPLY)"
 # treats the example identity as unset until the user replaces it.
 if [[ ! -f "$REPO_ROOT/home/.chezmoidata/personal.yaml" ]]; then
   if [[ -f "$REPO_ROOT/home/personal.yaml.example" ]]; then
-    warn "home/.chezmoidata/personal.yaml missing; seeding from example. Git identity remains unset until you edit it."
-    run mkdir -p "$REPO_ROOT/home/.chezmoidata"
-    [[ "$DRY_RUN" == 1 ]] || cp "$REPO_ROOT/home/personal.yaml.example" \
-      "$REPO_ROOT/home/.chezmoidata/personal.yaml"
+    warn "home/.chezmoidata/personal.yaml missing; seeding from example for host '$HOST_PROFILE'. Git identity remains unset until you edit it."
+    run bash "$REPO_ROOT/ops/seed-personal-yaml.sh" \
+      "$REPO_ROOT/home/personal.yaml.example" \
+      "$REPO_ROOT/home/.chezmoidata/personal.yaml" "$HOST_PROFILE"
   else
     fail "no personal.yaml and no example to seed from"
   fi

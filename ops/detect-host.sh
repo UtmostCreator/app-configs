@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Detect host profile: macos | linux-desktop | linux-cli | wsl
+# Detect host profile: macos | linux-desktop | linux-cli | wsl (= WSL2)
 #
 # Override the linux fallback with HOST_PROFILE_DEFAULT
 # (default: linux-desktop). Override the whole answer with HOST_PROFILE.
@@ -10,6 +10,23 @@
 #   HOST_PROFILE=wsl bash ops/detect-host.sh
 
 set -euo pipefail
+
+proc_version="${DETECT_HOST_PROC_VERSION:-/proc/version}"
+
+# --wsl-version: print 2 (WSL2), 1 (WSL1) or none. The repo supports WSL2
+# only: WSL1 has no real Linux kernel or systemd, so Nix and the Home Manager
+# user timers do not work there. WSL2 kernels say "microsoft-standard" (and
+# usually "WSL2"); WSL1 reports a fake 4.4.0-*-Microsoft kernel.
+if [[ "${1:-}" == --wsl-version ]]; then
+  if grep -qiE 'microsoft-standard|wsl2' "$proc_version" 2>/dev/null; then
+    echo 2
+  elif grep -qiE 'microsoft|wsl' "$proc_version" 2>/dev/null; then
+    echo 1
+  else
+    echo none
+  fi
+  exit 0
+fi
 
 if [[ -n "${HOST_PROFILE:-}" ]]; then
   case "$HOST_PROFILE" in
@@ -30,7 +47,7 @@ case "$(uname -s)" in
     ;;
   Linux)
     # DETECT_HOST_PROC_VERSION: test override for the kernel version file.
-    if grep -qiE 'microsoft|wsl' "${DETECT_HOST_PROC_VERSION:-/proc/version}" 2>/dev/null; then
+    if grep -qiE 'microsoft|wsl' "$proc_version" 2>/dev/null; then
       echo wsl
     else
       echo "${HOST_PROFILE_DEFAULT:-linux-desktop}"

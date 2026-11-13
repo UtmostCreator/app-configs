@@ -62,6 +62,11 @@ case "$HOST_PROFILE" in
   macos|linux-desktop|linux-cli|wsl) ;;
   *) fail "unsupported HOST_PROFILE: $HOST_PROFILE" ;;
 esac
+# The wsl profile means WSL2. Refuse WSL1 before installing anything.
+if [[ "$HOST_PROFILE" == wsl && "$(bash "$REPO_ROOT/ops/detect-host.sh" --wsl-version)" == 1 ]]; then
+  fail "WSL1 is not supported (no systemd, no real Linux kernel for Nix). Convert from PowerShell: wsl --set-version <distro> 2   (list distros: wsl --list --verbose)"
+fi
+
 # Home Manager builds for the username in nix/vars/default.nix. A different
 # login user (common on WSL, where the distro asks for a new name) would only
 # fail later inside home-manager switch, so stop here with the fix.

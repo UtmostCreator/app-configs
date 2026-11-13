@@ -57,7 +57,10 @@ switch (uname -s)
                     end
                 end
             end
-            if not ssh-add -l >/dev/null 2>&1
+            # 2 = agent unreachable; 1 = reachable but no identities, which
+            # the key loading below handles. Only a dead agent is replaced.
+            ssh-add -l >/dev/null 2>&1
+            if test $status -eq 2
                 umask 077
                 ssh-agent -s >$env_file
                 for line in (cat $env_file)

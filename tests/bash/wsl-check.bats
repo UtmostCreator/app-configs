@@ -12,6 +12,8 @@ setup() {
     export WSL_CHECK_PROC1_COMM="$BATS_TEST_TMPDIR/comm"
     export WSL_CHECK_REPO_ROOT="$HOME/app-configs"
     export WSL_CHECK_WINDOWS_PREFIX="$BATS_TEST_TMPDIR/mnt/"
+    printf 'Linux version 6.6.87.2-microsoft-standard-WSL2 #1 SMP\n' >"$BATS_TEST_TMPDIR/version"
+    export DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version"
 }
 
 check() { PATH="$1" run "$STUBS/bash" "$SCRIPT"; }
@@ -51,4 +53,15 @@ check() { PATH="$1" run "$STUBS/bash" "$SCRIPT"; }
 @test "missing clip.exe (interop off) is a TODO" {
     check "$STUBS"
     grep -q '^TODO .*clip.exe' <<<"$output"
+}
+
+@test "WSL2 kernel is reported OK" {
+    check "$STUBS"
+    grep -q '^OK WSL2' <<<"$output"
+}
+
+@test "WSL1 kernel is a TODO with the conversion command" {
+    printf 'Linux version 4.4.0-19041-Microsoft (Microsoft@Microsoft.com) #1237-Microsoft\n' >"$DETECT_HOST_PROC_VERSION"
+    check "$STUBS"
+    grep -q '^TODO .*WSL1.*wsl --set-version' <<<"$output"
 }

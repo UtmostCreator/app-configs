@@ -11,6 +11,12 @@ proc1_comm="${WSL_CHECK_PROC1_COMM:-/proc/1/comm}"
 repo_root="${WSL_CHECK_REPO_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 win_prefix="${WSL_CHECK_WINDOWS_PREFIX:-/mnt/}"
 
+case "$(bash "${BASH_SOURCE[0]%/*}/detect-host.sh" --wsl-version)" in
+  2) echo "OK WSL2 kernel" ;;
+  1) echo "TODO WSL1 detected (unsupported: no systemd or real kernel). From PowerShell: wsl --set-version <distro> 2" ;;
+  *) echo "TODO not a WSL kernel; this check is for WSL2 hosts" ;;
+esac
+
 # systemd runs the Home Manager user timers (AI CLI and MCP updates).
 if [[ "$(head -n1 "$proc1_comm" 2>/dev/null)" == systemd ]]; then
   echo "OK systemd is PID 1 (user services and timers run)"

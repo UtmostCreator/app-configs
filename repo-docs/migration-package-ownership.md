@@ -31,7 +31,7 @@ manually verified** against <https://search.nixos.org/packages> and
 | `bat` | Nix | `nix/modules/home/cli.nix` | |
 | `bats-core` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `bats`. |
 | `btop` | Nix | `nix/modules/home/cli.nix` | Config via chezmoi. |
-| `colima` | cask (macOS) / DROPPED (Linux/WSL) | `nix/modules/darwin/homebrew.nix` brews | macOS-only container runtime. Linux uses native Docker if needed. |
+| `colima` | Nix (all hosts) | `nix/modules/home/dev.nix` | Docker daemon VM on macOS. Installed on Linux/WSL too, but there native Docker Engine is the daemon (WSL: see `docs/platforms/wsl/setup.md`). |
 | `difftastic` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `difftastic`. |
 | `direnv` | **decision: DROPPED** | — | mise per-project env covers current `.envrc`-style use. Re-add as Nix if a specific mise gap appears. |
 | `docker` | Nix (Linux) / cask Docker Desktop (macOS) | `nix/modules/home/dev.nix` (Linux); macOS uses Docker Desktop cask or colima | CLI from nixpkgs `docker`; daemon source is host-specific. |
@@ -46,7 +46,7 @@ manually verified** against <https://search.nixos.org/packages> and
 | `mise` | nix-profile | `ops/bootstrap.sh` | Chicken-and-egg. Not in Home Manager. |
 | `mysql-client` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `mariadb-client` (provides `mysql`) or `mysql_client` per channel — verify before commit. |
 | `neovim` | Nix | `nix/modules/home/dev.nix` | Config tree under chezmoi (`home/dot_config/nvim/`). |
-| `pnpm` | mise | `home/dot_config/mise/config.toml.tmpl` | Per project runtime; not Nix. |
+| `pnpm` | Nix | `nix/modules/home/dev.nix` | Same version on every host; projects may still pin their own through mise. |
 | `ripgrep` | Nix | `nix/modules/home/cli.nix` | |
 | `ripgrep-all` | Nix | `nix/modules/home/cli.nix` | nixpkgs attribute is `ripgrep-all` (binary `rga`). |
 | `semgrep` | Nix | `nix/modules/home/dev.nix` | Verify `pkgs.semgrep` availability per channel; fallback `pipx` if missing. |
@@ -137,7 +137,9 @@ Optional add when actually used:
 
 - [x] Helper `ops/generate-package-matrix.sh` runs cleanly (no probe needed).
 - [x] Every TBD row resolved.
-- [x] PHP, Node, pnpm: ownership is **mise** (not Nix).
+- [x] PHP, Composer, Node 22, pnpm: ownership is **Nix** (`nix/modules/home/dev.nix`) so
+  macOS and WSL get the same versions. mise pins stay per project. On macOS,
+  Laravel Herd can shadow `php`/`composer`; check `command -v php`.
 - [x] `direnv`: dropped with note above; reversible later.
 - [x] macOS GUI apps: cask-only.
 - [x] Nix attribute names: verified against

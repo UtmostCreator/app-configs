@@ -1,6 +1,23 @@
-{ pkgs, lib, ... }:
 {
-  nix = {
+  pkgs,
+  lib,
+  config,
+  ...
+}:
+{
+  options.myConfig.nixClientAutoOptimise = lib.mkOption {
+    type = lib.types.bool;
+    default = true;
+    description = ''
+      Write auto-optimise-store into the user's nix.conf. It is a restricted
+      setting: the daemon ignores it, with a warning on every nix command,
+      unless the user is in trusted-users. NixOS gets trusted-users from
+      sys-setup; standalone hosts such as WSL2 Ubuntu do not, so they turn
+      this off and set it in /etc/nix/nix.conf instead if wanted.
+    '';
+  };
+
+  config.nix = {
     package = lib.mkDefault pkgs.nix;
 
     settings = {
@@ -8,6 +25,8 @@
         "nix-command"
         "flakes"
       ];
+    }
+    // lib.optionalAttrs config.myConfig.nixClientAutoOptimise {
       auto-optimise-store = true;
     };
 

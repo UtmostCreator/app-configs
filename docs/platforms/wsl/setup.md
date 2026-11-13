@@ -88,7 +88,7 @@ The WSL2 section checks:
 | SSH key passphrase | Keychain (`ssh-add --apple-use-keychain`) | one shared agent per boot (`ssh-agent.fish`: `keychain` if installed, else `~/.ssh/agent.env`) |
 | Docker daemon | Colima VM | Docker Engine in WSL, or Docker Desktop's WSL integration. Pick one. |
 | Opening URLs (`gh auth login`) | `open` | prints the URL; `wslu`/`wslview` is gone from nixpkgs (project discontinued) |
-| VS Code | macOS app | Windows app + Remote WSL; `code .` from the WSL shell |
+| VS Code | macOS app | Windows app + Remote WSL; `code .` from the WSL shell. User settings live on the Windows side (`%APPDATA%\Code\User`) and sync via Settings Sync; chezmoi does not write `~/.config/Code` on WSL because nothing reads it |
 | PHP / Composer | Nix, but Laravel Herd may shadow them | Nix |
 
 Do not run Colima inside WSL. It would start a VM inside the WSL VM. Docker

@@ -3,8 +3,13 @@
 Workflow:
 
 1. VS Code user settings + keybindings are chezmoi-managed at:
-   - Linux / WSL: `~/.config/Code/User/`
+   - Linux desktop: `~/.config/Code/User/`
    - macOS: `~/Library/Application Support/Code/User/`
+   - WSL2: not managed. VS Code is the Windows app + Remote-WSL, which reads
+     user settings from `%APPDATA%\Code\User` on Windows (keep them in sync
+     with Settings Sync); the WSL server only reads
+     `~/.vscode-server/data/Machine/settings.json`. `home/.chezmoiignore`
+     skips `~/.config/Code` on the `wsl` host profile.
 
    Sources live under `home/dot_config/Code/User/` and
    `home/Library/Application Support/Code/User/` in the repo. Both

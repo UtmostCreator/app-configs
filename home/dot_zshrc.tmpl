@@ -431,6 +431,29 @@ composer() {
 }
 # <<< composer 1password wrapper
 
+# >>> cli shortcuts (twin of ~/.config/fish/conf.d/cli.fish; keep equal)
+alias gst='git st'
+alias gco='git co'
+alias gl='git pull'
+alias gp='git push'
+alias gd='git diff'
+alias gau='git add -u'
+alias gaa='git add .'
+alias gai='git add -i'
+alias gcmsg='git commit -m'
+alias gti='git'
+alias it='git'
+alias pa='php artisan'
+alias pat='php artisan test'
+alias punit='./vendor/bin/phpunit'
+alias pint='./vendor/bin/pint'
+alias nr='npm run'
+alias ni='npm install'
+alias ll='eza -lah --git'
+alias lt='eza --tree -L 2'
+alias reload='exec zsh'
+# <<< cli shortcuts
+
 # Pin mise versions
 # eval "$(mise activate zsh)"
 export PATH="$HOME/.local/bin:$PATH"

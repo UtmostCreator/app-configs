@@ -45,13 +45,22 @@ Library/**
 {{- end }}
 
 {{- if eq .chezmoi.os "darwin" }}
-# Linux/WSL VS Code path excluded on macOS.
+# Linux VS Code path excluded on macOS.
 .config/Code
 .config/Code/**
 # Linux/WSL Ghostty XDG path excluded on macOS (macOS uses the
 # Library/Application Support/com.mitchellh.ghostty path instead).
 .config/ghostty
 .config/ghostty/**
+{{- end }}
+
+{{- if eq $hostProfile "wsl" }}
+# WSL2: VS Code is the Windows app + Remote-WSL. Windows VS Code reads its
+# user settings from %APPDATA%\Code\User (synced via Settings Sync) and the
+# WSL server reads ~/.vscode-server/data/Machine/settings.json, so nothing
+# ever reads ~/.config/Code here.
+.config/Code
+.config/Code/**
 {{- end }}
 
 {{- if or (eq $hostProfile "wsl") (eq $hostProfile "linux-cli") }}

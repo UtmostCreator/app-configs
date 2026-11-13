@@ -40,6 +40,17 @@ for t in node npm npx pnpm yarn corepack; do
   fi
 done
 
+# Docker: the CLI is from Nix; the daemon is Docker Engine in WSL2 or Docker
+# Desktop's WSL integration (never Colima here). Time-bound: a stale Desktop
+# socket can hang `docker info`.
+if command -v docker >/dev/null 2>&1; then
+  if timeout 5 docker info >/dev/null 2>&1; then
+    echo "OK Docker daemon reachable"
+  else
+    echo "TODO no Docker daemon: start Docker Engine (sudo systemctl start docker) or enable Docker Desktop's WSL integration"
+  fi
+fi
+
 # clipcopy (tmux copy mode) uses clip.exe, which needs Windows interop.
 if command -v clip.exe >/dev/null 2>&1; then
   echo "OK clip.exe reachable (clipboard copy works)"

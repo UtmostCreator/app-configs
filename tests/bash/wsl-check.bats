@@ -65,3 +65,17 @@ check() { PATH="$1" run "$STUBS/bash" "$SCRIPT"; }
     check "$STUBS"
     grep -q '^TODO .*WSL1.*wsl --set-version' <<<"$output"
 }
+
+@test "docker CLI without a reachable daemon is a TODO" {
+    printf '#!/bin/sh\nexit 1\n' >"$STUBS/docker"; chmod +x "$STUBS/docker"
+    ln -sf "$(command -v timeout)" "$STUBS/timeout"
+    check "$STUBS"
+    grep -q '^TODO .*Docker daemon' <<<"$output"
+}
+
+@test "docker with a reachable daemon is OK" {
+    printf '#!/bin/sh\nexit 0\n' >"$STUBS/docker"; chmod +x "$STUBS/docker"
+    ln -sf "$(command -v timeout)" "$STUBS/timeout"
+    check "$STUBS"
+    grep -q '^OK Docker daemon reachable' <<<"$output"
+}

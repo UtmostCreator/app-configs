@@ -1,0 +1,4 @@
+#!/bin/sh
+# topn [N]: count identical stdin lines, most frequent first (default 20).
+#   rg -o 'ERROR \w+' app.log | topn 10
+sort | uniq -c | sort -nr | head -n "${1:-20}"

@@ -267,6 +267,41 @@
 	# --- ripgrep: search the working tree fast (respects .gitignore) ---
 	# git rgrep <pattern> -> ripgrep across tracked files (falls back to git grep)
 	rgrep = "!f(){ if command -v rg >/dev/null 2>&1; then rg \"$@\"; else git grep -n \"$@\"; fi; }; f"
+
+	# =====================================================================
+	# Daily-loop shortcuts mined from ~27k commands of real shell history
+	# and personal runbooks (see docs/reference/cli-shortcuts.md)
+	# =====================================================================
+	# git s -> short status with branch line
+	s = status -sb
+	# Files changed vs HEAD: modified, staged, untracked; NUL-separated,
+	# repo-root relative. Feeds `rgc` (~/.local/bin).
+	changed = "!{ git diff --name-only -z --diff-filter=ACMR; git diff --cached --name-only -z --diff-filter=ACMR; git ls-files --others --exclude-standard -z; } | sort -zu"
+	# Preview a commit including new files: intent-to-add, then stat
+	dnew = "!git add -N . && git diff --stat"
+	# Default-branch workflows (origin/HEAD, else main):
+	# git sync [branch] -> update the default branch without leaving yours
+	sync = "!f(){ b=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##');  b=${1:-$b}; b=${b:-main}; if [ \"$(git branch --show-current)\" = \"$b\" ]; then git pull; else git fetch origin \"$b:$b\"; fi; }; f"
+	# git rbd -> rebase the current branch onto the fresh default branch
+	rbd = "!f(){ b=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##'); b=${b:-main}; git fetch origin \"$b\" && git rebase \"origin/$b\"; }; f"
+	# git nb <name> -> new branch from the fresh default branch
+	nb = "!f(){ [ -n \"${1:-}\" ] || { echo 'usage: git nb <branch>'; return 1; }; b=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##'); b=${b:-main}; git fetch origin \"$b\" && git switch --no-track -c \"$1\" \"origin/$b\"; }; f"
+	# Push without hooks (pre-push suites); -u is implied by push.autoSetupRemote
+	pnv = push --no-verify
+	pfnv = push --force-with-lease --no-verify
+	# git ppr [gh pr create args] -> push, then open a PR filled from commits
+	ppr = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; git push --no-verify && gh pr create --fill \"$@\"; }; f"
+	# git prreview -> PRs waiting for my review; git prfiles [N] -> PR file list
+	prreview = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh pr list --search 'is:open review-requested:@me' \"$@\"; }; f"
+	prfiles = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh pr diff --name-only \"$@\"; }; f"
+	# git merged-prs <base> [head] -> PR branches merged in a range (release notes)
+	merged-prs = "!f(){ git log \"${1:?usage: git merged-prs <base> [head]}..${2:-HEAD}\" --merges --grep='^Merge pull request #' --format=%s | sed -nE 's|^Merge pull request #[0-9]+ from [^/]+/(.+)$|\\1|p' | sort -u; }; f"
+	# Worktrees (wt is taken by whatchanged)
+	wta = worktree add
+	wtl = worktree list
+	wtp = worktree prune
+	# `git git status` (typed `git ` twice) just works
+	git = "!git"
 [core]
 {{- if $useGitDelta }}
 	pager = delta
@@ -284,6 +319,10 @@
 
 [merge]
 	conflictstyle = zdiff3
+
+# Mistyped subcommands (commi, stas, pul, ...) offer the fix and ask first.
+[help]
+	autocorrect = prompt
 
 # SSH-only GitHub auth. An empty helper resets the helper list, so a
 # system-level helper (Homebrew Git's osxkeychain, which raised repeated

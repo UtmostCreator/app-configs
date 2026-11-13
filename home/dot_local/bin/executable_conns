@@ -1,0 +1,7 @@
+#!/bin/sh
+# conns [N]: established TCP connections counted per remote IP (default 20).
+if command -v ss >/dev/null 2>&1; then
+  ss -Htn state established | awk '{print $NF}' | sed -E 's/:[0-9]+$//; s/^\[//; s/\]$//'
+else
+  netstat -an -p tcp | awk '$6 == "ESTABLISHED" {print $5}' | sed -E 's/\.[0-9]+$//'
+fi | topn "${1:-20}"

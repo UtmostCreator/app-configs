@@ -1,0 +1,7 @@
+#!/bin/sh
+# ports [PORT]: who is listening (all ports, or one). macOS and Linux/WSL2.
+#   ports        listening TCP/UDP sockets with owning process
+#   ports 5173   what holds port 5173
+if [ -n "${1:-}" ]; then exec lsof -nP -i :"$1"; fi
+if command -v ss >/dev/null 2>&1; then exec ss -lntup; fi
+exec lsof -nP -iTCP -sTCP:LISTEN

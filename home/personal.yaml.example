@@ -20,7 +20,8 @@ minimal: false
 # Renders git delta in .gitconfig (set false to disable).
 useGitDelta: true
 
-# Host profile selector. One of:
+# Host profile selector. ops/install.sh sets hostProfile and gui from the
+# detected host when it seeds this file (ops/seed-personal-yaml.sh). One of:
 #   macos          - macOS, GUI module on, karabiner on
 #   linux-desktop  - Linux desktop, GUI module on, primary Linux target
 #   linux-cli      - headless Linux / CLI server, no GUI

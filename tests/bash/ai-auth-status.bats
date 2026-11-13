@@ -11,6 +11,8 @@
 #
 # Run:  bats tests/bash/ai-auth-status.bats
 
+bats_require_minimum_version 1.5.0
+
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     SCRIPT="$REPO_ROOT/nix/modules/home/scripts/ai-auth-status.sh"
@@ -34,6 +36,14 @@ claude_expires_in_days() {
     jq -n --argjson ms "$(((NOW + $1 * 86400 + 3600) * 1000))" \
         '{claudeAiOauth: {accessToken: "sk-ant-oat-FAKE", refreshToken: "sk-ant-ort-FAKE",
                           expiresAt: 0, refreshTokenExpiresAt: $ms}}' >"$CLAUDE_CREDENTIALS"
+}
+
+# Stubs plus only the tools the script needs, so a notify-send or
+# powershell.exe installed on the test host cannot leak in.
+minimal_path() {
+    local p="$BATS_TEST_TMPDIR/bin" t
+    for t in bash jq timeout date base64 tr; do p+=":$(dirname "$(command -v "$t")")"; done
+    echo "$p"
 }
 
 b64url() { printf '%s' "$1" | base64 -w0 | tr '+/' '-_' | tr -d '='; }
@@ -117,6 +127,56 @@ codex_signed_in() {
     run bash "$SCRIPT" --notify
     [ "$status" -eq 0 ]
     grep -q 'notify-send .*Claude 3d left' "$CALLS"
+}
+
+@test "--notify writes the warning to stderr for the journal" {
+    claude_expires_in_days 3
+    run --separate-stderr bash "$SCRIPT" --notify
+    [ "$status" -eq 0 ]
+    [[ "$stderr" == *"Log in again"*"Claude 3d left"* ]]
+}
+
+@test "--notify falls back to a Windows toast when notify-send fails (WSL2)" {
+    # WSL2 usually has no notification daemon, so notify-send fails.
+    cat >"$BATS_TEST_TMPDIR/bin/notify-send" <<'EOF'
+#!/usr/bin/env bash
+echo "notify-send $*" >>"$CALLS"
+exit 1
+EOF
+    cat >"$BATS_TEST_TMPDIR/bin/powershell.exe" <<'EOF'
+#!/usr/bin/env bash
+echo "powershell.exe $*" >>"$CALLS"
+EOF
+    chmod +x "$BATS_TEST_TMPDIR/bin/"*
+    claude_expires_in_days 3
+    run bash "$SCRIPT" --notify
+    [ "$status" -eq 0 ]
+    grep -q '^powershell.exe .*Claude 3d left' "$CALLS"
+}
+
+@test "--notify quotes the message safely for PowerShell" {
+    rm "$BATS_TEST_TMPDIR/bin/notify-send"
+    cat >"$BATS_TEST_TMPDIR/bin/powershell.exe" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$@" >>"$CALLS"
+EOF
+    chmod +x "$BATS_TEST_TMPDIR/bin/powershell.exe"
+    claude_expires_in_days 3
+    PATH="$(minimal_path)" \
+        WINDOWS_POWERSHELL=/nonexistent run bash "$SCRIPT" --notify
+    [ "$status" -eq 0 ]
+    # The message reaches PowerShell only as single-quoted literals, never as
+    # code: no $(...) or double-quoted interpolation of the summary.
+    grep -qF "'Claude 3d left · Codex signed in'" "$CALLS"
+}
+
+@test "--notify without notify-send or PowerShell still exits 0 and logs" {
+    rm "$BATS_TEST_TMPDIR/bin/notify-send"
+    claude_expires_in_days 3
+    PATH="$(minimal_path)" \
+        WINDOWS_POWERSHELL=/nonexistent run --separate-stderr bash "$SCRIPT" --notify
+    [ "$status" -eq 0 ]
+    [[ "$stderr" == *"Claude 3d left"* ]]
 }
 
 # ── Home Manager wiring ─────────────────────────────────────────────────────

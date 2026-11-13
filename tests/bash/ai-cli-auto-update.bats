@@ -42,9 +42,20 @@ case "\$1" in
 esac
 EOF
     done
+    # Fake systemctl: `show -p LoadState` reports BACKGROUND_LOAD_STATE
+    # (default loaded); like the real one, try-restart on a unit that is not
+    # installed exits 5.
     cat >"$STUBS/systemctl" <<'EOF'
 #!/usr/bin/env bash
 echo "systemctl $*" >>"$CALLS"
+if [[ " $* " == *" show "* ]]; then
+  echo "${BACKGROUND_LOAD_STATE:-loaded}"
+  exit 0
+fi
+if [[ " $* " == *" try-restart "* && " $* " == *" claude-background-sessions.service "* \
+      && "${BACKGROUND_LOAD_STATE:-loaded}" == not-found ]]; then
+  exit 5
+fi
 exit "${FAIL_RESTART:-0}"
 EOF
     chmod +x "$STUBS"/*
@@ -98,6 +109,20 @@ codex_state() { cat "$XDG_STATE_HOME/codex-auto-update/installed-version"; }
     [ "$status" -ne 0 ]
     ! grep -q systemctl "$CALLS"
     [ "$(claude_state)" = 2.1.300 ]
+}
+
+@test "claude: a host without the background-sessions unit still applies the update" {
+    # Regression: try-restart on a unit that is not installed exits 5, so
+    # under set -e the run failed after every successful update, never
+    # recorded the version, and the unit showed as failed every hour.
+    echo 2.1.319 >"$VERSION_FILE"
+    echo 2.1.320 >"$NEXT_VERSION_FILE"
+    export BACKGROUND_LOAD_STATE=not-found
+    run bash "$CLAUDE_SCRIPT"
+    [ "$status" -eq 0 ]
+    ! grep -q 'try-restart.*claude-background-sessions.service' "$CALLS"
+    grep -qF "systemctl --user try-restart claude-remote-control@*.service" "$CALLS"
+    [ "$(claude_state)" = 2.1.320 ]
 }
 
 @test "claude: a failed restart is retried on the next run" {

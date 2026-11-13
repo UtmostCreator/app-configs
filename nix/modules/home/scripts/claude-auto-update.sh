@@ -31,8 +31,17 @@ fi
 
 echo "Applying Claude Code $current to supervised sessions (previously: ${applied:-none})"
 # try-restart only touches running units; both kinds keep conversation state
-# across a process restart. The glob covers every project instance.
-systemctl --user try-restart claude-background-sessions.service 'claude-remote-control@*.service'
+# across a process restart. The glob covers every project instance and matches
+# nothing when none run. claude-background-sessions.service is optional and not
+# defined in this repo; try-restart on a unit that is not installed exits 5,
+# which would fail every run on hosts without it, so it is only named when
+# systemd knows it.
+units=('claude-remote-control@*.service')
+background="claude-background-sessions.service"
+if [[ "$(systemctl --user show -p LoadState --value "$background" 2>/dev/null)" == loaded ]]; then
+  units=("$background" "${units[@]}")
+fi
+systemctl --user try-restart "${units[@]}"
 
 printf '%s\n' "$current" >"$applied_file.tmp"
 mv "$applied_file.tmp" "$applied_file"

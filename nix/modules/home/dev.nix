@@ -228,7 +228,14 @@ in
           pkgs.util-linux
         ]
       }:${config.home.profileDirectory}/bin";
-      ExecStart = "${pkgs.bash}/bin/bash ${config.home.homeDirectory}/Projects/app-configs/ops/update-codebase-memory-mcp.sh --apply";
+      # Find the repo through chezmoi's source dir (the sys-* helpers do the
+      # same), not a fixed ~/Projects/app-configs: README installs to
+      # ~/app-configs. chezmoi is on PATH via the profile bin dir above.
+      # Logic in scripts/codebase-memory-mcp-update.sh (tested by
+      # tests/bash/bootstrap-safety.bats).
+      ExecStart = "${pkgs.writeShellScript "codebase-memory-mcp-update" (
+        builtins.readFile ./scripts/codebase-memory-mcp-update.sh
+      )}";
       TimeoutStartSec = "30min";
     };
   };

@@ -18,9 +18,8 @@ docker_cli_hint() {
     fi
 }
 
-# Start Herd
-echo "Ensuring Herd services are running..."
-herd start
+# Start Herd (skipped off macOS)
+ws_ensure_herd
 
 if ! command -v docker >/dev/null 2>&1; then
     echo "[ERROR] $(docker_cli_hint)"

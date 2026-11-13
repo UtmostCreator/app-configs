@@ -15,7 +15,7 @@ available in Git and is intentionally not duplicated here.
 | --- | --- | --- |
 | Linux compositor | Both `docs/plans/migration/overview.md` (Niri) and `docs/plans/hyprland-migration.md` remain active alternatives. | Choose Niri or Hyprland before changing the desktop architecture; then retire the rejected plan and comparison doc. |
 | macOS validation | `darwin-rebuild check --flake ./nix#macos` requires a macOS host. | Run before production macOS use. |
-| WSL validation | `home-manager switch --flake ./nix#wsl --dry-run` has not been rerun on a WSL host. | Run on the next supported WSL host. |
+| WSL validation | `nix build ./nix#homeConfigurations.wsl.activationPackage` builds (checked 2026-11-13 on x86_64-linux). Activation on a real WSL host is still unverified. | On the next WSL host, follow `docs/platforms/wsl/setup.md` and run `sys-readiness` (includes `ops/wsl-check.sh`). |
 
 ## Refactor audit
 

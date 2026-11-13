@@ -28,9 +28,17 @@ for t in nix home-manager chezmoi mise lefthook git; do
   if have "$t"; then ok "$t present"; else bad "$t missing (run: sys-install)"; fi
 done
 
+HOST_PROFILE="${HOST_PROFILE:-$(bash "$REPO_ROOT/ops/detect-host.sh" 2>/dev/null || echo unknown)}"
+
 hdr "Applications & CLI (sample of the declared set)"
-for t in fish nvim rg fd bat eza fzf zoxide starship atuin tmux lazygit delta \
-         gh jq yq node npm php docker stripe firefox code ghostty bruno flameshot; do
+sample=(fish nvim rg fd bat eza fzf zoxide starship atuin tmux lazygit delta
+        gh jq yq node npm php docker stripe)
+# GUI apps are only declared for GUI hosts (gui.nix / Homebrew casks).
+case "$HOST_PROFILE" in
+  macos|linux-desktop) sample+=(firefox code ghostty bruno) ;;
+esac
+[[ "$HOST_PROFILE" == linux-desktop ]] && sample+=(flameshot)
+for t in "${sample[@]}"; do
   if have "$t"; then ok "$t"; else note "$t not on PATH (run: sys-update)"; fi
 done
 
@@ -53,6 +61,16 @@ if [[ "$n" -gt 0 ]]; then ok "$n git aliases active"; else note "no git aliases 
 hdr "Health checks"
 if bash "$REPO_ROOT/ops/doctor.sh" >/dev/null 2>&1; then ok "doctor passes"; else bad "doctor failed (run: bash ops/doctor.sh)"; fi
 if bash "$REPO_ROOT/ops/validate-config.sh" >/dev/null 2>&1; then ok "validate-config passes"; else bad "validate-config failed"; fi
+
+if [[ "$HOST_PROFILE" == wsl ]]; then
+  hdr "WSL2"
+  while read -r level msg; do
+    case "$level" in
+      OK) ok "$msg" ;;
+      *) note "$msg" ;;
+    esac
+  done < <(bash "$REPO_ROOT/ops/wsl-check.sh")
+fi
 
 rebuild_needed=0
 if is_nixos; then

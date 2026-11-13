@@ -68,3 +68,34 @@ run_with_os() {
     [ -f "$MARKS/herd" ]
     [[ "$output" != *"Skipping Herd"* ]]
 }
+
+# ── Docker daemon: Colima VM on macOS, existing daemon elsewhere (WSL2) ─────
+
+@test "ws-stack start on Linux uses the running Docker daemon, never Colima" {
+    stub colima "touch '$MARKS/colima'; exit 1"
+    run_with_os Linux "$WS/stack/start.sh"
+    [ "$status" -eq 0 ]
+    [ ! -f "$MARKS/colima" ]
+    [[ "$output" == *"Using the running Docker daemon"* ]]
+    [[ "$output" == *"Redis container is running"* ]]
+}
+
+@test "workspace start on Linux without a Docker daemon stops with a hint" {
+    stub colima "touch '$MARKS/colima'; exit 1"
+    stub docker 'case "$1" in info) exit 1 ;; esac; exit 0'
+    run_with_os Linux "$WS/start.sh"
+    [ "$status" -ne 0 ]
+    [ ! -f "$MARKS/colima" ]
+    [[ "$output" == *"No Docker daemon"* ]]
+    [[ "$output" == *"docs/platforms/wsl/setup.md"* ]]
+}
+
+@test "ws-stack start on macOS still restarts Colima with vz" {
+    stub open 'exit 0'
+    stub herd 'exit 0'
+    stub colima "echo \"\$*\" >>'$MARKS/colima'"
+    run_with_os Darwin "$WS/stack/start.sh"
+    [ "$status" -eq 0 ]
+    grep -qx 'stop' "$MARKS/colima"
+    grep -qx 'start --cpu 2 --memory 2 --vm-type vz' "$MARKS/colima"
+}

@@ -9,8 +9,6 @@ CONTAINER_NAME="$WS_REDIS_CONTAINER_NAME"
 WS_DIR="$WS_BACKEND_APP_DIR"
 LOG_DIR="$WS_LOG_DIR"
 LOG_FILE="$WS_BACKEND_LOG_FILE"
-COLIMA_LOG_DIR="$HOME/logs/colima"
-COLIMA_LOG_FILE="$COLIMA_LOG_DIR/colima-$(date +%F).log"
 
 for arg in "$@"; do
     case "$arg" in
@@ -30,17 +28,8 @@ done
 
 ws_ensure_herd --app
 
-mkdir -p "$COLIMA_LOG_DIR"
-echo "Restarting Colima (cpu=2, memory=2GiB, vm-type=vz)..."
-{
-    printf '[%s] colima stop\n' "$(date '+%Y-%m-%d %H:%M:%S')"
-    colima stop
-} >>"$COLIMA_LOG_FILE" 2>&1 || true
-{
-    printf '[%s] colima start --cpu 2 --memory 2 --vm-type vz\n' "$(date '+%Y-%m-%d %H:%M:%S')"
-    colima start --cpu 2 --memory 2 --vm-type vz
-} >>"$COLIMA_LOG_FILE" 2>&1
-echo "Colima logs: $COLIMA_LOG_FILE"
+# Docker daemon: Colima VM on macOS, the running daemon elsewhere (WSL2).
+ws_ensure_docker
 
 if ! docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
     echo "Creating Redis container..."

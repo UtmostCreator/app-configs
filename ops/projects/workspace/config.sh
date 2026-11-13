@@ -74,6 +74,37 @@ ws_ensure_herd() {
 	herd start
 }
 
+# ws_ensure_docker: make sure a Docker daemon is reachable. macOS restarts
+# the Colima VM (cpu=2, memory=2GiB, vm-type=vz) and logs to ~/logs/colima.
+# Other hosts (WSL2, Linux) use the daemon that is already running (Docker
+# Engine or Docker Desktop's WSL integration); Colima there would be a VM
+# inside a VM, and vz is macOS-only.
+ws_ensure_docker() {
+	if [[ "$(uname -s)" != Darwin ]]; then
+		if docker info >/dev/null 2>&1; then
+			echo "Using the running Docker daemon (Colima is macOS-only here)."
+			return 0
+		fi
+		echo "[ERROR] No Docker daemon reachable. Start Docker Engine (sudo systemctl start docker)" \
+			"or enable Docker Desktop's WSL integration; see docs/platforms/wsl/setup.md." >&2
+		return 1
+	fi
+	local log_dir="$HOME/logs/colima"
+	local log_file
+	log_file="$log_dir/colima-$(date +%F).log"
+	mkdir -p "$log_dir"
+	echo "Restarting Colima (cpu=2, memory=2GiB, vm-type=vz)..."
+	{
+		printf '[%s] colima stop\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+		colima stop
+	} >>"$log_file" 2>&1 || true
+	{
+		printf '[%s] colima start --cpu 2 --memory 2 --vm-type vz\n' "$(date '+%Y-%m-%d %H:%M:%S')"
+		colima start --cpu 2 --memory 2 --vm-type vz
+	} >>"$log_file" 2>&1
+	echo "Colima logs: $log_file"
+}
+
 web_frontend_export_netlify_env() {
 	local app_dir="${1:-$WS_FRONTEND_APP_DIR}"
 	local key=""

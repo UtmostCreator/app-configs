@@ -29,7 +29,8 @@ case "$(uname -s)" in
     echo macos
     ;;
   Linux)
-    if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
+    # DETECT_HOST_PROC_VERSION: test override for the kernel version file.
+    if grep -qiE 'microsoft|wsl' "${DETECT_HOST_PROC_VERSION:-/proc/version}" 2>/dev/null; then
       echo wsl
     else
       echo "${HOST_PROFILE_DEFAULT:-linux-desktop}"

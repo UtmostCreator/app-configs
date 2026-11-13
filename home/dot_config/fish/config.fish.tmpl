@@ -124,6 +124,18 @@ set -gx HERD_PHP_83_INI_SCAN_DIR "$HOME/Library/Application Support/Herd/config/
 set -gx NODE_EXTRA_CA_CERTS "$HOME/Library/Application Support/Herd/config/valet/CA/LaravelValetCASelfSigned.pem"
 {{ end -}}
 
+{{ if ne .chezmoi.os "darwin" -}}
+# ─── WSL2: open URLs and files with Windows ─────────────────────────────────
+# wsl-open (~/.local/bin) replaces macOS `open` and the removed wslview, so
+# gh auth login / gh browse / `open .` reach the Windows default app.
+if set -q WSL_DISTRO_NAME; or set -q WSL_INTEROP
+    set -gx BROWSER wsl-open
+    function open --description 'open a URL, file or folder with Windows (wsl-open)'
+        wsl-open $argv
+    end
+end
+{{ end -}}
+
 # ─── 1Password-backed integrations (macOS and Linux/WSL2) ───────────────────
 # `op` comes from the Homebrew cask on macOS and from Nix on Linux (dev.nix).
 # NPM token: load only when already signed in (no startup prompt).

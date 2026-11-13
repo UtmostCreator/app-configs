@@ -13,8 +13,10 @@
 #                opaque, so there is no readable deadline beyond "signed in".
 #
 # Exit 1 when a login is missing, expired, or due within AI_AUTH_WARN_DAYS
-# (default 7). --notify always exits 0 and sends a desktop notification only
-# when something needs attention. Token values are never printed.
+# (default 7). --notify always exits 0 and, only when something needs
+# attention, sends a desktop notification (a Windows toast on WSL2 when
+# notify-send fails) and logs the warning to stderr. Token values are never
+# printed.
 set -uo pipefail
 
 mode="${1:-}"
@@ -90,6 +92,38 @@ else
   codex_short="Codex not signed in"
 fi
 
+# ── Notification ────────────────────────────────────────────────────────────
+# PowerShell single-quoted literal: nothing inside is interpolated or run.
+# PowerShell also ends such strings at the Unicode single quotes, so every
+# quote character is doubled, which is its escape inside '...'.
+ps_quote() {
+  local s="${1//\'/\'\'}" q
+  for q in $'\xe2\x80\x98' $'\xe2\x80\x99' $'\xe2\x80\x9a' $'\xe2\x80\x9b'; do s="${s//"$q"/$q$q}"; done
+  printf "'%s'" "$s"
+}
+
+# Desktop notification, else a Windows toast (WSL2 usually has no
+# notification daemon, so notify-send fails there). The warning always goes to
+# stderr as well, so the timer's run lands in the journal.
+notify() {
+  local title="$1" body="$2" ps
+  echo "AI logins: $title: $body" >&2
+  notify-send --urgency=critical --app-name="AI logins" "$title" "$body" 2>/dev/null && return 0
+  # systemd user units do not inherit the Windows PATH that WSL appends.
+  ps="$(command -v powershell.exe 2>/dev/null)" || ps="${WINDOWS_POWERSHELL:-/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe}"
+  [[ -x "$ps" ]] || return 0
+  timeout 10 "$ps" -NoProfile -NonInteractive -Command "\$t = $(ps_quote "$title"); \$m = $(ps_quote "$body");
+    [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > \$null;
+    \$x = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02);
+    \$n = \$x.GetElementsByTagName('text');
+    \$n.Item(0).AppendChild(\$x.CreateTextNode(\$t)) > \$null;
+    \$n.Item(1).AppendChild(\$x.CreateTextNode(\$m)) > \$null;
+    \$app = '{1AC14E77-02E7-4E5D-B744-2EB1AE5198B7}\\WindowsPowerShell\\v1.0\\powershell.exe';
+    [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier(\$app).Show([Windows.UI.Notifications.ToastNotification]::new(\$x))" \
+    >/dev/null 2>&1 || echo "AI logins: Windows toast failed" >&2
+  return 0
+}
+
 summary="$claude_short · $codex_short"
 case "$mode" in
   --summary)
@@ -98,8 +132,7 @@ case "$mode" in
     ;;
   --notify)
     if ((attention)); then
-      notify-send --urgency=critical --app-name="AI logins" \
-        "Log in again before you travel" "$summary" 2>/dev/null || true
+      notify "Log in again before you travel" "$summary"
     fi
     echo "$summary"
     exit 0

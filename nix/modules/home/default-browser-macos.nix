@@ -5,7 +5,7 @@
   home.activation.defaultBrowser = lib.mkIf pkgs.stdenv.hostPlatform.isDarwin (
     lib.hm.dag.entryAfter [ "writeBoundary" ] ''
       run env PATH=/opt/homebrew/bin:/usr/local/bin:$PATH \
-        ${pkgs.bash}/bin/bash ${../../../ops/set-default-browser-macos.sh}
+        ${pkgs.bash}/bin/bash ${./scripts/set-default-browser-macos.sh}
     ''
   );
 }

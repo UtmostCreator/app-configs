@@ -59,6 +59,12 @@ bash ops/install.sh              # apply (snapshots $HOME first)
 The first install seeds `home/.chezmoidata/personal.yaml` with
 `hostProfile: wsl` and `gui: false`. Fill in your name and email there.
 
+The managed gitconfig sends `https://github.com/` Git URLs over SSH. Add
+your SSH key to GitHub (`gh ssh-key add ~/.ssh/id_ed25519.pub`) before the
+first `nvim` launch (lazy.nvim clones plugins) or the first `sys-update`
+(`git pull`), or switch the clone to SSH:
+`git remote set-url origin git@github.com:UtmostCreator/app-configs.git`.
+
 ## 4. Verify
 
 ```bash
@@ -88,3 +94,9 @@ The WSL2 section checks:
 Do not run Colima inside WSL. It would start a VM inside the WSL VM. Docker
 Engine (`sudo apt install docker.io`, then add yourself to the `docker` group)
 is the lighter choice for CLI-only use.
+
+## Not yet verified on a real WSL host
+
+The WSL configuration builds and the install path is tested in dry-run mode
+on Linux, but nobody has activated it on real WSL yet. Open items are
+tracked in `docs/plans/migration/followups.md` ("WSL validation").

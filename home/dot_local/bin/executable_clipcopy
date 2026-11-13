@@ -1,0 +1,28 @@
+#!/bin/sh
+# clipcopy: copy stdin to the system clipboard on macOS, WSL, Wayland or X11.
+# Used by tmux copy mode (~/.tmux.conf), which used to call pbcopy directly
+# and so failed on Linux and WSL.
+#
+# WSL comes before Wayland: WSLg exposes a Wayland display, but its clipboard
+# bridge to Windows is unreliable, and clip.exe writes the Windows clipboard
+# directly. clip.exe misreads UTF-8 input, so the text is converted to
+# UTF-16LE first.
+set -eu
+
+if command -v pbcopy >/dev/null 2>&1; then
+  exec pbcopy
+fi
+if [ -n "${WSL_DISTRO_NAME:-}${WSL_INTEROP:-}" ] && command -v clip.exe >/dev/null 2>&1; then
+  iconv -f UTF-8 -t UTF-16LE | clip.exe
+  exit
+fi
+if [ -n "${WAYLAND_DISPLAY:-}" ] && command -v wl-copy >/dev/null 2>&1; then
+  exec wl-copy
+fi
+if [ -n "${DISPLAY:-}" ]; then
+  if command -v xclip >/dev/null 2>&1; then exec xclip -selection clipboard; fi
+  if command -v xsel >/dev/null 2>&1; then exec xsel --clipboard --input; fi
+fi
+
+echo "clipcopy: no clipboard backend (pbcopy, clip.exe, wl-copy, xclip, xsel)" >&2
+exit 1

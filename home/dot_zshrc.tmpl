@@ -19,21 +19,32 @@ plugins=(
   zsh-autosuggestions
 )
 
-source "$ZSH/oh-my-zsh.sh"
+# oh-my-zsh is optional (installed by hand on macOS, usually absent on
+# Linux/WSL2). Without it, zsh-autosuggestions comes from Nix (see below).
+[ -r "$ZSH/oh-my-zsh.sh" ] && source "$ZSH/oh-my-zsh.sh"
 
+# Nix-provided zsh plugins (nix/modules/home/shell-packages.nix).
+__nix_zsh_share="$HOME/.nix-profile/share"
+if ! typeset -f _zsh_autosuggest_start >/dev/null \
+  && [ -r "$__nix_zsh_share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
+  source "$__nix_zsh_share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+fi
+{{ if eq .chezmoi.os "darwin" }}
 # Herd injected PHP binary.
 export PATH="$HOME/Library/Application Support/Herd/bin/:$PATH"
 export HERD_PHP_84_INI_SCAN_DIR="$HOME/Library/Application Support/Herd/config/php/84/"
 export HERD_PHP_83_INI_SCAN_DIR="$HOME/Library/Application Support/Herd/config/php/83/"
 export PATH="$PATH:/Applications/Herd.app/Contents/MacOS"
-
+{{ end }}
 # NVM
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
 
-# Homebrew mysql-client
+{{ if eq .chezmoi.os "darwin" -}}
+# Homebrew mysql-client (Linux gets mysql from Nix mariadb).
 export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"
+{{ end -}}
 
 # Copilot CLI: enforce repo hook allowlists when available.
 export COPILOT_STRICT_ALLOWLIST=1
@@ -61,18 +72,22 @@ bindkey '^I^I' autosuggest-accept
 
 # GitHub NPM token — load only when already signed into 1Password CLI.
 # This avoids startup prompts in new shells.
-if op whoami >/dev/null 2>&1; then
+if command -v op >/dev/null 2>&1 && op whoami >/dev/null 2>&1; then
     export NPM_TOKEN="$(op item get 'GitHub NPM Token' --fields label=token --reveal 2>/dev/null)"
 fi
+{{ if eq .chezmoi.os "darwin" -}}
 export NODE_EXTRA_CA_CERTS="$HOME/Library/Application Support/Herd/config/valet/CA/LaravelValetCASelfSigned.pem"
-
 source /opt/homebrew/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
+{{- else -}}
+[ -r "$__nix_zsh_share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ] \
+  && source "$__nix_zsh_share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+{{- end }}
 
 # fzf shell integration (key bindings: Ctrl+R history, Ctrl+T files, Alt+C cd)
-eval "$(fzf --zsh)"
+command -v fzf >/dev/null 2>&1 && eval "$(fzf --zsh)"
 
 # zoxide
-eval "$(zoxide init zsh)"
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
 
 # 1Password CLI: do not auto-sign in on shell startup.
 # Run `op signin` manually when you need 1Password-backed commands.
@@ -121,7 +136,7 @@ else
 fi
 
 if [[ -z "${ATUIN_SESSION:-}" || "${ATUIN_SHLVL:-}" != "$SHLVL" ]]; then
-    export ATUIN_SESSION=$(atuin uuid)
+    export ATUIN_SESSION=$(atuin uuid 2>/dev/null)
     export ATUIN_SHLVL=$SHLVL
 fi
 ATUIN_HISTORY_ID=""
@@ -327,13 +342,6 @@ zle -N _atuin_ai_question_mark
 bindkey '?' _atuin_ai_question_mark # Question mark
 
 
-# Herd injected PHP 8.4 configuration.
-export HERD_PHP_84_INI_SCAN_DIR="$HOME/Library/Application Support/Herd/config/php/84/"
-
-
-# Herd injected PHP 8.3 configuration.
-export HERD_PHP_83_INI_SCAN_DIR="$HOME/Library/Application Support/Herd/config/php/83/"
-
 # aliases
 alias op-refresh='op signin && source ~/.zshrc'
 
@@ -351,6 +359,7 @@ rggi() {
     "$@"
 }
 
+{{ if eq .chezmoi.os "darwin" -}}
 brewup() {
   local formulae=(
     atuin bat btop colima docker docker-compose eza fd fzf git git-delta just
@@ -400,13 +409,25 @@ brewup() {
 
   brew cleanup
 }
-
+{{ end }}
 # >>> composer 1password wrapper
+# macOS wraps Herd's composer; Linux/WSL2 wraps the Nix one. Without op or
+# the env file it runs composer unchanged.
 composer() {
-  op run --env-file="$HOME/.config/1password/composer.env" -- sh -c '
+{{- if eq .chezmoi.os "darwin" }}
+  local real="$HOME/Library/Application Support/Herd/bin/composer"
+{{- else }}
+  local real
+  real="$(whence -p composer)"
+{{- end }}
+  if command -v op >/dev/null 2>&1 && [ -r "$HOME/.config/1password/composer.env" ]; then
+    op run --env-file="$HOME/.config/1password/composer.env" -- sh -c '
     export COMPOSER_AUTH="{\"github-oauth\":{\"github.com\":\"$GITHUB_COMPOSER_TOKEN\"}}"
     exec "$@"
-  ' sh "$HOME/Library/Application Support/Herd/bin//composer" "$@"
+  ' sh "$real" "$@"
+  else
+    "$real" "$@"
+  fi
 }
 # <<< composer 1password wrapper
 

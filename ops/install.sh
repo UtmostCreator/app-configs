@@ -163,7 +163,9 @@ if [[ -x "$REPO_ROOT/ops/vscode-extensions.sh" ]]; then
   if [[ "$DRY_RUN" == 1 ]]; then
     run bash "$REPO_ROOT/ops/vscode-extensions.sh" --dry-run
   else
-    run bash "$REPO_ROOT/ops/vscode-extensions.sh"
+    # Optional step: one failed extension must not abort lefthook and doctor.
+    run bash "$REPO_ROOT/ops/vscode-extensions.sh" \
+      || warn "VS Code extensions: ops/vscode-extensions.sh failed; re-run it after install"
   fi
 else
   warn "ops/vscode-extensions.sh missing or not executable; skipping"

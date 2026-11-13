@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# wsl-open: open a URL, file or folder with Windows from WSL2.
+# The WSL2 stand-in for macOS `open` and for wslu's `wslview` (removed from
+# nixpkgs). fish sets BROWSER=wsl-open and `open` to it on WSL2, so
+# `gh auth login`, `gh browse` and `open .` reach the Windows default app.
+#
+# Usage: wsl-open [URL|PATH]   (no argument: current directory)
+set -euo pipefail
+
+target="${1:-.}"
+
+if ! command -v explorer.exe >/dev/null 2>&1; then
+  echo "wsl-open: explorer.exe not on PATH; enable [interop] appendWindowsPath in /etc/wsl.conf" >&2
+  exit 1
+fi
+
+if [[ "$target" =~ ^[a-zA-Z][a-zA-Z0-9+.-]*:// || "$target" == mailto:* ]]; then
+  arg="$target"
+elif [[ -e "$target" ]]; then
+  arg="$(wslpath -w "$target")"
+else
+  echo "wsl-open: no such file, folder or URL: $target" >&2
+  exit 1
+fi
+
+# explorer.exe exits 1 even when it opened the target, so its status is
+# ignored.
+explorer.exe "$arg" || true

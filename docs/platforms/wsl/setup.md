@@ -99,7 +99,7 @@ WSL2: 1Password `op` (so `NPM_TOKEN`, the composer token wrapper and
 | Clipboard (tmux copy) | `pbcopy` | `clip.exe` via `clipcopy` |
 | SSH key passphrase | Keychain (`ssh-add --apple-use-keychain`) | one agent per boot via `keychain` (Nix), passphrase asked once |
 | Docker daemon | Colima VM | Docker Engine in WSL, or Docker Desktop's WSL integration. Pick one. The `ws` launchers use whichever is running. |
-| Opening URLs (`gh auth login`) | `open` | prints the URL; `wslu`/`wslview` is gone from nixpkgs (project discontinued) |
+| Opening URLs and files (`gh auth login`, `open .`) | `open` | `wsl-open` (Windows `explorer.exe`); fish sets `BROWSER=wsl-open` and `open` on WSL2. Replaces `wslview`, which nixpkgs dropped |
 | VS Code | macOS app | Windows app + Remote WSL; `code .` from the WSL shell. User settings live on the Windows side (`%APPDATA%\Code\User`) and sync via Settings Sync; chezmoi does not write `~/.config/Code` on WSL because nothing reads it |
 | PHP / Composer | Nix, but Laravel Herd may shadow them | Nix |
 | Laravel Herd (`.test` sites, Valet CA) | Herd app | no equivalent; `ws` launchers skip Herd. Use `php artisan serve` or Sail |

@@ -1,0 +1,5 @@
+#!/bin/sh
+# curl-timing URL [curl args]: status plus DNS/connect/TLS/TTFB/total times.
+exec curl -sS -o /dev/null -L --max-redirs 5 --connect-timeout 5 --max-time 30 \
+  -w 'code=%{http_code} ip=%{remote_ip} dns=%{time_namelookup} connect=%{time_connect} tls=%{time_appconnect} ttfb=%{time_starttransfer} total=%{time_total} redirects=%{num_redirects}\n' \
+  "$@"

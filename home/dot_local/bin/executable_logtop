@@ -1,0 +1,20 @@
+#!/bin/sh
+# shellcheck disable=SC2016 # awk programs are single-quoted on purpose
+# logtop FIELD [N] FILE...: rank combined-format access logs (Apache/nginx).
+# FIELD: ip | path | status | pathstatus | ua. Reads .gz rotations too.
+#   logtop ip 20 /var/log/nginx/access.log*
+set -eu
+usage() { echo "usage: logtop ip|path|status|pathstatus|ua [N] FILE..." >&2; exit 2; }
+[ $# -ge 2 ] || usage
+field=$1; shift
+case $1 in ''|*[!0-9]*) n=20 ;; *) n=$1; shift ;; esac
+[ $# -ge 1 ] || usage
+case $field in
+  ip) prog='{print $1}' ;;
+  path) prog='{print $7}' ;;
+  status) prog='{print $9}' ;;
+  pathstatus) prog='{print $7, $9}' ;;
+  ua) prog='BEGIN{FS="\""} {print $6}' ;;
+  *) usage ;;
+esac
+gzip -dcf -- "$@" | awk "$prog" | topn "$n"

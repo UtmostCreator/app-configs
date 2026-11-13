@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# rgc [rg args]: ripgrep only the files changed in this repo (modified,
+# staged, untracked). LZ=1 runs lizard on them instead. Works from any subdir.
+#   rgc -n TODO        LZ=1 rgc -C 10
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+files=()
+while IFS= read -r -d '' f; do [[ -f $f ]] && files+=("$f"); done < <(git changed)
+((${#files[@]})) || { echo "rgc: no changed files" >&2; exit 1; }
+if [[ ${LZ:-0} == 1 ]]; then exec lizard "$@" -- "${files[@]}"; fi
+exec rg "$@" -- "${files[@]}"

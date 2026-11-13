@@ -1,0 +1,4 @@
+#!/bin/sh
+# psmem [N]: top N processes by resident memory (default 25).
+f=pid,ppid,user,%cpu,%mem,rss,etime,stat,comm
+if [ "$(uname)" = Darwin ]; then ps -axo "$f" -m; else ps -eo "$f" --sort=-rss; fi | head -n "${1:-25}"

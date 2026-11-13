@@ -1,0 +1,12 @@
+#!/bin/sh
+# killport PORT [SIGNAL]: stop whatever listens on PORT (default SIGTERM).
+# Shows the processes before signalling them.
+set -eu
+port="${1:?usage: killport PORT [SIGNAL]}"
+sig="${2:-TERM}"
+pids="$(lsof -nP -t -iTCP:"$port" -sTCP:LISTEN || true)"
+[ -n "$pids" ] || { echo "killport: nothing listens on $port" >&2; exit 1; }
+lsof -nP -iTCP:"$port" -sTCP:LISTEN
+# shellcheck disable=SC2086 # one PID per word
+env kill -s "$sig" $pids
+echo "killport: sent SIG$sig to $(echo "$pids" | tr '\n' ' ')"

@@ -28,9 +28,7 @@ for arg in "$@"; do
     esac
 done
 
-echo "Ensuring Herd app and services are running..."
-open -ga Herd >/dev/null 2>&1 || open -a Herd
-herd start
+ws_ensure_herd --app
 
 mkdir -p "$COLIMA_LOG_DIR"
 echo "Restarting Colima (cpu=2, memory=2GiB, vm-type=vz)..."

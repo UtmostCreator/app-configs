@@ -6,7 +6,8 @@ WS_PROJECTS_ROOT_DIR="$(cd "$WS_SCRIPTS_DIR/.." && pwd)"
 WS_TMUX_SCRIPTS_DIR="$WS_PROJECTS_ROOT_DIR/tmux"
 WS_LOGGING_SCRIPTS_DIR="$WS_PROJECTS_ROOT_DIR/logging"
 WS_HEALTH_SCRIPTS_DIR="$WS_PROJECTS_ROOT_DIR/health"
-WS_HERD_ROOT_DIR="$HOME/Herd"
+# Laravel Herd (macOS-only) keeps the apps in ~/Herd. Override on other hosts.
+WS_HERD_ROOT_DIR="${WS_HERD_ROOT_DIR:-$HOME/Herd}"
 
 WS_TMUX_SESSION="ws-dev"
 WS_PANE_BACKEND="ws-backend"
@@ -33,6 +34,7 @@ WS_FRONTEND_LOG_FILE="$WS_LOG_DIR/web-frontend-npm.log"
 
 WS_BACKEND_JUSTFILE="$WS_BACKEND_APP_DIR/justfile"
 
+# macOS-only (Herd). verify-workspace treats a missing file as the default port.
 WS_HERD_DNSMASQ_CONF="$HOME/Library/Application Support/Herd/config/dnsmasq/dnsmasq.conf"
 WS_RESOLVER_TEST_FILE="/etc/resolver/test"
 WS_HOSTS_FILE="/etc/hosts"
@@ -52,6 +54,25 @@ WS_SCRIPT_FRONTEND_DEBUG="$WS_SCRIPTS_DIR/frontend/debug.sh"
 WS_SCRIPT_LOG_CAPTURE="$WS_LOGGING_SCRIPTS_DIR/capture.sh"
 
 WS_TMP_RESTART_LOG="${TMPDIR:-/tmp}/ws-restart.log"
+
+# ws_ensure_herd [--app]: make sure Herd's services (and, with --app, the Herd
+# desktop app) are running. Herd is macOS-only, so on any other host the step
+# is skipped with a single message instead of failing on `open`/`herd`.
+ws_ensure_herd() {
+	local os
+	os="$(uname -s)"
+	if [[ "$os" != Darwin ]]; then
+		echo "Skipping Herd: Laravel Herd is macOS-only (this host is $os)."
+		return 0
+	fi
+	if [[ "${1:-}" == --app ]]; then
+		echo "Ensuring Herd app and services are running..."
+		open -ga Herd >/dev/null 2>&1 || open -a Herd
+	else
+		echo "Ensuring Herd services are running..."
+	fi
+	herd start
+}
 
 web_frontend_export_netlify_env() {
 	local app_dir="${1:-$WS_FRONTEND_APP_DIR}"

@@ -78,18 +78,33 @@ The WSL2 section checks:
 | systemd is PID 1 | `[boot] systemd=true`, then `wsl --shutdown` |
 | repo on the Linux filesystem | re-clone under `~` |
 | `node`/`npm`/`npx`/`pnpm` not resolving to Windows copies | run `sys-update`; or uninstall Windows Node |
+| WSL2, not WSL1 (`ops/detect-host.sh --wsl-version`) | `wsl --set-version <distro> 2` (install refuses WSL1) |
+| Docker daemon reachable | `sudo systemctl start docker`, or enable Docker Desktop's WSL integration |
 | `clip.exe` reachable | `[interop] appendWindowsPath=true` |
+
+## What matches macOS
+
+The shell and CLI layer is shared: fish (default) and zsh configs, starship,
+atuin, fzf, zoxide, tmux, git config and aliases, neovim, yazi, every tool in
+`nix/modules/home/{cli,dev}.nix`, and the same versions from one
+`flake.lock`. The CLIs macOS gets from Homebrew are installed from Nix on
+WSL2: 1Password `op` (so `NPM_TOKEN`, the composer token wrapper and
+`op-refresh` work), GitHub Copilot `copilot`, `mysql` (MariaDB client) and
+`docker compose`.
 
 ## What differs from macOS
 
 | Area | macOS | WSL2 |
 | --- | --- | --- |
 | Clipboard (tmux copy) | `pbcopy` | `clip.exe` via `clipcopy` |
-| SSH key passphrase | Keychain (`ssh-add --apple-use-keychain`) | one shared agent per boot (`ssh-agent.fish`: `keychain` if installed, else `~/.ssh/agent.env`) |
-| Docker daemon | Colima VM | Docker Engine in WSL, or Docker Desktop's WSL integration. Pick one. |
+| SSH key passphrase | Keychain (`ssh-add --apple-use-keychain`) | one agent per boot via `keychain` (Nix), passphrase asked once |
+| Docker daemon | Colima VM | Docker Engine in WSL, or Docker Desktop's WSL integration. Pick one. The `ws` launchers use whichever is running. |
 | Opening URLs (`gh auth login`) | `open` | prints the URL; `wslu`/`wslview` is gone from nixpkgs (project discontinued) |
 | VS Code | macOS app | Windows app + Remote WSL; `code .` from the WSL shell. User settings live on the Windows side (`%APPDATA%\Code\User`) and sync via Settings Sync; chezmoi does not write `~/.config/Code` on WSL because nothing reads it |
 | PHP / Composer | Nix, but Laravel Herd may shadow them | Nix |
+| Laravel Herd (`.test` sites, Valet CA) | Herd app | no equivalent; `ws` launchers skip Herd. Use `php artisan serve` or Sail |
+| AI login-expiry alert | desktop notification | Windows toast via `powershell.exe`, and logged to the journal |
+| Nix store optimisation | user `nix.conf` | not set per user (WSL2 user is not a trusted Nix user); add `auto-optimise-store = true` to `/etc/nix/nix.conf` if wanted |
 
 Do not run Colima inside WSL. It would start a VM inside the WSL VM. Docker
 Engine (`sudo apt install docker.io`, then add yourself to the `docker` group)

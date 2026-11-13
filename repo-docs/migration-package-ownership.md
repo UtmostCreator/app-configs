@@ -74,7 +74,9 @@ apps are owned through `nix-darwin` Homebrew bridge (`nix/modules/darwin/homebre
 |------|-------|-------------------|-------|
 | `ast-grep` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `ast-grep`. |
 | `code2prompt` | manual | — | Cargo install, per docs. |
-| `copilot` | DROPPED | — | Copilot CLI removed from install script intentionally; we use OpenCode. |
+| `copilot` | cask (macOS) / Nix (Linux, WSL2) | `nix/modules/darwin/homebrew.nix` `copilot-cli`; `nix/modules/home/dev.nix` `github-copilot-cli` | GitHub Copilot CLI on every host. |
+| `op` (1Password CLI) | cask (macOS) / Nix (Linux, WSL2) | `nix/modules/darwin/homebrew.nix` `1password-cli`; `nix/modules/home/dev.nix` `_1password-cli` | Used by the fish/zsh NPM_TOKEN, composer and op-refresh helpers. |
+| `keychain` | Nix (Linux, WSL2) | `nix/modules/home/dev.nix` | One ssh-agent per boot; macOS uses the system Keychain. |
 | `claude` (Claude Code) | manual | — | Native installer into `~/.local/share/claude`; self-updates via `claude update`. Intentionally **not** Nix — a second copy breaks update detection. |
 | `files-to-prompt` | manual | — | `uv tool install files-to-prompt` per docs. |
 | `gh` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `gh`. |

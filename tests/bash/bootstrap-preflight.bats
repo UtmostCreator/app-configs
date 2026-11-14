@@ -22,6 +22,11 @@ setup() {
     for tool in nix chezmoi mise home-manager lefthook curl darwin-rebuild; do
         cat >"$STUBS/$tool" <<STUB
 #!/usr/bin/env bash
+# The login-user preflight reads the username with \`nix eval --raw -f <file> username\`
+# (read-only, so it is answered from the file and not recorded as a call).
+if [[ "$tool" == nix && "\${1:-}" == eval ]]; then
+    sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\\1/p' "\$4"; exit 0
+fi
 printf '%s %s\n' "$tool" "\$*" >> "\$CALLS"
 if [[ "$tool" == chezmoi && "\${1:-}" == diff && "\${FAIL_DIFF:-0}" == 1 ]]; then
     echo "chezmoi: template error" >&2; exit 1

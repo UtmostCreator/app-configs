@@ -99,6 +99,11 @@ case "$HOST_PROFILE" in
   macos|linux-desktop|linux-cli|wsl) ;;
   *) fail "unsupported HOST_PROFILE: $HOST_PROFILE" ;;
 esac
+# WSL1 refusal and the login-user check live in ops/lib/preflight.sh (shared
+# with bootstrap). Nix may not be installed yet (fresh machine): the user check
+# is then deferred until right after the Nix step, once Nix exists.
+USER_CHECKED=0
+have nix && USER_CHECKED=1
 preflight_host_checks "$REPO_ROOT" "$HOST_PROFILE"
 log "Repo:  $REPO_ROOT"
 log "Host:  $HOST_PROFILE"
@@ -120,6 +125,13 @@ fi
 
 preflight_refresh_nix_path
 have nix || { [[ "$DRY_RUN" == 1 ]] || fail "nix still not on PATH after install"; }
+if ((USER_CHECKED == 0)); then
+  if have nix; then
+    preflight_check_login_user "$REPO_ROOT"
+  else
+    warn "nix is not installed (dry-run); the login-user check will run after a real install"
+  fi
+fi
 
 # ── 3. base tools ───────────────────────────────────────────────────────────
 step "Base tools (chezmoi, mise, home-manager, lefthook)"

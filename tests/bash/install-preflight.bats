@@ -1,6 +1,13 @@
 #!/usr/bin/env bats
-# ops/install.sh preflight: stop early when the login user does not match the
-# Nix username, instead of failing deep inside home-manager switch.
+# ops/install.sh safety contract: preflight (login user, DRY_RUN, WSL1, the
+# bats HOME guard), argument handling, and the install steps themselves
+# (chezmoi --source, mise cwd, Nix download and features, base tools, macOS sudo,
+# NixOS advisory, degraded summary, temp cleanup).
+#
+# The first tests run the real ops/install.sh in dry-run. The later ones run a
+# scratch copy with every tool stubbed on PATH and every host path (Nix profile,
+# /etc/profile.d, NixOS markers) redirected to scratch, so nothing real is
+# installed and the host cannot change a result.
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
@@ -648,4 +655,14 @@ helpers_present() {
     run env -u DRY_RUN HOME="$BATS_TEST_TMPDIR/home/../../outside-$$" USER=utmostcreator PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
     [ "$status" -eq 3 ]
     [ ! -e "$LOG" ]
+}
+
+@test "--help documents the degraded summary and every exit code" {
+    run bash "$REPO_ROOT/ops/install.sh" --help
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"degraded"* ]]
+    [[ "$output" == *"1 "*"required-step failure"* ]]
+    [[ "$output" == *"2 "*"bad argument"* ]]
+    [[ "$output" == *"3 "*"bats"* ]]
+    [[ "$output" == *"sudo"* ]]
 }

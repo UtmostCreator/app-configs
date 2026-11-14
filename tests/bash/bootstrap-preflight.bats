@@ -15,6 +15,9 @@ setup() {
     export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
     export CALLS="$BATS_TEST_TMPDIR/calls"; : >"$CALLS"
     export NIX_PATH_REFRESH=0
+    # A caller's NIX_CONFIG (ops/ci-local.sh exports one) would enable
+    # nix-command in the stub and hide whether the lib exports it itself.
+    unset NIX_CONFIG
     NIX_USER="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$REPO_ROOT/nix/vars/default.nix")"
     export USER="$NIX_USER"
 

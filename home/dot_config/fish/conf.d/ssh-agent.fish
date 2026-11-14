@@ -53,7 +53,10 @@ switch (uname -s)
                     test -f $HOME/.ssh/$k; and set -a keys $k
                 end
             end
-            keychain --eval --quiet --agents ssh $keys | source
+            # No --agents: keychain 3 deprecates it (prints a warning on every
+            # shell). Without it, ssh key names mean ssh-only in both keychain
+            # 2.8+ (default) and 3.x (`add`, via legacy parsing).
+            keychain --eval --quiet $keys | source
         else
             # Fallback: persistent agent env file shared across shells.
             set -l env_file $HOME/.ssh/agent.env

@@ -141,7 +141,7 @@ load_agent_fish() {
     touch "$HOME/.ssh/present"
     APP_CONFIGS_SSH_KEYS="present missing" run load_agent
     [ "$status" -eq 0 ]
-    [ "$(cat "$HOME/keychain-args")" = "--eval --quiet --agents ssh present" ]
+    [ "$(cat "$HOME/keychain-args")" = "--eval --quiet present" ]
 }
 
 @test "fish: keychain is passed only configured keys that exist" {
@@ -152,7 +152,7 @@ load_agent_fish() {
     for tool in fish bash cat awk touch chmod; do ln -sf "$(command -v "$tool")" "$STUBS/$tool"; done
     run env PATH="$STUBS" HOME="$HOME" XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" \
         "$STUBS/fish" --no-config -i -c 'set -g APP_CONFIGS_SSH_KEYS present missing; source $argv[1]' "$fish_script"
-    [ "$(cat "$HOME/keychain-args")" = "--eval --quiet --agents ssh present" ]
+    [ "$(cat "$HOME/keychain-args")" = "--eval --quiet present" ]
 }
 
 # --- multi-key splitting (zsh does not word-split unquoted expansions) ------
@@ -196,7 +196,7 @@ keychain_argv_setup() {
     stub keychain 'for a in "$@"; do printf "arg=%s\n" "$a"; done >>"$HOME/kc.log"'
 }
 
-KEYCHAIN_WANT=$'arg=--eval\narg=--quiet\narg=--agents\narg=ssh\narg=k1\narg=k2'
+KEYCHAIN_WANT=$'arg=--eval\narg=--quiet\narg=k1\narg=k2'
 
 @test "zsh: keychain receives one argv entry per key" {
     command -v zsh >/dev/null || skip "zsh not installed (run with zsh on PATH to exercise this)"
@@ -211,4 +211,31 @@ KEYCHAIN_WANT=$'arg=--eval\narg=--quiet\narg=--agents\narg=ssh\narg=k1\narg=k2'
     APP_CONFIGS_SSH_KEYS="k1  k2" PATH="$(isolate_path)" \
         bash --norc --noprofile -i -c '. "$1"' _ "$SCRIPT" 2>/dev/null
     [ "$(cat "$HOME/kc.log")" = "$KEYCHAIN_WANT" ]
+}
+
+# keychain 3 deprecates --agents (a warning on every new shell); keychain 2.8+
+# and 3.x are both ssh-only by default for ssh key names.
+@test "bash: keychain is never given the deprecated --agents flag" {
+    stub keychain 'printf "%s\n" "$*" >"$HOME/keychain-args"; echo "export KC_SOURCED=yes"'
+    touch "$HOME/.ssh/present"
+    APP_CONFIGS_SSH_KEYS="present" PATH="$(isolate_path)" \
+        bash --norc --noprofile -i -c '. "$1"; printf "kc=%s\n" "${KC_SOURCED:-}" >"$HOME/kc-out"' _ "$SCRIPT" 2>/dev/null
+    if grep -q -- '--agents' "$HOME/keychain-args"; then echo 'assertion failed: --agents passed' >&2; return 1; fi
+    grep -q -- '--eval' "$HOME/keychain-args"
+    grep -q 'present' "$HOME/keychain-args"
+    [ "$(cat "$HOME/kc-out")" = "kc=yes" ]
+}
+
+@test "fish: keychain is never given the deprecated --agents flag" {
+    command -v fish >/dev/null || skip "fish not installed"
+    stub keychain 'printf "%s\n" "$*" >"$HOME/keychain-args"; echo "set -gx KC_SOURCED yes"'
+    touch "$HOME/.ssh/present"
+    local fish_script="$REPO_ROOT/home/dot_config/fish/conf.d/ssh-agent.fish"
+    for tool in fish bash cat awk touch chmod; do ln -sf "$(command -v "$tool")" "$STUBS/$tool"; done
+    run env PATH="$STUBS" HOME="$HOME" XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" \
+        "$STUBS/fish" --no-config -i -c 'set -g APP_CONFIGS_SSH_KEYS present; source $argv[1]; echo "kc=$KC_SOURCED"' "$fish_script"
+    if grep -q -- '--agents' "$HOME/keychain-args"; then echo 'assertion failed: --agents passed' >&2; return 1; fi
+    grep -q -- '--eval' "$HOME/keychain-args"
+    grep -q 'present' "$HOME/keychain-args"
+    [[ "$output" == *"kc=yes"* ]]
 }

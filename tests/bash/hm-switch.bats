@@ -3,6 +3,10 @@
 # (update-all, install, bootstrap, the codebase-memory-mcp updater) goes
 # through it, so the conflict check and -b hm-bak cannot be skipped by one.
 
+# `! cmd` in the middle of a bats test does not fail it (set -e ignores a
+# negated command), so assert absence explicitly.
+refute_grep() { if grep -q "$@"; then echo "unexpected match: $*" >&2; return 1; fi; }
+
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     export HOME="$BATS_TEST_TMPDIR/home"
@@ -37,7 +41,7 @@ add_conflict() {
     run hm_switch /repo/nix linux-desktop
     [ "$status" -ne 0 ]
     [[ "$output" == *"nix profile remove parallel"* ]]
-    ! grep -q '^home-manager' "$CALLS"
+    refute_grep '^home-manager' "$CALLS"
 }
 
 @test "a missing jq is an error, not an empty conflict list" {
@@ -51,7 +55,7 @@ add_conflict() {
     run hm_switch /repo/nix linux-desktop
     [ "$status" -ne 0 ]
     [[ "$output" == *"manifest.json is missing"* ]]
-    ! grep -q '^home-manager' "$CALLS"
+    refute_grep '^home-manager' "$CALLS"
 }
 
 @test "a host with no nix profile at all has nothing to collide with" {
@@ -66,7 +70,7 @@ add_conflict() {
     run hm_switch /repo/nix linux-desktop
     [ "$status" -ne 0 ]
     [[ "$output" == *"could not build"* ]]
-    ! grep -q '^home-manager' "$CALLS"
+    refute_grep '^home-manager' "$CALLS"
 }
 
 @test "a failed switch explains the existing .hm-bak abort" {

@@ -40,6 +40,163 @@ if ! git ls-files -z >"$TRACKED_FILE"; then
   : >"$TRACKED_FILE"
 fi
 
+# --- Nix text analysis (awk; no Nix evaluation, so it stays fast) -----------
+# NIX_STRIP: remove comments (# and /* */) and neutralise string contents.
+# Double-quoted strings keep their text with `{ } ; = # $` and blanks replaced
+# by `_` (so attribute keys like "flameshot/flameshot.ini" stay readable);
+# indented '' strings become "". Line count is preserved.
+read -r -d '' NIX_STRIP <<'AWK' || true
+function neut(c) { return (c ~ /[{};=#$ \t]/) ? "_" : c }
+BEGIN { st = 0; sbuf = "" }
+{
+  line = $0; n = length(line); out = ""
+  for (i = 1; i <= n; i++) {
+    c = substr(line, i, 1); d = substr(line, i, 2); t = substr(line, i, 3)
+    if (st == 0) {
+      if (c == "#") break
+      else if (d == "/*") { st = 3; i++ }
+      else if (c == "\"") { st = 1; sbuf = "" }
+      else if (d == "''") { st = 2; i++ }
+      else out = out c
+    } else if (st == 1) {
+      if (c == "\\") { sbuf = sbuf "__"; i++ }
+      else if (c == "\"") { st = 0; out = out "\"" sbuf "\"" }
+      else sbuf = sbuf neut(c)
+    } else if (st == 2) {
+      if (t == "'''") i += 2
+      else if (d == "''" && (substr(line, i + 2, 1) == "$" || substr(line, i + 2, 1) == "\\")) i += 2
+      else if (d == "''") { st = 0; i++; out = out "\"\"" }
+    } else if (st == 3) {
+      if (d == "*/") { st = 0; i++ }
+    }
+  }
+  if (st == 1) sbuf = sbuf "_"
+  print out
+}
+AWK
+
+# NIX_SCAN: tokenise stripped Nix and walk the bindings, tracking the attribute
+# path through nested `{ }` (so `programs = { x = { enable = true; }; }` is
+# programs.x.enable). Emits one line per finding:
+#   PROGRAM|file:line|programs.<x>.enable = <rhs>
+#   SERVICE|file:line|services.<x>.enable = <rhs>      (only when hm=1)
+#   TOOL|file:line|<tool>|<home.packages|with pkgs>    (only when hm=1)
+#   XDG|file:line|<configFile key>                     (only when hm=1)
+#   XDGDYN|file:line|<expr>   (xdg.configFile = <expr>; keys unknowable here)
+# Limits (text, not evaluation): `let`-bound attrsets, `//` merges and
+# generated attribute names are not followed; `--eval` covers those.
+read -r -d '' NIX_SCAN <<'AWK' || true
+function isword(t) { return t ~ /^[A-Za-z_"]/ && !(t in KW) }
+function lastseg(t,   m) { m = t; sub(/^.*\./, "", m); return m }
+function where(i) { return file ":" tl[i] }
+BEGIN {
+  nk = split("if then else let in with assert inherit rec or import", ka, " ")
+  for (k = 1; k <= nk; k++) KW[ka[k]] = 1
+  nk = split(tools, ta, " "); for (k = 1; k <= nk; k++) TOOL[ta[k]] = 1
+  nk = split(allowed_programs, pa, " "); for (k = 1; k <= nk; k++) AP[pa[k]] = 1
+  nk = split(allowed_services, sa, " "); for (k = 1; k <= nk; k++) AS[sa[k]] = 1
+  n = 0
+}
+{
+  line = $0
+  while (gsub(/\$\{[^{}]*\}/, "DYN", line)) { }
+  pos = 1; len = length(line)
+  while (pos <= len) {
+    rest = substr(line, pos)
+    if (match(rest, /^[ \t\r]+/)) { pos += RLENGTH; continue }
+    if (match(rest, /^([A-Za-z_][A-Za-z0-9_'-]*|"[^"]*")(\.([A-Za-z_][A-Za-z0-9_'-]*|"[^"]*"))*/)) {
+      tk = substr(rest, 1, RLENGTH); pos += RLENGTH
+    } else if (match(rest, /^(==|!=|\/\/|\+\+|->|&&|\|\||<=|>=|\.\.\.)/)) {
+      tk = substr(rest, 1, RLENGTH); pos += RLENGTH
+    } else { tk = substr(rest, 1, 1); pos++ }
+    n++; tok[n] = tk; tl[n] = NR
+  }
+}
+# Right-hand side tokens from j up to the `;` ending the binding (brackets and
+# `with`/`let` aware). Sets RHS (joined) and HB (1 if a `{` occurs).
+function rhs_scan(j,   d, lc, ws, k, t, cnt) {
+  RHS = ""; HB = 0; d = 0; lc = 0; ws = 0; cnt = 0
+  for (k = j; k <= n && cnt < 60; k++) {
+    cnt++
+    t = tok[k]
+    if (t == "{") HB = 1
+    if (t == "{" || t == "[" || t == "(") d++
+    else if (t == "}" || t == "]" || t == ")") { d--; if (d < 0) break }
+    else if (t == "let") lc++
+    else if (t == "in") { if (lc > 0) lc-- }
+    else if (t == "with" || t == "assert") ws++
+    else if (t == ";") { if (ws > 0) ws--; else if (d == 0 && lc == 0) break }
+    RHS = RHS (RHS == "" ? "" : " ") t
+  }
+}
+function scan_tools(j, ctx,   d, lc, ws, k, t, ls) {
+  d = 0; lc = 0; ws = 0
+  for (k = j; k <= n; k++) {
+    t = tok[k]
+    if (t == "{" || t == "[" || t == "(") d++
+    else if (t == "}" || t == "]" || t == ")") { d--; if (d < 0) break }
+    else if (t == "let") lc++
+    else if (t == "in") { if (lc > 0) lc-- }
+    else if (t == "with" || t == "assert") ws++
+    else if (t == ";") { if (ws > 0) ws--; else if (d == 0 && lc == 0) break }
+    else if (isword(t) && !(k in SEEN)) {
+      ls = lastseg(t)
+      if (ls in TOOL) { SEEN[k] = 1; print "TOOL|" where(k) "|" ls "|" ctx }
+    }
+  }
+}
+function record(f, i,   mid, rest, key, isoff) {
+  if (f ~ /\.enable$/ && (f ~ /^programs\./ || f ~ /^services\./)) {
+    rhs_scan(i + 2)
+    isoff = (RHS == "false" || RHS ~ /^(lib\.)?mk[A-Za-z]+( [0-9]+)? false$/)
+    mid = f; sub(/^[a-z]+\./, "", mid); sub(/\.enable$/, "", mid); sub(/\..*$/, "", mid)  # first segment: the module
+    if (f ~ /^programs\./) {
+      if (!(mid in AP) && !isoff) print "PROGRAM|" where(i) "|" f " = " RHS
+    } else if (hm == 1 && !(mid in AS) && !isoff) {
+      print "SERVICE|" where(i) "|" f " = " RHS
+    }
+  }
+  if (hm != 1) return
+  if (f == "home.packages") scan_tools(i + 2, "home.packages")
+  if (f ~ /^xdg\.configFile/) {
+    if (f == "xdg.configFile") {
+      rhs_scan(i + 2)
+      if (!HB) print "XDGDYN|" where(i) "|" RHS
+    } else {
+      rest = substr(f, length("xdg.configFile.") + 1)
+      if (substr(rest, 1, 1) == "\"") { match(rest, /^"[^"]*"/); key = substr(rest, 2, RLENGTH - 2) }
+      else { key = rest; sub(/\..*$/, "", key) }
+      if (!(key in XSEEN)) { XSEEN[key] = 1; print "XDG|" where(i) "|" key }
+    }
+  }
+}
+END {
+  depth = 0; pref[0] = ""; pend[0] = ""; lets[0] = 0; withs = 0
+  for (i = 1; i <= n; i++) {
+    t = tok[i]
+    if (t == "{") {
+      depth++
+      pref[depth] = (pend[depth - 1] != "") ? pend[depth - 1] : pref[depth - 1]
+      pend[depth] = ""; lets[depth] = 0
+    } else if (t == "}") { if (depth > 0) depth--
+    } else if (t == "let") { lets[depth]++
+    } else if (t == "in") { if (lets[depth] > 0) lets[depth]--
+    } else if (t == "with" || t == "assert") {
+      withs++
+      if (hm == 1 && t == "with" && tok[i + 1] == "pkgs" && tok[i + 2] == ";") scan_tools(i + 3, "with pkgs")
+    } else if (t == ";") {
+      if (withs > 0) withs--
+      else if (lets[depth] == 0) pend[depth] = ""
+    } else if (isword(t) && tok[i + 1] == "=" && (tok[i - 1] == "{" || tok[i - 1] == ";") && lets[depth] == 0) {
+      f = (pref[depth] == "") ? t : pref[depth] "." t
+      pend[depth] = f
+      sub(/^config\./, "", f)
+      record(f, i)
+    }
+  }
+}
+AWK
+
 # 1. .chezmoiroot at repo root, contents == "home" (surrounding whitespace is
 # trimmed, like chezmoi does; anything else, including "ho me", fails).
 if [[ ! -f .chezmoiroot ]]; then
@@ -109,37 +266,71 @@ else
   ok "no tracked secret paths (personal data, projects.yaml, .env)"
 fi
 
-# 6. Home Manager modules: only programs.home-manager.enable allowed
-if [[ -d nix/modules ]]; then
-  bad="$(rg --no-line-number -nP '^\s*programs\.[A-Za-z0-9_-]+\.enable\s*=\s*true' nix/modules 2>/dev/null \
-        | grep -Ev 'programs\.home-manager\.enable' || true)"
-  if [[ -n "$bad" ]]; then
-    err "forbidden programs.<x>.enable found in nix/modules:"
-    printf '%s\n' "$bad" | sed 's/^/      /' >&2
-  else
-    ok "no forbidden programs.<x>.enable in nix/modules"
-  fi
-fi
+# 6-8. Home Manager policy, checked on comment- and string-stripped Nix
+# (see NIX_STRIP / NIX_SCAN above), so commented-out lines and text inside
+# strings never match and multi-line lists and nested attrsets are seen.
+#   6. Only these HM modules may be enabled: programs.home-manager,
+#      programs.vicinae, programs.openclaw, services.syncthing. Every other
+#      programs.<x>.enable / services.<x>.enable (dotted, nested in
+#      `programs = { x = { enable = ...; }; }`, behind lib.mkDefault/mkIf,
+#      inside mkMerge lists) is a violation unless its value is literally
+#      `false`. services.* is only checked in Home Manager files; NixOS and
+#      nix-darwin modules legitimately enable system services.
+#   7. mise, chezmoi, home-manager, lefthook (bootstrap-installed) must not be
+#      in home.packages or in any `with pkgs; [ ... ]` list.
+#   8. direnv (Phase 3: DROPPED) likewise.
+ALLOWED_PROGRAMS="home-manager vicinae openclaw"
+ALLOWED_SERVICES="syncthing"
+BOOTSTRAP_TOOLS="mise chezmoi home-manager lefthook"
 
-# 7. Bootstrap-managed tools must not appear in Home Manager modules
-if [[ -d nix/modules/home ]]; then
-  for tool in mise chezmoi home-manager lefthook; do
-    if rg --no-line-number -nFw "$tool" nix/modules/home 2>/dev/null \
-         | grep -qE ':\s*(home\.packages|with pkgs)'; then
-      err "bootstrap tool '$tool' referenced in nix/modules/home"
+NIX_FINDINGS=""
+scan_failed=0
+nix_dirs=()
+for d in nix/modules nix/lib nix/hosts; do
+  [[ -d "$d" ]] && nix_dirs+=("$d")
+done
+if ((${#nix_dirs[@]} > 0)); then
+  if ! nix_files="$(find "${nix_dirs[@]}" -type f \( -path 'nix/hosts/*' -name home.nix -o -path 'nix/modules/*' -name '*.nix' -o -path 'nix/lib/*' -name '*.nix' \) | LC_ALL=C sort)"; then
+    err "find failed; cannot scan nix modules"
+    nix_files=""
+  fi
+  while IFS= read -r f; do
+    [[ -z "$f" ]] && continue
+    case "$f" in
+      nix/modules/nixos/* | nix/modules/darwin/*) hm=0 ;;
+      *) hm=1 ;;
+    esac
+    if ! res="$(awk "$NIX_STRIP" "$f" | awk -v file="$f" -v hm="$hm" \
+          -v allowed_programs="$ALLOWED_PROGRAMS" -v allowed_services="$ALLOWED_SERVICES" \
+          -v tools="$BOOTSTRAP_TOOLS direnv" "$NIX_SCAN")"; then
+      err "scan failed for $f"
+      scan_failed=1
+      continue
     fi
-  done
-  ok "bootstrap-managed tools not duplicated in Home Manager modules"
+    [[ -n "$res" ]] && NIX_FINDINGS+="$res"$'\n'
+  done <<<"$nix_files"
 fi
 
-# 8. direnv (Phase 3 decision: DROPPED) must not appear in nix/modules/home
-if [[ -d nix/modules/home ]]; then
-  if rg --no-line-number -nFw direnv nix/modules/home 2>/dev/null \
-       | grep -qE ':\s*(home\.packages|with pkgs)'; then
-    err "direnv was DROPPED in Phase 3 but found in nix/modules/home"
-  else
-    ok "direnv not in Home Manager modules (per Phase 3 DROPPED decision)"
+e0=$ERRORS
+while IFS='|' read -r kind where a _; do
+  [[ "$kind" == "PROGRAM" || "$kind" == "SERVICE" ]] || continue
+  err "forbidden $([[ "$kind" == PROGRAM ]] && echo programs || echo services).<x>.enable at $where: $a (allowed: programs: $ALLOWED_PROGRAMS; services: $ALLOWED_SERVICES)"
+done <<<"$NIX_FINDINGS"
+if ((ERRORS == e0 && scan_failed == 0)); then
+  ok "only allowlisted programs.<x>/services.<x> enabled in nix/modules"
+fi
+
+e0=$ERRORS
+while IFS='|' read -r kind where tool ctx; do
+  [[ "$kind" == "TOOL" ]] || continue
+  if [[ "$tool" == "direnv" ]]; then
+    err "direnv was DROPPED in Phase 3 but found in $ctx at $where"
+    else
+    err "bootstrap tool '$tool' referenced in $ctx at $where"
   fi
+done <<<"$NIX_FINDINGS"
+if ((ERRORS == e0 && scan_failed == 0)); then
+  ok "bootstrap-managed tools and direnv not in Home Manager package lists"
 fi
 
 # 9. Migration audit docs must exist, be non-empty, and have no unresolved

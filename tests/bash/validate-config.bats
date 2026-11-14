@@ -153,3 +153,141 @@ track() { mkdir -p "$(dirname "$R/$1")"; printf 'x: 1\n' >"$R/$1"; git -C "$R" a
     [ "$status" -ne 0 ]
     [[ "$output" == *"git ls-files failed"* ]]
 }
+
+# --- Home Manager policy (rules 6-8), on comment/string-stripped Nix -------
+
+# nixmod <path under nix/modules/home> <body>: write a module with the body
+# inside the usual { pkgs, lib, ... }: { } wrapper.
+nixmod() {
+    mkdir -p "$(dirname "$R/nix/modules/home/$1")"
+    printf '{ pkgs, lib, config, ... }:\n{\n%s\n}\n' "$2" >"$R/nix/modules/home/$1"
+}
+
+@test "rule 6: forbidden programs.<x>.enable spellings all fail" {
+    local body
+    local -a bodies=(
+        'programs.git.enable = true;'
+        'programs.git = { enable = true; };'
+        'programs = { git.enable = true; };'
+        'programs = { git = { enable = true; }; };'
+        'programs.git.enable = lib.mkDefault true;'
+        'programs.git = lib.mkIf pkgs.stdenv.isLinux { enable = true; };'
+        'programs.git.enable = lib.mkIf pkgs.stdenv.isLinux true;'
+        'config = lib.mkIf true { programs.git.enable = true; };'
+        'config = lib.mkMerge [ { programs.git.enable = true; } ];'
+        'programs.git.enable =
+           true;'
+    )
+    for body in "${bodies[@]}"; do
+        nixmod ok.nix "$body"
+        validate
+        [ "$status" -ne 0 ] || { echo "not rejected: $body"; return 1; }
+        [[ "$output" == *"forbidden programs.<x>.enable"*"programs.git.enable"* ]] || { echo "unreported: $body: $output"; return 1; }
+    done
+}
+
+@test "rule 6: allowlisted modules, disabled modules and sub-options pass" {
+    nixmod ok.nix 'programs.home-manager.enable = true;
+  programs.vicinae = { enable = true; systemd.enable = true; };
+  programs.openclaw.enable = true;
+  services.syncthing = { enable = true; };
+  programs.git.enable = false;
+  programs.fish.enable = lib.mkForce false;
+  systemd.user.services.foo.enable = true;
+  options.programs.bar.enable = lib.mkEnableOption "bar";'
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+@test "rule 6: commented-out and in-string programs lines are ignored" {
+    nixmod ok.nix "# programs.git.enable = true;
+  /* programs.git.enable = true; */
+  x = \"programs.git.enable = true;\";
+  y = ''
+    programs.git.enable = true;
+  '';"
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+@test "rule 6: services.<x>.enable fails in Home Manager modules but not in NixOS modules" {
+    nixmod ok.nix 'services.foo.enable = true;'
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"forbidden services.<x>.enable"* ]]
+    nixmod ok.nix 'services.syncthing.enable = true;'
+    mkdir -p "$R/nix/modules/nixos"
+    printf '{ ... }:\n{\n  services.keyd.enable = true;\n}\n' >"$R/nix/modules/nixos/keyd.nix"
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+@test "rule 6: programs.<x>.enable in a NixOS module still fails" {
+    mkdir -p "$R/nix/modules/nixos"
+    printf '{ ... }:\n{\n  programs.git.enable = true;\n}\n' >"$R/nix/modules/nixos/git.nix"
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"forbidden programs.<x>.enable"* ]]
+}
+
+@test "rules 7/8: bootstrap tools and direnv in a multi-line home.packages list fail" {
+    local tool
+    for tool in mise chezmoi home-manager lefthook direnv pkgs.mise; do
+        nixmod ok.nix "home.packages = with pkgs; [
+    jq
+    $tool
+    ripgrep
+  ];"
+        validate
+        [ "$status" -ne 0 ] || { echo "not rejected: $tool"; return 1; }
+        [[ "$output" == *"${tool#pkgs.}"*"home.packages"* ]] || { echo "unreported: $tool: $output"; return 1; }
+    done
+}
+
+@test "rules 7/8: tools in other list shapes fail" {
+    local body
+    local -a bodies=(
+        'home.packages = (with pkgs; [ jq ]) ++ [ pkgs.mise ];'
+        'home.packages = lib.optionals true [ pkgs.chezmoi ];'
+        'home.packages = let extra = [ pkgs.jq ]; in extra ++ [ pkgs.lefthook ];'
+        'home = { packages = with pkgs; [
+    direnv ]; };'
+        'x = with pkgs; [
+    mise
+  ];'
+    )
+    for body in "${bodies[@]}"; do
+        nixmod ok.nix "$body"
+        validate
+        [ "$status" -ne 0 ] || { echo "not rejected: $body"; return 1; }
+    done
+}
+
+@test "rules 7/8: tool names in comments, strings and longer names are fine" {
+    nixmod ok.nix 'home.packages = with pkgs; [
+    jq # mise is installed by bootstrap
+    mise-completions
+    nix-direnv
+  ];
+  x = "mise";
+  # never include direnv, chezmoi, home-manager or lefthook here'
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+@test "rule 7: no [OK] line is printed for a rule that reported errors" {
+    nixmod ok.nix 'home.packages = with pkgs; [
+    mise
+  ];'
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" != *"[OK]   bootstrap"* ]]
+}
+
+@test "a scan that fails is a validation failure" {
+    printf '#!/bin/sh\nexit 4\n' >"$STUBS/awk"; chmod +x "$STUBS/awk"
+    git -C "$R" add -A
+    PATH="$STUBS:$PATH" run bash "$R/ops/validate-config.sh"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"scan failed"* ]]
+}

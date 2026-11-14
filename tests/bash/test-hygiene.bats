@@ -47,7 +47,10 @@ setup() {
     # The nested bats run and the tmux server must not write to the suite HOME.
     export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
     sock="$BATS_TEST_TMPDIR/real-tmux.sock"
-    tmux -S "$sock" new-session -d -s mine 'sleep 600'
+    # The session's command runs through the login shell (fish here), which
+    # creates ~/.config/fish: give it a scratch HOME, not the suite's.
+    mkdir -p "$BATS_TEST_TMPDIR/home"
+    HOME="$BATS_TEST_TMPDIR/home" tmux -S "$sock" new-session -d -s mine 'sleep 600'
     # Inside tmux, TMUX names the client's server socket.
     run env TMUX="$sock,99999,0" TMUX_PANE=%0 bats -f 'invalid arguments' \
         "$REPO_ROOT/ops/projects/logging/test/log-workspace.bats"

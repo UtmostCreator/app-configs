@@ -35,14 +35,23 @@ DEPLOY_DIR="$HOME/.config/app-configs"
 MARKER_BEGIN="# >>> app-configs ssh-agent >>>"
 MARKER_END="# <<< app-configs ssh-agent <<<"
 
-ACTION="install"
-if [ "${1:-}" = "--remove" ] || [ "${1:-}" = "-r" ]; then
-    ACTION="remove"
-fi
-
 log()  { printf '[ssh-agent-setup] %s\n' "$*"; }
 warn() { printf '[ssh-agent-setup][WARN] %s\n' "$*" >&2; }
 die()  { printf '[ssh-agent-setup][ERROR] %s\n' "$*" >&2; exit 1; }
+
+usage() {
+    printf 'Usage: %s [--remove|-r | --help|-h]\n' "${0##*/}"
+}
+
+# Exactly zero or one known flag; anything else is a typo that must not
+# silently run an install.
+ACTION="install"
+case "$#:${1:-}" in
+    0:)             ;;
+    1:--remove|1:-r) ACTION="remove" ;;
+    1:--help|1:-h)  usage; exit 0 ;;
+    *)              usage >&2; warn "unknown or extra argument(s): $*"; exit 2 ;;
+esac
 
 detect_os() {
     case "$(uname -s)" in
@@ -66,33 +75,64 @@ detect_shell() {
     esac
 }
 
+# strip_block <file>: print <file> without the managed block. Fails unless
+# the markers are well formed: at most one begin/end pair, begin before end,
+# no nesting, no stray or unterminated marker. This keeps a damaged file from
+# being truncated.
+strip_block() {
+    awk -v b="$MARKER_BEGIN" -v e="$MARKER_END" '
+        function fail(msg) { print msg > "/dev/stderr"; bad = 1; exit 2 }
+        $0 == b { if (inb)  fail("nested begin marker")
+                  if (seen) fail("duplicate begin marker")
+                  inb = 1; seen = 1; next }
+        $0 == e { if (!inb) fail("end marker without begin marker")
+                  inb = 0; next }
+        !inb    { print }
+        END     { if (bad) exit 2
+                  if (inb) { print "begin marker without end marker" > "/dev/stderr"; exit 2 } }
+    ' "$1"
+}
+
+# remove_block <file>: drop the managed block in place. Aborts the whole run,
+# leaving the file untouched, when the markers are not a single clean pair.
+# Writes through `cat >` so the file keeps its mode, owner and symlink.
+remove_block() {
+    local f="$1" tmp
+    [ -f "$f" ] || return 0
+    grep -qF -e "$MARKER_BEGIN" -e "$MARKER_END" "$f" || return 0
+    tmp="$(mktemp "${TMPDIR:-/tmp}/ssh-agent-setup.XXXXXX")"
+    if ! strip_block "$f" >"$tmp"; then
+        rm -f "$tmp"
+        die "$f has missing, duplicate or nested app-configs ssh-agent markers; fix it by hand. Nothing was changed."
+    fi
+    cat "$tmp" >"$f"
+    rm -f "$tmp"
+}
+
+# The installer owns only the marked block, never other lines. The directive
+# order matters: IgnoreUnknown must come before UseKeychain so non-Apple ssh
+# builds do not reject the unknown option.
 ensure_macos_ssh_config() {
     local cfg="$HOME/.ssh/config"
     mkdir -p "$HOME/.ssh"
     chmod 700 "$HOME/.ssh"
-    [ -f "$cfg" ] || { umask 077; : > "$cfg"; }
-    if ! grep -qE '^[[:space:]]*UseKeychain[[:space:]]+yes' "$cfg"; then
-        log "Adding 'Host *' Keychain block to ~/.ssh/config"
-        {
-            printf '\n%s\n' "$MARKER_BEGIN"
-            printf 'Host *\n'
-            printf '    AddKeysToAgent yes\n'
-            printf '    UseKeychain yes\n'
-            printf '    IgnoreUnknown UseKeychain\n'
-            printf '%s\n' "$MARKER_END"
-        } >> "$cfg"
-        chmod 600 "$cfg"
+    if [ ! -f "$cfg" ]; then
+        (umask 077; : > "$cfg")
     fi
+    remove_block "$cfg"
+    log "Writing managed 'Host *' Keychain block in ~/.ssh/config"
+    {
+        printf '\n%s\n' "$MARKER_BEGIN"
+        printf 'Host *\n'
+        printf '    AddKeysToAgent yes\n'
+        printf '    IgnoreUnknown UseKeychain\n'
+        printf '    UseKeychain yes\n'
+        printf '%s\n' "$MARKER_END"
+    } >> "$cfg"
 }
 
 remove_macos_ssh_config_block() {
-    local cfg="$HOME/.ssh/config"
-    [ -f "$cfg" ] || return 0
-    awk -v b="$MARKER_BEGIN" -v e="$MARKER_END" '
-        $0 == b { skip = 1; next }
-        $0 == e { skip = 0; next }
-        !skip   { print }
-    ' "$cfg" > "$cfg.tmp" && mv "$cfg.tmp" "$cfg"
+    remove_block "$HOME/.ssh/config"
 }
 
 check_keychain_linux() {
@@ -138,35 +178,45 @@ install_posix_snippet() {
     touch "$rc"
     if grep -qF "$MARKER_BEGIN" "$rc"; then
         log "Source block already present in $rc; refreshing."
-        awk -v b="$MARKER_BEGIN" -v e="$MARKER_END" '
-            $0 == b { skip = 1; next }
-            $0 == e { skip = 0; next }
-            !skip   { print }
-        ' "$rc" > "$rc.tmp" && mv "$rc.tmp" "$rc"
     fi
+    remove_block "$rc"
     {
         printf '\n%s\n' "$MARKER_BEGIN"
         if [ -n "${APP_CONFIGS_SSH_KEYS:-}" ]; then
             printf 'export APP_CONFIGS_SSH_KEYS=%q\n' "$APP_CONFIGS_SSH_KEYS"
         fi
-        printf '[ -f "%s/ssh-agent.sh" ] && . "%s/ssh-agent.sh"\n' \
-            "$DEPLOY_DIR" "$DEPLOY_DIR"
+        # Literal $HOME so the rc stays portable across home paths.
+        # shellcheck disable=SC2016
+        printf '%s\n' '[ -f "$HOME/.config/app-configs/ssh-agent.sh" ] && . "$HOME/.config/app-configs/ssh-agent.sh"'
         printf '%s\n' "$MARKER_END"
     } >> "$rc"
     log "Wired $rc to source the snippet."
 }
 
+# remove_installed_file <path> <repo-source>: delete a deployed loader only
+# when this installer created it. chezmoi-managed files are never touched, and
+# a file that differs from the repo snippet was written by someone else.
+remove_installed_file() {
+    local path="$1" src="$2"
+    [ -f "$path" ] || return 0
+    if chezmoi_managed "$path"; then
+        log "$path is managed by chezmoi; keeping it."
+    elif cmp -s "$path" "$src"; then
+        rm -f "$path"
+        log "Removed $path"
+    else
+        warn "$path differs from the installer's copy; keeping it."
+    fi
+}
+
 remove_posix_snippet() {
     local rc="$1"
     [ -f "$rc" ] || return 0
-    chezmoi_managed "$rc" && return 0
-    awk -v b="$MARKER_BEGIN" -v e="$MARKER_END" '
-        $0 == b { skip = 1; next }
-        $0 == e { skip = 0; next }
-        !skip   { print }
-    ' "$rc" > "$rc.tmp" && mv "$rc.tmp" "$rc"
-    rm -f "$DEPLOY_DIR/ssh-agent.sh"
-    log "Removed snippet from $rc"
+    if chezmoi_managed "$rc"; then
+        return 0
+    fi
+    remove_block "$rc"
+    log "Removed snippet block from $rc (if present)"
 }
 
 install_fish_snippet() {
@@ -179,16 +229,18 @@ install_fish_snippet() {
         log "Installed snippet to $conf_d/ssh-agent.fish"
     fi
     if [ -n "${APP_CONFIGS_SSH_KEYS:-}" ] && command -v fish >/dev/null 2>&1; then
+        # The value travels as argv ($argv[1]) and is split on whitespace
+        # into a fish list; it is never parsed as fish code.
         # shellcheck disable=SC2016
-        fish -c "set -Ux APP_CONFIGS_SSH_KEYS $APP_CONFIGS_SSH_KEYS" || true
-        log "Set fish universal var APP_CONFIGS_SSH_KEYS=$APP_CONFIGS_SSH_KEYS"
+        fish -c 'set -Ux APP_CONFIGS_SSH_KEYS (string match -r -a "\S+" -- $argv[1])' \
+            "$APP_CONFIGS_SSH_KEYS" \
+            || die "fish failed to set APP_CONFIGS_SSH_KEYS"
+        log "Set fish universal var APP_CONFIGS_SSH_KEYS"
     fi
 }
 
 remove_fish_snippet() {
-    chezmoi_managed "$HOME/.config/fish/conf.d/ssh-agent.fish" && return 0
-    rm -f "$HOME/.config/fish/conf.d/ssh-agent.fish"
-    log "Removed fish snippet"
+    remove_installed_file "$HOME/.config/fish/conf.d/ssh-agent.fish" "$SNIPPET_FISH"
 }
 
 main() {
@@ -228,6 +280,7 @@ main() {
         remove_posix_snippet "$HOME/.bashrc"
         remove_posix_snippet "$HOME/.bash_profile"
         remove_posix_snippet "$HOME/.zshrc"
+        remove_installed_file "$DEPLOY_DIR/ssh-agent.sh" "$SNIPPET_SH"
         remove_fish_snippet
         [ "$os" = "darwin" ] && remove_macos_ssh_config_block
         rmdir "$DEPLOY_DIR" 2>/dev/null || true

@@ -83,7 +83,9 @@ _app_configs_ssh_linux_keychain() {
             *)  [ -f "$HOME/.ssh/$k" ] && set -- "$@" "$k" ;;
         esac
     done < <(_app_configs_ssh_key_names)
-    eval "$(keychain --eval --quiet --agents ssh "$@")"
+    # No --agents: keychain 3 deprecates it (warning on every shell). Without
+    # it, ssh key names mean ssh-only in both keychain 2.8+ (default) and 3.x.
+    eval "$(keychain --eval --quiet "$@")"
 }
 
 _app_configs_ssh_linux_plain() {

@@ -7,6 +7,10 @@
 # writes to scratch space instead of the real ~/.config, ~/.local/state,
 # ~/.gitconfig, tmux server or systemd user bus. PATH is kept as is: tests
 # need the real Nix profile.
+#
+# Files and tests run in parallel (bats --jobs) when GNU parallel is
+# available. RUN_BATS_JOBS=<n> picks the job count; RUN_BATS_JOBS=1 runs
+# sequentially. Passing -j/--jobs yourself overrides both.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,7 +28,11 @@ trap 'rm -rf "$scratch"' EXIT
 export HOME="$scratch/home"
 # Unset rather than point the XDG base dirs at the scratch HOME: tests that
 # give themselves their own HOME expect ~/.config and friends to follow it.
-unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME GIT_CONFIG_GLOBAL
+unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME GIT_CONFIG_GLOBAL
+# Except the cache: GNU parallel (bats --jobs) exports XDG_CACHE_HOME="" when
+# it is unset, and Nix then writes its eval/fetcher caches to ./nix/ in the
+# repository. A cache shared by the whole run is harmless.
+export XDG_CACHE_HOME="$HOME/.cache"
 export XDG_RUNTIME_DIR="$scratch/runtime"
 export TMUX_TMPDIR="$scratch/tmux"
 # Never reach the developer's tmux server, ssh agent or session bus.
@@ -38,17 +46,32 @@ printf '[user]\n\tname = bats\n\temail = bats@example.invalid\n[init]\n\tdefault
 # them too, or they silently stop being exercised.
 args=(tests/bash ops/projects/logging/test)
 
+jobs="${RUN_BATS_JOBS:-}"
+if [[ -z "$jobs" ]]; then
+    jobs="$(nproc 2>/dev/null || echo 1)"
+fi
+user_jobs=0
+for arg in "$@"; do
+    case "$arg" in -j | --jobs | --jobs=*) user_jobs=1 ;; esac
+done
+if [[ "$user_jobs" == 0 && "$jobs" =~ ^[0-9]+$ && "$jobs" -gt 1 ]] \
+    && command -v parallel >/dev/null 2>&1 \
+    && [[ "$(parallel --version 2>/dev/null </dev/null)" == *"GNU parallel"* ]]; then
+    args=(--jobs "$jobs" "${args[@]}")
+fi
+
 status=0
 bats "${args[@]}" "$@" || status=$?
 
 # Tests must write inside their own temp dirs. Anything left in the shared
 # scratch HOME would have landed in the real HOME on a plain `bats` run.
-# Exempt: the git identity and ~/.cache (disposable).
+# Exempt: the git identity, GNU parallel's state and ~/.cache (disposable,
+# and shared by tests that set their own HOME under bats --jobs).
 shopt -s dotglob nullglob
 leaks=()
 for path in "$HOME"/*; do
     case "${path#"$HOME"/}" in
-        .gitconfig | .cache) ;;
+        .gitconfig | .parallel | .cache) ;;
         *) leaks+=("${path#"$HOME"/}") ;;
     esac
 done

@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/Projects/ai-monitoring/adapters/claude-code/capture-response.mjs",
+            "command": "[ -f ~/Projects/ai-monitoring/adapters/claude-code/capture-response.mjs ] && node ~/Projects/ai-monitoring/adapters/claude-code/capture-response.mjs || true",
             "timeout": 10
           }
         ]
@@ -39,7 +39,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/Projects/ai-monitoring/adapters/claude-code/capture-response.mjs",
+            "command": "[ -f ~/Projects/ai-monitoring/adapters/claude-code/capture-response.mjs ] && node ~/Projects/ai-monitoring/adapters/claude-code/capture-response.mjs || true",
             "timeout": 10
           }
         ]
@@ -50,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ~/Projects/ai-monitoring/adapters/claude-code/capture-response.mjs",
+            "command": "[ -f ~/Projects/ai-monitoring/adapters/claude-code/capture-response.mjs ] && node ~/Projects/ai-monitoring/adapters/claude-code/capture-response.mjs || true",
             "timeout": 10
           }
         ]

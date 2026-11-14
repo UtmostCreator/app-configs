@@ -1,7 +1,9 @@
 # Daily-loop abbreviations, mined from ~27k commands of real shell history
 # (git status/add/commit/push loop, php artisan, npm). Abbreviations expand in
 # place, so the full command is what lands in history. zsh twins live in the
-# "cli shortcuts" block of ~/.zshrc; tests/bash/cli-abbr.bats keeps them equal.
+# "cli shortcuts" block of ~/.zshrc; tests/bash/cli-abbr.bats keeps the
+# abbreviations equal. The functions gi, nreset, patw, zc and hms are
+# fish-only and have no zsh twin.
 # Reference: docs/reference/cli-shortcuts.md
 
 # git (oh-my-zsh git-plugin names; the expansions use the repo's git aliases)

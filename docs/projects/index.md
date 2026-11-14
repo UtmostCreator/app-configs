@@ -4,8 +4,8 @@ Generic tmux + health + GitHub PR helpers for N sibling project repos.
 
 Everything is config-driven — there are no project names in any tracked
 script. Real per-host values live in `home/.chezmoidata/projects.yaml`
-(gitignored). The committed example at `home/personal.yaml.example`'s
-sibling `home/projects.yaml.example` shows the schema with placeholders.
+(gitignored). The committed template `home/projects.yaml.example` shows the
+schema with placeholders; copy it there and edit it.
 
 ## What it gives you
 

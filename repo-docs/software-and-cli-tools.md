@@ -104,7 +104,7 @@ mise run tools:optional:install
 - **[shfmt](https://github.com/mvdan/sh)** - shell formatting check for tracked scripts
 - **[actionlint](https://github.com/rhysd/actionlint)** - GitHub Actions workflow validation
 - **[lychee](https://github.com/lycheeverse/lychee)** - Markdown and text link checking for repo docs
-- **[bats-core](https://github.com/bats-core/bats-core)** - shell test runner used by `tests/shell/`
+- **[bats-core](https://github.com/bats-core/bats-core)** - shell test runner used by `tests/bash/` and `ops/projects/logging/test/`
 - **[yq](https://github.com/mikefarah/yq)** - YAML querying for Copilot command policy loading
 
 ### LLM Observability / Eval Stack (Phoenix + promptfoo)

@@ -31,10 +31,9 @@ ops/unix/
     ssh-agent-setup.sh           # idempotent installer (install / --remove);
                                  # also re-used by ops/bootstrap.sh step 8.
 
-docs/unix/
-    QUICKSTART.md                # 1-command runbook
-    ssh-agent-setup.md           # this file
-    ssh-agent-snippets.md        # short reference from the original README
+docs/getting-started/unix-quickstart.md   # 1-command runbook
+docs/guides/ssh-agent-setup.md            # this file
+docs/reference/ssh-agent-snippets.md      # short reference from the original README
 ```
 
 ## How the loader decides what to do

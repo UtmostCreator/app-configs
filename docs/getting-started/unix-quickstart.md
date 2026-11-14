@@ -52,7 +52,13 @@ Files deployed:
 | `~/.config/app-configs/ssh-agent.sh`          | `home/dot_config/app-configs/ssh-agent.sh` (chezmoi-managed) |
 | `~/.config/fish/conf.d/ssh-agent.fish`        | `home/dot_config/fish/conf.d/ssh-agent.fish` (chezmoi-managed) |
 
-The bash/zsh rc is edited inside a marker-delimited block:
+On a chezmoi host (the normal case here) `~/.bashrc`, `~/.zshrc` and the fish
+`conf.d` loader are chezmoi-managed and **already source the loader**, so
+there is nothing to add by hand, and editing them would trip the `sys-update`
+preflight. The installer detects this and leaves them alone.
+
+On a home that chezmoi does not manage, the installer edits the bash/zsh rc
+inside a marker-delimited block:
 
 ```bash
 # >>> app-configs ssh-agent >>>
@@ -60,11 +66,15 @@ The bash/zsh rc is edited inside a marker-delimited block:
 # <<< app-configs ssh-agent <<<
 ```
 
-Re-running the installer refreshes the block in place.
+Re-running the installer refreshes the block in place. The rest of this page
+(manual steps) applies only to non-chezmoi homes.
 
 ---
 
 ## Manual setup (without the installer)
+
+> Skip this section on a chezmoi host: `chezmoi apply` (`sys-update`) deploys
+> the snippet and the rc files already source it.
 
 ### Linux / WSL — bash / zsh
 
@@ -79,7 +89,7 @@ brew install keychain                   # Homebrew on Linux
 mkdir -p ~/.config/app-configs
 cp home/dot_config/app-configs/ssh-agent.sh ~/.config/app-configs/
 
-# 3. Add to ~/.bashrc or ~/.zshrc (idempotent — only add once):
+# 3. Non-chezmoi homes only: add to ~/.bashrc or ~/.zshrc (only once):
 cat >> ~/.bashrc <<'EOF'
 
 # >>> app-configs ssh-agent >>>

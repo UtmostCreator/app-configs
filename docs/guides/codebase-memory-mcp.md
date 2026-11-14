@@ -28,7 +28,8 @@ detected host and restarts the dashboard. Home Manager applies the current
 configuration in this checkout, including other local configuration edits.
 No flake inputs are updated, and no changes are committed or pushed.
 Failed activation leaves the release lock available for retry on the next run.
-The checkout must remain at `~/Projects/app-configs` for the timer to find it.
+The timer finds the checkout through `chezmoi source-path`, so the clone can
+live anywhere chezmoi is configured to use.
 
 ```bash
 systemctl --user list-timers 'codebase-memory-mcp-*'

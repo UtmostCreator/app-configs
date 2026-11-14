@@ -9,11 +9,13 @@
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    # install.sh prepends the Nix default profile to PATH (and sources its
-    # profile scripts); a real nix there would shadow the stub and run against
-    # the scratch repo. NIX_PATH_REFRESH=0 turns that off for the test, so it
-    # runs on hosts that do have a system Nix (CI runners always do).
-    export NIX_PATH_REFRESH=0
+    # install.sh prepends the Nix default profile to PATH; point it (and the
+    # NixOS markers) at scratch paths so a host's real nix cannot shadow the stub.
+    unset NIX_CONFIG
+    export INSTALL_NIX_DEFAULT_PROFILE="$BATS_TEST_TMPDIR/no-nix-profile" \
+        INSTALL_ETC_PROFILE_D="$BATS_TEST_TMPDIR/no-profile.d" \
+        INSTALL_NIXOS_MARKER="$BATS_TEST_TMPDIR/no-nixos-marker" \
+        INSTALL_OS_RELEASE="$BATS_TEST_TMPDIR/no-os-release"
 
     FAKE="$BATS_TEST_TMPDIR/repo"
     STUBS="$BATS_TEST_TMPDIR/bin"

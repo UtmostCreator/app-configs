@@ -291,3 +291,100 @@ nixmod() {
     [ "$status" -ne 0 ]
     [[ "$output" == *"scan failed"* ]]
 }
+
+# --- xdg.configFile allowlist and path collisions (rules 11-12) ------------
+
+@test "rule 11: allowlisted xdg.configFile keys pass in every spelling" {
+    nixmod ok.nix 'xdg.configFile."flameshot/flameshot.ini".text = "x";
+  xdg.configFile."wireplumber/wireplumber.conf.d/51-kanto-ora4.conf" = lib.mkIf true { text = "x"; };
+  xdg.configFile = { "gremlins/gremlins/.gremlins.yaml".text = "x"; };
+  xdg = { configFile."mimeapps.list".text = "x"; };
+  xdg.configFile."systemd/user/foo.service".force = true;
+  xdg.configFile."systemd/user/${n}.timer".force = true;'
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+@test "rule 11: other xdg.configFile keys fail in every spelling" {
+    local body
+    local -a bodies=(
+        'xdg.configFile."fish/config.fish".text = "x";'
+        'xdg.configFile."fish/config.fish" = { text = "x"; };'
+        'xdg.configFile = { "fish/config.fish".text = "x"; };'
+        'xdg = { configFile."fish/config.fish".text = "x"; };'
+        'xdg.configFile = lib.mkIf true { "fish/config.fish".text = "x"; };'
+        'xdg.configFile."${n}/x.conf".text = "x";'
+        'xdg.configFile."flameshot/flameshot.ini.bak".text = "x";'
+        'xdg.configFile."systemd/other/x".text = "x";'
+    )
+    for body in "${bodies[@]}"; do
+        nixmod ok.nix "$body"
+        validate
+        [ "$status" -ne 0 ] || { echo "not rejected: $body"; return 1; }
+        [[ "$output" == *"is not allowlisted"* ]] || { echo "unreported: $body: $output"; return 1; }
+    done
+}
+
+@test "rule 11: xdg.configFile = <expr> is a note in text mode, not a failure" {
+    nixmod ok.nix 'xdg.configFile = takeOver;'
+    validate
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"[NOTE]"*"--eval"* ]]
+}
+
+@test "rule 11: a commented-out xdg.configFile is ignored" {
+    nixmod ok.nix '# xdg.configFile."fish/config.fish".text = "x";'
+    validate
+    [ "$status" -eq 0 ]
+}
+
+# collision fixtures: an allowlisted HM target that is also a chezmoi source
+collide() {
+    nixmod ok.nix 'xdg.configFile."flameshot/flameshot.ini".text = "x";'
+    mkdir -p "$R/home/dot_config/flameshot"
+    printf '[General]\n' >"$R/home/dot_config/flameshot/$1"
+}
+
+@test "rule 12: an allowlisted target that is also a chezmoi source fails" {
+    local src
+    for src in flameshot.ini private_flameshot.ini flameshot.ini.tmpl executable_flameshot.ini.tmpl; do
+        rm -rf "$R/home/dot_config"
+        collide "$src"
+        validate
+        [ "$status" -ne 0 ] || { echo "not rejected: $src"; return 1; }
+        [[ "$output" == *"collides with chezmoi source home/dot_config/flameshot/$src"* ]] || { echo "unreported: $src: $output"; return 1; }
+    done
+}
+
+@test "rule 12: a dot_ directory and a top-level file collide too" {
+    nixmod ok.nix 'xdg.configFile."mimeapps.list".text = "x";
+  xdg.configFile."gremlins/gremlins/.gremlins.yaml".text = "x";'
+    mkdir -p "$R/home/dot_config/gremlins/gremlins"
+    printf 'a: 1\n' >"$R/home/dot_config/mimeapps.list"
+    printf 'a: 1\n' >"$R/home/dot_config/gremlins/gremlins/dot_gremlins.yaml"
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"\"mimeapps.list\""*"collides"* ]]
+    [[ "$output" == *"\"gremlins/gremlins/.gremlins.yaml\""*"collides"* ]]
+}
+
+@test "rule 12: no collision when .chezmoiignore excludes the target on Linux" {
+    collide flameshot.ini
+    printf '{{- if ne .chezmoi.os "darwin" }}\n# HM owns it on Linux\n.config/flameshot\n.config/flameshot/**\n{{- end }}\n' >"$R/home/.chezmoiignore"
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+@test "rule 12: an ignore line only for darwin, or commented out, does not count" {
+    collide flameshot.ini
+    printf '{{- if eq .chezmoi.os "darwin" }}\n.config/flameshot\n{{- end }}\n# .config/flameshot\n' >"$R/home/.chezmoiignore"
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"collides"* ]]
+}
+
+@test "rule 12: a different chezmoi file in the same directory is not a collision" {
+    collide other.ini
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}

@@ -377,6 +377,106 @@ if [[ -d nix ]]; then
   fi
 fi
 
+# 11. xdg.configFile targets in Home Manager modules: one owner per target
+# path. Home Manager may own only the allowlisted keys below (plus systemd/user/*
+# takeover entries); every other ~/.config file belongs to chezmoi
+# (home/dot_config). `xdg.configFile = <expr>` (e.g. a let-bound genAttrs) is
+# not followable in text; it is reported as a note and covered by --eval.
+ALLOWED_XDG_KEYS="flameshot/flameshot.ini wireplumber/wireplumber.conf.d/51-kanto-ora4.conf gremlins/gremlins/.gremlins.yaml mimeapps.list"
+ALLOWED_XDG_PREFIX="systemd/user/"
+
+xdg_key_allowed() {
+  local k="$1" a
+  for a in $ALLOWED_XDG_KEYS; do
+    [[ "$k" == "$a" ]] && return 0
+  done
+  [[ "$k" == "$ALLOWED_XDG_PREFIX"* ]]
+}
+
+e0=$ERRORS
+XDG_TEXT_KEYS=""
+while IFS='|' read -r kind where a _; do
+  case "$kind" in
+    XDG)
+      XDG_TEXT_KEYS+="$a"$'\n'
+      xdg_key_allowed "$a" ||
+        err "xdg.configFile.\"$a\" at $where is not allowlisted (allowed: $ALLOWED_XDG_KEYS, $ALLOWED_XDG_PREFIX*); other ~/.config files belong to chezmoi (home/dot_config)"
+      ;;
+    XDGDYN)
+      printf '[NOTE] %s: xdg.configFile = %s is not checked in text mode; run with --eval\n' "$where" "$a"
+      ;;
+  esac
+done <<<"$NIX_FINDINGS"
+if ((ERRORS == e0 && scan_failed == 0)); then
+  ok "xdg.configFile keys limited to the allowlist"
+fi
+
+# 12. Path collisions: an xdg.configFile target must not also be a chezmoi
+# source under home/dot_config, unless home/.chezmoiignore excludes it on
+# Linux (a `.config/<target>` line, or a parent directory, inside an
+# `ne .chezmoi.os "darwin"` block). Source names are mapped to target names by
+# dropping chezmoi attribute prefixes (exact_, private_, executable_, ...), the
+# dot_ prefix (-> ".") and a .tmpl suffix. Prints "<target>\t<source path>".
+chezmoi_config_sources() {
+  tr '\0' '\n' <"$TRACKED_FILE" | awk '
+    index($0, "home/dot_config/") == 1 {
+      p = substr($0, length("home/dot_config/") + 1)
+      n = split(p, c, "/"); out = ""
+      for (i = 1; i <= n; i++) {
+        s = c[i]
+        while (match(s, /^(exact|private|readonly|executable|empty|create|modify|remove|symlink|literal)_/)) s = substr(s, RLENGTH + 1)
+        if (s ~ /^dot_/) s = "." substr(s, 5)
+        if (i == n) sub(/\.tmpl$/, "", s)
+        out = out (i > 1 ? "/" : "") s
+      }
+      print out "\t" $0
+    }'
+}
+
+# chezmoiignore_covers <target>: exit 0 when home/.chezmoiignore ignores
+# .config/<target> (or a parent) on Linux, per the block rule above.
+chezmoiignore_covers() {
+  [[ -f home/.chezmoiignore ]] || return 1
+  awk -v target="$1" '
+    BEGIN { n = split(target, c, "/"); for (i = 1; i <= n; i++) { p = (i > 1 ? p "/" : "") c[i]; want[".config/" p] = 1 } }
+    /^[ \t]*\{\{-?[ \t]*if / {
+      sp++
+      if ($0 ~ /eq \.chezmoi\.os "darwin"/) kind[sp] = "d"
+      else if ($0 ~ /ne \.chezmoi\.os "darwin"/) kind[sp] = "l"
+      else kind[sp] = "o"
+      next
+    }
+    /^[ \t]*\{\{-?[ \t]*else/ { if (kind[sp] == "d") kind[sp] = "l"; else if (kind[sp] == "l") kind[sp] = "d"; next }
+    /^[ \t]*\{\{-?[ \t]*end/ { if (sp > 0) sp--; next }
+    /^[ \t]*(#|\{\{)/ { next }
+    {
+      line = $0; gsub(/^[ \t]+|[ \t]+$/, "", line)
+      for (i = 1; i <= sp; i++) if (kind[i] != "l") next
+      if (line in want) found = 1
+    }
+    END { exit found ? 0 : 1 }' home/.chezmoiignore
+}
+
+# check_xdg_collisions <newline-separated xdg targets>
+check_xdg_collisions() {
+  local keys="$1" sources key tgt src
+  sources="$(chezmoi_config_sources)" || { err "cannot list chezmoi sources under home/dot_config"; return; }
+  while IFS= read -r key; do
+    [[ -z "$key" ]] && continue
+    while IFS=$'\t' read -r tgt src; do
+      [[ "$tgt" == "$key" ]] || continue
+      chezmoiignore_covers "$key" ||
+        err "xdg.configFile.\"$key\" (Home Manager) collides with chezmoi source $src; one owner per path: ignore it on Linux in home/.chezmoiignore or drop one side"
+    done <<<"$sources"
+  done <<<"$keys"
+}
+
+e0=$ERRORS
+check_xdg_collisions "$XDG_TEXT_KEYS"
+if ((ERRORS == e0)); then
+  ok "no xdg.configFile target is also a live chezmoi source"
+fi
+
 echo
 if ((ERRORS > 0)); then
   printf '[validate-config] %d invariant violation(s)\n' "$ERRORS" >&2

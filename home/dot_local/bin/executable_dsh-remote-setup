@@ -2,6 +2,24 @@
 # Finish or inspect private Android access to DeepSeek Harness.
 set -euo pipefail
 
+usage() {
+  printf 'Usage: dsh-remote-setup [-h|--help]\n'
+  printf 'Joins Tailscale, serves http://127.0.0.1:$DSH_REMOTE_PORT (default 3080) and\n'
+  printf 'enables the dsh-remote systemd user service. Linux only.\n'
+}
+
+case "$#:${1:-}" in
+  0:) ;;
+  1:-h | 1:--help) usage; exit 0 ;;
+  *) printf 'dsh-remote-setup: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
+esac
+
+# Everything below needs systemd and ss; refuse before any mutation.
+if [[ "$(uname -s)" != Linux ]]; then
+  printf 'dsh-remote-setup: Linux only (needs systemd --user); nothing changed.\n' >&2
+  exit 69
+fi
+
 port="${DSH_REMOTE_PORT:-3080}"
 
 command -v tailscale >/dev/null 2>&1 || {

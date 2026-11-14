@@ -35,10 +35,23 @@ DEPLOY_DIR="$HOME/.config/app-configs"
 MARKER_BEGIN="# >>> app-configs ssh-agent >>>"
 MARKER_END="# <<< app-configs ssh-agent <<<"
 
+usage() {
+    cat <<'USAGE'
+Usage:
+  ssh-agent-setup.sh             install the ssh-agent auto-loader
+  ssh-agent-setup.sh --remove    uninstall it (alias: -r)
+  ssh-agent-setup.sh --help      show this help (alias: -h)
+USAGE
+}
+
 ACTION="install"
-if [ "${1:-}" = "--remove" ] || [ "${1:-}" = "-r" ]; then
-    ACTION="remove"
-fi
+case "$#:${1:-}" in
+    0:)            ;;
+    1:--remove|1:-r) ACTION="remove" ;;
+    1:--help|1:-h) usage; exit 0 ;;
+    *)             printf '[ssh-agent-setup][ERROR] unknown argument(s): %s\n' "$*" >&2
+                   usage >&2; exit 2 ;;
+esac
 
 log()  { printf '[ssh-agent-setup] %s\n' "$*"; }
 warn() { printf '[ssh-agent-setup][WARN] %s\n' "$*" >&2; }
@@ -56,7 +69,7 @@ detect_os() {
 # login shell from /etc/passwd; fall back to $SHELL.
 detect_shell() {
     local sh
-    sh="$(getent passwd "$USER" 2>/dev/null | awk -F: '{print $7}' || true)"
+    sh="$(getent passwd "${USER:-$(id -un)}" 2>/dev/null | awk -F: '{print $7}' || true)"
     [ -n "$sh" ] || sh="${SHELL:-}"
     case "$(basename "$sh")" in
         fish) echo fish ;;
@@ -165,7 +178,9 @@ remove_posix_snippet() {
         $0 == e { skip = 0; next }
         !skip   { print }
     ' "$rc" > "$rc.tmp" && mv "$rc.tmp" "$rc"
-    rm -f "$DEPLOY_DIR/ssh-agent.sh"
+    if ! chezmoi_managed "$DEPLOY_DIR/ssh-agent.sh"; then
+        rm -f "$DEPLOY_DIR/ssh-agent.sh"
+    fi
     log "Removed snippet from $rc"
 }
 

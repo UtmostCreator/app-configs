@@ -55,6 +55,44 @@ chezmoi_manages() { # chezmoi_manages yes|no
     grep -q '>>> app-configs ssh-agent >>>' "$HOME/.zshrc"
 }
 
+@test "--help prints usage and changes nothing" {
+    chezmoi_manages no
+    rm -f "$HOME/.zshrc"
+    run env PATH="$STUBS:$PATH" SHELL=/bin/zsh bash "$SCRIPT" --help
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Usage"* ]]
+    [ ! -e "$HOME/.zshrc" ]
+    [ "$(cat "$HOME/.config/app-configs/ssh-agent.sh")" = "# managed loader" ]
+}
+
+@test "unknown arguments (--dry-run, typos) exit 2 and change nothing" {
+    chezmoi_manages no
+    rm -f "$HOME/.zshrc"
+    for a in --dry-run --remvoe foo; do
+        run env PATH="$STUBS:$PATH" SHELL=/bin/zsh bash "$SCRIPT" "$a"
+        [ "$status" -eq 2 ]
+        [ ! -e "$HOME/.zshrc" ]
+    done
+    run env PATH="$STUBS:$PATH" SHELL=/bin/zsh bash "$SCRIPT" --remove extra
+    [ "$status" -eq 2 ]
+}
+
+@test "--remove never deletes a chezmoi-managed loader even when the rc is not managed" {
+    printf '#!/bin/sh\n[ "$2" = "%s" ] && exit 0\nexit 1\n' "$HOME/.config/app-configs/ssh-agent.sh" >"$STUBS/chezmoi"
+    chmod +x "$STUBS/chezmoi"
+    printf '# >>> app-configs ssh-agent >>>\nx\n# <<< app-configs ssh-agent <<<\n' >"$HOME/.zshrc"
+    run env PATH="$STUBS:$PATH" SHELL=/bin/zsh bash "$SCRIPT" --remove
+    [ "$status" -eq 0 ]
+    [ -f "$HOME/.config/app-configs/ssh-agent.sh" ]
+    ! grep -q '>>> app-configs' "$HOME/.zshrc"
+}
+
+@test "an unset USER does not abort the installer" {
+    chezmoi_manages yes
+    run env -u USER PATH="$STUBS:$PATH" SHELL=/bin/zsh bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+}
+
 @test "the chezmoi-managed rc templates source the loader themselves" {
     : >"$BATS_TEST_TMPDIR/c.toml"
     for t in dot_zshrc.tmpl dot_bashrc.tmpl; do

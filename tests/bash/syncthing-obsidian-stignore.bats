@@ -105,8 +105,11 @@ run_sys_update() {
     printf '#!/usr/bin/env bash\nexit 0\n' > "$STUBS/$tool"
     chmod +x "$STUBS/$tool"
   done
-  # PREPARE fails closed unless `nix build --print-out-paths` names a directory.
+  # PREPARE fails closed unless `nix build --print-out-paths` names a directory,
+  # and ACTIVATE fails unless the switch leaves the profile on that directory.
   mkdir -p "$BATS_TEST_TMPDIR/hm-out"
+  printf '#!/usr/bin/env bash\nln -sfn "%s" "%s/nix/profiles/home-manager"\nexit 0\n' \
+    "$BATS_TEST_TMPDIR/hm-out" "$XDG_STATE_HOME" > "$STUBS/home-manager"
   cat > "$STUBS/nix" <<NIX
 #!/usr/bin/env bash
 case "\$*" in *--print-out-paths*) printf '%s\\n' "$BATS_TEST_TMPDIR/hm-out" ;; esac

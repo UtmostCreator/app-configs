@@ -28,6 +28,9 @@ teardown() {
     if [ -n "${SOCK:-}" ] && [ -S "$SOCK" ]; then
         "$REAL_TMUX" -S "$SOCK" kill-server 2>/dev/null || true
     fi
+    if [ -n "${SOCKDIR:-}" ]; then
+        rm -rf "$SOCKDIR"
+    fi
 }
 
 stub() {
@@ -47,10 +50,15 @@ esac'
 # Wrapper pinning the real tmux to a private socket; starts session dev-other.
 isolated_tmux() {
     command -v tmux >/dev/null 2>&1 || skip "tmux not installed"
-    SOCK="$BATS_TEST_TMPDIR/tmux.sock"
+    # Short temp path: unix socket paths cap near 108 bytes.
+    SOCKDIR="$(mktemp -d /tmp/tx.XXXXXX)"
+    SOCK="$SOCKDIR/s"
     REAL_TMUX="$(command -v tmux)"
     stub tmux 'exec "'"$REAL_TMUX"'" -S "'"$SOCK"'" "$@"'
-    "$REAL_TMUX" -S "$SOCK" -f /dev/null new-session -d -s dev-other
+    # Hermetic: panes started by the private server must never reach the real
+    # ssh, so ssh is a stub on the PATH the server starts with.
+    stub ssh 'exit 0'
+    PATH="$STUBS:$PATH" "$REAL_TMUX" -S "$SOCK" -f /dev/null new-session -d -s dev-other
 }
 
 @test "ssh.sh --force: kill-session target is exact" {

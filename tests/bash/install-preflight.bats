@@ -244,7 +244,7 @@ make_repo() {
     run env USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
     [ "$status" -ne 0 ]
     [[ "$output" == *"[install:error]"*"snapshot-home.sh"* ]]
-    ! grep -q 'args=apply' "$STUB_LOG"
+    ! grep -q 'args=.* apply' "$STUB_LOG"
 }
 
 @test "a missing snapshot helper stops the install before chezmoi apply" {
@@ -253,7 +253,7 @@ make_repo() {
     run env USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
     [ "$status" -ne 0 ]
     [[ "$output" == *"[install:error] ops/snapshot-home.sh missing"* ]]
-    ! grep -q 'args=apply' "$STUB_LOG"
+    ! grep -q 'args=.* apply' "$STUB_LOG"
 }
 
 # ── chezmoi source directory and mise working directory ─────────────────────
@@ -310,9 +310,7 @@ restricted_path() {
     echo "$output"
     [ "$status" -eq 0 ]
     grep -q 'args=profile install nixpkgs#home-manager$' "$STUB_LOG"
-    ! grep -q 'nixpkgs#chezmoi' "$STUB_LOG"
-    ! grep -q 'nixpkgs#mise' "$STUB_LOG"
-    ! grep -q 'nixpkgs#lefthook' "$STUB_LOG"
+    [ "$(grep -c 'nixpkgs#chezmoi\|nixpkgs#mise\|nixpkgs#lefthook' "$STUB_LOG")" -eq 0 ]
 }
 
 @test "an existing Nix without nix-command and flakes gets them for this run only" {

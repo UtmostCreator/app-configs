@@ -231,43 +231,81 @@ def pattern(cmd):
         return p + " +chain"
     return p
 
+ENV_ASSIGN = re.compile(r"[A-Z_][A-Z0-9_]*=.*")
+NPM_FAMILY = ("npm", "pnpm", "yarn", "bun")
+NPM_SUBS = NPM_SCRIPTS | {"run", "i", "ci", "install", "add", "outdated", "audit", "update", "exec", "test", "x"}
+TWO_LEVEL = ("nix", "docker", "gh")  # `nix flake check`, `docker compose up`, `gh pr view`
+
+def _sub_git(rest):
+    sub = rest[0]
+    return [sub if (sub in GIT_SUB or sub in GIT_ALIASES) else "<sub>"], rest[1:]
+
+def _sub_php(rest):
+    if rest[0] != "artisan":
+        return [], rest
+    words, rest = ["artisan"], rest[1:]
+    if rest:
+        ns = rest[0].split(":")[0]
+        words.append(rest[0] if ns in ARTISAN_NS and SUBCMD_RE.match(rest[0]) else "<artisan-cmd>")
+        rest = rest[1:]
+    return words, rest
+
+def _sub_npm(rest):
+    sub = rest[0] if SUBCMD_RE.match(rest[0]) and rest[0] in NPM_SUBS else "<sub>"
+    words, rest = [sub], rest[1:]
+    if sub == "run" and rest:
+        words.append(rest[0] if rest[0] in NPM_SCRIPTS else "<script>")
+        rest = rest[1:]
+    return words, rest
+
+def _sub_multi(head, rest):
+    if not SUBCMD_RE.match(rest[0]):
+        return [], rest
+    words, rest = [rest[0]], rest[1:]
+    if head in TWO_LEVEL and rest and SUBCMD_RE.match(rest[0]):
+        words.append(rest[0])
+        rest = rest[1:]
+    return words, rest
+
+def subcommand_words(head, rest):
+    """Readable subcommand words for known tools, and the arguments left over."""
+    if not rest:
+        return [], rest
+    if head == "git":
+        return _sub_git(rest)
+    if head == "php":
+        return _sub_php(rest)
+    if head in NPM_FAMILY:
+        return _sub_npm(rest)
+    if head in MULTI:
+        return _sub_multi(head, rest)
+    return [], rest
+
+def masked_args(rest):
+    """Arguments as placeholders, collapsing runs of the same placeholder."""
+    out, last = [], None
+    for t in rest:
+        n = norm_token(t)
+        if n == last and n.startswith("<"):
+            continue
+        out.append(n)
+        last = n
+    return out
+
 def _pattern(cmd):
     toks = split(cmd)
-    while toks and re.fullmatch(r"[A-Z_][A-Z0-9_]*=.*", toks[0]):
+    while toks and ENV_ASSIGN.fullmatch(toks[0]):
         toks = toks[1:]
     if not toks:
         return "<empty>"
     head = first_token(cmd)
     if head.startswith("<"):
         return head
-    out, rest = [head], toks[1:]
+    rest = toks[1:]
     if head == "sudo" and rest:
         return "sudo " + pattern(" ".join(shlex.quote(x) for x in rest))
-    if head == "git" and rest:
-        sub = rest[0]
-        out.append(sub if (sub in GIT_SUB or sub in GIT_ALIASES) else "<sub>"); rest = rest[1:]
-    elif head == "php" and rest and rest[0] == "artisan":
-        out.append("artisan"); rest = rest[1:]
-        if rest:
-            ns = rest[0].split(":")[0]
-            out.append(rest[0] if ns in ARTISAN_NS and SUBCMD_RE.match(rest[0]) else "<artisan-cmd>")
-            rest = rest[1:]
-    elif head in ("npm", "pnpm", "yarn", "bun") and rest:
-        out.append(rest[0] if SUBCMD_RE.match(rest[0]) and rest[0] in NPM_SCRIPTS | {"run", "i", "ci", "install", "add", "outdated", "audit", "update", "exec", "test", "x"} else "<sub>")
-        rest = rest[1:]
-        if out[-1] == "run" and rest:
-            out.append(rest[0] if rest[0] in NPM_SCRIPTS else "<script>"); rest = rest[1:]
-    elif head in MULTI and rest and SUBCMD_RE.match(rest[0]):
-        out.append(rest[0]); rest = rest[1:]
-        if head in ("nix", "docker", "gh", "mise") and rest and SUBCMD_RE.match(rest[0]) and head != "mise":
-            out.append(rest[0]); rest = rest[1:]
-    last = None
-    for t in rest:
-        n = norm_token(t)
-        if n == last and n.startswith("<"):
-            continue
-        out.append(n); last = n
-    return " ".join(out[:8])
+    words, rest = subcommand_words(head, rest)
+    return " ".join(([head] + words + masked_args(rest))[:8])
 
 GIT_ALIASES = set()
 
@@ -318,43 +356,51 @@ def raw_first(cmd):
     toks = split(cmd)
     return toks[0] if toks else ""
 
-def analyse_source(name, rows, top):
-    res = {"name": name, "entries": len(rows)}
+NOT_A_FAILURE = (0, None, -1, 130, 141)  # success, unknown, unrecorded, Ctrl-C, SIGPIPE
+WRAPPERS = ("bash", "sh", "zsh", "fish", "exec", "sudo", "env", "nix", "xargs", "source", "set")
+NIX_CMD = re.compile(r"^(sudo\s+)?(nix|home-manager|nixos-rebuild|sys-update|chezmoi)\b")
+CURVE_POINTS = (5, 10, 25, 50, 100, 200)
+NGRAM_GAP_S = 300  # consecutive commands further apart are not one sequence
+RETRY_GAP_S = 60
+
+def failed(r):
+    return r["exit"] not in NOT_A_FAILURE
+
+def date_range(rows):
     ts = [r["ts"] for r in rows if r["ts"]]
-    if ts:
-        res["date_range"] = [dt.datetime.fromtimestamp(min(ts), dt.timezone.utc).date().isoformat(),
-                             dt.datetime.fromtimestamp(max(ts), dt.timezone.utc).date().isoformat()]
-    ft = collections.Counter(first_token(r["cmd"]) for r in rows)
-    pc = collections.Counter(pattern(r["cmd"]) for r in rows)
-    res["top_first_tokens"] = ft.most_common(top)
-    res["top_patterns"] = pc.most_common(top)
-    n = len(rows) or 1
-    cum, curve, ranked = 0, {}, [c for _, c in pc.most_common()]
-    for i, c in enumerate(ranked, 1):
+    if not ts:
+        return None
+    day = lambda t: dt.datetime.fromtimestamp(t, dt.timezone.utc).date().isoformat()
+    return [day(min(ts)), day(max(ts))]
+
+def coverage_curve(pattern_counts, n):
+    cum, curve = 0, {}
+    for i, (_, c) in enumerate(pattern_counts.most_common(), 1):
         cum += c
-        if i in (5, 10, 25, 50, 100, 200):
+        if i in CURVE_POINTS:
             curve[i] = round(cum / n, 3)
-    res["coverage_curve"] = curve
-    res["distinct_patterns"] = len(pc)
-    timed = any(r["dur"] is not None for r in rows)
-    if not timed:
-        res["adoption"] = {k: sum(1 for r in rows if rx.search(r["cmd"].strip())) for k, rx in ADOPTION.items()}
-        return res
-    # workflows
+    return curve
+
+def adoption(rows):
+    return {k: sum(1 for r in rows if rx.search(r["cmd"].strip())) for k, rx in ADOPTION.items()}
+
+def workflow_stats(rows):
     wf = {}
     for wname, rx in WORKFLOWS:
         sel = [r for r in rows if rx.search(r["cmd"].strip()) and not interactive_label(r["cmd"])]
         if sel:
             wf[wname] = tstats(sel)
-    res["workflows"] = wf
-    # interactive classes
+    return wf
+
+def interactive_stats(rows):
     ic = collections.defaultdict(list)
     for r in rows:
-        l = interactive_label(r["cmd"])
-        if l:
-            ic[l].append(r)
-    res["interactive"] = {k: tstats(v, cap=False) for k, v in sorted(ic.items(), key=lambda kv: -len(kv[1]))}
-    # slowest repeated patterns by total time (non-interactive)
+        label = interactive_label(r["cmd"])
+        if label:
+            ic[label].append(r)
+    return {k: tstats(v, cap=False) for k, v in sorted(ic.items(), key=lambda kv: -len(kv[1]))}
+
+def slowest_by_total(rows, top):
     byp = collections.defaultdict(list)
     for r in rows:
         if not interactive_label(r["cmd"]):
@@ -362,128 +408,199 @@ def analyse_source(name, rows, top):
     slow = [(p, tstats(v)) for p, v in byp.items() if len(v) >= 3]
     slow = [s for s in slow if s[1]["total_min"]]
     slow.sort(key=lambda s: -s[1]["total_min"])
-    res["slowest_by_total"] = slow[:top]
-    # failures
-    known_exec = KNOWN | set(GIT_ALIASES)
-    f127 = collections.Counter()
-    for r in rows:
-        if r["exit"] == 127:
-            t = raw_first(r["cmd"])
-            if t in ("bash", "sh", "zsh", "fish", "exec", "sudo", "env", "nix", "xargs", "source", "set"):
-                f127["127 raised inside a %s-wrapped command/script" % t] += 1
-            elif t in KNOWN or shutil.which(t):
-                f127["known tool not on PATH at the time" if t in KNOWN else "<local-tool> not on PATH at the time"] += 1
-            else:
-                best = min(KNOWN, key=lambda k: lev(t, k)) if t else ""
-                f127[("typo of %s" % best) if t and 3 <= len(t) <= 12 and lev(t, best) <= (1 if len(best) <= 4 else 2) else "<unknown command>"] += 1
-    res["exit127"] = f127.most_common(top)
+    return slow[:top]
+
+def closest(word, vocab):
+    # sorted(): ties break alphabetically. min() over a set picked by hash
+    # order, which Python randomises per process, so reports differed run to run.
+    return min(sorted(vocab), key=lambda k: lev(word, k))
+
+def classify_127(first):
+    """Why a command exited 127 ("not found"), without naming private tools."""
+    if first in WRAPPERS:
+        return "127 raised inside a %s-wrapped command/script" % first
+    if first in KNOWN:
+        return "known tool not on PATH at the time"
+    if shutil.which(first):
+        return "<local-tool> not on PATH at the time"
+    best = closest(first, KNOWN) if first else ""
+    limit = 1 if len(best) <= 4 else 2
+    if first and 3 <= len(first) <= 12 and lev(first, best) <= limit:
+        return "typo of %s" % best
+    return "<unknown command>"
+
+def exit127(rows, top):
+    return collections.Counter(classify_127(raw_first(r["cmd"])) for r in rows if r["exit"] == 127).most_common(top)
+
+def git_subcommand_typos(rows, top):
+    vocab = GIT_SUB | set(GIT_ALIASES)
     gt = collections.Counter()
-    gsub = GIT_SUB | set(GIT_ALIASES)
     for r in rows:
         t = split(r["cmd"])
-        if len(t) > 1 and t[0] == "git" and not t[1].startswith("-") and t[1] not in gsub and r["exit"] not in (0, -1):
-            best = min(gsub, key=lambda k: lev(t[1], k))
+        if len(t) > 1 and t[0] == "git" and not t[1].startswith("-") and t[1] not in vocab and r["exit"] not in (0, -1):
+            best = closest(t[1], vocab)
             gt[("git typo of %s" % best) if lev(t[1], best) <= 2 else "git <unknown subcommand>"] += 1
-    res["git_subcommand_typos"] = gt.most_common(top)
+    return gt.most_common(top)
+
+def failing_patterns(rows):
+    """(failures per pattern, attempts per pattern), Ctrl-C/SIGPIPE excluded."""
     ex = [r for r in rows if r["exit"] is not None and r["exit"] not in FAIL_IGNORE]
-    fbp = collections.Counter(pattern(r["cmd"]) for r in ex if r["exit"] != 0)
-    tbp = collections.Counter(pattern(r["cmd"]) for r in ex)
-    res["top_failing_patterns"] = [(p, c, round(c / tbp[p], 2)) for p, c in fbp.most_common(top)]
-    res["exit_codes"] = collections.Counter(r["exit"] for r in rows).most_common(12)
-    # retries / sudo reruns within session
-    retries, sudo_rerun = collections.Counter(), collections.Counter()
-    bi, tri, rep = collections.Counter(), collections.Counter(), collections.Counter()
+    return (collections.Counter(pattern(r["cmd"]) for r in ex if r["exit"] != 0),
+            collections.Counter(pattern(r["cmd"]) for r in ex))
+
+def sessions(rows):
     sess = collections.defaultdict(list)
     for r in rows:
         sess[r["session"]].append(r)
     for s in sess.values():
         s.sort(key=lambda r: r["ts"])
+    return list(sess.values())
+
+def retries_and_sudo(sess):
+    """A failed command run again (or with sudo) within RETRY_GAP_S."""
+    retries, sudo_rerun = collections.Counter(), collections.Counter()
+    for s in sess:
         for a, b in zip(s, s[1:]):
             gap = b["ts"] - (a["ts"] + (a["dur"] or 0))
-            if a["exit"] not in (0, None, -1, 130, 141) and gap <= 60:
-                if b["cmd"].strip() == a["cmd"].strip():
-                    retries[pattern(a["cmd"])] += 1
-                elif b["cmd"].strip() in ("sudo " + a["cmd"].strip(), "sudo !!"):
-                    sudo_rerun[pattern(a["cmd"])] += 1
+            if not failed(a) or gap > RETRY_GAP_S:
+                continue
+            if b["cmd"].strip() == a["cmd"].strip():
+                retries[pattern(a["cmd"])] += 1
+            elif b["cmd"].strip() in ("sudo " + a["cmd"].strip(), "sudo !!"):
+                sudo_rerun[pattern(a["cmd"])] += 1
+    return retries, sudo_rerun
+
+def ngrams(sess):
+    """Back-to-back pattern sequences within NGRAM_GAP_S: bigrams, trigrams, repeats."""
+    bi, tri, rep = collections.Counter(), collections.Counter(), collections.Counter()
+    for s in sess:
         pats = [pattern(r["cmd"]) for r in s]
         tss = [r["ts"] for r in s]
         for i in range(len(pats) - 1):
-            if tss[i + 1] - tss[i] > 300:
+            if tss[i + 1] - tss[i] > NGRAM_GAP_S:
                 continue
             if pats[i] == pats[i + 1]:
-                rep[pats[i]] += 1; continue
+                rep[pats[i]] += 1
+                continue
             bi[(pats[i], pats[i + 1])] += 1
-            if i + 2 < len(pats) and tss[i + 2] - tss[i + 1] <= 300 and pats[i + 1] != pats[i + 2]:
+            if i + 2 < len(pats) and tss[i + 2] - tss[i + 1] <= NGRAM_GAP_S and pats[i + 1] != pats[i + 2]:
                 tri[(pats[i], pats[i + 1], pats[i + 2])] += 1
-    res["retry_same_cmd_60s"] = retries.most_common(top)
+    return bi, tri, rep
+
+def next_after_failure(sess, failing):
     after = collections.defaultdict(collections.Counter)
-    for s_ in sess.values():
-        for a_, b_ in zip(s_, s_[1:]):
-            if a_["exit"] not in (0, None, -1, 130, 141):
-                after[pattern(a_["cmd"])][pattern(b_["cmd"])] += 1
-    res["next_after_failure"] = {p: after[p].most_common(5) for p, _ in fbp.most_common(8)}
+    for s in sess:
+        for a, b in zip(s, s[1:]):
+            if failed(a):
+                after[pattern(a["cmd"])][pattern(b["cmd"])] += 1
+    return {p: after[p].most_common(5) for p, _ in failing.most_common(8)}
+
+def nix_failures(rows, top):
+    return collections.Counter(pattern(r["cmd"].strip()) for r in rows
+                               if NIX_CMD.match(r["cmd"].strip()) and failed(r)).most_common(top)
+
+def analyse_source(name, rows, top):
+    """All metrics for one history source. Key order is the report order."""
+    res = {"name": name, "entries": len(rows)}
+    span = date_range(rows)
+    if span:
+        res["date_range"] = span
+    pc = collections.Counter(pattern(r["cmd"]) for r in rows)
+    res["top_first_tokens"] = collections.Counter(first_token(r["cmd"]) for r in rows).most_common(top)
+    res["top_patterns"] = pc.most_common(top)
+    res["coverage_curve"] = coverage_curve(pc, len(rows) or 1)
+    res["distinct_patterns"] = len(pc)
+    if not any(r["dur"] is not None for r in rows):
+        # untimed sources (fish, bash) have no exit codes or sessions either
+        res["adoption"] = adoption(rows)
+        return res
+    res["workflows"] = workflow_stats(rows)
+    res["interactive"] = interactive_stats(rows)
+    res["slowest_by_total"] = slowest_by_total(rows, top)
+    res["exit127"] = exit127(rows, top)
+    res["git_subcommand_typos"] = git_subcommand_typos(rows, top)
+    fails, tries = failing_patterns(rows)
+    res["top_failing_patterns"] = [(p, c, round(c / tries[p], 2)) for p, c in fails.most_common(top)]
+    res["exit_codes"] = collections.Counter(r["exit"] for r in rows).most_common(12)
+    sess = sessions(rows)
+    retries, sudo_rerun = retries_and_sudo(sess)
+    bi, tri, rep = ngrams(sess)
+    res["retry_same_cmd_60s"] = retries.most_common(top)
+    res["next_after_failure"] = next_after_failure(sess, fails)
     res["retry_total"] = sum(retries.values())
     res["sudo_rerun"] = sudo_rerun.most_common(top)
     res["bigrams"] = [(" -> ".join(k), v) for k, v in bi.most_common(top)]
     res["trigrams"] = [(" -> ".join(k), v) for k, v in tri.most_common(top)]
     res["immediate_repeats"] = rep.most_common(10)
-    res["adoption"] = {k: sum(1 for r in rows if rx.search(r["cmd"].strip())) for k, rx in ADOPTION.items()}
-    nixerr = collections.Counter()
-    for r in rows:
-        c = r["cmd"].strip()
-        if re.match(r"^(sudo\s+)?(nix|home-manager|nixos-rebuild|sys-update|chezmoi)\b", c) and r["exit"] not in (0, None, -1, 130, 141):
-            nixerr[pattern(c)] += 1
-    res["nix_hm_failures"] = nixerr.most_common(top)
+    res["adoption"] = adoption(rows)
+    res["nix_hm_failures"] = nix_failures(rows, top)
     return res
 
 # ---------------------------------------------------------------- sys-update logs
-def analyse_sysupdate(d):
+STATUS_LINE = re.compile(r"^\[(✓|✗|!|·|→)\]")
+NIX_ERROR = re.compile(r"error: (Cannot build|Build failed|hash mismatch|Path '.*' .* not tracked|.* has been removed from nixpkgs|executing .git.)")
+RERUN_WINDOW_S = 1800
+
+def nix_error_kind(match):
+    k = match.group(1)
+    if "not tracked" in k:
+        return "path not tracked by git"
+    if "removed" in k:
+        return "package removed from nixpkgs"
+    if "git" in k:
+        return "git not on PATH"
+    return k
+
+def step_names(status, mark):
+    """Step names from status lines like '[✗] home-manager: switch failed'."""
+    return [re.sub(r":.*", "", l[4:]).strip() for l in status if l.startswith(mark)]
+
+def parse_run(path, start):
+    lines = open(path, encoding="utf-8", errors="replace").read().splitlines()
+    status = [l for l in lines if STATUS_LINE.match(l)]
+    fails = step_names(status, "[✗]")
+    report_only = len(lines) <= 8 and not fails
+    errs = collections.Counter(nix_error_kind(m) for m in map(NIX_ERROR.search, lines) if m)
+    return dict(start=start, dur=os.path.getmtime(path) - start, fails=fails,
+                warns=step_names(status, "[!]"), report_only=report_only, errs=errs,
+                ok=(not fails and not report_only))
+
+def load_runs(d):
     runs = []
     for f in sorted(os.listdir(d)):
         if not f.endswith(".log"):
             continue
-        p = os.path.join(d, f)
         try:
             start = dt.datetime.strptime(f[:16], "%Y%m%dT%H%M%SZ").replace(tzinfo=dt.timezone.utc).timestamp()
         except ValueError:
             continue
-        txt = open(p, encoding="utf-8", errors="replace").read()
-        lines = txt.splitlines()
-        status = [l for l in lines if re.match(r"^\[(✓|✗|!|·|→)\]", l)]
-        fails = [re.sub(r":.*", "", l[4:]).strip() for l in status if l.startswith("[✗]")]
-        warns = [re.sub(r":.*", "", l[4:]).strip() for l in status if l.startswith("[!]")]
-        steps = [re.sub(r"/\S+/", "", l[2:]).split()[0:3] for l in lines if l.startswith("$ ")]
-        final = status[-1][:4] if status else "?"
-        report_only = len(lines) <= 8 and not fails
-        errs = collections.Counter()
-        for l in lines:
-            m = re.search(r"error: (Cannot build|Build failed|hash mismatch|Path '.*' .* not tracked|.* has been removed from nixpkgs|executing .git.)", l)
-            if m:
-                k = m.group(1)
-                k = "path not tracked by git" if "not tracked" in k else ("package removed from nixpkgs" if "removed" in k else ("git not on PATH" if "git" in k else k))
-                errs[k] += 1
-        runs.append(dict(start=start, dur=os.path.getmtime(p) - start, fails=fails, warns=warns,
-                         nsteps=len(steps), report_only=report_only, errs=errs,
-                         ok=(not fails and not report_only)))
+        runs.append(parse_run(os.path.join(d, f), start))
+    return runs
+
+def minutes_pct(durs, q):
+    return rnd(pct(durs, q) / 60) if durs else None
+
+def run_day(run):
+    return dt.datetime.fromtimestamp(run["start"], dt.timezone.utc).date().isoformat()
+
+def analyse_sysupdate(d):
+    runs = load_runs(d)
     full = [r for r in runs if not r["report_only"]]
     durs_ok = [r["dur"] for r in full if r["ok"] and r["dur"] < 7200]
     durs_fail = [r["dur"] for r in full if not r["ok"] and r["dur"] < 7200]
-    fc = collections.Counter(f for r in runs for f in r["fails"])
-    wc = collections.Counter(w for r in runs for w in r["warns"])
-    ec = collections.Counter()
+    errors = collections.Counter()
     for r in runs:
-        ec.update(r["errs"])
-    # retries: a failed apply followed by another run within 30 min
-    chains = sum(1 for a, b in zip(full, full[1:]) if not a["ok"] and b["start"] - a["start"] < 1800)
+        errors.update(r["errs"])
+    # a failed apply followed by another run within RERUN_WINDOW_S
+    reruns = sum(1 for a, b in zip(full, full[1:]) if not a["ok"] and b["start"] - a["start"] < RERUN_WINDOW_S)
     return dict(runs=len(runs), report_or_preflight_only=len(runs) - len(full), apply_runs=len(full),
                 apply_success=sum(1 for r in full if r["ok"]),
-                ok_median_min=rnd(pct(durs_ok, .5) / 60) if durs_ok else None,
-                ok_p90_min=rnd(pct(durs_ok, .9) / 60) if durs_ok else None,
-                fail_median_min=rnd(pct(durs_fail, .5) / 60) if durs_fail else None,
-                failed_step_counts=fc.most_common(), warning_step_counts=wc.most_common(10),
-                nix_error_kinds=ec.most_common(), fail_then_rerun_within_30min=chains,
-                date_range=[dt.datetime.fromtimestamp(runs[0]["start"], dt.timezone.utc).date().isoformat(),
-                            dt.datetime.fromtimestamp(runs[-1]["start"], dt.timezone.utc).date().isoformat()] if runs else None)
+                ok_median_min=minutes_pct(durs_ok, .5), ok_p90_min=minutes_pct(durs_ok, .9),
+                fail_median_min=minutes_pct(durs_fail, .5),
+                failed_step_counts=collections.Counter(f for r in runs for f in r["fails"]).most_common(),
+                warning_step_counts=collections.Counter(w for r in runs for w in r["warns"]).most_common(10),
+                nix_error_kinds=errors.most_common(), fail_then_rerun_within_30min=reruns,
+                date_range=[run_day(runs[0]), run_day(runs[-1])] if runs else None)
 
 # ---------------------------------------------------------------- dotfiles inventory
 def inventory(repo):

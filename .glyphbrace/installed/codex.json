@@ -1,0 +1,373 @@
+{
+  "schema_version": 1,
+  "provider": "codex",
+  "bundle_digest": "1c7272576a650db8ac9872c395d37072574adc7f54a431fd460b303c812ac834",
+  "selection": {
+    "docs_mode": "full",
+    "tier": "maintainer",
+    "model_profile": "balanced",
+    "optional_skills": [
+      "autopilot",
+      "change-reporting",
+      "change-traceability"
+    ]
+  },
+  "files": [
+    {
+      "path": ".agents/skills/agent-definition-review/SKILL.md",
+      "kind": "skill",
+      "hash": "5c91f59d2a3a587aa46a8aef384ba371ce3262060b4630b63117ec0ccd2e787c",
+      "managed": "5c91f59d2a3a587aa46a8aef384ba371ce3262060b4630b63117ec0ccd2e787c"
+    },
+    {
+      "path": ".agents/skills/audit-agent-fleet/SKILL.md",
+      "kind": "skill",
+      "hash": "974adcb7e8e6a7883cb6a43807c25bc2fa0a866d594b29abf31e0af4574b95d8",
+      "managed": "974adcb7e8e6a7883cb6a43807c25bc2fa0a866d594b29abf31e0af4574b95d8"
+    },
+    {
+      "path": ".agents/skills/autopilot/SKILL.md",
+      "kind": "skill",
+      "hash": "57b9160f6a35be6042a540dfa3d2862eb48499dfdd7655bb3d3c9b470265df4a",
+      "managed": "57b9160f6a35be6042a540dfa3d2862eb48499dfdd7655bb3d3c9b470265df4a"
+    },
+    {
+      "path": ".agents/skills/bug-reproduction-and-fix/SKILL.md",
+      "kind": "skill",
+      "hash": "862ae15433449bf8725d3f31f9b9de22fea3dcb02b4ededc8e2c6b48e1653a95",
+      "managed": "862ae15433449bf8725d3f31f9b9de22fea3dcb02b4ededc8e2c6b48e1653a95"
+    },
+    {
+      "path": ".agents/skills/change-reporting/SKILL.md",
+      "kind": "skill",
+      "hash": "5e2dcb7d9afa26e671d1f3dd4d3a6afa1ea449d589a00976e9a2c4ba55b5d564",
+      "managed": "5e2dcb7d9afa26e671d1f3dd4d3a6afa1ea449d589a00976e9a2c4ba55b5d564"
+    },
+    {
+      "path": ".agents/skills/change-reporting/agents/openai.yaml",
+      "kind": "skill-file",
+      "hash": "a1499d95abd8447558c535fe5554adcc3c9b988a0a39264a6283d430effe1e94"
+    },
+    {
+      "path": ".agents/skills/change-traceability/SKILL.md",
+      "kind": "skill",
+      "hash": "2e9208d60575d5f3c7e0060939ebb7b9d9e2a8ca508e7b6f08f8dc97eedba365",
+      "managed": "2e9208d60575d5f3c7e0060939ebb7b9d9e2a8ca508e7b6f08f8dc97eedba365"
+    },
+    {
+      "path": ".agents/skills/characterization-testing/SKILL.md",
+      "kind": "skill",
+      "hash": "0d27ce89ef82a50e274946c89d51748dbfcae6d2b3c97f9daf8717b7950f43a5",
+      "managed": "0d27ce89ef82a50e274946c89d51748dbfcae6d2b3c97f9daf8717b7950f43a5"
+    },
+    {
+      "path": ".agents/skills/check-agent-request-fit/SKILL.md",
+      "kind": "skill",
+      "hash": "463b86de666315953f9e9de40c25341faffd8d5f6f6f87572ad19318d29db0aa",
+      "managed": "463b86de666315953f9e9de40c25341faffd8d5f6f6f87572ad19318d29db0aa"
+    },
+    {
+      "path": ".agents/skills/clarification/SKILL.md",
+      "kind": "skill",
+      "hash": "4d79d0fb5624422f057c2a4200935789cfa4372eb1f4b4e4324aa30b3bc0fdd5",
+      "managed": "4d79d0fb5624422f057c2a4200935789cfa4372eb1f4b4e4324aa30b3bc0fdd5"
+    },
+    {
+      "path": ".agents/skills/config-change-safety/SKILL.md",
+      "kind": "skill",
+      "hash": "b29e7df28d43472bd0b7924b9e4262d24357ce7e5b4f84d4303e9b57edcde55e",
+      "managed": "b29e7df28d43472bd0b7924b9e4262d24357ce7e5b4f84d4303e9b57edcde55e"
+    },
+    {
+      "path": ".agents/skills/contract-boundaries/SKILL.md",
+      "kind": "skill",
+      "hash": "8372d2c498f14f492af585b7784ce8566a57a9434871114fb85036a35451eb7a",
+      "managed": "8372d2c498f14f492af585b7784ce8566a57a9434871114fb85036a35451eb7a"
+    },
+    {
+      "path": ".agents/skills/dependency-upgrade/SKILL.md",
+      "kind": "skill",
+      "hash": "fdf5e2b779c563ab7f9d9ecabe258ffea69a73a899857ec1739a99c38772b0b9",
+      "managed": "fdf5e2b779c563ab7f9d9ecabe258ffea69a73a899857ec1739a99c38772b0b9"
+    },
+    {
+      "path": ".agents/skills/design-agent-runtime-guardrails/SKILL.md",
+      "kind": "skill",
+      "hash": "71483b2b5889e71de6a537876d85cb855a0917f49db7d20b909a898dd605072c",
+      "managed": "71483b2b5889e71de6a537876d85cb855a0917f49db7d20b909a898dd605072c"
+    },
+    {
+      "path": ".agents/skills/detect-tech-stack/SKILL.md",
+      "kind": "skill",
+      "hash": "bed040f4647d4e701d5629c20c6b3a46df1c76719520124a0f94074847621e10",
+      "managed": "bed040f4647d4e701d5629c20c6b3a46df1c76719520124a0f94074847621e10"
+    },
+    {
+      "path": ".agents/skills/docs-sync/SKILL.md",
+      "kind": "skill",
+      "hash": "8d420d310221c8aa08be8700fce0aab6368bb77326de826b04cd3ae794c96e45",
+      "managed": "8d420d310221c8aa08be8700fce0aab6368bb77326de826b04cd3ae794c96e45"
+    },
+    {
+      "path": ".agents/skills/feature-planning/SKILL.md",
+      "kind": "skill",
+      "hash": "fdd034eae2238c2465b768259fe86bf75a8068d27982b87ed78926d68d9662ea",
+      "managed": "fdd034eae2238c2465b768259fe86bf75a8068d27982b87ed78926d68d9662ea"
+    },
+    {
+      "path": ".agents/skills/glyphbrace-post-install-setup/SKILL.md",
+      "kind": "skill",
+      "hash": "2e7aa04a7233dcd4e9b3b4f135f1bf0665c72c808843c2d811f98a424b4aeebb",
+      "managed": "2e7aa04a7233dcd4e9b3b4f135f1bf0665c72c808843c2d811f98a424b4aeebb"
+    },
+    {
+      "path": ".agents/skills/human-handoff/SKILL.md",
+      "kind": "skill",
+      "hash": "922f2edddd0c1602aeaaaa07898efa13bdce8a290bf4139ae5f6061cfbaad7e8",
+      "managed": "922f2edddd0c1602aeaaaa07898efa13bdce8a290bf4139ae5f6061cfbaad7e8"
+    },
+    {
+      "path": ".agents/skills/infra-risk-audit/SKILL.md",
+      "kind": "skill",
+      "hash": "41498c458f6633e33ab5334abe96fe9ffee7544edad31a8031a843e1a84d435a",
+      "managed": "41498c458f6633e33ab5334abe96fe9ffee7544edad31a8031a843e1a84d435a"
+    },
+    {
+      "path": ".agents/skills/mentor-mode/SKILL.md",
+      "kind": "skill",
+      "hash": "ba97b5aec42c465f44616e46177570d337ba7a5a6643c55f1f20325cc0cccc6d",
+      "managed": "ba97b5aec42c465f44616e46177570d337ba7a5a6643c55f1f20325cc0cccc6d"
+    },
+    {
+      "path": ".agents/skills/project-context/SKILL.md",
+      "kind": "skill",
+      "hash": "2630b1cf3337352110543d38e4f24f4c6c429756812ea1ec78d7b15326815cb5",
+      "managed": "2630b1cf3337352110543d38e4f24f4c6c429756812ea1ec78d7b15326815cb5"
+    },
+    {
+      "path": ".agents/skills/release-safety/SKILL.md",
+      "kind": "skill",
+      "hash": "5ba54fd0d3b878a955d30239f9b7fb753ff42b0e77ff283d63176c561a44e51e",
+      "managed": "5ba54fd0d3b878a955d30239f9b7fb753ff42b0e77ff283d63176c561a44e51e"
+    },
+    {
+      "path": ".agents/skills/repo-investigation/SKILL.md",
+      "kind": "skill",
+      "hash": "d9bf2c9802818fd98d1ab51884101b6a185e10d9870f1db660bbef0673479562",
+      "managed": "d9bf2c9802818fd98d1ab51884101b6a185e10d9870f1db660bbef0673479562"
+    },
+    {
+      "path": ".agents/skills/repo-search/SKILL.md",
+      "kind": "skill",
+      "hash": "0f1404d0c6b83ef0f36f12a2bff4ce16d210d7ec84bc61975f9f399235ef9613",
+      "managed": "0f1404d0c6b83ef0f36f12a2bff4ce16d210d7ec84bc61975f9f399235ef9613"
+    },
+    {
+      "path": ".agents/skills/review-diff/SKILL.md",
+      "kind": "skill",
+      "hash": "351939d9f3c9c0813c56faade2eaaa9931a962abe0083d0b1418645d4c899e99",
+      "managed": "351939d9f3c9c0813c56faade2eaaa9931a962abe0083d0b1418645d4c899e99"
+    },
+    {
+      "path": ".agents/skills/runtime-evidence/SKILL.md",
+      "kind": "skill",
+      "hash": "c577f5b81a246037070d76e9d0b8fa2bd16cf7ceb117c0393b295fc41afd7d34",
+      "managed": "c577f5b81a246037070d76e9d0b8fa2bd16cf7ceb117c0393b295fc41afd7d34"
+    },
+    {
+      "path": ".agents/skills/safe-refactor/SKILL.md",
+      "kind": "skill",
+      "hash": "4575b178a617c055d6b4a097cb27722ee5d3ac723dc0e89728b259e0d7e2c616",
+      "managed": "4575b178a617c055d6b4a097cb27722ee5d3ac723dc0e89728b259e0d7e2c616"
+    },
+    {
+      "path": ".agents/skills/script-inventory/SKILL.md",
+      "kind": "skill",
+      "hash": "554cec8ba24213ba6faeb047f120709810a077b8a1e74afb8e7b9fa95efd15cd",
+      "managed": "554cec8ba24213ba6faeb047f120709810a077b8a1e74afb8e7b9fa95efd15cd"
+    },
+    {
+      "path": ".agents/skills/select-repo-commands/SKILL.md",
+      "kind": "skill",
+      "hash": "a52ae580a79261c45d32d8d08766f0efc4705d5a79a6d465b2a9132e5c4eb12b",
+      "managed": "a52ae580a79261c45d32d8d08766f0efc4705d5a79a6d465b2a9132e5c4eb12b"
+    },
+    {
+      "path": ".agents/skills/technical-change-planning/SKILL.md",
+      "kind": "skill",
+      "hash": "55224465885ef2e4708b515ac9eb2f71acb12b91e5bc289a61b91cd895f54976",
+      "managed": "55224465885ef2e4708b515ac9eb2f71acb12b91e5bc289a61b91cd895f54976"
+    },
+    {
+      "path": ".agents/skills/test-quality-audit/SKILL.md",
+      "kind": "skill",
+      "hash": "f04af4c4cd6fd9f937a5b8a76a259fac4c6d7aebb18af4853d4066028bbd0615",
+      "managed": "f04af4c4cd6fd9f937a5b8a76a259fac4c6d7aebb18af4853d4066028bbd0615"
+    },
+    {
+      "path": ".agents/skills/verify-change/SKILL.md",
+      "kind": "skill",
+      "hash": "c85af6c32890bdaf44998fb2d79167ee22bce7d6b3168cc7865ccbbf21fe21ea",
+      "managed": "c85af6c32890bdaf44998fb2d79167ee22bce7d6b3168cc7865ccbbf21fe21ea"
+    },
+    {
+      "path": ".agents/skills/verify-ui-change/SKILL.md",
+      "kind": "skill",
+      "hash": "77e652a0c915ee3c710cf208ebe90177553a7dab088a684bf9200259a95f3bfb",
+      "managed": "77e652a0c915ee3c710cf208ebe90177553a7dab088a684bf9200259a95f3bfb"
+    },
+    {
+      "path": ".agents/skills/workflow-drift-audit/SKILL.md",
+      "kind": "skill",
+      "hash": "84a496a839580ba80c3e5227083049a8a164d91c079d3b5b4e664865eb8f67ac",
+      "managed": "84a496a839580ba80c3e5227083049a8a164d91c079d3b5b4e664865eb8f67ac"
+    },
+    {
+      "path": ".codex/agents/agent-definition-reviewer.toml",
+      "kind": "agent",
+      "hash": "410f712edf07851a94bbf0f2f8253cc41e6b858ef181a9fa4cfebf0872151195",
+      "managed": "410f712edf07851a94bbf0f2f8253cc41e6b858ef181a9fa4cfebf0872151195"
+    },
+    {
+      "path": ".codex/agents/agent-factory.toml",
+      "kind": "agent",
+      "hash": "76008dfc3e82fbdd34564eae27b06b16f33b50c291ec0c5942eb868f20cde91b",
+      "managed": "76008dfc3e82fbdd34564eae27b06b16f33b50c291ec0c5942eb868f20cde91b"
+    },
+    {
+      "path": ".codex/agents/architect.toml",
+      "kind": "agent",
+      "hash": "b075312bb3858bcc5d1642293abb9f5b32bd8eae104e25ba6a3476d2151568eb",
+      "managed": "b075312bb3858bcc5d1642293abb9f5b32bd8eae104e25ba6a3476d2151568eb"
+    },
+    {
+      "path": ".codex/agents/configuration-maintainer.toml",
+      "kind": "agent",
+      "hash": "485829696ad3fc710f5b783d026d18d39cf8874eb830703d3a4a611d21d1cab4",
+      "managed": "485829696ad3fc710f5b783d026d18d39cf8874eb830703d3a4a611d21d1cab4"
+    },
+    {
+      "path": ".codex/agents/fleet-assessor.toml",
+      "kind": "agent",
+      "hash": "47f54a0eb08daad004b41ae5a853607adbf29c6f17323f4e64f90c5bf49c3669",
+      "managed": "47f54a0eb08daad004b41ae5a853607adbf29c6f17323f4e64f90c5bf49c3669"
+    },
+    {
+      "path": ".codex/agents/implementer.toml",
+      "kind": "agent",
+      "hash": "549fc89b34c5211aae352a884f8842b5d861db3d87136a5c300d41f819c2f287",
+      "managed": "549fc89b34c5211aae352a884f8842b5d861db3d87136a5c300d41f819c2f287"
+    },
+    {
+      "path": ".codex/agents/local-maintainer.toml",
+      "kind": "agent",
+      "hash": "aa69cce12f2014ab582010ac3b6c576a2689698667c59294e84a10d29f44a7b4",
+      "managed": "aa69cce12f2014ab582010ac3b6c576a2689698667c59294e84a10d29f44a7b4"
+    },
+    {
+      "path": ".codex/agents/orchestrator.toml",
+      "kind": "agent",
+      "hash": "4378feb9814ec07e3fdceb70e1a64a8f0dd0e3a354911e8878e1f813e6eb3051",
+      "managed": "4378feb9814ec07e3fdceb70e1a64a8f0dd0e3a354911e8878e1f813e6eb3051"
+    },
+    {
+      "path": ".codex/agents/phoenix-analyzer.toml",
+      "kind": "agent",
+      "hash": "eb17dc24336512a9aed1d61c5596119de855838c593935ee493659fd837fdc26",
+      "managed": "eb17dc24336512a9aed1d61c5596119de855838c593935ee493659fd837fdc26"
+    },
+    {
+      "path": ".codex/agents/plan-writer.toml",
+      "kind": "agent",
+      "hash": "ee227f2648fb72540ba72c5b207a04caf657c3dc911167ad3fe001c1a6f999b4",
+      "managed": "ee227f2648fb72540ba72c5b207a04caf657c3dc911167ad3fe001c1a6f999b4"
+    },
+    {
+      "path": ".codex/agents/release-auditor.toml",
+      "kind": "agent",
+      "hash": "a06d7b1e965fb7a51103a41a37c76306b463326cb3dbcdf377c45db6fa113670",
+      "managed": "a06d7b1e965fb7a51103a41a37c76306b463326cb3dbcdf377c45db6fa113670"
+    },
+    {
+      "path": ".codex/agents/researcher.toml",
+      "kind": "agent",
+      "hash": "5feba33bcb5c1d950273807303c618a03ac8c5c451887fd081a2211134954adf",
+      "managed": "5feba33bcb5c1d950273807303c618a03ac8c5c451887fd081a2211134954adf"
+    },
+    {
+      "path": ".codex/agents/reviewer.toml",
+      "kind": "agent",
+      "hash": "7a08053c49d8e114e39c94e6c3e5c096c8bc5b182700ad073d025138d5d28523",
+      "managed": "7a08053c49d8e114e39c94e6c3e5c096c8bc5b182700ad073d025138d5d28523"
+    },
+    {
+      "path": ".codex/agents/super-implementer.toml",
+      "kind": "agent",
+      "hash": "45e63afcf8f6421868dfe6f8994a8e59f9f1aff9560cf5f8c0e153e44249f28c",
+      "managed": "45e63afcf8f6421868dfe6f8994a8e59f9f1aff9560cf5f8c0e153e44249f28c"
+    },
+    {
+      "path": ".gitignore",
+      "kind": "gitignore-region",
+      "hash": "40343cf9ceb9ee2e6e476f85eae7abc13bd9135628f8fbef9ce09aa91d1c89ca",
+      "region": {
+        "id": "guidance-codex",
+        "version": 1,
+        "origin": "foreign",
+        "origin_digest": "fa1fff7d1bfbfcd22f314f7585d52b894ff15f7ba61eb98c62fa515e299270dd",
+        "digest": "4f24a6f00b3cb3839d73751744c31aa55a395828b01d7cddc9b6c51cd70ec1de"
+      }
+    },
+    {
+      "path": "AGENTS.md",
+      "kind": "entry-region",
+      "hash": "ecd5d895718722d866849260e44403289f03a6cc92bb85d7fd9a50510670bf33",
+      "region": {
+        "id": "guidance-codex",
+        "version": 1,
+        "origin": "foreign",
+        "origin_digest": "d5822eff78cd3e26cea9b3f054459f7d069c1bc13041179b1de049b47784345b",
+        "digest": "d61c86f163761b0c70cb4a4349279dcbc96835508349d5d6d047e3b271c55796"
+      }
+    }
+  ],
+  "created_dirs": [
+    ".agents/skills",
+    ".agents/skills/agent-definition-review",
+    ".agents/skills/audit-agent-fleet",
+    ".agents/skills/autopilot",
+    ".agents/skills/bug-reproduction-and-fix",
+    ".agents/skills/change-reporting",
+    ".agents/skills/change-reporting/agents",
+    ".agents/skills/change-traceability",
+    ".agents/skills/characterization-testing",
+    ".agents/skills/check-agent-request-fit",
+    ".agents/skills/clarification",
+    ".agents/skills/config-change-safety",
+    ".agents/skills/contract-boundaries",
+    ".agents/skills/dependency-upgrade",
+    ".agents/skills/design-agent-runtime-guardrails",
+    ".agents/skills/detect-tech-stack",
+    ".agents/skills/docs-sync",
+    ".agents/skills/feature-planning",
+    ".agents/skills/glyphbrace-post-install-setup",
+    ".agents/skills/human-handoff",
+    ".agents/skills/infra-risk-audit",
+    ".agents/skills/mentor-mode",
+    ".agents/skills/project-context",
+    ".agents/skills/release-safety",
+    ".agents/skills/repo-investigation",
+    ".agents/skills/repo-search",
+    ".agents/skills/review-diff",
+    ".agents/skills/runtime-evidence",
+    ".agents/skills/safe-refactor",
+    ".agents/skills/script-inventory",
+    ".agents/skills/select-repo-commands",
+    ".agents/skills/technical-change-planning",
+    ".agents/skills/test-quality-audit",
+    ".agents/skills/verify-change",
+    ".agents/skills/verify-ui-change",
+    ".agents/skills/workflow-drift-audit",
+    ".codex/agents"
+  ]
+}

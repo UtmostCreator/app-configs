@@ -83,3 +83,11 @@ __pycache__/
 /home/.chezmoidata/projects.yaml
 # restsift regenerates its state; never commit it.
 /.restsift/state/
+
+# glyphbrace:managed:begin guidance-claude:v1
+.glyphbrace/local/
+# glyphbrace:managed:end guidance-claude:v1
+
+# glyphbrace:managed:begin guidance-codex:v1
+.glyphbrace/local/
+# glyphbrace:managed:end guidance-codex:v1

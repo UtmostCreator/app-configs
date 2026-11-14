@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "provider": "docs",
+  "bundle_digest": "92e09e267906b8e1d8a6b870f184a6e01e37434056c5da6521d20e62b3a50b61",
+  "selection": {
+    "docs_mode": "full"
+  },
+  "files": [
+    {
+      "path": "docs/ai/README.md",
+      "kind": "kit-doc",
+      "hash": "9bbc8a650bf1b552dfb2af794eb2dc7d4087c563e230fb75ff649d1e19ab555e"
+    },
+    {
+      "path": "docs/ai/managed/operations/context-economy.md",
+      "kind": "kit-doc",
+      "hash": "c5b34e69a1217e5ac4eb694cecb1b692bc115d87f2154b2d7b464bb1274b4f47"
+    },
+    {
+      "path": "docs/ai/managed/operations/failure-handling.md",
+      "kind": "kit-doc",
+      "hash": "f30f6cc263a299f38e06b89f2ee42fe3d1296a5acfa84dde7f1eb3d2397f2404"
+    },
+    {
+      "path": "docs/ai/managed/operations/session-reentry.md",
+      "kind": "kit-doc",
+      "hash": "0d596e493d0c33f42b28e8deb2b730b1f893f70d3a69df56329653ce8113b8e7"
+    },
+    {
+      "path": "docs/generated/README.md",
+      "kind": "seed-doc",
+      "hash": "871253c3d6666726201ed431903d8f76460ab075e2597a6c0adb3c93c6c9afb8"
+    },
+    {
+      "path": "docs/shared/domains/README.md",
+      "kind": "seed-doc",
+      "hash": "fd3fd0999f6959cd434ff9899b81b6d722f02cac05014bb157beb43644b650fa"
+    },
+    {
+      "path": "docs/shared/domains/domain-template/README.md",
+      "kind": "seed-doc",
+      "hash": "84d81b6753adefeeb19555c02a12f14b5446f0268d15730b6255e8507c957b43"
+    },
+    {
+      "path": "docs/shared/domains/domain-template/how-it-works.md",
+      "kind": "seed-doc",
+      "hash": "aef2da7c1c29a1e0c72ace75bbe8969e10648cfdc367156a869bbdc3f0a42759"
+    },
+    {
+      "path": "docs/shared/domains/domain-template/operations.md",
+      "kind": "seed-doc",
+      "hash": "6c492671a777934e7a21f6fb70a4bc6328d37fde278151e637a1c0712a6e9894"
+    },
+    {
+      "path": "docs/shared/domains/domain-template/reference/README.md",
+      "kind": "seed-doc",
+      "hash": "00ace40d88d190c023b6a617f688e657fb600feeee97148a7b6d54dff292f17f"
+    },
+    {
+      "path": "docs/shared/domains/domain-template/usage.md",
+      "kind": "seed-doc",
+      "hash": "0a2d82a82415364cfc2ff07727401a8528b0f8cc21790e44363e5ee58ee2c56c"
+    },
+    {
+      "path": "docs/shared/domains/domain-template/verification.md",
+      "kind": "seed-doc",
+      "hash": "62baeaa3116e280896c88cc72ac914a6d16593a77c17e1078f79cfed2f185ba1"
+    },
+    {
+      "path": "docs/shared/index.md",
+      "kind": "seed-doc",
+      "hash": "9644678d663dfbcaa13682eb78ac14a3e6c62a45702390d26aa5a436cb358c74"
+    },
+    {
+      "path": "docs/shared/operations/README.md",
+      "kind": "seed-doc",
+      "hash": "98d1257e2afa9e5f6cb3ab747bb19a89525db974a09b9a036d261805c276ecc3"
+    },
+    {
+      "path": "docs/shared/operations/documentation-maintenance.md",
+      "kind": "seed-doc",
+      "hash": "8ff0c3ce55b5c3b7312e21a53fa7308f4194df1040717991e828031f95959b77"
+    },
+    {
+      "path": "docs/shared/operations/security/README.md",
+      "kind": "seed-doc",
+      "hash": "07a9f8fad209c861451911380c20ff64fb8691ea4ddd0101149adfc7a4c85248"
+    },
+    {
+      "path": "docs/shared/overview/README.md",
+      "kind": "seed-doc",
+      "hash": "ea5f52f135f6b1579d294b548340f6205f5baa004848bfb98963611d5511dd9b"
+    },
+    {
+      "path": "docs/shared/overview/conventions.md",
+      "kind": "seed-doc",
+      "hash": "123ccd46780f97c20910bffdd399b2381452fa881bbf9667911d13fffd90b0fa"
+    },
+    {
+      "path": "docs/shared/overview/project-context.md",
+      "kind": "seed-doc",
+      "hash": "5978691a4121a8889aa5effdf56f595d86f05a41122834d50a64dbdb1ca0b2e1"
+    },
+    {
+      "path": "docs/shared/overview/project-interaction.md",
+      "kind": "seed-doc",
+      "hash": "74d1d0f2114a6a3800231aee971d60a1df192340e6e025da8e49555a7e534326"
+    },
+    {
+      "path": "docs/shared/overview/project-stack.md",
+      "kind": "seed-doc",
+      "hash": "a7d6d5bc83869b50ed96035f8d0c17a82c5ffffc7807170c036225b623b60ef1"
+    },
+    {
+      "path": "docs/shared/platform/README.md",
+      "kind": "seed-doc",
+      "hash": "666fc7d27d3e3eabef514b7b2a35d3031f719f7cafc47d9f22852b81f99fda06"
+    },
+    {
+      "path": "docs/shared/platform/contract-data.md",
+      "kind": "seed-doc",
+      "hash": "f6243da80ef6a6afcce48d96ad3077f0f2479778a92dee94d983922efa5602d0"
+    },
+    {
+      "path": "docs/shared/templates/README.md",
+      "kind": "seed-doc",
+      "hash": "c8d661c5740fb6269ea865956875abeac56c0a86c9a9cdece491ab428e83a206"
+    },
+    {
+      "path": "docs/shared/templates/approval-packet.template.md",
+      "kind": "seed-doc",
+      "hash": "38155c9104b1f5231587f3071127923d2ee212b6e05d95d64afb4b8fbe2c6086"
+    },
+    {
+      "path": "docs/shared/templates/examples/README.md",
+      "kind": "seed-doc",
+      "hash": "dbd1a89f65ec4a5d7407f1c66a5f2dc437e8da4780a9b84cfddb6c14efb96b55"
+    },
+    {
+      "path": "docs/shared/templates/examples/inventory-correction.md",
+      "kind": "seed-doc",
+      "hash": "afa14bc2301f8c3e46fc8f242900241227b30ebe3d1fdeec3016562f38458ba5"
+    },
+    {
+      "path": "docs/shared/templates/examples/parcel-tracking.md",
+      "kind": "seed-doc",
+      "hash": "4086d9b1fa9d964dafd880c6b0c70ba2775b89efae3c4f8bfccb253baa86513e"
+    },
+    {
+      "path": "docs/shared/templates/overview/README.md",
+      "kind": "seed-doc",
+      "hash": "50dd970e516b678dada2fcace8c5fde4544b87c1b78ac6ea777b248c6507cb1e"
+    },
+    {
+      "path": "docs/shared/templates/overview/conventions.template.md",
+      "kind": "seed-doc",
+      "hash": "dd089a2b678b7a9f8abc442bc686c119346c37169e63fb610c66b467b04fc4f9"
+    },
+    {
+      "path": "docs/shared/templates/overview/project-context.template.md",
+      "kind": "seed-doc",
+      "hash": "953effdefd8438c6ed81db2f187ab94feca6eb865a0850691558de3cad151527"
+    },
+    {
+      "path": "docs/shared/templates/overview/project-interaction.template.md",
+      "kind": "seed-doc",
+      "hash": "629a68fcbeeaa7598598c2a9e02f89d60905bbfc81eb9ba9861decb20fefe29f"
+    },
+    {
+      "path": "docs/shared/templates/slice-card.template.md",
+      "kind": "seed-doc",
+      "hash": "755e061831bbb64bdb64d5c2b10b878607fffeec1623b09c51e62948d882c6f8"
+    },
+    {
+      "path": "docs/shared/templates/verification-evidence.template.md",
+      "kind": "seed-doc",
+      "hash": "fc5f328a70c31853da01c470f12150ffe46893046cdfd8c8dfc78c319c46a0d5"
+    },
+    {
+      "path": "docs/work/active/README.md",
+      "kind": "seed-doc",
+      "hash": "d80a471f97f2a341d2b93c488cd3cb2195017691c9194b3df876e9a7b881cb1a"
+    },
+    {
+      "path": "docs/work/archive/README.md",
+      "kind": "seed-doc",
+      "hash": "e9ada23f9b6671898c0c82510eec2f3a048c96ca45c148f1be4b866313d834a3"
+    },
+    {
+      "path": "docs/work/index.md",
+      "kind": "seed-doc",
+      "hash": "c06d86d73b4e382db59444d8cb2668535ba61d0d34c27e8b29ecdbc6f7e1ea6a"
+    }
+  ],
+  "created_dirs": [
+    "docs/ai",
+    "docs/ai/managed",
+    "docs/ai/managed/operations",
+    "docs/generated",
+    "docs/shared",
+    "docs/shared/domains",
+    "docs/shared/domains/domain-template",
+    "docs/shared/domains/domain-template/reference",
+    "docs/shared/operations",
+    "docs/shared/operations/security",
+    "docs/shared/overview",
+    "docs/shared/platform",
+    "docs/shared/templates",
+    "docs/shared/templates/examples",
+    "docs/shared/templates/overview",
+    "docs/work",
+    "docs/work/active",
+    "docs/work/archive"
+  ],
+  "needed_by": [
+    "claude",
+    "codex"
+  ]
+}

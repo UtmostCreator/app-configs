@@ -67,7 +67,7 @@ load_agent() {
 load_agent_fish() {
     local fish_script="$REPO_ROOT/home/dot_config/fish/conf.d/ssh-agent.fish"
     local tool
-    for tool in fish bash cat awk touch; do
+    for tool in fish bash cat awk touch chmod; do
         ln -sf "$(command -v "$tool")" "$STUBS/$tool"
     done
     PATH="$STUBS" XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" \
@@ -101,4 +101,17 @@ load_agent_fish() {
     SSH_ADD_L_STATUS=0 run load_agent_fish
     [ "$status" -eq 0 ]
     [ ! -f "$HOME/agent-started" ]
+}
+
+@test "fish: starting an agent does not leave the shell with umask 077" {
+    command -v fish >/dev/null || skip "fish not installed"
+    printf 'SSH_AUTH_SOCK=/tmp/dead.sock; export SSH_AUTH_SOCK;\n' >"$HOME/.ssh/agent.env"
+    local fish_script="$REPO_ROOT/home/dot_config/fish/conf.d/ssh-agent.fish"
+    for tool in fish bash cat awk touch chmod; do ln -sf "$(command -v "$tool")" "$STUBS/$tool"; done
+    SSH_ADD_L_STATUS=2 run env PATH="$STUBS" HOME="$HOME" \
+        "$STUBS/fish" --no-config -i -c 'umask 0022; source $argv[1]; umask' "$fish_script"
+    [ -f "$HOME/agent-started" ]
+    [ "${lines[-1]}" = "0022" ]
+    # the agent env file itself stays private
+    [ "$(stat -c %a "$HOME/.ssh/agent.env")" = "600" ]
 }

@@ -7,8 +7,9 @@
 #    in Home Manager package lists only; mentioning direnv in docs is fine)
 #
 # Nix scan scope: programs.* in nix/modules/**, nix/lib and nix/hosts/*/home.nix;
-# services.*, home.packages and xdg.configFile only in the Home Manager files
-# among those (everything except nix/modules/nixos and nix/modules/darwin).
+# services.*, home.packages, xdg.configFile and home.file only in the Home
+# Manager files among those (everything except nix/modules/nixos and
+# nix/modules/darwin).
 #
 # Exits non-zero if any invariant is violated. Fails closed: a tool that
 # cannot run (git missing, `git ls-files` failing) is a violation, not a pass.
@@ -57,7 +58,13 @@ fi
 # than the working tree means a secret that is tracked but deleted on disk, or
 # staged but gitignored, is still seen.
 TRACKED_FILE="$(mktemp)"
-trap 'rm -f "$TRACKED_FILE"' EXIT
+CHEZ_TMP="" # scratch dir for rendering home/.chezmoiignore (rule 12), made on demand
+cleanup() {
+  rm -f "$TRACKED_FILE"
+  [[ -n "$CHEZ_TMP" ]] && rm -rf "$CHEZ_TMP"
+  return 0
+}
+trap cleanup EXIT
 if ! git ls-files -z >"$TRACKED_FILE"; then
   err "git ls-files failed; cannot validate tracked paths"
   : >"$TRACKED_FILE"
@@ -66,8 +73,9 @@ fi
 # --- Nix text analysis (awk; no Nix evaluation, so it stays fast) -----------
 # NIX_STRIP: remove comments (# and /* */) and neutralise string contents.
 # Double-quoted strings keep their text with `{ } ; = # $` and blanks replaced
-# by `_` (so attribute keys like "flameshot/flameshot.ini" stay readable);
-# indented '' strings become "". Line count is preserved.
+# by `_` (so attribute keys like "flameshot/flameshot.ini" stay readable); a `${`
+# becomes the control character \001, so a scan can tell an interpolated key
+# from a literal one. Indented '' strings become "". Line count is preserved.
 read -r -d '' NIX_STRIP <<'AWK' || true
 function neut(c) { return (c ~ /[{};=#$ \t]/) ? "_" : c }
 BEGIN { st = 0; sbuf = "" }
@@ -83,6 +91,7 @@ BEGIN { st = 0; sbuf = "" }
       else out = out c
     } else if (st == 1) {
       if (c == "\\") { sbuf = sbuf "__"; i++ }
+      else if (c == "$" && substr(line, i + 1, 1) == "{") sbuf = sbuf "\001"  # interpolation marker
       else if (c == "\"") { st = 0; out = out "\"" sbuf "\"" }
       else sbuf = sbuf neut(c)
     } else if (st == 2) {
@@ -106,8 +115,18 @@ AWK
 #   TOOL|file:line|<tool>|<home.packages|with pkgs>    (only when hm=1)
 #   XDG|file:line|<configFile key>                     (only when hm=1)
 #   XDGDYN|file:line|<expr>   (xdg.configFile = <expr>; keys unknowable here)
+#   HF|file:line|<target>     (home.file; only when hm=1; a literal `target`
+#                              option wins over the attribute name)
+#   HFDYN|file:line|<expr>    (home.file declaration whose target text cannot
+#                              decide: anything parse_set() does not accept,
+#                              interpolated names, a non-literal `target`, and
+#                              a top-level `home`/`config.home` binding that is
+#                              not an attrset literal, since it can hide
+#                              home.file; see parse_set for the exact shapes)
 # Limits (text, not evaluation): `let`-bound attrsets, `//` merges and
-# generated attribute names are not followed; `--eval` covers those.
+# generated attribute names are not followed; `--eval` covers those. For
+# home.file they are reported (HFDYN) instead of ignored; for xdg.configFile
+# only a whole-attrset expression is (XDGDYN).
 read -r -d '' NIX_SCAN <<'AWK' || true
 function isword(t) { return t ~ /^[A-Za-z_"]/ && !(t in KW) }
 function lastseg(t,   m) { m = t; sub(/^.*\./, "", m); return m }
@@ -118,7 +137,7 @@ BEGIN {
   nk = split(tools, ta, " "); for (k = 1; k <= nk; k++) TOOL[ta[k]] = 1
   nk = split(allowed_programs, pa, " "); for (k = 1; k <= nk; k++) AP[pa[k]] = 1
   nk = split(allowed_services, sa, " "); for (k = 1; k <= nk; k++) AS[sa[k]] = 1
-  n = 0
+  n = 0; nhf = 0
 }
 {
   line = $0
@@ -137,9 +156,10 @@ BEGIN {
 }
 # Right-hand side tokens from j up to the `;` ending the binding (brackets and
 # `with`/`let` aware). Sets RHS (joined) and HB (1 if a `{` occurs).
-function rhs_scan(j,   d, lc, ws, k, t, cnt) {
-  RHS = ""; HB = 0; d = 0; lc = 0; ws = 0; cnt = 0
-  for (k = j; k <= n && cnt < 60; k++) {
+function rhs_scan(j, lim,   d, lc, ws, k, t, cnt) {
+  if (lim == "") lim = 60
+  RHS = ""; HB = 0; d = 0; lc = 0; ws = 0; cnt = 0; RN = 0
+  for (k = j; k <= n && cnt < lim; k++) {
     cnt++
     t = tok[k]
     if (t == "{") HB = 1
@@ -150,7 +170,121 @@ function rhs_scan(j,   d, lc, ws, k, t, cnt) {
     else if (t == "with" || t == "assert") ws++
     else if (t == ";") { if (ws > 0) ws--; else if (d == 0 && lc == 0) break }
     RHS = RHS (RHS == "" ? "" : " ") t
+    RTK[++RN] = t
   }
+}
+# parse_set(mode): 1 only when the right-hand side just scanned (RTK[1..RN]) has
+# a shape this scanner can follow completely, 0 (= undecidable here) otherwise.
+# Fail-closed by construction: only the shapes below are accepted.
+#   RHS   := [ONE WRAPPER] `{ BODY }`  |  mkMerge `[` (`{ BODY }`)* `]`
+#   WRAPPER := mkIf COND | optionalAttrs COND | mkOverride <digits> | mkDefault
+#              | mkForce | mkBefore | mkAfter   (optionally `lib.`-prefixed)
+#   COND  := UNIT ((&& | || | == | !=) UNIT)*; UNIT := [!] (word | `( flat )`)
+#            where `flat` holds no { } [ ] ;
+#   mode 0  home.file = RHS: BODY bindings are `"k".attr = <value>;` or
+#           `name = { ENTRYBODY };`
+#   mode 1  home.file.<n> = RHS: BODY is an ENTRYBODY, bindings `attr = <value>;`
+#   mode 2  home = RHS: BODY is skipped (the key walker follows it)
+# Never accepted: inherit, //, let, with, rec, import, or, in, assert anywhere
+# (in mode 2 only outside the braces), attribute selection after } ) or ],
+# parentheses or other calls anywhere but a wrapper's condition, bare names
+# (`files`, `mkLinks {..}`, `mkMerge [ base ]`), `if`.
+function peek_is_word(t) { return t ~ /^[A-Za-z_"]/ && !(t in KW) }
+function skip_value(   d, u) {
+  d = 0
+  while (pi <= RN) {
+    u = RTK[pi]
+    if (u == "{" || u == "[" || u == "(") d++
+    else if (u == "}" || u == "]" || u == ")") { d--; if (d < 0) return 0 }
+    else if (u == ";" && d == 0) { pi++; return 1 }
+    pi++
+  }
+  return 0
+}
+function skip_braces(   d, u) {
+  d = 1
+  while (pi <= RN) {
+    u = RTK[pi++]
+    if (u == "{") d++
+    else if (u == "}") { d--; if (d == 0) return 1 }
+  }
+  return 0
+}
+function parse_body(bmode,   t, k2, hasattr) {
+  while (pi <= RN) {
+    t = RTK[pi]
+    if (t == "}") { pi++; return 1 }
+    if (!peek_is_word(t)) return 0
+    k2 = t; gsub(/"[^"]*"/, "Q", k2); hasattr = (k2 ~ /\./)
+    pi++
+    if (RTK[pi] != "=") return 0
+    pi++
+    if (bmode == 0 && !hasattr) {
+      if (RTK[pi] != "{") return 0
+      pi++
+      if (!parse_body(1)) return 0
+      if (RTK[pi] != ";") return 0
+      pi++
+    } else if (!skip_value()) return 0
+  }
+  return 0
+}
+function parse_cond(   t, u, d) {
+  while (1) {
+    if (RTK[pi] == "!") pi++
+    t = RTK[pi]
+    if (t == "(") {
+      d = 1; pi++
+      while (pi <= RN && d > 0) {
+        u = RTK[pi]
+        if (u == "{" || u == "}" || u == "[" || u == "]" || u == ";") return 0
+        if (u == "(") d++
+        else if (u == ")") d--
+        pi++
+      }
+      if (d > 0) return 0
+    } else if (peek_is_word(t)) pi++
+    else return 0
+    t = RTK[pi]
+    if (t == "&&" || t == "||" || t == "==" || t == "!=") { pi++; continue }
+    return 1
+  }
+}
+function parse_set(mode,   k, u, bd, t) {
+  bd = 0
+  for (k = 1; k <= RN; k++) {
+    u = RTK[k]
+    if (u == "{") bd++
+    else if (u == "}") bd--
+    if (mode == 2 && bd > 0) continue
+    if (u ~ /^(inherit|\/\/|let|with|rec|import|or|in|assert)$/) return 0
+    if (u == "." && k > 1 && RTK[k - 1] ~ /^[})\]]$/) return 0
+  }
+  pi = 1
+  t = RTK[pi]
+  if (t ~ /^(lib\.)?mkMerge$/) {
+    pi++
+    if (RTK[pi] != "[") return 0
+    pi++
+    while (RTK[pi] == "{") {
+      pi++
+      if (mode == 2 ? !skip_braces() : !parse_body(mode == 1 ? 1 : 0)) return 0
+    }
+    if (RTK[pi] != "]") return 0
+    pi++
+  } else {
+    if (t ~ /^(lib\.)?(mkIf|optionalAttrs)$/) { pi++; if (!parse_cond()) return 0 }
+    else if (t ~ /^(lib\.)?(mkDefault|mkForce|mkBefore|mkAfter)$/) pi++
+    else if (t ~ /^(lib\.)?mkOverride$/) {
+      pi++
+      if (RTK[pi] !~ /^[0-9]$/) return 0
+      while (RTK[pi] ~ /^[0-9]$/) pi++
+    }
+    if (RTK[pi] != "{") return 0
+    pi++
+    if (mode == 2 ? !skip_braces() : !parse_body(mode == 1 ? 1 : 0)) return 0
+  }
+  return (pi == RN + 1)
 }
 function scan_tools(j, ctx,   d, lc, ws, k, t, ls) {
   d = 0; lc = 0; ws = 0
@@ -168,7 +302,7 @@ function scan_tools(j, ctx,   d, lc, ws, k, t, ls) {
     }
   }
 }
-function record(f, i,   mid, rest, key, isoff) {
+function record(f, i,   mid, rest, key, attr, a2, isoff) {
   if (f ~ /\.enable$/ && (f ~ /^programs\./ || f ~ /^services\./)) {
     rhs_scan(i + 2)
     isoff = (RHS == "false" || RHS ~ /^(lib\.)?mk[A-Za-z]+( [0-9]+)? false$/)
@@ -191,8 +325,46 @@ function record(f, i,   mid, rest, key, isoff) {
       rest = substr(f, length("xdg.configFile.") + 1)
       if (substr(rest, 1, 1) == "\"") { match(rest, /^"[^"]*"/); key = substr(rest, 2, RLENGTH - 2) }
       else { key = rest; sub(/\..*$/, "", key) }
+      gsub(/\001/, "${}", key)
       if (!(key in XSEEN)) { XSEEN[key] = 1; print "XDG|" where(i) "|" key }
     }
+  }
+  if (f == "home") {
+    rhs_scan(i + 2, 100000)
+    if (!parse_set(2)) print "HFDYN|" where(i) "|home = " RHS
+  }
+  if (f ~ /^home\.file(\.|$)/) {
+    if (f == "home.file") {
+      rhs_scan(i + 2, 100000)
+      if (!parse_set(0)) print "HFDYN|" where(i) "|home.file = " RHS
+    } else {
+      rest = substr(f, length("home.file.") + 1)
+      if (substr(rest, 1, 1) == "\"") { match(rest, /^"[^"]*"/); key = substr(rest, 2, RLENGTH - 2); attr = substr(rest, RLENGTH + 1) }
+      else { key = rest; sub(/\..*$/, "", key); attr = substr(rest, length(key) + 1) }
+      if (!(key in HFK)) { HFK[key] = where(i); HFO[++nhf] = key }
+      a2 = attr; gsub(/"/, "", a2)
+      if (a2 == ".target") {
+        rhs_scan(i + 2, 100000)
+        if (RHS ~ /^"[^"\001]*"$/) HFT[key] = substr(RHS, 2, length(RHS) - 2)
+        else HFTD[key] = ".target = " RHS
+      } else if (a2 == "") {
+        rhs_scan(i + 2, 100000)
+        if (!parse_set(1)) HFTD[key] = " = " RHS
+      }
+    }
+  }
+}
+# home.file targets, emitted once the whole file is walked (a `target` option
+# may come after the options that created the entry).
+function emit_home_file(   j, key, t, w, disp) {
+  for (j = 1; j <= nhf; j++) {
+    key = HFO[j]; w = HFK[key]
+    t = (key in HFT) ? HFT[key] : key
+    sub(/^(\.\/)+/, "", t); sub(/\/+$/, "", t)
+    disp = t; gsub(/\001/, "${...}", disp)
+    if (key in HFTD) print "HFDYN|" w "|home.file.\"" key "\"" HFTD[key]
+    else if (t ~ /\001/ || t == "DYN" || t ~ /(^|\/)DYN(\/|$)/) print "HFDYN|" w "|home.file.\"" disp "\""
+    else print "HF|" w "|" t
   }
 }
 END {
@@ -219,6 +391,7 @@ END {
       record(f, i)
     }
   }
+  if (hm == 1) emit_home_file()
 }
 AWK
 
@@ -441,70 +614,169 @@ if ((ERRORS == e0 && scan_failed == 0)); then
   ok "xdg.configFile keys limited to the allowlist"
 fi
 
-# 12. Path collisions: an xdg.configFile target must not also be a chezmoi
-# source under home/dot_config, unless home/.chezmoiignore excludes it on
-# Linux (a `.config/<target>` line, or a parent directory, inside an
-# `ne .chezmoi.os "darwin"` block). Source names are mapped to target names by
-# dropping chezmoi attribute prefixes (exact_, private_, executable_, ...), the
-# dot_ prefix (-> ".") and a .tmpl suffix. Prints "<target>\t<source path>".
-chezmoi_config_sources() {
+# 12. Path collisions: a Home Manager target (xdg.configFile or home.file) must
+# not also be a chezmoi target, unless home/.chezmoiignore excludes the chezmoi
+# copy on every host that Home Manager can declare it for. "Chezmoi target"
+# means any tracked file under home/ (not only home/dot_config): source names
+# are mapped to target names by dropping chezmoi attribute prefixes (exact_,
+# private_, executable_, ...), the dot_ prefix (-> ".") and a .tmpl suffix.
+# Source files that are not targets (.chezmoi* at the top level, run_*
+# scripts) are skipped. A Home Manager directory target that contains a
+# chezmoi target collides too.
+#
+# Ownership per host is decided by chezmoi itself, not by reading its ignore
+# syntax: for each (os, hostProfile, gui) combination, `chezmoi managed` runs
+# hermetically on a scratch source that holds a copy of home/.chezmoiignore
+# plus an empty placeholder at the colliding source path (nothing else from
+# the repo, so personal.yaml is never read). The chezmoi copy counts as ignored
+# on that host when its target is absent from the managed list, whatever
+# pattern syntax (globs, `!` re-includes, templates) did that. Hermetic means:
+# scratch --source/--destination/--config, scratch HOME, XDG_CONFIG_HOME and
+# XDG_CONFIG_DIRS, and template data only from --override-data (chezmoi.os,
+# hostProfile, gui). Other .chezmoi.* values (arch, hostname, username, homeDir,
+# ...) still come from the machine running the check, so an ignore file that
+# branches on them is judged for this machine only.
+#
+# Which hosts must be covered:
+#   text mode  every Linux host (hostProfile linux-desktop, linux-cli, wsl,
+#              each with gui true and false), because Home Manager modules
+#              that the text scan sees may be used by any of them. An ignore
+#              that covers only some of these fails and lists the uncovered
+#              hosts, so a host-gated ignore (`wsl` only, `gui` only, darwin
+#              only) is rejected.
+#   --eval     only the evaluated profile's own host (macos is os darwin), so
+#              a target Home Manager declares on Linux only is judged on Linux.
+# A chezmoi that cannot run (missing, template error) is a failure: the
+# collision cannot be decided, so it is not passed, and no [OK] is printed for
+# the rules that needed it.
+TEXT_HOSTS="linux:linux-desktop linux:linux-cli linux:wsl"
+RENDER_BROKEN=0
+UNCOVERED=""
+
+chezmoi_sources() {
   tr '\0' '\n' <"$TRACKED_FILE" | awk '
-    index($0, "home/dot_config/") == 1 {
-      p = substr($0, length("home/dot_config/") + 1)
-      n = split(p, c, "/"); out = ""
+    index($0, "home/") == 1 {
+      p = substr($0, length("home/") + 1)
+      n = split(p, c, "/"); out = ""; skip = 0
+      if (c[1] ~ /^\.chezmoi/) next
       for (i = 1; i <= n; i++) {
         s = c[i]
         while (match(s, /^(exact|private|readonly|executable|empty|create|modify|remove|symlink|literal)_/)) s = substr(s, RLENGTH + 1)
+        if (s ~ /^run_/) skip = 1
         if (s ~ /^dot_/) s = "." substr(s, 5)
         if (i == n) sub(/\.tmpl$/, "", s)
         out = out (i > 1 ? "/" : "") s
       }
-      print out "\t" $0
+      if (!skip) print out "\t" $0
     }'
 }
 
-# chezmoiignore_covers <target>: exit 0 when home/.chezmoiignore ignores
-# .config/<target> (or a parent) on Linux, per the block rule above.
-chezmoiignore_covers() {
-  [[ -f home/.chezmoiignore ]] || return 1
-  awk -v target="$1" '
-    BEGIN { n = split(target, c, "/"); for (i = 1; i <= n; i++) { p = (i > 1 ? p "/" : "") c[i]; want[".config/" p] = 1 } }
-    /^[ \t]*\{\{-?[ \t]*if / {
-      sp++
-      if ($0 ~ /eq \.chezmoi\.os "darwin"/) kind[sp] = "d"
-      else if ($0 ~ /ne \.chezmoi\.os "darwin"/) kind[sp] = "l"
-      else kind[sp] = "o"
-      next
-    }
-    /^[ \t]*\{\{-?[ \t]*else/ { if (kind[sp] == "d") kind[sp] = "l"; else if (kind[sp] == "l") kind[sp] = "d"; next }
-    /^[ \t]*\{\{-?[ \t]*end/ { if (sp > 0) sp--; next }
-    /^[ \t]*(#|\{\{)/ { next }
-    {
-      line = $0; gsub(/^[ \t]+|[ \t]+$/, "", line)
-      for (i = 1; i <= sp; i++) if (kind[i] != "l") next
-      if (line in want) found = 1
-    }
-    END { exit found ? 0 : 1 }' home/.chezmoiignore
+# managed_on_host <os> <hostProfile> <gui> <source path under home/> <target>:
+# exit 0 when chezmoi manages <target> on that host, 1 when it does not, 2 when
+# chezmoi cannot decide (error printed once, then RENDER_BROKEN stops retries).
+managed_on_host() {
+  local os="$1" prof="$2" gui="$3" src="$4" tgt="$5" sdir list
+  [[ $RENDER_BROKEN -eq 1 ]] && return 2
+  if ! command -v chezmoi >/dev/null 2>&1; then
+    RENDER_BROKEN=1
+    err "chezmoi not found on PATH; cannot decide path ownership from home/.chezmoiignore"
+    return 2
+  fi
+  if [[ -z "$CHEZ_TMP" ]]; then
+    CHEZ_TMP="$(mktemp -d)" || { RENDER_BROKEN=1; err "mktemp failed; cannot decide path ownership"; return 2; }
+    mkdir -p "$CHEZ_TMP/home"
+  fi
+  sdir="$CHEZ_TMP/src"
+  rm -rf "$sdir"
+  mkdir -p "$sdir/$(dirname "${src#home/}")"
+  : >"$sdir/${src#home/}"
+  [[ -f home/.chezmoiignore ]] && cp home/.chezmoiignore "$sdir/.chezmoiignore"
+  if ! list="$(HOME="$CHEZ_TMP/home" XDG_CONFIG_HOME="$CHEZ_TMP/home/.config" XDG_CONFIG_DIRS="$CHEZ_TMP/home/xdg" \
+        chezmoi managed --source "$sdir" --destination "$CHEZ_TMP/home/dest" --config "$CHEZ_TMP/chezmoi.toml" \
+        --no-tty --path-style relative \
+        --override-data "{\"chezmoi\":{\"os\":\"$os\"},\"hostProfile\":\"$prof\",\"gui\":$gui}" \
+        2>"$CHEZ_TMP/chezmoi.err")"; then
+    RENDER_BROKEN=1
+    err "chezmoi managed failed for home/.chezmoiignore (os=$os hostProfile=$prof gui=$gui); path ownership is undecidable:"
+    tail -n 3 "$CHEZ_TMP/chezmoi.err" | sed 's/^/      /' >&2
+    return 2
+  fi
+  grep -Fxq -- "$tgt" <<<"$list" && return 0
+  return 1
 }
 
-# check_xdg_collisions <newline-separated xdg targets>
-check_xdg_collisions() {
-  local keys="$1" sources key tgt src
-  sources="$(chezmoi_config_sources)" || { err "cannot list chezmoi sources under home/dot_config"; return; }
+# ignored_on_hosts <hosts "os:profile ..."> <source path> <target>: sets
+# UNCOVERED to the hosts where chezmoi still manages the target (space
+# separated, "os/profile/gui=<bool>"); returns 1 when chezmoi could not decide
+# (already reported). Not run in a subshell, so errors survive.
+ignored_on_hosts() {
+  local hosts="$1" src="$2" tgt="$3" h os prof gui rc
+  UNCOVERED=""
+  for h in $hosts; do
+    os="${h%%:*}"; prof="${h#*:}"
+    for gui in true false; do
+      managed_on_host "$os" "$prof" "$gui" "$src" "$tgt"; rc=$?
+      [[ $rc -eq 2 ]] && return 1
+      [[ $rc -eq 0 ]] && UNCOVERED+="$os/$prof/gui=$gui "
+    done
+  done
+  return 0
+}
+
+# check_path_collisions <xdg|home.file> <hosts> <newline-separated full targets>
+check_path_collisions() {
+  local kind="$1" hosts="$2" keys="$3" sources key tgt src label
+  sources="$(chezmoi_sources)" || { err "cannot list chezmoi sources under home/"; return; }
   while IFS= read -r key; do
     [[ -z "$key" ]] && continue
+    if [[ "$kind" == xdg ]]; then label="xdg.configFile.\"${key#.config/}\""; else label="home.file.\"$key\""; fi
     while IFS=$'\t' read -r tgt src; do
-      [[ "$tgt" == "$key" ]] || continue
-      chezmoiignore_covers "$key" ||
-        err "xdg.configFile.\"$key\" (Home Manager) collides with chezmoi source $src; one owner per path: ignore it on Linux in home/.chezmoiignore or drop one side"
+      [[ "$tgt" == "$key" || "$tgt" == "$key"/* ]] || continue
+      ignored_on_hosts "$hosts" "$src" "$tgt" || return
+      [[ -z "$UNCOVERED" ]] && continue
+      err "$label (Home Manager) collides with chezmoi source $src; not ignored on: ${UNCOVERED% }. One owner per path: ignore it in home/.chezmoiignore on every host where Home Manager owns it, or drop one side"
     done <<<"$sources"
   done <<<"$keys"
 }
 
+# xdg keys are relative to ~/.config; chezmoi targets are relative to ~.
+check_xdg_collisions() { # check_xdg_collisions <hosts> <newline-separated xdg keys>
+  local keys="" k
+  while IFS= read -r k; do
+    [[ -z "$k" ]] && continue
+    keys+=".config/$k"$'\n'
+  done <<<"$2"
+  check_path_collisions xdg "$1" "$keys"
+}
+
 e0=$ERRORS
-check_xdg_collisions "$XDG_TEXT_KEYS"
-if ((ERRORS == e0 && scan_failed == 0)); then
+check_xdg_collisions "$TEXT_HOSTS" "$XDG_TEXT_KEYS"
+if ((ERRORS == e0 && scan_failed == 0 && RENDER_BROKEN == 0)); then
   ok "no xdg.configFile target is also a live chezmoi source"
+fi
+
+# home.file: literal targets are collision-checked; a declaration whose target
+# text cannot decide (interpolated or let-bound name, merge, generated attrset,
+# non-literal `target`) is a NOTE and is never reported as verified.
+e0=$ERRORS
+HF_TEXT_KEYS=""
+hf_dyn=0
+while IFS='|' read -r kind where a _; do
+  case "$kind" in
+    HF) HF_TEXT_KEYS+="$a"$'\n' ;;
+    HFDYN)
+      hf_dyn=$((hf_dyn + 1))
+      printf '[NOTE] %s: %s cannot be resolved in text mode; its chezmoi ownership is only decided by --eval\n' "$where" "$a"
+      ;;
+  esac
+done <<<"$NIX_FINDINGS"
+check_path_collisions home.file "$TEXT_HOSTS" "$HF_TEXT_KEYS"
+if ((ERRORS == e0 && scan_failed == 0 && RENDER_BROKEN == 0)); then
+  if ((hf_dyn == 0)); then
+    ok "no literal home.file target is also a live chezmoi source"
+  else
+    printf '[NOTE] home.file: %d declaration(s) not verifiable in text mode (literal ones passed); run with --eval\n' "$hf_dyn"
+  fi
 fi
 
 # 13. (--eval only) The same policy on the *evaluated* Home Manager config, for
@@ -514,6 +786,10 @@ fi
 # too slow and too dependent on the nix store/network for the pre-commit hook,
 # so the default run skips it. It is meant for CI, but ops/ci.sh does not
 # run it yet (wiring it needs the user's approval).
+# It also resolves every home.file target (cfg.home.file.<n>.target, so a
+# `target` option is honoured) and applies the chezmoi collision check per
+# profile host: the nested, let-bound and generated home.file declarations
+# that text mode reports as NOTE are decided here.
 # Needs nix and jq; their absence is a failure, not a skip.
 # Tolerated, not declared by us: the home-manager package that
 # programs.home-manager adds to home.packages, programs.man (Home Manager default) and
@@ -523,7 +799,7 @@ fi
 EVAL_PROFILES="${VALIDATE_EVAL_PROFILES:-linux-desktop linux-cli wsl macos}"
 # shellcheck disable=SC2016 # Nix source, not shell: no expansion wanted
 EVAL_QUERY='cfg: let
-  inherit (builtins) attrNames filter map isAttrs tryEval;
+  inherit (builtins) attrNames attrValues filter map isAttrs tryEval;
   on = set: n: let r = tryEval (let v = set.${n}; in isAttrs v && (v.enable or false) == true); in r.success && r.value;
   en = set: filter (on set) (attrNames set);
 in {
@@ -531,6 +807,7 @@ in {
   programs = en cfg.programs;
   services = en cfg.services;
   xdg = attrNames cfg.xdg.configFile;
+  files = map (f: f.target) (filter (f: f.enable or true) (attrValues cfg.home.file));
 }'
 
 in_list() { # in_list <word> <space-separated list>
@@ -549,7 +826,7 @@ if ((EVAL)); then
     for profile in $EVAL_PROFILES; do
       eval_err="$(mktemp)"
       if ! json="$(nix eval --no-eval-cache --json "path:$ROOT_DIR/nix#homeConfigurations.$profile.config" --apply "$EVAL_QUERY" 2>"$eval_err")" ||
-         ! jq -e 'has("packages") and has("programs") and has("services") and has("xdg")' <<<"$json" >/dev/null 2>&1; then
+         ! jq -e 'has("packages") and has("programs") and has("services") and has("xdg") and has("files")' <<<"$json" >/dev/null 2>&1; then
         err "nix eval failed for homeConfigurations.$profile"
         tail -n 5 "$eval_err" | sed 's/^/      /' >&2
         rm -f "$eval_err"
@@ -580,7 +857,12 @@ if ((EVAL)); then
         xdg_key_allowed "$name" ||
           err "[$profile] evaluated xdg.configFile.\"$name\" is not allowlisted"
       done <<<"$profile_keys"
-      check_xdg_collisions "$profile_keys"
+      # Ownership is judged on this profile's own host (macos is darwin).
+      case "$profile" in macos | darwin*) host="darwin:$profile" ;; *) host="linux:$profile" ;; esac
+      check_xdg_collisions "$host" "$profile_keys"
+      # Home Manager also lists every xdg.configFile entry in home.file (as
+      # .config/<key>): those were checked above, so report each only once.
+      check_path_collisions home.file "$host" "$(jq -r '(.xdg | map(".config/" + .)) as $x | .files[] | select(. as $f | $x | index($f) | not)' <<<"$json")"
     done
     if ((ERRORS == e0)); then
       ok "evaluated Home Manager config follows the policy ($EVAL_PROFILES)"

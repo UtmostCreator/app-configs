@@ -252,3 +252,34 @@ make_repo() {
     [[ "$output" == *"[install:error] ops/snapshot-home.sh missing"* ]]
     ! grep -q 'args=apply' "$STUB_LOG"
 }
+
+# ── chezmoi source directory and mise working directory ─────────────────────
+
+@test "every chezmoi call, including the snapshot's, names the repo as its source" {
+    make_repo repo
+    stub "$FAKE/ops/snapshot-home.sh" 'chezmoi managed --include files,symlinks'
+    run env USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    echo "$output"
+    [ "$status" -eq 0 ]
+    [ "$(grep -c '^chezmoi ' "$STUB_LOG")" -eq 3 ]   # init, managed (snapshot), apply
+    grep -q "args=init --source=$FAKE\$" "$STUB_LOG"
+    grep -q "args=--source=$FAKE managed" "$STUB_LOG"
+    grep -q "args=--source=$FAKE apply --force" "$STUB_LOG"
+}
+
+@test "the dry-run chezmoi diff names the repo as its source" {
+    make_repo repo
+    run env USER=utmostcreator DRY_RUN=1 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'chezmoi --source="$1" diff'* ]]
+    [[ "$output" == *"chezmoi init --source=$FAKE"* ]]
+}
+
+@test "mise install runs in the repo, not in the caller's directory" {
+    make_repo repo
+    mkdir -p "$BATS_TEST_TMPDIR/elsewhere"
+    cd "$BATS_TEST_TMPDIR/elsewhere"
+    run env USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    grep -q "^mise cwd=$FAKE nixcfg=\[[^]]*\] args=install\$" "$STUB_LOG"
+}

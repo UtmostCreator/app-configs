@@ -256,7 +256,10 @@ if is_nixos; then
   # live in /etc/nixos/app-configs-extra.nix (written by sys-setup) rather than
   # configuration.nix.
   need_rebuild=0
-  cur_shell="$(getent passwd "$(id -un)" | cut -d: -f7)"
+  # getent is not on every PATH (minimal envs); fall back to $SHELL rather
+  # than dying under set -e after the install already finished.
+  cur_shell="$({ getent passwd "$(id -un)" 2>/dev/null || true; } | cut -d: -f7)"
+  cur_shell="${cur_shell:-${SHELL:-unknown}}"
   [[ "$cur_shell" == *fish* ]] || { warn "fish is not yet the system login shell (now: $cur_shell)"; need_rebuild=1; }
   nix show-config 2>/dev/null | grep -qE "trusted-users\s*=.*\b$(id -un)\b" \
     || { warn "your user is not in nix trusted-users (auto-optimise warning)"; need_rebuild=1; }

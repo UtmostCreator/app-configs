@@ -36,8 +36,10 @@ setup() {
 
   STUBS="$BATS_TEST_TMPDIR/bin"; mkdir -p "$STUBS"
   printf '#!/usr/bin/env bash\ncat "$RELEASE_FIXTURE"\n' > "$STUBS/curl"
-  printf '#!/usr/bin/env bash\necho "codebase-memory-mcp 0.0.1"\n' > "$STUBS/codebase-memory-mcp"
-  printf '#!/usr/bin/env bash\nprintf "home-manager %%s\\n" "$*" >> "$CALL_LOG"\nexit "${FAIL_SWITCH:-0}"\n' > "$STUBS/home-manager"
+  # The switch "installs" the release, so the post-switch version check passes.
+  export INSTALLED_FILE="$BATS_TEST_TMPDIR/installed-version"; echo 0.0.1 > "$INSTALLED_FILE"
+  printf '#!/usr/bin/env bash\necho "codebase-memory-mcp $(cat "$INSTALLED_FILE")"\n' > "$STUBS/codebase-memory-mcp"
+  printf '#!/usr/bin/env bash\nprintf "home-manager %%s\\n" "$*" >> "$CALL_LOG"\n[ "${FAIL_SWITCH:-0}" = 0 ] || exit "$FAIL_SWITCH"\njq -r ".tag_name | ltrimstr(\\"v\\")" "$RELEASE_FIXTURE" > "$INSTALLED_FILE"\n' > "$STUBS/home-manager"
   printf '#!/usr/bin/env bash\nprintf "systemctl %%s\\n" "$*" >> "$CALL_LOG"\n' > "$STUBS/systemctl"
   real_mktemp="$(command -v mktemp)"
   printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >> "$MKTEMP_LOG"\nexec %s "$@"\n' "$real_mktemp" > "$STUBS/mktemp"

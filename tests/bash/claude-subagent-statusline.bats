@@ -107,11 +107,58 @@ FOUR_AGENTS() {
     [ "$output" = "t=a-very-long-ag… Sonnet 5 · high · ▶ 0% · 1s" ]
 }
 
-@test "narrow panel keeps only name, status, and context %" {
+@test "narrow panel keeps name, compact model tag with effort initial, status, and context %" {
     run rows "$(FOUR_AGENTS | jq '.columns = 50')"
     [ "$status" -eq 0 ]
-    [ "${lines[3]}" = "a4=Architecture ▶ 84% ⚠" ]
-    [ "${lines[2]}" = "a3=Tests        ✓ 36%" ]
+    [ "${lines[3]}" = "a4=Architecture Opus 5:M ▶ 84% ⚠" ]
+    [ "${lines[2]}" = "a3=Tests        Son 5:h  ✓ 36%" ]
+    [ "${lines[0]}" = "a1=Explore      Son 5:h  ▶ 24%" ]
+    [ "${lines[1]}" = "a2=UI-review    Opus 5:x ▶ 71%" ]
+}
+
+@test "narrow panel: compact tags for Sonnet 4.6, Haiku 4.5, and no effort initial when inherited" {
+    run rows "$(jq -n --argjson a "$(task s Son claude-sonnet-4-6 '' running 1000 200000 5)" '{columns: 50, tasks: [$a]}')"
+    [ "$status" -eq 0 ]
+    [ "$output" = "s=Son Son 4.6 ▶ 1%" ]
+    run rows "$(jq -n --argjson a "$(task h Haiku claude-haiku-4-5-20251001 low failed 1000 200000 5)" '{columns: 50, tasks: [$a]}')"
+    [ "$output" = "h=Haiku Haiku 4.5:l ✗ 1%" ]
+}
+
+@test "narrow panel: effort initial is dropped when the row would not fit, the model tag stays" {
+    run rows "$(FOUR_AGENTS | jq '.columns = 28')"
+    [ "$status" -eq 0 ]
+    [ "${lines[3]}" = "a4=Architecture Opus 5 ▶ 84% ⚠" ]
+}
+
+@test "narrow panel: effort initials are unambiguous (medium m, max M, xhigh x)" {
+    input=$(jq -n \
+        --argjson a "$(task a A claude-opus-5 medium running 1000 200000 5)" \
+        --argjson b "$(task b B claude-opus-5 max running 1000 200000 5)" \
+        --argjson c "$(task c C claude-opus-5 xhigh running 1000 200000 5)" \
+        --argjson d "$(task d D claude-opus-5 low running 1000 200000 5)" \
+        --argjson e "$(task e E claude-opus-5 odd running 1000 200000 5)" \
+        '{columns: 50, tasks: [$a, $b, $c, $d, $e]}')
+    run rows "$input"
+    [ "${lines[0]}" = "a=A Opus 5:m ▶ 1%" ]
+    [ "${lines[1]}" = "b=B Opus 5:M ▶ 1%" ]
+    [ "${lines[2]}" = "c=C Opus 5:x ▶ 1%" ]
+    [ "${lines[3]}" = "d=D Opus 5:l ▶ 1%" ]
+    [ "${lines[4]}" = "e=E Opus 5   ▶ 1%" ]
+}
+
+@test "narrow panel: the effort initial is kept or dropped for every row at once" {
+    run rows "$(FOUR_AGENTS | jq '.columns = 28')"
+    [ "$status" -eq 0 ]
+    [ "${lines[0]}" = "a1=Explore      Son 5  ▶ 24%" ]
+    [ "${lines[1]}" = "a2=UI-review    Opus 5 ▶ 71%" ]
+    [ "${lines[2]}" = "a3=Tests        Son 5  ✓ 36%" ]
+    [ "${lines[3]}" = "a4=Architecture Opus 5 ▶ 84% ⚠" ]
+}
+
+@test "narrow panel: a task without a model shows no tag" {
+    input=$(jq -n --argjson a "$(task n Nomodel '' high running 1000 200000 5)" '{columns: 50, tasks: [$a]}')
+    run rows "$input"
+    [ "${lines[0]}" = "n=Nomodel ▶ 1%" ]
 }
 
 @test "no tasks prints nothing" {

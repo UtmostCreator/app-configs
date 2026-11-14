@@ -44,10 +44,20 @@ add_conflict() {
     refute_grep '^home-manager' "$CALLS"
 }
 
-@test "a missing jq is an error, not an empty conflict list" {
-    run env PATH="$STUBS" "$BASH" -c "source '$REPO_ROOT/ops/lib/hm-switch.sh'; hm_check_conflicts /repo/nix p; echo status=\$?; echo \"\$HM_CHECK_MSG\""
+@test "with neither jq nor nix the check is an error, not an empty conflict list" {
+    local empty="$BATS_TEST_TMPDIR/empty"; mkdir -p "$empty"
+    run env PATH="$empty" "$BASH" -c "source '$REPO_ROOT/ops/lib/hm-switch.sh'; hm_check_conflicts /repo/nix p; echo status=\$?; echo \"\$HM_CHECK_MSG\""
     [[ "$output" == *"status=2"* ]]
-    [[ "$output" == *"jq is not on PATH"* ]]
+    [[ "$output" == *"neither jq nor nix"* ]]
+}
+
+@test "without jq the check borrows it from nixpkgs (a fresh bootstrap has no jq)" {
+    printf '#!/usr/bin/env bash\nprintf "nix %%s\\n" "$*" >> "$CALLS"\n[ "$1" = run ] && exit 0\nprintf "%%s\\n" "$BATS_TEST_TMPDIR/out"\n' >"$STUBS/nix"
+    local t
+    for t in bash tail cut sort paste dirname cat sed grep find; do ln -sf "$(command -v "$t")" "$STUBS/$t"; done
+    run env PATH="$STUBS" "$BASH" -c "source '$REPO_ROOT/ops/lib/hm-switch.sh'; hm_check_conflicts /repo/nix p; echo status=\$?"
+    [[ "$output" == *"status=0"* ]]
+    grep -q '^nix run nixpkgs#jq -- ' "$CALLS"
 }
 
 @test "a profile without a manifest is an error" {

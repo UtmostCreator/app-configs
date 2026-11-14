@@ -13,8 +13,4 @@
   # CLI-only host: skip the GPU driver hook, which would warn on every switch
   # until `sudo non-nixos-gpu-setup` is run.
   targets.genericLinux.gpu.enable = false;
-
-  # The WSL2 user is not a trusted Nix user (no sys-setup on Ubuntu), so a
-  # client auto-optimise-store only produces warnings. See nix-settings.nix.
-  myConfig.nixClientAutoOptimise = false;
 }

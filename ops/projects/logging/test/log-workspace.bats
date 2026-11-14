@@ -45,7 +45,8 @@ session_instance() {
 }
 
 wait_for() {
-  local attempts=60
+  # 15 s: a fully parallel suite run can starve a process exit past 6 s.
+  local attempts=150
   while (( attempts > 0 )); do
     if "$@"; then
       return 0

@@ -53,8 +53,10 @@ refused() {
     refused
 }
 
-@test "cleanup.sh --apply refuses an outside repo" {
-    run env PATH="$STUBS:$PATH" bash "$OUTSIDE/ops/cleanup.sh" --apply --yes
+@test "cleanup.sh --apply refuses a HOME outside the test dir" {
+    # cleanup never writes the repository; what it mutates hangs off HOME.
+    mkdir -p "$OUTSIDE/home"
+    run env HOME="$OUTSIDE/home" PATH="$STUBS:$PATH" bash "$REPO_ROOT/ops/cleanup.sh" --apply --yes
     refused
 }
 

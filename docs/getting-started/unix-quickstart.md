@@ -118,8 +118,8 @@ cat >> ~/.ssh/config <<'EOF'
 
 Host *
     AddKeysToAgent yes
-    UseKeychain yes
     IgnoreUnknown UseKeychain
+    UseKeychain yes
 EOF
 chmod 600 ~/.ssh/config
 

@@ -48,7 +48,10 @@ preflight_host_checks() {
   # login user (common on WSL, where the distro asks for a new name) would only
   # fail later inside home-manager switch, so stop here with the fix.
   local nix_user login_user
-  nix_user="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$repo_root/nix/vars/default.nix")"
+  nix_user=""
+  if [[ -f "$repo_root/nix/vars/default.nix" ]]; then
+    nix_user="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$repo_root/nix/vars/default.nix")"
+  fi
   login_user="${USER:-$(id -un)}"
   if [[ -n "$nix_user" && "$login_user" != "$nix_user" ]]; then
     fail "login user '$login_user' does not match username '$nix_user' in nix/vars/default.nix. Log in as '$nix_user' (WSL: create that user and set it as [user] default in /etc/wsl.conf), or change username and homeDirectory there."

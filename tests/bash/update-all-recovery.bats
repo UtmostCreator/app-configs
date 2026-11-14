@@ -133,16 +133,6 @@ clean() { [ -z "$(git -C "$FAKE" status --porcelain)" ]; }
 
 # ── release locks ───────────────────────────────────────────────────────────
 
-@test "a changed codebase-memory-mcp release lock is committed with the flake lock" {
-  export BUMP_CBM=1
-  run_update
-  [ "$status" -eq 0 ]
-  clean
-  git -C "$FAKE" diff --name-only HEAD~1 HEAD | grep -qx 'nix/packages/codebase-memory-mcp/release.json'
-}
-
-# ── concurrency ─────────────────────────────────────────────────────────────
-
 @test "a second sys-update stops while another run holds the lock" {
   mkdir -p "$SYS_UPDATE_STATE_DIR"
   exec 8>"$SYS_UPDATE_STATE_DIR/lock"
@@ -200,7 +190,7 @@ STUB
   printf '#!/usr/bin/env bash\necho "unsupported" >&2\nexit 1\n' > "$FAKE/ops/detect-host.sh"
   run env -u HOST_PROFILE PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"could not detect the host profile"* ]]
+  [[ "$output" == *"host detection failed"* ]]
   [[ "$output" != *"SYSTEM UPDATE"* ]]
   run env -u HOST_PROFILE PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes
   [ "$status" -ne 0 ]

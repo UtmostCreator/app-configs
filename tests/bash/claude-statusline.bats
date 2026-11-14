@@ -17,6 +17,10 @@ setup() {
 
     export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
     export STATUSLINE_NOW=$NOW TZ=UTC COLUMNS=200
+    # No git-result caching by default (tests edit the tree between runs); the
+    # cache tests turn it on. The cache dir stays inside the test sandbox.
+    export STATUSLINE_GIT_TTL=0 XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR/run"
+    mkdir -p "$XDG_RUNTIME_DIR"
     # Isolate from the real ~/.claude/sessions (Remote Control lookup).
     export CLAUDE_CONFIG_DIR="$BATS_TEST_TMPDIR/claude"
     mkdir -p "$CLAUDE_CONFIG_DIR/sessions"
@@ -280,4 +284,249 @@ session_file() {
     run statusline '{"session_id": "sess-1"}'
     [ "$status" -eq 0 ]
     [[ "$output" == "advanced-gym ⎇ main | "* ]]
+}
+
+# --- Remaining context tokens -----------------------------------------------------
+
+@test "wide: remaining tokens come from remaining_percentage and sit before LONG" {
+    run statusline '{"context_window": {"remaining_percentage": 45.2}}'
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"| Ctx 55% · 548k/1M · 452k left · LONG"* ]]
+}
+
+@test "remaining tokens are hidden when remaining_percentage is absent or null" {
+    run statusline '{"context_window": {"remaining_percentage": null}}'
+    [ "$status" -eq 0 ]
+    [[ "$output" != *left* ]]
+    run statusline
+    [[ "$output" != *left* ]]
+}
+
+# --- Context pressure colours -----------------------------------------------------
+
+# ctx_color <used_percentage>: the escape sequence that starts the Ctx segment.
+ctx_color() {
+    payload "{\"context_window\": {\"used_percentage\": $1}}" | bash "$SCRIPT" \
+        | grep -o $'\033\\[[0-9;]*mCtx' | sed 's/Ctx$//'
+}
+
+@test "context pressure colours switch at 75, 85 and 95 percent" {
+    green=$'\033[0;32m' yellow=$'\033[0;33m' orange=$'\033[38;5;208m' red=$'\033[1;31m'
+    [ "$(ctx_color 74)" = "$green" ]
+    [ "$(ctx_color 75)" = "$yellow" ]
+    [ "$(ctx_color 84)" = "$yellow" ]
+    [ "$(ctx_color 85)" = "$orange" ]
+    [ "$(ctx_color 94)" = "$orange" ]
+    [ "$(ctx_color 95)" = "$red" ]
+}
+
+# --- Git counts and ahead/behind ---------------------------------------------------
+
+@test "git: staged, unstaged and untracked path counts when more than one path changed" {
+    touch "$REPO/a" "$REPO/b"
+    git -C "$REPO" add a b
+    git -C "$REPO" -c user.name=t -c user.email=t@t commit -q -m ab
+    echo x >"$REPO/a"; git -C "$REPO" add a      # staged
+    echo y >"$REPO/b"                            # unstaged
+    touch "$REPO/u1" "$REPO/u2"                  # untracked
+    run statusline
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main* ●1 ✚1 …2 +2/-0 | "* ]]
+}
+
+@test "git: a single changed path keeps the plain marker (no count breakdown)" {
+    touch "$REPO/u1"
+    run statusline
+    [[ "$output" == "advanced-gym ⎇ main* | "* ]]
+}
+
+# remote_setup: bare origin, main pushed and tracked.
+remote_setup() {
+    git init -q --bare "$WORK/origin.git"
+    git -C "$REPO" remote add origin "$WORK/origin.git"
+    git -C "$REPO" push -q -u origin main 2>/dev/null
+}
+
+@test "git: ahead and behind the upstream, shown only when non-zero" {
+    remote_setup
+    run statusline
+    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    git -C "$REPO" -c user.name=t -c user.email=t@t commit -q --allow-empty -m local
+    run statusline
+    [[ "$output" == "advanced-gym ⎇ main ↑1 | "* ]]
+    # Another clone pushes; the script does not fetch, so it stays unaware.
+    git clone -q -b main "$WORK/origin.git" "$WORK/other" 2>/dev/null
+    git -C "$WORK/other" -c user.name=t -c user.email=t@t commit -q --allow-empty -m r1
+    git -C "$WORK/other" -c user.name=t -c user.email=t@t commit -q --allow-empty -m r2
+    git -C "$WORK/other" push -q origin HEAD:main
+    run statusline
+    [[ "$output" == "advanced-gym ⎇ main ↑1 | "* ]]
+    git -C "$REPO" fetch -q origin
+    run statusline
+    [[ "$output" == "advanced-gym ⎇ main ↑1↓2 | "* ]]
+}
+
+@test "git: the script never fetches or pulls" {
+    ! grep -Eq '^[^#]*git[^#]*(fetch|pull)' "$SCRIPT"
+}
+
+@test "git results are cached for the TTL in a per-repo file under XDG_RUNTIME_DIR" {
+    export STATUSLINE_GIT_TTL=5
+    run statusline
+    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    touch "$REPO/a"
+    run statusline
+    [[ "$output" == "advanced-gym ⎇ main | "* ]]          # still cached
+    [ -n "$(find "$XDG_RUNTIME_DIR" -type f | head -1)" ]
+    STATUSLINE_NOW=$((NOW + 6)) run statusline
+    [[ "$output" == "advanced-gym ⎇ main* | "* ]]         # expired
+}
+
+@test "git cache is per repo" {
+    export STATUSLINE_GIT_TTL=5
+    make_repo "$WORK/second" trunk
+    run statusline
+    run statusline "$(jq -n --arg d "$WORK/second" '{workspace: {project_dir: $d, current_dir: $d}}')"
+    [[ "$output" == "second ⎇ trunk | "* ]]
+}
+
+# --- Session cost and duration ------------------------------------------------------
+
+@test "cost and duration go on the second line only when present" {
+    run statusline '{"cost": {"total_cost_usd": 1.234, "total_duration_ms": 3725000}}'
+    [ "$status" -eq 0 ]
+    [ "${#lines[@]}" -eq 2 ]
+    [ "${lines[1]}" = '$1.23 · 1h02m' ]
+    run statusline '{"cost": {"total_cost_usd": 0.5, "total_duration_ms": 45000}}'
+    [ "${lines[1]}" = '$0.50 · 45s' ]
+    run statusline '{"cost": {"total_duration_ms": 720000}}'
+    [ "${lines[1]}" = "12m" ]
+    run statusline '{"cost": {"total_lines_added": 1}}'
+    [ "${#lines[@]}" -eq 1 ]
+}
+
+# --- Cache health -------------------------------------------------------------------
+
+@test "cache health shows the hit ratio, or cold, only when caching is observed" {
+    run statusline '{"prompt_cache": {"caching_observed": true, "warm": true, "hit_ratio": 0.91}}'
+    [ "${lines[1]}" = "Cache 91%" ]
+    run statusline '{"prompt_cache": {"caching_observed": true, "warm": false, "hit_ratio": 0.91}}'
+    [ "${lines[1]}" = "Cache 91% cold" ]
+    run statusline '{"prompt_cache": {"caching_observed": true, "warm": true, "hit_ratio": null}}'
+    [ "${#lines[@]}" -eq 1 ]
+    run statusline '{"prompt_cache": {"caching_observed": false, "warm": false, "hit_ratio": 0}}'
+    [ "${#lines[@]}" -eq 1 ]
+}
+
+@test "worktree, PR, cost and cache share the second line" {
+    run statusline "$(jq -n --argjson b "$EXTRAS" '$b * {
+        cost: {total_cost_usd: 2, total_duration_ms: 60000},
+        prompt_cache: {caching_observed: true, warm: true, hit_ratio: 0.5}}')"
+    [ "${lines[1]}" = 'WT ui-redesign | PR #184 approved | $2.00 · 1m · Cache 50%' ]
+}
+
+# --- Width adaptation ---------------------------------------------------------------
+
+# width <text>: display columns of one line (ANSI already stripped; UTF-8
+# continuation bytes do not count).
+width() {
+    printf %s "$1" | LC_ALL=C tr -d '\200-\277' | wc -c | tr -d ' '
+}
+
+FULLER='{"context_window": {"remaining_percentage": 45.2}}'
+
+@test "wide: drops remaining tokens first, then reset times, then 7d" {
+    git -C "$REPO" checkout -q -b feature/statusline-upgrade-with-a-rather-long-name
+    edit_tracked
+    full="$(jq -n --argjson a "$FULL" --argjson b "$FULLER" '$a * $b')"
+    run statusline "$full"
+    [[ "${lines[0]}" == *"452k left"* ]]
+    export COLUMNS=$(( $(width "${lines[0]}") - 1 ))
+    run statusline "$full"
+    [ "${lines[0]}" = "advanced-gym ⎇ feature/statusline-upgrade-with-a-rather-long-name* +3/-2 | Opus 5 · effort:high | Ctx 55% · 548k/1M · LONG | 5h 72% ↻1h24m · 7d 41% ↻Tue" ]
+    export COLUMNS=$(( $(width "${lines[0]}") - 1 ))
+    run statusline "$full"
+    [[ "${lines[0]}" != *left* && "${lines[0]}" != *"↻"* && "${lines[0]}" == *"7d 41%"* ]]
+    export COLUMNS=$(( $(width "${lines[0]}") - 1 ))
+    run statusline "$full"
+    [[ "${lines[0]}" != *"7d"* && "${lines[0]}" == *"5h 72%"* ]]
+}
+
+@test "every line fits the terminal for widths down to 60" {
+    edit_tracked
+    full="$(jq -n --argjson a "$FULL" --argjson b "$FULLER" --argjson c "$EXTRAS" '$a * $b * $c')"
+    for cols in 200 140 125 119 100 90 80 70 60; do
+        COLUMNS=$cols run statusline "$full"
+        [ "$status" -eq 0 ]
+        for l in "${lines[@]}"; do
+            [ "$(width "$l")" -le "$cols" ] || { echo "cols=$cols width=$(width "$l"): $l"; false; }
+        done
+    done
+}
+
+@test "narrow line drops 7d, then 5h, as the terminal shrinks" {
+    export COLUMNS=45
+    run statusline "$FULL"
+    [ "$output" = "advanced-gym ⎇ main | Opus 5:high | Ctx 55%" ]
+    export COLUMNS=56
+    run statusline "$FULL"
+    [ "$output" = "advanced-gym ⎇ main | Opus 5:high | Ctx 55% | 5h 72%" ]
+}
+
+@test "the statusline does not print the permission/auto mode (native footer owns it)" {
+    run statusline '{"permission_mode": "auto", "vim": {"mode": "NORMAL"}}'
+    [[ "$output" != *auto* ]]
+}
+
+@test "one invocation stays fast" {
+    start=$SECONDS
+    for _ in 1 2 3 4 5; do statusline "$FULL" >/dev/null; done
+    [ $(( SECONDS - start )) -le 3 ]
+}
+
+# --- Cache hardening ----------------------------------------------------------------
+
+# cache_file <repo-dir>: where the script keeps that directory's cached line.
+cache_file() {
+    local key
+    key=$(printf %s "$1" | cksum)
+    printf '%s/claude-statusline-%s/%s' "$XDG_RUNTIME_DIR" "$(id -u)" "${key%% *}"
+}
+
+@test "cache: a crafted line is a miss and nothing in it is ever evaluated" {
+    export STATUSLINE_GIT_TTL=5
+    marker="$WORK/pwned"
+    file=$(cache_file "$REPO")
+    mkdir -p -m 700 "$(dirname "$file")"
+    printf '%s\tmain\tX[$(touch %s)]\t0\t0\t0\t0\t0\t0\t0\n' "$NOW" "$marker" >"$file"
+    run statusline
+    [ "$status" -eq 0 ]
+    [ ! -e "$marker" ]
+    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    # The first field is checked too.
+    printf 'NOW[$(touch %s)]\tmain\t0\t0\t0\t0\t0\t0\t0\t0\n' "$marker" >"$file"
+    run statusline
+    [ ! -e "$marker" ]
+}
+
+@test "cache: a line with control characters in the branch is a miss" {
+    export STATUSLINE_GIT_TTL=5
+    file=$(cache_file "$REPO")
+    mkdir -p -m 700 "$(dirname "$file")"
+    printf '%s\tevil\033[31mbranch\t0\t0\t0\t0\t0\t0\t0\t0\n' "$NOW" >"$file"
+    run bash -c "jq -n --arg d '$REPO' '{workspace: {project_dir: \$d, current_dir: \$d}}' | bash '$SCRIPT'"
+    [[ "$output" != *evil* ]]
+}
+
+@test "cache: a symlinked cache directory is not followed or chmodded" {
+    export STATUSLINE_GIT_TTL=5 TMPDIR="$WORK/tmpd"
+    unset XDG_RUNTIME_DIR
+    mkdir -p "$TMPDIR" "$WORK/victim"
+    chmod 755 "$WORK/victim"
+    ln -s "$WORK/victim" "$TMPDIR/claude-statusline-$(id -u)"
+    run statusline
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    [ -n "$(find "$WORK/victim" -maxdepth 0 -perm 755)" ]
+    [ -z "$(find "$WORK/victim" -type f)" ]
 }

@@ -30,7 +30,7 @@
     ripgrep
     ripgrep-all # binary: rga
     starship
-    tealdeer # tldr/tlrc alternative in nixpkgs (binary: tldr)
+    tlrc # tldr client (binary: tldr); matrix owner for tldr
     tmux
     tree # directory tree view (eza --tree also works)
     yazi
@@ -44,7 +44,7 @@
     # `du` replacement (du-dust; chosen over ncdu — larger, more active
     # community; binary: dust)
     dust
-    # Interactive cheatsheet launcher (Ctrl-G); complements tldr/tealdeer
+    # Interactive cheatsheet launcher (Ctrl-G); complements tldr/tlrc
     # (quick examples) — different tool, no overlap.
     navi
     # ── Productivity / text (from macOS tools audit) ──

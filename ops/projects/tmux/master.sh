@@ -81,11 +81,22 @@ percent_rows() {
   echo $(( (total_rows * percent + 50) / 100 ))
 }
 
+# term_size <cols|lines> <fallback>: tput when it works (ncurses may be absent
+# on a minimal host, and there is no terminal when detached), else the fallback.
+term_size() {
+  local n
+  if command -v tput >/dev/null 2>&1 && n="$(tput "$1" 2>/dev/null)" && [ -n "$n" ]; then
+    echo "$n"
+  else
+    echo "$2"
+  fi
+}
+
 get_tmux_width() {
   if [ -n "${TMUX:-}" ]; then
     tmux display-message -p '#{client_width}'
   else
-    tput cols
+    term_size cols "${COLUMNS:-200}"
   fi
 }
 
@@ -93,7 +104,7 @@ get_tmux_height() {
   if [ -n "${TMUX:-}" ]; then
     tmux display-message -p '#{window_height}'
   else
-    echo $(( $(tput lines) - 1 ))
+    echo $(( $(term_size lines "${LINES:-50}") - 1 ))
   fi
 }
 
@@ -202,8 +213,7 @@ send_backend_verify_then_git_workflow() {
   run_bootstrap_in_pane "$pane_id" "$cmd"
 }
 
-# Parse every argument first and act afterwards: a later bad argument (or
-# --help) must not leave an earlier --force having already killed the session.
+# Parse every argument before acting, so an invalid one never follows a kill.
 FORCE="0"
 for arg in "$@"; do
   case "$arg" in
@@ -224,17 +234,18 @@ for arg in "$@"; do
       ;;
   esac
 done
-if [ "$FORCE" = "1" ]; then
-  tmux kill-session -t "$SESSION" 2>/dev/null || true
-fi
 
-if tmux has-session -t "$SESSION" 2>/dev/null; then
-  if [ -n "${TMUX:-}" ]; then
-    tmux switch-client -t "$SESSION"
-  elif [ "$DETACHED" = "1" ]; then
+# "=" makes every target an exact name; bare names prefix-match other sessions.
+[ "$FORCE" = "1" ] && { tmux kill-session -t "=$SESSION" 2>/dev/null || true; }
+
+if tmux has-session -t "=$SESSION" 2>/dev/null; then
+  # Same order as proj_tmux_attach: --detached wins, even inside $TMUX.
+  if [ "$DETACHED" = "1" ]; then
     echo "tmux session $SESSION is already running"
+  elif [ -n "${TMUX:-}" ]; then
+    tmux switch-client -t "=$SESSION"
   else
-    tmux attach-session -t "$SESSION"
+    tmux attach-session -t "=$SESSION"
   fi
   exit 0
 fi
@@ -266,7 +277,7 @@ BOTTOM_ROWS=$(( TOTAL_ROWS - LOG_ROWS - 1 ))
 
 if [ "$BOTTOM_ROWS" -lt 10 ]; then
   echo "Terminal is too short for this layout"
-  tmux kill-session -t "$SESSION" 2>/dev/null || true
+  tmux kill-session -t "=$SESSION" 2>/dev/null || true
   exit 1
 fi
 
@@ -279,7 +290,7 @@ BACKEND_ROWS=$(( BOTTOM_ROWS - UI_ROWS - 1 ))
 
 if [ "$BACKEND_ROWS" -lt 3 ]; then
   echo "Terminal is too short for the left column layout"
-  tmux kill-session -t "$SESSION" 2>/dev/null || true
+  tmux kill-session -t "=$SESSION" 2>/dev/null || true
   exit 1
 fi
 
@@ -289,7 +300,7 @@ FRONTEND_GROUP_ROWS=$(( BOTTOM_ROWS - PAYMENTS_ROWS - 1 ))
 
 if [ "$FRONTEND_GROUP_ROWS" -lt 6 ]; then
   echo "Terminal is too short for the right column layout"
-  tmux kill-session -t "$SESSION" 2>/dev/null || true
+  tmux kill-session -t "=$SESSION" 2>/dev/null || true
   exit 1
 fi
 
@@ -299,7 +310,7 @@ INTEGRATION_ROWS=$(( FRONTEND_GROUP_ROWS - FRONTEND_ROWS - 1 ))
 
 if [ "$INTEGRATION_ROWS" -lt 3 ]; then
   echo "Terminal is too short for the frontend/integration layout"
-  tmux kill-session -t "$SESSION" 2>/dev/null || true
+  tmux kill-session -t "=$SESSION" 2>/dev/null || true
   exit 1
 fi
 
@@ -347,10 +358,10 @@ send_backend_verify_then_git_workflow "$P_BACKEND"
 tmux select-window -t "$WINDOW_TARGET"
 tmux select-pane -t "$P_BACKEND"
 
-if [ -n "${TMUX:-}" ]; then
-  tmux switch-client -t "$SESSION"
-elif [ "$DETACHED" = "1" ]; then
+if [ "$DETACHED" = "1" ]; then
   echo "tmux session $SESSION started in detached mode"
+elif [ -n "${TMUX:-}" ]; then
+  tmux switch-client -t "=$SESSION"
 else
-  tmux attach-session -t "$SESSION"
+  tmux attach-session -t "=$SESSION"
 fi

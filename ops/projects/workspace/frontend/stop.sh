@@ -112,7 +112,7 @@ kill_frontend_listener_on_port() {
     fi
 }
 
-if tmux has-session -t "$SESSION" 2>/dev/null; then
+if tmux has-session -t "=$SESSION" 2>/dev/null; then
     pane_id="$(tmux list-panes -a -F '#{session_name}	#{pane_title}	#{pane_id}' | awk -F '	' -v session="$SESSION" -v title="$PANE_TITLE" '$1 == session && $2 == title { print $3; exit }')"
 
     if [ -n "$pane_id" ]; then

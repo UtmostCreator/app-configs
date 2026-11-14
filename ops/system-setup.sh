@@ -32,22 +32,32 @@ done
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=ops/lib/preflight.sh
 source "$REPO_ROOT/ops/lib/preflight.sh"
-# Test guard: an apply run under bats must stay inside the test's scratch dir.
-[[ "$MODE" == "apply" ]] && preflight_bats_guard system-setup "to apply" "$REPO_ROOT"
-
 log()  { printf '[system-setup:%s] %s\n' "$MODE" "$*"; }
 fail() { printf '[system-setup:error] %s\n' "$*" >&2; exit 1; }
 
-[[ -f /etc/NIXOS ]] || grep -qi '^ID=nixos' /etc/os-release 2>/dev/null \
+# The test seams below point the script at fixtures, never at a real system.
+[[ "$MODE" != "apply" ]] \
+  || [[ -z "${SYSTEM_SETUP_NIXOS_DIR:-}${SYSTEM_SETUP_ASSUME_NIXOS:-}" ]] \
+  || fail "--apply is refused while SYSTEM_SETUP_NIXOS_DIR / SYSTEM_SETUP_ASSUME_NIXOS is set (report-mode only test seams)"
+# Test guard: an apply run under bats must stay inside the test's scratch dir.
+[[ "$MODE" == "apply" ]] && preflight_bats_guard system-setup "to apply" "$REPO_ROOT"
+
+# SYSTEM_SETUP_ASSUME_NIXOS=1 is a test seam: it skips the host OS probe so the
+# detection logic can be exercised against fixture configs on any host.
+[[ "${SYSTEM_SETUP_ASSUME_NIXOS:-0}" == 1 ]] || [[ -f /etc/NIXOS ]] \
+  || grep -qi '^ID=nixos' /etc/os-release 2>/dev/null \
   || fail "not NixOS — this script only applies to NixOS systems"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SYS="/etc/nixos/configuration.nix"
-MODULE="/etc/nixos/app-configs-extra.nix"
+# SYSTEM_SETUP_NIXOS_DIR is a test seam (default /etc/nixos); tests point it at
+# a fixture directory and only ever run report mode.
+NIXOS_DIR="${SYSTEM_SETUP_NIXOS_DIR:-/etc/nixos}"
+SYS="$NIXOS_DIR/configuration.nix"
+MODULE="$NIXOS_DIR/app-configs-extra.nix"
 [[ -f "$SYS" ]] || fail "$SYS not found"
 USER_NAME="${USER_NAME:-${SUDO_USER:-$USER}}"
 FLAKE_ARG=""
-[[ -f /etc/nixos/flake.nix ]] && FLAKE_ARG="--flake /etc/nixos#nixos"
+[[ -f "$NIXOS_DIR/flake.nix" ]] && FLAKE_ARG="--flake $NIXOS_DIR#nixos"
 
 log "Target user: $USER_NAME"
 log "System config: $SYS"
@@ -65,7 +75,7 @@ cur_timezone="$(bash "$SCRIPT_DIR/detect-timezone.sh")"
 # SCRIPT_DIR is <repo>/ops, so the module is one level up.
 DOCKER_MODULE_SRC="$(cd "$SCRIPT_DIR/.." && pwd)/nix/modules/nixos/docker.nix"
 DOCKER_MODULE_NAME="app-configs-docker.nix"     # basename inside /etc/nixos
-DOCKER_MODULE_DST="/etc/nixos/${DOCKER_MODULE_NAME}"
+DOCKER_MODULE_DST="$NIXOS_DIR/${DOCKER_MODULE_NAME}"
 
 # On by default here so `sys-setup --apply` provisions docker.service; disable
 # for a host that must not run the daemon with: ENABLE_DOCKER=0 sudo sys-setup --apply
@@ -86,16 +96,59 @@ ENABLE_TAILSCALE="${ENABLE_TAILSCALE:-1}"
 #
 #   have_*  = is this setting ALREADY satisfied on the live system or in $MODULE?
 #             Used only for the "nothing to do" early exit.
-in_sys()    { grep -q "$1" "$SYS" 2>/dev/null; }
-in_module() { [[ -f "$MODULE" ]] && grep -q "$1" "$MODULE" 2>/dev/null; }
+#
+# Detection looks only at ACTIVE Nix text, deliberately without parsing strings:
+# lines whose first non-blank character is `#`, and `/* ... */` blocks that
+# START a line, are ignored; everything else counts (so a "/home/*/.cache"
+# glob or a URL #fragment inside a string can never hide a real setting). A
+# trailing `# comment` after code is therefore still searched — an accepted
+# trade-off. The text is collapsed to one line so multi-line lists match.
+#   - ANY `opt = ...` assignment means the USER owns the option; a literal
+#     `false` is additionally reported ("disabled in configuration.nix; not
+#     overriding"). We never override, since a second definition would conflict
+#     at NixOS eval time.
+#   - Edge: a line inside a '' string that starts with `/*` is treated as a
+#     block-comment start and skipped (strings are not parsed).
+#   - trusted-users must name the target user (or @wheel); another user's
+#     entry does not make $USER_NAME trusted.
+active_nix() {
+  [[ -f "$1" ]] || return 0
+  awk '
+    inblock { if (index($0, "*/")) inblock = 0; next }
+    /^[[:space:]]*#/ { next }
+    /^[[:space:]]*\/\*/ { if (!index($0, "*/")) inblock = 1; next }
+    { print }
+  ' "$1" | tr '\n' ' '
+}
+in_text()   { local t; t="$(active_nix "$1")"; grep -Eq "$2" <<<"$t"; }
+in_sys()    { in_text "$SYS" "$1"; }
+in_module() { [[ -f "$MODULE" ]] && in_text "$MODULE" "$1"; }
+# Regexes for "<dotted.option> = true" / "= false" / either (dots escaped).
+opt_enabled()  { local o="${1//./\\.}"; printf '%s\\s*=\\s*true' "$o"; }
+opt_disabled() { local o="${1//./\\.}"; printf '%s\\s*=\\s*false' "$o"; }
+# opt_set: ANY assignment (true, false, lib.mkForce false, config.x ...) is
+# user-owned; emitting our own definition next to it would conflict at eval time.
+opt_set()      { local o="${1//./\\.}"; printf '%s\\s*=' "$o"; }
+# nix.gc: any definition is user-owned; "off" via the dotted or the block form.
+gc_disabled_re='nix\.gc\.automatic\s*=\s*false|nix\.gc\s*=\s*\{[^}]*automatic\s*=\s*false'
+# trusted-users must list the target user (or the wheel group); [^;]* stays
+# inside one assignment but spans lines.
+trusted_re() { printf 'trusted-users[^;]*("%s"|"@wheel")' "$USER_NAME"; }
+
+# Tell the user when their own config disables something we would manage.
+note_disabled() { in_sys "$2" && log "$1 disabled in configuration.nix; not overriding"; return 0; }
+note_disabled programs.fish "$(opt_disabled programs.fish.enable)"
+note_disabled nix.gc "$gc_disabled_re"
+(( ENABLE_DOCKER == 1 )) && note_disabled docker "$(opt_disabled virtualisation.docker.enable)"
+(( ENABLE_TAILSCALE == 1 )) && note_disabled tailscale "$(opt_disabled services.tailscale.enable)"
 
 need_fish=1; need_trusted=1; need_gc=1; need_timezone=1
-in_sys "programs.fish.enable" && need_fish=0
-in_sys "trusted-users" && need_trusted=0
-in_sys "nix.gc" && need_gc=0
+in_sys "$(opt_set programs.fish.enable)" && need_fish=0
+in_sys "$(trusted_re)" && need_trusted=0
+in_sys 'nix\.gc' && need_gc=0
 # Timezone: only let configuration.nix own it if it ALREADY pins our target zone;
 # a stale `time.timeZone = "America/New_York"` must NOT suppress our module entry.
-if grep -q "time.timeZone\s*=\s*\"${SYSTEM_TIMEZONE}\"" "$SYS" 2>/dev/null; then
+if in_sys "time\\.timeZone\\s*=\\s*\"${SYSTEM_TIMEZONE}\""; then
   need_timezone=0
 fi
 # Docker: only skip re-emitting the copied-module import + toggle if
@@ -104,35 +157,35 @@ fi
 need_docker=0
 if (( ENABLE_DOCKER == 1 )); then
   need_docker=1
-  { in_sys "virtualisation.docker.enable" || in_sys "$DOCKER_MODULE_NAME"; } && need_docker=0
+  { in_sys "$(opt_set virtualisation.docker.enable)" || in_sys "${DOCKER_MODULE_NAME//./\\.}"; } && need_docker=0
 fi
 need_tailscale=0
 if (( ENABLE_TAILSCALE == 1 )); then
   need_tailscale=1
-  in_sys "services.tailscale.enable" && need_tailscale=0
+  in_sys "$(opt_set services.tailscale.enable)" && need_tailscale=0
 fi
 
 # Already fully applied? (live state or already in the module we manage)
 have_fish=0; have_trusted=0; have_gc=0; have_timezone=0; have_docker=1; have_tailscale=1
-{ in_sys "programs.fish.enable" || in_module "programs.fish.enable"; } && have_fish=1
-{ in_sys "trusted-users" || in_module "trusted-users"; } && have_trusted=1
-{ in_sys "nix.gc" || in_module "nix.gc"; } && have_gc=1
-{ [[ "$cur_timezone" == "$SYSTEM_TIMEZONE" ]] || in_module "time.timeZone"; } && have_timezone=1
+{ in_sys "$(opt_set programs.fish.enable)" || in_module "$(opt_enabled programs.fish.enable)"; } && have_fish=1
+{ in_sys "$(trusted_re)" || in_module "$(trusted_re)"; } && have_trusted=1
+{ in_sys 'nix\.gc' || in_module 'nix\.gc'; } && have_gc=1
+{ [[ "$cur_timezone" == "$SYSTEM_TIMEZONE" ]] || in_module 'time\.timeZone'; } && have_timezone=1
 # Docker is satisfied when disabled, or the daemon is live, or configuration.nix
 # declares it, or our copied module is imported AND the copied file exists on disk
 # (existence matters: a pure flake fails if the imported ./file is absent).
 if (( ENABLE_DOCKER == 1 )); then
   have_docker=0
   { systemctl is-active docker >/dev/null 2>&1 \
-    || in_sys "virtualisation.docker.enable" || in_sys "$DOCKER_MODULE_NAME" \
-    || { in_module "$DOCKER_MODULE_NAME" && in_module "myConfig.docker.enable" \
+    || in_sys "$(opt_set virtualisation.docker.enable)" || in_sys "${DOCKER_MODULE_NAME//./\\.}" \
+    || { in_module "${DOCKER_MODULE_NAME//./\\.}" && in_module "$(opt_enabled myConfig.docker.enable)" \
          && [[ -f "$DOCKER_MODULE_DST" ]]; }; } && have_docker=1
 fi
 if (( ENABLE_TAILSCALE == 1 )); then
   have_tailscale=0
   { systemctl is-active tailscaled >/dev/null 2>&1 \
-    || in_sys "services.tailscale.enable" \
-    || in_module "services.tailscale.enable"; } && have_tailscale=1
+    || in_sys "$(opt_set services.tailscale.enable)" \
+    || in_module "$(opt_enabled services.tailscale.enable)"; } && have_tailscale=1
 fi
 
 if (( have_fish == 1 && have_trusted == 1 && have_gc == 1 && have_timezone == 1 && have_docker == 1 && have_tailscale == 1 )); then
@@ -172,7 +225,8 @@ SNIPPET="$(mktemp)"
   (( need_trusted == 1 )) && echo "  nix.settings.trusted-users = [ \"root\" \"${USER_NAME}\" ];"
   (( need_gc == 1 ))      && {
     echo "  nix.gc = { automatic = true; dates = \"weekly\"; options = \"--delete-older-than 14d\"; };"
-    echo "  nix.optimise.automatic = true;"
+    # A user-defined nix.optimise.automatic must not get a second definition.
+    in_sys 'nix\.optimise\.automatic\s*=' || echo "  nix.optimise.automatic = true;"
   }
   (( need_timezone == 1 )) && {
     echo "  # Europe/London is the shipped default. mkForce makes this win over"
@@ -230,7 +284,7 @@ fi
 #      same-line form (`imports = [`) and the common multi-line form
 #      (`imports =\n  [ ...`) by inserting after the first `[` that follows
 #      an `imports =` token. Uses awk for multi-line safety (sed is line-based).
-FLAKE="/etc/nixos/flake.nix"
+FLAKE="$NIXOS_DIR/flake.nix"
 wired=0
 
 if [[ -n "$FLAKE_ARG" && -f "$FLAKE" ]]; then

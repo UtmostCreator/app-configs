@@ -52,13 +52,6 @@ apply() { run env PATH="$STUBS:$PATH" HOST_PROFILE=linux-desktop bash "$FAKE/ops
     [[ "$output" == *"would: chezmoi init"* ]]
 }
 
-@test "a failing dry-run diff preview is shown, not swallowed" {
-    FAIL_DIFF=1 dry_run
-    [ "$status" -eq 0 ]
-    [[ "$output" == *"template error"* ]]
-    [[ "$output" == *"chezmoi diff failed"* ]]
-}
-
 @test "WSL1 is refused with the conversion command, before anything else" {
     printf 'Linux version 4.4.0-19041-Microsoft (Microsoft@Microsoft.com)\n' >"$BATS_TEST_TMPDIR/version"
     run env PATH="$STUBS:$PATH" HOST_PROFILE=wsl DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version" \

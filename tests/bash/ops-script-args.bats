@@ -42,11 +42,12 @@ SCRIPTS=(readiness doctor ci detect-host)
     done
 }
 
-@test "unknown arguments exit 2 and run nothing" {
+@test "unknown arguments exit 2 or 64 and run nothing" {
     local s
     for s in "${SCRIPTS[@]}"; do
         run env PATH="$STUBS:$PATH" bash "$COPY/ops/$s.sh" --bogus
-        [ "$status" -eq 2 ] || { echo "$s: status $status"; return 1; }
+        # 2 (usage) or 64 (EX_USAGE, doctor and readiness) both mean "refused".
+        [ "$status" -eq 2 ] || [ "$status" -eq 64 ] || { echo "$s: status $status"; return 1; }
         [ ! -s "$MARK" ] || { echo "$s ran: $(cat "$MARK")"; return 1; }
     done
 }

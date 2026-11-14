@@ -8,10 +8,12 @@
 # stdout: one {"id", "content"} JSON line per row.
 #
 # Row:     Architecture Opus 5   · max   · ▶ 84% ⚠ · 7m31
-# Narrow:  Architecture ▶ 84% ⚠                        (columns < 60)
+# Narrow:  Architecture Opus 5:m ▶ 84% ⚠                (columns < 60)
 #
 # Status: ▶ running  ◷ pending  ✓ completed  ✗ failed  ■ killed. Elapsed time is
 # shown only while running/pending (tasks carry no end time). ⚠ at >= 80% context.
+# Narrow keeps a compact model tag (Sonnet -> Son) plus the effort initial when
+# the row still fits; without a model there is no tag.
 # STATUSLINE_NOW (epoch seconds) pins the clock for tests.
 set -euo pipefail
 
@@ -31,6 +33,8 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
         | split("-")
         | [(.[0][0:1] | ascii_upcase) + .[0][1:]] + (if length > 1 then [.[1:] | join(".")] else [] end)
         | join(" ");
+    # Narrow-row effort initial; unknown levels get none.
+    def eff_i: ({low: "l", medium: "m", high: "h", xhigh: "x", max: "M"})[.] // "";
     def elapsed:
         ($now - (. / 1000 | floor)) as $s
         | if $s < 60 then "\([$s, 0] | max)s"
@@ -59,6 +63,11 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
     | ([$rows[].name | length] | max // 0) as $name_w
     | ([$rows[].model | length] | max // 0) as $model_w
     | ([$rows[].effort | length] | max // 0) as $effort_w
+    | ([$rows[] | (.model | sub("^Sonnet"; "Son")) + (if .model != "" and (.effort | eff_i) != "" then ":x" else "" end) | length] | max // 0) as $full_w
+    # Widest state ("▶ 84% ⚠"), so keeping or dropping the effort initial is one decision for all rows.
+    | ([$rows[] | 2 + (if .pct == null then (.tokens | length) + 4
+                       else (.pct | tostring | length) + 1 + (if .pct >= 80 then 2 else 0 end) end)] | max // 0) as $state_w
+    | ([$rows[].model | sub("^Sonnet"; "Son") | length] | max // 0) as $tag_w
     | $rows[]
     | (.status | icon) as [$glyph, $glyph_color]
     | .pct as $p
@@ -71,7 +80,13 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
        then .since | elapsed else "" end) as $age
     | (.name | rpad($name_w)) as $name
     | {id, content:
-        (if $cols < 60 then "\($name) \($state)"
+        (if $cols < 60 then
+            ((.model | sub("^Sonnet"; "Son")) as $tag
+             | (if .model != "" and (.effort | eff_i) != ""
+                then $tag + ":" + (.effort | eff_i) else $tag end) as $full
+             | (if $name_w + 1 + $full_w + 1 + $state_w <= $cols
+                then $full | rpad($full_w) else $tag | rpad($tag_w) end) as $mark
+             | ([$name, $mark, $state] | map(select(length > 0)) | join(" ")))
          else $name + " " + ([(.model | rpad($model_w)), (.effort | rpad($effort_w)), $state, $age]
                             | map(select(length > 0)) | join(" · "))
          end)}

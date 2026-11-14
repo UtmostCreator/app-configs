@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Health runner.
 #
-# Discovers every executable file in ops/projects/health/checks.d/,
-# runs it once, collects its JSON output, and emits an aggregate
-# JSON document:
+# Discovers every *.sh file in ops/projects/health/checks.d/ (the
+# executable bit is not required), runs each once via `bash`, collects its
+# JSON output, and emits an aggregate JSON document:
 #
 #   {
 #     "checks": [ {name, section, status, note, fix}, ... ],
@@ -112,8 +112,13 @@ fi
 # pass automation gates.
 final_exit() {
   local failed
-  failed="$(jq -r '.overall.failed' <<<"$AGG")"
-  if [[ "$failed" -gt 0 ]]; then
+  # Fail closed: a jq failure, null, or non-numeric count must not read as "0 failed".
+  if ! failed="$(jq -er '.overall.failed' <<<"$AGG")" \
+    || [[ ! "$failed" =~ ^(0|[1-9][0-9]{0,17})$ ]]; then
+    proj_log "could not read overall.failed from aggregate; treating run as failed"
+    return 1
+  fi
+  if (( failed > 0 )); then
     return 1
   fi
   return 0

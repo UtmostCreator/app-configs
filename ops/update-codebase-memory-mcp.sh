@@ -46,7 +46,7 @@ cleanup() {
   rm -f "$candidate"
   if [[ "$restore_on_exit" == 1 && -f "$previous" ]]; then
     cp "$previous" "$release_lock"
-    echo "Release lock restored to its state before this run (the update did not complete)." >&2
+    echo "Activation failed; restored previous release.json (the update did not complete)." >&2
   fi
 }
 trap cleanup EXIT
@@ -125,8 +125,29 @@ if [[ "$changed" == 1 && "$in_repo" == 1 ]]; then
   fi
 fi
 
+# The switch succeeded, so the new generation stays active whatever fails
+# below; say so and how to go back.
+post_switch_failed() {
+  if [[ "$changed" == 1 ]]; then
+    echo "Post-switch check failed: new generation (version $version) is still active and release.json records it." >&2
+    echo "Recover: fix the service and rerun, or pick the previous generation from 'home-manager generations'." >&2
+  else
+    echo "Post-switch check failed; the lock was unchanged." >&2
+  fi
+  exit 1
+}
+
 if [[ "$activated" == 1 ]]; then
-  systemctl --user restart codebase-memory-mcp-ui.service
-  curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 \
-    --max-time 30 http://127.0.0.1:9749/ --output /dev/null
+  # The dashboard service is a Linux systemd user unit only; macOS has none.
+  if [[ "$(uname -s)" == Linux ]]; then
+    systemctl --user restart codebase-memory-mcp-ui.service || post_switch_failed
+    curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 \
+      --max-time 30 http://127.0.0.1:9749/ --output /dev/null || post_switch_failed
+  fi
+  # HTTP 200 alone does not prove the right build is running.
+  activated_version="$(codebase-memory-mcp --version 2>/dev/null || true)"
+  if [[ "$activated_version" != "codebase-memory-mcp $version" ]]; then
+    echo "Activated binary reports '$activated_version', expected $version." >&2
+    post_switch_failed
+  fi
 fi

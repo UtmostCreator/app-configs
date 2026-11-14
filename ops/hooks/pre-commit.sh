@@ -6,30 +6,49 @@ cd "$ROOT_DIR"
 
 echo "[hook] pre-commit checks"
 
-staged_files="$(git diff --cached --name-only --diff-filter=ACM || true)"
+blob=""
+snap=""
+staged_list=""
+tmp_file=""
+cr=$'\r' # CRLF files end markers with \r
+trap 'rm -f "$blob" "$staged_list" "$tmp_file"; [[ -z "$snap" ]] || rm -rf "$snap"' EXIT
 
-if [[ -n "$staged_files" ]]; then
+# NUL-separated so non-ASCII or odd names are not C-quoted by git.
+staged_list="$(mktemp "${TMPDIR:-/tmp}/app-configs-staged-names.XXXXXX")"
+git diff --cached --name-only -z --diff-filter=ACM >"$staged_list"
+
+if [[ -s "$staged_list" ]]; then
     # Real env files hold secrets; examples/templates are fine.
-    env_files="$(grep -E '(^|/)\.env(\.[^/]+)?$' <<<"$staged_files" | grep -vE '\.(example|sample|template|tmpl)$' || true)"
-    if [[ -n "$env_files" ]]; then
-        echo "[hook] env file staged (use a .env.example instead):"
-        echo "$env_files"
-        exit 1
-    fi
+    env_found=0
+    while IFS= read -r -d '' file; do
+        if [[ "$file" =~ (^|/)\.env(\.[^/]+)?$ && ! "$file" =~ \.(example|sample|template|tmpl)$ ]]; then
+            [[ "$env_found" == 1 ]] || echo "[hook] env file staged (use a .env.example instead):"
+            env_found=1
+            printf '%s\n' "$file"
+        fi
+    done <"$staged_list"
+    [[ "$env_found" == 0 ]] || exit 1
 
-    while IFS= read -r file; do
-        [[ -n "$file" ]] || continue
-        if git show ":$file" | rg -n '^(<<<<<<<|=======|>>>>>>>)' >/dev/null 2>&1; then
+    # Only the <<<<<<< / >>>>>>> markers are checked: a lone ======= is also a
+    # Markdown heading underline. Scan a temp copy of the staged blob with grep
+    # (no pipe, so no SIGPIPE; grep is POSIX, so a missing rg cannot fail open).
+    blob="$(mktemp "${TMPDIR:-/tmp}/app-configs-blob.XXXXXX")"
+    while IFS= read -r -d '' file; do
+        git show ":$file" >"$blob"
+        if grep -aE "^(<{7}|>{7})( |${cr}?\$)" "$blob" >/dev/null; then
             echo "[hook] merge conflict markers found in staged blob: $file"
             exit 1
         fi
-    done <<<"$staged_files"
+    done <"$staged_list"
 fi
 
 if command -v gitleaks >/dev/null 2>&1; then
     gitleaks protect --staged --redact --verbose
 elif command -v trufflehog >/dev/null 2>&1; then
-    trufflehog git file://. --since-commit HEAD --results=verified,unknown --fail
+    # Scan the staged snapshot (index contents), not history since HEAD.
+    snap="$(mktemp -d "${TMPDIR:-/tmp}/app-configs-staged.XXXXXX")"
+    git checkout-index --all --prefix="$snap/"
+    trufflehog filesystem "$snap" --results=verified,unknown --fail
 elif [[ "${APP_CONFIGS_ALLOW_MISSING_SCANNER:-}" == "1" ]]; then
     # Deliberate bootstrap escape hatch: the commit goes through, but loudly.
     {
@@ -49,9 +68,9 @@ else
     exit 1
 fi
 
-if [[ -n "$staged_files" ]]; then
+if [[ -s "$staged_list" ]]; then
     # Delegate the project health check to the scripts we actually ship.
-    # ops/doctor.sh checks toolchain + tracked-file presence.
+    # ops/doctor.sh checks toolchain + file presence.
     # ops/validate-config.sh enforces the dotfiles-migration invariants.
     # If either script is missing (e.g. partial clone), only warn — never
     # block a commit on infrastructure that is not present.

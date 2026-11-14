@@ -100,13 +100,14 @@ inline_guards() {
     [ -z "$output" ] || { echo "inline guard copies:"; echo "$output"; return 1; }
 }
 
-@test "known twin: update-all.sh still carries its own WSL1 and bats guards (finding, not yet merged into preflight)" {
-    # Recorded so the duplication is visible. When update-all.sh moves to
-    # preflight_host_checks, this test fails: delete it and add update-all.sh
-    # to the install/bootstrap list above.
+@test "known twin: update-all.sh still carries its own WSL1 refusal (finding; its bats guard is the shared one)" {
+    # update-all.sh uses preflight_bats_guard but keeps an inline WSL1 check
+    # for an explicit HOST_PROFILE=wsl. When it moves to preflight_host_checks,
+    # this test fails: delete it and add update-all.sh to the list above.
+    grep -q 'preflight_bats_guard' "$REPO_ROOT/ops/update-all.sh"
     run inline_guards "$REPO_ROOT" ops/update-all.sh
     [[ "$output" == *"--wsl-version"* ]]
-    [[ "$output" == *"BATS_TEST_TMPDIR"* ]]
+    [[ "$output" != *"BATS_TEST_TMPDIR"* ]]
 }
 
 @test "seeded: an inline WSL1 refusal or username check in install.sh is caught" {

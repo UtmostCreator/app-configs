@@ -81,3 +81,67 @@ setup() {
     [[ "$output" == *"refusing a real install from a bats test"* ]]
     [[ "$output" != *"Preflight"* ]]
 }
+
+# ── username diagnostic and lefthook quoting ────────────────────────────────
+# These run install.sh from a scratch repo copy. Every tool it calls is a PATH
+# stub and every ops/ helper is a stub script, so nothing real is installed.
+
+stub() {
+    printf '#!/usr/bin/env bash\n%s\n' "$2" >"$1"
+    chmod +x "$1"
+}
+
+# make_repo <dir-name> [username]: scratch repo under the test tmpdir.
+make_repo() {
+    [ ! -x /nix/var/nix/profiles/default/bin/nix ] \
+        || skip "a system Nix default profile would shadow the nix stub"
+    FAKE="$BATS_TEST_TMPDIR/$1"
+    STUBS="$BATS_TEST_TMPDIR/bin"
+    LOG="$BATS_TEST_TMPDIR/lefthook.log"
+    mkdir -p "$FAKE/ops" "$FAKE/nix/vars" "$FAKE/home/.chezmoidata" "$FAKE/.git" "$STUBS"
+    cp "$REPO_ROOT/ops/install.sh" "$FAKE/ops/install.sh"
+    cp -R "$REPO_ROOT/ops/lib" "$FAKE/ops/lib"
+    printf '{\n  username = "%s";\n}\n' "${2:-utmostcreator}" >"$FAKE/nix/vars/default.nix"
+    : >"$FAKE/home/.chezmoidata/personal.yaml"
+    for tool in nix chezmoi home-manager mise; do stub "$STUBS/$tool" 'exit 0'; done
+    stub "$STUBS/lefthook" "printf 'argv=%s cwd=%s\n' \"\$*\" \"\$PWD\" >>'$LOG'"
+    for s in snapshot-home doctor; do stub "$FAKE/ops/$s.sh" 'exit 0'; done
+    stub "$FAKE/ops/detect-timezone.sh" 'echo Europe/London'
+}
+
+@test "username mismatch message names the value from nix/vars/default.nix" {
+    make_repo repo zed-user
+    run env USER=someone-else DRY_RUN=1 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"login user 'someone-else' does not match username 'zed-user' in nix/vars/default.nix"* ]]
+    [[ "$output" == *"Log in as 'zed-user'"* ]]
+    [[ "$output" != *"utmostcreator"* ]]
+}
+
+@test "lefthook install runs once in a repo path with spaces and an apostrophe" {
+    make_repo "it's a repo"
+    run env USER=utmostcreator PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    echo "$output"
+    [ "$status" -eq 0 ]
+    [ "$(wc -l <"$LOG")" -eq 1 ]
+    [ "$(cat "$LOG")" = "argv=install cwd=$FAKE" ]
+}
+
+@test "a crafted repo path cannot inject commands into the lefthook step" {
+    mkdir -p "$BATS_TEST_TMPDIR/work"
+    make_repo "x';touch pwned-marker;'"
+    cd "$BATS_TEST_TMPDIR/work"
+    run env USER=utmostcreator PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    echo "$output"
+    [ "$status" -eq 0 ]
+    [ ! -e "$BATS_TEST_TMPDIR/work/pwned-marker" ]
+    [ "$(cat "$LOG")" = "argv=install cwd=$FAKE" ]
+}
+
+@test "dry-run does not invoke lefthook" {
+    make_repo repo
+    run env USER=utmostcreator DRY_RUN=1 PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would run: sh -c"*"lefthook install"* ]]
+    [ ! -e "$LOG" ]
+}

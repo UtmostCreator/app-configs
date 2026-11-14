@@ -14,5 +14,4 @@ exec lychee \
   --no-progress \
   --format detailed \
   "docs/**/*.md" \
-  "AI-universal-rules/docs/**/*.md" \
-  "AI-universal-rules/templates/**/*.md"
+  "repo-docs/**/*.md"

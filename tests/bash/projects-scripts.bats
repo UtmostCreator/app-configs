@@ -166,3 +166,11 @@ stub_gh() {
     [ "$(cat "$STATE_FILE")" = "$before" ]
 }
 
+@test "pr-watch: a non-event change logs [update] without jq parse errors" {
+    pr_watch_setup
+    stub gh 'case "$2" in list) echo "[{\"number\":7,\"title\":\"t\",\"author\":{\"login\":\"a\"},\"reviewDecision\":null,\"mergeable\":\"UNKNOWN\",\"updatedAt\":\"y\",\"statusCheckRollup\":[]}]" ;; esac'
+    run env PATH="$STUBS:$PATH" bash "$P/github/pr-watch.sh" --once
+    [[ "$output" == *"[pr-watch][update]"* ]]
+    [[ "$output" != *"[REVIEW]"* && "$output" != *"[CI FAIL]"* ]]
+    [[ "$output" != *"parse error"* ]]
+}

@@ -275,7 +275,7 @@ set_status() { meta_put status "$1"; }
 # next to the backup: other agent sessions may edit this repo concurrently, and
 # the sys-update lock does not stop them.
 # Returns 0 when the file ends up as the backup (or was left correctly), 1 when
-# it was kept, 2 when the restore itself failed.
+# it was kept, 2 when the restore itself failed (including a missing .failed copy).
 # shellcheck disable=SC2329  # reached from on_exit
 
 restore_guarded() {
@@ -295,8 +295,9 @@ restore_guarded() {
   fi
   # The .failed copy is the safety net: without it the file is not touched.
   if [[ -e "$file" ]] && ! cp -- "$file" "$backup.failed" 2>/dev/null; then
-    ui_warn "$label" "could not keep a copy of the current content ($(tilde "$backup.failed")); left in place"
-    return 1
+    # A failure, not "kept": the caller must not report this as an edit by someone else.
+    ui_err "$label" "could not keep a copy of the current content ($(tilde "$backup.failed")); left in place, not restored"
+    return 2
   fi
   if cp -- "$backup" "$tmp" && mv -f -- "$tmp" "$file"; then
     ui_ok "$label" "restored"
@@ -944,12 +945,14 @@ if [[ "$MODE" == "apply" ]]; then
   if SNAPSHOT_DIR="$("$REPO_ROOT/ops/snapshot-home.sh" --print-dir 2>"$SNAPSHOT_ERR" < /dev/null)" \
       && [[ -n "$SNAPSHOT_DIR" && -d "$SNAPSHOT_DIR" ]]; then
     cat "$SNAPSHOT_ERR" >> "$RUN_LOG"
+    rm -f -- "${SNAPSHOT_ERR:?}"
     meta_put snapshot_dir "$SNAPSHOT_DIR" || meta_failed snapshot_dir
     ui_ok "dotfiles" "snapshot → $(tilde "$SNAPSHOT_DIR")"
   else
     cat "$SNAPSHOT_ERR" >> "$RUN_LOG"
     UI_LAST_LOG="$SNAPSHOT_ERR"
     ui_err "dotfiles" "snapshot failed — refusing to apply without a way back"
+    rm -f -- "${SNAPSHOT_ERR:?}"; UI_LAST_LOG=""
     exit 1
   fi
 
@@ -1512,6 +1515,8 @@ if [[ "$MODE" == "apply" ]]; then
   printf '\n'
   if (( UI_COUNT_WARN > 0 || ${#UI_NOTES[@]} > 0 )); then
     ui_warn "updated" "with warnings · $(ui_counts_line)"
+  elif [[ "$HOST_PROFILE" != linux-desktop ]]; then
+    ui_ok "updated" "(no runtime verification gate for $HOST_PROFILE) · $(ui_counts_line)"
   else
     ui_ok "updated" "and verified · $(ui_counts_line)"
   fi

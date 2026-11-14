@@ -88,18 +88,24 @@ The `Host *` block the installer adds:
 ```ssh
 Host *
     AddKeysToAgent yes
-    UseKeychain yes
     IgnoreUnknown UseKeychain
+    UseKeychain yes
 ```
+
+The order matters: `IgnoreUnknown UseKeychain` must come before
+`UseKeychain yes`, or an ssh build without Apple's Keychain patch rejects the
+unknown option.
 
 - `AddKeysToAgent yes`: any time `ssh` itself loads a new key (because
   you `ssh somewhere` and it picks an `IdentityFile`), it gets added
   to the agent automatically.
-- `UseKeychain yes`: when prompted for a passphrase, store it in
-  Keychain after success.
 - `IgnoreUnknown UseKeychain`: keeps the config valid on Linux
   (where `UseKeychain` is unknown), so the same `~/.ssh/config` is
-  portable across all your machines.
+  portable across all your machines. ssh uses the first `IgnoreUnknown`
+  line it sees, so an earlier one that does not list `UseKeychain`
+  overrides this one; the installer warns when it finds such a line.
+- `UseKeychain yes`: when prompted for a passphrase, store it in
+  Keychain after success.
 
 ## Linux fallback (no `keychain` installed)
 
@@ -145,6 +151,19 @@ Set it in three places, in order of precedence:
        bash ops/unix/ssh-agent-setup.sh
    ```
 
+### Choosing the shell to wire
+
+`APP_CONFIGS_SSH_SHELL` (`bash`, `zsh` or `fish`) is an install-time
+override for which shell's rc file the installer wires; it is not read by the
+snippet at run time. Without it the installer uses your login shell from
+`/etc/passwd`, then `$SHELL`. Any other shell is an error that aborts before
+any file is touched, and the message names the override. `--remove` needs no
+shell: it cleans every rc file.
+
+```bash
+APP_CONFIGS_SSH_SHELL=zsh bash ops/unix/ssh-agent-setup.sh
+```
+
 ## Idempotency rules
 
 - The bash/zsh rc block is delimited by:
@@ -158,8 +177,10 @@ Set it in three places, in order of precedence:
 - The fish snippet is a single `.fish` file in `conf.d`. Re-running the
   installer overwrites it.
 - The macOS `~/.ssh/config` block uses the same `# >>> ... <<<` markers.
-  Re-running the installer skips the edit if `UseKeychain yes` is
-  already present anywhere in the config (e.g. you added it manually).
+  The installer always manages its own block: each run removes the old
+  block and writes a fresh one, regardless of other `UseKeychain` lines in
+  the config. If the markers are unpaired (begin without end or vice versa),
+  duplicated or nested, it stops and leaves the file unchanged.
 
 ## Rollback
 
@@ -167,11 +188,14 @@ Set it in three places, in order of precedence:
 bash ops/unix/ssh-agent-setup.sh --remove
 ```
 
-Removes:
+Removes only what the installer created, and never a chezmoi-managed file:
 
-- The marker-delimited block from `~/.bashrc`, `~/.bash_profile`, `~/.zshrc`.
-- `~/.config/app-configs/ssh-agent.sh`.
-- `~/.config/fish/conf.d/ssh-agent.fish`.
+- The marker-delimited block from `~/.bashrc`, `~/.bash_profile`, `~/.zshrc`
+  (skipped for any of them that chezmoi manages).
+- `~/.config/app-configs/ssh-agent.sh` and
+  `~/.config/fish/conf.d/ssh-agent.fish`, only when the file is identical to
+  the repo snippet and not chezmoi-managed. A file that differs is kept with
+  a warning.
 - The marker block in `~/.ssh/config` on macOS.
 
 Does **not** touch:

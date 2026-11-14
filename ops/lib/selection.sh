@@ -16,6 +16,9 @@
 #   ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}
 # (an empty array is an unbound variable under set -u before bash 4.4).
 #
+# The path is percent-encoded for the URL (space, ?, # and %), so a directory
+# name with those characters is neither misparsed nor taken for another path; the
+# printed form is therefore also safe to paste into a shell.
 # The directory is made absolute here, before any sudo: sudo may change HOME,
 # and a relative path would mean something else inside the build.
 # Validators, CI and `nix flake check` do not source this file: they evaluate
@@ -31,6 +34,17 @@ selection_dir() {
   printf '%s\n' "${APP_CONFIGS_SELECTION_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/app-configs/selection}"
 }
 
+# selection_url_path PATH: PATH with the characters that break a Nix `path:` URL
+# percent-encoded. `%` first, so the others are not encoded twice.
+selection_url_path() {
+  local p="$1" hash='#' q='?' space=' '
+  p="${p//%/%25}"
+  p="${p//"$space"/%20}"
+  p="${p//"$q"/%3F}"
+  p="${p//"$hash"/%23}"
+  printf '%s' "$p"
+}
+
 selection_args() {
   local dir abs
   SELECTION_ARGS=()
@@ -38,7 +52,7 @@ selection_args() {
   dir="$SELECTION_DIR"
   [[ -f "$dir/selection.toml" ]] || return 0
   abs="$(cd "$dir" 2>/dev/null && pwd -P)" || return 0
-  SELECTION_ARGS=(--override-input selection "path:$abs")
+  SELECTION_ARGS=(--override-input selection "path:$(selection_url_path "$abs")")
 }
 
 selection_args_text() {

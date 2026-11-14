@@ -10,6 +10,9 @@ refute_grep() { if grep -q "$@"; then echo "unexpected match: $*" >&2; return 1;
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     export HOME="$BATS_TEST_TMPDIR/home"
+    # An exact-command-line suite: never pick up a real selection file or an
+    # exported XDG_CONFIG_HOME (tests that want a selection set their own).
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/no-selection"
     export CALLS="$BATS_TEST_TMPDIR/calls"
     STUBS="$BATS_TEST_TMPDIR/bin"
     mkdir -p "$HOME/.nix-profile" "$STUBS" "$BATS_TEST_TMPDIR/out/home-path/bin"
@@ -174,4 +177,20 @@ mk_selection() {
 @test "selection: no prompt can run in hm-switch.sh or selection.sh" {
     run grep -nE '(^|[^[:alnum:]_])read[[:space:]]' "$REPO_ROOT/ops/lib/hm-switch.sh" "$REPO_ROOT/ops/lib/selection.sh"
     [ "$status" -ne 0 ]
+}
+
+@test "selection: a directory with a space, ?, # or % is percent-encoded in the URL and the printed form" {
+    SEL="$BATS_TEST_TMPDIR/we ird?d#r%20x"; mkdir -p "$SEL"
+    printf 'profile = "work"\n' >"$SEL/selection.toml"
+    export APP_CONFIGS_SELECTION_DIR="$SEL"
+    selection_args
+    abs="$(cd "$SEL" && pwd -P)"
+    [ "${SELECTION_ARGS[1]}" = selection ]
+    enc="${abs//%/%25}"; enc="${enc// /%20}"; enc="${enc//\?/%3F}"; enc="${enc//#/%23}"
+    [ "${SELECTION_ARGS[2]}" = "path:$enc" ]
+    [[ "${SELECTION_ARGS[2]}" != *" "* && "${SELECTION_ARGS[2]}" != *"?"* && "${SELECTION_ARGS[2]}" != *"#"* ]]
+    # %20 in the name stays %2520, so it cannot select a directory with a space
+    [[ "${SELECTION_ARGS[2]}" == *"%2520x" ]]
+    # the printed form has no raw space either, so it can be pasted into a shell
+    [[ "$(selection_args_text)" != *"we ird"* ]]
 }

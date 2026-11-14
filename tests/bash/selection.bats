@@ -203,3 +203,17 @@ pk() { cat "$BATS_FILE_TMPDIR/pkgs-$1.json"; }
     after="$(sha256sum "$REPO_ROOT/nix/flake.lock")"
     [ "$before" = "$after" ]
 }
+
+@test "a selection directory with a space, ? and # in its path works with a real --override-input" {
+    local dir="$BATS_TEST_TMPDIR/my sel?x#y%z"
+    mkdir -p "$dir"
+    cp "$BATS_TEST_DIRNAME/fixtures/selection/media-go-off/selection.toml" "$dir/"
+    source "$REPO_ROOT/ops/lib/selection.sh"
+    APP_CONFIGS_SELECTION_DIR="$dir" selection_args
+    [ "${#SELECTION_ARGS[@]}" -eq 3 ]
+    run --separate-stderr timeout 600 nix eval --json \
+        "path:$REPO_ROOT/nix#homeConfigurations.linux-cli.config.myConfig.groups" "${SELECTION_ARGS[@]}"
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    run jq -e '. == {go: false, media: false, security: true}' <<<"$output"
+    [ "$status" -eq 0 ]
+}

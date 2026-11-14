@@ -15,14 +15,14 @@ setup_file() {
     # tests compare the recorded values.
     local h
     for h in linux-cli linux-desktop; do
-        drv "$h" default >"$BATS_FILE_TMPDIR/drv-default-$h" 2>/dev/null || true
+        drv "$h" default >"$BATS_FILE_TMPDIR/drv-default-$h" 2>"$BATS_FILE_TMPDIR/err-drv-default-$h" || true
     done
-    drv linux-cli empty >"$BATS_FILE_TMPDIR/drv-empty-linux-cli" 2>/dev/null || true
-    drv linux-cli all-on-work >"$BATS_FILE_TMPDIR/drv-all-on-work-linux-cli" 2>/dev/null || true
-    drv linux-desktop all-on-personal >"$BATS_FILE_TMPDIR/drv-all-on-personal-linux-desktop" 2>/dev/null || true
+    drv linux-cli empty >"$BATS_FILE_TMPDIR/drv-empty-linux-cli" 2>"$BATS_FILE_TMPDIR/err-drv-empty-linux-cli" || true
+    drv linux-cli all-on-work >"$BATS_FILE_TMPDIR/drv-all-on-work-linux-cli" 2>"$BATS_FILE_TMPDIR/err-drv-all-on-work-linux-cli" || true
+    drv linux-desktop all-on-personal >"$BATS_FILE_TMPDIR/drv-all-on-personal-linux-desktop" 2>"$BATS_FILE_TMPDIR/err-drv-all-on-personal-linux-desktop" || true
     local f
     for f in default media-go-off all-false; do
-        pkgs linux-cli "$f" >"$BATS_FILE_TMPDIR/pkgs-$f.json" 2>/dev/null || true
+        pkgs linux-cli "$f" >"$BATS_FILE_TMPDIR/pkgs-$f.json" 2>"$BATS_FILE_TMPDIR/err-pkgs-$f" || true
     done
 }
 
@@ -42,7 +42,7 @@ sel() {
 drv() {
     local args=()
     mapfile -t args < <(sel "$2")
-    timeout 600 nix eval --raw "path:$REPO_ROOT/nix#homeConfigurations.$1.activationPackage.drvPath" "${args[@]}" 2>/dev/null
+    timeout 600 nix eval --raw "path:$REPO_ROOT/nix#homeConfigurations.$1.activationPackage.drvPath" "${args[@]}"
 }
 
 # hmjson <host> <fixture> <attr under config>: evaluate to JSON.
@@ -60,7 +60,14 @@ pkgs() {
         "${args[@]}" --apply 'ps: map (x: x.pname or x.name or "") ps' | jq -c 'sort'
 }
 
-recorded() { cat "$BATS_FILE_TMPDIR/drv-$1" 2>/dev/null; }
+# recorded <name>: a value recorded by setup_file; on an empty value, print the
+# stderr of the eval that produced it so the failure is diagnosable.
+recorded() {
+    local v
+    v="$(cat "$BATS_FILE_TMPDIR/drv-$1" 2>/dev/null)"
+    if [ -z "$v" ]; then cat "$BATS_FILE_TMPDIR/err-drv-$1" >&2 2>/dev/null || true; fi
+    printf '%s' "$v"
+}
 
 @test "the committed selection file exists and is empty (no selection)" {
     [ -f "$REPO_ROOT/nix/selection/selection.toml" ]
@@ -128,6 +135,15 @@ recorded() { cat "$BATS_FILE_TMPDIR/drv-$1" 2>/dev/null; }
     [[ "$output" == *"unknown profile 'nope'"* ]]
 }
 
+@test "an unknown top-level key fails evaluation and names the key" {
+    run hmjson linux-cli bare-group-key myConfig.groups
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"unknown key 'media'"* ]]
+    run hmjson linux-cli typo-profile-key myConfig.groups
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"unknown key 'profle'"* ]]
+}
+
 @test "groups without a profile fail evaluation and name the key" {
     run hmjson linux-cli groups-without-profile myConfig.groups
     [ "$status" -ne 0 ]
@@ -143,7 +159,7 @@ GO='["delve","go","go-arch-lint","gofumpt","golangci-lint","gopls","goreleaser",
 pk() { cat "$BATS_FILE_TMPDIR/pkgs-$1.json"; }
 
 @test "default packages include every gated package" {
-    [ -s "$BATS_FILE_TMPDIR/pkgs-default.json" ]
+    [ -s "$BATS_FILE_TMPDIR/pkgs-default.json" ] || { cat "$BATS_FILE_TMPDIR/err-pkgs-default" >&2; return 1; }
     run jq -e --argjson g "$MEDIA" --argjson s "$SECURITY" --argjson o "$GO" \
         '($g + $s + $o) - . == []' "$BATS_FILE_TMPDIR/pkgs-default.json"
     [ "$status" -eq 0 ]

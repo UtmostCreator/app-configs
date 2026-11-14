@@ -27,12 +27,19 @@ let
 
   raw = readToml (inputs.selection + "/selection.toml");
   rawGroups = raw.groups or { };
+  knownKeys = [
+    "profile"
+    "groups"
+  ];
+  unknownKeys = lib.filter (k: !(lib.elem k knownKeys)) (builtins.attrNames raw);
   unknownGroups = lib.filter (g: !(lib.elem g groupNames)) (builtins.attrNames rawGroups);
 
   # Validated selection. Every failure is a throw so that evaluating any
   # option that depends on the selection fails, and the message names the key.
   selection =
-    if raw ? profile && !(lib.elem raw.profile profileNames) then
+    if unknownKeys != [ ] then
+      throw "selection.toml: unknown key '${lib.head unknownKeys}'; known keys: ${lib.concatStringsSep ", " knownKeys}"
+    else if raw ? profile && !(lib.elem raw.profile profileNames) then
       throw "selection.toml: unknown profile '${toString raw.profile}'; known profiles: ${lib.concatStringsSep ", " profileNames}"
     else if unknownGroups != [ ] then
       throw "selection.toml: unknown group '${lib.head unknownGroups}'; known groups: ${lib.concatStringsSep ", " groupNames}"

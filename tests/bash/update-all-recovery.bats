@@ -21,7 +21,9 @@ setup() {
 
   GEN_DIR="$BATS_TEST_TMPDIR/hm-generation-1"
   mkdir -p "$GEN_DIR"
-  printf '#!/usr/bin/env bash\nprintf "activate %%s\\n" "$*" >> "$STUB_LOG"\n' > "$GEN_DIR/activate"
+  # like a real activate, it moves the profile back onto this generation
+  printf '#!/usr/bin/env bash\nprintf "activate %%s\\n" "$*" >> "$STUB_LOG"\nln -sfn home-manager-1-link "%s/home-manager"\n' \
+    "$HOME/.local/state/nix/profiles" > "$GEN_DIR/activate"
   chmod +x "$GEN_DIR/activate"
   ln -s "$GEN_DIR" "$HOME/.local/state/nix/profiles/home-manager-1-link"
   ln -s home-manager-1-link "$HOME/.local/state/nix/profiles/home-manager"

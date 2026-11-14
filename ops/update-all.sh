@@ -276,7 +276,11 @@ run_failed() {
     prepare)  restore_run_files; set_status failed:prepare ;;
     activate) restore_run_files; set_status failed:activate
               printf '  Roll back with: sys-update rollback   (Home Manager generation %s)\n' "${HM_GEN_BEFORE:-unknown}" ;;
-    verify)   set_status failed:verify ;;
+    verify)   set_status failed:verify
+              printf '  The update is activated but did not pass verification; flake.lock was kept. Choose one:\n'
+              printf '    undo it:  sys-update rollback\n'
+              printf '    keep it:  git -C %q commit --only -m "chore(nix): update flake inputs" -- %s\n' \
+                "$REPO_ROOT" "${UPDATE_FILES[*]}" ;;
     *)        ui_warn "update" "stopped during the $PHASE phase; the update itself was already committed or applied" ;;
   esac
 }
@@ -961,29 +965,68 @@ if [[ "$MODE" == "apply" ]]; then
   phase_status activated
   PHASE=verify
 fi
+
 # ── 5. VERIFY (the gate) ────────────────────────────────────────────────────
 # What must hold for the update to be committed. The profile target check
-# above is part of it and cannot be skipped; --skip-verify skips what follows.
+# above is part of it and cannot be skipped; --skip-verify skips what follows
+# (and the CHECKS), and the run then says it was not runtime-verified.
+#
+# Hard: on linux-desktop `brave --version` runs, and the default-browser MIME
+# mappings equal brave-browser.desktop whenever they can be queried. Advisory
+# only when xdg-mime is missing, a query comes back empty, or there is no
+# graphical session: the mapping cannot be judged there.
+
+BROWSER_MIMES=(x-scheme-handler/http x-scheme-handler/https text/html application/pdf)
+
+# verify_browser — prints findings itself; returns 1 on a hard failure.
+verify_browser() {
+  local mime got graphical=1 empty=0 wrong=() hard=0
+  [[ -z "${WAYLAND_DISPLAY:-}" && -z "${DISPLAY:-}" && ( -z "${XDG_SESSION_TYPE:-}" || "${XDG_SESSION_TYPE:-}" == tty ) ]] && graphical=0
+  if ! brave --version >/dev/null 2>&1; then
+    ui_err "default browser" "brave --version failed: Brave is unavailable"
+    return 1
+  fi
+  if ! have xdg-mime; then
+    ui_warn "default browser" "Brave runs; xdg-mime is not installed, so the default associations were not checked"
+    ui_note warn verify "default browser associations were not checked (no xdg-mime)"
+    return 0
+  fi
+  for mime in "${BROWSER_MIMES[@]}"; do
+    got="$(xdg-mime query default "$mime" 2>/dev/null)"
+    if [[ -z "$got" ]]; then empty=1
+    elif [[ "$got" != brave-browser.desktop ]]; then wrong+=("$mime=$got"); fi
+  done
+  if ((${#wrong[@]} == 0 && empty == 0)); then
+    ui_ok "default browser" "Brave (HTTP, HTTPS, HTML, PDF)"
+    return 0
+  fi
+  if [[ "$graphical" == 0 || "$empty" == 1 ]]; then
+    ui_warn "default browser" "Brave runs; the default associations could not be judged ($([[ "$graphical" == 0 ]] && echo 'no graphical session' || echo 'an xdg-mime query returned nothing'))"
+    ui_note warn verify "default browser associations were not checked here"
+    return 0
+  fi
+  hard=1
+  ui_err "default browser" "default associations did not apply: ${wrong[*]}"
+  printf '  A user-level mapping can take precedence over the declared defaults: look in ~/.config/*-mimeapps.list\n'
+  return "$hard"
+}
 
 if [[ "$MODE" == "apply" ]]; then
   if [[ "$DO_VERIFY" == 1 ]]; then
     if [[ "$HOST_PROFILE" == linux-desktop ]]; then
       ui_section "Verification"
-      BROWSER_DEFAULTS_OK=1
-      for mime in x-scheme-handler/http x-scheme-handler/https text/html application/pdf; do
-        [[ "$(xdg-mime query default "$mime" 2>/dev/null)" == brave-browser.desktop ]] || BROWSER_DEFAULTS_OK=0
-      done
-      if [[ "$BROWSER_DEFAULTS_OK" == 1 ]] && brave --version >/dev/null 2>&1; then
-        ui_ok "default browser" "Brave (HTTP, HTTPS, HTML, PDF)"
-      else
-        ui_err "default browser" "Brave is unavailable or its default associations did not apply"
+      if ! verify_browser; then
         printf '\nUpdate verification failed. Full log: %s\n' "$RUN_LOG"
         exit 1
       fi
     fi
+    meta_put runtime_verified 1 || ui_warn "metadata" "could not record runtime_verified"
     phase_status verified
   else
+    meta_put runtime_verified 0 || ui_warn "metadata" "could not record runtime_verified"
     phase_status verify-skipped
+    ui_warn "verify" "skipped (--skip-verify): this update is not runtime-verified"
+    ui_note warn verify "the update was applied without runtime verification (--skip-verify)"
   fi
 fi
 
@@ -992,16 +1035,39 @@ fi
 # uncommitted would make the next run stop at the dirty-worktree gate on our
 # own output; committing it earlier would leave a lock that never ran.
 
+# update_file_key <repo-relative path>: the run-record key of the hash this
+# run recorded after writing that file.
+update_file_key() {
+  case "$1" in
+    nix/flake.lock) echo flake_lock_hash_written ;;
+    nix/packages/brave/release.json) echo brave_release_hash_written ;;
+  esac
+}
+
 if [[ "$MODE" == "apply" ]]; then
   PHASE=commit
   COMMIT_STATE=commit-skipped
   if [[ "$GIT_STATE" != "no-repo" ]] \
     && ! git -C "$REPO_ROOT" diff --quiet HEAD -- "${UPDATE_FILES[@]}" 2>/dev/null; then
+    # A file that differs from HEAD but not by what this run wrote was changed
+    # by somebody else while the update ran; it is theirs to commit.
+    FOREIGN_EDITS=()
+    for _f in "${UPDATE_FILES[@]}"; do
+      git -C "$REPO_ROOT" diff --quiet HEAD -- "$_f" 2>/dev/null && continue
+      _want="$(meta_get "$RUN_META" "$(update_file_key "$_f")")"
+      _have="$(git hash-object -- "$REPO_ROOT/$_f" 2>/dev/null || true)"
+      [[ -n "$_want" && "$_have" == "$_want" ]] || FOREIGN_EDITS+=("$_f")
+    done
+    COMMIT_ARGS=(-m "chore(nix): update flake inputs")
+    [[ "$DO_VERIFY" == 1 ]] || COMMIT_ARGS+=(-m "Not runtime-verified: applied with sys-update --skip-verify.")
     if [[ "$LOCK_WAS_CLEAN" != 1 ]]; then
       ui_warn "flake.lock" "not committed (it had local edits before the update)"
       ui_note warn git "flake.lock not committed: it had local edits before the update"
+    elif ((${#FOREIGN_EDITS[@]})); then
+      ui_warn "flake.lock" "not committed: ${FOREIGN_EDITS[*]} changed during the update by something else"
+      ui_note warn git "${FOREIGN_EDITS[*]} changed during the update by something else; it was not committed"
     # --only commits the lock alone, whatever else is staged or modified.
-    elif run_step "flake.lock" git -C "$REPO_ROOT" commit --only -m "chore(nix): update flake inputs" -- "${UPDATE_FILES[@]}"; then
+    elif run_step "flake.lock" git -C "$REPO_ROOT" commit --only "${COMMIT_ARGS[@]}" -- "${UPDATE_FILES[@]}"; then
       ui_ok "flake.lock" "committed ($(git -C "$REPO_ROOT" rev-parse --short HEAD))"
       COMMIT_STATE=committed
     else

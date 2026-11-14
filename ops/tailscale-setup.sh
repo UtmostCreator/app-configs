@@ -14,6 +14,13 @@ case "${1:-}" in
   *) printf 'tailscale-setup: unknown argument: %s\n' "$1" >&2; exit 2 ;;
 esac
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=ops/lib/preflight.sh
+source "$REPO_ROOT/ops/lib/preflight.sh"
+# Test guard (ops/lib/preflight.sh): an apply run under bats must stay inside
+# the test's scratch directory.
+[[ "$mode" == apply ]] && preflight_bats_guard tailscale-setup "to apply" "$REPO_ROOT"
+
 target_module=/etc/nixos/app-configs-tailscale.nix
 system_config=/etc/nixos/configuration.nix
 system_flake=/etc/nixos/flake.nix

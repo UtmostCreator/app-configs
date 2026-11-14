@@ -16,9 +16,11 @@
 # symlinked temp root (macOS /var -> /private/var) does not defeat the guard.
 _preflight_under() {
   local path="$1" root="$2" real
-  [[ "$path" == "$root"* ]] && return 0
+  # Anchored: the root itself or a path inside it. A bare prefix match also
+  # accepted siblings such as "$root-evil".
+  [[ "$path" == "$root" || "$path" == "$root"/* ]] && return 0
   real="$(cd -P "$root" 2>/dev/null && pwd)" || return 1
-  [[ "$path" == "$real"* ]]
+  [[ "$path" == "$real" || "$path" == "$real"/* ]]
 }
 
 # Under bats a mutating run must stay inside the test's scratch directory:

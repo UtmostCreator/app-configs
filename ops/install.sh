@@ -54,6 +54,15 @@ while (($#)); do
   shift
 done
 
+# DRY_RUN is a switch, not a truthy string: DRY_RUN=true used to mean "apply".
+case "$DRY_RUN" in
+  0 | 1) ;;
+  *)
+    printf '[install:error] DRY_RUN must be 0 or 1 (got: %s)\n' "$DRY_RUN" >&2
+    exit 2
+    ;;
+esac
+
 # shellcheck source=ops/lib/preflight.sh
 source "$REPO_ROOT/ops/lib/preflight.sh"
 

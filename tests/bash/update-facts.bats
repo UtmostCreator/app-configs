@@ -155,3 +155,116 @@ setup() {
   run classify_warning "building /nix/store/xxx.drv"
   [ "$status" -ne 0 ]
 }
+
+# ── T-0011 regressions ──────────────────────────────────────────────────────
+
+@test "nix_parse_store_name survives set -e" {
+  run bash -c '
+    set -e
+    source "$1/ops/lib/update-facts.sh"
+    nix_parse_store_name /nix/store/hkclq7d0j10l7gk1v2hpif398dvnq6lz-ripgrep-15.2.0
+  ' _ "$REPO_ROOT"
+  [ "$status" -eq 0 ]
+  [ "$output" = "$(printf 'ripgrep\t15.2.0')" ]
+}
+
+@test "letter-prefixed versions split from the pname" {
+  run nix_parse_store_name /nix/store/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-foo-v1.2.3
+  [ "$output" = "$(printf 'foo\tv1.2.3')" ]
+  run nix_parse_store_name /nix/store/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-foo-unstable-2026-09-11
+  [ "$output" = "$(printf 'foo\tunstable-2026-09-11')" ]
+}
+
+@test "package filters look at the basename, not the parsed pname" {
+  run bash -c '
+    source "$1/ops/lib/update-facts.sh"
+    printf "%s\n" \
+      /nix/store/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-foo-1.0.drv \
+      /nix/store/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-python3-3.12.1-env \
+      /nix/store/cccccccccccccccccccccccccccccccc-config-1.json \
+      /nix/store/dddddddddddddddddddddddddddddddd-ripgrep-15.2.0 \
+      | nix_packages_from_paths
+  ' _ "$REPO_ROOT"
+  [ "$output" = "$(printf 'ripgrep\t15.2.0')" ]
+}
+
+@test "nix_toplevel_packages fails when nix-store fails" {
+  mkdir -p "$BATS_TEST_TMPDIR/bin" "$BATS_TEST_TMPDIR/prof"
+  printf '#!/bin/sh\necho /nix/store/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-ripgrep-15.2.0\nexit 1\n' \
+    > "$BATS_TEST_TMPDIR/bin/nix-store"
+  chmod +x "$BATS_TEST_TMPDIR/bin/nix-store"
+  PATH="$BATS_TEST_TMPDIR/bin:$PATH" run nix_toplevel_packages "$BATS_TEST_TMPDIR/prof"
+  [ "$status" -ne 0 ]
+}
+
+@test "package_delta counts duplicate rows once" {
+  same="$(printf 'fish\t4.9.2\nfish\t4.9.2\npy\t1\npy\t2')"
+  run package_delta "$same" "$same"
+  [ "$output" = "$(printf 'summary\t0\t0\t0\t2')" ]
+}
+
+@test "package_delta puts the summary last even after sorting" {
+  run package_delta "$(printf 'zlib\t1')" "$(printf 'zlib\t2')"
+  [ "${lines[-1]}" = "$(printf 'summary\t1\t0\t0\t0')" ]
+}
+
+@test "package_delta compares several versions of one pname regardless of row order" {
+  run package_delta "$(printf 'py\t2\npy\t1')" "$(printf 'py\t1\npy\t2')"
+  [ "$output" = "$(printf 'summary\t0\t0\t0\t1')" ]
+}
+
+@test "a failing git status is an error state, not clean" {
+  repo="$BATS_TEST_TMPDIR/broken"
+  mkdir -p "$repo"
+  git -C "$repo" init -q
+  git -C "$repo" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+  printf 'garbage' > "$repo/.git/index"
+  run git_worktree_state "$repo"
+  [ "$status" -ne 0 ]
+  [[ "$output" == error* ]]
+}
+
+@test "untracked files inside a new directory are counted individually" {
+  repo="$BATS_TEST_TMPDIR/deep"
+  mkdir -p "$repo/d"
+  git -C "$repo" init -q
+  git -C "$repo" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+  touch "$repo/d/a" "$repo/d/b"
+  run git_worktree_state "$repo"
+  [ "$output" = "$(printf 'dirty\t0\t2')" ]
+}
+
+@test "git_upstream: no upstream is empty success, failure is an error" {
+  repo="$BATS_TEST_TMPDIR/up"
+  mkdir -p "$repo"
+  git -C "$repo" init -q
+  git -C "$repo" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+  run git_upstream "$repo"
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+  # Configured but unresolvable upstream is a failure, not "none".
+  br="$(git -C "$repo" symbolic-ref --short HEAD)"
+  git -C "$repo" config "branch.$br.remote" origin
+  git -C "$repo" config "branch.$br.merge" refs/heads/gone
+  run git_upstream "$repo"
+  [ "$status" -eq 1 ]
+  run git_upstream "$BATS_TEST_TMPDIR/not-a-repo"
+  [ "$status" -eq 2 ]
+}
+
+@test "error lines are classified as errors" {
+  run classify_warning "error: builder for foo failed"
+  [ "$status" -eq 0 ]
+  [[ "$output" == error* ]]
+  [[ "$output" == *"builder for foo failed"* ]]
+}
+
+@test "a single news item uses singular wording" {
+  run classify_warning "There is 1 unread and relevant news item."
+  [[ "$output" == *"1 unread news entry"* ]]
+}
+
+@test "news count is taken from the sentence, not a leading timestamp" {
+  run classify_warning "[2026-11-14 10:00:01] There are 394 unread and relevant news items."
+  [[ "$output" == *"394 unread"* ]]
+}

@@ -13,6 +13,19 @@ set -euo pipefail
 
 proc_version="${DETECT_HOST_PROC_VERSION:-/proc/version}"
 
+usage() {
+  cat <<'USAGE'
+Usage: bash ops/detect-host.sh [--wsl-version | -h | --help]
+Prints macos | linux-desktop | linux-cli | wsl. See the header for overrides.
+USAGE
+}
+case "$#:${1:-}" in
+  0:) ;;
+  1:--wsl-version) ;;
+  1:-h | 1:--help) usage; exit 0 ;;
+  *) printf 'detect-host: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
+esac
+
 # --wsl-version: print 2 (WSL2), 1 (WSL1) or none. The repo supports WSL2
 # only: WSL1 has no real Linux kernel or systemd, so Nix and the Home Manager
 # user timers do not work there. WSL2 kernels say "microsoft-standard" (and

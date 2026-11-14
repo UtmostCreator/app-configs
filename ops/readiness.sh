@@ -12,6 +12,18 @@
 # pending. Exit 1 = something required is missing.
 
 set -uo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: bash ops/readiness.sh [-h|--help]
+Read-only readiness report; takes no other arguments.
+USAGE
+}
+case "$#:${1:-}" in
+  0:) ;;
+  1:-h | 1:--help) usage; exit 0 ;;
+  *) printf 'readiness: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
+esac
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 pass=0 warn=0 err=0
@@ -77,12 +89,13 @@ if is_nixos; then
   # Check the LIVE, activated system — authoritative regardless of which file
   # the settings live in (configuration.nix vs an imported module like
   # /etc/nixos/app-configs-extra.nix written by sys-setup).
-  cur_shell="$({ getent passwd "$USER" 2>/dev/null || true; } | cut -d: -f7)"
+  cur_user="${USER:-$(id -un)}"
+  cur_shell="$({ getent passwd "$cur_user" 2>/dev/null || true; } | cut -d: -f7)"
   cur_shell="${cur_shell:-${SHELL:-unknown}}"
   if [[ "$cur_shell" == *fish* ]]; then ok "login shell is fish ($cur_shell)"
   else note "login shell is $cur_shell, not fish — run: sudo sys-setup --apply"; rebuild_needed=1; fi
 
-  if nix show-config 2>/dev/null | grep -qE "trusted-users\s*=.*\b${USER}\b"; then
+  if nix show-config 2>/dev/null | grep -qE "trusted-users\s*=.*\b${cur_user}\b"; then
     ok "user in nix trusted-users"
   else note "user not in nix trusted-users — run: sudo sys-setup --apply"; rebuild_needed=1; fi
 

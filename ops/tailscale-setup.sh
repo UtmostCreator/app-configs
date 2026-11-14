@@ -27,7 +27,7 @@ elif [[ -n "${SUDO_USER:-}" ]]; then
 elif [[ -n "${PKEXEC_UID:-}" ]]; then
   user_name="$(getent passwd "$PKEXEC_UID" | cut -d: -f1)"
 elif [[ "$(id -u)" -ne 0 ]]; then
-  user_name="$USER"
+  user_name="${USER:-$(id -un)}"
 else
   printf 'tailscale-setup: set USER_NAME when invoking directly as root\n' >&2
   exit 1

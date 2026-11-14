@@ -187,18 +187,30 @@ precondition passes**, and each phase reports one line instead of raw output:
 | Phase | What it does |
 | --- | --- |
 | `PRECHECK` | canonical repo path, git worktree + upstream, required tools, free disk |
-| `SNAPSHOT` | `$HOME` dotfiles, `flake.lock`, current Home Manager generation, mise versions |
-| `APPLY` | `git pull --ff-only` · `nix flake update` + `check` · `chezmoi apply` · `home-manager switch` / `darwin-rebuild switch` · `nix profile upgrade` · `mise upgrade` · `lefthook install` · Syncthing ignores · commit the new `flake.lock` |
-| `VERIFY` | generation activated, no chezmoi drift, core commands on `PATH`, no failed user units, no missing mise tools |
+| `PULL` | `git pull --ff-only`; when it brings new commits the run restarts in the updated `update-all.sh` (same lock, run id and log) before anything is configured |
+| `SNAPSHOT` | `$HOME` dotfiles, `flake.lock`, current Home Manager generation (pinned by a GC root), mise versions |
+| `PREPARE` | `nix flake update` + `check` · host build; a failure restores `flake.lock` |
+| `ACTIVATE` | `chezmoi apply` · `home-manager switch` / `darwin-rebuild switch`; the profile must then point at the built closure (never skipped) |
+| `VERIFY` | gate: Brave runs and is the default browser (`--skip-verify` skips it) |
+| `COMMIT` | the new `flake.lock` is committed only after a verified activation |
+| `MAINTAIN` | `nix profile upgrade` · `mise upgrade` · `lefthook install` · Syncthing ignores (warnings only) |
+| `CHECKS` | advisory: no chezmoi drift, core commands on `PATH`, no failed user units, no missing mise tools |
 | `CLEANUP` | safe, non-destructive (section 3 below) unless `NO_CLEANUP=1` |
 | `SUMMARY` | package delta, warnings worth acting on, rollback handle, log path |
 
 A **dirty worktree aborts the run** before anything changes: updating on top of
 local edits mixes your changes, upstream commits and a new lock into one
 conflict. Commit, stash, or pass `--allow-dirty` to accept that deliberately.
-Once the update has built and activated, the new `flake.lock` is committed
-on its own (`chore(nix): update flake inputs`), so the next run starts clean.
-A lock that already had local edits before the run is left for you to commit.
+Once the update has built, activated and been verified, the new `flake.lock` is
+committed on its own (`chore(nix): update flake inputs`), so the next run starts
+clean. With `--skip-verify` the commit body says it was not runtime-verified.
+A lock that already had local edits before the run, or one something else
+changed while the update ran, is left for you to commit. If verification
+fails, the lock stays uncommitted and the run prints both ways out:
+`sys-update rollback`, or the `git commit --only` command that keeps it. A
+failed or interrupted run before activation restores the lock it wrote (unless
+it was edited meanwhile). Only one update or rollback runs at a time; a second
+one exits 5.
 
 Command output goes to a per-run log under
 `~/.local/state/sys-update/runs/<timestamp>.log`; the terminal only shows raw
@@ -251,12 +263,21 @@ itself.
 
 ### Undo an update
 
-Every applied run records a rollback handle (Home Manager generation,
-`flake.lock` backup, dotfiles snapshot):
+Every applied run records a rollback handle (Home Manager generation, pinned by
+a GC root so garbage collection cannot remove it; `flake.lock` backup; dotfiles
+snapshot) and the phase it reached:
 
 ```bash
-sys-update rollback          # re-activate the previous generation + restore the lock
+sys-update rollback          # switch the profile back to the previous generation + restore the lock
 ```
+
+Rollback takes the same lock as an update, checks that the profile really is on
+the previous generation afterwards, and restores `flake.lock` only while it
+still holds what the update wrote. If the update had already been committed it
+prints the `git commit --only` / `git checkout HEAD --` choices. A run that
+stopped before activation has nothing to roll back. On macOS the files are
+restored and the system switch is manual. If cleanup collected the previous
+generation the update warns and records `rollback_handle=lost`.
 
 The dotfiles snapshot is *shown*, not auto-restored — the command prints the
 exact `cp -a <snapshot>/. ~/` to run if you want it back.

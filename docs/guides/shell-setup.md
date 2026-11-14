@@ -31,7 +31,7 @@ Source files live in `home/` under the chezmoi tree.
 | `home/dot_bashrc.tmpl` | `~/.bashrc` (exec-into-fish + fallback) |
 | `home/dot_zshrc.tmpl` | `~/.zshrc` (zsh, still supported) |
 | `home/dot_zprofile.tmpl` | `~/.zprofile` |
-| `home/dot_gitconfig.tmpl` | `~/.gitconfig` (templated identity + 62 aliases) |
+| `home/dot_gitconfig.tmpl` | `~/.gitconfig` (templated identity + git aliases; see `docs/reference/cli-shortcuts.md`) |
 | `home/dot_config/starship/starship.toml` | `~/.config/starship/starship.toml` |
 | `home/dot_config/atuin/config.toml` | `~/.config/atuin/config.toml` |
 | `home/dot_local/bin/executable_*` | `~/.local/bin/*` (sys-update/cleanup/install/readiness/setup, git-branch-origin) |

@@ -94,7 +94,11 @@ See item 4 (delta config) first — better delta settings may remove the need.
 
 ---
 
-## 4. delta side-by-side + richer config — NEEDS-DECISION (next step)
+## 4. delta side-by-side + richer config — DONE
+
+Shipped in `home/dot_gitconfig.tmpl` (`[delta]`: navigate, line-numbers,
+side-by-side, syntax theme; toggled by `useGitDelta`). The notes below are
+kept for history; no further work is planned.
 
 **Benefit 50 · Difficulty 15.**
 
@@ -330,8 +334,9 @@ Move when **any** of these becomes true:
 - **treefmt-nix + flake checks**: `nix/treefmt.nix` + flake `formatter`/`checks`
   (nixfmt). `nix fmt` formats the tree; `nix flake check` fails on unformatted
   Nix. Tree formatted once on adoption.
-- **Git aliases**: `gd` (diff), `gcfp`/`fixprev` (commit --fixup HEAD), `grs`
-  (reset --soft HEAD~) in `home/dot_gitconfig.tmpl`.
+- **Git aliases**: `gd` (diff), `fixprev` (commit --fixup HEAD), `uncommit`
+  (reset --soft HEAD~1) in `home/dot_gitconfig.tmpl` (the duplicate `gcfp`
+  and `grs` were removed on 2026-11-14).
 - **syncthing** (package) under the personal profile (see item 10 to run it).
 - **navi**: interactive cheatsheet launcher in `cli.nix` (complements tldr).
 - **fish niceties**: vi keybindings + `GPG_TTY` + `fishPlugins.autopair` in

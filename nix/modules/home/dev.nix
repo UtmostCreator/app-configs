@@ -132,7 +132,9 @@ in
       shellcheck
       shfmt
       stripe-cli # Stripe CLI for local webhook testing (binary: stripe)
-      watchexec
+      watchexec # rerun on file change (fish `patw` for focused artisan tests)
+      xh # readable HTTP client for manual API calls; keep curl for scripts
+      hyperfine # benchmark commands (warmups + runs) before claiming a speedup
       # ── Go development toolchain (for the ya-under-control Go rewrite) ──
       #    Installed here so `home-manager switch` provisions the full stack
       #    reproducibly across hosts. golangci-lint bundles staticcheck, govet,

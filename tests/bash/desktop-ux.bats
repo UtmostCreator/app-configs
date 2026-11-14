@@ -19,12 +19,25 @@ render_ghostty() {
         --source "$REPO_ROOT/home" execute-template <"$GHOSTTY_TMPL"
 }
 
-# hm_eval <attr-expr>: evaluate an expression against the linux-desktop
-# Home Manager config, bound as `hm`.
-hm_eval() {
-    nix eval --json --impure --expr "
-      let hm = (builtins.getFlake \"path:$REPO_ROOT/nix\").homeConfigurations.linux-desktop.config;
-      in $1"
+# Evaluate the linux-desktop Home Manager facts once per file: every
+# `nix eval` of path:nix copies the flake into the store and re-evaluates it.
+# A failure is recorded, not raised, so the template tests still run.
+setup_file() {
+    export HM_JSON="$BATS_FILE_TMPDIR/hm.json"
+    REPO_NIX="$(cd "$BATS_TEST_DIRNAME/../../nix" && pwd)" nix eval --json --impure --expr '
+      let hm = (builtins.getFlake "path:${builtins.getEnv "REPO_NIX"}").homeConfigurations.linux-desktop.config;
+      in {
+        # Merged across modules, the list evaluates to a GVariant string ("@as [...]").
+        gtfNotEnabled = let v = hm.dconf.settings."org/gnome/shell".enabled-extensions;
+          in builtins.match ".*grand-theft-focus@zalckos[.]github[.]com.*" (toString v) == null;
+        gtfNotInstalled = !(builtins.any (p: (p.pname or "") == "gnome-shell-extension-grand-theft-focus") hm.home.packages);
+      }' >"$HM_JSON" 2>"$BATS_FILE_TMPDIR/hm.err" || true
+}
+
+# hm_value <key>: one fact from the evaluation above.
+hm_value() {
+    [ -s "$HM_JSON" ] || { cat "$BATS_FILE_TMPDIR/hm.err" >&2; return 1; }
+    jq -c --arg k "$1" '.[$k]' "$HM_JSON"
 }
 
 @test "ghostty: ctrl+t opens a new tab on Linux" {
@@ -42,15 +55,13 @@ hm_eval() {
 }
 
 @test "gnome: grand-theft-focus is disabled" {
-    # Merged across modules, the list evaluates to a GVariant string ("@as [...]").
-    run hm_eval 'let v = hm.dconf.settings."org/gnome/shell".enabled-extensions;
-      in builtins.match ".*grand-theft-focus@zalckos[.]github[.]com.*" (toString v) == null'
+    run hm_value gtfNotEnabled
     [ "$status" -eq 0 ]
     [ "$output" = true ]
 }
 
 @test "gnome: grand-theft-focus package is not installed" {
-    run hm_eval '!(builtins.any (p: (p.pname or "") == "gnome-shell-extension-grand-theft-focus") hm.home.packages)'
+    run hm_value gtfNotInstalled
     [ "$status" -eq 0 ]
     [ "$output" = true ]
 }

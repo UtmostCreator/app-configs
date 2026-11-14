@@ -1,35 +1,60 @@
 #!/usr/bin/env bats
 # Safety and hygiene contract for the git aliases in home/dot_gitconfig.tmpl.
 
-setup() {
+# Render the template once per file; each test gets its own copy.
+setup_file() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    : >"$BATS_TEST_TMPDIR/c.toml"
-    export GIT_CONFIG_GLOBAL="$BATS_TEST_TMPDIR/gitconfig" GIT_CONFIG_SYSTEM=/dev/null
-    chezmoi execute-template --config "$BATS_TEST_TMPDIR/c.toml" --source "$REPO_ROOT/home" \
+    : >"$BATS_FILE_TMPDIR/c.toml"
+    chezmoi execute-template --config "$BATS_FILE_TMPDIR/c.toml" --source "$REPO_ROOT/home" \
         --override-data '{"name":"T","email":"t@example.test","signingKey":"","useGitDelta":false}' \
-        --file "$REPO_ROOT/home/dot_gitconfig.tmpl" >"$GIT_CONFIG_GLOBAL"
+        --file "$REPO_ROOT/home/dot_gitconfig.tmpl" >"$BATS_FILE_TMPDIR/gitconfig"
 }
 
-aliases() { git config --global --name-only --get-regexp '^alias\.' | sed 's/^alias\.//'; }
+setup() {
+    REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+    export GIT_CONFIG_GLOBAL="$BATS_TEST_TMPDIR/gitconfig" GIT_CONFIG_SYSTEM=/dev/null
+    cp "$BATS_FILE_TMPDIR/gitconfig" "$GIT_CONFIG_GLOBAL"
+}
+
 value() { git config --global --get "alias.$1"; }
 
+# load_aliases: ALIAS_NAMES / ALIAS_VALUES from one git call rather than one
+# `git config` (plus greps) per alias.
+load_aliases() {
+    local record key
+    ALIAS_NAMES=() ALIAS_VALUES=()
+    while IFS= read -r -d '' record; do
+        key="${record%%$'\n'*}"
+        ALIAS_NAMES+=("${key#alias.}")
+        ALIAS_VALUES+=("${record#*$'\n'}")
+    done < <(git config --global -z --get-regexp '^alias\.')
+    [ "${#ALIAS_NAMES[@]}" -gt 0 ]
+}
+
 @test "no alias shadows a git command (git would silently ignore it)" {
-    builtins="$(git --list-cmds=main,others)"
-    for a in $(aliases); do
-        if grep -qxF "$a" <<<"$builtins"; then echo "collides: $a"; return 1; fi
-    done
+    load_aliases
+    collisions="$(git --list-cmds=main,others | grep -xF -f <(printf '%s\n' "${ALIAS_NAMES[@]}") || true)"
+    [ -z "$collisions" ] || { echo "collides: $collisions"; return 1; }
 }
 
 @test "no two aliases have the same definition" {
-    dupes="$(for a in $(aliases); do value "$a" | tr -s '[:space:]' ' '; echo; done | sort | uniq -d)"
+    load_aliases
+    # one record per alias, whitespace runs folded to one space
+    dupes="$(printf '%s\0' "${ALIAS_VALUES[@]}" | tr -s '[:space:]' ' ' | tr '\0' '\n' \
+        | sed 's/^ //; s/ $//' | sort | uniq -d)"
     [ -z "$dupes" ] || { echo "duplicates: $dupes"; return 1; }
 }
 
 @test "no alias bypasses hooks or force-pushes without a lease" {
-    for a in $(aliases); do
-        v="$(value "$a")"
-        if grep -qE -- '--no-verify' <<<"$v"; then echo "bypasses hooks: $a"; return 1; fi
-        if grep -qE 'push[^;|&]*( -f( |$)| --force( |$))' <<<"$v"; then echo "bare force push: $a"; return 1; fi
+    load_aliases
+    local force='push[^;|&]*( -f( |$)| --force( |$))' i a v
+    for i in "${!ALIAS_NAMES[@]}"; do
+        a="${ALIAS_NAMES[$i]}"
+        # line by line, as grep matched it
+        while IFS= read -r v; do
+            if [[ "$v" == *--no-verify* ]]; then echo "bypasses hooks: $a"; return 1; fi
+            if [[ "$v" =~ $force ]]; then echo "bare force push: $a"; return 1; fi
+        done <<<"${ALIAS_VALUES[$i]}"
     done
 }
 

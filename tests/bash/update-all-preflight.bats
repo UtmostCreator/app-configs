@@ -173,3 +173,97 @@ STUB
   [[ "$output" != *"wrote them: .claude"* ]]
   [[ "$output" != *"Code/User/settings.json"*"edited"* ]]
 }
+
+# ── T-0010: host detection, PRECHECK contracts, exit codes ──────────────────
+
+# Stub every required tool so an apply run reaches the check under test on any
+# host (a bare CI runner has no home-manager).
+stub_required_tools() {
+  local bin="$BATS_TEST_TMPDIR/req-bin"; mkdir -p "$bin"
+  local t
+  for t in nix chezmoi home-manager; do
+    printf '#!/bin/sh\nexit 0\n' > "$bin/$t"; chmod +x "$bin/$t"
+  done
+  REQ_PATH="$bin:$PATH"
+}
+
+@test "S10: a failed host detection stops with exit 4 and shows the reason" {
+  run env -u HOST_PROFILE DETECT_HOST_OSRELEASE=/nonexistent DETECT_HOST_PROC_VERSION=/nonexistent \
+    bash "$FAKE/ops/update-all.sh"
+  [ "$status" -eq 4 ]
+  [[ "$output" == *"detect-host"* ]]
+  [[ "$output" == *"cannot read kernel release"* ]]
+}
+
+@test "S10: a failed host detection never falls back to linux-desktop" {
+  run env -u HOST_PROFILE DETECT_HOST_OSRELEASE=/nonexistent DETECT_HOST_PROC_VERSION=/nonexistent \
+    bash "$FAKE/ops/update-all.sh" --apply --yes
+  [ "$status" -eq 4 ]
+  [[ "$output" != *"SYSTEM UPDATE"* ]]
+  [ ! -e "$SYS_UPDATE_STATE_DIR/runs" ]
+}
+
+@test "G-02: rollback does not need host detection and reaches its own no-run message" {
+  run -1 env -u HOST_PROFILE DETECT_HOST_OSRELEASE=/nonexistent DETECT_HOST_PROC_VERSION=/nonexistent \
+    bash "$FAKE/ops/update-all.sh" rollback --yes
+  [[ "$output" == *"no recorded run"* ]]
+  [[ "$output" != *"host detection failed"* ]]
+}
+
+@test "S11: an unsupported HOST_PROFILE is rejected with exit 4" {
+  run env HOST_PROFILE=bogus bash "$FAKE/ops/update-all.sh"
+  [ "$status" -eq 4 ]
+  [[ "$output" == *"unsupported HOST_PROFILE: bogus"* ]]
+}
+
+@test "an unreadable worktree status stops the update (git state error)" {
+  stub_required_tools
+  printf 'not an index\n' > "$FAKE/.git/index"
+  run env HOST_PROFILE=linux-cli PATH="$REQ_PATH" bash "$FAKE/ops/update-all.sh" --apply --yes
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"worktree status"* ]]
+  [[ "$output" == *"stopped before"* ]]
+}
+
+@test "an upstream that is configured but cannot be resolved stops an apply" {
+  stub_required_tools
+  branch="$(git -C "$FAKE" symbolic-ref --short HEAD)"
+  git -C "$FAKE" config "branch.$branch.remote" origin
+  git -C "$FAKE" config "branch.$branch.merge" "refs/heads/$branch"
+  run env HOST_PROFILE=linux-cli PATH="$REQ_PATH" bash "$FAKE/ops/update-all.sh" --apply --yes
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"upstream"*"cannot be resolved"* ]]
+  [[ "$output" == *"stopped before"* ]]
+}
+
+@test "an unresolvable upstream is only a warning in report mode" {
+  branch="$(git -C "$FAKE" symbolic-ref --short HEAD)"
+  git -C "$FAKE" config "branch.$branch.remote" origin
+  git -C "$FAKE" config "branch.$branch.merge" "refs/heads/$branch"
+  run env HOST_PROFILE=linux-cli bash "$FAKE/ops/update-all.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"upstream"*"cannot be resolved"* ]]
+}
+
+@test "a branch with no upstream is information, not a failure" {
+  run env HOST_PROFILE=linux-cli bash "$FAKE/ops/update-all.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no upstream"* ]]
+}
+
+@test "S47: --help lists every exit code" {
+  run bash "$FAKE/ops/update-all.sh" --help
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Exit codes"* ]]
+  for code in 0 1 2 3 4 5 129 130 131 141 143; do
+    grep -Eq "^ +$code +" <<<"$output"
+  done
+  [[ "$output" == *"lock"* ]]
+  [[ "$output" == *"host detection"* ]]
+}
+
+@test "--help stays inside the header comment" {
+  run bash "$FAKE/ops/update-all.sh" --help
+  [[ "$output" != *"set -uo pipefail"* ]]
+  [[ "$output" != *"REPO_ROOT="* ]]
+}

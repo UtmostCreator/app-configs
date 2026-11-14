@@ -77,6 +77,9 @@ all_survive() {
 run_sys_update() {
   export SYS_UPDATE_STATE_DIR="$HOME/.local/state/sys-update"
   export HOST_PROFILE=linux-desktop
+  # PRECHECK needs a Home Manager profile directory (same rule as update-all-apply.bats).
+  export XDG_STATE_HOME="$HOME/.local/state"
+  mkdir -p "$XDG_STATE_HOME/nix/profiles"
   export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
   mkdir -p "$HOME/.config/syncthing"
   {
@@ -98,10 +101,18 @@ run_sys_update() {
 
   STUBS="$BATS_TEST_TMPDIR/bin"
   mkdir -p "$STUBS"
-  for tool in nix chezmoi home-manager mise lefthook; do
+  for tool in chezmoi home-manager mise lefthook; do
     printf '#!/usr/bin/env bash\nexit 0\n' > "$STUBS/$tool"
     chmod +x "$STUBS/$tool"
   done
+  # PREPARE fails closed unless `nix build --print-out-paths` names a directory.
+  mkdir -p "$BATS_TEST_TMPDIR/hm-out"
+  cat > "$STUBS/nix" <<NIX
+#!/usr/bin/env bash
+case "\$*" in *--print-out-paths*) printf '%s\\n' "$BATS_TEST_TMPDIR/hm-out" ;; esac
+exit 0
+NIX
+  chmod +x "$STUBS/nix"
 
   run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup --skip-verify
 }

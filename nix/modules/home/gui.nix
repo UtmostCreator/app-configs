@@ -294,7 +294,12 @@
         # window when VS Code was already running in the background. So we open
         # the folder, then explicitly focus a VS Code window via the same
         # Vicinae/Windows D-Bus API used by vicinae-toggle-app.
-        ${vscode}/bin/code "$selected" >/dev/null 2>&1 || true
+        # Failures are surfaced (stderr + exit status), not swallowed: a failed
+        # open must not look like success. `code` output stays quiet on success.
+        if ! code_out="$(${vscode}/bin/code "$selected" 2>&1)"; then
+          echo "vscode-recent-projects: 'code $selected' failed: $code_out" >&2
+          exit 1
+        fi
 
         dest="org.gnome.Shell"
         obj="/org/gnome/Shell/Extensions/Windows"

@@ -1,4 +1,4 @@
-{ ... }:
+{ config, ... }:
 {
   # macOS Homebrew package declarations.
   #
@@ -76,9 +76,15 @@
       # Check with `docker compose version`.
       "docker-compose"
       # Provides the macOS `mysql` client. Nix mariadb is Linux-only (dev.nix).
+      # Keg-only (conflicts with `mysql`), so brew does not link it. Interactive
+      # shells already add its bin (fish config.fish.tmpl, zshrc);
+      # environment.systemPath below covers GUI and non-interactive use.
       "mysql-client"
       # Sets default macOS app handlers.
       "duti"
     ];
   };
+
+  # mysql-client is keg-only: brew does not link it into the Homebrew bin.
+  environment.systemPath = [ "${config.homebrew.prefix}/opt/mysql-client/bin" ];
 }

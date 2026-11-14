@@ -88,7 +88,7 @@ curated=(
   ops/system-setup.sh ops/tailscale-setup.sh ops/vscode-extensions.sh
   ops/detect-os-disks.sh ops/syncthing-obsidian-stignore.sh ops/bootstrap.sh
   ops/detect-host.sh ops/lint-shell.sh ops/run-bats.sh ops/wsl-check.sh
-  ops/seed-personal-yaml.sh ops/unix/ssh-agent-setup.sh
+  ops/seed-personal-yaml.sh ops/unix/ssh-agent-setup.sh ops/audit.sh
 )
 present=()
 for f in "${curated[@]}"; do [[ -f "$f" ]] && present+=("$f"); done

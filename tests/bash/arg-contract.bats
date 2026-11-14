@@ -70,6 +70,10 @@ sandbox_init() {
     mkdir -p "$SB_HOME" "$SB_STUBS" "$SB/run"
     chmod 700 "$SB/run"
     : >"$SB_CALLS"
+    # The helpers this repo installs into ~/.local/bin (topn, killport, ...)
+    # exist on the developer's machine and not in CI: keep them off the PATH so
+    # the result does not depend on which one it is.
+    SB_PATH="$(printf '%s' "$PATH" | tr : '\n' | grep -v '/\.local/bin$' | paste -sd: -)"
     local t realgit
     for t in "${MUTATORS[@]}"; do
         printf '#!/bin/sh\necho "%s $*" >>"%s"\nexit 1\n' "$t" "$SB_CALLS" >"$SB_STUBS/$t"
@@ -93,7 +97,7 @@ probe() {
     local root="$1" script="$2" arg="$3" interp=(bash)
     [[ "$script" == *.py ]] && interp=(python3 -I)
     : >"$SB_CALLS"
-    PROBE_OUT="$(cd "$root" && env -i PATH="$SB_STUBS:$PATH" HOME="$SB_HOME" \
+    PROBE_OUT="$(cd "$root" && env -i PATH="$SB_STUBS:$SB_PATH" HOME="$SB_HOME" \
         XDG_CONFIG_HOME="$SB_HOME/.config" XDG_DATA_HOME="$SB_HOME/.local/share" \
         XDG_STATE_HOME="$SB_HOME/.local/state" XDG_CACHE_HOME="$SB_HOME/.cache" \
         XDG_RUNTIME_DIR="$SB/run" TMPDIR="$SB" TERM=dumb LANG=C USER="${USER:-x}" \

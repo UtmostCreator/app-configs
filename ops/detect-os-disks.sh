@@ -25,6 +25,18 @@
 
 set -uo pipefail
 
+usage() {
+  cat <<'USAGE'
+Usage: bash ops/detect-os-disks.sh [-h|--help]
+Read-only disk and OS scan for the dual-boot snippet (AI_OUTPUT=json for JSON); takes no other arguments.
+USAGE
+}
+case "$#:${1:-}" in
+  0:) ;;
+  1:-h | 1:--help) usage; exit 0 ;;
+  *) printf 'detect-os-disks: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
+esac
+
 AI_OUTPUT="${AI_OUTPUT:-plain}"
 
 have() { command -v "$1" >/dev/null 2>&1; }

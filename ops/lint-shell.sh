@@ -12,6 +12,18 @@
 #    a lint that silently skips is not a passing lint.
 set -euo pipefail
 
+usage() {
+  cat <<'USAGE'
+Usage: bash ops/lint-shell.sh [-h|--help]
+bash -n and ShellCheck over every shell script (read-only); takes no other arguments.
+USAGE
+}
+case "$#:${1:-}" in
+  0:) ;;
+  1:-h | 1:--help) usage; exit 0 ;;
+  *) printf 'lint-shell: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
+esac
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 

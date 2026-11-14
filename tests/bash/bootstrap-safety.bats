@@ -105,7 +105,17 @@ first_install() { # first_install <host>
     rm -f "$FRESH/home/.chezmoidata/personal.yaml"
     local user
     user="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$REPO_ROOT/nix/vars/default.nix")"
-    run env USER="$user" HOST_PROFILE="$1" DRY_RUN=1 bash "$FRESH/ops/install.sh"
+    # install.sh asks Nix for the username and its features; never use the
+    # host's nix. The stub answers `nix eval --raw -f <file> username` by
+    # reading the file and reports both experimental features as enabled.
+    printf '%s\n' '#!/usr/bin/env bash' \
+        'case "$1" in' \
+        '  eval) sed -nE '"'"'s/^[[:space:]]*username = "([^"]+)";.*/\1/p'"'"' "$4" ;;' \
+        '  show-config) echo "experimental-features = nix-command flakes" ;;' \
+        '  --version) echo "nix (stub) 0" ;;' \
+        'esac' >"$STUBS/nix"
+    chmod +x "$STUBS/nix"
+    run env PATH="$STUBS:$PATH" USER="$user" HOST_PROFILE="$1" DRY_RUN=1 bash "$FRESH/ops/install.sh"
 }
 
 @test "first install on macos: seeds for macos, uses darwin-rebuild, writes nothing" {

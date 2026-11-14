@@ -29,7 +29,7 @@ proj_health_for_each_project() {
   local check_id="$1"
   local id
   for id in $(proj_ids); do
-    if proj_yq ".projects.\"$id\".health.checks // [] | .[]" | grep -Fxq "$check_id"; then
+    if PROJ_ID="$id" proj_yq '.projects[strenv(PROJ_ID)].health.checks // [] | .[]' | grep -Fxq "$check_id"; then
       printf '%s\n' "$id"
     fi
   done

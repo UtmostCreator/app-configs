@@ -90,3 +90,22 @@ SH
     run env PATH="$stubs:$PATH" DOTFILES_DIR="$BATS_TEST_TMPDIR/dots" fish --no-config -c "source $FISH_FILE; hms --show-trace"
     [ "$output" = "home-manager switch -b hm-bak --flake $BATS_TEST_TMPDIR/dots/nix#wsl --show-trace" ]
 }
+
+@test "hms passes the local install selection through, before the caller's own arguments" {
+    stubs="$BATS_TEST_TMPDIR/bin"; mkdir -p "$stubs" "$BATS_TEST_TMPDIR/dots/ops/lib"
+    printf '#!/bin/sh\necho "home-manager $*"\n' >"$stubs/home-manager"; chmod +x "$stubs/home-manager"
+    printf '#!/bin/sh\necho wsl\n' >"$BATS_TEST_TMPDIR/dots/ops/detect-host.sh"
+    cp "$REPO_ROOT/ops/lib/selection.sh" "$BATS_TEST_TMPDIR/dots/ops/lib/selection.sh"
+    sel="$BATS_TEST_TMPDIR/sel"; mkdir -p "$sel"; printf 'profile = "work"\n' >"$sel/selection.toml"
+    run env PATH="$stubs:$PATH" DOTFILES_DIR="$BATS_TEST_TMPDIR/dots" APP_CONFIGS_SELECTION_DIR="$sel" fish --no-config -c "source $FISH_FILE; hms --show-trace"
+    [ "$output" = "home-manager switch -b hm-bak --flake $BATS_TEST_TMPDIR/dots/nix#wsl --override-input selection path:$sel --show-trace" ]
+}
+
+@test "hms without a local selection runs the same command line as before" {
+    stubs="$BATS_TEST_TMPDIR/bin"; mkdir -p "$stubs" "$BATS_TEST_TMPDIR/dots/ops/lib"
+    printf '#!/bin/sh\necho "home-manager $*"\n' >"$stubs/home-manager"; chmod +x "$stubs/home-manager"
+    printf '#!/bin/sh\necho wsl\n' >"$BATS_TEST_TMPDIR/dots/ops/detect-host.sh"
+    cp "$REPO_ROOT/ops/lib/selection.sh" "$BATS_TEST_TMPDIR/dots/ops/lib/selection.sh"
+    run env PATH="$stubs:$PATH" DOTFILES_DIR="$BATS_TEST_TMPDIR/dots" APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/none" fish --no-config -c "source $FISH_FILE; hms --show-trace"
+    [ "$output" = "home-manager switch -b hm-bak --flake $BATS_TEST_TMPDIR/dots/nix#wsl --show-trace" ]
+}

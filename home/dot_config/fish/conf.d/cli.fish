@@ -89,5 +89,7 @@ function hms --description 'home-manager switch --flake $DOTFILES_DIR/nix#<host>
     set -l dots $DOTFILES_DIR
     test -n "$dots"; or set dots ~/Projects/app-configs
     set -l host (bash $dots/ops/detect-host.sh); or return
-    home-manager switch -b hm-bak --flake "$dots/nix#$host" $argv
+    # The local install selection (ops/lib/selection.sh) is added through bash,
+    # the same way sys-update, sys-install and bootstrap add it; extra args follow.
+    bash -c 'f="$1/ops/lib/selection.sh"; [ -f "$f" ] && { . "$f"; selection_args; }; exec home-manager switch -b hm-bak --flake "$1/nix#$2" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} "${@:3}"' _ $dots $host $argv
 end

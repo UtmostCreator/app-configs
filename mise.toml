@@ -109,14 +109,17 @@ echo '=== home-manager / darwin-rebuild dry-run ==='
 case "$HOST" in
   macos)
     if command -v darwin-rebuild >/dev/null 2>&1; then
-      darwin-rebuild check --flake ./nix#macos
+      # Same local install selection as sync:apply (ops/lib/selection.sh).
+      . ops/lib/selection.sh; selection_args
+      darwin-rebuild check --flake ./nix#macos ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}
     else
       echo 'missing: darwin-rebuild'
     fi
     ;;
   linux-desktop|linux-cli|wsl)
     if command -v home-manager >/dev/null 2>&1 && [ -d nix ]; then
-      home-manager switch --flake "./nix#$HOST" --dry-run
+      . ops/lib/selection.sh; selection_args
+      home-manager switch --flake "./nix#$HOST" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} --dry-run
     else
       echo 'missing: home-manager or nix/ flake'
     fi
@@ -176,7 +179,9 @@ chezmoi apply
 case "$HOST" in
   macos)
     command -v darwin-rebuild >/dev/null 2>&1 || { echo 'missing: darwin-rebuild'; exit 1; }
-    darwin-rebuild switch --flake ./nix#macos
+    # The local install selection (ops/lib/selection.sh), like sys-update.
+    . ops/lib/selection.sh; selection_args
+    darwin-rebuild switch --flake ./nix#macos ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}
     ;;
   *)
     command -v home-manager >/dev/null 2>&1 || { echo 'missing: home-manager'; exit 1; }

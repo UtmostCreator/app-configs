@@ -76,27 +76,35 @@ hm_switch_users() {
 
 # -- 5. local install selection (T-0042) -----------------------------------
 
-# Lines in ops/ that build, switch or evaluate a host configuration without
+# Lines that build, switch or evaluate a host configuration without
 # SELECTION_ARGS (or selection_args_text in a message that prints the command).
-# Comments, quoted message continuations and messages are skipped. Not covered
-# on purpose: validators and CI, which evaluate the committed default
-# (validate-config.sh, ci.sh, ci-local.sh), and vicinae-extension.sh (a hint).
-# Prints path:line:text.
+# Same file set as rule 1. A message call and its first quoted string
+# (fail/warn/log/echo/printf/ui_*/step_fail/note "...") is removed before the
+# match, so `cmd || fail "..."` is still judged on `cmd`. Comment lines and
+# quoted continuation lines are skipped. Not covered on purpose: validators and
+# CI, which evaluate the committed default (validate-config.sh, ci.sh,
+# ci-local.sh), and vicinae-extension.sh (a hint). Prints path:line:text.
 selection_sites() {
-    local root="$1" f
+    local root="$1" f n text stripped
     while IFS= read -r -d '' f; do
         case "$f" in
             ops/validate-config.sh | ops/ci.sh | ops/ci-local.sh | ops/vicinae-extension.sh | ops/projects/*) continue ;;
         esac
-        grep -nE 'home-manager (switch|build)|darwin-rebuild (switch|build|check)|#darwin-rebuild|nix (build|eval) .*(#(homeConfigurations|darwinConfigurations)|BUILD_TARGET)' "$root/$f" |
-            grep -vE '^[0-9]+:[[:space:]]*(#|//|"|'"'"')' |
-            grep -vE "(fail|warn|log|echo|printf|ui_[a-z]+|step_fail|note)[ (=\"'].*(home-manager switch|nix build)" |
-            grep -vE 'SELECTION_ARGS|selection_args_text' |
-            sed "s|^|$f:|"
-    done < <(cd "$root" && find ops -type f -name '*.sh' -print0 2>/dev/null)
+        while IFS= read -r line; do
+            n="${line%%:*}"; text="${line#*:}"
+            case "$text" in *SELECTION_ARGS* | *selection_args_text*) continue ;; esac
+            printf '%s:%s:%s\n' "$f" "$n" "$text"
+        done < <(
+            grep -nvE '^[[:space:]]*(#|//|"|'"'"'|description|hint=|--description)' "$root/$f" |
+                sed -E 's/(fail|warn|log|echo|printf|ui_[a-z]+|step_fail|note|--description|hint=)[ (]*("[^"]*"|'"'"'[^'"'"']*'"'"')//g' |
+                grep -E 'home-manager( +[^ |;&]+)* +(switch|build)|darwin-rebuild +(switch|build|check)|#darwin-rebuild|nix (build|eval) .*#'
+        )
+    done < <(cd "$root" && find ops scripts home nix mise.toml -type f \
+        \( -name '*.sh' -o -name '*.tmpl' -o -name '*.fish' -o -name '*.nix' -o -name mise.toml -o -name 'executable_*' \) \
+        -print0 2>/dev/null)
 }
 
-@test "every host build, switch and eval in ops/ passes the selection arguments" {
+@test "every host build, switch and eval passes the selection arguments (rule 1 file set, hms included)" {
     run selection_sites "$REPO_ROOT"
     [ -z "$output" ] || { printf 'host build/switch/eval without SELECTION_ARGS:\n%s\n' "$output"; return 1; }
 }
@@ -125,6 +133,36 @@ selection_sites() {
     [[ "$output" == *"ops/cleanup.sh:"*"nix build"* ]]
     [[ "$output" == *"ops/cleanup.sh:"*"nix eval"* ]]
     [[ "$output" == *"ops/cleanup.sh:"*"darwin-rebuild switch"* ]]
+}
+
+@test "seeded: the || fail form, home-manager -b x switch and a variable build target are caught" {
+    local copy="$BATS_TEST_TMPDIR/repo"; repo_copy "$copy"
+    {
+        printf '\nhome-manager switch --flake "$D/nix#h" || fail "home-manager switch failed"\n'
+        printf 'home-manager -b x switch --flake "$D/nix#h"\n'
+        printf 'nix build "$FLAKE#$TARGET"\n'
+    } >>"$copy/ops/cleanup.sh"
+    run selection_sites "$copy"
+    [[ "$output" == *'ops/cleanup.sh:'*'home-manager switch --flake "$D/nix#h"'* ]]
+    [[ "$output" == *'ops/cleanup.sh:'*'home-manager -b x switch'* ]]
+    [[ "$output" == *'ops/cleanup.sh:'*'nix build "$FLAKE#$TARGET"'* ]]
+    # a bare message is not a call site
+    : >"$copy/ops/cleanup.sh"
+    printf 'fail "home-manager switch failed"\n' >>"$copy/ops/cleanup.sh"
+    run selection_sites "$copy"
+    [[ "$output" != *"ops/cleanup.sh:"* ]]
+}
+
+@test "mise sync:apply and sync:dry-run pass the selection arguments to darwin-rebuild" {
+    local task
+    for task in sync:apply sync:dry-run; do
+        awk -v t="[tasks.\"$task\"]" '/^\[tasks/{r=($0==t)} r' "$REPO_ROOT/mise.toml" |
+            grep -E 'darwin-rebuild (switch|check)' | grep -q 'SELECTION_ARGS' || { echo "$task: darwin-rebuild without SELECTION_ARGS"; return 1; }
+        awk -v t="[tasks.\"$task\"]" '/^\[tasks/{r=($0==t)} r' "$REPO_ROOT/mise.toml" |
+            grep -q 'ops/lib/selection.sh' || { echo "$task does not source selection.sh"; return 1; }
+    done
+    awk '/^\[tasks."sync:dry-run"\]/{r=1;next} /^\[tasks/{r=0} r' "$REPO_ROOT/mise.toml" |
+        grep -E 'home-manager switch .*--dry-run' | grep -q 'SELECTION_ARGS'
 }
 
 @test "seeded: dropping the arguments from a real call site is caught, adding them is accepted" {

@@ -60,11 +60,11 @@ set -e
 git diff --check
 bash ops/doctor.sh
 bash ops/validate-config.sh
-if command -v nix >/dev/null 2>&1 && [ -d nix ]; then
-  nix flake check ./nix
-else
-  echo 'missing: nix or nix/ flake (skip flake check)'
+if ! command -v nix >/dev/null 2>&1 || [ ! -d nix ]; then
+  echo 'missing: nix or nix/ flake (cannot run flake check)' >&2
+  exit 1
 fi
+nix flake check ./nix
 """
 
 # ─── chezmoi-only apply (no Nix/mise/lefthook side effects) ─────────────────
@@ -270,7 +270,7 @@ description = "Format all Nix files (nixfmt RFC style)"
 run = "git ls-files -z '*.nix' | xargs -0 nixfmt"
 
 [tasks."nix:lint"]
-description = "Lint Nix config (statix + deadnix); warnings are advisory"
+description = "Lint Nix config (statix + deadnix advisory; nixfmt --check required, fails if nixfmt is missing)"
 run = """
 set -e
 echo '=== statix ==='
@@ -278,7 +278,7 @@ if command -v statix >/dev/null 2>&1; then statix check nix/ || true; else echo 
 echo '=== deadnix ==='
 if command -v deadnix >/dev/null 2>&1; then deadnix nix/ || true; else echo 'missing: deadnix'; fi
 echo '=== nixfmt --check ==='
-if command -v nixfmt >/dev/null 2>&1; then git ls-files -z '*.nix' | xargs -0 nixfmt --check; else echo 'missing: nixfmt'; fi
+if command -v nixfmt >/dev/null 2>&1; then git ls-files -z '*.nix' | xargs -0 nixfmt --check; else echo 'missing: nixfmt' >&2; exit 1; fi
 """
 
 # ─── Optional convenience tools (opt-in) ────────────────────────────────────

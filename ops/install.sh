@@ -305,7 +305,7 @@ log "Install complete (host=$HOST_PROFILE, mode=$([[ "$DRY_RUN" == 1 ]] && echo 
 
 # ── NixOS system-rebuild advisory (NOT run automatically — needs sudo) ───────
 # The user environment is fully installed above. System-level settings (fish
-# login shell, trusted-users, GC timer) live in /etc/nixos and require an
+# login shell, GC timer, time zone) live in /etc/nixos and require an
 # explicit, privileged `nixos-rebuild`. We never run sudo unattended; instead we
 # detect what is missing and print exact next steps. See docs/platforms/nixos/rebuild.md.
 if is_nixos; then
@@ -319,11 +319,12 @@ if is_nixos; then
   cur_shell="$({ getent passwd "$(id -un)" 2>/dev/null || true; } | cut -d: -f7)"
   cur_shell="${cur_shell:-${SHELL:-unknown}}"
   [[ "$cur_shell" == *fish* ]] || { warn "fish is not yet the system login shell (now: $cur_shell)"; need_rebuild=1; }
-  nix show-config 2>/dev/null | grep -qE "trusted-users\s*=.*\b$(id -un)\b" \
-    || { warn "your user is not in nix trusted-users (auto-optimise warning)"; need_rebuild=1; }
-  { systemctl is-active nix-gc.timer >/dev/null 2>&1 || systemctl is-active nix-optimise.timer >/dev/null 2>&1; } \
-    || { warn "no active system-level nix.gc/optimise timer"; need_rebuild=1; }
-  cur_timezone="$(bash "$REPO_ROOT/ops/detect-timezone.sh")"
+  # No trusted-users check or advice on purpose: a trusted user can act as root
+  # through the Nix daemon, so this installer must never suggest adding anyone.
+  # nix-optimise.timer only dedups the store; it does not collect garbage.
+  systemctl is-active nix-gc.timer >/dev/null 2>&1 \
+    || { warn "system nix-gc.timer is not active (nix-optimise.timer alone does not collect garbage)"; need_rebuild=1; }
+  cur_timezone="$(bash "$REPO_ROOT/ops/detect-timezone.sh" 2>/dev/null || true)"
   [[ "$cur_timezone" == "Europe/London" ]] \
     || { warn "system time zone is ${cur_timezone:-unknown}, not Europe/London"; need_rebuild=1; }
 
@@ -334,7 +335,7 @@ if is_nixos; then
     log "Then open a NEW terminal (reboot only if a kernel/driver changed)."
     log "Confirm:  sys-readiness   (or: nixos-rebuild list-generations | head ; systemctl --failed)"
   else
-    log "System layer already active (fish login shell + trusted-users + GC timer). Nothing to do."
+    log "System layer already active (fish login shell + GC timer + time zone). Nothing to do."
   fi
 
   step "Maintenance"

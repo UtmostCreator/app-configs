@@ -2,8 +2,8 @@
 #
 # Copy this file to home/.chezmoidata/projects.yaml and fill in real
 # values. The real file is gitignored. The committed scripts under
-# ops/projects/ read this via `bash ops/projects/detect-project.sh`,
-# which sources $HOME/.config/projects/config.yaml (chezmoi-rendered).
+# ops/projects/ read it through ops/projects/lib.sh (proj_ids, proj_field),
+# from $HOME/.config/projects/config.yaml (chezmoi-rendered).
 #
 # Schema is intentionally flat: id -> definition. Add a project by
 # adding a key under `projects:` and its id to `project_order:`.

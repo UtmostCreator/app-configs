@@ -24,6 +24,11 @@ if not status is-interactive
     exit 0
 end
 
+# ─── Greeting ───────────────────────────────────────────────────────────────
+# Empty greeting: no "Welcome to fish" banner on every new terminal. Nothing
+# else owns this (programs.fish is not enabled in nix/).
+set -g fish_greeting
+
 # ─── PATH ───────────────────────────────────────────────────────────────────
 # fish_add_path is idempotent and prepends in front of the system path.
 fish_add_path -g $HOME/.local/bin

@@ -867,6 +867,33 @@ if [[ "$MODE" == "apply" ]]; then
   HM_PATH_BEFORE="$(profile_target "$HM_PROFILE")"
   if [[ -n "$HM_GEN_BEFORE" ]]; then meta_put hm_gen_before "$HM_GEN_BEFORE" || meta_failed hm_gen_before; fi
   if [[ -n "$HM_PATH_BEFORE" ]]; then meta_put hm_path_before "$HM_PATH_BEFORE" || meta_failed hm_path_before; fi
+
+  # GC roots: the closures a rollback needs must survive nix-gc.timer,
+  # sys-cleanup --gc and nix-collect-garbage while this run is the last one.
+  # Without --indirect on purpose: the symlink is the root, and Nix registers
+  # it for us. Rooting is fail-closed, before anything is changed. Moving
+  # SYS_UPDATE_STATE_DIR afterwards leaves these roots dangling.
+  GCROOT_DIR="$STATE_DIR/gcroots/$RUN_ID"
+  # root_closure <label> <store path> <root name> <meta key>
+  root_closure() {
+    if have nix-store && mkdir -p "$GCROOT_DIR" && run_step "gc root" nix-store --realise "$2" --add-root "$GCROOT_DIR/$3"; then
+      meta_put "$4" "$GCROOT_DIR/$3" || meta_failed "$4"
+      ui_ok "gc root" "$1 pinned"
+    else
+      ui_err "gc root" "cannot pin the current $1 — refusing to apply without a way back"
+      exit 1
+    fi
+  }
+  if [[ -n "$HM_PATH_BEFORE" ]]; then root_closure "Home Manager generation" "$HM_PATH_BEFORE" hm gcroot
+  else meta_put gcroot none || meta_failed gcroot; fi
+  if [[ "$HOST_PROFILE" == macos ]]; then
+    DARWIN_LINK="${SYS_UPDATE_DARWIN_SYSTEM_LINK:-/run/current-system}"
+    DARWIN_BEFORE="$(readlink -f -- "$DARWIN_LINK" 2>/dev/null || true)"
+    if [[ -n "$DARWIN_BEFORE" && -d "$DARWIN_BEFORE" ]]; then
+      meta_put darwin_system_before "$DARWIN_BEFORE" || meta_failed darwin_system_before
+      root_closure "darwin system" "$DARWIN_BEFORE" darwin darwin_gcroot
+    fi
+  fi
   HM_PKGS_BEFORE="$(packages_in_profile "$HM_PROFILE")"
   PROFILE_PKGS_BEFORE="$(packages_in_profile "$HOME/.nix-profile")"
   if MISE_BEFORE="$(mise_versions)"; then MISE_OK=1; fi
@@ -932,6 +959,15 @@ if [[ "$MODE" == "apply" ]]; then
       [[ -e "$old_file" ]] && rm -f -- "$old_file"
     done
     rm -rf -- "${STATE_DIR:?}/gcroots/$old_id"
+  done
+  # GC roots also expire with age (the same KEEP_DAYS as sys-cleanup), except
+  # the one of the run last-run now points at.
+  GCROOT_KEEP_DAYS="${KEEP_DAYS:-14}"
+  [[ "$GCROOT_KEEP_DAYS" =~ ^[0-9]+$ ]] || GCROOT_KEEP_DAYS=14
+  mapfile -t OLD_ROOTS < <(find "$STATE_DIR/gcroots" -mindepth 1 -maxdepth 1 -type d \
+    -mtime "+$((10#$GCROOT_KEEP_DAYS))" ! -name "$RUN_ID" 2>/dev/null)
+  for old_root in ${OLD_ROOTS[@]+"${OLD_ROOTS[@]}"}; do
+    [[ -n "$old_root" ]] && rm -rf -- "$old_root"
   done
   PHASE=prepare
 fi
@@ -1409,6 +1445,8 @@ if [[ "$MODE" == "apply" ]]; then PHASE=cleanup; fi
 if [[ "$DO_CLEANUP" == 1 && -x "$REPO_ROOT/ops/cleanup.sh" ]]; then
   ui_section "Cleanup"
   CLEAN_ARGS=(--apply --yes); [[ "$DO_GC" == 1 ]] && CLEAN_ARGS+=(--gc)
+  # The generation this run replaced is the rollback target: cleanup keeps it.
+  [[ "$HM_GEN_BEFORE" =~ ^[0-9]+$ ]] && CLEAN_ARGS+=(--protect-hm-generation "$HM_GEN_BEFORE")
   if run_step "cleanup" bash "$REPO_ROOT/ops/cleanup.sh" "${CLEAN_ARGS[@]}"; then
     if [[ "$MODE" == "apply" ]]; then
       RECLAIMED="$(grep -oE 'freed [0-9.]+ [KMG]iB' "$UI_LAST_LOG" | tail -1)"
@@ -1421,6 +1459,13 @@ if [[ "$DO_CLEANUP" == 1 && -x "$REPO_ROOT/ops/cleanup.sh" ]]; then
 elif [[ "$DO_CLEANUP" != 1 ]]; then
   ui_section "Cleanup"
   ui_skip "cleanup" "disabled (NO_CLEANUP / --no-cleanup)"
+fi
+
+# Whatever cleanup (or an earlier GC) did, say if the rollback target is gone.
+if [[ "$MODE" == "apply" && -n "$HM_PATH_BEFORE" && ! -e "$HM_PATH_BEFORE/activate" ]]; then
+  ui_warn "rollback" "the previous generation is no longer in the store; sys-update rollback cannot restore it"
+  ui_note warn rollback "the previous Home Manager generation was collected; rollback is not possible"
+  meta_put rollback_handle lost || true
 fi
 
 # ── 7. SUMMARY ──────────────────────────────────────────────────────────────

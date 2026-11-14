@@ -5,6 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/config.sh"
 
+# shellcheck source=ops/projects/lib.sh
+source "$WS_PROJECTS_ROOT_DIR/lib.sh"
+ws_no_args ws-fix "$@"
+
 VERIFY_SCRIPT="${VERIFY_SCRIPT:-$WS_SCRIPT_VERIFY_WORKSPACE}"
 
 command -v jq >/dev/null 2>&1 || { echo "Missing required command: jq" >&2; exit 127; }

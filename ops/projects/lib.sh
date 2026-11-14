@@ -34,6 +34,23 @@ require_cmd() {
   done
 }
 
+# ws_no_args <command-name> "$@": guard for scripts that take no arguments.
+# `--help`/`-h` prints usage and exits 0; any other argument exits 2. Call it
+# before the script does anything, so a mistyped `ws-stop --help` never acts.
+ws_no_args() {
+  local name="$1"
+  shift
+  [[ $# -eq 0 ]] && return 0
+  case "$1" in
+    -h|--help)
+      printf 'Usage: %s\nTakes no arguments.\n' "$name"
+      exit 0
+      ;;
+  esac
+  printf '%s: unknown argument(s): %s\nUsage: %s\n' "$name" "$*" "$name" >&2
+  exit 2
+}
+
 proj_have_cmd() {
   command -v "$1" >/dev/null 2>&1
 }

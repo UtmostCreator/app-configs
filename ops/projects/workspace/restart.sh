@@ -5,6 +5,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/config.sh"
 
+# shellcheck source=ops/projects/lib.sh
+source "$WS_PROJECTS_ROOT_DIR/lib.sh"
+if [[ "${1:-}" != "--worker" ]]; then
+  ws_no_args ws-restart "$@"
+fi
+
 SESSION="$WS_TMUX_SESSION"
 SELF_PATH="$WS_SCRIPT_RESTART"
 OPEN_WORKSPACE_SCRIPT="$WS_SCRIPT_OPEN_WORKSPACE"

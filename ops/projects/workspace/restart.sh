@@ -23,7 +23,7 @@ warn() {
 wait_for_session_shutdown() {
   local waited=0
 
-  while tmux has-session -t "$SESSION" 2>/dev/null; do
+  while tmux has-session -t "=$SESSION" 2>/dev/null; do
     if (( waited >= SHUTDOWN_TIMEOUT_SECONDS )); then
       return 1
     fi
@@ -73,16 +73,16 @@ restart_from_tmux() {
   local helper_session="${SESSION}-restart-helper-$$"
 
   log "Preparing tmux-assisted restart..."
-  tmux kill-session -t "$helper_session" 2>/dev/null || true
+  tmux kill-session -t "=$helper_session" 2>/dev/null || true
   tmux new-session -d -s "$helper_session" -n restart
-  tmux switch-client -t "$helper_session"
+  tmux switch-client -t "=$helper_session"
 
   stop_workspace
 
   log "Starting backend workspace and switching client to $SESSION..."
   bash "$OPEN_WORKSPACE_SCRIPT"
 
-  tmux kill-session -t "$helper_session" 2>/dev/null || true
+  tmux kill-session -t "=$helper_session" 2>/dev/null || true
 }
 
 if [[ "${1:-}" == "$WORKER_FLAG" ]]; then
@@ -100,7 +100,7 @@ if [[ ! -f "$STOP_WORKSPACE_SCRIPT" ]]; then
   exit 1
 fi
 
-if tmux has-session -t "$SESSION" 2>/dev/null; then
+if tmux has-session -t "=$SESSION" 2>/dev/null; then
   if [[ -n "${TMUX:-}" ]]; then
     restart_from_tmux
     exit 0

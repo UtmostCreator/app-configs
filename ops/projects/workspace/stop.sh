@@ -52,12 +52,12 @@ stop_stack() {
 }
 
 stop_tmux_session() {
-  if tmux has-session -t "$SESSION" 2>/dev/null; then
+  if tmux has-session -t "=$SESSION" 2>/dev/null; then
     # Detach all clients attached to this session BEFORE killing it.
     # Without this, tmux silently switches the terminal to another active session
     # instead of returning you to the normal shell.
-    tmux detach-client -s "$SESSION" 2>/dev/null || true
-    tmux kill-session -t "$SESSION"
+    tmux detach-client -s "=$SESSION" 2>/dev/null || true
+    tmux kill-session -t "=$SESSION"
     log "$SESSION stopped"
   else
     log "$SESSION is not running"

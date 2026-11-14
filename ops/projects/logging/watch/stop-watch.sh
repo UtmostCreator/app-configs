@@ -9,7 +9,7 @@ SESSION="$WS_TMUX_SESSION"
 PANE_TITLES=("APP-logs" "APP-LOG" "ws-log")
 PROCESS_PATTERN="just --justfile $WS_BACKEND_JUSTFILE log-bat"
 
-if tmux has-session -t "$SESSION" 2>/dev/null; then
+if tmux has-session -t "=$SESSION" 2>/dev/null; then
     for title in "${PANE_TITLES[@]}"; do
         pane_id="$(tmux list-panes -a -F '#{session_name}	#{pane_title}	#{pane_id}' | awk -F '	' -v session="$SESSION" -v t="$title" '$1 == session && $2 == t { print $3; exit }')"
         if [ -n "$pane_id" ]; then

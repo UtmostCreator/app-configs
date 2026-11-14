@@ -4,7 +4,12 @@
 # Defaults to --dry-run: a strictly read-only plan. Dry-run only inspects
 # (host detection, `doctor.sh --preflight`, which tools are on PATH) and prints
 # the commands it would run. It never installs, sources, previews, initialises
-# chezmoi or runs `nix flake check`.
+# chezmoi or runs `nix flake check`. When Nix is already installed it does run
+# two read-only Nix queries for the login-user check (ops/lib/preflight.sh):
+# `nix show-config` and `nix eval --raw -f nix/vars/default.nix username`; if
+# this Nix lacks nix-command or flakes they are enabled for that process only
+# (NIX_CONFIG), never written to nix.conf. Without Nix the check falls back to
+# a sed match of nix/vars/default.nix and stops on a mismatch.
 #
 # Only the command line enables apply; the MODE environment variable and CI
 # are ignored. Apply needs explicit approval:

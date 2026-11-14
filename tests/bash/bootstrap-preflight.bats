@@ -23,8 +23,17 @@ setup() {
         cat >"$STUBS/$tool" <<STUB
 #!/usr/bin/env bash
 # The login-user preflight reads the username with \`nix eval --raw -f <file> username\`
-# (read-only, so it is answered from the file and not recorded as a call).
+# after \`nix show-config\` (both read-only, so they are answered here and not
+# recorded as calls). Like a real Nix, eval needs nix-command: from
+# NIX_STUB_FEATURES (what show-config reports, default both) or NIX_CONFIG.
+if [[ "$tool" == nix && "\${1:-}" == show-config ]]; then
+    printf 'experimental-features = %s\\n' "\${NIX_STUB_FEATURES-nix-command flakes}"; exit 0
+fi
 if [[ "$tool" == nix && "\${1:-}" == eval ]]; then
+    case "\${NIX_STUB_FEATURES-nix-command flakes} \${NIX_CONFIG:-}" in
+        *nix-command*) ;;
+        *) echo "error: experimental Nix feature 'nix-command' is disabled" >&2; exit 1 ;;
+    esac
     sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\\1/p' "\$4"; exit 0
 fi
 printf '%s %s\n' "$tool" "\$*" >> "\$CALLS"
@@ -55,6 +64,17 @@ apply() { run env PATH="$STUBS:$PATH" HOST_PROFILE=linux-desktop bash "$FAKE/ops
     [ "$status" -eq 0 ]
     refute_grep '^chezmoi init' "$CALLS"
     [[ "$output" == *"would: chezmoi init"* ]]
+}
+
+@test "bootstrap enables nix-command for its username eval on a Nix that lacks it" {
+    # show-config reports no features and eval refuses without nix-command, as a
+    # real Nix does. Bootstrap must turn the features on for this run (not
+    # edit nix.conf) before it asks for the username.
+    run env PATH="$STUBS:$PATH" NIX_STUB_FEATURES="" HOST_PROFILE=linux-desktop \
+        bash "$REPO_ROOT/ops/bootstrap.sh" --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"nix-command and flakes are not both enabled"* ]]
+    [[ "$output" != *"nix eval failed"* ]]
 }
 
 @test "WSL1 is refused with the conversion command, before anything else" {

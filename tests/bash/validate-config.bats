@@ -392,7 +392,7 @@ collide() {
 
 # --- --eval: the policy on the evaluated config (rule 13) ------------------
 
-GOOD_EVAL='{"packages":["jq","home-manager"],"programs":["home-manager","man","vicinae"],"services":["syncthing","vicinae"],"xdg":["flameshot/flameshot.ini","systemd/user/x.service","nix/nix.conf","dconf/.keep"]}'
+GOOD_EVAL='{"packages":["jq","home-manager"],"programs":["home-manager","man","vicinae"],"services":["syncthing","vicinae"],"xdg":["flameshot/flameshot.ini","systemd/user/x.service","nix/nix.conf","dconf/.keep"],"files":[".local/share/x",".config/flameshot/flameshot.ini",".config/systemd/user/x.service",".config/nix/nix.conf",".config/dconf/.keep"]}'
 
 # eval_with <json>: stub nix to print the JSON for every profile; calls are logged
 eval_with() {
@@ -413,12 +413,12 @@ eval_with() {
 @test "--eval: violations in the evaluated config fail" {
     local json
     local -a bad=(
-        '{"packages":["jq","mise"],"programs":[],"services":[],"xdg":[]}'
-        '{"packages":["direnv"],"programs":[],"services":[],"xdg":[]}'
-        '{"packages":["home-manager"],"programs":[],"services":[],"xdg":[]}'
-        '{"packages":[],"programs":["git"],"services":[],"xdg":[]}'
-        '{"packages":[],"programs":[],"services":["foo"],"xdg":[]}'
-        '{"packages":[],"programs":[],"services":[],"xdg":["fish/config.fish"]}'
+        '{"packages":["jq","mise"],"programs":[],"services":[],"xdg":[],"files":[]}'
+        '{"packages":["direnv"],"programs":[],"services":[],"xdg":[],"files":[]}'
+        '{"packages":["home-manager"],"programs":[],"services":[],"xdg":[],"files":[]}'
+        '{"packages":[],"programs":["git"],"services":[],"xdg":[],"files":[]}'
+        '{"packages":[],"programs":[],"services":["foo"],"xdg":[],"files":[]}'
+        '{"packages":[],"programs":[],"services":[],"xdg":["fish/config.fish"],"files":[]}'
     )
     for json in "${bad[@]}"; do
         eval_with "$json"
@@ -514,4 +514,361 @@ eval_with() {
     PATH="$STUBS:$PATH" run bash "$R/ops/validate-config.sh" --eval
     [ "$status" -ne 0 ]
     [[ "$output" == *"attribute boom missing"* ]]
+}
+
+# --- T-0014 F7: home.file must not declare a chezmoi-owned path -------------
+
+# chezsrc <path under home/>: a tracked chezmoi source file
+chezsrc() { mkdir -p "$(dirname "$R/home/$1")"; printf 'x\n' >"$R/home/$1"; }
+
+@test "rule 12: home.file on a chezmoi-owned path fails in every spelling" {
+    local body
+    local -a bodies=(
+        'home.file.".zshrc".text = "x";'
+        'home.file.".zshrc" = { text = "x"; };'
+        'home.file = { ".zshrc".text = "x"; };'
+        'home.file = { ".zshrc" = { source = ./x; }; };'
+        'home = { file = { ".zshrc".source = ./x; }; };'
+        'home.file = lib.mkMerge [ { ".zshrc".text = "x"; } ];'
+        'home.file."./.zshrc".text = "x";'
+        'home.file."zshrc-link".text = "x"; home.file."zshrc-link".target = ".zshrc";'
+        'home.file."zshrc-link" = { target = ".zshrc"; text = "x"; };'
+        'home.file.".zshrc".text = "x"; # trailing comment'
+    )
+    chezsrc dot_zshrc
+    for body in "${bodies[@]}"; do
+        nixmod ok.nix "$body"
+        validate
+        [ "$status" -ne 0 ] || { echo "not rejected: $body"; return 1; }
+        [[ "$output" == *"home.file.\".zshrc\""*"collides with chezmoi source home/dot_zshrc"* ]] || { echo "unreported: $body: $output"; return 1; }
+    done
+}
+
+@test "rule 12: home.file collides with every chezmoi source spelling and nested targets" {
+    local src
+    for src in dot_zshrc private_dot_zshrc dot_zshrc.tmpl executable_dot_zshrc.tmpl; do
+        rm -rf "$R/home"/*zshrc*
+        chezsrc "$src"
+        nixmod ok.nix 'home.file.".zshrc".text = "x";'
+        validate
+        [ "$status" -ne 0 ] || { echo "not rejected: $src"; return 1; }
+        [[ "$output" == *"collides with chezmoi source home/$src"* ]] || { echo "unreported: $src: $output"; return 1; }
+    done
+    rm -rf "$R/home"/*zshrc*
+    chezsrc private_dot_config/fish/config.fish
+    nixmod ok.nix 'home.file.".config/fish/config.fish".text = "x";'
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"collides with chezmoi source home/private_dot_config/fish/config.fish"* ]]
+}
+
+@test "rule 12: a home.file directory that contains a chezmoi target collides" {
+    chezsrc private_dot_ssh/config
+    nixmod ok.nix 'home.file.".ssh".source = ./ssh;'
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"home.file.\".ssh\""*"collides"* ]]
+}
+
+@test "rule 12: an xdg.configFile target under private_dot_config is a chezmoi target too" {
+    chezsrc private_dot_config/mimeapps.list
+    nixmod ok.nix 'xdg.configFile."mimeapps.list".text = "x";'
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"\"mimeapps.list\""*"collides"* ]]
+}
+
+@test "rule 12: valid home.file declarations pass and are reported as checked" {
+    chezsrc dot_zshrc
+    chezsrc dot_zshrc.d/extra.zsh
+    chezsrc run_once_setup.sh
+    chezsrc .chezmoiignore
+    nixmod ok.nix 'home.file.".zsh".text = "x";
+  home.file.".zshrc2".text = "x";
+  home.file.".local/share/foo".text = "x";
+  # home.file.".zshrc".text = "commented out";
+  programs.home-manager.enable = true;
+  home.sessionVariables.NOTE = "home.file.\".zshrc\".text = x";'
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"[OK]   no literal home.file target is also a live chezmoi source"* ]]
+}
+
+@test "rule 12: a home.file in a NixOS module is not a Home Manager declaration" {
+    chezsrc dot_zshrc
+    mkdir -p "$R/nix/modules/nixos"
+    printf '{ ... }:\n{\n  home.file.".zshrc".text = "x";\n}\n' >"$R/nix/modules/nixos/x.nix"
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+@test "rule 12: dynamic home.file declarations are a NOTE, never an [OK]" {
+    local body
+    local -a bodies=(
+        'home.file."${name}".text = "x";'
+        'home.file."${config.home.homeDirectory}/x".text = "x";'
+        'home.file = lib.mapAttrs (n: v: { text = v; }) { a = "1"; };'
+        'home.file = files;'
+        'home.file = { ".a".text = "1"; } // extra;'
+        'home.file.".a".target = "${name}";'
+        'home.file.".a" = { target = lib.mkForce ".zshrc"; text = "x"; };'
+        'home.file.zsh = base;'
+        'home.file.zsh = mkZsh ".zshrc";'
+        'home.file = mkLinks { zsh = { text = "x"; }; };'
+        'home.file = lib.attrsets.mapAttrs'"'"' (n: v: lib.nameValuePair ".zshrc" v) { a = { text = "x"; }; };'
+        'home.file = pkgs.lib.genAttrs [ ".zshrc" ] (n: { text = "x"; });'
+        'home.file.zsh = { inherit target; };'
+        'home.file.zsh = { text = "x"; } // base;'
+        'home.file = lib.mkMerge [ base { ".a".text = "x"; } ];'
+        'home.file = lib.mkIf (builtins.elem 1 [ 1 ]) (mkLinks { a = 1; });'
+        'home.file = lib.mkMerge [ { ".a".text = "x"; } (lib.mkIf true extra) ];'
+        'home.file = (mkLinks [ ".zshrc" ]);'
+        'home.file.zsh = lib.mkMerge [ { text = "x"; } (base) ];'
+        'home.file = { inherit zshrc; };'
+        'home.file = { inherit (s) ".zshrc"; };'
+        'home.file.zsh = { inherit (s) target; };'
+        'home.file = { ".a".text = "x"; }.x;'
+        'home.file = rec { ".a".text = "x"; };'
+        'home.file = if c then { ".a".text = "x"; } else { };'
+        'home.file = lib.mkIf (c) (lib.mkMerge [ { ".a".text = "x"; } ]);'
+        'home.file = lib.mkIf a b { ".a".text = "x"; };'
+        'home.file = lib.mkMerge [ { ".a".text = "x"; } ] ++ more;'
+        'home.file = { ".a" = foo { text = "x"; }; };'
+        'home.file.zsh = { text = "x"; }.y;'
+        'home.file.zsh = lib.mkIf c (lib.mkMerge [ { text = "x"; } ]);'
+    )
+    chezsrc dot_zshrc
+    for body in "${bodies[@]}"; do
+        nixmod ok.nix "$body"
+        validate
+        [ "$status" -eq 0 ] || { echo "rejected: $body: $output"; return 1; }
+        [[ "$output" == *"[NOTE] "*"home.file"*"--eval"* ]] || { echo "no note: $body: $output"; return 1; }
+        [[ "$output" != *"[OK]   no literal home.file target"* ]] || { echo "verified: $body"; return 1; }
+    done
+}
+
+@test "rule 12: a let-bound target option behind a bare home.file entry is a NOTE" {
+    chezsrc dot_zshrc
+    printf '{ lib, ... }:\nlet\n  base = { target = ".zshrc"; };\nin\n{\n  home.file.zsh = base;\n}\n' >"$R/nix/modules/home/ok.nix"
+    validate
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"[NOTE] "*'home.file."zsh" = base'* ]]
+    [[ "$output" != *"[OK]   no literal home.file target"* ]]
+}
+
+@test "rule 12: wrapped attrset literals stay decidable" {
+    chezsrc dot_zshrc
+    local body
+    local -a bodies=(
+        'home.file = lib.mkIf config.x.enable { ".zshrc".text = "x"; };'
+        'home.file = lib.mkMerge [ { ".zshrc".text = "x"; } { ".b".text = "y"; } ];'
+        'home.file = lib.mkIf (a && !b) { ".zshrc".text = "x"; };'
+        'home.file = lib.mkOverride 90 { ".zshrc".text = "x"; };'
+        'home = { packages = with pkgs; [ jq ]; file = { ".zshrc".text = "x"; }; };'
+        'home.file = lib.optionalAttrs pkgs.stdenv.isLinux { ".zshrc".text = "x"; };'
+        'home.file.".zshrc" = lib.mkForce { text = "x"; };'
+        'home.file = lib.mkDefault { ".zshrc" = { text = "x"; }; };'
+    )
+    for body in "${bodies[@]}"; do
+        nixmod ok.nix "$body"
+        validate
+        [ "$status" -ne 0 ] || { echo "not rejected: $body"; return 1; }
+        [[ "$output" == *"collides with chezmoi source home/dot_zshrc"* ]] || { echo "unreported: $body: $output"; return 1; }
+        [[ "$output" != *"[NOTE]"*"home"* ]] || { echo "needless note: $body: $output"; return 1; }
+    done
+}
+
+@test "rule 12: home bound to anything but an attrset literal hides home.file, so it is a NOTE" {
+    local body
+    local -a bodies=(
+        'home = base;'
+        'home = lib.mkIf c base;'
+        'config.home = base;'
+        'home = { packages = [ ]; } // extra;'
+        'home = lib.mkMerge [ base ];'
+        'home = (mk { });'
+    )
+    chezsrc dot_zshrc
+    for body in "${bodies[@]}"; do
+        nixmod ok.nix "$body"
+        validate
+        [ "$status" -eq 0 ] || { echo "rejected: $body: $output"; return 1; }
+        [[ "$output" == *"[NOTE] "*": home = "*"--eval"* ]] || { echo "no note: $body: $output"; return 1; }
+        [[ "$output" != *"[OK]   no literal home.file target"* ]] || { echo "verified: $body"; return 1; }
+    done
+    nixmod ok.nix 'home = { stateVersion = "24.05"; packages = with pkgs; [ jq ]; };'
+    validate
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"[NOTE]"* ]]
+    [[ "$output" == *"[OK]   no literal home.file target"* ]]
+}
+
+@test "rule 12: a let-bound home.file attrset is a NOTE" {
+    chezsrc dot_zshrc
+    printf '{ lib, ... }:\nlet\n  files = { ".zshrc".text = "x"; };\nin\n{\n  home.file = files;\n}\n' >"$R/nix/modules/home/ok.nix"
+    validate
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"[NOTE] "*"home.file = files"* ]]
+}
+
+@test "rule 12: home.file on a chezmoi path passes when .chezmoiignore covers it on every Linux host" {
+    chezsrc dot_zshrc
+    nixmod ok.nix 'home.file.".zshrc".text = "x";'
+    printf '{{- if ne .chezmoi.os "darwin" }}\n.zshrc\n{{- end }}\n' >"$R/home/.chezmoiignore"
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+# --- T-0014 F5: host-gated .chezmoiignore, decided by rendering it ----------
+
+# ignore_case <ignore file body>: flameshot collision plus that .chezmoiignore
+ignore_case() { collide flameshot.ini; printf '%b' "$1" >"$R/home/.chezmoiignore"; validate; }
+
+@test "rule 12: host-gated ignores that make Linux ownership unambiguous are accepted" {
+    local body
+    local -a ok=(
+        '{{ if ne .chezmoi.os "darwin" }}\n.config/flameshot\n{{ end }}\n'
+        '{{ if eq .chezmoi.os "linux" }}\n.config/flameshot/**\n{{ end }}\n'
+        '{{ if not (eq .chezmoi.os "darwin") }}\n.config/flameshot\n{{ end }}\n'
+        '{{ if eq .chezmoi.os "darwin" }}\n{{ else }}\n.config/flameshot\n{{ end }}\n'
+        '{{ if and (ne .chezmoi.os "darwin") true }}\n.config/flameshot/flameshot.ini\n{{ end }}\n'
+        '.config/flameshot/*.ini\n'
+        '.config/flameshot/[f]lameshot.ini\n'
+        '.config/flameshot/{flameshot,x}.ini\n'
+        '.config/flameshot\n!.config/flameshot/flameshot.ini\n'
+        '{{- $p := default "linux-desktop" .hostProfile -}}\n{{ if or (eq $p "wsl") (ne $p "wsl") }}\n.config/flameshot\n{{ end }}\n'
+        '.config/*\n'
+    )
+    for body in "${ok[@]}"; do
+        ignore_case "$body"
+        [ "$status" -eq 0 ] || { echo "rejected: $body: $output"; return 1; }
+    done
+}
+
+@test "rule 12: ignores that leave Linux ownership ambiguous or unset fail and name the hosts" {
+    local body
+    local -a bad=(
+        '{{ if eq .chezmoi.os "darwin" }}\n.config/flameshot\n{{ end }}\n'
+        '{{ if eq .hostProfile "wsl" }}\n.config/flameshot\n{{ end }}\n'
+        '{{ if not .gui }}\n.config/flameshot\n{{ end }}\n'
+        '{{ if and (ne .chezmoi.os "darwin") .gui }}\n.config/flameshot\n{{ end }}\n'
+        '.config/flameshot\n!.config/flameshot\n'
+        '.config/fl**.ini\n'
+        '.config/flameshot/*\n!.config/flameshot/[f]lameshot.ini\n'
+        '.config/flameshot/*\n!.config/flameshot/{flameshot,x}.ini\n'
+        '.config/flameshot/other.ini\n'
+        '# .config/flameshot\n'
+    )
+    for body in "${bad[@]}"; do
+        ignore_case "$body"
+        [ "$status" -ne 0 ] || { echo "not rejected: $body"; return 1; }
+        [[ "$output" == *"collides with chezmoi source home/dot_config/flameshot/flameshot.ini; not ignored on: "* ]] || { echo "unreported: $body: $output"; return 1; }
+    done
+    ignore_case '{{ if eq .hostProfile "wsl" }}\n.config/flameshot\n{{ end }}\n'
+    [[ "$output" == *"linux/linux-desktop/gui=true"* ]]
+    [[ "$output" != *"linux/wsl/gui"* ]]
+}
+
+@test "rule 12: an ignore file that cannot be rendered fails closed" {
+    ignore_case '{{ if }}\n.config/flameshot\n'
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"chezmoi managed failed for home/.chezmoiignore"* ]]
+    ignore_case '{{ if .personal.laptop }}\n.config/flameshot\n{{ end }}\n.config/flameshot\n'
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"chezmoi managed failed for home/.chezmoiignore"* ]]
+}
+
+@test "rule 12: no [OK] is printed for the collision rules when chezmoi could not decide" {
+    ignore_case '{{ if }}\n'
+    [ "$status" -ne 0 ]
+    [[ "$output" != *"[OK]   no xdg.configFile target is also"* ]]
+    [[ "$output" != *"[OK]   no literal home.file target"* ]]
+}
+
+# nochezmoi_path: a PATH with the tools the validator needs, but no chezmoi
+nochezmoi_path() {
+    local t
+    NOCHEZ="$BATS_TEST_TMPDIR/nochezmoi"
+    mkdir -p "$NOCHEZ"
+    for t in git awk tr find sort sed mktemp rm cat mv tail grep wc dirname; do ln -s "$(command -v $t)" "$NOCHEZ/$t"; done
+}
+
+@test "rule 12: a missing chezmoi cannot decide an ownership question, so it fails" {
+    collide flameshot.ini
+    printf '{{ if ne .chezmoi.os "darwin" }}\n.config/flameshot\n{{ end }}\n' >"$R/home/.chezmoiignore"
+    git -C "$R" add -A
+    nochezmoi_path
+    PATH="$NOCHEZ" run "$(command -v bash)" "$R/ops/validate-config.sh"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"chezmoi not found"* ]]
+}
+
+@test "rule 12: no chezmoi is needed when nothing collides" {
+    git -C "$R" add -A
+    nochezmoi_path
+    PATH="$NOCHEZ" run "$(command -v bash)" "$R/ops/validate-config.sh"
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+@test "rule 12: deciding ownership never reads the caller's chezmoi config, HOME or XDG dirs" {
+    collide flameshot.ini
+    printf '{{ if ne .chezmoi.os "darwin" }}\n.config/flameshot\n{{ end }}\n' >"$R/home/.chezmoiignore"
+    local d
+    for d in h/.config/chezmoi h/xdg/chezmoi h/.local/share/chezmoi; do
+        mkdir -p "$BATS_TEST_TMPDIR/$d"
+        printf 'this is [not valid toml\n' >"$BATS_TEST_TMPDIR/$d/chezmoi.toml"
+    done
+    printf 'sourceDir = "/nonexistent"\n' >"$BATS_TEST_TMPDIR/h/.chezmoi.toml"
+    git -C "$R" add -A
+    find "$BATS_TEST_TMPDIR/h" | LC_ALL=C sort >"$BATS_TEST_TMPDIR/before.txt"
+    HOME="$BATS_TEST_TMPDIR/h" XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/h/.config" XDG_CONFIG_DIRS="$BATS_TEST_TMPDIR/h/xdg" \
+        run bash "$R/ops/validate-config.sh"
+    find "$BATS_TEST_TMPDIR/h" | LC_ALL=C sort >"$BATS_TEST_TMPDIR/after.txt"
+    diff "$BATS_TEST_TMPDIR/before.txt" "$BATS_TEST_TMPDIR/after.txt" || return 1
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+# --- T-0014 F7/F5 in --eval: evaluated home.file targets, per-profile hosts --
+
+@test "--eval: an evaluated home.file target that is a chezmoi source fails" {
+    chezsrc dot_zshrc
+    eval_with '{"packages":[],"programs":[],"services":[],"xdg":[],"files":[".zshrc"]}'
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"home.file.\".zshrc\""*"collides with chezmoi source home/dot_zshrc"* ]]
+}
+
+@test "--eval: a let-bound home.file declaration is a NOTE in text mode and decided by --eval" {
+    chezsrc dot_zshrc
+    printf '{ lib, ... }:\nlet\n  files = { ".zshrc".text = "x"; };\nin\n{\n  home.file = files;\n}\n' >"$R/nix/modules/home/ok.nix"
+    eval_with "$GOOD_EVAL"
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"[NOTE] "*"home.file = files"* ]]
+    eval_with '{"packages":[],"programs":[],"services":[],"xdg":[],"files":[".zshrc"]}'
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"collides with chezmoi source home/dot_zshrc"* ]]
+}
+
+@test "--eval: ownership is judged on each profile's own host (macos is darwin)" {
+    chezsrc dot_zshrc
+    printf '{{ if ne .chezmoi.os "darwin" }}\n.zshrc\n{{ end }}\n' >"$R/home/.chezmoiignore"
+    eval_with '{"packages":[],"programs":[],"services":[],"xdg":[],"files":[".zshrc"]}'
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"darwin/macos/gui="* ]]
+    [[ "$output" != *"linux/"*"gui="* ]]
+    VALIDATE_EVAL_PROFILES="linux-desktop wsl" eval_with '{"packages":[],"programs":[],"services":[],"xdg":[],"files":[".zshrc"]}'
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+}
+
+@test "--eval: output without a files list is a failed eval" {
+    eval_with '{"packages":[],"programs":[],"services":[],"xdg":[]}'
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"nix eval failed"* ]]
+}
+
+@test "--eval: one collision of an xdg.configFile target is reported once, not again via home.file" {
+    mkdir -p "$R/home/dot_config/flameshot"
+    printf '[General]\n' >"$R/home/dot_config/flameshot/flameshot.ini"
+    VALIDATE_EVAL_PROFILES=wsl eval_with "$GOOD_EVAL"
+    [ "$status" -ne 0 ]
+    [ "$(grep -c 'collides with chezmoi source' <<<"$output")" -eq 1 ]
 }

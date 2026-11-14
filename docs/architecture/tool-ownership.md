@@ -25,6 +25,23 @@ needs an allowlist edit in `ops/validate-config.sh` (tracked as T-0014) plus a
 row in this document. A new entry in an also-permitted family needs a row
 only.
 
+`ops/validate-config.sh` enforces this: a Home Manager `xdg.configFile` or
+`home.file` target that is also a chezmoi target (any tracked file under
+`home/`) fails unless `chezmoi managed` no longer lists the chezmoi copy, with
+`home/.chezmoiignore` evaluated by chezmoi itself per host (hermetic scratch
+source; template data only for `.chezmoi.os`, `hostProfile` and `gui`). Both
+`gui` values must be ignored for each profile: all Linux profiles
+(linux-desktop, linux-cli, wsl) in the default run, the evaluated profile's own
+host with `--eval`. In the default (text) run a `home.file` declaration is
+decided only when it is one attrset literal `{ ... }`, optionally behind a
+single wrapper (`mkIf <cond>`, `optionalAttrs <cond>`, `mkOverride <n>`,
+`mkDefault`, `mkForce`, `mkBefore`, `mkAfter`), or `mkMerge [ ... ]` of bare
+literals, with literal keys and none of `inherit`, `//`, `let`, `with`, `rec`,
+`import`, `or`, attribute selection or parentheses outside a wrapper's
+condition. Anything else, and any `home` or `config.home` bound to something
+other than an attrset literal, is printed as a NOTE and is only decided by
+`--eval`; the default run then prints no `[OK]` for the `home.file` rule.
+
 Known exceptions to the rule, all follow-ups:
 
 - `flameshot/flameshot.ini` is declared by both owners, on different hosts.

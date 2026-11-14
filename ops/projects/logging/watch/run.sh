@@ -308,12 +308,35 @@ create_session() {
   configure_session "$session" "$instance"
 }
 
+# session_failed <session>: a viewer has already reported FAILED. Viewers
+# never recover from that on their own, so waiting longer cannot help.
+session_failed() {
+  local session="$1"
+  local instance
+  local role
+  local file
+  local state=""
+
+  instance="$(tmux show-option -qv -t "$session" @log_workspace_instance 2>/dev/null || true)"
+  [[ -n "$instance" ]] || return 1
+  for role in all integration ws frontend; do
+    file="$(health_file "$instance" "$role")"
+    [[ -f "$file" ]] || continue
+    IFS=$'\t' read -r state _ <"$file" || continue
+    [[ "$state" == FAILED* ]] && return 0
+  done
+  return 1
+}
+
 wait_for_session() {
   local session="$1"
   local _attempt
   for _attempt in {1..25}; do
     if session_healthy "$session"; then
       return 0
+    fi
+    if session_failed "$session"; then
+      return 1
     fi
     sleep 0.2
   done

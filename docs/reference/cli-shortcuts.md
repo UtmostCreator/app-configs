@@ -77,6 +77,17 @@ command.
 | `hyperfine 'a' 'b'` | benchmark two commands with warmups before claiming a speedup |
 | `rgc [rg args]` | ripgrep only changed files; `LZ=1 rgc` runs lizard on them |
 
+## Measure before and after
+
+`mise run history:report` writes a sanitised report of this machine's
+history (atuin, fish, bash and sys-update runs) to
+`~/.local/state/history-report/report.md`: top patterns, workflow failure
+rates with median and P90 times, retries, typos, tool adoption, and how
+often each shortcut on this page is actually used. Only allowlisted tool
+names and git aliases are printed; arguments, paths, hosts and unknown
+commands are masked. Compare two reports from the same time window to keep
+or drop a shortcut. `hyperfine` measures single-command speedups.
+
 ## Not ported
 
 - Project-specific scripts (issue-tracker exports, the PR dashboard, app

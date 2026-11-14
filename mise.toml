@@ -25,33 +25,8 @@ description = "Whitespace and repository lint checks"
 run = "git diff --check"
 
 [tasks."lint:shell"]
-description = "Shell syntax + ShellCheck for migration scripts"
-run = """
-set -e
-bash -n ops/bootstrap.sh ops/detect-host.sh ops/snapshot-home.sh \
-        ops/validate-config.sh ops/check-source-of-truth.sh \
-        ops/generate-package-matrix.sh ops/doctor.sh \
-        ops/install.sh ops/update-all.sh ops/update-version-report.sh \
-        ops/lib/update-facts.sh ops/lib/update-ui.sh ops/cleanup.sh \
-        ops/readiness.sh ops/system-setup.sh ops/tailscale-setup.sh ops/vscode-extensions.sh \
-        ops/detect-os-disks.sh ops/syncthing-obsidian-stignore.sh 2>/dev/null || \
-  echo 'missing: one or more scripts not yet created (Phase 7)'
-if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck -x ops/snapshot-home.sh ops/validate-config.sh \
-              ops/update-version-report.sh ops/lib/update-facts.sh ops/lib/update-ui.sh \
-              ops/check-source-of-truth.sh ops/generate-package-matrix.sh \
-              ops/doctor.sh ops/install.sh ops/update-all.sh \
-              ops/cleanup.sh ops/readiness.sh ops/system-setup.sh \
-              ops/tailscale-setup.sh \
-              ops/vscode-extensions.sh \
-              ops/detect-os-disks.sh ops/syncthing-obsidian-stignore.sh
-  for f in ops/bootstrap.sh ops/detect-host.sh; do
-    [ -f "$f" ] && shellcheck "$f"
-  done
-else
-  echo 'missing: shellcheck (skip lint; install via Nix per Phase 6 matrix)'
-fi
-"""
+description = "bash -n on every committed shell script + ShellCheck (fails if shellcheck is missing)"
+run = "bash ops/lint-shell.sh"
 
 [tasks."test:bash"]
 description = "Run bats tests for shell scripts (deterministic, no live hardware)"

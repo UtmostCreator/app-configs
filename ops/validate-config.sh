@@ -13,7 +13,8 @@
 
 set -uo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# VALIDATE_CONFIG_ROOT lets the tests point the checks at a scratch repo.
+ROOT_DIR="${VALIDATE_CONFIG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$ROOT_DIR" || exit 1
 
 ERRORS=0
@@ -66,33 +67,58 @@ else
   ok "personal.yaml not staged"
 fi
 
-# 6. Home Manager modules: only programs.home-manager.enable allowed
-if [[ -d nix/modules ]]; then
-  bad="$(rg --no-line-number -nP '^\s*programs\.[A-Za-z0-9_-]+\.enable\s*=\s*true' nix/modules 2>/dev/null \
-        | grep -Ev 'programs\.home-manager\.enable' || true)"
-  if [[ -n "$bad" ]]; then
-    err "forbidden programs.<x>.enable found in nix/modules:"
+# Checks 6-8 scan nix/modules with ripgrep. A missing rg must fail them, not
+# let every scan "find nothing" and print ok.
+HAVE_RG=1
+if ! command -v rg >/dev/null 2>&1; then
+  HAVE_RG=0
+  err "ripgrep (rg) not found; invariants 6-8 cannot be checked"
+fi
+
+# 6. Home Manager modules: no programs.<x> modules except an explicit
+#    allowlist. Both spellings are matched: `programs.x.enable = true;` and
+#    the attrset form `programs.x = { enable = true; ... };`.
+#    Allowlist (keep in sync with docs/architecture/tool-ownership.md):
+#      home-manager  the HM bootstrap itself
+#      vicinae       nix/modules/home/vicinae.nix (launcher, no chezmoi config)
+#      openclaw      nix/modules/home/openclaw.nix (user service)
+PROGRAMS_ALLOWLIST='home-manager|vicinae|openclaw'
+if [[ -d nix/modules && $HAVE_RG == 1 ]]; then
+  bad="$(rg --no-line-number -nP \
+          '^\s*programs\.(?!('"$PROGRAMS_ALLOWLIST"')\b)[A-Za-z0-9_-]+(\.enable\s*=\s*true|\s*=\s*\{)' \
+          nix/modules)"
+  rc=$?
+  if (( rc > 1 )); then
+    err "rg failed while scanning nix/modules for programs.<x> (exit $rc)"
+  elif [[ -n "$bad" ]]; then
+    err "forbidden programs.<x> (not in allowlist: ${PROGRAMS_ALLOWLIST//|/, }) found in nix/modules:"
     printf '%s\n' "$bad" | sed 's/^/      /' >&2
   else
-    ok "no forbidden programs.<x>.enable in nix/modules"
+    ok "no forbidden programs.<x> in nix/modules (allowlist: ${PROGRAMS_ALLOWLIST//|/, })"
   fi
 fi
 
+# nix_lists_tool <tool>: true when nix/modules/home mentions <tool> as a
+# package: on the same line as home.packages / with pkgs, or as its own list
+# entry (`tool` or `pkgs.tool`, optional trailing comment) on a multi-line list.
+nix_lists_tool() {
+  rg --no-line-number -nFw "$1" nix/modules/home | grep -qE ':\s*(home\.packages|with pkgs)' && return 0
+  rg --no-line-number -nP '^\s*(pkgs\.)?'"$1"'\s*(#.*)?$' nix/modules/home >/dev/null
+}
+
 # 7. Bootstrap-managed tools must not appear in Home Manager modules
-if [[ -d nix/modules/home ]]; then
+if [[ -d nix/modules/home && $HAVE_RG == 1 ]]; then
   for tool in mise chezmoi home-manager lefthook; do
-    if rg --no-line-number -nFw "$tool" nix/modules/home 2>/dev/null \
-         | grep -qE ':\s*(home\.packages|with pkgs)'; then
+    if nix_lists_tool "$tool"; then
       err "bootstrap tool '$tool' referenced in nix/modules/home"
     fi
   done
-  ok "bootstrap-managed tools not duplicated in Home Manager modules"
+  ok "bootstrap-managed tools check done (nix/modules/home)"
 fi
 
 # 8. direnv (Phase 3 decision: DROPPED) must not appear in nix/modules/home
-if [[ -d nix/modules/home ]]; then
-  if rg --no-line-number -nFw direnv nix/modules/home 2>/dev/null \
-       | grep -qE ':\s*(home\.packages|with pkgs)'; then
+if [[ -d nix/modules/home && $HAVE_RG == 1 ]]; then
+  if nix_lists_tool direnv; then
     err "direnv was DROPPED in Phase 3 but found in nix/modules/home"
   else
     ok "direnv not in Home Manager modules (per Phase 3 DROPPED decision)"

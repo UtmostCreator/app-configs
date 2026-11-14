@@ -61,21 +61,26 @@ detect_os() {
     esac
 }
 
-# Detect which interactive shell config to wire into. Prefer the user's
-# login shell from /etc/passwd; fall back to $SHELL.
+# Detect which interactive shell config to wire into. APP_CONFIGS_SSH_SHELL
+# (bash|zsh|fish) overrides; otherwise prefer the user's login shell from
+# /etc/passwd and fall back to $SHELL. An unsupported shell is an error, not
+# a silent bash default that would edit the wrong rc file.
 detect_shell() {
-    local sh
-    sh="$(getent passwd "$USER" 2>/dev/null | awk -F: '{print $7}' || true)"
-    [ -n "$sh" ] || sh="${SHELL:-}"
-    case "$(basename "$sh")" in
-        fish) echo fish ;;
-        zsh)  echo zsh ;;
-        bash) echo bash ;;
-        *)    echo bash ;;
+    local sh name
+    sh="${APP_CONFIGS_SSH_SHELL:-}"
+    if [ -z "$sh" ]; then
+        sh="$(getent passwd "$USER" 2>/dev/null | awk -F: '{print $7}' || true)"
+        [ -n "$sh" ] || sh="${SHELL:-}"
+    fi
+    name="$(basename "$sh")"
+    case "$name" in
+        fish|zsh|bash) echo "$name" ;;
+        *) die "Unsupported shell '$name'. Set APP_CONFIGS_SSH_SHELL=bash|zsh|fish to choose which rc file to wire." ;;
     esac
 }
 
-# strip_block <file>: print <file> without the managed block. Fails unless
+# strip_block <file>: print <file> without the managed block (and the one
+# blank separator line right before it). Fails unless
 # the markers are well formed: at most one begin/end pair, begin before end,
 # no nesting, no stray or unterminated marker. This keeps a damaged file from
 # being truncated.
@@ -84,12 +89,16 @@ strip_block() {
         function fail(msg) { print msg > "/dev/stderr"; bad = 1; exit 2 }
         $0 == b { if (inb)  fail("nested begin marker")
                   if (seen) fail("duplicate begin marker")
+                  held = 0   # the blank separator the installer wrote
                   inb = 1; seen = 1; next }
         $0 == e { if (!inb) fail("end marker without begin marker")
                   inb = 0; next }
-        !inb    { print }
+        inb     { next }
+        $0 == "" { if (held) print ""; held = 1; next }
+                { if (held) print ""; held = 0; print }
         END     { if (bad) exit 2
-                  if (inb) { print "begin marker without end marker" > "/dev/stderr"; exit 2 } }
+                  if (inb) { print "begin marker without end marker" > "/dev/stderr"; exit 2 }
+                  if (held) print "" }
     ' "$1"
 }
 
@@ -97,16 +106,23 @@ strip_block() {
 # leaving the file untouched, when the markers are not a single clean pair.
 # Writes through `cat >` so the file keeps its mode, owner and symlink.
 remove_block() {
-    local f="$1" tmp
+    local f="$1" tmp bak
     [ -f "$f" ] || return 0
     grep -qF -e "$MARKER_BEGIN" -e "$MARKER_END" "$f" || return 0
     tmp="$(mktemp "${TMPDIR:-/tmp}/ssh-agent-setup.XXXXXX")"
     if ! strip_block "$f" >"$tmp"; then
         rm -f "$tmp"
-        die "$f has missing, duplicate or nested app-configs ssh-agent markers; fix it by hand. Nothing was changed."
+        die "$f has missing, duplicate or nested app-configs ssh-agent markers; fix it by hand. $f was not changed."
     fi
-    cat "$tmp" >"$f"
-    rm -f "$tmp"
+    # The in-place write is not atomic, so keep the original until the result
+    # is verified. On failure the backup is kept and its path is reported.
+    bak="$(mktemp "${TMPDIR:-/tmp}/ssh-agent-setup.backup.XXXXXX")"
+    cp "$f" "$bak"
+    if ! cat "$tmp" >"$f" || ! cmp -s "$tmp" "$f"; then
+        rm -f "$tmp"
+        die "Rewriting $f failed; the original is saved as backup $bak. Restore it with: cat '$bak' > '$f'"
+    fi
+    rm -f "$tmp" "$bak"
 }
 
 # The installer owns only the marked block, never other lines. The directive
@@ -120,6 +136,11 @@ ensure_macos_ssh_config() {
         (umask 077; : > "$cfg")
     fi
     remove_block "$cfg"
+    # ssh keeps the first IgnoreUnknown it sees; one earlier than our block
+    # that does not list UseKeychain would override ours.
+    if grep -iE '^[[:space:]]*IgnoreUnknown[[:space:]]' "$cfg" | grep -viq 'UseKeychain'; then
+        warn "$cfg has an IgnoreUnknown line without UseKeychain; ssh uses the first one, so add UseKeychain to it."
+    fi
     log "Writing managed 'Host *' Keychain block in ~/.ssh/config"
     {
         printf '\n%s\n' "$MARKER_BEGIN"
@@ -228,12 +249,14 @@ install_fish_snippet() {
         install -m 0644 "$SNIPPET_FISH" "$conf_d/ssh-agent.fish"
         log "Installed snippet to $conf_d/ssh-agent.fish"
     fi
-    if [ -n "${APP_CONFIGS_SSH_KEYS:-}" ] && command -v fish >/dev/null 2>&1; then
+    if [[ "${APP_CONFIGS_SSH_KEYS:-}" =~ [^[:space:]] ]] && command -v fish >/dev/null 2>&1; then
         # The value travels as argv ($argv[1]) and is split on whitespace
-        # into a fish list; it is never parsed as fish code.
+        # into a fish list; it is never parsed as fish code. The `--` ends
+        # fish's own option parsing so a value such as --init-command=... is
+        # data too.
         # shellcheck disable=SC2016
         fish -c 'set -Ux APP_CONFIGS_SSH_KEYS (string match -r -a "\S+" -- $argv[1])' \
-            "$APP_CONFIGS_SSH_KEYS" \
+            -- "$APP_CONFIGS_SSH_KEYS" \
             || die "fish failed to set APP_CONFIGS_SSH_KEYS"
         log "Set fish universal var APP_CONFIGS_SSH_KEYS"
     fi
@@ -246,10 +269,13 @@ remove_fish_snippet() {
 main() {
     local os shell rc
     os="$(detect_os)"
-    shell="$(detect_shell)"
-    log "OS=$os  shell=$shell  action=$ACTION"
+    log "OS=$os  action=$ACTION"
 
     if [ "$ACTION" = "install" ]; then
+        # Resolve the shell first so an unsupported one aborts before any
+        # file is touched. --remove needs no shell: it cleans every rc.
+        shell="$(detect_shell)"
+        log "shell=$shell"
         case "$os" in
             darwin) ensure_macos_ssh_config ;;
             linux)  check_keychain_linux ;;

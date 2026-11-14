@@ -197,7 +197,7 @@ stub_uname() { printf '#!/bin/sh\necho %s\n' "$1" >"$STUBS/uname"; chmod +x "$ST
     setup_run /bin/zsh --remove
     [ "$status" -eq 0 ]
     [ "$(stat -c %a "$HOME/.ssh/config")" = "600" ]
-    [ "$(sed '/^$/d' "$HOME/.ssh/config")" = "$(printf 'Host x\n    User me')" ]
+    [ "$(cat "$HOME/.ssh/config")" = "$(printf 'Host x\n    User me')" ]
 }
 
 @test "macOS: an existing config's mode is not changed by install" {
@@ -259,4 +259,136 @@ stub_uname() { printf '#!/bin/sh\necho %s\n' "$1" >"$STUBS/uname"; chmod +x "$ST
     [ ! -e "$HOME/.zshrc" ]
     setup_run /bin/zsh --remove extra
     [ "$status" -eq 2 ]
+}
+
+# --- T-0021 review round 1 ---------------------------------------------------
+
+@test "fish: a value that looks like a fish option is data, not an option" {
+    command -v fish >/dev/null || skip "fish not installed"
+    chezmoi_manages no
+    clean_home
+    APP_CONFIGS_SSH_KEYS="--init-command=touch $BATS_TEST_TMPDIR/pwned" setup_run /usr/bin/fish
+    [ ! -e "$BATS_TEST_TMPDIR/pwned" ]
+    [ "$status" -eq 0 ]
+    APP_CONFIGS_SSH_KEYS="-x y" setup_run /usr/bin/fish
+    [ "$status" -eq 0 ]
+}
+
+@test "fish: a whitespace-only key list is skipped without calling fish" {
+    chezmoi_manages no
+    clean_home
+    printf '#!/bin/sh\ntouch "%s/fish-called"\nexit 1\n' "$BATS_TEST_TMPDIR" >"$STUBS/fish"
+    chmod +x "$STUBS/fish"
+    APP_CONFIGS_SSH_KEYS="   " setup_run /usr/bin/fish
+    [ "$status" -eq 0 ]
+    [ ! -e "$BATS_TEST_TMPDIR/fish-called" ]
+}
+
+@test "unsupported login shell is rejected, names the shell and the override" {
+    chezmoi_manages no
+    clean_home
+    setup_run /bin/sh
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"'sh'"* ]]
+    [[ "$output" == *"APP_CONFIGS_SSH_SHELL"* ]]
+    [ ! -e "$HOME/.bashrc" ]
+    run env -u XDG_CONFIG_HOME USER=no-such-user-bats PATH="$STUBS:$PATH" SHELL=/bin/sh \
+        APP_CONFIGS_SSH_SHELL=zsh bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    grep -qF "$BEGIN_M" "$HOME/.zshrc"
+}
+
+@test "install, install, remove restores the rc byte for byte" {
+    chezmoi_manages no
+    clean_home
+    printf 'alias a=b\nexport X=1\n' >"$HOME/.zshrc"
+    cp "$HOME/.zshrc" "$BATS_TEST_TMPDIR/orig"
+    setup_run /bin/zsh
+    setup_run /bin/zsh
+    [ "$(grep -cF "$BEGIN_M" "$HOME/.zshrc")" = 1 ]
+    setup_run /bin/zsh --remove
+    [ "$status" -eq 0 ]
+    cmp "$HOME/.zshrc" "$BATS_TEST_TMPDIR/orig"
+}
+
+@test "macOS: install, install, remove restores ~/.ssh/config byte for byte" {
+    chezmoi_manages no
+    stub_uname Darwin
+    clean_home
+    mkdir -p "$HOME/.ssh"
+    printf 'Host x\n    User me\n' >"$HOME/.ssh/config"
+    cp "$HOME/.ssh/config" "$BATS_TEST_TMPDIR/orig"
+    setup_run /bin/zsh
+    setup_run /bin/zsh
+    setup_run /bin/zsh --remove
+    cmp "$HOME/.ssh/config" "$BATS_TEST_TMPDIR/orig"
+}
+
+@test "macOS: a symlinked ~/.ssh/config stays a symlink and its target is edited" {
+    chezmoi_manages no
+    stub_uname Darwin
+    clean_home
+    mkdir -p "$HOME/.ssh" "$HOME/dotfiles"
+    printf 'Host x\n' >"$HOME/dotfiles/ssh_config"
+    chmod 640 "$HOME/dotfiles/ssh_config"
+    ln -s "$HOME/dotfiles/ssh_config" "$HOME/.ssh/config"
+    setup_run /bin/zsh
+    [ -L "$HOME/.ssh/config" ]
+    grep -qF "$BEGIN_M" "$HOME/dotfiles/ssh_config"
+    setup_run /bin/zsh --remove
+    [ -L "$HOME/.ssh/config" ]
+    run grep -qF "$BEGIN_M" "$HOME/dotfiles/ssh_config"
+    [ "$status" -eq 1 ]
+    [ "$(stat -c %a "$HOME/dotfiles/ssh_config")" = "640" ]
+}
+
+@test "rc: file mode is preserved by install and remove" {
+    chezmoi_manages no
+    clean_home
+    printf 'x\n' >"$HOME/.zshrc"
+    chmod 640 "$HOME/.zshrc"
+    setup_run /bin/zsh
+    [ "$(stat -c %a "$HOME/.zshrc")" = "640" ]
+    setup_run /bin/zsh --remove
+    [ "$(stat -c %a "$HOME/.zshrc")" = "640" ]
+}
+
+@test "--help exits 0 and prints usage" {
+    chezmoi_manages no
+    clean_home
+    setup_run /bin/zsh --help
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Usage"* ]]
+    [ ! -e "$HOME/.zshrc" ]
+}
+
+@test "a failed rewrite names a backup holding the original; success leaves none" {
+    chezmoi_manages no
+    clean_home
+    export TMPDIR="$BATS_TEST_TMPDIR/tmp"; mkdir -p "$TMPDIR"
+    printf 'keep\n%s\nexport A=1\n%s\n' "$BEGIN_M" "$END_M" >"$HOME/.zshrc"
+    cp "$HOME/.zshrc" "$BATS_TEST_TMPDIR/orig"
+    chmod 444 "$HOME/.zshrc"
+    setup_run /bin/zsh --remove
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"backup"* ]]
+    [[ "$output" == *"$TMPDIR"* ]]
+    bk="$(ls "$TMPDIR"/ssh-agent-setup.backup.* | head -n1)"
+    cmp "$bk" "$BATS_TEST_TMPDIR/orig"
+    rm -f "$TMPDIR"/*
+    chmod 644 "$HOME/.zshrc"
+    setup_run /bin/zsh --remove
+    [ "$status" -eq 0 ]
+    [ -z "$(ls -A "$TMPDIR")" ]
+}
+
+@test "macOS: an earlier IgnoreUnknown without UseKeychain triggers a warning" {
+    chezmoi_manages no
+    stub_uname Darwin
+    clean_home
+    mkdir -p "$HOME/.ssh"
+    printf 'IgnoreUnknown Foo\nHost x\n' >"$HOME/.ssh/config"
+    setup_run /bin/zsh
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN"*"IgnoreUnknown"* ]]
 }

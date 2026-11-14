@@ -35,7 +35,18 @@
 #   --skip-verify     skip the post-update verification phase
 #   --verbose, -v     mirror command output to the terminal
 #
-# Exit 0 on success (warnings allowed), 1 on a failed precondition or step.
+# Exit codes:
+#   0    success (warnings allowed)
+#   1    a failed precondition or step, or an incomplete rollback
+#   2    usage error (unknown argument)
+#   3    refused: bats test running against the real HOME
+#   4    host detection failed (set HOST_PROFILE)
+#   5    another sys-update holds the lock
+#   129  hung up (SIGHUP)
+#   130  interrupted (SIGINT)
+#   131  quit (SIGQUIT)
+#   141  broken pipe (SIGPIPE)
+#   143  terminated (SIGTERM)
 
 set -uo pipefail
 
@@ -79,7 +90,15 @@ RUN_DIR="$STATE_DIR/runs"
 RUN_LOG="$RUN_DIR/$RUN_ID.log"
 RUN_META="$RUN_DIR/$RUN_ID.meta"
 LOCK_BACKUP="$RUN_DIR/$RUN_ID.flake.lock"
-HM_PROFILE="$HOME/.local/state/nix/profiles/home-manager"
+# Home Manager's own activate rule decides where its profile lives: the XDG
+# state directory when it exists, else the per-user Nix profile directory.
+HM_PROFILE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles"
+HM_PROFILE_DIR_OK=1
+if [[ ! -d "$HM_PROFILE_DIR" ]]; then
+  _hm_alt="${NIX_STATE_DIR:-/nix/var/nix}/profiles/per-user/${USER:-$(id -un)}"
+  if [[ -d "$_hm_alt" ]]; then HM_PROFILE_DIR="$_hm_alt"; else HM_PROFILE_DIR_OK=0; fi
+fi
+HM_PROFILE="$HM_PROFILE_DIR/home-manager"
 LOCK_FILE="$STATE_DIR/lock"
 LOCK_DIR="$STATE_DIR/lock.d"
 
@@ -170,8 +189,14 @@ hm_generation() {
   local link; link="$(readlink "$HM_PROFILE" 2>/dev/null)" || return 1
   [[ "$link" =~ -([0-9]+)-link$ ]] && printf '%s\n' "${BASH_REMATCH[1]}"
 }
-meta_put() { [[ -n "${RUN_META:-}" ]] && printf '%s=%s\n' "$1" "$2" >> "$RUN_META"; return 0; }
+# meta_put returns the write status: a record that cannot be written is a
+# rollback handle that does not exist.
+meta_put() { [[ -n "${RUN_META:-}" ]] || return 1; printf '%s=%s\n' "$1" "$2" >> "$RUN_META"; }
 meta_get() { sed -n "s/^$2=//p" "$1" | tail -1; }
+meta_failed() {
+  ui_err "metadata" "cannot write '$1' to $(tilde "$RUN_META") — refusing to apply without a rollback record"
+  exit 1
+}
 
 # EXIT, INT, TERM, HUP, QUIT and PIPE are trapped before anything can take the lock or start a
 # background job.
@@ -210,12 +235,18 @@ for arg in "$@"; do
     --skip-verify) DO_VERIFY=0 ;;
     --verbose|-v)  VERBOSE=1 ;;
     --last)        : ;;  # accepted for `rollback --last` symmetry
-    -h|--help)     sed -n '2,50p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help)     awk 'NR > 1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "$0"; exit 0 ;;
     *) printf 'sys-update: unknown argument: %s (try --help)\n' "$arg" >&2; exit 2 ;;
   esac
 done
 
-HOST_PROFILE="${HOST_PROFILE:-$(bash "$REPO_ROOT/ops/detect-host.sh" 2>/dev/null || echo linux-desktop)}"
+# detect-host.sh validates an explicit HOST_PROFILE too and explains a failure
+# on stderr; there is no silent fallback to a desktop profile.
+# Rollback never reads the host profile, so it does not depend on detection.
+if [[ "$SUBCOMMAND" != rollback ]] && ! HOST_PROFILE="$(bash "$REPO_ROOT/ops/detect-host.sh")"; then
+  printf 'sys-update: host detection failed; set HOST_PROFILE to macos, linux-desktop, linux-cli or wsl\n' >&2
+  exit 4
+fi
 
 [[ "$MODE" == apply && "$SUBCOMMAND" != rollback ]] && acquire_lock
 
@@ -325,18 +356,38 @@ fi
 IFS=$'\t' read -r GIT_STATE GIT_MODIFIED GIT_UNTRACKED <<< "$(git_worktree_state "$REPO_ROOT")"
 GIT_BRANCH="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
 GIT_UPSTREAM="$(git_upstream "$REPO_ROOT")"
+# git_upstream: 0 with empty output = no upstream, 1 = configured but not
+# resolvable, 2 = not a repository (see ops/lib/update-facts.sh).
+GIT_UPSTREAM_RC=$?
 
 if [[ "$GIT_STATE" == "no-repo" ]]; then
   ui_info "git" "not a git repository; repo self-update disabled"
   DO_PULL=0
 else
-  if [[ -n "$GIT_UPSTREAM" ]]; then
-    ui_ok "branch" "$GIT_BRANCH → $GIT_UPSTREAM"
-  else
-    ui_info "branch" "$GIT_BRANCH (no upstream; repo self-update disabled)"
-    DO_PULL=0
-  fi
+  case "$GIT_UPSTREAM_RC" in
+    0)
+      if [[ -n "$GIT_UPSTREAM" ]]; then
+        ui_ok "branch" "$GIT_BRANCH → $GIT_UPSTREAM"
+      else
+        ui_info "branch" "$GIT_BRANCH (no upstream; repo self-update disabled)"
+        DO_PULL=0
+      fi ;;
+    1)
+      DO_PULL=0
+      if [[ "$MODE" == "apply" ]]; then
+        precheck_fail "upstream" "$GIT_BRANCH has an upstream that cannot be resolved (check: git -C $REPO_ROOT status -sb)"
+      else
+        ui_warn "upstream" "$GIT_BRANCH has an upstream that cannot be resolved; repo self-update disabled"
+      fi ;;
+    *)
+      DO_PULL=0
+      ui_info "branch" "$GIT_BRANCH (upstream unknown; repo self-update disabled)" ;;
+  esac
   case "$GIT_STATE" in
+    error)
+      # Fail closed: when git itself cannot say, the tree is not known to be clean.
+      DO_PULL=0
+      precheck_fail "worktree" "could not read the worktree status (git status failed)" ;;
     clean)
       ui_ok "worktree" "clean" ;;
     dirty)
@@ -374,6 +425,15 @@ else
   ui_warn "tools" "missing: ${MISSING[*]} (run: sys-install)"
 fi
 
+# Home Manager's profile directory (not used on macOS, which has no HM profile).
+if [[ "$HM_PROFILE_DIR_OK" == 0 && "$HOST_PROFILE" != "macos" ]]; then
+  if [[ "$MODE" == "apply" ]]; then
+    precheck_fail "home-manager profile" "no profile directory found (looked in $HM_PROFILE_DIR and ${NIX_STATE_DIR:-/nix/var/nix}/profiles/per-user/${USER:-$(id -un)})"
+  else
+    ui_warn "home-manager profile" "no profile directory found (looked in $HM_PROFILE_DIR and ${NIX_STATE_DIR:-/nix/var/nix}/profiles/per-user/${USER:-$(id -un)})"
+  fi
+fi
+
 # Hand-edited managed files. chezmoi asks before overwriting a target that
 # changed since it last wrote it, and with --no-tty that question ends in an
 # unexplained EOF halfway through the update. Ask it here instead, while
@@ -383,8 +443,21 @@ fi
 # file and writes the merge (e.g. ~/.claude/settings.json, VS Code's
 # settings.json), so an app rewriting them is expected, not a conflict.
 CHEZMOI_CONFLICTS=()
+CHEZMOI_STATUS_OK=1
 if have chezmoi; then
-  mapfile -t _chezmoi_edited < <(chezmoi status 2>/dev/null | awk 'substr($0,1,1)=="M" && substr($0,2,1)!=" " {print substr($0,4)}')
+  # A failing `chezmoi status` is not "no local edits": it means unknown.
+  if _chezmoi_status="$(chezmoi status 2>/dev/null)"; then
+    mapfile -t _chezmoi_edited < <(printf '%s\n' "$_chezmoi_status" \
+      | awk 'substr($0,1,1)=="M" && substr($0,2,1)!=" " {print substr($0,4)}')
+  else
+    CHEZMOI_STATUS_OK=0
+    _chezmoi_edited=()
+    if [[ "$MODE" == "apply" ]]; then
+      precheck_fail "managed files" "chezmoi status failed, so local edits cannot be ruled out (run: chezmoi status)"
+    else
+      ui_warn "managed files" "chezmoi status failed, so local edits cannot be ruled out (run: chezmoi status)"
+    fi
+  fi
   if [[ "${#_chezmoi_edited[@]}" -gt 0 ]]; then
     _chezmoi_dest="$(chezmoi target-path 2>/dev/null || true)"
     for _target in "${_chezmoi_edited[@]}"; do
@@ -393,7 +466,9 @@ if have chezmoi; then
       CHEZMOI_CONFLICTS+=("$_target")
     done
   fi
-  if [[ "${#CHEZMOI_CONFLICTS[@]}" -eq 0 ]]; then
+  if [[ "$CHEZMOI_STATUS_OK" == 0 ]]; then
+    :   # already reported above
+  elif [[ "${#CHEZMOI_CONFLICTS[@]}" -eq 0 ]]; then
     ui_ok "managed files" "no local edits"
   elif [[ "$CHEZMOI_FORCE" == 1 ]]; then
     ui_warn "managed files" "${#CHEZMOI_CONFLICTS[@]} hand-edited, will be overwritten (--force): ${CHEZMOI_CONFLICTS[*]}"
@@ -463,32 +538,50 @@ fi
 HM_PKGS_BEFORE=""; PROFILE_PKGS_BEFORE=""; MISE_BEFORE=""; MISE_OK=0
 HM_GEN_BEFORE=""; SNAPSHOT_DIR=""
 
+# Only a lock that matches HEAD is ours to commit afterwards; local edits to it
+# (possible under --allow-dirty) are the user's to keep or discard. Decided
+# here so the run record can carry it (it is also what a restore will trust).
+LOCK_WAS_CLEAN=0
+UPDATE_FILES=(nix/flake.lock)
+[[ -f "$REPO_ROOT/nix/packages/brave/release.json" ]] && UPDATE_FILES+=(nix/packages/brave/release.json)
+if [[ "$GIT_STATE" != "no-repo" ]] \
+  && git -C "$REPO_ROOT" ls-files --error-unmatch nix/flake.lock >/dev/null 2>&1 \
+  && git -C "$REPO_ROOT" diff --quiet HEAD -- "${UPDATE_FILES[@]}" 2>/dev/null; then
+  LOCK_WAS_CLEAN=1
+fi
+
 if [[ "$MODE" == "apply" ]]; then
   ui_section "Snapshot"
-  meta_put run_id "$RUN_ID"; meta_put repo "$REPO_ROOT"; meta_put host "$HOST_PROFILE"
-  meta_put log "$RUN_LOG"
+  # Every record is checked: a rollback handle that could not be written must
+  # stop the run here, before anything is changed.
+  meta_put run_id "$RUN_ID" || meta_failed run_id
+  meta_put repo "$REPO_ROOT" || meta_failed repo
+  meta_put host "$HOST_PROFILE" || meta_failed host
+  meta_put hm_profile "$HM_PROFILE" || meta_failed hm_profile
+  meta_put log "$RUN_LOG" || meta_failed log
+  meta_put lock_was_clean "$LOCK_WAS_CLEAN" || meta_failed lock_was_clean
 
   HM_GEN_BEFORE="$(hm_generation || true)"
   HM_PATH_BEFORE="$(profile_target "$HM_PROFILE")"
-  [[ -n "$HM_GEN_BEFORE" ]] && meta_put hm_gen_before "$HM_GEN_BEFORE"
-  [[ -n "$HM_PATH_BEFORE" ]] && meta_put hm_path_before "$HM_PATH_BEFORE"
+  if [[ -n "$HM_GEN_BEFORE" ]]; then meta_put hm_gen_before "$HM_GEN_BEFORE" || meta_failed hm_gen_before; fi
+  if [[ -n "$HM_PATH_BEFORE" ]]; then meta_put hm_path_before "$HM_PATH_BEFORE" || meta_failed hm_path_before; fi
   HM_PKGS_BEFORE="$(packages_in_profile "$HM_PROFILE")"
   PROFILE_PKGS_BEFORE="$(packages_in_profile "$HOME/.nix-profile")"
   if MISE_BEFORE="$(mise_versions)"; then MISE_OK=1; fi
-  ui_ok "package state" "$(printf '%s\n' "$HM_PKGS_BEFORE" | grep -c . ) Home Manager packages recorded"
+  ui_ok "package state" "$(printf '%s\n' "$HM_PKGS_BEFORE" | grep -cvFx -e "$UVR_EMPTY_SET" -e "") Home Manager packages recorded"
 
   if [[ -f "$REPO_ROOT/nix/flake.lock" ]]; then
     if cp "$REPO_ROOT/nix/flake.lock" "$LOCK_BACKUP" 2>/dev/null; then
-      meta_put flake_lock_backup "$LOCK_BACKUP"
+      meta_put flake_lock_backup "$LOCK_BACKUP" || meta_failed flake_lock_backup
       ui_ok "flake.lock" "backed up"
     else
-      ui_warn "flake.lock" "backup failed"
+      ui_err "flake.lock" "backup failed"; exit 1
     fi
   fi
 
   if [[ -f "$REPO_ROOT/nix/packages/brave/release.json" ]]; then
     if cp "$REPO_ROOT/nix/packages/brave/release.json" "$RUN_DIR/$RUN_ID.brave.json"; then
-      meta_put brave_release_backup "$RUN_DIR/$RUN_ID.brave.json"
+      meta_put brave_release_backup "$RUN_DIR/$RUN_ID.brave.json" || meta_failed brave_release_backup
     else
       ui_err "Brave release" "backup failed"; exit 1
     fi
@@ -505,7 +598,7 @@ if [[ "$MODE" == "apply" ]]; then
   if SNAPSHOT_DIR="$("$REPO_ROOT/ops/snapshot-home.sh" --print-dir 2>"$SNAPSHOT_ERR" < /dev/null)" \
       && [[ -n "$SNAPSHOT_DIR" && -d "$SNAPSHOT_DIR" ]]; then
     cat "$SNAPSHOT_ERR" >> "$RUN_LOG"
-    meta_put snapshot_dir "$SNAPSHOT_DIR"
+    meta_put snapshot_dir "$SNAPSHOT_DIR" || meta_failed snapshot_dir
     ui_ok "dotfiles" "snapshot → $(tilde "$SNAPSHOT_DIR")"
   else
     cat "$SNAPSHOT_ERR" >> "$RUN_LOG"
@@ -514,15 +607,29 @@ if [[ "$MODE" == "apply" ]]; then
     exit 1
   fi
 
-  printf '%s\n' "$RUN_META" > "$STATE_DIR/last-run" 2>/dev/null || true
+  # The pointer moves only now, once the record is complete, and atomically
+  # (temp file + rename): a reader never sees a half-written or premature one.
+  meta_put status started || meta_failed status
+  if ! { [[ ! -d "$STATE_DIR/last-run" ]] && printf '%s\n' "$RUN_META" > "$STATE_DIR/last-run.tmp.$$" \
+         && mv -f "$STATE_DIR/last-run.tmp.$$" "$STATE_DIR/last-run"; } 2>/dev/null; then
+    rm -f "$STATE_DIR/last-run.tmp.$$"
+    ui_err "last-run" "cannot write $(tilde "$STATE_DIR/last-run") — refusing to apply without a rollback pointer"
+    exit 1
+  fi
 
-  # Keep the last N runs. Logs are cheap, but not unbounded; the rollback
-  # handle for the current run is written above and always survives.
+  # Keep the last N runs. Logs are cheap, but not unbounded. Everything a run
+  # owns is named "<run id>.*"; the run last-run points at is never pruned.
   KEEP_RUNS="${SYS_UPDATE_KEEP_RUNS:-20}"
   mapfile -t OLD_RUNS < <(find "$RUN_DIR" -maxdepth 1 -name '*.meta' -type f 2>/dev/null \
     | LC_ALL=C sort -r | tail -n "+$((KEEP_RUNS + 1))")
   for old_meta in ${OLD_RUNS[@]+"${OLD_RUNS[@]}"}; do
-    rm -f "${old_meta%.meta}".{log,meta,flake.lock,brave.json}
+    [[ "$old_meta" == "$RUN_META" ]] && continue
+    old_id="$(basename "$old_meta" .meta)"
+    [[ -n "$old_id" ]] || continue
+    for old_file in "$RUN_DIR/$old_id".*; do
+      [[ -e "$old_file" ]] && rm -f -- "$old_file"
+    done
+    rm -rf -- "${STATE_DIR:?}/gcroots/$old_id"
   done
 fi
 
@@ -556,17 +663,21 @@ lock_inputs() {
   jq -r '.nodes | to_entries[] | [.key, (.value.locked.rev // .value.locked.narHash // "")] | @tsv' "$1" 2>/dev/null
 }
 LOCK_BEFORE="$(lock_inputs "$REPO_ROOT/nix/flake.lock")"
-# Only a lock that matches HEAD is ours to commit afterwards; local edits to it
-# (possible under --allow-dirty) are the user's to keep or discard.
-LOCK_WAS_CLEAN=0
-UPDATE_FILES=(nix/flake.lock)
-[[ -f "$REPO_ROOT/nix/packages/brave/release.json" ]] && UPDATE_FILES+=(nix/packages/brave/release.json)
-if [[ "$GIT_STATE" != "no-repo" ]] \
-  && git -C "$REPO_ROOT" ls-files --error-unmatch nix/flake.lock >/dev/null 2>&1 \
-  && git -C "$REPO_ROOT" diff --quiet HEAD -- "${UPDATE_FILES[@]}" 2>/dev/null; then
-  LOCK_WAS_CLEAN=1
-fi
-if run_step "flake inputs" nix flake update --flake "$REPO_ROOT/nix"; then
+
+# record_written_hash <meta key> <file>: the content hash of a file a writer
+# step just produced, kept even when the step failed. A later restore only
+# overwrites the file while it still has this content.
+record_written_hash() {
+  [[ "$MODE" == apply && -f "$2" ]] || return 0
+  local hash
+  if ! hash="$(git hash-object -- "$2")" || ! meta_put "$1" "$hash"; then
+    step_fail "metadata" "cannot record $1 — a restore could not tell whose edit the file holds"
+  fi
+}
+
+run_step "flake inputs" nix flake update --flake "$REPO_ROOT/nix"; FLAKE_UPDATE_RC=$?
+record_written_hash flake_lock_hash_written "$REPO_ROOT/nix/flake.lock"
+if [[ "$FLAKE_UPDATE_RC" == 0 ]]; then
   if [[ "$MODE" == "apply" ]]; then
     LOCK_AFTER="$(lock_inputs "$REPO_ROOT/nix/flake.lock")"
     if [[ -n "$LOCK_BEFORE" && -n "$LOCK_AFTER" ]]; then
@@ -586,7 +697,9 @@ fi
 # the binary lock alongside flake inputs so browser security updates continue.
 if [[ "$STEP_FAILED" == 0 && "$HOST_PROFILE" == linux-desktop ]] \
   && [[ -f "$REPO_ROOT/nix/packages/brave/release.json" ]]; then
-  if run_step "Brave release" bash "$REPO_ROOT/ops/update-brave.sh"; then
+  run_step "Brave release" bash "$REPO_ROOT/ops/update-brave.sh"; BRAVE_UPDATE_RC=$?
+  record_written_hash brave_release_hash_written "$REPO_ROOT/nix/packages/brave/release.json"
+  if [[ "$BRAVE_UPDATE_RC" == 0 ]]; then
     [[ "$MODE" == apply ]] && ui_ok "Brave release" "official stable release checked"
   else
     step_fail "Brave release" "could not verify the latest official release — nothing was applied"
@@ -631,9 +744,16 @@ fi
 # also ships makes the switch fail after home-manager-path is already gone
 # (git drops off PATH). Stop here instead, with the exact fix.
 if [[ "$STEP_FAILED" == 0 && "$MODE" == apply && "$HOST_PROFILE" != macos ]]; then
-  HM_OUT="$(nix build --no-link --print-out-paths "$REPO_ROOT/nix#$BUILD_TARGET" 2>/dev/null | tail -n1)"
-  if [[ -n "$HM_OUT" ]]; then
-    mapfile -t PROFILE_CONFLICTS < <(profile_hm_conflicts "$HOME/.nix-profile/manifest.json" "$HM_OUT/home-path")
+  # Fail closed: a build that exits non-zero, prints nothing or names a path
+  # that is not a directory cannot be checked for collisions, so it stops here.
+  BUILD_OUT=""
+  if _build_paths="$(nix build --no-link --print-out-paths "$REPO_ROOT/nix#$BUILD_TARGET" 2>/dev/null)"; then
+    BUILD_OUT="$(printf '%s\n' "$_build_paths" | tail -n1)"
+  fi
+  if [[ -z "$BUILD_OUT" || ! -d "$BUILD_OUT" ]]; then
+    step_fail "host build" "could not resolve the built closure (nix build --print-out-paths failed or printed no directory) — nothing was applied"
+  else
+    mapfile -t PROFILE_CONFLICTS < <(profile_hm_conflicts "$HOME/.nix-profile/manifest.json" "$BUILD_OUT/home-path")
     if ((${#PROFILE_CONFLICTS[@]})); then
       mapfile -t CONFLICT_PKGS < <(printf '%s\n' "${PROFILE_CONFLICTS[@]}" | cut -f1 | sort -u)
       step_fail "nix profile" "${#CONFLICT_PKGS[@]} hand-installed package(s) collide with Home Manager: ${PROFILE_CONFLICTS[*]//$'\t'/ ships }"
@@ -735,7 +855,9 @@ fi
 
 # hooks ---------------------------------------------------------------------
 if [[ "$STEP_FAILED" == 0 ]] && have lefthook && [[ -e "$REPO_ROOT/.git" ]]; then
-  if run_step "git hooks" sh -c "cd '$REPO_ROOT' && lefthook install"; then
+  # The path travels as $1, never spliced into the command string.
+  # shellcheck disable=SC2016
+  if run_step "git hooks" sh -c 'cd "$1" && lefthook install' sh "$REPO_ROOT"; then
     [[ "$MODE" == "apply" ]] && ui_ok "git hooks" "synced"
   else
     ui_warn "git hooks" "lefthook install failed"
@@ -898,6 +1020,7 @@ if [[ "$MODE" == "apply" ]]; then
     ui_ok "updated" "and verified · $(ui_counts_line)"
   fi
   printf '  %sfull log: %s%s\n' "$UI_C_DIM" "$(tilde "$RUN_LOG")" "$UI_C_OFF"
+  meta_put status "done" || ui_warn "metadata" "could not record status=done"
 else
   ui_notes_report
   printf '\n  %sReport only — nothing was changed. Re-run with --apply.%s\n' "$UI_C_DIM" "$UI_C_OFF"

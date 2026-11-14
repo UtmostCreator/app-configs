@@ -82,9 +82,26 @@ casks="$(extract_array CASKS | sort -u)"
 extra_tools=""
 if [[ -f "$DOCS_FILE" ]]; then
   # Tools that the docs explicitly mention but FORMULAE/CASKS omit.
-  candidates="$(rg --no-line-number --only-matching \
+  # Two sources: (1) every documented list entry of the form
+  # `- **[Name](url)** ...` (single-word names lower-cased; multi-word names
+  # fall back to the GitHub repository name, e.g. "GitHub Copilot CLI" ->
+  # copilot-cli), so the list tracks the docs instead of a fixed subset; and
+  # (2) a small set of tools the docs mention only in prose.
+  # Names are NOT mapped to package names (e.g. docs "delta" vs package
+  # git-delta), so such entries can appear as false "missing" rows; the matrix
+  # is a draft for human review, so this noise is accepted.
+  documented="$(awk '
+    match($0, /^[[:space:]]*-[[:space:]]+\*\*\[[^]]+\]\([^)]+\)/) {
+      seg = substr($0, RSTART, RLENGTH)
+      name = seg; sub(/^[^[]*\[/, "", name); sub(/\].*$/, "", name)
+      url = seg; sub(/^.*\]\(/, "", url); sub(/\)$/, "", url)
+      if (name !~ / /) print tolower(name)
+      else if (url ~ /^https:\/\/github\.com\/[^\/]+\/[^\/]+/) { split(url, p, "/"); print tolower(p[5]) }
+    }' "$DOCS_FILE")"
+  prose="$(rg --no-line-number --only-matching \
     --regexp '\b(mkcert|stripe|copilot|colima|docker|p7zip|gh|gitleaks|tldr|tealdeer|files-to-prompt|code2prompt|scc|repomix|ast-grep)\b' \
-    "$DOCS_FILE" | sort -u || true)"
+    "$DOCS_FILE" || true)"
+  candidates="$(printf '%s\n%s\n' "$documented" "$prose" | grep -v '^$' | sort -u || true)"
   for c in $candidates; do
     if ! printf '%s\n' "$formulae" | grep -Fxq "$c"; then
       if ! printf '%s\n' "$casks" | grep -Fxq "$c"; then

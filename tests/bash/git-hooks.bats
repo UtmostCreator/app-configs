@@ -47,6 +47,19 @@ msg() { printf '%s\n' "$1" >"$BATS_TEST_TMPDIR/msg"; bash "$HOOKS/commit-msg.sh"
     [[ "$output" == *"conflict markers"* ]]
 }
 
+@test "pre-push still rejects a conflict marker on line 1 of a huge diff" {
+    # grep -q exits at the first match; under pipefail the SIGPIPE'd `git show`
+    # then made the whole pipeline "fail" and the marker was ignored once the
+    # diff exceeded the pipe buffer.
+    cd "$WORK"
+    { printf '<<<<<<< HEAD\n'; seq 1 200000; } >big.txt
+    git add big.txt && git commit -q --no-verify -m "chore: big"
+    sha="$(git rev-parse HEAD)"
+    run bash -c "echo 'refs/heads/main $sha refs/heads/main 0000000000000000000000000000000000000000' | bash '$HOOKS/pre-push.sh'"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"conflict markers"* ]]
+}
+
 @test "pre-push allows clean commits and ignores markdown rules (=======)" {
     cd "$WORK"
     printf 'Title\n=======\n' >f.md

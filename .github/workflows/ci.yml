@@ -1,6 +1,9 @@
 # Runs the same checks as `mise run ci:local`: repo invariants, bash -n on
-# every shell script + ShellCheck, the whole bats suite, `nix flake check`
-# and evaluation of every host. Tools come from the flake-pinned nixpkgs
+# every shell script + ShellCheck, the whole bats suite, native
+# `nix flake check`, `nix flake check --all-systems --no-build` (evaluates
+# aarch64-darwin and every host), and a native build of the
+# linux-cli and wsl activation packages (linux-desktop is evaluated only).
+# Tools come from the flake-pinned nixpkgs
 # (ops/ci-packages.txt) in a clean environment, so a pass here means the
 # same as a pass on your machine with ops/ci-local.sh.
 name: ci
@@ -21,7 +24,7 @@ concurrency:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

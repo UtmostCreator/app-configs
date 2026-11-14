@@ -5,6 +5,9 @@
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     STUBS="$BATS_TEST_TMPDIR/bin"
+    # Exact-command-line tests below: never pick up a real selection file or an
+    # exported XDG_CONFIG_HOME (tests that want a selection set their own).
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/no-selection"
     mkdir -p "$STUBS"
     PROC="$BATS_TEST_TMPDIR/version"
     # Isolate from the host: no inherited WSL env or WSL filesystem markers.

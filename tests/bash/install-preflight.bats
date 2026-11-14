@@ -13,6 +13,9 @@ setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     # Never let install.sh see the real HOME, even if DRY_RUN were lost.
     export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
+    # An exact-command-line suite: never pick up a real selection file or an
+    # exported XDG_CONFIG_HOME (tests that want a selection set their own).
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/no-selection"
     # Isolate from the host: no inherited WSL env or WSL filesystem markers.
     unset WSL_DISTRO_NAME
     export DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-wsl-run" DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-wsl-interop"

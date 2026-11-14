@@ -11,6 +11,9 @@ setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   export NO_COLOR=1
   export HOME="$BATS_TEST_TMPDIR/home"
+  # An exact-command-line suite: never pick up a real selection file or an
+  # exported XDG_CONFIG_HOME (tests that want a selection set their own).
+  export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/no-selection"
   export SYS_UPDATE_STATE_DIR="$HOME/.local/state/sys-update"
   export HOST_PROFILE=linux-desktop
   # Never let the developer's real state directories leak into a run.
@@ -71,6 +74,7 @@ case "$tool \$*" in
                           [[ "\${STUB_INT_AFTER_UPDATE:-0}" == 1 ]] && kill -INT "\$PPID" ;;
   "nix flake check"*)     printf 'warning: The check omitted these incompatible systems: aarch64-darwin\n' >&2 ;;
   "nix build"*)          [[ "\${FAIL_HOST_BUILD:-0}" == 1 ]] && exit 1
+                          [[ "\${FAIL_HOST_BUILD:-0}" == override && "\$*" == *--override-input* ]] && exit 1
                           if [[ "\$*" == *--print-out-paths* ]]; then
                             [[ "\${FAIL_PRINT_OUT:-0}" == 1 ]] && exit 1
                             [[ "\${STUB_HM_OUT_EMPTY:-0}" == 1 ]] || printf '%s\n' "\${STUB_HM_OUT:-$BATS_TEST_TMPDIR/hm-out}"
@@ -1793,8 +1797,9 @@ mk_selection() {
 
 @test "selection: a selection that fails the host build stops before dotfiles or activation" {
   mk_selection
-  FAIL_HOST_BUILD=1 run_update
+  FAIL_HOST_BUILD=override run_update
   [ "$status" -eq 1 ]
+  grep -q -- '--override-input selection' "$STUB_LOG"
   run grep -E '^(chezmoi apply|home-manager switch)' "$STUB_LOG"
   [ "$status" -ne 0 ]
 }

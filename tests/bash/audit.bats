@@ -13,6 +13,9 @@ TOOLS=(bash env git jq awk sed grep head tail cut sort uniq wc tr paste mktemp r
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
+    # An exact-command-line suite: never pick up a real selection file or an
+    # exported XDG_CONFIG_HOME (tests that want a selection set their own).
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/no-selection"
     unset TMUX SYS_UPDATE_STATE_DIR HM_PROFILE_MANIFEST
     export XDG_STATE_HOME="$BATS_TEST_TMPDIR/state"
     FIX="$BATS_TEST_TMPDIR/fix"; mkdir -p "$FIX"

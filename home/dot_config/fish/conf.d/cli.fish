@@ -32,6 +32,9 @@ abbr -a ni 'npm install'
 abbr -a ll 'eza -lah --git'
 abbr -a lt 'eza --tree -L 2'
 
+# lazygit for the stage/diff/commit/push loop (git ui does the same)
+abbr -a lg lazygit
+
 # Reload the shell after config edits (replaces `source ~/.zshrc`)
 abbr -a reload 'exec fish'
 
@@ -52,4 +55,14 @@ end
 # Fresh node_modules (and Nuxt/Next caches), then a clean install.
 function nreset --description 'rm node_modules .nuxt .next, then npm ci'
     rm -rf node_modules .nuxt .next; and npm ci
+end
+
+# Rerun one focused artisan test whenever a PHP file changes (-r restarts a
+# running test, -c clears the screen). Keep it focused: not the whole suite.
+function patw --description 'watch PHP files and rerun php artisan test --filter=<name>'
+    if not set -q argv[1]
+        echo "usage: patw <test filter>" >&2
+        return 2
+    end
+    watchexec -e php -r -c -- php artisan test --filter=$argv[1] $argv[2..]
 end

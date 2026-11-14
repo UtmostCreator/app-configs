@@ -3,7 +3,7 @@
 #
 # Scans block devices live and reports, per physical disk:
 #   - whether it holds a Windows install (EFI System part + Microsoft reserved
-#     / NTFS), a Linux install (Linux-fs root + EFI System), or neither
+#     + NTFS/BitLocker), a Linux install (Linux-fs root + EFI System), or neither
 #   - which disk the CURRENTLY RUNNING OS booted from (marked [current])
 #   - the partition layout that justifies each verdict
 #
@@ -66,12 +66,27 @@ else
 fi
 
 # Per-disk classification done in jq so plain + json modes share one source.
-#   windows  : has an "EFI System" part AND (a "Microsoft reserved" part OR an ntfs fs)
-#   linux    : has an "EFI System" part AND a linux filesystem (ext*/btrfs/xfs/f2fs)
+#   windows  : has an "EFI System" part AND a "Microsoft reserved" part AND a
+#              Windows fs (ntfs/BitLocker). Either marker alone is not proof:
+#              an NTFS data partition or a stray MSR exists on non-Windows disks.
+#   linux    : has an "EFI System" part AND a linux filesystem (ext*/btrfs/xfs/f2fs),
+#              including one nested in LUKS/LVM, or a LUKS/LVM part typed Linux
 #   esp_only : has an EFI System part but no clear OS markers
 #   data     : no EFI System part
 analysis="$(printf '%s' "$lsblk_json" | jq --arg cur "$current_disk" '
   def is_linux_fs($f): ($f != null) and ($f | test("^(ext[234]|btrfs|xfs|f2fs)$"));
+  # A partition counts as Linux when it, or anything nested under it (an
+  # unlocked LUKS mapping, an LVM logical volume), carries a Linux filesystem,
+  # or when it is a (possibly locked) LUKS / LVM container typed as Linux.
+  def is_linux_part:
+    ([.. | objects | select(has("fstype")) | .fstype] | any(is_linux_fs(.)))
+    or ((.fstype == "crypto_LUKS" or .fstype == "LVM2_member")
+        and ((.parttypename // "") | test("^Linux")));
+  # Windows filesystems; BitLocker hides NTFS but is still a Windows volume.
+  # NOTE: the `has_ntfs` field below therefore ALSO covers BitLocker volumes.
+  # Known miss: a Windows install with ESP + NTFS but no "Microsoft reserved"
+  # partition (e.g. one converted with MBR2GPT) is reported as not-Windows.
+  def is_windows_fs($f): ($f == "ntfs") or ($f == "BitLocker");
   [ .blockdevices[]
     | select(.type == "disk")
     | . as $d
@@ -82,15 +97,15 @@ analysis="$(printf '%s' "$lsblk_json" | jq --arg cur "$current_disk" '
         current: ($d.name == $cur),
         has_esp:    ($parts | any(.parttypename == "EFI System")),
         has_msr:    ($parts | any(.parttypename == "Microsoft reserved")),
-        has_ntfs:   ($parts | any(.fstype == "ntfs")),
-        has_linux:  ($parts | any(is_linux_fs(.fstype))),
+        has_ntfs:   ($parts | any(is_windows_fs(.fstype))),
+        has_linux:  ($parts | any(is_linux_part)),
         has_swap:   ($parts | any(.fstype == "swap")),
         esp:        [ $parts[] | select(.parttypename == "EFI System")
                        | {name, size, uuid, mountpoint} ],
         parts:      [ $parts[] | {name, size, fstype, parttypename, mountpoint} ]
       }
     | .os = (
-        if (.has_esp and (.has_msr or .has_ntfs)) then "windows"
+        if (.has_esp and .has_msr and .has_ntfs) then "windows"
         elif (.has_esp and .has_linux) then "linux"
         elif .has_esp then "esp-only"
         else "data" end)

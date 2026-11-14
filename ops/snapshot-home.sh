@@ -17,6 +17,18 @@
 
 set -euo pipefail
 
+usage() {
+  cat <<'USAGE'
+Usage: bash ops/snapshot-home.sh [-h|--help]
+Copies the files chezmoi is about to overwrite into $HOME/.local/state/dotfiles-snapshots (override: DOTFILES_SNAPSHOT_ROOT); takes no other arguments.
+USAGE
+}
+case "$#:${1:-}" in
+  0:) ;;
+  1:-h | 1:--help) usage; exit 0 ;;
+  *) printf 'snapshot-home: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
+esac
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 log()  { printf '[snapshot-home] %s\n' "$*"; }

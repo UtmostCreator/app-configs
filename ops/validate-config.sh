@@ -13,6 +13,18 @@
 
 set -uo pipefail
 
+usage() {
+  cat <<'USAGE'
+Usage: bash ops/validate-config.sh [-h|--help]
+Checks the repository invariants (read-only); takes no other arguments.
+USAGE
+}
+case "$#:${1:-}" in
+  0:) ;;
+  1:-h | 1:--help) usage; exit 0 ;;
+  *) printf 'validate-config: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
+esac
+
 # VALIDATE_CONFIG_ROOT lets the tests point the checks at a scratch repo.
 ROOT_DIR="${VALIDATE_CONFIG_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 cd "$ROOT_DIR" || exit 1

@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
+usage() {
+  cat <<'USAGE'
+Usage: bash ops/projects/logging/watch/stop-watch.sh [-h|--help]
+Stops the workspace log watcher; takes no other arguments.
+USAGE
+}
+case "$#:${1:-}" in
+  0:) ;;
+  1:-h | 1:--help) usage; exit 0 ;;
+  *) printf 'stop-watch: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/../../workspace/config.sh"

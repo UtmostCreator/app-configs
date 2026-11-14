@@ -5,6 +5,9 @@
   ...
 }:
 let
+  # One binding for php and composer so the interpreter and the composer
+  # package (which embeds its php) cannot diverge.
+  phpPkg = pkgs.php84;
   codebaseMemoryMcp = pkgs.callPackage ../../packages/codebase-memory-mcp { };
   codebaseMemoryMcpUi = pkgs.writeShellScript "codebase-memory-mcp-ui-service" ''
     set -euo pipefail
@@ -111,10 +114,10 @@ in
       # use nodejs.org prebuilt binaries (stub ld-linux loader) and
       # would compile from source; Nix supplies the same 22.x instead.
       p7zip
-      php
+      phpPkg
       # PHP 8.4 (with extensions). Enables the AI workflow
       # validators in ops/doctor.sh.
-      php84Packages.composer # Composer 2.x for PHP 8.4; on PATH on every host.
+      phpPkg.packages.composer # Composer 2.x built for the same PHP as above; on PATH on every host.
       # macOS keeps a Herd+1Password `composer` shell function
       # (fish/zsh) that shadows this binary; on Linux this IS
       # the active composer for project-local PHP work.
@@ -172,8 +175,10 @@ in
 
   # Gremlins defaults to one worker per CPU; with a runaway mutant per worker the
   # memory cap above still multiplies. Half the cores leaves the desktop usable.
-  # Read from $XDG_CONFIG_HOME/gremlins/gremlins/.gremlins.yaml; a repo-level
-  # .gremlins.yaml still overrides it.
+  # Read from $XDG_CONFIG_HOME/gremlins/gremlins/.gremlins.yaml (the doubled
+  # directory is intentional: gremlins v0.6.0 defaultConfigPaths() joins
+  # "gremlins","gremlins" under $XDG_CONFIG_HOME; internal/configuration/
+  # configuration.go). A repo-level .gremlins.yaml still overrides it.
   xdg.configFile."gremlins/gremlins/.gremlins.yaml".text = ''
     unleash:
       workers: 8
@@ -219,8 +224,10 @@ in
   systemd.user.services.codebase-memory-mcp-update = lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     Unit = {
       Description = "Update Codebase Memory MCP from the latest verified stable release";
-      Wants = [ "network-online.target" ];
-      After = [ "network-online.target" ];
+      # No network-online.target ordering: it is a system-manager target and has
+      # no effect in `systemd --user`. The script retries its downloads (curl
+      # --retry) and the unit is timer-driven (Persistent), so a missed network
+      # fails this run and the next timer fire retries.
     };
     Service = {
       Type = "oneshot";
@@ -243,6 +250,10 @@ in
       # ~/app-configs. chezmoi is on PATH via the profile bin dir above.
       # Logic in scripts/codebase-memory-mcp-update.sh (tested by
       # tests/bash/bootstrap-safety.bats).
+      # NOTE: with --apply the script runs `home-manager switch` when a new
+      # release lock is found, i.e. a full Home Manager activation from a
+      # background timer. Accepted by design (it is what installs the update);
+      # it only runs for a changed, verified release.
       ExecStart = "${pkgs.writeShellScript "codebase-memory-mcp-update" (
         builtins.readFile ./scripts/codebase-memory-mcp-update.sh
       )}";

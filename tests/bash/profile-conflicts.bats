@@ -29,20 +29,24 @@ JSON
 @test "home-manager-path itself is never a conflict" {
     touch "$T/hmpath/bin/git"
     run profile_hm_conflicts "$T/manifest.json" "$T/hm/home-path"
+    [ "$status" -eq 0 ]
     [[ "$output" != *home-manager-path* ]]
 }
 
 @test "no overlap prints nothing" {
     rm "$T/hm/home-path/bin/parallel"
     run profile_hm_conflicts "$T/manifest.json" "$T/hm/home-path"
+    [ "$status" -eq 0 ]
     [ -z "$output" ]
 }
 
 @test "a missing manifest or home-path is not an error" {
     run profile_hm_conflicts "$T/nope.json" "$T/hm/home-path"
-    [ "$status" -eq 0 ] && [ -z "$output" ]
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
     run profile_hm_conflicts "$T/manifest.json" "$T/nope"
-    [ "$status" -eq 0 ] && [ -z "$output" ]
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
 }
 
 @test "older list-style manifests (version 2) are read too" {

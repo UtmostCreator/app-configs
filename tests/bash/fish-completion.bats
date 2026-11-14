@@ -38,3 +38,14 @@ binding() { # binding <mode> <key> -> the command bound to it
     run env HOME="$home" fish --no-config -c "cd $BATS_TEST_TMPDIR/elsewhere; set -g CDPATH . \$HOME/Projects; complete -C 'cd app-al'"
     [[ "$output" == *"app-alpha/"* ]]
 }
+
+@test "rendered config silences the default fish greeting" {
+    # Real startup path: config.fish in a scratch HOME, interactive fish.
+    mkdir -p "$HOME/.config/fish"; cp "$CFG" "$HOME/.config/fish/config.fish"
+    run env HOME="$HOME" XDG_CONFIG_HOME="$HOME/.config" \
+        XDG_DATA_HOME="$HOME/.local/share" XDG_STATE_HOME="$HOME/.local/state" XDG_CACHE_HOME="$HOME/.cache" \
+        fish -i -c 'set -q fish_greeting; and echo "defined[$fish_greeting]"'
+    # Unset and empty both expand to nothing; only a defined-empty variable
+    # stops fish from printing its stock greeting.
+    [[ "$output" == *"defined[]"* ]]
+}

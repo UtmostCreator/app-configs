@@ -46,17 +46,27 @@ proj_check_config() {
 }
 
 proj_yq() {
-  # Read a yq expression from $PROJECTS_CONFIG, never erroring out
-  # on missing keys (returns empty string instead).
+  # Read a yq expression from $PROJECTS_CONFIG. A missing key yields an
+  # empty/"null" result, but a yq error (malformed YAML, bad expression)
+  # is reported on stderr and returned as a non-zero status. Callers that
+  # capture output with $(...) must check the status.
   proj_check_config
-  yq -r "$@" "$PROJECTS_CONFIG" 2>/dev/null || true
+  yq -r "$@" "$PROJECTS_CONFIG"
 }
 
 proj_ids() {
   # List project ids in pane order. chezmoi's toYaml sorts map keys, so
   # declaration order under `projects:` is lost; an explicit
   # `project_order` list wins, falling back to the (sorted) keys.
-  proj_yq '(.project_order // (.projects | keys)) | .[]'
+  # Fails on a parse error and when no project is configured: every caller
+  # needs at least one id, and "zero projects" must not look like success.
+  local out
+  out="$(proj_yq '(.project_order // (.projects // {} | keys)) | .[]')" || return 1
+  if [[ -z "$out" ]]; then
+    proj_log "no projects configured in $PROJECTS_CONFIG"
+    return 1
+  fi
+  printf '%s\n' "$out"
 }
 
 proj_field() {
@@ -65,7 +75,9 @@ proj_field() {
   local id="$1"
   local path="$2"
   [[ -z "$id" || -z "$path" ]] && return 1
-  proj_yq ".projects.\"$id\".$path // \"\""
+  # select(. != null) rather than `// ""`: the alternative operator also
+  # swallows a configured `false`. A missing key prints nothing.
+  proj_yq ".projects.\"$id\".$path | select(. != null)"
 }
 
 proj_field_default() {

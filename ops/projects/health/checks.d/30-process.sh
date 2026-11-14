@@ -7,7 +7,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=ops/projects/health/lib.sh
 source "$SCRIPT_DIR/../lib.sh"
 
-for id in $(proj_health_for_each_project process); do
+ids="$(proj_health_for_each_project process)" || exit 1
+for id in $ids; do
   PROJ_CHECK_NAME="${id}-process"
   unit="$(proj_field "$id" service.unit)"
   if [[ -n "$unit" && "$unit" != null ]]; then

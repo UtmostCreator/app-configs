@@ -27,9 +27,11 @@ proj_health_http_ok() {
 # Walk every project that lists `<check_id>` in its `.health.checks`.
 proj_health_for_each_project() {
   local check_id="$1"
-  local id
-  for id in $(proj_ids); do
-    if proj_yq ".projects.\"$id\".health.checks // [] | .[]" | grep -Fxq "$check_id"; then
+  local id ids checks
+  ids="$(proj_ids)" || return 1
+  for id in $ids; do
+    checks="$(proj_yq ".projects.\"$id\".health.checks // [] | .[]")" || return 1
+    if grep -Fxq "$check_id" <<<"$checks"; then
       printf '%s\n' "$id"
     fi
   done

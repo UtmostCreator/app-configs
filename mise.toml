@@ -278,7 +278,9 @@ run = "nix flake show ./nix"
 
 [tasks."nix:fmt"]
 description = "Format all Nix files (nixfmt RFC style)"
-run = "nixfmt nix/*.nix nix/**/*.nix"
+# git ls-files, not nix/**/*.nix: mise runs tasks without globstar, so the
+# glob only reached 5 of 40 files.
+run = "git ls-files -z '*.nix' | xargs -0 nixfmt"
 
 [tasks."nix:lint"]
 description = "Lint Nix config (statix + deadnix); warnings are advisory"
@@ -289,7 +291,7 @@ if command -v statix >/dev/null 2>&1; then statix check nix/ || true; else echo 
 echo '=== deadnix ==='
 if command -v deadnix >/dev/null 2>&1; then deadnix nix/ || true; else echo 'missing: deadnix'; fi
 echo '=== nixfmt --check ==='
-if command -v nixfmt >/dev/null 2>&1; then nixfmt --check nix/*.nix nix/**/*.nix; else echo 'missing: nixfmt'; fi
+if command -v nixfmt >/dev/null 2>&1; then git ls-files -z '*.nix' | xargs -0 nixfmt --check; else echo 'missing: nixfmt'; fi
 """
 
 # ─── Optional convenience tools (opt-in) ────────────────────────────────────

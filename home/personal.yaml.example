@@ -4,8 +4,10 @@
 # values. The real file is gitignored. Templates referencing these
 # values render with `chezmoi execute-template`.
 #
-# Required keys: name, email, signingKey, hostProfile.
-# Optional keys with defaults: minimal=false, useGitDelta=true, gui=true.
+# Required keys: name, email, signingKey. Recommended: hostProfile, gui.
+# Optional keys with defaults: minimal=false, useGitDelta=true, gui=false.
+# (ops/install.sh seeds hostProfile and gui for the detected host; when a
+# key is missing, templates fall back to hostProfile=linux-desktop, gui=false.)
 
 name: "Your Full Name"
 email: "you@example.com"

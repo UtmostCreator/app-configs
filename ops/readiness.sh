@@ -7,7 +7,6 @@
 #
 # Usage:
 #   bash ops/readiness.sh         # full report, exit 0 if ready
-#   AI_OUTPUT=plain bash ops/readiness.sh
 #
 # Exit 0 = user environment ready. Exit 2 = ready but optional system rebuild
 # pending. Exit 1 = something required is missing.

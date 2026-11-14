@@ -5,6 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/watch/config.sh"
 
+# shellcheck source=ops/projects/lib.sh
+source "$SCRIPT_DIR/../lib.sh"
+ws_no_args kill-logs "$@"
+
 stopped="0"
 for session in "$LOG_WORKSPACE_SESSION_NAME" log-workspace; do
   if tmux list-sessions -F '#{session_name}' 2>/dev/null | awk -v wanted="$session" '$0 == wanted { found=1 } END { exit !found }'; then

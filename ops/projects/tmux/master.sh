@@ -202,21 +202,31 @@ send_backend_verify_then_git_workflow() {
   run_bootstrap_in_pane "$pane_id" "$cmd"
 }
 
+# Parse every argument first and act afterwards: a later bad argument (or
+# --help) must not leave an earlier --force having already killed the session.
+FORCE="0"
 for arg in "$@"; do
   case "$arg" in
     --detached)
       DETACHED="1"
       ;;
     --force)
-      tmux kill-session -t "$SESSION" 2>/dev/null || true
+      FORCE="1"
+      ;;
+    -h|--help)
+      echo "Usage: bash $WS_SCRIPT_OPEN_WORKSPACE [--detached] [--force]"
+      exit 0
       ;;
     *)
-      echo "Unknown argument: $arg"
-      echo "Usage: bash $WS_SCRIPT_OPEN_WORKSPACE [--detached] [--force]"
-      exit 1
+      echo "Unknown argument: $arg" >&2
+      echo "Usage: bash $WS_SCRIPT_OPEN_WORKSPACE [--detached] [--force]" >&2
+      exit 2
       ;;
   esac
 done
+if [ "$FORCE" = "1" ]; then
+  tmux kill-session -t "$SESSION" 2>/dev/null || true
+fi
 
 if tmux has-session -t "$SESSION" 2>/dev/null; then
   if [ -n "${TMUX:-}" ]; then

@@ -5,6 +5,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/../config.sh"
 
+# shellcheck source=ops/projects/lib.sh
+source "$WS_PROJECTS_ROOT_DIR/lib.sh"
+ws_no_args ws-frontend-restart "$@"
+
 SESSION="$WS_TMUX_SESSION"
 PANE_TITLE="$WS_PANE_FRONTEND"
 START_NUXT_CMD="bash $WS_SCRIPT_START_FRONTEND"

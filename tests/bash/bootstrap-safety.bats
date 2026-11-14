@@ -122,7 +122,7 @@ first_install() { # first_install <host>
     first_install macos
     [ "$status" -eq 0 ]
     [[ "$output" == *"seed-personal-yaml.sh"*"personal.yaml macos"* ]]
-    [[ "$output" == *"darwin-rebuild switch --flake $FRESH/nix#macos"* ]]
+    [[ "$output" == *"sudo nix run $FRESH/nix#darwin-rebuild -- switch --flake $FRESH/nix#macos"* ]]
     [[ "$output" != *"home-manager switch"* ]]
     [ ! -e "$FRESH/home/.chezmoidata/personal.yaml" ]
 }

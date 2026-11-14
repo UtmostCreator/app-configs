@@ -542,3 +542,42 @@ helpers_present() {
     before="${output%%best-effort*}"
     [[ "$before" != *"seed-personal-yaml"* ]]
 }
+
+# ── macOS: nix-darwin switch goes through sudo (ticket finding 18) ──────────
+
+@test "macOS first run: sudo nix run the pinned darwin-rebuild" {
+    make_repo repo
+    stub_tool sudo
+    run env USER=utmostcreator HOST_PROFILE=macos bash "$FAKE/ops/install.sh"
+    echo "$output"
+    [ "$status" -eq 0 ]
+    grep -q "^sudo cwd=.* args=nix run $FAKE/nix#darwin-rebuild -- switch --flake $FAKE/nix#macos\$" "$STUB_LOG"
+    [ "$(grep -c 'home-manager' "$STUB_LOG")" -eq 0 ]
+}
+
+@test "macOS with darwin-rebuild installed: sudo darwin-rebuild switch" {
+    make_repo repo
+    stub_tool sudo
+    stub_tool darwin-rebuild
+    run env USER=utmostcreator HOST_PROFILE=macos bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    grep -q "^sudo cwd=.* args=darwin-rebuild switch --flake $FAKE/nix#macos\$" "$STUB_LOG"
+}
+
+@test "macOS without usable sudo stops before anything is installed or changed" {
+    make_repo repo
+    stub_tool sudo
+    run env USER=utmostcreator STUB_FAIL_SUDO=1 HOST_PROFILE=macos bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"[install:error] macOS switch needs sudo"* ]]
+    [[ "$output" != *"── Nix ──"* ]]
+    [ "$(grep -c '^chezmoi\|^nix profile\|args=nix flake' "$STUB_LOG")" -eq 0 ]
+}
+
+@test "a macOS dry run does not ask for sudo" {
+    make_repo repo
+    stub_tool sudo
+    run env USER=utmostcreator STUB_FAIL_SUDO=1 DRY_RUN=1 HOST_PROFILE=macos bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would run: sudo nix run $FAKE/nix#darwin-rebuild -- switch --flake $FAKE/nix#macos"* ]]
+}

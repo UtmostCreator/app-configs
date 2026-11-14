@@ -148,7 +148,7 @@ step "Home Manager / nix-darwin switch"
 if [[ "$HOST_PROFILE" == "macos" ]]; then
   run darwin-rebuild switch --flake "$REPO_ROOT/nix#macos"
 else
-  run home-manager switch --flake "$REPO_ROOT/nix#$HOST_PROFILE"
+  run home-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HOST_PROFILE"
 fi
 
 # ── 7. mise ─────────────────────────────────────────────────────────────────

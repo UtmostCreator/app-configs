@@ -13,6 +13,9 @@ setup() {
   mkdir -p "$TEST_HOME" "$TEST_STATE" "$TEST_TMUX"
   chmod 700 "$TEST_TMUX"
   export HOME="$TEST_HOME"
+  # Inside tmux, TMUX names the caller's server and wins over TMUX_TMPDIR, so
+  # teardown's kill-server would kill the session running `bats`.
+  unset TMUX TMUX_PANE
   export TMUX_TMPDIR="$TEST_TMUX"
   export LOG_WORKSPACE_STATE_DIR="$TEST_STATE"
   export LOG_WORKSPACE_SESSION_NAME="$SESSION"

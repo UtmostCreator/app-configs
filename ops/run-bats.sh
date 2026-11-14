@@ -12,4 +12,6 @@ if ! command -v bats >/dev/null 2>&1; then
     exit 1
 fi
 
-exec bats tests/bash "$@"
+# The log-workspace / log-errors suites live next to their scripts; run
+# them too, or they silently stop being exercised.
+exec bats tests/bash ops/projects/logging/test "$@"

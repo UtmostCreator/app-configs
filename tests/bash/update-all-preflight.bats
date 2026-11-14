@@ -112,3 +112,53 @@ dirty_it() {
   [[ "$output" == *"refusing to apply from a bats test"* ]]
   [ -z "$(ls -A "$outside")" ]   # no snapshot or state written there
 }
+
+# A chezmoi stub for the managed-files gate: `status` prints $CHEZMOI_STATUS,
+# `source-path` names a modify_ source for each target listed in
+# $CHEZMOI_MODIFY_TARGETS and a plain source for everything else.
+stub_chezmoi() {
+  STUBS="$BATS_TEST_TMPDIR/bin"
+  mkdir -p "$STUBS"
+  cat > "$STUBS/chezmoi" <<'STUB'
+#!/usr/bin/env bash
+case "$1" in
+  status) [[ -n "${CHEZMOI_STATUS:-}" ]] && printf '%s\n' "$CHEZMOI_STATUS" ;;
+  target-path) [[ $# -eq 1 ]] && printf '%s\n' "$HOME" ;;
+  source-path)
+    shift
+    for t in "$@"; do
+      rel="${t#"$HOME"/}" base="${t##*/}" src="dot_${base#.}"
+      for m in ${CHEZMOI_MODIFY_TARGETS:-}; do [[ "$rel" == "$m" ]] && src="modify_${base}.tmpl"; done
+      printf '/src/%s/%s\n' "$(dirname "$rel")" "$src"
+    done ;;
+esac
+exit 0
+STUB
+  chmod +x "$STUBS/chezmoi"
+}
+
+@test "a hand-edited plain managed file is reported as a conflict" {
+  stub_chezmoi
+  export CHEZMOI_STATUS='MM .gitconfig'
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
+  [[ "$output" == *"1 edited since chezmoi wrote them: .gitconfig"* ]]
+}
+
+@test "a modify_ target is not a conflict: chezmoi merges it without prompting" {
+  stub_chezmoi
+  export CHEZMOI_STATUS='MM .claude/settings.json'
+  export CHEZMOI_MODIFY_TARGETS='.claude/settings.json'
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
+  [[ "$output" != *"edited since chezmoi wrote them"* ]]
+  [[ "$output" == *"managed files"*"no local edits"* ]]
+}
+
+@test "modify_ targets are dropped but plain conflicts beside them still count" {
+  stub_chezmoi
+  export CHEZMOI_STATUS=$'MM .claude/settings.json\nMM .gitconfig\nMM .config/Code/User/settings.json'
+  export CHEZMOI_MODIFY_TARGETS='.claude/settings.json .config/Code/User/settings.json'
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
+  [[ "$output" == *"1 edited since chezmoi wrote them: .gitconfig"* ]]
+  [[ "$output" != *"wrote them: .claude"* ]]
+  [[ "$output" != *"Code/User/settings.json"*"edited"* ]]
+}

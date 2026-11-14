@@ -113,11 +113,27 @@ check_keychain_linux() {
     fi
 }
 
+# chezmoi_managed <path>: true when chezmoi owns the target. Such files must
+# never be edited here: chezmoi would see a hand edit (sys-update then
+# refuses to run) and the next apply would undo it anyway. The managed rc
+# templates already source the loader.
+chezmoi_managed() {
+    command -v chezmoi >/dev/null 2>&1 && chezmoi source-path "$1" >/dev/null 2>&1
+}
+
 install_posix_snippet() {
     local rc="$1"  # path to ~/.bashrc or ~/.zshrc
-    mkdir -p "$DEPLOY_DIR"
-    install -m 0644 "$SNIPPET_SH" "$DEPLOY_DIR/ssh-agent.sh"
-    log "Installed snippet to $DEPLOY_DIR/ssh-agent.sh"
+    if chezmoi_managed "$DEPLOY_DIR/ssh-agent.sh"; then
+        log "$DEPLOY_DIR/ssh-agent.sh is managed by chezmoi; not copying it."
+    else
+        mkdir -p "$DEPLOY_DIR"
+        install -m 0644 "$SNIPPET_SH" "$DEPLOY_DIR/ssh-agent.sh"
+        log "Installed snippet to $DEPLOY_DIR/ssh-agent.sh"
+    fi
+    if chezmoi_managed "$rc"; then
+        log "$rc is managed by chezmoi and already sources the loader; not editing it."
+        return 0
+    fi
 
     touch "$rc"
     if grep -qF "$MARKER_BEGIN" "$rc"; then
@@ -143,6 +159,7 @@ install_posix_snippet() {
 remove_posix_snippet() {
     local rc="$1"
     [ -f "$rc" ] || return 0
+    chezmoi_managed "$rc" && return 0
     awk -v b="$MARKER_BEGIN" -v e="$MARKER_END" '
         $0 == b { skip = 1; next }
         $0 == e { skip = 0; next }
@@ -154,9 +171,13 @@ remove_posix_snippet() {
 
 install_fish_snippet() {
     local conf_d="$HOME/.config/fish/conf.d"
-    mkdir -p "$conf_d"
-    install -m 0644 "$SNIPPET_FISH" "$conf_d/ssh-agent.fish"
-    log "Installed snippet to $conf_d/ssh-agent.fish"
+    if chezmoi_managed "$conf_d/ssh-agent.fish"; then
+        log "$conf_d/ssh-agent.fish is managed by chezmoi; not overwriting it."
+    else
+        mkdir -p "$conf_d"
+        install -m 0644 "$SNIPPET_FISH" "$conf_d/ssh-agent.fish"
+        log "Installed snippet to $conf_d/ssh-agent.fish"
+    fi
     if [ -n "${APP_CONFIGS_SSH_KEYS:-}" ] && command -v fish >/dev/null 2>&1; then
         # shellcheck disable=SC2016
         fish -c "set -Ux APP_CONFIGS_SSH_KEYS $APP_CONFIGS_SSH_KEYS" || true
@@ -165,6 +186,7 @@ install_fish_snippet() {
 }
 
 remove_fish_snippet() {
+    chezmoi_managed "$HOME/.config/fish/conf.d/ssh-agent.fish" && return 0
     rm -f "$HOME/.config/fish/conf.d/ssh-agent.fish"
     log "Removed fish snippet"
 }

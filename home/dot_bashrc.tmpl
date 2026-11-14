@@ -27,6 +27,10 @@ case ":$PATH:" in
     *) export PATH="$HOME/.local/bin:$PATH" ;;
 esac
 
+# ssh-agent: one shared agent per boot (keychain on Linux, Keychain on macOS).
+# chezmoi owns this file, so ops/unix/ssh-agent-setup.sh no longer edits it.
+[ -f "$HOME/.config/app-configs/ssh-agent.sh" ] && . "$HOME/.config/app-configs/ssh-agent.sh"
+
 {{ if eq .chezmoi.os "darwin" -}}
 # macOS: Laravel Herd SSL certificate for Node.js.
 export NODE_EXTRA_CA_CERTS="$HOME/Library/Application Support/Herd/config/valet/CA/LaravelValetCASelfSigned.pem"

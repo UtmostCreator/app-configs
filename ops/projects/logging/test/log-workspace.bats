@@ -393,7 +393,7 @@ pid_is_gone() {
   grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z \[BACKEND-NPM\] ERROR boom$' "$output_file"
   grep -Eq '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z \[BACKEND-NPM\] DONE$' "$output_file"
   [ "$(grep -Fxc "$existing" "$output_file")" -eq 1 ]
-  ! grep -q $'\033' "$output_file"
+  if grep -q $'\033' "$output_file"; then echo 'assertion failed: expected no match' >&2; return 1; fi
   ! grep -q $'\r' "$output_file"
 }
 

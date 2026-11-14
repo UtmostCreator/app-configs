@@ -153,8 +153,8 @@ run_plain() { # $1 = fixture json, $2 = current disk
     # reminders may legitimately mention efibootmgr/nixos-rebuild.)
     code="$(grep -vE '^[[:space:]]*#' "$SCRIPT" \
         | grep -vE "printf|cat <<|echo ")"
-    ! echo "$code" | grep -Eq '(^|[;&|[:space:]])(efibootmgr|mkfs|nixos-rebuild)([[:space:]]|$)'
-    ! echo "$code" | grep -Eq 'bootctl[[:space:]]+(install|update)'
+    if echo "$code" | grep -Eq '(^|[;&|[:space:]])(efibootmgr|mkfs|nixos-rebuild)([[:space:]]|$)'; then echo 'assertion failed: expected no match' >&2; return 1; fi
+    if echo "$code" | grep -Eq 'bootctl[[:space:]]+(install|update)'; then echo 'assertion failed: expected no match' >&2; return 1; fi
     ! echo "$code" | grep -Eq '(^|[;&|[:space:]])mount[[:space:]]'
 }
 

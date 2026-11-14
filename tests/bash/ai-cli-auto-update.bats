@@ -75,7 +75,7 @@ codex_state() { cat "$XDG_STATE_HOME/codex-auto-update/installed-version"; }
     run bash "$CLAUDE_SCRIPT"
     [ "$status" -eq 0 ]
     grep -qx 'claude update' "$CALLS"
-    ! grep -q systemctl "$CALLS"
+    if grep -q systemctl "$CALLS"; then echo 'assertion failed: expected no match' >&2; return 1; fi
     [[ "$output" == *"already active"* ]]
 }
 
@@ -107,7 +107,7 @@ codex_state() { cat "$XDG_STATE_HOME/codex-auto-update/installed-version"; }
     export FAIL_UPDATE=1
     run bash "$CLAUDE_SCRIPT"
     [ "$status" -ne 0 ]
-    ! grep -q systemctl "$CALLS"
+    if grep -q systemctl "$CALLS"; then echo 'assertion failed: expected no match' >&2; return 1; fi
     [ "$(claude_state)" = 2.1.300 ]
 }
 
@@ -120,7 +120,7 @@ codex_state() { cat "$XDG_STATE_HOME/codex-auto-update/installed-version"; }
     export BACKGROUND_LOAD_STATE=not-found
     run bash "$CLAUDE_SCRIPT"
     [ "$status" -eq 0 ]
-    ! grep -q 'try-restart.*claude-background-sessions.service' "$CALLS"
+    if grep -q 'try-restart.*claude-background-sessions.service' "$CALLS"; then echo 'assertion failed: expected no match' >&2; return 1; fi
     grep -qF "systemctl --user try-restart claude-remote-control@*.service" "$CALLS"
     [ "$(claude_state)" = 2.1.320 ]
 }

@@ -177,9 +177,9 @@ setup() {
   grep -Fx -- '-I' "$pager_args"
   grep -Fx -- '-J' "$pager_args"
   grep -Fx -- '-L' "$pager_args"
-  ! grep -Fx -- '-F' "$pager_args"
-  ! grep -Fx -- '-S' "$pager_args"
-  ! grep -Fx -- '-X' "$pager_args"
+  if grep -Fx -- '-F' "$pager_args"; then echo 'assertion failed: expected no match' >&2; return 1; fi
+  if grep -Fx -- '-S' "$pager_args"; then echo 'assertion failed: expected no match' >&2; return 1; fi
+  if grep -Fx -- '-X' "$pager_args"; then echo 'assertion failed: expected no match' >&2; return 1; fi
 
   run script -q -e -c "env -u NO_COLOR PATH='$fake_bin:$PATH' PAGER_ARGS='$TEST_ROOT/no-pager-args' TERM=xterm-256color bash '$LOG_ERRORS' --no-pager '$FIXTURES/laravel.log'" /dev/null
   [ "$status" -eq 0 ]

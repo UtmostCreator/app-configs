@@ -220,15 +220,17 @@ for arg in "$@"; do
   esac
 done
 
-[ "$FORCE" = "1" ] && { tmux kill-session -t "$SESSION" 2>/dev/null || true; }
+# "=" makes every target an exact name; bare names prefix-match other sessions.
+[ "$FORCE" = "1" ] && { tmux kill-session -t "=$SESSION" 2>/dev/null || true; }
 
-if tmux has-session -t "$SESSION" 2>/dev/null; then
-  if [ -n "${TMUX:-}" ]; then
-    tmux switch-client -t "$SESSION"
-  elif [ "$DETACHED" = "1" ]; then
+if tmux has-session -t "=$SESSION" 2>/dev/null; then
+  # Same order as proj_tmux_attach: --detached wins, even inside $TMUX.
+  if [ "$DETACHED" = "1" ]; then
     echo "tmux session $SESSION is already running"
+  elif [ -n "${TMUX:-}" ]; then
+    tmux switch-client -t "=$SESSION"
   else
-    tmux attach-session -t "$SESSION"
+    tmux attach-session -t "=$SESSION"
   fi
   exit 0
 fi

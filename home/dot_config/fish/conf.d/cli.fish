@@ -80,3 +80,12 @@ function zc --description 'z <dir>, then start claude (or another agent) there'
     set -q argv[2]; and set agent $argv[2]
     command $agent $argv[3..]
 end
+
+# hms [args]: home-manager switch for this host from the dotfiles flake.
+# A bare `home-manager switch` has no config here and fails at once.
+function hms --description 'home-manager switch --flake $DOTFILES_DIR/nix#<host>'
+    set -l dots $DOTFILES_DIR
+    test -n "$dots"; or set dots ~/Projects/app-configs
+    set -l host (bash $dots/ops/detect-host.sh); or return
+    home-manager switch -b hm-bak --flake "$dots/nix#$host" $argv
+end

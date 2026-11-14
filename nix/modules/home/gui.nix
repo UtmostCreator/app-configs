@@ -366,23 +366,20 @@
         ${pkgs.systemd}/bin/systemctl --user stop syncthing.service
         echo "syncthing: stopped"
       '')
-      (writeShellScriptBin "sync-open" ''
-        set -euo pipefail
-        url="http://127.0.0.1:8384/"
-        # Start the service if it is not already active (idempotent).
-        if ! ${pkgs.systemd}/bin/systemctl --user is-active --quiet syncthing.service; then
-          ${pkgs.systemd}/bin/systemctl --user start syncthing.service
-        fi
-        # Wait for the Web UI to accept connections before opening it, so a
-        # cold start does not open a "connection refused" tab (~15s max).
-        for _ in $(${pkgs.coreutils}/bin/seq 1 30); do
-          if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null "$url" 2>/dev/null; then
-            break
-          fi
-          sleep 0.5
-        done
-        exec ${pkgs.xdg-utils}/bin/xdg-open "$url"
-      '')
+      # Logic in scripts/sync-open.sh (tested by tests/bash/sync-open.bats).
+      (writeShellScriptBin "sync-open" (
+        ''
+          export PATH=${
+            lib.makeBinPath [
+              systemd
+              curl
+              coreutils
+              xdg-utils
+            ]
+          }:$PATH
+        ''
+        + builtins.readFile ./scripts/sync-open.sh
+      ))
     ];
 
   # Flameshot configuration, managed declaratively so the screenshot keybindings

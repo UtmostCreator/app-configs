@@ -38,7 +38,7 @@ Commit once every relevant check passes **and** all of these hold:
 
 - The pre-commit hooks pass (gitleaks, `ops/validate-config.sh`). Never use
   `--no-verify`.
-- No secrets, no `home/personal.yaml`, no machine-local state.
+- No secrets, no `home/.chezmoidata/personal.yaml`, no machine-local state.
 - The diff only contains work you made or verified. Other sessions may be
   editing this repo concurrently (see `.claude/worktrees/`), so leave in-progress
   work that is not yours unstaged and mention it.

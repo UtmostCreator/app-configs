@@ -73,6 +73,7 @@ command.
 | `topn [N]` | `sort \| uniq -c \| sort -nr \| head`, for any stdin |
 | `logtop FIELD [N] FILE...` | rank access logs by `ip`, `path`, `status`, `pathstatus` or `ua`; reads `.gz` |
 | `curl-timing URL` | status plus DNS, connect, TLS, TTFB and total time |
+| `gh-stars-export [--format clean\|full\|both] [--out-dir DIR]` | back up your GitHub stars as JSON (gh + jq) |
 | `xh` | readable HTTP client for manual API calls (`xh DELETE <url>`); keep curl in scripts |
 | `hyperfine 'a' 'b'` | benchmark two commands with warmups before claiming a speedup |
 | `rgc [rg args]` | ripgrep only changed files; `LZ=1 rgc` runs lizard on them |

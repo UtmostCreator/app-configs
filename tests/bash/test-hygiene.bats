@@ -44,6 +44,8 @@ setup() {
 
 @test "logging tests never touch the tmux server you run them from" {
     command -v tmux >/dev/null || { echo "tmux missing"; return 1; }
+    # The nested bats run and the tmux server must not write to the suite HOME.
+    export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
     sock="$BATS_TEST_TMPDIR/real-tmux.sock"
     tmux -S "$sock" new-session -d -s mine 'sleep 600'
     # Inside tmux, TMUX names the client's server socket.

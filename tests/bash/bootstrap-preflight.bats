@@ -77,6 +77,87 @@ apply() { run env PATH="$STUBS:$PATH" HOST_PROFILE=linux-desktop bash "$FAKE/ops
     [[ "$output" != *"nix eval failed"* ]]
 }
 
+# ── no Nix yet (fresh machine): the sed fallback of the login-user check ─────
+
+# nonix_path: a PATH of symlinks to basic tools only, never a real nix.
+nonix_path() {
+    NONIX="$BATS_TEST_TMPDIR/nonix"; mkdir -p "$NONIX"
+    local t p
+    for t in bash env git curl sed awk cat dirname head tail find xargs stat sort grep \
+        uname mkdir tee tr rm cp chmod ls readlink basename sleep date wc cut id mktemp ln; do
+        p="$(command -v "$t" 2>/dev/null)" || continue
+        ln -sf "$p" "$NONIX/$t"
+    done
+    ! PATH="$NONIX" command -v nix >/dev/null 2>&1 || { echo "nix leaked into the test PATH" >&2; return 1; }
+}
+
+# host_checks <mode-args...>: call the shared preflight with the real repo and
+# a mismatched login user, under the no-nix PATH.
+host_checks() {
+    nonix_path
+    run env PATH="$NONIX" USER=someone-else REPO="$REPO_ROOT" "$NONIX/bash" -c '
+        fail() { printf "FAIL: %s\n" "$*" >&2; exit 1; }
+        warn() { printf "WARN: %s\n" "$*" >&2; }
+        source "$REPO/ops/lib/preflight.sh"
+        preflight_host_checks "$REPO" linux-desktop "$@"
+        echo "returned 0"' _ "$@"
+}
+
+@test "without nix, bootstrap refuses a login user that does not match the nix username" {
+    nonix_path
+    run env PATH="$NONIX" USER=someone-else HOST_PROFILE=linux-desktop \
+        bash "$REPO_ROOT/ops/bootstrap.sh" --dry-run
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"login user 'someone-else' does not match username '$NIX_USER'"* ]]
+    [[ "$output" != *"would: nix profile install"* ]]
+}
+
+@test "without nix, the default mode of preflight_host_checks fails on a user mismatch" {
+    host_checks
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"FAIL: login user 'someone-else' does not match username '$NIX_USER'"* ]]
+    [[ "$output" != *"returned 0"* ]]
+}
+
+@test "without nix, fail mode fails and warn mode only warns" {
+    host_checks fail
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"FAIL: login user 'someone-else' does not match"* ]]
+    host_checks warn
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN: login user 'someone-else' differs from username '$NIX_USER'"* ]]
+    [[ "$output" == *"returned 0"* ]]
+    [[ "$output" != *"FAIL:"* ]]
+}
+
+@test "without nix, a matching login user passes silently in both modes" {
+    nonix_path
+    for mode in fail warn; do
+        run env PATH="$NONIX" USER="$NIX_USER" REPO="$REPO_ROOT" "$NONIX/bash" -c '
+            fail() { printf "FAIL: %s\n" "$*" >&2; exit 1; }
+            warn() { printf "WARN: %s\n" "$*" >&2; }
+            source "$REPO/ops/lib/preflight.sh"
+            preflight_host_checks "$REPO" linux-desktop "$1"; echo returned 0' _ "$mode"
+        [ "$status" -eq 0 ]
+        [[ "$output" == "returned 0" ]]
+    done
+}
+
+@test "an unexpected preflight_host_checks mode fails closed, before any check" {
+    host_checks warm
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"FAIL: preflight_host_checks: unknown mode 'warm'"* ]]
+    # Also with a matching user: a typo in MODE is a caller bug, not a pass.
+    nonix_path
+    run env PATH="$NONIX" USER="$NIX_USER" REPO="$REPO_ROOT" "$NONIX/bash" -c '
+        fail() { printf "FAIL: %s\n" "$*" >&2; exit 1; }
+        warn() { :; }
+        source "$REPO/ops/lib/preflight.sh"
+        preflight_host_checks "$REPO" linux-desktop warm; echo returned 0'
+    [ "$status" -ne 0 ]
+    [[ "$output" != *"returned 0"* ]]
+}
+
 @test "WSL1 is refused with the conversion command, before anything else" {
     printf 'Linux version 4.4.0-19041-Microsoft (Microsoft@Microsoft.com)\n' >"$BATS_TEST_TMPDIR/version"
     run env PATH="$STUBS:$PATH" HOST_PROFILE=wsl DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version" \

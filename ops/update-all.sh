@@ -2,7 +2,8 @@
 # Update everything this repo manages — the Linux/NixOS equivalent of the
 # macOS `brewup` shell function, with the safety a config repo deserves.
 #
-# Lifecycle. Nothing is mutated until PRECHECK has passed in full:
+# Lifecycle. An apply first takes the update lock and creates its state
+# directory; nothing else is mutated until PRECHECK has passed in full:
 #
 #   PRECHECK  canonical repo path, git state, upstream, tools, disk
 #   PLAN      what would run (this is all report mode does)
@@ -38,6 +39,16 @@
 
 set -uo pipefail
 
+# Re-exec contract with a parent sys-update (consumed by the pull/re-exec step):
+# read once and unset at once, so no step command ever inherits them.
+# shellcheck disable=SC2034  # read by the re-exec/adoption code
+REEXEC_CHILD="${SYS_UPDATE_REEXEC:-}"
+# shellcheck disable=SC2034
+PARENT_RUN_ID="${SYS_UPDATE_RUN_ID:-}"
+# shellcheck disable=SC2034
+PULLED_FROM="${SYS_UPDATE_PULLED_FROM:-}"
+unset SYS_UPDATE_REEXEC SYS_UPDATE_RUN_ID SYS_UPDATE_PULLED_FROM
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 # shellcheck source=ops/lib/update-facts.sh
 source "$REPO_ROOT/ops/lib/update-facts.sh"
@@ -61,6 +72,130 @@ DO_VERIFY=1
 VERBOSE=0
 [[ "${NO_CLEANUP:-0}" == 1 ]] && DO_CLEANUP=0
 
+STATE_DIR="${SYS_UPDATE_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/sys-update}"
+RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
+LOCK_OWNED=0   # 1 only once this process has taken the lock itself
+RUN_DIR="$STATE_DIR/runs"
+RUN_LOG="$RUN_DIR/$RUN_ID.log"
+RUN_META="$RUN_DIR/$RUN_ID.meta"
+LOCK_BACKUP="$RUN_DIR/$RUN_ID.flake.lock"
+HM_PROFILE="$HOME/.local/state/nix/profiles/home-manager"
+LOCK_FILE="$STATE_DIR/lock"
+LOCK_DIR="$STATE_DIR/lock.d"
+
+# ── lock ────────────────────────────────────────────────────────────────────
+# One apply at a time. Two modes: flock(1) where it exists (the kernel drops the
+# lock when every process holding the descriptor is gone; the lock is not tied
+# to this process alone, so after SIGKILL an orphaned _ui_progress ticker can
+# still hold it until it exits), else an mkdir lock with an owner file (macOS).
+# The flock file is never unlinked.
+# Every step command runs through run_step, which closes the lock descriptor,
+# so a daemon a step leaves behind cannot keep the lock after we exit.
+
+LOCK_MODE=""
+use_flock() {
+  [[ "${SYS_UPDATE_FORCE_MKDIR_LOCK:-0}" != 1 ]] && have flock && [[ -d /proc/self/fd ]]
+}
+
+lock_refuse_flock() {
+  {
+    printf 'sys-update: another sys-update is running (lock: %s)\n' "$LOCK_FILE"
+    if have fuser; then printf '  holders:\n'; fuser -v "$LOCK_FILE" 2>&1 | sed 's/^/    /'
+    elif have lsof; then printf '  holders:\n'; lsof "$LOCK_FILE" 2>&1 | sed 's/^/    /'; fi
+    printf '  Wait for it to finish; the lock is released when that process exits.\n'
+    printf '  A stray update-all.sh process (for example an orphan of a killed run) may be holding it; if no update is running, kill that process.\n'
+  } >&2
+}
+
+lock_refuse_mkdir() {
+  local owner_pid="" owner_run=""
+  { read -r owner_pid owner_run < "$LOCK_DIR/owner"; } 2>/dev/null || true
+  {
+    printf 'sys-update: another sys-update holds the lock (%s)\n' "$LOCK_DIR"
+    if [[ "$owner_pid" =~ ^[0-9]+$ ]]; then
+      printf '  owner:   pid %s, run %s\n' "$owner_pid" "${owner_run:-?}"
+      printf '  process: %s\n' "$(ps -p "$owner_pid" -o command= 2>/dev/null || echo 'not running')"
+      printf '  Note: a pid can be reused, so a live process of that pid is not proof the owner is alive.\n'
+    else
+      printf '  owner:   unknown (no readable owner file)\n'
+    fi
+    printf '  If you are sure no update is running, remove the lock yourself:\n'
+    printf '    rm -rf %q\n' "$LOCK_DIR"
+  } >&2
+}
+
+# acquire_lock exits 5 when the lock is held, 1 when it cannot be set up.
+acquire_lock() {
+  mkdir -p "$STATE_DIR" || { printf 'sys-update: cannot create %s\n' "$STATE_DIR" >&2; exit 1; }
+  if use_flock; then
+    LOCK_MODE=flock
+    exec 9>"$LOCK_FILE" || { printf 'sys-update: cannot open %s\n' "$LOCK_FILE" >&2; exit 1; }
+    flock -n 9 || { lock_refuse_flock; exit 5; }
+  else
+    LOCK_MODE="mkdir"
+    if ! mkdir "$LOCK_DIR" 2>/dev/null; then lock_refuse_mkdir; exit 5; fi
+    # Owner file: written whole, then moved into place.
+    if ! { printf '%s %s\n' "$$" "$RUN_ID" > "$LOCK_DIR/owner.$$" && mv -f "$LOCK_DIR/owner.$$" "$LOCK_DIR/owner"; }; then
+      rm -rf "$LOCK_DIR"
+      printf 'sys-update: cannot record the lock owner in %s\n' "$LOCK_DIR" >&2; exit 1
+    fi
+  fi
+  LOCK_OWNED=1
+}
+
+# Only the owner (this pid and run id) removes an mkdir lock; a flock lock is
+# released by the kernel when the process exits.
+# shellcheck disable=SC2329  # invoked from on_exit
+release_lock() {
+  [[ "$LOCK_OWNED" == 1 && "$LOCK_MODE" == mkdir ]] || return 0
+  [[ "$(cat "$LOCK_DIR/owner" 2>/dev/null)" == "$$ $RUN_ID" ]] && rm -rf "$LOCK_DIR"
+  return 0
+}
+
+# Report mode never locks; it only mentions a running update.
+lock_is_held() {
+  if use_flock; then [[ -e "$LOCK_FILE" ]] && ! flock -n "$LOCK_FILE" true 2>/dev/null
+  else [[ -d "$LOCK_DIR" ]]; fi
+}
+
+# run_step <label> <command...>: ui_run with the lock descriptor closed.
+run_step() { ui_run "$@" 9>&-; }
+
+have() { command -v "$1" >/dev/null 2>&1; }
+# Paths read better as ~/… and the home prefix is never the interesting part.
+# The backslash matters: an unescaped ~ in the replacement is tilde-expanded
+# back to the real home directory before it is ever substituted.
+tilde() { printf '%s\n' "${1/#$HOME/\~}"; }
+hm_generation() {
+  local link; link="$(readlink "$HM_PROFILE" 2>/dev/null)" || return 1
+  [[ "$link" =~ -([0-9]+)-link$ ]] && printf '%s\n' "${BASH_REMATCH[1]}"
+}
+meta_put() { [[ -n "${RUN_META:-}" ]] && printf '%s=%s\n' "$1" "$2" >> "$RUN_META"; return 0; }
+meta_get() { sed -n "s/^$2=//p" "$1" | tail -1; }
+
+# EXIT, INT, TERM, HUP, QUIT and PIPE are trapped before anything can take the lock or start a
+# background job.
+# shellcheck disable=SC2329  # invoked through the EXIT trap
+on_exit() {
+  local rc=$?
+  trap - EXIT
+  # Background jobs first: the _ui_progress ticker is a forked subshell that
+  # keeps a copy of the lock descriptor and survives SIGINT. Left alive it
+  # would hold the lock after this process is gone.
+  # shellcheck disable=SC2046
+  kill $(jobs -p) 2>/dev/null; wait 2>/dev/null
+  [[ -n "${RUN_META:-}" && -f "$RUN_META" ]] && meta_put exit_code "$rc" 2>/dev/null
+  ui_cleanup
+  release_lock
+  exit "$rc"
+}
+trap on_exit EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+trap 'exit 129' HUP
+trap 'exit 131' QUIT
+trap 'exit 141' PIPE
+
 for arg in "$@"; do
   case "$arg" in
     rollback)      SUBCOMMAND="rollback" ;;
@@ -81,25 +216,8 @@ for arg in "$@"; do
 done
 
 HOST_PROFILE="${HOST_PROFILE:-$(bash "$REPO_ROOT/ops/detect-host.sh" 2>/dev/null || echo linux-desktop)}"
-STATE_DIR="${SYS_UPDATE_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/sys-update}"
-RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
-RUN_DIR="$STATE_DIR/runs"
-RUN_LOG="$RUN_DIR/$RUN_ID.log"
-RUN_META="$RUN_DIR/$RUN_ID.meta"
-LOCK_BACKUP="$RUN_DIR/$RUN_ID.flake.lock"
-HM_PROFILE="$HOME/.local/state/nix/profiles/home-manager"
 
-have() { command -v "$1" >/dev/null 2>&1; }
-# Paths read better as ~/… and the home prefix is never the interesting part.
-# The backslash matters: an unescaped ~ in the replacement is tilde-expanded
-# back to the real home directory before it is ever substituted.
-tilde() { printf '%s\n' "${1/#$HOME/\~}"; }
-hm_generation() {
-  local link; link="$(readlink "$HM_PROFILE" 2>/dev/null)" || return 1
-  [[ "$link" =~ -([0-9]+)-link$ ]] && printf '%s\n' "${BASH_REMATCH[1]}"
-}
-meta_put() { [[ -n "${RUN_META:-}" ]] && printf '%s=%s\n' "$1" "$2" >> "$RUN_META"; return 0; }
-meta_get() { sed -n "s/^$2=//p" "$1" | tail -1; }
+[[ "$MODE" == apply && "$SUBCOMMAND" != rollback ]] && acquire_lock
 
 # ── rollback ────────────────────────────────────────────────────────────────
 
@@ -133,7 +251,7 @@ do_rollback() {
   ui_section "Rolling back"
   local failed=0
   if [[ -n "$hm_path" && -x "$hm_path/activate" ]]; then
-    if ui_run "home-manager" "$hm_path/activate"; then
+    if run_step "home-manager" "$hm_path/activate"; then
       ui_ok "home-manager" "generation ${gen:-?} re-activated"
     else
       ui_err "home-manager" "re-activation failed"; failed=1
@@ -190,6 +308,9 @@ printf '\n'
 # ── 1. PRECHECK ─────────────────────────────────────────────────────────────
 
 ui_section "Preflight"
+if [[ "$MODE" == "report" ]] && lock_is_held; then
+  ui_info "lock" "another sys-update is running (this report takes no lock)"
+fi
 PRECHECK_FAILED=0
 precheck_fail() { ui_err "$1" "$2"; PRECHECK_FAILED=1; }
 
@@ -414,7 +535,7 @@ step_fail() { ui_err "$1" "$2"; STEP_FAILED=1; }
 # git pull ------------------------------------------------------------------
 if [[ "$DO_PULL" == 1 ]]; then
   HEAD_BEFORE="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
-  if ui_run "git pull" git -C "$REPO_ROOT" pull --ff-only; then
+  if run_step "git pull" git -C "$REPO_ROOT" pull --ff-only; then
     if [[ "$MODE" == "apply" ]]; then
       HEAD_AFTER="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
       if [[ "$HEAD_BEFORE" == "$HEAD_AFTER" ]]; then ui_ok "git pull" "already current"
@@ -445,7 +566,7 @@ if [[ "$GIT_STATE" != "no-repo" ]] \
   && git -C "$REPO_ROOT" diff --quiet HEAD -- "${UPDATE_FILES[@]}" 2>/dev/null; then
   LOCK_WAS_CLEAN=1
 fi
-if ui_run "flake inputs" nix flake update --flake "$REPO_ROOT/nix"; then
+if run_step "flake inputs" nix flake update --flake "$REPO_ROOT/nix"; then
   if [[ "$MODE" == "apply" ]]; then
     LOCK_AFTER="$(lock_inputs "$REPO_ROOT/nix/flake.lock")"
     if [[ -n "$LOCK_BEFORE" && -n "$LOCK_AFTER" ]]; then
@@ -465,7 +586,7 @@ fi
 # the binary lock alongside flake inputs so browser security updates continue.
 if [[ "$STEP_FAILED" == 0 && "$HOST_PROFILE" == linux-desktop ]] \
   && [[ -f "$REPO_ROOT/nix/packages/brave/release.json" ]]; then
-  if ui_run "Brave release" bash "$REPO_ROOT/ops/update-brave.sh"; then
+  if run_step "Brave release" bash "$REPO_ROOT/ops/update-brave.sh"; then
     [[ "$MODE" == apply ]] && ui_ok "Brave release" "official stable release checked"
   else
     step_fail "Brave release" "could not verify the latest official release — nothing was applied"
@@ -476,7 +597,7 @@ fi
 if [[ "$STEP_FAILED" == 0 ]]; then
   CHECK_ARGS=("$REPO_ROOT/nix")
   [[ "$FULL_CHECK" == 1 ]] && CHECK_ARGS=(--all-systems "${CHECK_ARGS[@]}")
-  if ui_run "flake check" nix flake check "${CHECK_ARGS[@]}"; then
+  if run_step "flake check" nix flake check "${CHECK_ARGS[@]}"; then
     ui_scan_warnings
     if [[ "$MODE" == "apply" ]]; then
       if [[ "$FULL_CHECK" == 1 ]]; then
@@ -499,7 +620,7 @@ if [[ "$STEP_FAILED" == 0 ]]; then
   else
     BUILD_TARGET="homeConfigurations.$HOST_PROFILE.activationPackage"
   fi
-  if ui_run "host build" nix build --no-link "$REPO_ROOT/nix#$BUILD_TARGET"; then
+  if run_step "host build" nix build --no-link "$REPO_ROOT/nix#$BUILD_TARGET"; then
     [[ "$MODE" == apply ]] && ui_ok "host build" "$HOST_PROFILE ready to activate"
   else
     step_fail "host build" "build failed — dotfiles and active generation were not changed"
@@ -528,7 +649,7 @@ if [[ "$STEP_FAILED" == 0 ]] && have chezmoi; then
   [[ "$CHEZMOI_FORCE" == 1 ]] && CHEZMOI_ARGS+=(--force)
   # The diff is recorded before the apply so the log always shows what changed.
   [[ "$MODE" == "apply" ]] && { ui_log_only ""; ui_log_only "\$ chezmoi diff"; chezmoi diff >> "${UI_LOG:-/dev/null}" 2>&1 || true; }
-  if ui_run "chezmoi" chezmoi "${CHEZMOI_ARGS[@]}"; then
+  if run_step "chezmoi" chezmoi "${CHEZMOI_ARGS[@]}"; then
     [[ "$MODE" == "apply" ]] && ui_ok "chezmoi" "$( ((PENDING > 0)) && echo "$PENDING file(s) applied" || echo 'already in sync')"
   else
     # Without --force chezmoi stops at a target that was edited by hand; that
@@ -540,7 +661,7 @@ fi
 # home-manager / darwin-rebuild ---------------------------------------------
 if [[ "$STEP_FAILED" == 0 ]]; then
   if [[ "$HOST_PROFILE" == "macos" ]]; then
-    if ui_run "darwin-rebuild" darwin-rebuild switch --flake "$REPO_ROOT/nix#macos"; then
+    if run_step "darwin-rebuild" darwin-rebuild switch --flake "$REPO_ROOT/nix#macos"; then
       ui_scan_warnings; [[ "$MODE" == "apply" ]] && ui_ok "darwin-rebuild" "switched"
     else
       step_fail "darwin-rebuild" "switch failed"
@@ -548,7 +669,7 @@ if [[ "$STEP_FAILED" == 0 ]]; then
   else
     # -b: a file HM would clobber is moved to <file>.hm-bak instead of
     # failing the switch.
-    if ui_run "home-manager" home-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HOST_PROFILE"; then
+    if run_step "home-manager" home-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HOST_PROFILE"; then
       ui_scan_warnings
       [[ "$MODE" == "apply" ]] && ui_ok "home-manager" "generation $(hm_generation || echo '?')"
     else
@@ -563,8 +684,8 @@ fi
 # than blocking the later steps.
 if [[ "$STEP_FAILED" == 0 && "$HOST_PROFILE" == "macos" ]]; then
   if have brew; then
-    if ui_run "brew update" brew update && ui_run "brew upgrade" brew upgrade --formula \
-       && ui_run "brew cask upgrade" brew upgrade --cask; then
+    if run_step "brew update" brew update && run_step "brew upgrade" brew upgrade --formula \
+       && run_step "brew cask upgrade" brew upgrade --cask; then
       ui_scan_warnings
       [[ "$MODE" == "apply" ]] && ui_ok "homebrew" "formulae and casks upgraded"
     else
@@ -589,7 +710,7 @@ if [[ "$STEP_FAILED" == 0 ]]; then
   fi
   if [[ "${#PROFILE_ELEMENTS[@]}" -eq 0 ]]; then
     ui_skip "nix profile" "no flake-installed entries to upgrade"
-  elif ui_run "nix profile" nix profile upgrade "${PROFILE_ELEMENTS[@]}"; then
+  elif run_step "nix profile" nix profile upgrade "${PROFILE_ELEMENTS[@]}"; then
     ui_scan_warnings
     [[ "$MODE" == "apply" ]] && ui_ok "nix profile" "${#PROFILE_ELEMENTS[@]} element(s) checked"
   else
@@ -600,7 +721,7 @@ fi
 # mise ----------------------------------------------------------------------
 if [[ "$STEP_FAILED" == 0 ]]; then
   if have mise; then
-    if ui_run "mise" mise upgrade; then
+    if run_step "mise" mise upgrade; then
       ui_scan_warnings
       [[ "$MODE" == "apply" ]] && ui_ok "mise" "tools upgraded"
     else
@@ -614,7 +735,7 @@ fi
 
 # hooks ---------------------------------------------------------------------
 if [[ "$STEP_FAILED" == 0 ]] && have lefthook && [[ -e "$REPO_ROOT/.git" ]]; then
-  if ui_run "git hooks" sh -c "cd '$REPO_ROOT' && lefthook install"; then
+  if run_step "git hooks" sh -c "cd '$REPO_ROOT' && lefthook install"; then
     [[ "$MODE" == "apply" ]] && ui_ok "git hooks" "synced"
   else
     ui_warn "git hooks" "lefthook install failed"
@@ -623,7 +744,7 @@ fi
 
 # Syncthing ignores ---------------------------------------------------------
 if [[ "$STEP_FAILED" == 0 && -x "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" ]]; then
-  if ui_run "syncthing" bash "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" --apply; then
+  if run_step "syncthing" bash "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" --apply; then
     if [[ "$MODE" == "apply" ]]; then
       SYNC_CHANGED="$(grep -oE 'Updated [0-9]+ folder' "$UI_LAST_LOG" | grep -oE '[0-9]+' | head -1)"
       if [[ "${SYNC_CHANGED:-0}" -gt 0 ]]; then
@@ -657,7 +778,7 @@ if [[ "$MODE" == "apply" && "$GIT_STATE" != "no-repo" ]] \
     ui_warn "flake.lock" "not committed (it had local edits before the update)"
     ui_note warn git "flake.lock not committed: it had local edits before the update"
   # --only commits the lock alone, whatever else is staged or modified.
-  elif ui_run "flake.lock" git -C "$REPO_ROOT" commit --only -m "chore(nix): update flake inputs" -- "${UPDATE_FILES[@]}"; then
+  elif run_step "flake.lock" git -C "$REPO_ROOT" commit --only -m "chore(nix): update flake inputs" -- "${UPDATE_FILES[@]}"; then
     ui_ok "flake.lock" "committed ($(git -C "$REPO_ROOT" rev-parse --short HEAD))"
   else
     ui_warn "flake.lock" "commit failed; the new lock is left uncommitted (see the run log)"
@@ -736,7 +857,7 @@ fi
 if [[ "$DO_CLEANUP" == 1 && -x "$REPO_ROOT/ops/cleanup.sh" ]]; then
   ui_section "Cleanup"
   CLEAN_ARGS=(--apply --yes); [[ "$DO_GC" == 1 ]] && CLEAN_ARGS+=(--gc)
-  if ui_run "cleanup" bash "$REPO_ROOT/ops/cleanup.sh" "${CLEAN_ARGS[@]}"; then
+  if run_step "cleanup" bash "$REPO_ROOT/ops/cleanup.sh" "${CLEAN_ARGS[@]}"; then
     if [[ "$MODE" == "apply" ]]; then
       RECLAIMED="$(grep -oE 'freed [0-9.]+ [KMG]iB' "$UI_LAST_LOG" | tail -1)"
       ui_ok "cleanup" "${RECLAIMED:-caches pruned, store optimised}"

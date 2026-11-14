@@ -263,26 +263,36 @@ meta_failed() {
 # set_status <value>: the run's phase marker, read by rollback.
 set_status() { meta_put status "$1"; }
 
-# restore_guarded <meta> <label> <file> <backup> <hash key>
+# restore_guarded <meta> <label> <file> <backup> <hash key> <started key>
 #
 # Puts a backup back only while the file still holds what this update wrote, so
-# an edit somebody else made in the meantime is never overwritten. The rule:
+# an edit somebody else made in the meantime is never overwritten. A run owns a
+# file only if it recorded writing it: a written-hash (<hash key>) or a "writer
+# started" marker (<started key>), recorded before the writer ran. The rule:
 #   file equals the backup                   -> nothing to do
 #   a hash was recorded (<hash key>)         -> restore only if the file still has it
-#   no hash recorded                         -> restore only if lock_was_clean=1
+#   writer started, no hash recorded         -> restore only if lock_was_clean=1
+#   neither recorded                         -> not this run's file: keep it, return 3
 #   anything else                            -> keep the file and warn
 # The safety of this guard rests on the .failed copy of what was replaced, kept
 # next to the backup: other agent sessions may edit this repo concurrently, and
 # the sys-update lock does not stop them.
 # Returns 0 when the file ends up as the backup (or was left correctly), 1 when
-# it was kept, 2 when the restore itself failed (including a missing .failed copy).
+# it was kept, 2 when the restore itself failed (including a missing .failed copy),
+# 3 when this run never recorded writing the file (left untouched, not an error).
+# Sets RESTORED=1 only when it put the backup back.
 # shellcheck disable=SC2329  # reached from on_exit
 
 restore_guarded() {
-  local meta="$1" label="$2" file="$3" backup="$4" key="$5" hash cur tmp="$3.tmp.$$"
+  local meta="$1" label="$2" file="$3" backup="$4" key="$5" started_key="$6" hash cur tmp="$3.tmp.$$"
+  RESTORED=0
   [[ -n "$backup" && -f "$backup" ]] || return 0
   cmp -s -- "$backup" "$file" 2>/dev/null && return 0
   hash="$(meta_get "$meta" "$key")"
+  if [[ -z "$hash" && -z "$(meta_get "$meta" "$started_key")" ]]; then
+    ui_skip "$label" "not restored: this run never wrote it (current content kept)"
+    return 3
+  fi
   if [[ -n "$hash" ]]; then
     cur="$(git hash-object -- "$file" 2>/dev/null || true)"
     if [[ "$cur" != "$hash" ]]; then
@@ -301,6 +311,7 @@ restore_guarded() {
   fi
   if cp -- "$backup" "$tmp" && mv -f -- "$tmp" "$file"; then
     ui_ok "$label" "restored"
+    RESTORED=1
     return 0
   fi
   rm -f -- "$tmp"
@@ -312,9 +323,9 @@ restore_guarded() {
 # shellcheck disable=SC2329  # reached from on_exit
 
 restore_run_files() {
-  restore_guarded "$RUN_META" "flake.lock" "$REPO_ROOT/nix/flake.lock" "$LOCK_BACKUP" flake_lock_hash_written
+  restore_guarded "$RUN_META" "flake.lock" "$REPO_ROOT/nix/flake.lock" "$LOCK_BACKUP" flake_lock_hash_written flake_lock_writer_started
   restore_guarded "$RUN_META" "Brave release" "$REPO_ROOT/nix/packages/brave/release.json" \
-    "$RUN_DIR/$RUN_ID.brave.json" brave_release_hash_written
+    "$RUN_DIR/$RUN_ID.brave.json" brave_release_hash_written brave_release_writer_started
   return 0
 }
 
@@ -422,22 +433,26 @@ profile_on_target() {
 
 # rollback_restore_files <meta> — the guarded restore of what the update wrote.
 # Sets ROLLBACK_KEPT=1 when a file was left alone and ROLLBACK_FAILED=1 when a
-# restore itself failed.
+# restore itself failed. ROLLBACK_RESTORED lists the repo-relative files that
+# were actually put back: only those are the rollback's to commit.
 rollback_restore_files() {
   local meta="$1" rc lock brave
+  ROLLBACK_RESTORED=()
   lock="$(meta_get "$meta" flake_lock_backup)"
   brave="$(meta_get "$meta" brave_release_backup)"
   if [[ -n "$lock" && -f "$lock" ]]; then
-    restore_guarded "$meta" "flake.lock" "$REPO_ROOT/nix/flake.lock" "$lock" flake_lock_hash_written; rc=$?
+    restore_guarded "$meta" "flake.lock" "$REPO_ROOT/nix/flake.lock" "$lock" flake_lock_hash_written flake_lock_writer_started; rc=$?
     ((rc == 1)) && ROLLBACK_KEPT=1
     ((rc == 2)) && ROLLBACK_FAILED=1
+    ((RESTORED == 1)) && ROLLBACK_RESTORED+=(nix/flake.lock)
   else
     ui_skip "flake.lock" "no backup recorded"
   fi
   if [[ -n "$brave" && -f "$brave" ]]; then
-    restore_guarded "$meta" "Brave release" "$REPO_ROOT/nix/packages/brave/release.json" "$brave" brave_release_hash_written; rc=$?
+    restore_guarded "$meta" "Brave release" "$REPO_ROOT/nix/packages/brave/release.json" "$brave" brave_release_hash_written brave_release_writer_started; rc=$?
     ((rc == 1)) && ROLLBACK_KEPT=1
     ((rc == 2)) && ROLLBACK_FAILED=1
+    ((RESTORED == 1)) && ROLLBACK_RESTORED+=(nix/packages/brave/release.json)
   fi
   return 0
 }
@@ -446,10 +461,11 @@ rollback_restore_files() {
 # say how to settle the repository.
 rollback_repo_hint() {
   [[ -e "$REPO_ROOT/.git" ]] || return 0
-  git -C "$REPO_ROOT" diff --quiet HEAD -- nix/flake.lock nix/packages/brave/release.json 2>/dev/null && return 0
+  ((${#ROLLBACK_RESTORED[@]})) || return 0
+  git -C "$REPO_ROOT" diff --quiet HEAD -- "${ROLLBACK_RESTORED[@]}" 2>/dev/null && return 0
   printf '  The restored files now differ from HEAD (the update had been committed). Choose one:\n'
-  printf '    keep the rollback:  git -C %q commit --only -m "revert(nix): restore flake inputs" -- nix/flake.lock nix/packages/brave/release.json\n' "$REPO_ROOT"
-  printf '    undo the restore:   git -C %q checkout HEAD -- nix/flake.lock nix/packages/brave/release.json\n' "$REPO_ROOT"
+  printf '    keep the rollback:  git -C %q commit --only -m "chore(nix): roll back flake inputs" -- %s\n' "$REPO_ROOT" "${ROLLBACK_RESTORED[*]}"
+  printf '    undo the restore:   git -C %q checkout HEAD -- %s\n' "$REPO_ROOT" "${ROLLBACK_RESTORED[*]}"
 }
 
 do_rollback() {
@@ -472,7 +488,7 @@ do_rollback() {
     exit 4
   fi
   [[ -n "$hm_profile" ]] || hm_profile="$HM_PROFILE"
-  ROLLBACK_KEPT=0; ROLLBACK_FAILED=0
+  ROLLBACK_KEPT=0; ROLLBACK_FAILED=0; ROLLBACK_RESTORED=()
 
   ui_init "" 0
   printf '%sROLLBACK · %s%s\n' "$UI_C_BOLD" "$(meta_get "$meta" run_id)" "$UI_C_OFF"
@@ -534,16 +550,20 @@ do_rollback() {
 
   # The update committed its new locks, so restoring the old ones leaves the
   # worktree dirty and the next sys-update would refuse. Remember now, before
-  # touching anything, whether those files were clean: only then is the
-  # restore ours to commit.
-  local restore_files=() restore_clean=0 lock_backup brave_backup
+  # touching anything, which candidate files had local edits: a restored file
+  # is the rollback's to commit only if it was clean. Which files are
+  # restored at all is decided by the ownership rule in restore_guarded.
+  local dirty_before=() cand=() f lock_backup brave_backup
   lock_backup="$(meta_get "$meta" flake_lock_backup)"
   brave_backup="$(meta_get "$meta" brave_release_backup)"
-  [[ -n "$lock_backup" && -f "$lock_backup" ]] && restore_files+=(nix/flake.lock)
-  [[ -n "$brave_backup" && -f "$brave_backup" ]] && restore_files+=(nix/packages/brave/release.json)
-  if ((${#restore_files[@]})) && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1 \
-    && git -C "$REPO_ROOT" diff --quiet HEAD -- "${restore_files[@]}" 2>/dev/null; then
-    restore_clean=1
+  [[ -n "$lock_backup" && -f "$lock_backup" ]] && cand+=(nix/flake.lock)
+  [[ -n "$brave_backup" && -f "$brave_backup" ]] && cand+=(nix/packages/brave/release.json)
+  if ((${#cand[@]})) && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    for f in "${cand[@]}"; do
+      git -C "$REPO_ROOT" diff --quiet HEAD -- "$f" 2>/dev/null || dirty_before+=("$f")
+    done
+  else
+    dirty_before=("${cand[@]}")
   fi
   if [[ -z "$hm_path" ]]; then
     ui_skip "home-manager" "no previous generation was recorded"
@@ -578,11 +598,19 @@ do_rollback() {
     ui_skip "flake.lock" "kept: the profile was not rolled back"
   fi
 
-  if ((${#restore_files[@]})) && [[ "$failed" == 0 ]] \
-    && ! git -C "$REPO_ROOT" diff --quiet HEAD -- "${restore_files[@]}" 2>/dev/null; then
-    if [[ "$restore_clean" != 1 ]]; then
-      ui_warn "locks" "not committed (they had local edits before the rollback): ${restore_files[*]}"
-    elif run_step "locks" git -C "$REPO_ROOT" commit --only -m "chore(nix): roll back flake inputs" -- "${restore_files[@]}"; then
+  # Commit only files this rollback actually restored, and never after a
+  # failed restore or a kept file: that state is for the user to settle.
+  if ((${#ROLLBACK_RESTORED[@]})) && [[ "$failed" == 0 ]] \
+    && ! git -C "$REPO_ROOT" diff --quiet HEAD -- "${ROLLBACK_RESTORED[@]}" 2>/dev/null; then
+    local restored_dirty=0
+    for f in "${ROLLBACK_RESTORED[@]}"; do
+      [[ " ${dirty_before[*]} " == *" $f "* ]] && restored_dirty=1
+    done
+    if [[ "$ROLLBACK_KEPT" == 1 ]]; then
+      ui_warn "locks" "not committed (a file was left in place, settle it first): ${ROLLBACK_RESTORED[*]}"
+    elif [[ "$restored_dirty" == 1 ]]; then
+      ui_warn "locks" "not committed (they had local edits before the rollback): ${ROLLBACK_RESTORED[*]}"
+    elif run_step "locks" git -C "$REPO_ROOT" commit --only -m "chore(nix): roll back flake inputs" -- "${ROLLBACK_RESTORED[@]}"; then
       ui_ok "locks" "committed ($(git -C "$REPO_ROOT" rev-parse --short HEAD))"
     else
       ui_warn "locks" "restored but the commit failed; commit them before the next sys-update"
@@ -1040,6 +1068,15 @@ record_written_hash() {
   fi
 }
 
+# record_writer_started <meta key>: written BEFORE the writer runs, so a failure
+# path knows this run is the one that may have changed the file. An unrecorded
+# marker stops the run before the writer starts.
+record_writer_started() {
+  [[ "$MODE" == apply ]] || return 0
+  meta_put "$1" 1 || meta_failed "$1"
+}
+
+record_writer_started flake_lock_writer_started
 run_step "flake inputs" nix flake update --flake "$REPO_ROOT/nix"; FLAKE_UPDATE_RC=$?
 record_written_hash flake_lock_hash_written "$REPO_ROOT/nix/flake.lock"
 if [[ "$FLAKE_UPDATE_RC" == 0 ]]; then
@@ -1062,6 +1099,7 @@ fi
 # the binary lock alongside flake inputs so browser security updates continue.
 if [[ "$STEP_FAILED" == 0 && "$HOST_PROFILE" == linux-desktop ]] \
   && [[ -f "$REPO_ROOT/nix/packages/brave/release.json" ]]; then
+  record_writer_started brave_release_writer_started
   run_step "Brave release" bash "$REPO_ROOT/ops/update-brave.sh"; BRAVE_UPDATE_RC=$?
   record_written_hash brave_release_hash_written "$REPO_ROOT/nix/packages/brave/release.json"
   if [[ "$BRAVE_UPDATE_RC" == 0 ]]; then

@@ -53,6 +53,7 @@ STUB
 printf '%s %s\n' "$tool" "\$*" >> "\$STUB_LOG"
 case "$tool \$*" in
   "nix flake update"*)    printf '{"nodes":{"nixpkgs":{"locked":{"rev":"new"}}}}\n' > "$FAKE/nix/flake.lock"
+                          [[ "\${FOREIGN_BRAVE:-0}" == 1 ]] && printf '{"version":"3.0.0"}\n' > "$FAKE/nix/packages/brave/release.json"
                           [[ "\${BUMP_CBM:-0}" == 1 ]] && printf '{"version":"9.9.9"}\n' > "$FAKE/nix/packages/codebase-memory-mcp/release.json" ;;
   "nix build"*)          [[ "\${FAIL_HOST_BUILD:-0}" == 1 ]] && exit 1
                           [[ "\$*" == *--print-out-paths* ]] && printf '%s\n' "\$STUB_HM_OUT" ;;
@@ -117,6 +118,38 @@ clean() { [ -z "$(git -C "$FAKE" status --porcelain)" ]; }
   [[ "$output" == *"not committed"* ]]
 }
 
+# A run restores only a file it recorded writing. On a host that never runs
+# update-brave, the Brave lock is not this run's, whoever else changed it.
+@test "rollback leaves a Brave bump committed by another session on a host that never wrote it" {
+  export HOST_PROFILE=linux-cli
+  run_update
+  [ "$status" -eq 0 ]
+  printf '{"version":"3.0.0"}\n' > "$FAKE/nix/packages/brave/release.json"
+  git -C "$FAKE" commit -q -am "chore(nix): bump brave"
+  before="$(commits)"
+  run_rollback
+  [ "$status" -eq 0 ]
+  grep -q '"3.0.0"' "$FAKE/nix/packages/brave/release.json"
+  grep -q '"rev":"old"' "$FAKE/nix/flake.lock"
+  [ "$(commits)" -eq $((before + 1)) ]
+  [ "$(git -C "$FAKE" diff --name-only HEAD~1 HEAD)" = "nix/flake.lock" ]
+  [[ "$output" == *"Brave release"*"not restored"* ]]
+  clean
+}
+
+@test "rollback commits nothing when a file it wrote was kept" {
+  run_update
+  [ "$status" -eq 0 ]
+  printf '{"nodes":{"nixpkgs":{"locked":{"rev":"theirs"}}}}\n' > "$FAKE/nix/flake.lock"
+  git -C "$FAKE" commit -q -am "chore(nix): their lock"
+  before="$(commits)"
+  run_rollback
+  [ "$status" -eq 0 ]
+  grep -q '"rev":"theirs"' "$FAKE/nix/flake.lock"
+  [ "$(commits)" -eq "$before" ]
+  [[ "$output" == *"not committed"* ]]
+}
+
 # ── a failed step ───────────────────────────────────────────────────────────
 
 @test "a failed step puts the pre-run lock and browser lock back" {
@@ -133,6 +166,14 @@ clean() { [ -z "$(git -C "$FAKE" status --porcelain)" ]; }
   run_update
   [ "$status" -eq 0 ]
   [[ "$output" != *"stopped before"* ]]
+}
+
+@test "a failed run does not revert a foreign Brave edit on a host that never wrote it" {
+  export HOST_PROFILE=linux-cli FAIL_SWITCH=1 FOREIGN_BRAVE=1
+  run_update
+  [ "$status" -ne 0 ]
+  grep -q '"rev":"old"' "$FAKE/nix/flake.lock"
+  grep -q '"3.0.0"' "$FAKE/nix/packages/brave/release.json"
 }
 
 @test "a failed host build restores the lock too" {

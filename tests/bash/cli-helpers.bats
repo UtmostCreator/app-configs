@@ -212,7 +212,7 @@ upstream_commit() {
     [ "$output" = "true" ]
     [ "$(git config --get help.autocorrect)" = "prompt" ]
     [ "$(git config --get alias.s)" = "status -sb" ]
-    [ "$(git config --get alias.pnv)" = "push --no-verify" ]
+    [ -z "$(git config --get alias.pnv)" ]   # hook bypass is typed out on purpose
 }
 
 @test "killport signals only listeners on the port, after showing them" {

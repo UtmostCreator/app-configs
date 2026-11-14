@@ -10,7 +10,6 @@
 	co = checkout
 	cob = checkout -b
 	prevb = checkout -
-	prb = checkout -
 	# committing
 	ci = commit
 	cam = commit -am
@@ -18,10 +17,8 @@
 	hist = log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short
 	adog = log --all --decorate --oneline --graph
 	# fixup the previous commit for a later autosquash rebase
-	gcfp = commit --fixup HEAD
 	fixprev = commit --fixup HEAD
 	# undo the last commit but keep its changes staged
-	grs = reset --soft HEAD~
 	# diff
 	gd = diff
 	# Review staged changes and check unstaged changes for whitespace errors
@@ -65,10 +62,8 @@
 	# --- Stash / backpack management ---
 	sl    = stash list
 	ss    = stash push -u -m
-	# git sst "message" [-- <path>]: tracked changes only
+	# git sst "message" [-- <path>]: tracked changes only (ss also stashes untracked)
 	sst   = stash push -m
-	# git ssu "message" [-- <path>]: also include untracked files (same as ss)
-	ssu   = stash push -u -m
 	sp    = stash pop
 	sa    = stash apply
 	# --- Conflict triage (boss fight utilities) ---
@@ -139,7 +134,7 @@
 	# Show a commit/ref with full patch and decoration
 	sh   = show --stat -p
 	# git wt <ref> -> what changed in a commit, name-status only
-	wt   = whatchanged --name-status
+	wt   = log --name-status --no-merges
 
 	# --- Committing helpers ---
 	amend  = commit --amend
@@ -194,7 +189,7 @@
 	# git rld -> reflog with local timestamps (when did HEAD move?)
 	rld  = reflog --date=local
 	# git undohard -> jump HEAD back to a reflog entry: git undohard 'HEAD@{3}'
-	undohard = reset --hard
+	undohard = "!f(){ git status --short; printf 'Discard ALL uncommitted changes above (reset --hard %s)? [y/N] ' \"${1:-HEAD}\"; read -r a; [ \"$a\" = y ] || { echo aborted; return 1; }; git reset --hard \"$@\"; }; f"
 	# git lostcommits -> dangling commits left after reset/rebase (recover work)
 	lostcommits = "!git fsck --no-reflogs --lost-found 2>/dev/null | awk '/commit/{print $3}' | xargs -r -n1 git --no-pager log -1 --oneline"
 
@@ -205,7 +200,7 @@
 	# --- Cleanup (working tree) ---
 	# Preview what clean would delete (untracked + ignored), then act
 	cleann = clean -dxn
-	cleanf = clean -dxf
+	cleanf = "!f(){ git clean -dxn; printf 'Delete ALL of the above, including ignored files (.env, vendor, node_modules)? [y/N] '; read -r a; [ \"$a\" = y ] || { echo aborted; return 1; }; git clean -dxf; }; f"
 
 	# --- Bug-history reports (where bugs cluster) ---
 	# git deleted <pathspec> -> find the commit that DELETED a path
@@ -286,17 +281,16 @@
 	rbd = "!f(){ b=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##'); b=${b:-main}; git fetch origin \"$b\" && git rebase \"origin/$b\"; }; f"
 	# git nb <name> -> new branch from the fresh default branch
 	nb = "!f(){ [ -n \"${1:-}\" ] || { echo 'usage: git nb <branch>'; return 1; }; b=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##'); b=${b:-main}; git fetch origin \"$b\" && git switch --no-track -c \"$1\" \"origin/$b\"; }; f"
-	# Push without hooks (pre-push suites); -u is implied by push.autoSetupRemote
-	pnv = push --no-verify
-	pfnv = push --force-with-lease --no-verify
-	# git ppr [gh pr create args] -> push, then open a PR filled from commits
-	ppr = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; git push --no-verify && gh pr create --fill \"$@\"; }; f"
+	# git ppr [gh pr create args] -> push (hooks run), then open a PR filled from commits
+	ppr = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; git push && gh pr create --fill \"$@\"; }; f"
 	# git prreview -> PRs waiting for my review; git prfiles [N] -> PR file list
 	prreview = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh pr list --search 'is:open review-requested:@me' \"$@\"; }; f"
 	prfiles = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh pr diff --name-only \"$@\"; }; f"
 	# git merged-prs <base> [head] -> PR branches merged in a range (release notes)
 	merged-prs = "!f(){ git log \"${1:?usage: git merged-prs <base> [head]}..${2:-HEAD}\" --merges --grep='^Merge pull request #' --format=%s | sed -nE 's|^Merge pull request #[0-9]+ from [^/]+/(.+)$|\\1|p' | sort -u; }; f"
-	# Worktrees (wt is taken by whatchanged)
+	# Worktrees: one folder per task instead of stash + switch.
+	# git wtn <branch> -> ../<repo>-<branch> on a new branch from fresh origin/<default>
+	wtn = "!f(){ [ -n \"${1:-}\" ] || { echo 'usage: git wtn <branch>'; return 1; }; b=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##'); b=${b:-main}; top=$(git rev-parse --show-toplevel) || return 1; dir=\"$(dirname \"$top\")/$(basename \"$top\")-$(printf %s \"$1\" | tr / -)\"; git fetch origin \"$b\" && git worktree add --no-track -b \"$1\" \"$dir\" \"origin/$b\" && echo \"worktree: $dir\"; }; f"
 	wta = worktree add
 	wtl = worktree list
 	wtp = worktree prune
@@ -323,6 +317,10 @@
 # Mistyped subcommands (commi, stas, pul, ...) offer the fix and ask first.
 [help]
 	autocorrect = prompt
+
+# Commit-message reminders when committing without -m (all lines are comments).
+[commit]
+	template = ~/.config/git/commit-template.txt
 
 # SSH-only GitHub auth. An empty helper resets the helper list, so a
 # system-level helper (Homebrew Git's osxkeychain, which raised repeated

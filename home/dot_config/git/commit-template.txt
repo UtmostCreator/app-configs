@@ -1,0 +1,8 @@
+
+# <type>(<scope>): <summary in the imperative, <= 72 chars>
+#
+# type: feat | fix | docs | refactor | test | chore | perf | build | ci
+# Body: why the change was needed and what it changes; wrap at 72.
+# Footer: refs/closes, BREAKING CHANGE: ...
+#
+# Lines starting with # are ignored. An empty message aborts the commit.

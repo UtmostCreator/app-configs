@@ -45,13 +45,25 @@ for arg in "$@"; do
 done
 
 log()  { printf '[bootstrap:%s] %s\n' "$MODE" "$*"; }
+warn() { printf '[bootstrap:warn] %s\n' "$*" >&2; }
 fail() { printf '[bootstrap:error] %s\n' "$*" >&2; exit 1; }
+# Dry-run aware command wrapper for the shared preflight (it prints instead of
+# running when MODE=dry-run).
+run() {
+  if [[ "$MODE" == "dry-run" ]]; then log "would run: $*"; else log "+ $*"; "$@"; fi
+}
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOST_PROFILE="${HOST_PROFILE:-$(bash "$REPO_ROOT/ops/detect-host.sh")}"
 
 # shellcheck source=ops/lib/hm-switch.sh
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
+# shellcheck source=ops/lib/preflight.sh
+source "$REPO_ROOT/ops/lib/preflight.sh"
+
+# Test guard (ops/lib/preflight.sh): an apply run under bats must stay inside
+# the test's scratch HOME and repo copy.
+[[ "$MODE" == "apply" ]] && preflight_bats_guard bootstrap "to apply" "$REPO_ROOT"
 
 log "Repo: $REPO_ROOT"
 log "Host: $HOST_PROFILE"
@@ -65,6 +77,11 @@ esac
 for cmd in git bash curl; do
   command -v "$cmd" >/dev/null 2>&1 || fail "Missing required command: $cmd"
 done
+
+# Same guards as ops/install.sh: WSL1 refusal, login user vs nix username,
+# and personal.yaml seeding (a missing one fails the flake and chezmoi later).
+preflight_host_checks "$REPO_ROOT" "$HOST_PROFILE"
+preflight_personal_yaml "$REPO_ROOT" "$HOST_PROFILE" run
 
 interactive_confirm() {
   local question="$1"
@@ -99,14 +116,7 @@ fi
 
 # Refresh PATH for the current process so the rest of the bootstrap can
 # see freshly installed nix-profile tools.
-for source_file in \
-  /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh \
-  "$HOME/.nix-profile/etc/profile.d/nix.sh" \
-  /etc/profile.d/nix.sh; do
-  # shellcheck disable=SC1090
-  [[ -r "$source_file" ]] && . "$source_file" || true
-done
-export PATH="$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH"
+preflight_refresh_nix_path
 
 have_nix=false
 command -v nix >/dev/null 2>&1 && have_nix=true
@@ -141,11 +151,21 @@ else
 fi
 
 # ─── 4. chezmoi ─────────────────────────────────────────────────────────────
+# `chezmoi init` writes ~/.config/chezmoi, so it belongs to apply mode only.
+# A dry run previews the diff straight from the repo and shows (not hides) why
+# it could not.
 if command -v chezmoi >/dev/null 2>&1; then
-  log "chezmoi init --source=$REPO_ROOT"
-  chezmoi init --source="$REPO_ROOT"
-  log "Preview pending chezmoi changes:"
-  chezmoi diff || true
+  if [[ "$MODE" == "dry-run" ]]; then
+    log "would: chezmoi init --source=$REPO_ROOT"
+    log "Preview pending chezmoi changes:"
+    chezmoi diff --source="$REPO_ROOT" \
+      || log "(chezmoi diff failed — shown above; not fatal in a dry run, but 'chezmoi init' may need to run first)"
+  else
+    log "chezmoi init --source=$REPO_ROOT"
+    chezmoi init --source="$REPO_ROOT"
+    log "Preview pending chezmoi changes:"
+    chezmoi diff
+  fi
 else
   if [[ "$MODE" == "dry-run" ]]; then
     log "would: chezmoi init + diff (chezmoi not yet installed)"

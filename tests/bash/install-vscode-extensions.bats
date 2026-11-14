@@ -9,10 +9,11 @@
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
-    # install.sh prepends the Nix default profile to PATH; a real nix there
-    # would shadow the stub and run against the scratch repo.
-    [ ! -x /nix/var/nix/profiles/default/bin/nix ] \
-        || skip "a system Nix default profile would shadow the nix stub"
+    # install.sh prepends the Nix default profile to PATH (and sources its
+    # profile scripts); a real nix there would shadow the stub and run against
+    # the scratch repo. NIX_PATH_REFRESH=0 turns that off for the test, so it
+    # runs on hosts that do have a system Nix (CI runners always do).
+    export NIX_PATH_REFRESH=0
 
     FAKE="$BATS_TEST_TMPDIR/repo"
     STUBS="$BATS_TEST_TMPDIR/bin"
@@ -22,6 +23,7 @@ setup() {
         "$FAKE/.git" "$STUBS" "$HOME" "$MARKS"
 
     cp "$REPO_ROOT/ops/install.sh" "$FAKE/ops/install.sh"
+    cp -a "$REPO_ROOT/ops/lib" "$FAKE/ops/lib"
     cp "$REPO_ROOT/nix/vars/default.nix" "$FAKE/nix/vars/default.nix"
     : >"$FAKE/home/.chezmoidata/personal.yaml"
     NIX_USER="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$FAKE/nix/vars/default.nix")"

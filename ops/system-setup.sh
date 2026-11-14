@@ -29,6 +29,12 @@ for a in "$@"; do
   esac
 done
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=ops/lib/preflight.sh
+source "$REPO_ROOT/ops/lib/preflight.sh"
+# Test guard: an apply run under bats must stay inside the test's scratch dir.
+[[ "$MODE" == "apply" ]] && preflight_bats_guard system-setup "to apply" "$REPO_ROOT"
+
 log()  { printf '[system-setup:%s] %s\n' "$MODE" "$*"; }
 fail() { printf '[system-setup:error] %s\n' "$*" >&2; exit 1; }
 

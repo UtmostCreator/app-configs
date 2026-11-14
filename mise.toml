@@ -94,6 +94,7 @@ chezmoi apply
 
 [tasks."sync:dry-run"]
 description = "Preview full sync (chezmoi + HM/darwin + mise + lefthook) without mutating"
+shell = "bash -c -o errexit"
 run = """
 set -e
 HOST="${HOST_PROFILE:-}"
@@ -148,6 +149,7 @@ echo 'Would run: lefthook install'
 
 [tasks."sync:apply"]
 description = "Apply full sync: snapshot + chezmoi + HM/darwin + mise + lefthook"
+shell = "bash -c -o errexit"
 run = """
 set -e
 HOST="${HOST_PROFILE:-}"

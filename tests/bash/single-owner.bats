@@ -165,6 +165,14 @@ selection_sites() {
         grep -E 'home-manager switch .*--dry-run' | grep -q 'SELECTION_ARGS'
 }
 
+@test "mise sync:apply and sync:dry-run declare a bash shell (selection.sh is not POSIX sh)" {
+    local task
+    for task in sync:apply sync:dry-run; do
+        awk -v t="[tasks.\"$task\"]" '/^\[tasks/{r=($0==t)} r' "$REPO_ROOT/mise.toml" |
+            grep -Eq '^shell = "bash -c' || { echo "$task: no bash shell declared"; return 1; }
+    done
+}
+
 @test "seeded: dropping the arguments from a real call site is caught, adding them is accepted" {
     local copy="$BATS_TEST_TMPDIR/repo"; repo_copy "$copy"
     sed -i 's| ${SELECTION_ARGS\[@\]+"${SELECTION_ARGS\[@\]}"}||' "$copy/ops/update-all.sh"

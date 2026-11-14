@@ -7,7 +7,17 @@
 # warn "<message>" before calling the functions that report through them.
 #
 #   preflight_bats_guard TAG WHAT REPO_ROOT   refuse to mutate from a bats test
-#   preflight_host_checks REPO_ROOT PROFILE   WSL1 refusal + username check
+#   preflight_ensure_nix_features             enable nix-command/flakes for this run
+#                                             when this Nix lacks them (once)
+#   preflight_check_login_user REPO_ROOT      login user == `nix eval` username
+#                                             (enables the features first)
+#   preflight_wsl_check REPO_ROOT PROFILE     refuse WSL1
+#   preflight_host_checks REPO_ROOT PROFILE [MODE]
+#                                             WSL1 refusal + username check. With
+#                                             nix: nix eval. Without nix: a sed
+#                                             match; MODE "fail" (default) stops
+#                                             on a mismatch, "warn" only warns,
+#                                             anything else fails closed.
 #   preflight_personal_yaml REPO_ROOT PROFILE RUNNER...
 #                                             seed personal.yaml when missing
 #   preflight_refresh_nix_path                make fresh nix-profile tools visible
@@ -40,6 +50,24 @@ preflight_bats_guard() {
   exit 3
 }
 
+# An existing Nix may lack nix-command/flakes, which `nix eval` and every later
+# step need. Enable them for this run only (NIX_CONFIG reaches every child
+# process); the user's nix.conf is not edited. Runs once; preflight_check_login_user
+# calls it before the first `nix eval`. If the probe itself fails, treat the
+# features as missing. No-op without nix.
+PREFLIGHT_NIX_FEATURES_DONE=0
+preflight_ensure_nix_features() {
+  command -v nix >/dev/null 2>&1 || return 0
+  ((PREFLIGHT_NIX_FEATURES_DONE == 0)) || return 0
+  PREFLIGHT_NIX_FEATURES_DONE=1
+  local features
+  features="$(nix show-config 2>/dev/null | sed -n 's/^experimental-features = //p')" || true
+  if [[ " $features " != *" nix-command "* || " $features " != *" flakes "* ]]; then
+    warn "nix-command and flakes are not both enabled in this Nix; enabling them for this run only"
+    export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG$'\n'}extra-experimental-features = nix-command flakes"
+  fi
+}
+
 # Home Manager builds for the username in nix/vars/default.nix. A different
 # login user (common on WSL, where the distro asks for a new name) would only
 # fail later inside home-manager switch, so stop here with the fix. The value
@@ -47,6 +75,7 @@ preflight_bats_guard() {
 # attribute works and a broken file is an error, not "no check". Needs nix.
 preflight_check_login_user() {
   local repo_root="$1" nix_user login_user err why
+  preflight_ensure_nix_features
   err="$(mktemp)" || fail "cannot create a temp file"
   if ! nix_user="$(nix eval --raw -f "$repo_root/nix/vars/default.nix" username 2>"$err")"; then
     why="$(tail -n 3 "$err" | tr '\n' ' ')"

@@ -11,7 +11,9 @@ HEALTH = Path(__file__).resolve().parent
 
 
 class HealthRunner(unittest.TestCase):
-    def run_check(self, body, mode='--json', fail_aggregation=False):
+    def run_check(self, body, mode='--json', fail_aggregation=False, fail_final_exit=False,
+                  keep_render=False, extra_checks=(), final_exit_filter=None,
+                  check_mode=None):
         with tempfile.TemporaryDirectory() as tmp:
             projects = Path(tmp) / 'projects'
             target = projects / 'health'
@@ -21,21 +23,50 @@ class HealthRunner(unittest.TestCase):
                 check.unlink()
             if body is not None:
                 (target / 'checks.d/check.sh').write_text(body)
-            # Exercise pretty mode without the renderer's optional terminal dependencies.
-            (target / 'render.sh').unlink()
+                if check_mode is not None:
+                    (target / 'checks.d/check.sh').chmod(check_mode)
+            for name, extra in extra_checks:
+                (target / 'checks.d' / name).write_text(extra)
+            if not keep_render:
+                # Exercise pretty mode without the renderer's optional terminal dependencies.
+                (target / 'render.sh').unlink()
+            marker = Path(tmp) / 'jq-shim-ran'
             env = dict(os.environ)
-            if fail_aggregation:
+            if fail_aggregation or fail_final_exit or keep_render or final_exit_filter:
                 binary = Path(tmp) / 'bin'; binary.mkdir()
+                if keep_render:
+                    # Plain pass-through so the renderer output is deterministic and unstyled.
+                    glow = binary / 'glow'
+                    glow.write_text('#!/usr/bin/env bash\ncat\n')
+                    glow.chmod(0o755)
+            if fail_aggregation or fail_final_exit or final_exit_filter:
                 real_jq = shutil.which('jq')
                 mock_jq = binary / 'jq'
-                mock_jq.write_text('#!/bin/bash\n'
-                                   'for arg in "$@"; do [[ "$arg" == --slurpfile ]] && exit 9; done\n'
-                                   'exec "$REAL_TEST_JQ" "$@"\n')
+                # Fail only the selected jq call; the marker proves the shim really ran.
+                trigger = '--slurpfile' if fail_aggregation else '.overall.failed'
+                # With final_exit_filter the call is not failed but answers with a crafted value.
+                env['TEST_JQ_FAKE'] = final_exit_filter or ''
+                mock_jq.write_text('#!/usr/bin/env bash\n'
+                                   'args=("$@")\n'
+                                   'for i in "${!args[@]}"; do\n'
+                                   '  if [[ "${args[i]}" == "$TEST_JQ_FAIL_ON" ]]; then\n'
+                                   '    : >"$TEST_JQ_MARKER"\n'
+                                   '    [[ -n "$TEST_JQ_FAKE" ]] || exit 9\n'
+                                   '    args[i]="$TEST_JQ_FAKE"\n'
+                                   '  fi\n'
+                                   'done\n'
+                                   'exec "$REAL_TEST_JQ" "${args[@]}"\n')
                 mock_jq.chmod(0o755)
-                env.update(PATH=str(binary) + os.pathsep + env['PATH'], REAL_TEST_JQ=real_jq)
+                env.update(REAL_TEST_JQ=real_jq, TEST_JQ_FAIL_ON=trigger,
+                           TEST_JQ_MARKER=str(marker))
+            if (Path(tmp) / 'bin').exists():
+                env['PATH'] = str(Path(tmp) / 'bin') + os.pathsep + env['PATH']
             arguments = ['bash', str(target / 'run.sh')] + ([mode] if mode else [])
             result = subprocess.run(arguments, env=env, text=True, capture_output=True, timeout=10)
-            record = json.loads(result.stdout) if result.stdout else None
+            # Without render.sh pretty mode falls back to `jq .`; with it, output is markdown.
+            record = json.loads(result.stdout) if result.stdout and not keep_render else None
+            if fail_aggregation or fail_final_exit or final_exit_filter:
+                self.assertTrue(marker.exists(), 'jq shim was never triggered')
             return result, record
 
     def test_check_failure_empty_malformed_and_invalid_status_fail(self):
@@ -83,7 +114,72 @@ class HealthRunner(unittest.TestCase):
                                                 fail_aggregation=True)
                 self.assertEqual(result.returncode, 1)
                 self.assertIsNone(record)
+                self.assertEqual(result.stdout, '')
                 self.assertIn('could not aggregate health results', result.stderr)
+
+    def test_final_exit_jq_failure_cannot_report_success_in_any_mode(self):
+        for mode in ('--json', '--quiet', ''):
+            with self.subTest(mode=mode):
+                row = dict(name='example', section='example', note='mock', status='ok')
+                result, _ = self.run_check('echo \'' + json.dumps(row) + '\'', mode,
+                                           fail_final_exit=True)
+                self.assertEqual(result.returncode, 1, result.stderr)
+
+    def test_final_exit_rejects_unreadable_or_non_numeric_failed_count(self):
+        crafted = ('null', 'del(.overall.failed) | .overall.failed', '"abc"', '-1', '"08"',
+                   '"1e3"', '"123456789012345678901"', '""')
+        for expr in crafted:
+            for mode in ('--json', '--quiet'):
+                with self.subTest(expr=expr, mode=mode):
+                    row = dict(name='example', section='example', note='mock', status='ok')
+                    result, _ = self.run_check('echo \'' + json.dumps(row) + '\'', mode,
+                                               final_exit_filter=expr)
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertIn('could not read overall.failed', result.stderr)
+
+    def test_multiple_checks_aggregate_counts_and_fail_if_any_fails(self):
+        def rows(*statuses):
+            return ''.join('echo \'' + json.dumps(dict(name=f'{s}{i}', section='s', note='n', status=s))
+                           + '\'\n' for i, s in enumerate(statuses))
+        cases = [(('ok', 'warn'), ('ok', 'ok'), 0, 3, 0, 1),
+                 (('ok',), ('warn', 'fail'), 1, 1, 1, 1)]
+        for first, second, code, passed, failed, warned in cases:
+            with self.subTest(first=first, second=second):
+                result, record = self.run_check(
+                    rows(*first), extra_checks=[('20-second.sh', rows(*second))])
+                self.assertEqual(result.returncode, code, result.stderr)
+                names = [c['name'] for c in record['checks']]
+                self.assertEqual(len(names), len(first) + len(second))
+                self.assertEqual((record['overall']['passed'], record['overall']['failed'],
+                                  record['overall']['warned']), (passed, failed, warned))
+
+    def test_bad_check_does_not_hide_good_check(self):
+        row = dict(name='good', section='s', note='n', status='ok')
+        result, record = self.run_check('echo \'' + json.dumps(row) + '\'',
+                                        extra_checks=[('20-bad.sh', 'exit 4')])
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(record['overall']['passed'], 1)
+        self.assertEqual(record['overall']['failed'], 1)
+
+    def test_non_executable_sh_file_is_still_run(self):
+        # Contract: every checks.d/*.sh is run via bash; the executable bit is irrelevant.
+        row = dict(name='x', section='s', note='n', status='ok')
+        result, record = self.run_check('echo \'' + json.dumps(row) + '\'', check_mode=0o644)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(record['overall']['passed'], 1)
+
+    def test_pretty_mode_renders_report_and_keeps_exit_contract(self):
+        for status in ('ok', 'fail'):
+            with self.subTest(status=status):
+                row = dict(name='pretty-check', section='demo', note='pretty note', status=status)
+                result, _ = self.run_check('echo \'' + json.dumps(row) + '\'', '',
+                                           keep_render=True)
+                self.assertEqual(result.returncode, int(status == 'fail'), result.stderr)
+                self.assertIn('# Project health', result.stdout)
+                self.assertIn('## demo', result.stdout)
+                self.assertIn('pretty-check', result.stdout)
+                self.assertIn('pretty note', result.stdout)
+                self.assertIn('failed: ' + str(int(status == 'fail')), result.stdout)
 
     def test_mixed_valid_and_invalid_records_are_discarded(self):
         row = dict(name='example', section='example', note='mock', status='ok')
@@ -166,7 +262,7 @@ proj_emit() { jq -nc --arg status "$1" --arg note "$3" '{status:$status,note:$no
         record, calls = self.run_process(match=1)
         self.assertEqual(record['status'], 'fail')
         self.assertNotIn('systemctl:', calls)
-        self.assertIn('pgrep:', calls)
+        self.assertEqual(calls.splitlines(), ['pgrep:-f npm.*example', 'pgrep:-x npm'])
 
     def test_unrelated_same_executable_never_claims_healthy(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -177,12 +273,16 @@ proj_emit() { jq -nc --arg status "$1" --arg note "$3" '{status:$status,note:$no
             (root / 'lib.sh').write_text('''
 proj_health_for_each_project() { echo example; }
 proj_field() { if [[ "$2" == service.start_cmd ]]; then echo 'npm run dev'; fi; }
-pgrep() { return 0; }
+pgrep() { printf 'pgrep:%s\\n' "$*" >>"$TEST_CALLS"; return 0; }
 proj_emit() { printf '%s\\n' "$1"; }
 ''')
-            result = subprocess.run(['bash', str(script)], text=True, capture_output=True, timeout=10)
+            calls = root / 'calls'
+            result = subprocess.run(['bash', str(script)], env=dict(os.environ, TEST_CALLS=str(calls)),
+                                    text=True, capture_output=True, timeout=10)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual(result.stdout.strip(), 'warn')
+            # Short-circuit: the first pgrep matched, so only the -f pattern was asked for.
+            self.assertEqual(calls.read_text().splitlines(), ['pgrep:-f npm.*example'])
 
 
 if __name__ == '__main__':

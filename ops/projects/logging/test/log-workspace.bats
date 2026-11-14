@@ -16,6 +16,8 @@ setup() {
   export TMUX_TMPDIR="$TEST_TMUX"
   export LOG_WORKSPACE_STATE_DIR="$TEST_STATE"
   export LOG_WORKSPACE_SESSION_NAME="$SESSION"
+  # Refresh health and sources quickly so tests wait on events, not ticks.
+  export LOG_WORKSPACE_POLL_INTERVAL=0.1
 }
 
 teardown() {
@@ -310,13 +312,13 @@ pid_is_gone() {
     '  : >"$FAKE_LNAV_MARKER"' \
     '  exit 134' \
     'fi' \
-    'sleep 10' >"$fake_bin/lnav"
+    'exec sleep 10' >"$fake_bin/lnav"
   chmod +x "$fake_bin/lnav"
 
   env PATH="$fake_bin:$PATH" FAKE_LNAV_MARKER="$marker" \
     bash "$VIEWER" --role integration --instance retry --state-dir "$TEST_STATE" \
     --config-dir "$LOGGING_DIR/lnav" --since 24h --backend lnav -- "$source_file" \
-    >"$viewer_output" 2>&1 &
+    >"$viewer_output" 2>&1 3>&- &
   viewer_pid="$!"
 
   wait_for test -e "$marker"
@@ -327,22 +329,29 @@ pid_is_gone() {
 }
 
 @test "Ctrl-C exits an lnav viewer cleanly" {
+  env --default-signal=INT true 2>/dev/null || skip "needs GNU env --default-signal"
   fake_bin="$TEST_ROOT/fake-bin"
   source_file="$TEST_ROOT/integration/storage/logs/laravel-2026-09-03.log"
   mkdir -p "$fake_bin" "$(dirname "$source_file")"
   cp "$BATS_TEST_DIRNAME/fixtures/laravel.log" "$source_file"
-  printf '#!/usr/bin/env bash\nsleep 10\n' >"$fake_bin/lnav"
+  # A viewer that ignored Ctrl-C would only return once this lnav exits.
+  printf '#!/usr/bin/env bash\nexec sleep 30\n' >"$fake_bin/lnav"
   chmod +x "$fake_bin/lnav"
 
-  env PATH="$fake_bin:$PATH" \
+  # Background jobs start with SIGINT ignored, and bash cannot trap a signal
+  # that was ignored on entry; restore the default so the viewer sees Ctrl-C
+  # as it would in a tmux pane.
+  env --default-signal=INT PATH="$fake_bin:$PATH" \
     bash "$VIEWER" --role integration --instance interrupted --state-dir "$TEST_STATE" \
     --config-dir "$LOGGING_DIR/lnav" --since 24h --backend lnav -- "$source_file" \
-    >"$TEST_ROOT/viewer-output.log" 2>&1 &
+    >"$TEST_ROOT/viewer-output.log" 2>&1 3>&- &
   viewer_pid="$!"
 
   wait_for health_has_state interrupted integration FOLLOWING
+  started="$SECONDS"
   kill -INT "$viewer_pid"
   wait "$viewer_pid"
+  (( SECONDS - started < 10 ))
 }
 
 @test "viewer failures remain explicit in health state" {

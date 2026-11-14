@@ -290,9 +290,21 @@ setup() {
 @test "SIGINT exits with status 130" {
   large="$TEST_ROOT/large.log"
   awk 'BEGIN { for (i=0; i<2000000; i++) print "ERROR repeated failure " i }' >"$large"
-  bash "$LOG_ERRORS" --group none --format json "$large" >/dev/null 2>&1 &
+  # Background jobs start with SIGINT ignored; restore the default, as in a
+  # terminal, or an early signal is dropped and the scan runs to the end.
+  # (GNU env only; elsewhere the old behaviour stands.)
+  sigint_default=()
+  if env --default-signal=INT true 2>/dev/null; then
+    sigint_default=(env --default-signal=INT)
+  fi
+  "${sigint_default[@]}" bash "$LOG_ERRORS" --group none --format json "$large" \
+    >/dev/null 2>&1 3>&- &
   pid=$!
-  sleep 0.1
+  # Signal the PHP scanner itself (run.sh execs it), not the bash preamble.
+  for _ in $(seq 100); do
+    { [[ "$(tr '\0' ' ' <"/proc/$pid/cmdline")" == *core.php* ]]; } 2>/dev/null && break
+    sleep 0.02
+  done
   kill -INT "$pid"
   interrupted=0
   wait "$pid" || interrupted=$?

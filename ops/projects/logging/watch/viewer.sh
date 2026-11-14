@@ -14,6 +14,9 @@ DEGRADED_REASON=""
 STREAM_PID=""
 STREAM_FILE=""
 VIEW_PID=""
+# Seconds between source and health refreshes (tests shorten it).
+POLL_INTERVAL="${LOG_WORKSPACE_POLL_INTERVAL:-2}"
+[[ "$POLL_INTERVAL" =~ ^[0-9]+([.][0-9]+)?$ ]] || POLL_INTERVAL=2
 
 usage() {
   printf 'Usage: %s --role ROLE --instance ID --state-dir DIR --config-dir DIR --since DURATION --backend lnav|less -- PATTERN...\n' "$0" >&2
@@ -161,7 +164,7 @@ wait_for_source() {
     IFS=$'\t' read -r available _ <<<"$status"
     refresh_state
     (( available > 0 )) && return 0
-    sleep 2
+    sleep "$POLL_INTERVAL"
   done
 }
 
@@ -169,7 +172,7 @@ monitor_sources() {
   local pid="$1"
   while kill -0 "$pid" 2>/dev/null; do
     refresh_state
-    sleep 2
+    sleep "$POLL_INTERVAL"
   done
 }
 
@@ -288,7 +291,7 @@ stream_for_less() {
         children+=("$child")
       done < <(pattern_matches "$pattern")
     done
-    sleep 2
+    sleep "$POLL_INTERVAL"
   done
 }
 

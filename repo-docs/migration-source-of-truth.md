@@ -1,7 +1,8 @@
 # Source-of-truth matrix (final)
 
 Reviewed copy of `repo-docs/migration-source-of-truth.draft.md`. Phase 2 reads only
-this file. Regenerate the draft via `bash ops/check-source-of-truth.sh`.
+this file. This matrix is historical: the generator `ops/check-source-of-truth.sh`
+was deleted once its `configs/` and `backup-sanitized/` inputs were gone.
 
 Branch: `feat/dotfiles-migration`
 Decision date: 2026-05-24
@@ -79,7 +80,7 @@ become deletes:
 
 ## Validation
 
-- [x] `ops/check-source-of-truth.sh` ran cleanly and emitted the draft.
+- [x] The (since removed) `ops/check-source-of-truth.sh` ran cleanly and emitted the draft.
 - [x] Every TBD row from the draft is resolved.
 - [x] Every `configs/` file has a disposition (migrate / merge / delete).
 - [x] Every `backup-sanitized/` file has a disposition.

@@ -6,6 +6,10 @@
 # Apply-mode runs use a scratch copy of the repo, a scratch HOME and PATH
 # stubs for every tool, so nothing real is installed or switched.
 
+# `! cmd` in the middle of a bats test does not fail it (set -e ignores a
+# negated command), so assert absence explicitly.
+refute_grep() { if grep -q "$@"; then echo "unexpected match: $*" >&2; return 1; fi; }
+
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
@@ -44,7 +48,7 @@ apply() { run env PATH="$STUBS:$PATH" HOST_PROFILE=linux-desktop bash "$FAKE/ops
 @test "a dry run never runs chezmoi init (it writes ~/.config/chezmoi)" {
     dry_run
     [ "$status" -eq 0 ]
-    ! grep -q '^chezmoi init' "$CALLS"
+    refute_grep '^chezmoi init' "$CALLS"
     [[ "$output" == *"would: chezmoi init"* ]]
 }
 
@@ -95,8 +99,8 @@ apply() { run env PATH="$STUBS:$PATH" HOST_PROFILE=linux-desktop bash "$FAKE/ops
     FAIL_DIFF=1 apply
     [ "$status" -ne 0 ]
     grep -q "^chezmoi init --source=$FAKE" "$CALLS"
-    ! grep -q '^chezmoi apply' "$CALLS"
-    ! grep -q '^home-manager' "$CALLS"
+    refute_grep '^chezmoi apply' "$CALLS"
+    refute_grep '^home-manager' "$CALLS"
 }
 
 @test "apply switches Home Manager with -b hm-bak" {

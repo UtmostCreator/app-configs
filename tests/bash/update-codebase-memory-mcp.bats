@@ -24,7 +24,7 @@ STUB
   export PATH="$BATS_TEST_TMPDIR/bin:$PATH"
 }
 
-@test "official stable metadata refreshes the Codebase Memory MCP lock idempotently" {
+@test "official stable metadata leaves an up-to-date Codebase Memory MCP lock byte-identical" {
   run bash "$FAKE/ops/update-codebase-memory-mcp.sh"
   [ "$status" -eq 0 ]
   cmp "$REPO_ROOT/nix/packages/codebase-memory-mcp/release.json" "$FAKE/nix/packages/codebase-memory-mcp/release.json"

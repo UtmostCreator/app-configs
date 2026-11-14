@@ -47,7 +47,8 @@ setup() {
         if [ "$os" = darwin ]; then
             grep -qxF ".local/bin/dsh-remote-setup" <<<"$output"
         else
-            ! grep -qxF ".local/bin/dsh-remote-setup" <<<"$output"
+            run grep -cxF ".local/bin/dsh-remote-setup" <<<"$output"
+            [ "$output" = "0" ]
         fi
     done
 }

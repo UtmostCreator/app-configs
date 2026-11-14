@@ -13,8 +13,8 @@ setup() {
 @test "macOS-run scripts use no bash 4 features" {
     local f
     for f in ops/vscode-extensions.sh ops/syncthing-obsidian-stignore.sh; do
-        ! grep -nE '\$\{[A-Za-z_]+(,,|\^\^)' "$REPO_ROOT/$f" || { echo "$f: case-modifying expansion"; return 1; }
-        ! grep -nE '(declare|local|typeset) -A|mapfile|readarray' "$REPO_ROOT/$f" || { echo "$f: bash 4 builtin"; return 1; }
+        if grep -nE '\$\{[A-Za-z_]+(,,|\^\^)' "$REPO_ROOT/$f"; then echo "$f: case-modifying expansion"; return 1; fi
+        if grep -nE '(declare|local|typeset) -A|mapfile|readarray' "$REPO_ROOT/$f"; then echo "$f: bash 4 builtin"; return 1; fi
     done
 }
 

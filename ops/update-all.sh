@@ -7,11 +7,17 @@
 #
 #   PRECHECK  canonical repo path, git state, upstream, tools, disk
 #   PLAN      what would run (this is all report mode does)
-#   SNAPSHOT  dotfiles, flake.lock, Home Manager generation, tool versions
-#   PREPARE   git pull · flake update/check · host build (nothing activated;
-#             a failure here restores flake.lock)
+#   PULL      git pull --ff-only; if it brought new commits the run restarts
+#             in the pulled script (same lock, run id and log) before anything
+#             is snapshotted or configured
+#   SNAPSHOT  dotfiles, flake.lock, Home Manager generation (pinned by a GC
+#             root), tool versions
+#   PREPARE   flake update/check · host build (nothing activated; a failure
+#             here restores flake.lock)
 #   ACTIVATE  chezmoi · home-manager / darwin-rebuild · the profile must then
-#             point at the closure PREPARE built (always checked)
+#             point at the closure PREPARE built (always checked). A failure
+#             also restores flake.lock, but the profile may already have
+#             moved: then run sys-update rollback
 #   VERIFY    gate: the default browser works (skipped by --skip-verify)
 #   COMMIT    flake.lock, only after a verified activation
 #   MAINTAIN  nix profile · mise · hooks · Syncthing ignores (warn only)
@@ -287,7 +293,11 @@ restore_guarded() {
     ui_warn "$label" "had local edits before the update and no record of what it wrote; left in place (previous content: $(tilde "$backup"))"
     return 1
   fi
-  [[ -e "$file" ]] && cp -- "$file" "$backup.failed" 2>/dev/null
+  # The .failed copy is the safety net: without it the file is not touched.
+  if [[ -e "$file" ]] && ! cp -- "$file" "$backup.failed" 2>/dev/null; then
+    ui_warn "$label" "could not keep a copy of the current content ($(tilde "$backup.failed")); left in place"
+    return 1
+  fi
   if cp -- "$backup" "$tmp" && mv -f -- "$tmp" "$file"; then
     ui_ok "$label" "restored"
     return 0
@@ -494,7 +504,14 @@ do_rollback() {
   if [[ "$full" == 0 ]]; then
     rollback_restore_files "$meta"
     printf '\n'
-    ui_ok "rollback" "nothing to roll back; the failed run's file changes were restored"
+    if [[ "$ROLLBACK_FAILED" == 1 ]]; then
+      ui_err "rollback" "incomplete: a file of the failed run could not be restored"
+      exit 1
+    elif [[ "$ROLLBACK_KEPT" == 1 ]]; then
+      ui_ok "rollback" "nothing to roll back; files edited since the failed run were left in place"
+    else
+      ui_ok "rollback" "nothing to roll back; the failed run's file changes were restored"
+    fi
     exit 0
   fi
 
@@ -972,7 +989,7 @@ if [[ "$MODE" == "apply" ]]; then
   PHASE=prepare
 fi
 
-# ── 4. APPLY ────────────────────────────────────────────────────────────────
+# ── 4. PREPARE ────────────────────────────────────────────────────────────────
 
 ui_section "$([[ "$MODE" == apply ]] && echo Updating || echo Plan)"
 STEP_FAILED=0
@@ -1103,7 +1120,7 @@ if [[ "$STEP_FAILED" == 0 && "$MODE" == apply ]]; then
   fi
 fi
 
-# ── 4b. ACTIVATE ────────────────────────────────────────────────────────────
+# ── 5. ACTIVATE ────────────────────────────────────────────────────────────
 # PREPARE changed nothing but flake.lock and the Brave release file; a step that
 # failed up to here leaves nothing activated and the EXIT handler restores them.
 if [[ "$STEP_FAILED" == 1 ]]; then update_failed; exit 1; fi
@@ -1179,7 +1196,7 @@ if [[ "$MODE" == "apply" ]]; then
   PHASE=verify
 fi
 
-# ── 5. VERIFY (the gate) ────────────────────────────────────────────────────
+# ── 6. VERIFY (the gate) ────────────────────────────────────────────────────
 # What must hold for the update to be committed. The profile target check
 # above is part of it and cannot be skipped; --skip-verify skips what follows
 # (and the CHECKS), and the run then says it was not runtime-verified.
@@ -1195,7 +1212,7 @@ BROWSER_MIMES=(x-scheme-handler/http x-scheme-handler/https text/html applicatio
 verify_browser() {
   local mime got graphical=1 empty=0 wrong=() hard=0
   [[ -z "${WAYLAND_DISPLAY:-}" && -z "${DISPLAY:-}" && ( -z "${XDG_SESSION_TYPE:-}" || "${XDG_SESSION_TYPE:-}" == tty ) ]] && graphical=0
-  if ! brave --version >/dev/null 2>&1; then
+  if ! brave --version 9>&- >/dev/null 2>&1; then
     ui_err "default browser" "brave --version failed: Brave is unavailable"
     return 1
   fi
@@ -1205,7 +1222,7 @@ verify_browser() {
     return 0
   fi
   for mime in "${BROWSER_MIMES[@]}"; do
-    got="$(xdg-mime query default "$mime" 2>/dev/null)"
+    got="$(xdg-mime query default "$mime" 9>&- 2>/dev/null)"
     if [[ -z "$got" ]]; then empty=1
     elif [[ "$got" != brave-browser.desktop ]]; then wrong+=("$mime=$got"); fi
   done
@@ -1232,8 +1249,12 @@ if [[ "$MODE" == "apply" ]]; then
         printf '\nUpdate verification failed. Full log: %s\n' "$RUN_LOG"
         exit 1
       fi
+      meta_put runtime_verified 1 || ui_warn "metadata" "could not record runtime_verified"
+    else
+      # No runtime gate exists for this host profile: not verified, not skipped.
+      meta_put runtime_verified n/a || ui_warn "metadata" "could not record runtime_verified"
+      ui_info "verify" "no runtime verification gate for $HOST_PROFILE"
     fi
-    meta_put runtime_verified 1 || ui_warn "metadata" "could not record runtime_verified"
     phase_status verified
   else
     meta_put runtime_verified 0 || ui_warn "metadata" "could not record runtime_verified"
@@ -1243,7 +1264,7 @@ if [[ "$MODE" == "apply" ]]; then
   fi
 fi
 
-# ── 6. COMMIT ───────────────────────────────────────────────────────────────
+# ── 7. COMMIT ───────────────────────────────────────────────────────────────
 # The update proved the new lock builds, activates and verifies. Leaving it
 # uncommitted would make the next run stop at the dirty-worktree gate on our
 # own output; committing it earlier would leave a lock that never ran.
@@ -1293,7 +1314,7 @@ if [[ "$MODE" == "apply" ]]; then
   PHASE=maintain
 fi
 
-# ── 7. MAINTAIN ─────────────────────────────────────────────────────────────
+# ── 8. MAINTAIN ─────────────────────────────────────────────────────────────
 # Housekeeping after the update is committed: a failure here warns, it never
 # undoes or blocks the update.
 # homebrew ------------------------------------------------------------------
@@ -1383,7 +1404,7 @@ if [[ "$STEP_FAILED" == 0 && -x "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" 
   fi
 fi
 
-# ── 8. CHECKS (advisory) ────────────────────────────────────────────────────
+# ── 9. CHECKS (advisory) ────────────────────────────────────────────────────
 # Reported, never a reason to fail: the update is already committed.
 
 if [[ "$MODE" == "apply" && "$DO_VERIFY" == 1 ]]; then
@@ -1440,7 +1461,7 @@ fi
 
 if [[ "$MODE" == "apply" ]]; then PHASE=cleanup; fi
 
-# ── 6. CLEANUP ──────────────────────────────────────────────────────────────
+# ── 10. CLEANUP ──────────────────────────────────────────────────────────────
 
 if [[ "$DO_CLEANUP" == 1 && -x "$REPO_ROOT/ops/cleanup.sh" ]]; then
   ui_section "Cleanup"
@@ -1468,7 +1489,7 @@ if [[ "$MODE" == "apply" && -n "$HM_PATH_BEFORE" && ! -e "$HM_PATH_BEFORE/activa
   meta_put rollback_handle lost || true
 fi
 
-# ── 7. SUMMARY ──────────────────────────────────────────────────────────────
+# ── 11. SUMMARY ──────────────────────────────────────────────────────────────
 
 if [[ "$MODE" == "apply" ]]; then
   ui_section "Changes"

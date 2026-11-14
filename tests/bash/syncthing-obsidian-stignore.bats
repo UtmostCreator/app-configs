@@ -101,7 +101,8 @@ run_sys_update() {
 
   STUBS="$BATS_TEST_TMPDIR/bin"
   mkdir -p "$STUBS"
-  for tool in chezmoi home-manager mise lefthook; do
+  # nix-store and nix-env are stubbed too: the suite must never reach the real ones.
+  for tool in chezmoi home-manager mise lefthook nix-store nix-env; do
     printf '#!/usr/bin/env bash\nexit 0\n' > "$STUBS/$tool"
     chmod +x "$STUBS/$tool"
   done

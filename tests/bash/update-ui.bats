@@ -213,7 +213,7 @@ setup() {
 }
 
 @test "the progress ticker draws nothing without a numeric pid to watch" {
-  run bash -c '
+  run timeout 10 bash -c '
     source "$1/ops/lib/update-ui.sh"; ui_init ""
     UI_TICK=0.05
     _ui_progress step /dev/null

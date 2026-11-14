@@ -1616,7 +1616,7 @@ STUB
     printf 'if flock -n %q true; then echo LOCK_FREE; else echo LOCK_HELD; fi\n' "$SYS_UPDATE_STATE_DIR/lock"
     printf 'echo "rc=$rc"\n'
   } > "$w"
-  run script -qec "bash $w" /dev/null
+  run env SHELL=/bin/sh script -qec "bash $w" /dev/null
 }
 
 @test "T-0011: after SIGKILL of the updater the ticker exits and the next run gets the lock" {
@@ -1648,4 +1648,58 @@ STUB
       term) [[ "$output" == *"rc=143"* ]] ;;
     esac
   done
+}
+
+# ── T-0010 review fixes: rollback of a failed run, .failed copy, verify n/a ──
+
+# A run that stopped right after writing the new lock: status started, the
+# update's own lock content back in the worktree, uncommitted.
+started_run_with_new_lock() {
+  run_update
+  [ "$status" -eq 0 ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  sed -i 's/^status=.*/status=started/' "$meta"
+  git -C "$FAKE" reset -q --hard "$(git -C "$FAKE" rev-list --max-parents=0 HEAD)"
+  printf '{"nodes":{"nixpkgs":{"locked":{"rev":"new"}}}}\n' > "$FAKE/nix/flake.lock"
+  : > "$STUB_LOG"
+}
+
+@test "F-01: rolling back a failed run does not claim a restore of a file it kept" {
+  started_run_with_new_lock
+  printf '{"nodes":{"nixpkgs":{"locked":{"rev":"later-edit"}}}}\n' > "$FAKE/nix/flake.lock"
+  do_rollback_cmd
+  [ "$status" -eq 0 ]
+  grep -q '"rev":"later-edit"' "$FAKE/nix/flake.lock"
+  [[ "$output" == *"left in place"* ]]
+  [[ "$output" != *"changes were restored"* ]]
+}
+
+@test "F-01: rolling back a failed run exits 1 when a file cannot be restored" {
+  started_run_with_new_lock
+  chmod 555 "$FAKE/nix"
+  do_rollback_cmd
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"could not be restored"* ]]
+  [[ "$output" != *"changes were restored"* ]]
+}
+
+@test "F-02: a restore that cannot keep the .failed copy leaves the file alone" {
+  updated_once
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  backup="$(sed -n 's/^flake_lock_backup=//p' "$meta")"
+  ln -s /nonexistent-dir/copy "$backup.failed"
+  do_rollback_cmd
+  grep -q '"rev":"new"' "$FAKE/nix/flake.lock"
+  [[ "$output" == *"could not keep a copy"* ]]
+}
+
+@test "N-01: a host without a verify gate records runtime_verified=n/a" {
+  export HOST_PROFILE=linux-cli
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$STUBS/systemctl"
+  printf '#!/usr/bin/env bash\necho ok\n' > "$STUBS/ai-auth-status"
+  chmod +x "$STUBS/systemctl" "$STUBS/ai-auth-status"
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup
+  [ "$status" -eq 0 ]
+  [ "$(meta_value runtime_verified)" = "n/a" ]
+  [[ "$output" == *"no runtime verification gate for linux-cli"* ]]
 }

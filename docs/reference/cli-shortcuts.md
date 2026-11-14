@@ -31,6 +31,10 @@ fish abbreviations expand in place, so history keeps the full command.
 | `lg` | `lazygit` |
 | `reload` | `exec fish` (zsh: `exec zsh`) |
 
+The abbreviations and aliases above exist in both fish and zsh. The functions
+below (`gi`, `nreset`, `patw`, `zc`, `hms`) are **fish-only**; zsh has no
+twin for them.
+
 Functions: `gi tst` runs `git st` (fixes the misplaced space); `nreset`
 removes `node_modules`, `.nuxt`, `.next` and runs `npm ci`; `patw <filter>`
 reruns one artisan test on every PHP change (watchexec).

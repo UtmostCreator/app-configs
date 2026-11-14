@@ -73,16 +73,17 @@ _app_configs_ssh_macos() {
 _app_configs_ssh_linux_keychain() {
     # keychain caches the agent across shells; passphrase asked once per boot.
     # Pass key basenames (no path) — keychain resolves them under ~/.ssh.
-    local keys=""
+    # Build argv in the positional parameters: one entry per key in bash and
+    # zsh, with no reliance on unquoted word splitting (zsh does not split).
     local k
+    set --
     while IFS= read -r k; do
         case "$k" in
-            /*) [ -f "$k" ] && keys="$keys $k" ;;
-            *)  [ -f "$HOME/.ssh/$k" ] && keys="$keys $k" ;;
+            /*) [ -f "$k" ] && set -- "$@" "$k" ;;
+            *)  [ -f "$HOME/.ssh/$k" ] && set -- "$@" "$k" ;;
         esac
     done < <(_app_configs_ssh_key_names)
-    # shellcheck disable=SC2086
-    eval "$(keychain --eval --quiet --agents ssh $keys)"
+    eval "$(keychain --eval --quiet --agents ssh "$@")"
 }
 
 _app_configs_ssh_linux_plain() {

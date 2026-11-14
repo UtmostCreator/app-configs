@@ -28,6 +28,8 @@ setup() {
   when: 1760000080
 - cmd: php artisan acmecorp:sync-orders
   when: 1760000090
+- cmd: res refactor priority
+  when: 1760000095
 - cmd: echo one\\necho two
   when: 1760000100
 H
@@ -42,7 +44,7 @@ H
     [ "$status" -eq 0 ]
     [ -s "$OUT/report.md" ] && [ -s "$OUT/report.json" ]
     run python3 -I -c "import json,sys; r=json.load(open('$OUT/report.json')); print(r['sources'][0]['entries'])"
-    [ "$output" = "11" ]
+    [ "$output" = "12" ]
 }
 
 @test "no private data reaches the report" {
@@ -61,6 +63,7 @@ H
     grep -q 'git st' "$OUT/report.md"
     grep -q 'php artisan <artisan-cmd>' "$OUT/report.md"
     grep -q 'just' "$OUT/report.md"
+    grep -q '| res |' "$OUT/report.md"     # the user's own public CLI is named
 }
 
 @test "atuin jsonl: failures exclude Ctrl-C and SIGPIPE" {

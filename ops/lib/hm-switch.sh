@@ -17,6 +17,8 @@
 
 # shellcheck source=ops/lib/profile-conflicts.sh
 source "${BASH_SOURCE[0]%/*}/profile-conflicts.sh"
+# shellcheck source=ops/lib/selection.sh
+source "${BASH_SOURCE[0]%/*}/selection.sh"
 
 HM_CHECK_MSG=""
 HM_CHECK_FIX=""
@@ -24,7 +26,8 @@ HM_CONFLICTS=()
 HM_BACKUP_EXT="hm-bak"
 
 hm_switch_describe() {
-  printf 'home-manager switch -b %s --flake %s#%s\n' "$HM_BACKUP_EXT" "$1" "$2"
+  selection_args
+  printf 'home-manager switch -b %s --flake %s#%s%s\n' "$HM_BACKUP_EXT" "$1" "$2" "$(selection_args_text)"
 }
 
 # A missing manifest (or no way to run jq) is an error here, not "no conflicts": the plain
@@ -56,11 +59,13 @@ hm_check_conflicts() {
     return 2
   fi
 
+  # An invalid local selection fails this build, before anything is activated.
   local out
-  out="$(nix build --no-link --print-out-paths "$flake_dir#homeConfigurations.$profile.activationPackage" 2>/dev/null | tail -n1)"
+  selection_args
+  out="$(nix build --no-link --print-out-paths "$flake_dir#homeConfigurations.$profile.activationPackage" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} 2>/dev/null | tail -n1)"
   if [[ -z "$out" || ! -d "$out/home-path" ]]; then
     HM_CHECK_MSG="cannot check nix-profile conflicts: could not build the $profile activation package"
-    HM_CHECK_FIX="nix build --no-link $flake_dir#homeConfigurations.$profile.activationPackage"
+    HM_CHECK_FIX="nix build --no-link $flake_dir#homeConfigurations.$profile.activationPackage$(selection_args_text)"
     return 2
   fi
 
@@ -80,7 +85,8 @@ hm_check_conflicts() {
 # the failure message names the way out.
 hm_switch_raw() {
   local flake_dir="$1" profile="$2" rc=0
-  home-manager switch -b "$HM_BACKUP_EXT" --flake "$flake_dir#$profile" || rc=$?
+  selection_args
+  home-manager switch -b "$HM_BACKUP_EXT" --flake "$flake_dir#$profile" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} || rc=$?
   if ((rc == 0)); then
     return 0
   fi

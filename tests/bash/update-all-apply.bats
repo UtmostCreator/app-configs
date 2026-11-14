@@ -1756,3 +1756,53 @@ started_run_with_new_lock() {
   [[ "$output" == *"no runtime verification gate for linux-cli"* ]]
   [[ "$output" != *"and verified"* ]]
 }
+
+# -- local install selection (T-0042) ------------------------------------------
+
+mk_selection() {
+  SEL="$BATS_TEST_TMPDIR/sel"; mkdir -p "$SEL"
+  printf 'profile = "work"\n' > "$SEL/selection.toml"
+  export APP_CONFIGS_SELECTION_DIR="$SEL"
+}
+
+@test "selection: with a local file both host builds and the switch carry the override, the flake check does not" {
+  mk_selection
+  run_update
+  [ "$status" -eq 0 ]
+  local t="homeConfigurations.linux-desktop.activationPackage"
+  grep -qx "nix build --no-link $FAKE/nix#$t --override-input selection path:$SEL" "$STUB_LOG"
+  grep -qx "nix build --no-link --print-out-paths $FAKE/nix#$t --override-input selection path:$SEL" "$STUB_LOG"
+  grep -qx "home-manager switch -b hm-bak --flake $FAKE/nix#linux-desktop --override-input selection path:$SEL" "$STUB_LOG"
+  # the check stays on the committed default, like CI
+  grep -q '^nix flake check' "$STUB_LOG"
+  run grep -E '^nix flake .*override-input' "$STUB_LOG"
+  [ "$status" -ne 0 ]
+}
+
+@test "selection: without a local file every host command line is unchanged" {
+  export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/none"
+  run_update
+  [ "$status" -eq 0 ]
+  local t="homeConfigurations.linux-desktop.activationPackage"
+  grep -qx "nix build --no-link $FAKE/nix#$t" "$STUB_LOG"
+  grep -qx "nix build --no-link --print-out-paths $FAKE/nix#$t" "$STUB_LOG"
+  grep -qx "home-manager switch -b hm-bak --flake $FAKE/nix#linux-desktop" "$STUB_LOG"
+  run grep -c 'override-input' "$STUB_LOG"
+  [ "$output" = 0 ]
+}
+
+@test "selection: a selection that fails the host build stops before dotfiles or activation" {
+  mk_selection
+  FAIL_HOST_BUILD=1 run_update
+  [ "$status" -eq 1 ]
+  run grep -E '^(chezmoi apply|home-manager switch)' "$STUB_LOG"
+  [ "$status" -ne 0 ]
+}
+
+@test "selection: no prompt runs in an update (stdin closed, selection present)" {
+  mk_selection
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup --skip-verify </dev/null
+  [ "$status" -eq 0 ]
+  run grep -nE 'selection_(preview|write|prompt)|read -p' "$REPO_ROOT/ops/update-all.sh" "$REPO_ROOT/ops/lib/hm-switch.sh" "$REPO_ROOT/ops/ci.sh"
+  [ "$status" -ne 0 ]
+}

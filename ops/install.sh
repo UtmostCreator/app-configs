@@ -99,6 +99,8 @@ run()  {
 
 # shellcheck source=ops/lib/hm-switch.sh
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
+# shellcheck source=ops/lib/selection.sh
+source "$REPO_ROOT/ops/lib/selection.sh"
 
 # INSTALL_NIXOS_MARKER / INSTALL_OS_RELEASE are test seams (same idea as the
 # DETECT_HOST_* overrides in ops/detect-host.sh).
@@ -243,10 +245,13 @@ if [[ "$HOST_PROFILE" == "macos" ]]; then
   # sudo resets the environment, so NIX_CONFIG (the features enabled earlier)
   # does not reach it: pass the features on the command line. darwin-rebuild
   # adds them itself (flakeFlags in nix-darwin's darwin-rebuild.sh).
+  # The selection directory is made absolute here, before sudo changes HOME
+  # (ops/lib/selection.sh); the override goes after `--` for darwin-rebuild.
+  selection_args
   if have darwin-rebuild; then
-    run sudo darwin-rebuild switch --flake "$REPO_ROOT/nix#macos"
+    run sudo darwin-rebuild switch --flake "$REPO_ROOT/nix#macos" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}
   else
-    run sudo nix --extra-experimental-features 'nix-command flakes' run "$REPO_ROOT/nix#darwin-rebuild" -- switch --flake "$REPO_ROOT/nix#macos"
+    run sudo nix --extra-experimental-features 'nix-command flakes' run "$REPO_ROOT/nix#darwin-rebuild" -- switch --flake "$REPO_ROOT/nix#macos" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}
   fi
 else
   if [[ "$DRY_RUN" == 1 ]]; then

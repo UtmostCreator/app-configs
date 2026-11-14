@@ -151,6 +151,13 @@ setup() {
   [[ "$output" == *"peer dependency"* ]]
 }
 
+@test "the lock lines Nix prints for a local selection are not warnings or errors" {
+  run classify_warning "warning: not writing modified lock file of flake 'path:/x/nix':"
+  [ "$status" -eq 1 ]
+  run classify_warning "• Updated input 'selection':"
+  [ "$status" -eq 1 ]
+}
+
 @test "ignores ordinary output lines" {
   run classify_warning "building /nix/store/xxx.drv"
   [ "$status" -ne 0 ]

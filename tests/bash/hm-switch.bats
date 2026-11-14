@@ -103,3 +103,75 @@ add_conflict() {
     bad="$(printf '%s\n' "$output" | grep -v -e 'hm-bak' -e '--dry-run' -e 'hm-switch.sh' || true)"
     [ -z "$bad" ] || { echo "$bad" >&2; return 1; }
 }
+
+# -- local install selection (T-0042): ops/lib/selection.sh is the one source --
+
+mk_selection() {
+    SEL="$BATS_TEST_TMPDIR/sel"; mkdir -p "$SEL"
+    printf 'profile = "work"\n' >"$SEL/selection.toml"
+    export APP_CONFIGS_SELECTION_DIR="$SEL"
+}
+
+@test "selection: no local file passes nothing; a local file passes the absolute override" {
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/none"
+    selection_args
+    [ "${#SELECTION_ARGS[@]}" -eq 0 ]
+    mk_selection
+    cd "$BATS_TEST_TMPDIR"
+    export APP_CONFIGS_SELECTION_DIR="sel"
+    selection_args
+    [ "${SELECTION_ARGS[*]}" = "--override-input selection path:$(cd "$SEL" && pwd -P)" ]
+}
+
+@test "selection: the default directory is under XDG_CONFIG_HOME, else HOME/.config" {
+    unset APP_CONFIGS_SELECTION_DIR
+    XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" run selection_dir
+    [ "$output" = "$BATS_TEST_TMPDIR/xdg/app-configs/selection" ]
+    unset XDG_CONFIG_HOME
+    run selection_dir
+    [ "$output" = "$HOME/.config/app-configs/selection" ]
+}
+
+@test "selection: with a local file the pre-check build and the switch both carry the override" {
+    mk_selection
+    run hm_switch /repo/nix linux-desktop
+    [ "$status" -eq 0 ]
+    grep -q "^nix build --no-link --print-out-paths /repo/nix#homeConfigurations.linux-desktop.activationPackage --override-input selection path:$SEL\$" "$CALLS"
+    grep -qx "home-manager switch -b hm-bak --flake /repo/nix#linux-desktop --override-input selection path:$SEL" "$CALLS"
+}
+
+@test "selection: without a local file the command lines are unchanged" {
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/none"
+    run hm_switch /repo/nix linux-desktop
+    [ "$status" -eq 0 ]
+    grep -qx 'nix build --no-link --print-out-paths /repo/nix#homeConfigurations.linux-desktop.activationPackage' "$CALLS"
+    grep -qx 'home-manager switch -b hm-bak --flake /repo/nix#linux-desktop' "$CALLS"
+    [ "$(hm_switch_describe /repo/nix linux-desktop)" = 'home-manager switch -b hm-bak --flake /repo/nix#linux-desktop' ]
+}
+
+@test "selection: the description shows the override" {
+    mk_selection
+    run hm_switch_describe /repo/nix wsl
+    [ "$output" = "home-manager switch -b hm-bak --flake /repo/nix#wsl --override-input selection path:$SEL" ]
+}
+
+@test "selection: a selection that fails the pre-check build stops before the switch" {
+    mk_selection
+    printf '#!/usr/bin/env bash\nprintf "nix %%s\\n" "$*" >> "$CALLS"\ncase "$*" in *--override-input*) exit 1 ;; esac\nprintf "%%s\\n" "$BATS_TEST_TMPDIR/out"\n' >"$STUBS/nix"
+    run hm_switch /repo/nix linux-desktop
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"--override-input selection path:$SEL"* ]]
+    refute_grep '^home-manager' "$CALLS"
+}
+
+@test "selection: empty SELECTION_ARGS is safe under set -u on this and older bash" {
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/none"
+    run "$BASH" -u -c "source '$REPO_ROOT/ops/lib/hm-switch.sh'; hm_switch_describe /repo/nix p"
+    [ "$status" -eq 0 ]
+    [ "$output" = 'home-manager switch -b hm-bak --flake /repo/nix#p' ]
+}
+
+@test "selection: no prompt can run in hm-switch.sh or selection.sh" {
+    run grep -nE '(^|[^[:alnum:]_])read[[:space:]]' "$REPO_ROOT/ops/lib/hm-switch.sh" "$REPO_ROOT/ops/lib/selection.sh"
+    [ "$status" -ne 0 ]
+}

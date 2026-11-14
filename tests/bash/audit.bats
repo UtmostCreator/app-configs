@@ -311,6 +311,21 @@ audit() { run env -i PATH="$BIN" HOME="$HOME" XDG_STATE_HOME="$XDG_STATE_HOME" T
     if grep -q '^nix build' "$CALLS"; then return 1; fi
 }
 
+@test "--live nix-profile: the eval carries the local selection override only when a file exists" {
+    export HM_PROFILE_MANIFEST="$BATS_TEST_TMPDIR/manifest.json"
+    local out="$BATS_TEST_TMPDIR/hm-out" sel="$HOME/.config/app-configs/selection"
+    mkdir -p "$out/home-path/bin"
+    printf '%s' "$out" >"$FIX/nix-out"
+    printf '{"version":3,"elements":{}}\n' >"$HM_PROFILE_MANIFEST"
+    audit --live
+    grep -qE '^nix eval --raw path:.*#homeConfigurations\.[a-z-]+\.activationPackage\.outPath$' "$CALLS"
+    : >"$CALLS"
+    # the default location under the (scratch) HOME; audit runs under env -i
+    mkdir -p "$sel"; printf 'profile = "work"\n' >"$sel/selection.toml"
+    audit --live
+    grep -qE "^nix eval --raw path:.*activationPackage\\.outPath --override-input selection path:$sel\$" "$CALLS"
+}
+
 @test "--live sys-update: a failed or unfinished run is a FAIL, none or an old one a WARN" {
     sysupdate_run failed 1
     audit --live

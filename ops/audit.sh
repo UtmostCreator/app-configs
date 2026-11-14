@@ -57,6 +57,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || exit 1
 # shellcheck source=ops/lib/profile-conflicts.sh
 source "$ROOT/ops/lib/profile-conflicts.sh"
+# shellcheck source=ops/lib/selection.sh
+source "$ROOT/ops/lib/selection.sh"
 # shellcheck source=ops/lib/state-lock.sh
 source "$ROOT/ops/lib/state-lock.sh"
 
@@ -334,12 +336,13 @@ live_nix_profile() {
   if [[ ! -f "$manifest" ]]; then pass "nix-profile: no profile manifest, nothing hand-installed"; return; fi
   # Evaluate, do not build: when the activation package is already in the
   # store (sys-update built it) the check is free, otherwise skip it.
-  if ! out="$(nix eval --raw "path:$ROOT/nix#homeConfigurations.$host.activationPackage.outPath" 2>/dev/null)" || [[ -z "$out" ]]; then
+  selection_args
+  if ! out="$(nix eval --raw "path:$ROOT/nix#homeConfigurations.$host.activationPackage.outPath" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} 2>/dev/null)" || [[ -z "$out" ]]; then
     warn "nix-profile: could not evaluate the $host activation package; conflicts not checked"
     return
   fi
   if [[ ! -d "$out/home-path" ]]; then
-    warn "nix-profile: the $host activation package is not built yet; run: nix build --no-link \"path:$ROOT/nix#homeConfigurations.$host.activationPackage\" then re-run"
+    warn "nix-profile: the $host activation package is not built yet; run: nix build --no-link \"path:$ROOT/nix#homeConfigurations.$host.activationPackage\"$(selection_args_text) then re-run"
     return
   fi
   conflicts="$(profile_hm_conflicts "$manifest" "$out/home-path")"

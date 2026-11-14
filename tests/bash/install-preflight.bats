@@ -575,6 +575,45 @@ helpers_present() {
     grep -q "^sudo cwd=.* args=darwin-rebuild switch --flake $FAKE/nix#macos\$" "$STUB_LOG"
 }
 
+# -- local install selection (T-0042): the override reaches every switch ------
+
+@test "macOS with a local selection: both sudo switch forms carry the absolute override" {
+    make_repo repo
+    stub_tool sudo
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/sel"
+    mkdir -p "$APP_CONFIGS_SELECTION_DIR"; printf 'profile = "work"\n' >"$APP_CONFIGS_SELECTION_DIR/selection.toml"
+    run env USER=utmostcreator HOST_PROFILE=macos bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    # first-run form: the override comes after `--`, so darwin-rebuild gets it
+    grep -q "^sudo cwd=.* args=nix --extra-experimental-features nix-command flakes run $FAKE/nix#darwin-rebuild -- switch --flake $FAKE/nix#macos --override-input selection path:$APP_CONFIGS_SELECTION_DIR\$" "$STUB_LOG"
+    : >"$STUB_LOG"
+    stub_tool darwin-rebuild
+    run env USER=utmostcreator HOST_PROFILE=macos bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    grep -q "^sudo cwd=.* args=darwin-rebuild switch --flake $FAKE/nix#macos --override-input selection path:$APP_CONFIGS_SELECTION_DIR\$" "$STUB_LOG"
+}
+
+@test "linux with a local selection: the Home Manager switch carries the override" {
+    make_repo repo
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/sel"
+    mkdir -p "$APP_CONFIGS_SELECTION_DIR"; printf 'profile = "work"\n' >"$APP_CONFIGS_SELECTION_DIR/selection.toml"
+    run env USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    grep -q "^home-manager cwd=.* args=switch -b hm-bak --flake $FAKE/nix#linux-cli --override-input selection path:$APP_CONFIGS_SELECTION_DIR\$" "$STUB_LOG"
+    # a dry run prints the same command line and prompts for nothing
+    run env USER=utmostcreator DRY_RUN=1 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh" </dev/null
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"home-manager switch -b hm-bak --flake $FAKE/nix#linux-cli --override-input selection path:$APP_CONFIGS_SELECTION_DIR"* ]]
+}
+
+@test "linux without a local selection: the Home Manager switch line is unchanged" {
+    make_repo repo
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/none"
+    run env USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    grep -q "^home-manager cwd=.* args=switch -b hm-bak --flake $FAKE/nix#linux-cli\$" "$STUB_LOG"
+}
+
 @test "macOS without usable sudo stops before anything is installed or changed" {
     make_repo repo
     stub_tool sudo

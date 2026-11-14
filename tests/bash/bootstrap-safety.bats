@@ -257,6 +257,40 @@ mutated() { grep -Eq '^(nix profile|nix flake|chezmoi (init|apply)|mise (trust|i
     [[ "$output" == *"bootstrap complete"* ]]
 }
 
+@test "bootstrap with a local selection: preview and switch carry the override (linux)" {
+    bs_fixture
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/sel"
+    mkdir -p "$APP_CONFIGS_SELECTION_DIR"; printf 'profile = "work"\n' >"$APP_CONFIGS_SELECTION_DIR/selection.toml"
+    bs --yes
+    [ "$status" -eq 0 ]
+    grep -q "^home-manager switch -b hm-bak --flake $FX/nix#linux-cli --override-input selection path:$APP_CONFIGS_SELECTION_DIR --dry-run " "$CALLS"
+    grep -q "^home-manager switch -b hm-bak --flake $FX/nix#linux-cli --override-input selection path:$APP_CONFIGS_SELECTION_DIR \[pwd=" "$CALLS"
+    bs --dry-run
+    [[ "$output" == *"would: home-manager switch -b hm-bak --flake $FX/nix#linux-cli --override-input selection path:$APP_CONFIGS_SELECTION_DIR"* ]]
+}
+
+@test "bootstrap with a local selection: macOS preview build and both sudo forms carry it" {
+    bs_fixture
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/sel"
+    mkdir -p "$APP_CONFIGS_SELECTION_DIR"; printf 'profile = "work"\n' >"$APP_CONFIGS_SELECTION_DIR/selection.toml"
+    BS_HOST=macos bs --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would: nix build --no-link $FX/nix#darwinConfigurations.macos.system --override-input selection path:$APP_CONFIGS_SELECTION_DIR"* ]]
+    [[ "$output" == *"-- switch --flake $FX/nix#macos --override-input selection path:$APP_CONFIGS_SELECTION_DIR"* ]]
+    WITH_DARWIN_REBUILD=1 bs_fixture
+    BS_HOST=macos bs --dry-run
+    [[ "$output" == *"would: sudo darwin-rebuild switch --flake $FX/nix#macos --override-input selection path:$APP_CONFIGS_SELECTION_DIR"* ]]
+}
+
+@test "bootstrap without a local selection: switch lines are unchanged" {
+    bs_fixture
+    export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/none"
+    bs --yes
+    [ "$status" -eq 0 ]
+    grep -q "^home-manager switch -b hm-bak --flake $FX/nix#linux-cli --dry-run " "$CALLS"
+    grep -q "^home-manager switch -b hm-bak --flake $FX/nix#linux-cli \[pwd=" "$CALLS"
+}
+
 @test "bootstrap --yes does not prompt on a TTY" {
     bs_fixture
     bs_tty "" --yes

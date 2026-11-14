@@ -92,6 +92,8 @@ source "$REPO_ROOT/ops/lib/preflight.sh"
 # hm-switch.sh also sources profile-conflicts.sh (profile_hm_conflicts).
 # shellcheck source=ops/lib/hm-switch.sh
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
+# shellcheck source=ops/lib/selection.sh
+source "$REPO_ROOT/ops/lib/selection.sh"
 # shellcheck source=ops/lib/update-ui.sh
 source "$REPO_ROOT/ops/lib/update-ui.sh"
 # shellcheck source=ops/update-version-report.sh
@@ -1136,7 +1138,11 @@ if [[ "$STEP_FAILED" == 0 ]]; then
   else
     BUILD_TARGET="homeConfigurations.$HOST_PROFILE.activationPackage"
   fi
-  if run_step "host build" nix build --no-link "$REPO_ROOT/nix#$BUILD_TARGET"; then
+  # The local selection (ops/lib/selection.sh) applies here and at the switch
+  # below; the flake check above and CI keep evaluating the committed default.
+  # An invalid selection fails this build, before anything is activated.
+  selection_args
+  if run_step "host build" nix build --no-link "$REPO_ROOT/nix#$BUILD_TARGET" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}; then
     [[ "$MODE" == apply ]] && ui_ok "host build" "$HOST_PROFILE ready to activate"
   else
     step_fail "host build" "build failed — dotfiles and active generation were not changed"
@@ -1150,7 +1156,7 @@ if [[ "$STEP_FAILED" == 0 && "$MODE" == apply ]]; then
   # Fail closed: a build that exits non-zero, prints nothing or names a path
   # that is not a directory cannot be checked for collisions, so it stops here.
   BUILD_OUT=""
-  if _build_paths="$(nix build --no-link --print-out-paths "$REPO_ROOT/nix#$BUILD_TARGET" 2>/dev/null)"; then
+  if _build_paths="$(nix build --no-link --print-out-paths "$REPO_ROOT/nix#$BUILD_TARGET" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} 2>/dev/null)"; then
     BUILD_OUT="$(printf '%s\n' "$_build_paths" | tail -n1)"
   fi
   if [[ -z "$BUILD_OUT" || ! -d "$BUILD_OUT" ]]; then
@@ -1209,7 +1215,7 @@ fi
 # home-manager / darwin-rebuild ---------------------------------------------
 if [[ "$STEP_FAILED" == 0 ]]; then
   if [[ "$HOST_PROFILE" == "macos" ]]; then
-    if run_step "darwin-rebuild" darwin-rebuild switch --flake "$REPO_ROOT/nix#macos"; then
+    if run_step "darwin-rebuild" darwin-rebuild switch --flake "$REPO_ROOT/nix#macos" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}; then
       ui_scan_warnings
       if [[ "$MODE" == "apply" ]] && check_activated_target; then ui_ok "darwin-rebuild" "switched"; fi
     else

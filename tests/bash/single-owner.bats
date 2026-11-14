@@ -10,6 +10,9 @@
 #      ops/lib/preflight.sh; install.sh and bootstrap.sh call them, they do not
 #      carry their own copy.
 #   3. Every script with an apply mode contains the bats real-HOME guard.
+#   5. every host build, switch and eval in ops/ passes the local install
+#      selection (T-0042): ops/lib/selection.sh is the one source of the
+#      override arguments.
 #   4. fish and zsh twins: see tests/bash/ws-shell-parity.bats (ws-* names and
 #      the script each one runs) and tests/bash/cli-abbr.bats (shortcuts).
 #
@@ -69,6 +72,70 @@ hm_switch_users() {
     printf '\nhome-manager switch --flake "$REPO_ROOT/nix#$HOST_PROFILE"\n' >>"$copy/ops/cleanup.sh"
     run hm_switch_users "$copy"
     [[ "$output" == *"ops/cleanup.sh:"*"home-manager switch"* ]]
+}
+
+# -- 5. local install selection (T-0042) -----------------------------------
+
+# Lines in ops/ that build, switch or evaluate a host configuration without
+# SELECTION_ARGS (or selection_args_text in a message that prints the command).
+# Comments, quoted message continuations and messages are skipped. Not covered
+# on purpose: validators and CI, which evaluate the committed default
+# (validate-config.sh, ci.sh, ci-local.sh), and vicinae-extension.sh (a hint).
+# Prints path:line:text.
+selection_sites() {
+    local root="$1" f
+    while IFS= read -r -d '' f; do
+        case "$f" in
+            ops/validate-config.sh | ops/ci.sh | ops/ci-local.sh | ops/vicinae-extension.sh | ops/projects/*) continue ;;
+        esac
+        grep -nE 'home-manager (switch|build)|darwin-rebuild (switch|build|check)|#darwin-rebuild|nix (build|eval) .*(#(homeConfigurations|darwinConfigurations)|BUILD_TARGET)' "$root/$f" |
+            grep -vE '^[0-9]+:[[:space:]]*(#|//|"|'"'"')' |
+            grep -vE "(fail|warn|log|echo|printf|ui_[a-z]+|step_fail|note)[ (=\"'].*(home-manager switch|nix build)" |
+            grep -vE 'SELECTION_ARGS|selection_args_text' |
+            sed "s|^|$f:|"
+    done < <(cd "$root" && find ops -type f -name '*.sh' -print0 2>/dev/null)
+}
+
+@test "every host build, switch and eval in ops/ passes the selection arguments" {
+    run selection_sites "$REPO_ROOT"
+    [ -z "$output" ] || { printf 'host build/switch/eval without SELECTION_ARGS:\n%s\n' "$output"; return 1; }
+}
+
+@test "the scripts that use SELECTION_ARGS source ops/lib/selection.sh themselves" {
+    local f
+    for f in ops/install.sh ops/bootstrap.sh ops/update-all.sh ops/audit.sh ops/lib/hm-switch.sh; do
+        grep -q 'SELECTION_ARGS' "$REPO_ROOT/$f" || { echo "$f does not pass SELECTION_ARGS"; return 1; }
+        grep -q 'lib/selection.sh' "$REPO_ROOT/$f" || { echo "$f does not source selection.sh"; return 1; }
+    done
+    # nothing else builds the override arguments
+    run grep -rln -e '--override-input' "$REPO_ROOT/ops" --include='*.sh'
+    [ "$output" = "$REPO_ROOT/ops/lib/selection.sh" ]
+}
+
+@test "seeded: a host build, a switch and an eval without the selection arguments are caught" {
+    local copy="$BATS_TEST_TMPDIR/repo"; repo_copy "$copy"
+    {
+        printf '\nhome-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HOST_PROFILE"\n'
+        printf 'nix build --no-link "$REPO_ROOT/nix#homeConfigurations.wsl.activationPackage"\n'
+        printf 'out="$(nix eval --raw "path:$ROOT/nix#homeConfigurations.wsl.activationPackage.outPath")"\n'
+        printf 'sudo darwin-rebuild switch --flake "$REPO_ROOT/nix#macos"\n'
+    } >>"$copy/ops/cleanup.sh"
+    run selection_sites "$copy"
+    [[ "$output" == *"ops/cleanup.sh:"*"home-manager switch"* ]]
+    [[ "$output" == *"ops/cleanup.sh:"*"nix build"* ]]
+    [[ "$output" == *"ops/cleanup.sh:"*"nix eval"* ]]
+    [[ "$output" == *"ops/cleanup.sh:"*"darwin-rebuild switch"* ]]
+}
+
+@test "seeded: dropping the arguments from a real call site is caught, adding them is accepted" {
+    local copy="$BATS_TEST_TMPDIR/repo"; repo_copy "$copy"
+    sed -i 's| ${SELECTION_ARGS\[@\]+"${SELECTION_ARGS\[@\]}"}||' "$copy/ops/update-all.sh"
+    run selection_sites "$copy"
+    [[ "$output" == *"ops/update-all.sh:"*"nix build"* ]]
+    [[ "$output" == *"ops/update-all.sh:"*"darwin-rebuild switch"* ]]
+    printf '\nnix build --no-link "$REPO_ROOT/nix#homeConfigurations.wsl.activationPackage" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}\n' >>"$copy/ops/cleanup.sh"
+    run selection_sites "$copy"
+    [[ "$output" != *"ops/cleanup.sh:"* ]]
 }
 
 # -- 2. preflight guards -----------------------------------------------------

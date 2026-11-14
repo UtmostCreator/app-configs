@@ -88,6 +88,8 @@ run() {
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=ops/lib/hm-switch.sh
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
+# shellcheck source=ops/lib/selection.sh
+source "$REPO_ROOT/ops/lib/selection.sh"
 # shellcheck source=ops/lib/preflight.sh
 source "$REPO_ROOT/ops/lib/preflight.sh"
 
@@ -236,19 +238,21 @@ else
 fi
 
 # ─── 5. Home Manager / nix-darwin ───────────────────────────────────────────
+# Resolved to an absolute path now, before sudo (ops/lib/selection.sh).
+selection_args
 if [[ "$HOST_PROFILE" == "macos" ]]; then
   # darwin-rebuild is not installed on a first run: use the pinned flake output.
   # sudo resets the environment (no NIX_CONFIG), so the features go on the
   # command line; darwin-rebuild adds them itself.
   if command -v darwin-rebuild >/dev/null 2>&1; then
-    SWITCH_CMD=(sudo darwin-rebuild switch --flake "$REPO_ROOT/nix#macos")
+    SWITCH_CMD=(sudo darwin-rebuild switch --flake "$REPO_ROOT/nix#macos" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"})
   else
-    SWITCH_CMD=(sudo nix --extra-experimental-features "nix-command flakes" run "$REPO_ROOT/nix#darwin-rebuild" -- switch --flake "$REPO_ROOT/nix#macos")
+    SWITCH_CMD=(sudo nix --extra-experimental-features "nix-command flakes" run "$REPO_ROOT/nix#darwin-rebuild" -- switch --flake "$REPO_ROOT/nix#macos" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"})
   fi
-  DRY_CMD=(nix build --no-link "$REPO_ROOT/nix#darwinConfigurations.macos.system")
+  DRY_CMD=(nix build --no-link "$REPO_ROOT/nix#darwinConfigurations.macos.system" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"})
   switch_bin=nix
 else
-  SWITCH_CMD=(home-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HOST_PROFILE")
+  SWITCH_CMD=(home-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HOST_PROFILE" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"})
   DRY_CMD=("${SWITCH_CMD[@]}" --dry-run)
   switch_bin=home-manager
 fi

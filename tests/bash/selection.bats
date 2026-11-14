@@ -192,3 +192,14 @@ pk() { cat "$BATS_FILE_TMPDIR/pkgs-$1.json"; }
         "$BATS_FILE_TMPDIR/pkgs-all-false.json"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
 }
+
+@test "an evaluation with a local selection leaves nix/flake.lock byte-identical" {
+    local before after
+    before="$(sha256sum "$REPO_ROOT/nix/flake.lock")"
+    run hmjson linux-cli media-go-off myConfig.groups
+    [ "$status" -eq 0 ]
+    run hmjson linux-cli all-on-work myConfig.profile
+    [ "$status" -eq 0 ]
+    after="$(sha256sum "$REPO_ROOT/nix/flake.lock")"
+    [ "$before" = "$after" ]
+}

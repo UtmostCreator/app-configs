@@ -1722,6 +1722,19 @@ started_run_with_new_lock() {
   [ -z "$(ls "$TMPDIR" | grep '^sys-update-snapshot\.' || true)" ]
 }
 
+@test "R3-01: an updater interrupted during the snapshot leaves no sys-update-snapshot temp file" {
+  export TMPDIR="$BATS_TEST_TMPDIR/scratch-tmp"
+  mkdir -p "$TMPDIR"
+  # The snapshot script signals the updater, as a kill would during a slow
+  # snapshot. It runs in a command substitution, so the updater is the parent
+  # of its parent.
+  printf '#!/usr/bin/env bash\nkill -TERM "$(ps -o ppid= -p "$PPID" | tr -d " ")"\nsleep 1\nexit 1\n' > "$FAKE/ops/snapshot-home.sh"
+  chmod +x "$FAKE/ops/snapshot-home.sh"
+  run_update --allow-dirty
+  [ "$status" -eq 143 ]
+  [ -z "$(ls "$TMPDIR" | grep '^sys-update-snapshot\.' || true)" ]
+}
+
 @test "N-01: a host without a verify gate records runtime_verified=n/a" {
   export HOST_PROFILE=linux-cli
   printf '#!/usr/bin/env bash\nexit 0\n' > "$STUBS/systemctl"

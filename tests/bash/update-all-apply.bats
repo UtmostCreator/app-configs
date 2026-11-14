@@ -1255,3 +1255,212 @@ STUB
   meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
   [ "$(sed -n 's/^run_id=//p' "$meta")" != 20260101T000000Z-4242 ]
 }
+
+# ── T-0010 Gate B: rollback (T5) ────────────────────────────────────────────
+
+do_rollback_cmd() { run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" rollback --yes; }
+
+# An update that succeeded, so there is a run to roll back; the stub log is
+# emptied so the rollback's own calls are all that is left in it.
+updated_once() {
+  run_update
+  [ "$status" -eq 0 ]
+  : > "$STUB_LOG"
+}
+
+@test "S32: a rollback whose activate leaves the profile elsewhere sets the profile itself" {
+  updated_once
+  export STUB_ACTIVATE_NO_RELINK=1
+  do_rollback_cmd
+  [ "$status" -eq 0 ]
+  grep -q "^nix-env --profile $HOME/.local/state/nix/profiles/home-manager --set $GEN_DIR\$" "$STUB_LOG"
+  [ "$(readlink -f "$HOME/.local/state/nix/profiles/home-manager")" = "$(readlink -f "$GEN_DIR")" ]
+  grep -q '"rev":"old"' "$FAKE/nix/flake.lock"
+  [ "$(meta_value status)" = rolled-back ]
+}
+
+@test "S33: a rollback that cannot move the profile fails and keeps the lock" {
+  updated_once
+  export STUB_ACTIVATE_NO_RELINK=1
+  printf '#!/usr/bin/env bash\nprintf "nix-env %%s\\n" "$*" >> "$STUB_LOG"\nexit 1\n' > "$STUBS/nix-env"
+  chmod +x "$STUBS/nix-env"
+  do_rollback_cmd
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"still does not point at the previous generation"* ]]
+  grep -q '"rev":"new"' "$FAKE/nix/flake.lock"
+  [ "$(meta_value status)" != rolled-back ]
+}
+
+@test "S34: rolling back twice is harmless: the second finds the profile on target" {
+  updated_once
+  do_rollback_cmd
+  [ "$status" -eq 0 ]
+  : > "$STUB_LOG"
+  do_rollback_cmd
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"already on generation 1"* ]]
+  run grep -c '^activate' "$STUB_LOG"
+  [ "$output" = 0 ]
+}
+
+@test "S35b: a run that stopped while preparing has nothing to roll back" {
+  export FAIL_HOST_BUILD=1
+  run_update
+  [ "$status" -eq 1 ]
+  : > "$STUB_LOG"
+  do_rollback_cmd
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"nothing to roll back"* ]]
+  run grep -c '^activate\|^nix-env' "$STUB_LOG"
+  [ "$output" = 0 ]
+  grep -q '"rev":"old"' "$FAKE/nix/flake.lock"
+}
+
+@test "S35b: a run recorded as started restores a clean lock and activates nothing" {
+  run_update
+  [ "$status" -eq 0 ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  sed -i 's/^status=.*/status=started/' "$meta"
+  # The update's own lock content is back in the worktree, uncommitted, as it
+  # would be after a run that stopped right after writing it.
+  git -C "$FAKE" reset -q --hard "$(git -C "$FAKE" rev-list --max-parents=0 HEAD)"
+  printf '{"nodes":{"nixpkgs":{"locked":{"rev":"new"}}}}\n' > "$FAKE/nix/flake.lock"
+  : > "$STUB_LOG"
+  do_rollback_cmd
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"nothing to roll back"* ]]
+  grep -q '"rev":"old"' "$FAKE/nix/flake.lock"
+  run grep -c '^activate' "$STUB_LOG"
+  [ "$output" = 0 ]
+}
+
+@test "S36: a rollback uses the profile the run recorded, not one found today" {
+  updated_once
+  export STUB_ACTIVATE_NO_RELINK=1
+  export XDG_STATE_HOME="$BATS_TEST_TMPDIR/somewhere-else"
+  mkdir -p "$XDG_STATE_HOME/nix/profiles"
+  do_rollback_cmd
+  [ "$status" -eq 0 ]
+  grep -q "^nix-env --profile $HOME/.local/state/nix/profiles/home-manager --set" "$STUB_LOG"
+}
+
+@test "S37: a rollback is refused while an update holds the lock, and changes nothing" {
+  updated_once
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  before="$(sha256sum "$meta" "$FAKE/nix/flake.lock")"
+  runs_before="$(ls "$SYS_UPDATE_STATE_DIR/runs")"
+  hold_flock
+  do_rollback_cmd
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"another sys-update"* ]]
+  no_rm_hint "$output"
+  [ "$(sha256sum "$meta" "$FAKE/nix/flake.lock")" = "$before" ]
+  [ "$(ls "$SYS_UPDATE_STATE_DIR/runs")" = "$runs_before" ]
+  run grep -c '^activate\|^nix-env\|^home-manager' "$STUB_LOG"
+  [ "$output" = 0 ]
+}
+
+@test "S38: in mkdir mode a refused rollback leaves the foreign lock alone" {
+  updated_once
+  export SYS_UPDATE_FORCE_MKDIR_LOCK=1
+  sleep 60 3>&- & HOLDER=$!
+  mkdir -p "$SYS_UPDATE_STATE_DIR/lock.d"
+  printf '%s %s\n' "$HOLDER" "20260101T000000Z-$HOLDER" > "$SYS_UPDATE_STATE_DIR/lock.d/owner"
+  do_rollback_cmd
+  [ "$status" -eq 5 ]
+  [ "$(cat "$SYS_UPDATE_STATE_DIR/lock.d/owner")" = "$HOLDER 20260101T000000Z-$HOLDER" ]
+  grep -q '"rev":"new"' "$FAKE/nix/flake.lock"
+}
+
+@test "S39: two rollbacks cannot run at once" {
+  updated_once
+  cat > "$GEN_DIR/activate" <<'ACT'
+#!/usr/bin/env bash
+: > "$BATS_TEST_TMPDIR/in-activate"
+for _ in $(seq 200); do [[ -e "$BATS_TEST_TMPDIR/release" ]] && break; sleep 0.05; done
+printf 'activate %s\n' "$*" >> "$STUB_LOG"
+ln -sfn home-manager-1-link "$HOME/.local/state/nix/profiles/home-manager"
+ACT
+  chmod +x "$GEN_DIR/activate"
+  env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" rollback --yes \
+    3>&- > "$BATS_TEST_TMPDIR/first.out" 2>&1 &
+  HOLDER=$!
+  for _ in $(seq 100); do [[ -e "$BATS_TEST_TMPDIR/in-activate" ]] && break; sleep 0.05; done
+  [ -e "$BATS_TEST_TMPDIR/in-activate" ]
+  do_rollback_cmd
+  [ "$status" -eq 5 ]
+  : > "$BATS_TEST_TMPDIR/release"
+  wait "$HOLDER"
+  HOLDER=""
+  grep -q 'rollback.*done' "$BATS_TEST_TMPDIR/first.out"
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+}
+
+@test "S40: an interrupted rollback frees its lock and rolls nothing further" {
+  updated_once
+  cat > "$GEN_DIR/activate" <<'ACT'
+#!/usr/bin/env bash
+if flock -n "$SYS_UPDATE_STATE_DIR/lock" true; then echo free > "$BATS_TEST_TMPDIR/lock-state"
+else echo held > "$BATS_TEST_TMPDIR/lock-state"; fi
+kill -TERM "$PPID"
+sleep 0.3
+ACT
+  chmod +x "$GEN_DIR/activate"
+  do_rollback_cmd
+  [ "$status" -eq 143 ]
+  [ "$(cat "$BATS_TEST_TMPDIR/lock-state")" = held ]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+  grep -q '"rev":"new"' "$FAKE/nix/flake.lock"
+}
+
+@test "S40: a failed rollback frees its lock" {
+  updated_once
+  rm -rf "$GEN_DIR"
+  do_rollback_cmd
+  [ "$status" -eq 1 ]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+}
+
+@test "a rollback keeps a lock that was edited after the update" {
+  updated_once
+  printf '{"nodes":{"nixpkgs":{"locked":{"rev":"later-edit"}}}}\n' > "$FAKE/nix/flake.lock"
+  do_rollback_cmd
+  [ "$status" -eq 0 ]
+  grep -q '"rev":"later-edit"' "$FAKE/nix/flake.lock"
+  [[ "$output" == *"left in place"* ]]
+}
+
+@test "a rollback whose restore commit fails says how to settle the repository" {
+  updated_once
+  # The rollback commits the restored lock by itself; with that refused, the
+  # repository is left differing from HEAD and the output must say what to do.
+  mkdir -p "$FAKE/.git/hooks"
+  printf '#!/bin/sh\nexit 1\n' > "$FAKE/.git/hooks/pre-commit"
+  chmod +x "$FAKE/.git/hooks/pre-commit"
+  do_rollback_cmd
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"checkout HEAD -- nix/flake.lock"* ]]
+  [[ "$output" == *"commit --only"* ]]
+}
+
+@test "a record without a host is rolled back with a detected host, and fails closed when detection fails" {
+  updated_once
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  sed -i '/^host=/d; /^hm_profile=/d' "$meta"
+  HOST_PROFILE=bogus do_rollback_cmd
+  [ "$status" -eq 4 ]
+  do_rollback_cmd
+  [ "$status" -eq 0 ]
+}
+
+@test "macOS rollback restores the files and says the system switch is manual" {
+  export HOST_PROFILE=macos
+  cp "$STUBS/home-manager" "$STUBS/darwin-rebuild"
+  ln -s "$STUB_HM_OUT" "$BATS_TEST_TMPDIR/current-system"
+  export SYS_UPDATE_DARWIN_SYSTEM_LINK="$BATS_TEST_TMPDIR/current-system"
+  updated_once
+  do_rollback_cmd
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"not rolled back automatically"* ]]
+  grep -q '"rev":"old"' "$FAKE/nix/flake.lock"
+}

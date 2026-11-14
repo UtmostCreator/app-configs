@@ -374,9 +374,6 @@ done
 # A re-exec'd child never pulls: the parent already did.
 [[ "$REEXEC_CHILD" == 1 ]] && DO_PULL=0
 
-# detect-host.sh validates an explicit HOST_PROFILE too and explains a failure
-# on stderr; there is no silent fallback to a desktop profile.
-# Rollback never reads the host profile, so it does not depend on detection.
 # Test guard (ops/lib/preflight.sh), before anything else: under bats an apply
 # or rollback run must stay inside the test's scratch HOME and repo copy (an
 # install test once switched Home Manager on the dev machine). Exit 3.
@@ -384,6 +381,10 @@ if [[ "$MODE" == apply || "$SUBCOMMAND" == rollback ]]; then
   preflight_bats_guard sys-update "to apply" "$REPO_ROOT"
 fi
 
+# detect-host.sh validates an explicit HOST_PROFILE too and explains a failure
+# on stderr; there is no silent fallback to a desktop profile.
+# Rollback takes the host from the run record and detects it only for records
+# that predate it.
 if [[ "$SUBCOMMAND" != rollback ]] && ! HOST_PROFILE="$(bash "$REPO_ROOT/ops/detect-host.sh")"; then
   printf 'sys-update: host detection failed; set HOST_PROFILE to macos, linux-desktop, linux-cli or wsl\n' >&2
   exit 4
@@ -395,12 +396,51 @@ if [[ "$SUBCOMMAND" != rollback && "$HOST_PROFILE" == wsl ]] \
   exit 4
 fi
 
-[[ "$MODE" == apply && "$SUBCOMMAND" != rollback ]] && acquire_lock
+[[ "$MODE" == apply || "$SUBCOMMAND" == rollback ]] && acquire_lock
 
 # ── rollback ────────────────────────────────────────────────────────────────
+# Takes the same exclusive lock as an apply (above): a rollback refused while
+# an update runs changes nothing, and two rollbacks cannot run at once.
+
+# profile_on_target <profile link> <closure path>: the profile resolves to it.
+profile_on_target() {
+  [[ -n "$1" && -n "$2" && "$(readlink -f -- "$1" 2>/dev/null)" == "$(readlink -f -- "$2" 2>/dev/null)" ]]
+}
+
+# rollback_restore_files <meta> — the guarded restore of what the update wrote.
+# Sets ROLLBACK_KEPT=1 when a file was left alone and ROLLBACK_FAILED=1 when a
+# restore itself failed.
+rollback_restore_files() {
+  local meta="$1" rc lock brave
+  lock="$(meta_get "$meta" flake_lock_backup)"
+  brave="$(meta_get "$meta" brave_release_backup)"
+  if [[ -n "$lock" && -f "$lock" ]]; then
+    restore_guarded "$meta" "flake.lock" "$REPO_ROOT/nix/flake.lock" "$lock" flake_lock_hash_written; rc=$?
+    ((rc == 1)) && ROLLBACK_KEPT=1
+    ((rc == 2)) && ROLLBACK_FAILED=1
+  else
+    ui_skip "flake.lock" "no backup recorded"
+  fi
+  if [[ -n "$brave" && -f "$brave" ]]; then
+    restore_guarded "$meta" "Brave release" "$REPO_ROOT/nix/packages/brave/release.json" "$brave" brave_release_hash_written; rc=$?
+    ((rc == 1)) && ROLLBACK_KEPT=1
+    ((rc == 2)) && ROLLBACK_FAILED=1
+  fi
+  return 0
+}
+
+# If a restored file now differs from HEAD (the update had been committed),
+# say how to settle the repository.
+rollback_repo_hint() {
+  [[ -e "$REPO_ROOT/.git" ]] || return 0
+  git -C "$REPO_ROOT" diff --quiet HEAD -- nix/flake.lock nix/packages/brave/release.json 2>/dev/null && return 0
+  printf '  The restored files now differ from HEAD (the update had been committed). Choose one:\n'
+  printf '    keep the rollback:  git -C %q commit --only -m "revert(nix): restore flake inputs" -- nix/flake.lock nix/packages/brave/release.json\n' "$REPO_ROOT"
+  printf '    undo the restore:   git -C %q checkout HEAD -- nix/flake.lock nix/packages/brave/release.json\n' "$REPO_ROOT"
+}
 
 do_rollback() {
-  local last meta gen hm_path lock snapshot
+  local last meta gen hm_path run_status host snapshot hm_profile darwin_path
   last="$STATE_DIR/last-run"
   [[ -f "$last" ]] || { printf 'sys-update: no recorded run to roll back (looked in %s)\n' "$STATE_DIR" >&2; exit 1; }
   meta="$(cat "$last")"
@@ -408,17 +448,41 @@ do_rollback() {
 
   gen="$(meta_get "$meta" hm_gen_before)"
   hm_path="$(meta_get "$meta" hm_path_before)"
-  lock="$(meta_get "$meta" flake_lock_backup)"
-  local brave_backup
-  brave_backup="$(meta_get "$meta" brave_release_backup)"
   snapshot="$(meta_get "$meta" snapshot_dir)"
+  run_status="$(meta_get "$meta" status)"
+  host="$(meta_get "$meta" host)"
+  hm_profile="$(meta_get "$meta" hm_profile)"
+  darwin_path="$(meta_get "$meta" darwin_system_before)"
+  # Records from before the host and profile were recorded: detect them now.
+  if [[ -z "$host" ]] && ! host="$(bash "$REPO_ROOT/ops/detect-host.sh")"; then
+    printf 'sys-update: host detection failed; set HOST_PROFILE to macos, linux-desktop, linux-cli or wsl\n' >&2
+    exit 4
+  fi
+  [[ -n "$hm_profile" ]] || hm_profile="$HM_PROFILE"
+  ROLLBACK_KEPT=0; ROLLBACK_FAILED=0
 
   ui_init "" 0
   printf '%sROLLBACK · %s%s\n' "$UI_C_BOLD" "$(meta_get "$meta" run_id)" "$UI_C_OFF"
   ui_section "Will restore"
-  [[ -n "$hm_path" ]] && ui_info "home-manager" "generation ${gen:-?} ($hm_path)"
-  [[ -n "$lock" && -f "$lock" ]] && ui_info "flake.lock" "$(tilde "$lock")"
-  [[ -n "$snapshot" ]] && ui_info "dotfiles" "$(tilde "$snapshot") (restored manually, see below)"
+  ui_info "run status" "${run_status:-none recorded}"
+
+  # Where the run got to decides what there is to undo.
+  local full=1
+  case "$run_status" in
+    started|failed:snapshot|failed:prepare) full=0 ;;
+    ""|prepared|activating|activated|verified|verify-skipped|failed:activate|failed:verify|committed|commit-skipped|commit-failed|done|rolled-back) ;;
+    *) ui_warn "run status" "unrecognised status '$run_status'; treating the run as fully applied" ;;
+  esac
+
+  if [[ "$full" == 0 ]]; then
+    ui_info "home-manager" "nothing was activated by this run"
+  elif [[ "$host" == macos ]]; then
+    ui_info "darwin" "${darwin_path:-no system generation was recorded}"
+  elif [[ -n "$hm_path" ]]; then
+    ui_info "home-manager" "generation ${gen:-?} ($hm_path)"
+  fi
+  [[ -n "$(meta_get "$meta" flake_lock_backup)" ]] && ui_info "flake.lock" "$(tilde "$(meta_get "$meta" flake_lock_backup)")"
+  [[ -n "$snapshot" && "$full" == 1 ]] && ui_info "dotfiles" "$(tilde "$snapshot") (restored manually, see below)"
 
   if [[ "$ASSUME_YES" != 1 ]]; then
     printf '\nProceed with rollback? [y/N] '
@@ -427,45 +491,71 @@ do_rollback() {
   fi
 
   ui_section "Rolling back"
+  if [[ "$full" == 0 ]]; then
+    rollback_restore_files "$meta"
+    printf '\n'
+    ui_ok "rollback" "nothing to roll back; the failed run's file changes were restored"
+    exit 0
+  fi
+
+  if [[ "$host" == macos ]]; then
+    # No automated darwin rollback: the previous system is only rooted by path.
+    rollback_restore_files "$meta"
+    if [[ -n "$darwin_path" ]]; then
+      ui_err "darwin" "not rolled back automatically; switch back by hand: sudo $darwin_path/activate"
+    else
+      ui_err "darwin" "not rolled back automatically, and no previous system generation was recorded"
+    fi
+    [[ -n "$snapshot" && -d "$snapshot" ]] && ui_info "dotfiles" "restore with: cp -a $snapshot/. \$HOME/"
+    exit 1
+  fi
+
   local failed=0
 
   # The update committed its new locks, so restoring the old ones leaves the
   # worktree dirty and the next sys-update would refuse. Remember now, before
   # touching anything, whether those files were clean: only then is the
   # restore ours to commit.
-  local restore_files=() restore_clean=0
-  [[ -n "$lock" && -f "$lock" ]] && restore_files+=(nix/flake.lock)
+  local restore_files=() restore_clean=0 lock_backup brave_backup
+  lock_backup="$(meta_get "$meta" flake_lock_backup)"
+  brave_backup="$(meta_get "$meta" brave_release_backup)"
+  [[ -n "$lock_backup" && -f "$lock_backup" ]] && restore_files+=(nix/flake.lock)
   [[ -n "$brave_backup" && -f "$brave_backup" ]] && restore_files+=(nix/packages/brave/release.json)
   if ((${#restore_files[@]})) && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1 \
     && git -C "$REPO_ROOT" diff --quiet HEAD -- "${restore_files[@]}" 2>/dev/null; then
     restore_clean=1
   fi
-  if [[ -n "$hm_path" && -x "$hm_path/activate" ]]; then
-    if run_step "home-manager" "$hm_path/activate"; then
-      ui_ok "home-manager" "generation ${gen:-?} re-activated"
-    else
-      ui_err "home-manager" "re-activation failed"; failed=1
-    fi
+  if [[ -z "$hm_path" ]]; then
+    ui_skip "home-manager" "no previous generation was recorded"
+  elif [[ ! -d "$hm_path" ]]; then
+    ui_err "home-manager" "the previous generation is gone from the store ($hm_path)"
+    failed=1
+  elif profile_on_target "$hm_profile" "$hm_path"; then
+    ui_ok "home-manager" "already on generation ${gen:-?}; nothing to switch"
   else
-    ui_skip "home-manager" "previous generation no longer in the store"
+    if [[ -x "$hm_path/activate" ]]; then
+      run_step "home-manager" "$hm_path/activate" || ui_warn "home-manager" "activate returned non-zero"
+    fi
+    if ! profile_on_target "$hm_profile" "$hm_path" && have nix-env; then
+      # The old generation's activate script does not always move the profile.
+      run_step "home-manager profile" nix-env --profile "$hm_profile" --set "$hm_path" \
+        || ui_warn "home-manager profile" "nix-env --set returned non-zero"
+    fi
+    if profile_on_target "$hm_profile" "$hm_path"; then
+      ui_ok "home-manager" "generation ${gen:-?} is active again"
+    else
+      ui_err "home-manager" "the profile still does not point at the previous generation ($hm_path)"
+      failed=1
+    fi
   fi
 
-  if [[ -n "$lock" && -f "$lock" ]]; then
-    if cp "$lock" "$REPO_ROOT/nix/flake.lock"; then
-      ui_ok "flake.lock" "restored"
-    else
-      ui_err "flake.lock" "restore failed"; failed=1
-    fi
+  # The files follow the profile: with the profile not rolled back, the new
+  # lock still matches what is active, so it stays.
+  if [[ "$failed" == 0 ]]; then
+    rollback_restore_files "$meta"
+    [[ "$ROLLBACK_FAILED" == 1 ]] && failed=1
   else
-    ui_skip "flake.lock" "no backup recorded"
-  fi
-
-  if [[ -n "$brave_backup" && -f "$brave_backup" ]]; then
-    if cp "$brave_backup" "$REPO_ROOT/nix/packages/brave/release.json"; then
-      ui_ok "Brave release" "restored"
-    else
-      ui_err "Brave release" "restore failed"; failed=1
-    fi
+    ui_skip "flake.lock" "kept: the profile was not rolled back"
   fi
 
   if ((${#restore_files[@]})) && [[ "$failed" == 0 ]] \
@@ -485,7 +575,11 @@ do_rollback() {
 
   printf '\n'
   if [[ "$failed" == 0 ]]; then
-    ui_ok "rollback" "done"; exit 0
+    rollback_repo_hint
+    printf 'status=rolled-back\n' >> "$meta" 2>/dev/null || ui_warn "metadata" "could not record status=rolled-back"
+    if [[ "$ROLLBACK_KEPT" == 1 ]]; then ui_ok "rollback" "done (files that changed since the update were left in place)"
+    else ui_ok "rollback" "done"; fi
+    exit 0
   fi
   ui_err "rollback" "incomplete"; exit 1
 }

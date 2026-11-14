@@ -1,13 +1,13 @@
 {
-  "version": "1.99.55",
+  "version": "1.99.57",
   "archives": {
     "x86_64-linux": {
-      "url": "https://github.com/brave/brave-browser/releases/download/v1.99.55/brave-browser_1.99.55_amd64.deb",
-      "hash": "364e954a2ad84d5ba3e0e217a229d5873c4ae7107d15e6120e4207529539c88d"
+      "url": "https://github.com/brave/brave-browser/releases/download/v1.99.57/brave-browser_1.99.57_amd64.deb",
+      "hash": "8cd14c57f7fd6d79dfd9a25450175b5438a1b11b565ff5d08ad991b702de9fd5"
     },
     "aarch64-linux": {
-      "url": "https://github.com/brave/brave-browser/releases/download/v1.99.55/brave-browser_1.99.55_arm64.deb",
-      "hash": "af99f06830d096503f6667b36ff6ed6c455feef5203f0d28fef4cfd3ae5ee10a"
+      "url": "https://github.com/brave/brave-browser/releases/download/v1.99.57/brave-browser_1.99.57_arm64.deb",
+      "hash": "d05df4f8a8c494075246820c17897a469614f879938a77557f025fda7be61db4"
     }
   }
 }

@@ -145,3 +145,32 @@ make_repo() {
     [[ "$output" == *"would run: sh -c"*"lefthook install"* ]]
     [ ! -e "$LOG" ]
 }
+
+# ── DRY_RUN validation and the bats HOME guard ──────────────────────────────
+
+@test "DRY_RUN other than 0 or 1 is rejected before anything runs" {
+    make_repo repo
+    run env USER=utmostcreator DRY_RUN=true PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"[install:error] DRY_RUN must be 0 or 1 (got: true)"* ]]
+    [[ "$output" != *"Preflight"* ]]
+    [ ! -e "$LOG" ]
+}
+
+@test "DRY_RUN=0 plus --dry-run is still a dry run" {
+    make_repo repo
+    run env USER=utmostcreator DRY_RUN=0 PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh" --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Mode:  dry-run"* ]]
+    [ ! -e "$LOG" ]
+}
+
+@test "the bats HOME guard rejects a sibling that only shares the scratch prefix" {
+    make_repo repo
+    outside="${BATS_TEST_TMPDIR}-evil"
+    run env -u DRY_RUN HOME="$outside" USER=utmostcreator PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 3 ]
+    [ ! -e "$outside" ]
+    [ ! -e "$LOG" ]
+    [[ "$output" == *"refusing a real install from a bats test"* ]]
+}

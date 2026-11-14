@@ -54,6 +54,64 @@ If a check fails or a change is not safe to commit, leave it uncommitted and
 report exactly what failed. Do not commit a broken build, and do not push
 unless asked.
 
+## Agent safety
+
+These rules add to the existing instructions and to stricter host permissions;
+they never relax them. Where a rule above permits an action (for example
+"Commit when safe"), the stricter rule here and the host's permissions still
+apply. Do not bypass a denied permission; request the authorisation through the
+normal permission mechanism.
+
+### Isolation
+
+Concurrent sessions share this repository; each agent owns only its own
+worktree and temporary files.
+
+- Never save, pop or apply changes with `git stash`: the stash is shared
+  across worktrees. Save work as a patch file in your private scratch
+  directory instead (`git stash list` to inspect is fine). (Incident: a
+  shared stash was popped by the wrong agent.)
+- Keep scratch files in a private per-agent subdirectory, never a shared
+  fixed path. (Incident: shared scratch file collisions overwrote another
+  agent's drafts.)
+- When a worktree is authorised, base it on a recorded local `main` SHA.
+- Never stage, overwrite, commit or clean another ticket's or session's files.
+
+### Landing permissions
+
+- Implementing, committing, integrating (merge, cherry-pick or rebase onto
+  `main`), rewriting history and pushing each need their own explicit
+  authorisation for the current task. Authorising one never implies another.
+- Force-push only when explicitly asked, even when history rewriting is
+  authorised.
+
+### Regression scope
+
+- Reproduce a defect before fixing it.
+- For every changed script that other scripts source or call, find its direct
+  and indirect callers, related tests and shared dependencies; check the
+  `source`/`bash` call sites and the bats files that load it, not one name
+  grep.
+- A change to `ops/update-all.sh` or `ops/lib/*` runs the full
+  `bats tests/bash` suite.
+- Report every relevant suite you did not run. Never weaken assertions.
+- A reviewer must not PASS a change based only on tests that exercise the
+  modified script directly. (Incident: a review that ran only the changed
+  script's suites missed a cross-suite failure.)
+
+### Process cleanup
+
+- Signal only processes you started, tracked by PID, and their descendants.
+- Use bounded waits. Run foreground work under `timeout`; poll a background
+  PID with a deadline (for example `kill -0 "$pid"` in a counted loop) or wait
+  for a file under `timeout`. A plain `wait $pid` has no timeout and only
+  works in the shell that started the job.
+- Never use `pkill`, `killall`, `pgrep -f` or any other process-name pattern,
+  for killing or for waiting. (Incidents: a broad `pkill -f` touched another
+  session; two `pgrep -f` wait loops matched their own command line and stalled
+  for 64 minutes.)
+- Clean up background jobs before finishing.
+
 <!-- glyphbrace:managed:begin guidance-codex:v1 -->
 # Repository Instructions
 

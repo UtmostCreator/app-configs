@@ -56,6 +56,34 @@ lint() { git -C "$R" add -A; PATH="$STUBS:$PATH" run bash "$R/ops/lint-shell.sh"
     [[ "$output" == *"shellcheck not found"* ]]
 }
 
+@test "a syntax error in a rendered chezmoi shell template fails" {
+    command -v chezmoi >/dev/null || skip "chezmoi required"
+    printf '#!/usr/bin/env bash\n{{ if true }}\nif then\n{{ end }}\n' >"$R/home/dot_local/bin/executable_bad.tmpl"
+    lint
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"executable_bad.tmpl"* ]]
+}
+
+@test "a clean shell template passes and a non-shell template is skipped" {
+    command -v chezmoi >/dev/null || skip "chezmoi required"
+    printf '#!/usr/bin/env bash\n{{ if true }}echo {{ .name }}{{ end }}\n' >"$R/home/dot_local/bin/executable_good.tmpl"
+    printf '{"if then": {{ .name | quote }}}\n' >"$R/home/settings.json.tmpl"
+    lint
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"(rendered): 1 templates, 0 failed"* ]]
+}
+
+@test "shell templates without chezmoi fail instead of being skipped" {
+    printf '#!/usr/bin/env bash\ntrue\n' >"$R/home/dot_local/bin/executable_good.tmpl"
+    git -C "$R" add -A
+    only="$BATS_TEST_TMPDIR/only"; mkdir -p "$only"
+    for t in bash git head grep dirname; do ln -s "$(command -v "$t")" "$only/$t"; done
+    ln -s "$STUBS/shellcheck" "$only/shellcheck"
+    run env PATH="$only" bash "$R/ops/lint-shell.sh"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"chezmoi not found"* ]]
+}
+
 @test "mise lint:shell delegates to ops/lint-shell.sh" {
     run grep -A3 '^\[tasks."lint:shell"\]' "$REPO_ROOT/mise.toml"
     [[ "$output" == *"bash ops/lint-shell.sh"* ]]

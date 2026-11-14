@@ -61,8 +61,14 @@ switch (uname -s)
             # the key loading below handles. Only a dead agent is replaced.
             ssh-add -l >/dev/null 2>&1
             if test $status -eq 2
+                # Private env file, without leaving the whole interactive
+                # shell at umask 077 (the bash twin uses a subshell).
+                set -l old_umask (umask)
                 umask 077
                 ssh-agent -s >$env_file
+                umask $old_umask
+                # A pre-existing file keeps its old mode through `>`.
+                chmod 600 $env_file
                 for line in (cat $env_file)
                     set -l m (string match -r '^(SSH_[A-Z_]+)=([^;]+);' -- $line)
                     if test (count $m) -ge 3

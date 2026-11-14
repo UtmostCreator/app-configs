@@ -18,6 +18,7 @@ setup() {
     done
     printf '{ pkgs, ... }:\n{\n  home.packages = with pkgs; [ jq ];\n}\n' >"$R/nix/modules/home/ok.nix"
     STUBS="$BATS_TEST_TMPDIR/bin"; mkdir -p "$STUBS"
+    unset VALIDATE_EVAL_PROFILES
 }
 
 validate() { git -C "$R" add -A; run bash "$R/ops/validate-config.sh"; }
@@ -406,7 +407,7 @@ eval_with() {
     eval_with "$GOOD_EVAL"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
     [[ "$output" == *"evaluated Home Manager config follows the policy"* ]]
-    [ "$(wc -l <"$BATS_TEST_TMPDIR/nix.log")" -eq 3 ]
+    [ "$(wc -l <"$BATS_TEST_TMPDIR/nix.log")" -eq 4 ]
 }
 
 @test "--eval: violations in the evaluated config fail" {
@@ -505,4 +506,12 @@ eval_with() {
     validate
     [ "$status" -ne 0 ]
     [[ "$output" == *"forbidden programs.<x>.enable"* ]]
+}
+
+@test "--eval: a failing nix eval shows the tail of its stderr" {
+    printf '#!/bin/sh\necho "error: attribute boom missing" >&2\nexit 1\n' >"$STUBS/nix"; chmod +x "$STUBS/nix"
+    git -C "$R" add -A
+    PATH="$STUBS:$PATH" run bash "$R/ops/validate-config.sh" --eval
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"attribute boom missing"* ]]
 }

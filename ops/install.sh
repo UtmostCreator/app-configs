@@ -123,6 +123,15 @@ case "$HOST_PROFILE" in
   macos|linux-desktop|linux-cli|wsl) ;;
   *) fail "unsupported HOST_PROFILE: $HOST_PROFILE" ;;
 esac
+# macOS switches via sudo: fail now, before any mutation, not halfway through
+# (same check as ops/bootstrap.sh). A dry run never asks.
+if [[ "$DRY_RUN" != 1 && "$HOST_PROFILE" == macos ]]; then
+  if [[ -t 0 ]]; then
+    sudo -v || fail "macOS switch needs sudo; authentication failed"
+  else
+    sudo -n true || fail "macOS switch needs sudo; run on a TTY or configure sudo"
+  fi
+fi
 # An existing Nix may lack nix-command/flakes, which `nix eval` and every later
 # step need. Enable them for this run only (NIX_CONFIG reaches every child
 # process); the user's nix.conf is not edited. This must run before the first
@@ -236,7 +245,13 @@ fi
 # ── 6. Home Manager / nix-darwin ────────────────────────────────────────────
 step "Home Manager / nix-darwin switch"
 if [[ "$HOST_PROFILE" == "macos" ]]; then
-  run darwin-rebuild switch --flake "$REPO_ROOT/nix#macos"
+  # Same approach as ops/bootstrap.sh: the switch needs root, and darwin-rebuild
+  # does not exist on a first run, so use the pinned flake output instead.
+  if have darwin-rebuild; then
+    run sudo darwin-rebuild switch --flake "$REPO_ROOT/nix#macos"
+  else
+    run sudo nix run "$REPO_ROOT/nix#darwin-rebuild" -- switch --flake "$REPO_ROOT/nix#macos"
+  fi
 else
   if [[ "$DRY_RUN" == 1 ]]; then
     run "$(hm_switch_describe "$REPO_ROOT/nix" "$HOST_PROFILE")"

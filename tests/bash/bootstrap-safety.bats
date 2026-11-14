@@ -122,7 +122,7 @@ first_install() { # first_install <host>
     first_install macos
     [ "$status" -eq 0 ]
     [[ "$output" == *"seed-personal-yaml.sh"*"personal.yaml macos"* ]]
-    [[ "$output" == *"sudo nix run $FRESH/nix#darwin-rebuild -- switch --flake $FRESH/nix#macos"* ]]
+    [[ "$output" == *"sudo nix --extra-experimental-features nix-command flakes run $FRESH/nix#darwin-rebuild -- switch --flake $FRESH/nix#macos"* ]]
     [[ "$output" != *"home-manager switch"* ]]
     [ ! -e "$FRESH/home/.chezmoidata/personal.yaml" ]
 }
@@ -400,7 +400,7 @@ mutated() { grep -Eq '^(nix profile|nix flake|chezmoi (init|apply)|mise (trust|i
     BS_HOST=macos bs --yes
     [ "$status" -eq 0 ]
     grep -q "^nix build --no-link $FX/nix#darwinConfigurations.macos.system" "$CALLS"
-    grep -q "^sudo nix run $FX/nix#darwin-rebuild -- switch --flake $FX/nix#macos" "$CALLS"
+    grep -q "^sudo nix --extra-experimental-features nix-command flakes run $FX/nix#darwin-rebuild -- switch --flake $FX/nix#macos" "$CALLS"
     run grep -q 'darwin-rebuild check' "$CALLS"
     [ "$status" -ne 0 ]
 }
@@ -410,7 +410,7 @@ mutated() { grep -Eq '^(nix profile|nix flake|chezmoi (init|apply)|mise (trust|i
     BS_HOST=macos bs --yes
     [ "$status" -eq 0 ]
     grep -q "^sudo darwin-rebuild switch --flake $FX/nix#macos" "$CALLS"
-    run grep -q '^sudo nix run' "$CALLS"
+    run grep -q "^sudo nix " "$CALLS"
     [ "$status" -ne 0 ]
 }
 

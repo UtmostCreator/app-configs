@@ -138,8 +138,12 @@ host=example.test
     [ -f "$marker" ]
     rm -f "$marker"
 
-    GIT_CONFIG_SYSTEM="$system" GIT_CONFIG_GLOBAL="$RENDERED" GIT_TERMINAL_PROMPT=0 \
-        GIT_ASKPASS= SSH_ASKPASS= git credential fill <<<"$input" >/dev/null 2>&1 || true
+    # With no helper left, git fails only because it has nobody to ask for a
+    # username; any other failure (crash, bad config) must not pass this test.
+    run env GIT_CONFIG_SYSTEM="$system" GIT_CONFIG_GLOBAL="$RENDERED" GIT_TERMINAL_PROMPT=0 \
+        GIT_ASKPASS= SSH_ASKPASS= git credential fill <<<"$input"
+    [ "$status" -eq 128 ]
+    [[ "$output" == *"could not read Username"* ]]
     [ ! -f "$marker" ]
 }
 

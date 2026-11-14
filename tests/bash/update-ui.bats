@@ -132,5 +132,6 @@ setup() {
     UI_TICK=0.05
     ui_run "home-manager" sleep 0.3
   ' _ "$REPO_ROOT" "$UI_LOG_FILE"
+  [ "$status" -eq 0 ]
   [[ "$output" != *"running"* ]]
 }

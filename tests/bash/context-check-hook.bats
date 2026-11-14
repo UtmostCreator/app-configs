@@ -35,7 +35,9 @@ hook() { # hook <session>
 @test "warns once per tier, then again when the next tier is reached" {
     usage_line 0 150000 0 >"$T"
     run hook s3; [ "$status" -eq 1 ]
-    run hook s3; [ "$status" -eq 0 ] && [ -z "$output" ]
+    run hook s3
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
     usage_line 0 205000 0 >>"$T"
     run hook s3; [ "$status" -eq 1 ]
     [[ "$output" == *"CRITICAL"* ]]

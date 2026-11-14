@@ -79,7 +79,8 @@ new_repo() {
     run sh -c 'echo n | git cleanf'
     [ "$status" -ne 0 ]
     [[ "$output" == *"Would remove"*".env"* ]]
-    [ -f .env ] && [ -f untracked ]
+    [ -f .env ]
+    [ -f untracked ]
     run sh -c 'echo y | git cleanf'
     [ "$status" -eq 0 ]
     [ ! -e .env ] && [ ! -e untracked ] && [ -f tracked ]
@@ -120,7 +121,8 @@ new_repo() {
     [ "$(git -C "$wt" log -1 --format=%s)" = "two" ]
     [ -z "$(git -C "$wt" config --get branch.feat/login.merge)" ]   # --no-track
     # the current checkout is untouched
-    [ "$(git branch --show-current)" = "current" ] && [ -f wip.txt ]
+    [ "$(git branch --show-current)" = "current" ]
+    [ -f wip.txt ]
     run git wtn
     [ "$status" -ne 0 ]
     [[ "$output" == *"usage: git wtn"* ]]

@@ -256,7 +256,7 @@ setup() {
   command -v script >/dev/null 2>&1 || skip "script(1) is required for pseudo-terminal pager coverage"
   fake_bin="$TEST_ROOT/pager-bin"
   mkdir -p "$fake_bin"
-  printf '#!/usr/bin/env bash\n/bin/cat >/dev/null\nexit 42\n' >"$fake_bin/less"
+  printf '#!/usr/bin/env bash\ncat >/dev/null\nexit 42\n' >"$fake_bin/less"
   chmod +x "$fake_bin/less"
   run script -q -e -c "env PATH='$fake_bin:$PATH' COLUMNS=20 LINES=5 bash '$LOG_ERRORS' --full '$FIXTURES/laravel-long.log'" /dev/null
   [ "$status" -eq 1 ]

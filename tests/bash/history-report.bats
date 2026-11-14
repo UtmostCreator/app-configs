@@ -42,7 +42,8 @@ H
 @test "report is written and counts every entry" {
     run python3 -I "$SCRIPT" --fish "fish=$FISH" --out "$OUT"
     [ "$status" -eq 0 ]
-    [ -s "$OUT/report.md" ] && [ -s "$OUT/report.json" ]
+    [ -s "$OUT/report.md" ]
+    [ -s "$OUT/report.json" ]
     run python3 -I -c "import json,sys; r=json.load(open('$OUT/report.json')); print(r['sources'][0]['entries'])"
     [ "$output" = "12" ]
 }

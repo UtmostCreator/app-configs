@@ -65,6 +65,8 @@ codex_signed_in() {
 
 @test "never prints token material" {
     run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [ -n "$output" ]
     [[ "$output" != *FAKE* ]]
     [[ "$output" != *eyJ* ]]
 }

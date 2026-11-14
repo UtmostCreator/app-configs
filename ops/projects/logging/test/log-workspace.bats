@@ -30,6 +30,14 @@ teardown() {
   for pid in $(tmux list-panes -a -F '#{pane_pid}' 2>/dev/null); do
     pkill -KILL -P "$pid" 2>/dev/null || true
   done
+  # A test's fake tail that ignores hangups is not a pane child; stop it by PID.
+  if [[ -s "$TEST_ROOT/fake-tail.pid" ]]; then
+    while IFS= read -r pid; do
+      if [[ "$(ps -o args= -p "$pid" 2>/dev/null)" == "sleep 300" ]]; then
+        kill -KILL "$pid" 2>/dev/null || true
+      fi
+    done <"$TEST_ROOT/fake-tail.pid"
+  fi
   tmux kill-server >/dev/null 2>&1 || true
   # A TMUX=<path>,... client makes tmux use that path as its socket.
   tmux -S "$TEST_TMUX/fake-client" kill-server >/dev/null 2>&1 || true
@@ -55,6 +63,16 @@ wait_for() {
     ((attempts-=1))
   done
   return 1
+}
+
+fake_tails_started() {
+  [[ "$(wc -l <"$TEST_ROOT/fake-tail.pid" 2>/dev/null || echo 0)" -ge "$1" ]]
+}
+
+process_has_exited() {
+  local state
+  state="$(ps -o stat= -p "$1" 2>/dev/null | tr -d '[:space:]')"
+  [[ -z "$state" || "$state" == Z* ]]
 }
 
 health_has_state() {
@@ -301,6 +319,42 @@ pid_is_gone() {
   done
   run bash -c 'compgen -G "$1/less-$2-*.log"' bash "$TEST_STATE" "$instance"
   [ "$status" -ne 0 ]
+}
+
+@test "stopping a fallback session also ends a tail that ignores hangups" {
+  fake_bin="$TEST_ROOT/fake-bin"
+  mkdir -p "$fake_bin" "$TEST_HOME/Herd/integration/storage/logs"
+  printf '#!/usr/bin/env bash\nprintf "lnav 0.13.0\\n"\n' >"$fake_bin/lnav"
+  # Ignored signals survive exec, so the sleep keeps ignoring HUP and TERM.
+  printf '%s\n' \
+    '#!/usr/bin/env bash' \
+    'printf "%s\n" "$$" >>"$FAKE_TAIL_PID"' \
+    "trap '' HUP TERM" \
+    'exec sleep 300' >"$fake_bin/tail"
+  chmod +x "$fake_bin/lnav" "$fake_bin/tail"
+  cp "$BATS_TEST_DIRNAME/fixtures/laravel.log" "$TEST_HOME/Herd/integration/storage/logs/laravel-2026-09-03.log"
+
+  run env PATH="$fake_bin:$PATH" HOME="$HOME" TMUX_TMPDIR="$TMUX_TMPDIR" \
+    FAKE_TAIL_PID="$TEST_ROOT/fake-tail.pid" \
+    LOG_WORKSPACE_STATE_DIR="$LOG_WORKSPACE_STATE_DIR" \
+    LOG_WORKSPACE_SESSION_NAME="$LOG_WORKSPACE_SESSION_NAME" \
+    bash "$WORKSPACE" --detached --rebuild
+  [ "$status" -eq 0 ]
+  instance="$(session_instance)"
+  mapfile -t viewer_pids < <(cut -f3 "$TEST_STATE/health/$instance".*)
+  # Two panes (all, integration) match the fixture and start a tail each.
+  wait_for fake_tails_started 2
+  mapfile -t tail_pids <"$TEST_ROOT/fake-tail.pid"
+
+  tmux kill-session -t "$SESSION"
+
+  for pid in "${viewer_pids[@]}"; do
+    wait_for pid_is_gone "$pid"
+  done
+  # Both panes' tails are listed in the file.
+  for pid in "${tail_pids[@]}"; do
+    wait_for process_has_exited "$pid"
+  done
 }
 
 @test "lnav cutoff crash retry remains visibly degraded" {

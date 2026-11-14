@@ -47,6 +47,9 @@ mkdir -p "$HEALTH_DIR"
 
 # lnav can ignore SIGTERM, and a bare `wait` on it would then hang the viewer
 # (and leak lnav) after its tmux session is gone, so escalate to SIGKILL.
+# The same goes for the less fallback's stream process and its `tail -F`
+# children, which may ignore or miss SIGTERM; their children die first so a
+# SIGKILLed parent cannot orphan them.
 stop_child() {
   local pid="$1"
   local attempts=20
@@ -54,9 +57,10 @@ stop_child() {
   kill "$pid" 2>/dev/null || true
   while (( attempts > 0 )) && kill -0 "$pid" 2>/dev/null; do
     sleep 0.1
-    ((attempts-=1))
+    attempts=$((attempts - 1))
   done
   if kill -0 "$pid" 2>/dev/null; then
+    pkill -KILL -P "$pid" 2>/dev/null || true
     kill -KILL "$pid" 2>/dev/null || true
   fi
   wait "$pid" 2>/dev/null || true
@@ -265,8 +269,7 @@ stream_for_less() {
   # shellcheck disable=SC2329 # Invoked by the EXIT trap below.
   cleanup_children() {
     for child in "${children[@]}"; do
-      kill "$child" 2>/dev/null || true
-      wait "$child" 2>/dev/null || true
+      stop_child "$child"
     done
   }
   trap cleanup_children EXIT
@@ -285,7 +288,7 @@ stream_for_less() {
         started["$file"]=1
         (
           printf '\n===== %s =====\n' "$file"
-          tail -n 2000 -F "$file"
+          exec tail -n 2000 -F "$file"
         ) &
         child="$!"
         children+=("$child")
@@ -314,8 +317,7 @@ run_less() {
   status=$?
   set -e
   VIEW_PID=""
-  kill "$STREAM_PID" 2>/dev/null || true
-  wait "$STREAM_PID" 2>/dev/null || true
+  stop_child "$STREAM_PID"
   STREAM_PID=""
   rm -f "$STREAM_FILE"
   STREAM_FILE=""

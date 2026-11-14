@@ -139,7 +139,8 @@ stub_gh() {
 @test "pr-watch: a failing gh pr list leaves state untouched and rings nothing" {
     pr_watch_setup
     before="$(cat "$STATE_FILE")"
-    stub gh 'exit 1'
+    # view would report MERGED: only the list-failure skip keeps this quiet.
+    stub gh 'case "$2" in list) exit 1 ;; view) echo MERGED ;; esac'
     run env PATH="$STUBS:$PATH" bash "$P/github/pr-watch.sh" --once
     [ "$status" -eq 0 ]
     [[ "$output" != *"[pr-watch]"* ]]

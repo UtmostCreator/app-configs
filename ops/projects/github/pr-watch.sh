@@ -53,7 +53,7 @@ mkdir -p "$STATE_DIR"
 event_enabled() {
   local name="$1"
   local v
-  v="$(proj_yq ".github.pr_watch.events.\"$name\".enabled // false")"
+  v="$(PR_EVENT="$name" proj_yq '.github.pr_watch.events[strenv(PR_EVENT)].enabled // false')"
   [[ "$v" == "true" ]]
 }
 

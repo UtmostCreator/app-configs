@@ -89,7 +89,12 @@ run()  {
 # shellcheck source=ops/lib/hm-switch.sh
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
 
-is_nixos() { [[ -f /etc/NIXOS ]] || grep -qi '^ID=nixos' /etc/os-release 2>/dev/null; }
+# INSTALL_NIXOS_MARKER / INSTALL_OS_RELEASE are test seams (same idea as the
+# DETECT_HOST_* overrides in ops/detect-host.sh).
+is_nixos() {
+  [[ -f "${INSTALL_NIXOS_MARKER:-/etc/NIXOS}" ]] \
+    || grep -qi '^ID=nixos' "${INSTALL_OS_RELEASE:-/etc/os-release}" 2>/dev/null
+}
 have()     { command -v "$1" >/dev/null 2>&1; }
 
 # Temp files and dirs created below, removed on exit.
@@ -131,7 +136,16 @@ elif is_nixos; then
   fail "NixOS but 'nix' not on PATH — open a login shell and re-run"
 else
   warn "Nix not found; installing via Determinate Systems installer (non-NixOS)."
-  run sh -c "curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm"
+  # Download to a file, then run it. In `curl | sh` a failed download is hidden
+  # by the pipe (sh just reads an empty script and exits 0).
+  if [[ "$DRY_RUN" == 1 ]]; then
+    nix_installer="${TMPDIR:-/tmp}/nix-installer.XXXXXX"
+  else
+    nix_installer="$(mktemp)" || fail "cannot create a temp file for the Nix installer"
+    CLEANUP+=("$nix_installer")
+  fi
+  run curl --proto '=https' --tlsv1.2 -sSfL -o "$nix_installer" https://install.determinate.systems/nix
+  run sh "$nix_installer" install --no-confirm
 fi
 
 preflight_refresh_nix_path
@@ -144,13 +158,25 @@ if ((USER_CHECKED == 0)); then
   fi
 fi
 
+# An existing Nix may lack nix-command/flakes, which every step below needs.
+# Enable them for this run only (NIX_CONFIG reaches every child process); the
+# user's nix.conf is not edited.
+if have nix; then
+  nix_features="$(nix show-config 2>/dev/null | sed -n 's/^experimental-features = //p')"
+  if [[ " $nix_features " != *" nix-command "* || " $nix_features " != *" flakes "* ]]; then
+    warn "nix-command and flakes are not both enabled in this Nix; enabling them for this run only"
+    export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG$'\n'}extra-experimental-features = nix-command flakes"
+  fi
+fi
+
 # ── 3. base tools ───────────────────────────────────────────────────────────
 step "Base tools (chezmoi, mise, home-manager, lefthook)"
+# Install only what is missing: re-installing a tool that is already in the
+# profile (or provided another way) makes `nix profile install` conflict.
 missing_base=()
-for t in chezmoi mise home-manager lefthook; do have "$t" || missing_base+=("$t"); done
+for t in chezmoi mise home-manager lefthook; do have "$t" || missing_base+=("nixpkgs#$t"); done
 if (( ${#missing_base[@]} )); then
-  run nix profile install \
-    nixpkgs#chezmoi nixpkgs#mise nixpkgs#home-manager nixpkgs#lefthook
+  run nix profile install "${missing_base[@]}"
 else
   log "base tools already present"
 fi

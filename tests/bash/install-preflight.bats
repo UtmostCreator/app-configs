@@ -10,7 +10,7 @@ setup() {
     unset WSL_DISTRO_NAME
     export DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-wsl-run" DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-wsl-interop"
     # install.sh asks Nix for the username; the test never runs the real nix.
-    STUBS="$BATS_TEST_TMPDIR/bin"; mkdir -p "$STUBS"
+    export STUBS="$BATS_TEST_TMPDIR/bin"; mkdir -p "$STUBS"
     export STUB_LOG="$BATS_TEST_TMPDIR/calls.log"
     stub_nix
     export PATH="$STUBS:$PATH"
@@ -117,6 +117,9 @@ case \"\$1\" in
     sed -nE 's/^[[:space:]]*username = \"([^\"]+)\";.*/\\1/p' \"\$4\" ;;
   show-config)
     printf '%s\n' \"\${NIX_STUB_CONFIG-experimental-features = nix-command flakes}\" ;;
+  profile)
+    # \`nix profile install\` makes every <tool>.pending stub appear as <tool>.
+    for f in \"\$STUBS\"/*.pending; do [ ! -e \"\$f\" ] || mv \"\$f\" \"\${f%.pending}\"; done ;;
   --version) echo 'nix (stub) 0' ;;
 esac
 [ -z \"\${STUB_FAIL_NIX:-}\" ] || exit \"\$STUB_FAIL_NIX\"
@@ -282,4 +285,106 @@ make_repo() {
     run env USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
     [ "$status" -eq 0 ]
     grep -q "^mise cwd=$FAKE nixcfg=\[[^]]*\] args=install\$" "$STUB_LOG"
+}
+
+# ── Nix install, base tools, experimental features ──────────────────────────
+
+# restricted_path: a PATH with only the stubs and symlinks to the few host tools
+# install.sh needs, so a host-installed nix/home-manager/curl cannot leak in.
+restricted_path() {
+    local bin="$BATS_TEST_TMPDIR/basebin" c
+    mkdir -p "$bin"
+    for c in bash sh git sed grep cat cut head tr mktemp rm mkdir dirname id uname env date cp mv touch wc sort tail basename readlink chmod; do
+        ln -sf "$(command -v "$c")" "$bin/$c"
+    done
+    RPATH="$STUBS:$bin"
+}
+
+@test "only the missing base tools are installed" {
+    make_repo repo
+    stub_tool mise
+    stub "$STUBS/lefthook" 'exit 0'
+    mv "$STUBS/home-manager" "$STUBS/home-manager.pending"
+    restricted_path
+    run env USER=utmostcreator PATH="$RPATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    echo "$output"
+    [ "$status" -eq 0 ]
+    grep -q 'args=profile install nixpkgs#home-manager$' "$STUB_LOG"
+    ! grep -q 'nixpkgs#chezmoi' "$STUB_LOG"
+    ! grep -q 'nixpkgs#mise' "$STUB_LOG"
+    ! grep -q 'nixpkgs#lefthook' "$STUB_LOG"
+}
+
+@test "an existing Nix without nix-command and flakes gets them for this run only" {
+    make_repo repo
+    run env USER=utmostcreator NIX_STUB_CONFIG="max-jobs = 4" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    grep -q '^home-manager .*nixcfg=\[extra-experimental-features = nix-command flakes\]' "$STUB_LOG"
+    [ ! -e "$HOME/.config/nix" ]
+}
+
+@test "an existing Nix that lacks only flakes is topped up" {
+    make_repo repo
+    run env USER=utmostcreator NIX_STUB_CONFIG="experimental-features = nix-command" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    grep -q '^home-manager .*nixcfg=\[extra-experimental-features = nix-command flakes\]' "$STUB_LOG"
+}
+
+@test "a Nix that already has both features is left alone" {
+    make_repo repo
+    run env USER=utmostcreator NIX_STUB_CONFIG="experimental-features = nix-command flakes" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    grep -q '^home-manager .*nixcfg=\[\]' "$STUB_LOG"
+}
+
+# no_nix_host: nix is not installed and the host is not NixOS. The curl stub
+# serves an installer script that "installs" the held nix stub.
+no_nix_host() {
+    make_repo repo
+    export STUBS
+    mv "$STUBS/nix" "$STUBS/nix.hold"
+    cat >"$STUBS/curl" <<'EOF'
+#!/usr/bin/env bash
+out=""
+while [ $# -gt 0 ]; do [ "$1" = -o ] && out="$2"; shift; done
+printf 'curl\n' >>"$STUB_LOG"
+[ -z "${STUB_FAIL_CURL:-}" ] || exit "$STUB_FAIL_CURL"
+cat >"$out" <<INST
+#!/bin/sh
+printf 'installer %s\n' "\$*" >>"$STUB_LOG"
+mv "$STUBS/nix.hold" "$STUBS/nix"
+INST
+EOF
+    chmod +x "$STUBS/curl"
+    restricted_path
+    NONIXOS="INSTALL_NIXOS_MARKER=$BATS_TEST_TMPDIR/none INSTALL_OS_RELEASE=$BATS_TEST_TMPDIR/none"
+}
+
+@test "a failed Nix installer download stops the install before the installer runs" {
+    no_nix_host
+    run env $NONIXOS USER=utmostcreator STUB_FAIL_CURL=22 PATH="$RPATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 22 ]
+    [[ "$output" == *"[install:error] command failed (exit 22): curl"* ]]
+    [[ "$output" != *"nix still not on PATH"* ]]
+    ! grep -q '^installer' "$STUB_LOG"
+}
+
+@test "the downloaded Nix installer is run as a file, then the install continues" {
+    no_nix_host
+    run env $NONIXOS USER=utmostcreator PATH="$RPATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    echo "$output"
+    [ "$status" -eq 0 ]
+    grep -q '^installer install --no-confirm$' "$STUB_LOG"
+    [[ "$output" != *"| sh"* ]]
+}
+
+@test "dry-run without Nix shows the download step and defers the user check" {
+    no_nix_host
+    run env $NONIXOS USER=utmostcreator DRY_RUN=1 PATH="$RPATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would run: curl"*"-o "* ]]
+    [[ "$output" == *"would run: sh "*"install --no-confirm"* ]]
+    [[ "$output" == *"login-user check will run after a real install"* ]]
+    [[ "$output" != *"| sh"* ]]
+    [ ! -e "$STUB_LOG" ]
 }

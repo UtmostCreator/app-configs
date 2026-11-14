@@ -107,8 +107,8 @@ Then `sudo nixos-rebuild switch` and
 
 ## Monitor (HDMI/DisplayPort) speakers show under a chipset name
 
-The DELL monitor's built-in speakers are the GPU's HDMI/DisplayPort audio sink
-(`alsa_output.pci-*.hdmi-stereo`). PipeWire labels HDMI sinks from the audio
+The DELL monitor's built-in speakers are the HDMI/DisplayPort audio sink of the
+GPU it is plugged into (`alsa_output.pci-*.hdmi-stereo`). PipeWire labels HDMI sinks from the audio
 **controller** name (e.g. `AD106M High Definition Audio Controller Digital
 Stereo (HDMI)`), **not** from the monitor's EDID, so they can look "missing"
 when you search for "DELL". The device is not gone — only the label is generic.
@@ -120,9 +120,12 @@ grep monitor_name /proc/asound/card*/eld#0.0   # e.g. DELL S3425DW
 ```
 
 The same `51-kanto-ora4.conf` drop-in in `gui.nix` now adds a name-scoped rule
-that renames the NVIDIA HDMI sink to `DELL S3425DW` (matches
-`~alsa_output.pci-.*\.hdmi.*`). If you swap monitors, update `node.description`
-in `gui.nix` to the new ELD `monitor_name`. Verify after rebuild + relog:
+that renames the HDMI sinks of this host's two GPU audio functions to
+`DELL S3425DW`, matched by PCI address: `~alsa_output.pci-0000_06_00\.1\.hdmi-.*`
+(AMD iGPU, card1) and `~alsa_output.pci-0000_01_00\.1\.hdmi-.*` (NVIDIA dGPU,
+card0). Other HDMI sinks are left alone. If a GPU moves slot, update its address
+(`pactl list short cards`, or `/sys/class/sound/card*/device`); if you swap monitors, update `node.description` in
+`gui.nix` to the new ELD `monitor_name`. Verify after rebuild + relog:
 
 ```bash
 pactl list sinks | grep -A2 hdmi | grep -i description   # should read DELL S3425DW

@@ -92,3 +92,44 @@ report() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"unavailable"* ]]
 }
+
+# ── T-0024: empty package set vs failed snapshot ─────────────────────────────
+
+@test "mise: a successful empty snapshot is an empty set, not unavailable" {
+  run bash -c '
+    source "$1/ops/update-version-report.sh"
+    report_mise_changes "" "$(printf "example\t1.0.0")" 1
+  ' _ "$REPO_ROOT"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"unavailable"* ]]
+  [[ "$output" == *"1 added"* ]]
+}
+
+@test "mise: empty before and after (available) reports no changes" {
+  run bash -c '
+    source "$1/ops/update-version-report.sh"
+    report_mise_changes "" "" 1
+  ' _ "$REPO_ROOT"
+  [[ "$output" != *"unavailable"* ]]
+  [[ "$output" == *"no package changes"* ]]
+}
+
+@test "profile snapshot that lists nothing is distinguishable from a failed one" {
+  run bash -c '
+    source "$1/ops/update-version-report.sh"
+    nix_toplevel_packages() { return 0; }   # succeeded, zero packages
+    empty="$(packages_in_profile /nonexistent)"
+    nix_toplevel_packages() { return 1; }   # snapshot failed
+    failed="$(packages_in_profile /nonexistent)"
+    [[ "$empty" != "$failed" ]] || { echo "INDISTINGUISHABLE"; exit 1; }
+    render_package_delta "nix profile" "$empty" "$(printf "fish\t4.9.2")"
+    echo ---
+    render_package_delta "nix profile" "$failed" "$(printf "fish\t4.9.2")"
+  ' _ "$REPO_ROOT"
+  [ "$status" -eq 0 ]
+  empty_part="${output%%---*}"
+  failed_part="${output##*---}"
+  [[ "$empty_part" == *"1 added"* ]]
+  [[ "$empty_part" != *"unavailable"* ]]
+  [[ "$failed_part" == *"unavailable"* ]]
+}

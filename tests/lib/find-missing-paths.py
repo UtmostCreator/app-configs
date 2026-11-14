@@ -77,6 +77,8 @@ def file_set(root):
 
 def clean(p):
     p = p.rstrip(".,:;)")
+    # `file:12`, `file:2-5`, `file:33,49,53`: a line reference into the file.
+    p = re.sub(r':[0-9][0-9,-]*$', '', p)
     if re.search(r'[$*{}<>`~\\]|\.\.\.|…', p) or p.endswith("/..."):
         return None
     return p

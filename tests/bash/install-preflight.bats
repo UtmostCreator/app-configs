@@ -6,6 +6,9 @@ setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     # Never let install.sh see the real HOME, even if DRY_RUN were lost.
     export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
+    # Isolate from the host: no inherited WSL env or WSL filesystem markers.
+    unset WSL_DISTRO_NAME
+    export DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-wsl-run" DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-wsl-interop"
 }
 
 @test "mismatched user fails before anything is installed" {
@@ -30,7 +33,7 @@ setup() {
         >"$BATS_TEST_TMPDIR/version"
     expected="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$REPO_ROOT/nix/vars/default.nix")"
     run env USER="$expected" DRY_RUN=1 HOST_PROFILE=wsl \
-        DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version" bash "$REPO_ROOT/ops/install.sh"
+        DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version" DETECT_HOST_OSRELEASE="$BATS_TEST_TMPDIR/no-osrelease" bash "$REPO_ROOT/ops/install.sh"
     [ "$status" -ne 0 ]
     [[ "$output" == *"WSL1"* ]]
     [[ "$output" == *"wsl --set-version"* ]]
@@ -41,7 +44,7 @@ setup() {
     printf 'Linux version 6.6.87.2-microsoft-standard-WSL2 (root@host) #1 SMP\n' >"$BATS_TEST_TMPDIR/version"
     expected="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$REPO_ROOT/nix/vars/default.nix")"
     run env USER="$expected" DRY_RUN=1 HOST_PROFILE=wsl \
-        DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version" bash "$REPO_ROOT/ops/install.sh"
+        DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version" DETECT_HOST_OSRELEASE="$BATS_TEST_TMPDIR/no-osrelease" bash "$REPO_ROOT/ops/install.sh"
     [ "$status" -eq 0 ]
     [[ "$output" == *"Mode:  dry-run"* ]]
     [[ "$output" != *"WSL1"* ]]

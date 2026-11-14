@@ -294,7 +294,12 @@
         # window when VS Code was already running in the background. So we open
         # the folder, then explicitly focus a VS Code window via the same
         # Vicinae/Windows D-Bus API used by vicinae-toggle-app.
-        ${vscode}/bin/code "$selected" >/dev/null 2>&1 || true
+        # Failures are surfaced (stderr + exit status), not swallowed: a failed
+        # open must not look like success. `code` output stays quiet on success.
+        if ! code_out="$(${vscode}/bin/code "$selected" 2>&1)"; then
+          echo "vscode-recent-projects: 'code $selected' failed: $code_out" >&2
+          exit 1
+        fi
 
         dest="org.gnome.Shell"
         obj="/org/gnome/Shell/Extensions/Windows"
@@ -366,23 +371,20 @@
         ${pkgs.systemd}/bin/systemctl --user stop syncthing.service
         echo "syncthing: stopped"
       '')
-      (writeShellScriptBin "sync-open" ''
-        set -euo pipefail
-        url="http://127.0.0.1:8384/"
-        # Start the service if it is not already active (idempotent).
-        if ! ${pkgs.systemd}/bin/systemctl --user is-active --quiet syncthing.service; then
-          ${pkgs.systemd}/bin/systemctl --user start syncthing.service
-        fi
-        # Wait for the Web UI to accept connections before opening it, so a
-        # cold start does not open a "connection refused" tab (~15s max).
-        for _ in $(${pkgs.coreutils}/bin/seq 1 30); do
-          if ${pkgs.curl}/bin/curl -fsS -m 2 -o /dev/null "$url" 2>/dev/null; then
-            break
-          fi
-          sleep 0.5
-        done
-        exec ${pkgs.xdg-utils}/bin/xdg-open "$url"
-      '')
+      # Logic in scripts/sync-open.sh (tested by tests/bash/sync-open.bats).
+      (writeShellScriptBin "sync-open" (
+        ''
+          export PATH=${
+            lib.makeBinPath [
+              systemd
+              curl
+              coreutils
+              xdg-utils
+            ]
+          }:$PATH
+        ''
+        + builtins.readFile ./scripts/sync-open.sh
+      ))
     ];
 
   # Flameshot configuration, managed declaratively so the screenshot keybindings
@@ -391,7 +393,8 @@
   # Flameshot reads ~/.config/flameshot/flameshot.ini. Key choices:
   #   - copyAndCloseAfterUpload / copy-to-clipboard: captures go to the clipboard
   #     (the keybindings also pass `-c`, this aligns the GUI buttons with it).
-  #   - disabledTrayIcon=true: we drive Flameshot purely via hotkeys, no tray.
+  #   - disabledTrayIcon=false: keep the tray icon. The resident daemon (systemd
+  #     user service below) needs it for reliable Wayland hotkey capture.
   #   - showStartupLaunchMessage=false: no first-run popup.
   #   - contrastOpacity / uiColor: readable selection UI.
   # Linux-only; flameshot is in the Linux GUI package list above.
@@ -483,8 +486,9 @@
   # Hardware scan (cat /proc/asound/card<N>/stream0) shows the ORA4 enumerates as
   # a USB AUDIO device on a FULL-SPEED (12 Mbit/s) link supporting 16/24-bit at
   # 44.1/48/96 kHz, 2ch. On a full-speed link 24-bit/96kHz (~4.6 Mbit/s payload)
-  # sits at the edge of the bus and risks dropouts for NO audible gain on this
-  # DAC/driver pair, so the safe high-quality target is 24-bit / 48 kHz.
+  # fits the bus (about 38% of 12 Mbit/s) but leaves less isochronous headroom
+  # when other devices share the controller, for NO audible gain on this
+  # DAC/driver pair, so the conservative high-quality target is 24-bit / 48 kHz.
   #
   # This is a WirePlumber 0.5+ drop-in (SPA-JSON in wireplumber.conf.d/). It is
   # MATCHED TO THE ORA4 BY NAME (node.name prefix), so machines without the
@@ -493,9 +497,16 @@
   # What it locks in:
   #   - audio.format  = S24_3LE  -> stay 24-bit, don't silently drop to 16-bit
   #   - audio.rate    = 48000    -> sweet spot for the full-speed link
-  #   - allowed-rates = 48000    -> avoid pointless 96k rate-switching/dropouts
-  #   - node.pause-on-idle = false -> don't clip the first moment of playback
-  #   - api.alsa.soft-mixer = true -> SOFTWARE volume (see below)
+  #   - allowed-rates = 48000    -> avoid pointless 96k rate-switching
+  #   - node.pause-on-idle = false -> don't pause the node the moment it goes
+  #     idle (already the PipeWire default; set explicitly). It does NOT stop
+  #     WirePlumber suspending the idle device after its own timeout
+  #     (session.suspend-timeout-seconds), so the first moment of playback after
+  #     a long idle can still be clipped. Pinned for stability, not a guarantee
+  #   - api.alsa.soft-mixer = true -> SOFTWARE volume (see below). WirePlumber
+  #     0.5 documents this as a DEVICE property, so it is set on the device
+  #     rule; the node rule also keeps it because that placement was observed
+  #     working on this speaker.
   # Global resampler quality is left at the PipeWire default (already high); we
   # intentionally keep this device-scoped rather than changing global audio.
   #
@@ -531,6 +542,7 @@
               actions = {
                 update-props = {
                   api.alsa.use-acp = false
+                  api.alsa.soft-mixer = true
                 }
               }
             }
@@ -551,7 +563,7 @@
               }
             }
             {
-              # NODE-level: give the NVIDIA GPU's HDMI/DisplayPort audio sink a
+              # NODE-level: give the GPU HDMI/DisplayPort audio sinks (AMD iGPU or NVIDIA dGPU) a
               # friendly name. PipeWire labels HDMI sinks from the audio
               # CONTROLLER name (e.g. "AD106M High Definition Audio Controller
               # Digital Stereo (HDMI)"), NOT from the monitor's EDID. The monitor
@@ -560,12 +572,18 @@
               # DELL monitor's built-in speakers show up under an unrecognizable
               # chipset name in GNOME Sound / pavucontrol, so they look "missing".
               #
-              # Name-scoped to the NVIDIA HDMI output node prefix so other
-              # machines / non-HDMI devices are unaffected. If you swap monitors,
-              # update the description (read the current name from the ELD:
-              #   grep monitor_name /proc/asound/card*/eld#0.0).
+              # Scoped by PCI address to the two GPU audio functions on this
+              # host, so HDMI sinks of any other device are NOT renamed:
+              #   0000:06:00.1  AMD iGPU HDMI audio (card1 "HD-Audio Generic",
+              #                 vendor 0x1002); the DELL ELD is currently here
+              #   0000:01:00.1  NVIDIA dGPU HDMI audio (card0 "HDA NVidia")
+              # Either one can carry the monitor depending on which port it is
+              # plugged into. If a GPU moves slot, update its address (read it
+              # with: pactl list short cards). If you swap monitors, update the
+              # description (grep monitor_name /proc/asound/card*/eld#0.0).
               matches = [
-                { node.name = "~alsa_output.pci-.*\\.hdmi.*" }
+                { node.name = "~alsa_output.pci-0000_06_00\\.1\\.hdmi-.*" }
+                { node.name = "~alsa_output.pci-0000_01_00\\.1\\.hdmi-.*" }
               ]
               actions = {
                 update-props = {

@@ -54,7 +54,7 @@ manually verified** against <https://search.nixos.org/packages> and
 | `shfmt` | Nix | `nix/modules/home/dev.nix` | |
 | `starship` | Nix | `nix/modules/home/cli.nix` | Config via chezmoi. |
 | `stripe/stripe-cli/stripe` | manual | — | Stripe CLI installs via official script or `brew install stripe/stripe-cli/stripe`; not in nixpkgs at time of writing. Phase 6 documents in `docs/getting-started/bootstrap.md` only. |
-| `tlrc` | Nix | `nix/modules/home/cli.nix` | nixpkgs attribute is `tlrc`; alternative `tealdeer` if missing. |
+| `tlrc` | Nix | `nix/modules/home/cli.nix` | nixpkgs attribute `tlrc` (verified on the pinned nixpkgs); binary `tldr`. |
 | `tmux` | Nix | `nix/modules/home/cli.nix` | |
 | `watchexec` | Nix | `nix/modules/home/dev.nix` | |
 | `yazi` | Nix | `nix/modules/home/cli.nix` | nixpkgs attribute is `yazi`. |
@@ -86,7 +86,7 @@ apps are owned through `nix-darwin` Homebrew bridge (`nix/modules/darwin/homebre
 | `repomix` | manual | — | `npm install -g repomix` per docs. |
 | `scc` | Nix | `nix/modules/home/dev.nix` | nixpkgs attribute is `scc`. |
 | `stripe` | manual | — | Same as `stripe/stripe-cli/stripe` row above. |
-| `tldr` | Nix | `nix/modules/home/cli.nix` | nixpkgs attribute is `tealdeer` (binary `tldr`); duplicates `tlrc` row above — pick one. Final: **`tlrc`** wins (matches install script). `tldr` row resolved as DROPPED. |
+| `tldr` | Nix | `nix/modules/home/cli.nix` | duplicates `tlrc` row above. Final: **`tlrc`** wins (matches install script); `cli.nix` installs `tlrc`, not `tealdeer`. `tldr` row resolved as DROPPED. |
 
 ## Optional convenience tools (mise aqua, opt-in)
 
@@ -97,8 +97,8 @@ binaries so no host build deps are required.
 |------|-------|----------|-------|
 | `dive` | mise (aqua:wagoodman/dive) | `mise.toml` `tools:optional:install` | Inspect Docker image layers. |
 | `fx` | mise (aqua:antonmedv/fx) | `mise.toml` `tools:optional:install` | Interactive JSON viewer. |
-| `navi` | mise (aqua:denisidoro/navi) | `mise.toml` `tools:optional:install` | Cheatsheet TUI. |
-| `glow` | mise (aqua:charmbracelet/glow) | `mise.toml` `tools:optional:install` | Markdown reader in the terminal. |
+| `navi` | Nix | `nix/modules/home/cli.nix` | Cheatsheet TUI; removed from the mise optional installer. |
+| `glow` | Nix | `nix/modules/home/cli.nix` | Markdown reader in the terminal; removed from the mise optional installer. |
 | `gum` | mise (aqua:charmbracelet/gum) | `mise.toml` `tools:optional:install` | TUI toolkit for shell scripts. |
 
 ## macOS GUI / cask (declarative via nix-darwin in Phase 8)

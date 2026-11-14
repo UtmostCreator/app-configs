@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Run ops/ci.sh the way a fresh CI runner sees the repo: tools only from the
+# Run ops/ci.sh (checks, cross-platform evaluation, Linux activation builds;
+# see its header) the way a fresh CI runner sees the repo: tools only from the
 # flake-pinned nixpkgs (ops/ci-packages.txt), PATH limited to the Nix store
 # plus nix itself, an empty HOME, and no inherited environment. Anything the
 # tests silently take from this machine (~/.nix-profile, /run/current-system,

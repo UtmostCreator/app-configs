@@ -261,7 +261,7 @@ mise run cleanup:gc        # SAFE + remove generations older than KEEP_DAYS (def
 ```
 
 - **SAFE tier** (`--apply`): `nix store optimise` (hard-links identical files —
-  never deletes references), `mise cache clear`, `npm cache verify`. Verified
+  never deletes references), `mise cache prune`, `npm cache verify`. Verified
   to free multiple GiB while keeping every Home Manager generation.
 - **AGED tier** (`--apply --gc`): `home-manager expire-generations` +
   `nix-collect-garbage --delete-older-than ${KEEP_DAYS}d`. This removes only
@@ -278,11 +278,18 @@ you are certain.
 ### Declarative GC (already configured)
 
 `nix/modules/common/nix-settings.nix` declares scheduled GC
-(`nix.gc.automatic`, weekly, `--delete-older-than 7d`) and
-`auto-optimise-store`. On a **standalone Home Manager install on NixOS**, the
-system-wide GC timer is owned by the system config, not HM; `ops/cleanup.sh`
-gives you an explicit, on-demand path regardless. To run GC declaratively at
-the system level on NixOS, add to `/etc/nixos/configuration.nix`:
+(`nix.gc`, weekly, `--delete-older-than 14d`, matching `KEEP_DAYS` in
+`ops/cleanup.sh`) as a systemd user timer on Linux. It deletes this user's
+old generations, then every unreachable store path, so it overlaps the NixOS
+system timer where one exists. On macOS GC belongs to Determinate Nix, so
+Home Manager sets no GC there. Home Manager does not write
+`auto-optimise-store` by default. Nothing in this repo sets it system-wide
+either; on NixOS `ops/system-setup.sh` adds `nix.optimise.automatic = true`
+(a periodic deduplication timer, a different mechanism), and on other hosts
+neither is set unless you configure `/etc/nix/nix.conf` yourself.
+`ops/cleanup.sh` gives you an explicit, on-demand path
+regardless. To run GC declaratively at the system level on NixOS, add to
+`/etc/nixos/configuration.nix`:
 
 ```nix
 nix.gc = { automatic = true; dates = "weekly"; options = "--delete-older-than 14d"; };

@@ -119,21 +119,32 @@ bash ops/validate-config.sh
 - **Symptom (harmless):**
   `warning: ignoring the client-specified setting 'auto-optimise-store',
   because it is a restricted setting and you are not a trusted user`.
-- **Cause:** `nix/modules/common/nix-settings.nix` sets
-  `auto-optimise-store = true`, but standalone Home Manager applies it as a
-  client setting and your user is not in the **system** NixOS
-  `nix.settings.trusted-users`. Nix ignores the client setting and warns.
-- **Fix:** none required — it is a warning, not an error. To silence it,
-  add your user to `nix.settings.trusted-users` in your **system**
-  `/etc/nixos/configuration.nix` (system-side change, out of scope for this
-  repo).
+- **Cause:** `auto-optimise-store` is a restricted setting. The daemon ignores
+  it from a user's `nix.conf` unless that user is in the **system**
+  `nix.settings.trusted-users`. Home Manager no longer writes it by default
+  (`myConfig.nixClientAutoOptimise` defaults to `false` in
+  `nix/modules/common/nix-settings.nix`), so a fresh host does not show the
+  warning. It reappears only if a host sets that option to `true` without being
+  a trusted user.
+- **Fix:** leave the option `false`. Nothing in this repo sets
+  `auto-optimise-store` system-wide. `ops/system-setup.sh` adds
+  `nix.optimise.automatic = true` (a periodic store deduplication timer, a
+  different mechanism from the inline `auto-optimise-store` setting) and
+  `trusted-users`. If you want inline optimisation, set
+  `nix.settings.auto-optimise-store = true` in `/etc/nixos/configuration.nix`
+  yourself. On non-NixOS hosts neither is set unless you edit
+  `/etc/nix/nix.conf`.
 
-### 5. `nix.package = pkgs.nix` in nix-settings.nix
+### 5. `nix.package` in nix-settings.nix
 
-- **Context:** standalone Home Manager managing `nix.*` on NixOS may need an
-  explicit Nix package to avoid conflicting with the system Nix.
-- **Status:** the current module does not set `nix.package`; add it only if a
-  supported NixOS host reproduces that conflict.
+- **Context:** on every host except macOS, nix-settings.nix sets
+  `nix.package = lib.mkDefault pkgs.nix`. Home Manager uses it only to
+  generate the user `nix.conf` (`extra-experimental-features = nix-command
+  flakes`, which appends to the system value). It never puts that package on
+  `PATH`, so it cannot shadow the NixOS system Nix.
+- **Status:** no conflict is known. macOS sets `myConfig.nixSystemManaged`
+  (Determinate Nix owns the package and `nix.conf`), so Home Manager writes no
+  user `nix.conf` there. Daemon settings stay in the system config.
 
 ## Can NixOS use mise at all? (yes, with one rule)
 
@@ -215,11 +226,11 @@ Starship, Atuin, fzf, zoxide, yazi (`yy`), and mise all initialise for fish.
    Do **not** `chsh` to the Nix-profile fish path on NixOS — it is
    non-persistent and points outside `/etc/shells`.
 
-## Expected non-fatal `doctor.sh` warnings on NixOS
+## `doctor.sh` warnings on NixOS
 
-These are **optional** files, not failures (`doctor.sh` still exits 0):
-
-- `justfile` / `Justfile` — optional task-runner files this repo does not ship.
+`doctor.sh` has no warnings that are expected on NixOS. A `[WARN]` line names
+a missing optional binary or file; read it and decide. It does not fail the
+run, which still exits 0.
 
 ## Rollback
 

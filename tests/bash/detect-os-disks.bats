@@ -171,3 +171,74 @@ run_plain() { # $1 = fixture json, $2 = current disk
     [ "$status" -eq 1 ]
     [[ "$output" == *"required tool missing: jq"* ]]
 }
+
+# --- T-0024: false positives / negatives ----------------------------------
+
+@test "ESP + NTFS data partition only (no MSR) is not a Windows install" {
+    local fx='{"blockdevices":[
+      {"name":"sda","size":"500G","type":"disk","children":[
+        {"name":"sda1","size":"1G","type":"part","fstype":"vfat","parttypename":"EFI System","mountpoint":"/boot"},
+        {"name":"sda2","size":"200G","type":"part","fstype":"ext4","parttypename":"Linux filesystem","mountpoint":"/"},
+        {"name":"sda3","size":"299G","type":"part","fstype":"ntfs","parttypename":"Microsoft basic data"}
+      ]}]}'
+    run_json "$fx" "sda"
+    [ "$status" -eq 0 ]
+    [ "$(echo "$output" | jq -r '.windows_disk')" = "" ]
+    [ "$(echo "$output" | jq -r '.disks[0].os')" = "linux" ]
+}
+
+@test "ESP + MSR without any Windows filesystem is not a Windows install" {
+    local fx='{"blockdevices":[
+      {"name":"sda","size":"500G","type":"disk","children":[
+        {"name":"sda1","size":"1G","type":"part","fstype":"vfat","parttypename":"EFI System"},
+        {"name":"sda2","size":"16M","type":"part","fstype":null,"parttypename":"Microsoft reserved"}
+      ]}]}'
+    run_json "$fx" "sda"
+    [ "$(echo "$output" | jq -r '.windows_disk')" = "" ]
+}
+
+@test "BitLocker-encrypted Windows (ESP + MSR + BitLocker) is still Windows" {
+    local fx='{"blockdevices":[
+      {"name":"sda","size":"500G","type":"disk","children":[
+        {"name":"sda1","size":"1G","type":"part","fstype":"vfat","parttypename":"EFI System"},
+        {"name":"sda2","size":"16M","type":"part","fstype":null,"parttypename":"Microsoft reserved"},
+        {"name":"sda3","size":"400G","type":"part","fstype":"BitLocker","parttypename":"Microsoft basic data"}
+      ]}]}'
+    run_json "$fx" "sdb"
+    [ "$(echo "$output" | jq -r '.disks[0].os')" = "windows" ]
+}
+
+@test "LUKS-encrypted Linux root (ext4 nested under crypto_LUKS) is detected" {
+    local fx='{"blockdevices":[
+      {"name":"nvme0n1","size":"931.5G","type":"disk","children":[
+        {"name":"nvme0n1p1","size":"1G","type":"part","fstype":"vfat","parttypename":"EFI System","mountpoint":"/boot"},
+        {"name":"nvme0n1p2","size":"900G","type":"part","fstype":"crypto_LUKS","parttypename":"Linux filesystem","children":[
+          {"name":"cryptroot","size":"900G","type":"crypt","fstype":"ext4","mountpoint":"/"}
+        ]}
+      ]}]}'
+    run_json "$fx" "nvme0n1"
+    [ "$(echo "$output" | jq -r '.linux_disk')" = "nvme0n1" ]
+    [ "$(echo "$output" | jq -r '.disks[0].os')" = "linux" ]
+}
+
+@test "LVM Linux root (LVM2_member with nested lv) is detected" {
+    local fx='{"blockdevices":[
+      {"name":"sda","size":"500G","type":"disk","children":[
+        {"name":"sda1","size":"1G","type":"part","fstype":"vfat","parttypename":"EFI System","mountpoint":"/boot"},
+        {"name":"sda2","size":"499G","type":"part","fstype":"LVM2_member","parttypename":"Linux LVM","children":[
+          {"name":"vg-root","size":"499G","type":"lvm","fstype":"btrfs","mountpoint":"/"}
+        ]}
+      ]}]}'
+    run_json "$fx" "sda"
+    [ "$(echo "$output" | jq -r '.disks[0].os')" = "linux" ]
+}
+
+@test "locked LUKS partition typed as Linux next to an ESP counts as Linux" {
+    local fx='{"blockdevices":[
+      {"name":"sda","size":"500G","type":"disk","children":[
+        {"name":"sda1","size":"1G","type":"part","fstype":"vfat","parttypename":"EFI System"},
+        {"name":"sda2","size":"499G","type":"part","fstype":"crypto_LUKS","parttypename":"Linux filesystem"}
+      ]}]}'
+    run_json "$fx" "sda"
+    [ "$(echo "$output" | jq -r '.disks[0].os')" = "linux" ]
+}

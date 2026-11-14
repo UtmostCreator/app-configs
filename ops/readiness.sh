@@ -9,21 +9,22 @@
 #   bash ops/readiness.sh         # full report, exit 0 if ready
 #
 # Exit 0 = user environment ready. Exit 2 = ready but optional system rebuild
-# pending. Exit 1 = something required is missing.
+# pending. Exit 1 = something required is missing. Exit 64 = bad arguments.
 
 set -uo pipefail
 
-usage() {
-  cat <<'USAGE'
-Usage: bash ops/readiness.sh [-h|--help]
-Read-only readiness report; takes no other arguments.
-USAGE
-}
-case "$#:${1:-}" in
-  0:) ;;
-  1:-h | 1:--help) usage; exit 0 ;;
-  *) printf 'readiness: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
-esac
+for arg in "$@"; do
+  case "$arg" in
+    -h | --help)
+      echo "Usage: bash ops/readiness.sh [-h|--help]"
+      echo "Read-only readiness report; takes no other arguments."
+      exit 0
+      ;;
+  esac
+  echo "readiness.sh: unknown argument: $arg (usage: readiness.sh)" >&2
+  exit 64
+done
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 pass=0 warn=0 err=0
@@ -35,15 +36,22 @@ have() { command -v "$1" >/dev/null 2>&1; }
 is_nixos() { [[ -f /etc/NIXOS ]] || grep -qi '^ID=nixos' /etc/os-release 2>/dev/null; }
 
 hdr "Core tooling"
-for t in nix home-manager chezmoi mise lefthook git; do
+for t in nix home-manager chezmoi mise lefthook git jq yq; do
   if have "$t"; then ok "$t present"; else bad "$t missing (run: sys-install)"; fi
 done
 
 HOST_PROFILE="${HOST_PROFILE:-$(bash "$REPO_ROOT/ops/detect-host.sh" 2>/dev/null || echo unknown)}"
 
+hdr "Secret scanner (pre-commit policy: fail closed)"
+if have gitleaks; then ok "gitleaks present"
+elif have trufflehog; then ok "trufflehog present"
+elif [[ "${APP_CONFIGS_ALLOW_MISSING_SCANNER:-}" == 1 ]]; then
+  note "no secret scanner (allowed by APP_CONFIGS_ALLOW_MISSING_SCANNER=1; run: sys-update)"
+else bad "no secret scanner (need gitleaks or trufflehog; the pre-commit hook blocks without one; run: sys-update)"; fi
+
 hdr "Applications & CLI (sample of the declared set)"
 sample=(fish nvim rg fd bat eza fzf zoxide starship atuin tmux lazygit delta
-        gh jq yq node npm php docker stripe)
+        gh node npm php docker stripe)
 # GUI apps are only declared for GUI hosts (gui.nix / Homebrew casks).
 case "$HOST_PROFILE" in
   macos|linux-desktop) sample+=(firefox code ghostty bruno) ;;
@@ -99,6 +107,7 @@ if is_nixos; then
     ok "user in nix trusted-users"
   else note "user not in nix trusted-users — run: sudo sys-setup --apply"; rebuild_needed=1; fi
 
+  # This whole block is NixOS-only, hence Linux-only (systemd timers).
   if systemctl is-active nix-gc.timer >/dev/null 2>&1 \
      || systemctl is-active nix-optimise.timer >/dev/null 2>&1; then
     ok "system GC/optimise timer active"

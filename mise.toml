@@ -299,7 +299,7 @@ if command -v nixfmt >/dev/null 2>&1; then git ls-files -z '*.nix' | xargs -0 ni
 # from clobbering each other.
 
 [tasks."tools:optional:install"]
-description = "Install + pin opt-in convenience tools (dive, fx, navi, glow, gum) to ~/.config/mise/conf.d/optional-tools.toml"
+description = "Install + pin opt-in convenience tools (dive, fx, gum) to ~/.config/mise/conf.d/optional-tools.toml"
 run = """
 set -e
 config_dir="${HOME}/.config/mise/conf.d"
@@ -311,8 +311,6 @@ fi
 for tool in \
   aqua:wagoodman/dive \
   aqua:antonmedv/fx \
-  aqua:denisidoro/navi \
-  aqua:charmbracelet/glow \
   aqua:charmbracelet/gum
 do
   echo "=== mise use --path $config_file $tool ==="
@@ -327,7 +325,7 @@ echo "or run them directly under $HOME/.local/share/mise/shims/."
 [tasks."tools:optional:list"]
 description = "List the opt-in convenience tools and their install state"
 run = """
-for tool in dive fx navi glow gum; do
+for tool in dive fx gum; do
   if command -v "$tool" >/dev/null 2>&1; then
     printf '  %-8s %s\\n' "$tool" "$(command -v "$tool")"
   else

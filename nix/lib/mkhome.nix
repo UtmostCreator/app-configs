@@ -27,6 +27,8 @@ inputs.home-manager.lib.homeManagerConfiguration {
       programs.home-manager.enable = true;
     }
   ];
+  # `username` is authoritative: it comes from the mkHome argument and wins over
+  # any `username` a caller puts in extraSpecialArgs.
   extraSpecialArgs = extraSpecialArgs // {
     inherit inputs username;
   };

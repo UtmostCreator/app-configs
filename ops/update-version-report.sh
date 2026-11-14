@@ -13,15 +13,25 @@ _UVR_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=ops/lib/update-facts.sh
 source "$_UVR_DIR/lib/update-facts.sh"
 
+# A snapshot that was taken but lists zero packages must not look like a
+# snapshot that failed: both would otherwise be the empty string. Snapshots
+# carry this marker when they are a successful, empty set; a bare empty string
+# still means "no snapshot".
+UVR_EMPTY_SET='(empty package set)'
+
 profile_target() {
   local link="$1"
   [[ -e "$link" || -L "$link" ]] || return 0
   readlink -f "$link" 2>/dev/null || true
 }
 
-# packages_in_profile <profile link> -> "pname\tversion" list (empty on failure)
+# packages_in_profile <profile link> -> "pname\tversion" list.
+# Prints nothing when the snapshot failed, and $UVR_EMPTY_SET when it succeeded
+# but the profile holds no packages.
 packages_in_profile() {
-  nix_toplevel_packages "$(profile_target "$1")" 2>/dev/null || true
+  local out
+  out="$(nix_toplevel_packages "$(profile_target "$1")" 2>/dev/null)" || return 0
+  if [[ -n "$out" ]]; then printf '%s\n' "$out"; else printf '%s\n' "$UVR_EMPTY_SET"; fi
 }
 
 mise_versions() {
@@ -57,6 +67,10 @@ render_package_delta() {
     return 0
   fi
 
+  # A successful empty snapshot is a real (empty) package set.
+  [[ "$before" == "$UVR_EMPTY_SET" ]] && before=""
+  [[ "$after" == "$UVR_EMPTY_SET" ]] && after=""
+
   local delta up add rm same
   delta="$(package_delta "$before" "$after")"
   IFS=$'\t' read -r _ up add rm same <<< "$(printf '%s\n' "$delta" | grep '^summary')"
@@ -89,7 +103,8 @@ report_mise_changes() {
     printf '  mise tools\n    unavailable (version snapshot could not be taken)\n'
     return 0
   fi
-  render_package_delta "mise tools" "$before" "$after"
+  # available=1 means the snapshots succeeded, so an empty one is an empty set.
+  render_package_delta "mise tools" "${before:-$UVR_EMPTY_SET}" "${after:-$UVR_EMPTY_SET}"
 }
 
 # report_nix_changes <label> <before profile path> <after profile path>

@@ -37,9 +37,13 @@ if [[ ${#HOSTS[@]} -eq 0 ]]; then
   proj_fail "no ssh_workspace.hosts declared in $PROJECTS_CONFIG"
 fi
 
+for host in "${HOSTS[@]}"; do
+  [[ "$host" =~ ^[A-Za-z0-9._@:-]+$ ]] || proj_fail "invalid ssh alias in $PROJECTS_CONFIG: $host"
+done
+
 SESSION="$(proj_yq '.ssh_workspace.session // "remote-shells"')"
 
-[[ "$FORCE" == "1" ]] && tmux kill-session -t "$SESSION" 2>/dev/null || true
+[[ "$FORCE" == "1" ]] && tmux kill-session -t "=$SESSION" 2>/dev/null || true
 if proj_tmux_session_exists "$SESSION"; then
   proj_tmux_attach "$SESSION" "$DETACHED"
   exit 0
@@ -61,7 +65,9 @@ for host in "${HOSTS[@]}"; do
     PANE=$(tmux split-window -h -t "$PREV" -P -F '#{pane_id}')
   fi
   tmux select-pane -t "$PANE" -T "$host"
-  tmux send-keys -t "$PANE" "ssh $host" Enter
+  # The allow-list above is the guard: it rejects shell syntax in aliases.
+  # %q is defence in depth only.
+  tmux send-keys -t "$PANE" "ssh -- $(printf '%q' "$host")" Enter
   PREV="$PANE"
 done
 

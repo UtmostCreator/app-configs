@@ -69,6 +69,50 @@ msg() { printf '%s\n' "$1" >"$BATS_TEST_TMPDIR/msg"; bash "$HOOKS/commit-msg.sh"
     [ "$status" -eq 0 ]
 }
 
+@test "pre-push rejects conflict markers in a large commit (no SIGPIPE false pass)" {
+    cd "$WORK"
+    # Marker first, then well over the pipe buffer, so an early-exiting grep -q
+    # would SIGPIPE git show and (under pipefail) make the check look clean.
+    { printf '<<<<<<< HEAD\n'; seq 1 400000; } >big.txt
+    git add big.txt && git commit -q --no-verify -m "chore: big bad"
+    sha="$(git rev-parse HEAD)"
+    run bash -c "echo 'refs/heads/main $sha refs/heads/main 0000000000000000000000000000000000000000' | bash '$HOOKS/pre-push.sh'"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"conflict markers"* ]]
+}
+
+@test "pre-push rejects conflict markers that only a merge commit introduces" {
+    cd "$WORK"
+    base="$(git rev-parse HEAD)"
+    git checkout -q -b side
+    printf 's\n' >side.txt && git add side.txt && git commit -q -m "chore: side"
+    git checkout -q main
+    printf 'm\n' >main.txt && git add main.txt && git commit -q -m "chore: main"
+    git merge -q --no-ff --no-commit side
+    printf '<<<<<<< HEAD\nx\n' >evil.txt && git add evil.txt
+    git commit -q --no-verify -m "Merge branch 'side'"
+    sha="$(git rev-parse HEAD)"
+    run bash -c "echo 'refs/heads/main $sha refs/heads/main $base' | bash '$HOOKS/pre-push.sh'"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"conflict markers"* ]]
+}
+
+@test "pre-push fails closed when the pushed range cannot be listed" {
+    cd "$WORK"
+    sha="$(git rev-parse HEAD)"
+    run bash -c "echo 'refs/heads/main $sha refs/heads/main 1111111111111111111111111111111111111111' | bash '$HOOKS/pre-push.sh'"
+    [ "$status" -ne 0 ]
+}
+
+@test "pre-push rejects CRLF conflict markers" {
+    cd "$WORK"
+    printf '<<<<<<<\r\nx\r\n' >f.txt
+    git add f.txt && git commit -q --no-verify -m "chore: crlf"
+    sha="$(git rev-parse HEAD)"
+    run bash -c "echo 'refs/heads/main $sha refs/heads/main 0000000000000000000000000000000000000000' | bash '$HOOKS/pre-push.sh'"
+    [ "$status" -eq 1 ]
+}
+
 @test "pre-push protection is opt-in" {
     cd "$WORK"
     sha="$(git rev-parse HEAD)"
@@ -167,4 +211,102 @@ run_precommit() { run env PATH="$STUB" "$@" bash "$WORK/ops/hooks/pre-commit.sh"
     run_precommit
     [ "$status" -eq 0 ]
     [[ "$output" == *"pre-commit passed"* ]]
+}
+
+# --- pre-commit conflict-marker detection ------------------------------------
+@test "pre-commit rejects staged conflict markers (<<<<<<< and >>>>>>>)" {
+    precommit_env
+    cd "$WORK"
+    printf 'a\n<<<<<<< HEAD\nx\n' >c.txt && git add c.txt
+    run_precommit APP_CONFIGS_ALLOW_MISSING_SCANNER=1
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"conflict markers"* ]]
+    git reset -q
+    printf 'a\n>>>>>>> branch\n' >c.txt && git add c.txt
+    run_precommit APP_CONFIGS_ALLOW_MISSING_SCANNER=1
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"conflict markers"* ]]
+}
+
+@test "pre-commit rejects conflict markers in a large staged file (no SIGPIPE false pass)" {
+    precommit_env
+    cd "$WORK"
+    { printf '<<<<<<< HEAD\n'; seq 1 400000; } >big.txt && git add big.txt
+    run_precommit APP_CONFIGS_ALLOW_MISSING_SCANNER=1
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"conflict markers"* ]]
+}
+
+@test "pre-commit accepts a lone ======= line such as a Markdown heading underline" {
+    precommit_env
+    cd "$WORK"
+    printf 'Title\n=======\n' >h.md && git add h.md
+    run_precommit APP_CONFIGS_ALLOW_MISSING_SCANNER=1
+    [[ "$output" != *"conflict markers"* ]]
+    [ "$status" -eq 0 ]
+}
+
+@test "pre-commit conflict check does not depend on rg being installed" {
+    precommit_env
+    rm -f "$STUB/rg"
+    cd "$WORK"
+    printf '<<<<<<< HEAD\n' >c.txt && git add c.txt
+    run_precommit APP_CONFIGS_ALLOW_MISSING_SCANNER=1
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"conflict markers"* ]]
+}
+
+# --- pre-commit trufflehog fallback --------------------------------------------
+@test "pre-commit trufflehog fallback scans the staged snapshot, not history" {
+    precommit_env
+    cat >"$STUB/trufflehog" <<'EOS'
+#!/usr/bin/env bash
+printf '%s\n' "$@" >"$TRUFFLE_ARGS"
+# Report a hit only if the scanned directory holds the staged content.
+for a in "$@"; do
+    if [[ -d "$a" ]] && grep -rq STAGED_SECRET_MARKER "$a"; then exit 183; fi
+done
+exit 0
+EOS
+    chmod +x "$STUB/trufflehog"
+    cd "$WORK"
+    printf 'STAGED_SECRET_MARKER\n' >s.txt && git add s.txt
+    # Working tree differs from the index: only the staged snapshot has the marker.
+    printf 'clean\n' >s.txt
+    run_precommit TRUFFLE_ARGS="$BATS_TEST_TMPDIR/targs"
+    [ "$status" -ne 0 ]
+    [[ "$output" != *"pre-commit passed"* ]]
+    ! grep -q -- '--since-commit' "$BATS_TEST_TMPDIR/targs"
+}
+
+@test "pre-commit rejects CRLF conflict markers" {
+    precommit_env
+    cd "$WORK"
+    printf '<<<<<<<\r\nx\r\n' >c.txt && git add c.txt
+    run_precommit APP_CONFIGS_ALLOW_MISSING_SCANNER=1
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"conflict markers"* ]]
+}
+
+@test "pre-commit handles non-ASCII filenames (clean passes, markers fail)" {
+    precommit_env
+    cd "$WORK"
+    printf 'ok\n' >"caf\xc3\xa9.txt" && git add .
+    run_precommit APP_CONFIGS_ALLOW_MISSING_SCANNER=1
+    [ "$status" -eq 0 ]
+    git reset -q
+    printf '<<<<<<< HEAD\n' >"caf\xc3\xa9.txt" && git add .
+    run_precommit APP_CONFIGS_ALLOW_MISSING_SCANNER=1
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"conflict markers"* ]]
+}
+
+@test "pre-commit blocks a .env under a non-ASCII directory" {
+    precommit_env
+    cd "$WORK"
+    mkdir "d\xc3\xa9p\xc3\xb4t"
+    printf 'A=1\n' >"d\xc3\xa9p\xc3\xb4t/.env" && git add .
+    run_precommit APP_CONFIGS_ALLOW_MISSING_SCANNER=1
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"env file staged"* ]]
 }

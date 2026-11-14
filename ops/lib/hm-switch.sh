@@ -27,7 +27,7 @@ hm_switch_describe() {
   printf 'home-manager switch -b %s --flake %s#%s\n' "$HM_BACKUP_EXT" "$1" "$2"
 }
 
-# A missing jq or manifest is an error here, not "no conflicts": the plain
+# A missing manifest (or no way to run jq) is an error here, not "no conflicts": the plain
 # profile_hm_conflicts treats missing input as empty, which would let a broken
 # check pass as a clean one. The one legitimate empty case is a host without
 # any nix profile, which cannot hold hand-installed packages.
@@ -36,13 +36,19 @@ hm_check_conflicts() {
   local manifest="${HM_PROFILE_MANIFEST:-$HOME/.nix-profile/manifest.json}"
   HM_CHECK_MSG=""; HM_CHECK_FIX=""; HM_CONFLICTS=()
 
-  if ! command -v jq >/dev/null 2>&1; then
-    HM_CHECK_MSG="cannot check nix-profile conflicts: jq is not on PATH"
-    HM_CHECK_FIX="nix profile install nixpkgs#jq"
-    return 2
-  fi
   if [[ ! -e "$manifest" && ! -e "$(dirname "$manifest")" ]]; then
     return 0
+  fi
+  # A fresh bootstrap has a nix profile but often no jq yet. Installing jq into
+  # the profile would itself collide with Home Manager, so borrow it from nixpkgs.
+  if ! command -v jq >/dev/null 2>&1; then
+    if command -v nix >/dev/null 2>&1; then
+      jq() { nix run nixpkgs#jq -- "$@"; }
+    else
+      HM_CHECK_MSG="cannot check nix-profile conflicts: neither jq nor nix is on PATH"
+      HM_CHECK_FIX="put nix on PATH (source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh)"
+      return 2
+    fi
   fi
   if [[ ! -f "$manifest" ]]; then
     HM_CHECK_MSG="cannot check nix-profile conflicts: $manifest is missing"

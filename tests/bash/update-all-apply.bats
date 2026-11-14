@@ -5,13 +5,19 @@
 # a snapshot before mutation, a rollback handle afterwards, no raw output on
 # a clean run, and no attempt to upgrade packages another manager owns.
 
+bats_require_minimum_version 1.5.0
+
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   export NO_COLOR=1
   export HOME="$BATS_TEST_TMPDIR/home"
   export SYS_UPDATE_STATE_DIR="$HOME/.local/state/sys-update"
   export HOST_PROFILE=linux-desktop
+  # Never let the developer's real state directories leak into a run.
+  export XDG_STATE_HOME="$HOME/.local/state"
+  export NIX_STATE_DIR="$BATS_TEST_TMPDIR/nix-state"
   export STUB_LOG="$BATS_TEST_TMPDIR/calls.log"
+  : > "$STUB_LOG"
   # The updater commits the new lock; the fake $HOME has no git identity.
   export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
   mkdir -p "$HOME/.local/state/nix/profiles" "$HOME/.nix-profile"
@@ -28,12 +34,15 @@ setup() {
 #!/usr/bin/env bash
 printf 'activate %s
 ' "$*" >> "$STUB_LOG"
+[[ "${STUB_ACTIVATE_NO_RELINK:-0}" == 1 ]] \
+  || ln -sfn home-manager-1-link "${STUB_PROFILE_DIR:-$HOME/.local/state/nix/profiles}/home-manager"
 ACT
   chmod +x "$GEN_DIR/activate"
   ln -s "$GEN_DIR" "$HOME/.local/state/nix/profiles/home-manager-1-link"
   ln -s home-manager-1-link "$HOME/.local/state/nix/profiles/home-manager"
 
-  FAKE="$BATS_TEST_TMPDIR/repo"
+  # A quote and a space in the path: the updater must quote its own repo path.
+  FAKE="$BATS_TEST_TMPDIR/it's a repo"
   mkdir -p "$FAKE/nix"
   cp -a "$REPO_ROOT/ops" "$FAKE/ops"
   printf '{"nodes":{"nixpkgs":{"locked":{"rev":"old"}}}}\n' > "$FAKE/nix/flake.lock"
@@ -55,17 +64,80 @@ JSON
 #!/usr/bin/env bash
 printf '%s %s\n' "$tool" "\$*" >> "\$STUB_LOG"
 case "$tool \$*" in
-  "nix flake update"*)    printf '{"nodes":{"nixpkgs":{"locked":{"rev":"new"}}}}\n' > "$FAKE/nix/flake.lock" ;;
+  "nix flake update"*)    [[ "\${FAIL_FLAKE_UPDATE:-0}" == 1 ]] && { echo "error: cannot update inputs" >&2; exit 1; }
+                          printf '{"nodes":{"nixpkgs":{"locked":{"rev":"new"}}}}\n' > "$FAKE/nix/flake.lock"
+                          [[ "\${STUB_HUP_AFTER_UPDATE:-0}" == 1 ]] && kill -HUP "\$PPID"
+                          [[ "\${STUB_TERM_AFTER_UPDATE:-0}" == 1 ]] && kill -TERM "\$PPID"
+                          [[ "\${STUB_INT_AFTER_UPDATE:-0}" == 1 ]] && kill -INT "\$PPID" ;;
   "nix flake check"*)     printf 'warning: The check omitted these incompatible systems: aarch64-darwin\n' >&2 ;;
   "nix build"*)          [[ "\${FAIL_HOST_BUILD:-0}" == 1 ]] && exit 1
-                          [[ "\$*" == *--print-out-paths* && -n "\${STUB_HM_OUT:-}" ]] && printf '%s\n' "\$STUB_HM_OUT" ;;
-  "chezmoi status"*)      printf '%s\n' "\${CHEZMOI_STATUS:- M dot_thing}" ;;
-  "home-manager switch"*) printf 'There are 394 unread and relevant news items.\n' ;;
+                          if [[ "\$*" == *--print-out-paths* ]]; then
+                            [[ "\${FAIL_PRINT_OUT:-0}" == 1 ]] && exit 1
+                            [[ "\${STUB_HM_OUT_EMPTY:-0}" == 1 ]] || printf '%s\n' "\${STUB_HM_OUT:-$BATS_TEST_TMPDIR/hm-out}"
+                          fi ;;
+  "chezmoi managed"*)     [[ "\${CHEZMOI_MANAGED_FAIL:-0}" == 1 ]] && { echo "chezmoi: managed exploded" >&2; exit 1; } ;;
+  "chezmoi status"*)      [[ "\${CHEZMOI_STATUS_FAIL:-0}" == 1 ]] && { echo "chezmoi: status exploded" >&2; exit 1; }
+                          printf '%s\n' "\${CHEZMOI_STATUS:- M dot_thing}" ;;
+  "chezmoi apply"*)       # STUB_TOUCH_LOCK=1: another session edits flake.lock mid-run
+                          [[ "\${STUB_TOUCH_LOCK:-0}" == 1 ]] && printf '{"nodes":{"nixpkgs":{"locked":{"rev":"foreign"}}}}\n' > "$FAKE/nix/flake.lock" ;;
+  "home-manager switch"*) printf 'There are 394 unread and relevant news items.\n'
+                          if [[ "\${STUB_HM_NO_RELINK:-0}" != 1 ]]; then
+                            ln -sfn "\${STUB_HM_OUT:-$BATS_TEST_TMPDIR/hm-out}" "\${STUB_PROFILE_DIR:-$HOME/.local/state/nix/profiles}/home-manager-2-link"
+                            ln -sfn home-manager-2-link "\${STUB_PROFILE_DIR:-$HOME/.local/state/nix/profiles}/home-manager"
+                          fi ;;
 esac
 exit 0
 STUB
     chmod +x "$STUBS/$tool"
   done
+
+  mkdir -p "$BATS_TEST_TMPDIR/hm-out"
+
+  # Tools the lifecycle work calls directly. None of them touches real state.
+  cat > "$STUBS/nix-store" <<'STUB'
+#!/usr/bin/env bash
+printf 'nix-store %s\n' "$*" >> "$STUB_LOG"
+[[ "${FAIL_GCROOT:-0}" == 1 ]] && { echo "nix-store: cannot add root" >&2; exit 1; }
+target="" root=""
+while (($#)); do
+  case "$1" in
+    --realise) target="$2"; shift ;;
+    --add-root) root="$2"; shift ;;
+    -q) exit 0 ;;
+  esac
+  shift
+done
+if [[ -n "$root" ]]; then mkdir -p "$(dirname "$root")"; ln -sfn "$target" "$root"; fi
+exit 0
+STUB
+  cat > "$STUBS/nix-env" <<'STUB'
+#!/usr/bin/env bash
+printf 'nix-env %s\n' "$*" >> "$STUB_LOG"
+profile="" target=""
+while (($#)); do
+  case "$1" in
+    --profile) profile="$2"; shift ;;
+    --set) target="$2"; shift ;;
+  esac
+  shift
+done
+if [[ -n "$profile" && -n "$target" ]]; then
+  ln -sfn "$target" "$profile-99-link"
+  ln -sfn "$(basename "$profile")-99-link" "$profile"
+fi
+exit 0
+STUB
+  cat > "$STUBS/xdg-mime" <<'STUB'
+#!/usr/bin/env bash
+[[ "${STUB_MIME_EMPTY:-0}" == 1 ]] && exit 0
+printf '%s\n' "${STUB_MIME-brave-browser.desktop}"
+STUB
+  cat > "$STUBS/brave" <<'STUB'
+#!/usr/bin/env bash
+[[ "${FAIL_BRAVE:-0}" == 1 ]] && exit 1
+echo "Brave Browser 1.0.0"
+STUB
+  chmod +x "$STUBS/nix-store" "$STUBS/nix-env" "$STUBS/xdg-mime" "$STUBS/brave"
   PATH="$STUBS:$PATH"
 }
 
@@ -360,4 +432,473 @@ JSON
 @test "home-manager switch backs up files it would clobber" {
   run_update
   grep -q '^home-manager switch .*-b hm-bak' "$STUB_LOG"
+}
+
+@test "a missing snapshot script stops the apply before anything runs" {
+  rm "$FAKE/ops/snapshot-home.sh"
+  run_update --allow-dirty
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"snapshot"* ]]
+  ! grep -q '^home-manager switch' "$STUB_LOG"
+}
+
+@test "a non-executable snapshot script stops the apply" {
+  chmod -x "$FAKE/ops/snapshot-home.sh"
+  run_update --allow-dirty
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"snapshot"* ]]
+  ! grep -q '^home-manager switch' "$STUB_LOG"
+}
+
+@test "the snapshot dir is taken from --print-dir, not parsed from logs" {
+  export DOTFILES_SNAPSHOT_ROOT="$BATS_TEST_TMPDIR/my snaps"
+  run_update
+  [ "$status" -eq 0 ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  dir="$(sed -n 's/^snapshot_dir=//p' "$meta")"
+  [[ "$dir" == "$DOTFILES_SNAPSHOT_ROOT"/* ]]
+  [ -f "$dir/MANIFEST.txt" ]
+}
+
+@test "a failed snapshot stops before any update and shows the cause" {
+  export CHEZMOI_MANAGED_FAIL=1
+  run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"snapshot failed"* ]]
+  [[ "$output" == *"managed exploded"* ]]
+  run ! grep -q '^nix flake update' "$STUB_LOG"
+  run ! grep -q '^home-manager switch' "$STUB_LOG"
+}
+
+# ── T-0010 lock, run id, metadata, pruning ──────────────────────────────────
+
+teardown() {
+  [[ -n "${HOLDER:-}" ]] && kill "$HOLDER" 2>/dev/null
+  chmod -R u+w "$BATS_TEST_TMPDIR" 2>/dev/null
+  return 0
+}
+
+# A live holder of the flock lock, standing in for another sys-update.
+hold_flock() {
+  mkdir -p "$SYS_UPDATE_STATE_DIR"
+  bash -c 'exec 9>"$1"; flock -n 9 || exit 1; echo ready; exec sleep 60' _ \
+    "$SYS_UPDATE_STATE_DIR/lock" 3>&- > "$BATS_TEST_TMPDIR/holder.out" &
+  HOLDER=$!
+  for _ in $(seq 100); do [[ -s "$BATS_TEST_TMPDIR/holder.out" ]] && return 0; sleep 0.05; done
+  return 1
+}
+
+# A fixed UTC timestamp, so two runs in "the same second" are reproducible.
+freeze_date() {
+  local real_date; real_date="$(command -v date)"
+  cat > "$STUBS/date" <<STUB
+#!/usr/bin/env bash
+if [[ "\$1" == -u && "\$2" == +%Y%m%dT%H%M%SZ ]]; then echo 20260101T000000Z; exit 0; fi
+exec "$real_date" "\$@"
+STUB
+  chmod +x "$STUBS/date"
+}
+
+no_rm_hint() { [[ ! "$1" =~ (^|[^a-z])rm[[:space:]] ]]; }
+
+@test "S01: a running update holds the flock lock: exit 5 and no rm hint" {
+  hold_flock
+  run_update
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"another sys-update"* ]]
+  no_rm_hint "$output"
+  [ -f "$SYS_UPDATE_STATE_DIR/lock" ]
+  run grep -c 'nix flake update' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "S02: the lock is free after a failure and the lock file is kept" {
+  export FAIL_HOST_BUILD=1
+  run_update
+  [ "$status" -ne 0 ]
+  [ -f "$SYS_UPDATE_STATE_DIR/lock" ]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+}
+
+@test "S02: a successful run leaves the lock file in place and free" {
+  run_update
+  [ "$status" -eq 0 ]
+  [ -f "$SYS_UPDATE_STATE_DIR/lock" ]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+}
+
+@test "S03: mkdir mode refuses a live foreign owner and prints the removal command" {
+  export SYS_UPDATE_FORCE_MKDIR_LOCK=1
+  sleep 60 3>&- & HOLDER=$!
+  mkdir -p "$SYS_UPDATE_STATE_DIR/lock.d"
+  printf '%s %s\n' "$HOLDER" "20260101T000000Z-$HOLDER" > "$SYS_UPDATE_STATE_DIR/lock.d/owner"
+  run_update
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"$HOLDER"* ]]
+  [[ "$output" == *"sleep"* ]]
+  [[ "$output" == *"rm -rf"*"lock.d"* ]]
+  [[ "$output" == *"reused"* ]]
+  [ -d "$SYS_UPDATE_STATE_DIR/lock.d" ]
+  run grep -c 'nix flake update' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "S04: an owner-less lock directory counts as held" {
+  export SYS_UPDATE_FORCE_MKDIR_LOCK=1
+  mkdir -p "$SYS_UPDATE_STATE_DIR/lock.d"
+  run_update
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"rm -rf"*"lock.d"* ]]
+  [ -d "$SYS_UPDATE_STATE_DIR/lock.d" ]
+}
+
+@test "S05: only the owner removes a mkdir lock" {
+  export SYS_UPDATE_FORCE_MKDIR_LOCK=1
+  # a refused run must not remove someone else's lock
+  mkdir -p "$SYS_UPDATE_STATE_DIR/lock.d"
+  printf '1 other-run\n' > "$SYS_UPDATE_STATE_DIR/lock.d/owner"
+  run_update
+  [ "$status" -eq 5 ]
+  [ "$(cat "$SYS_UPDATE_STATE_DIR/lock.d/owner")" = "1 other-run" ]
+  rm -rf "$SYS_UPDATE_STATE_DIR/lock.d"
+  # the owner removes its own lock after success and after failure
+  run_update
+  [ "$status" -eq 0 ]
+  [ ! -e "$SYS_UPDATE_STATE_DIR/lock.d" ]
+  reset_repo
+  FAIL_HOST_BUILD=1 run_update
+  [ "$status" -ne 0 ]
+  [ ! -e "$SYS_UPDATE_STATE_DIR/lock.d" ]
+}
+
+@test "S05: the mkdir lock owner file names this process and run id" {
+  export SYS_UPDATE_FORCE_MKDIR_LOCK=1
+  cat > "$STUBS/mise" <<'STUB'
+#!/usr/bin/env bash
+cat "$SYS_UPDATE_STATE_DIR/lock.d/owner" >> "$STUB_LOG"
+exit 0
+STUB
+  run_update
+  [ "$status" -eq 0 ]
+  grep -Eq '^[0-9]+ [0-9]{8}T[0-9]{6}Z-[0-9]+$' "$STUB_LOG"
+}
+
+@test "report mode takes no lock and says so when an update is running" {
+  hold_flock
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"update is running"* ]]
+}
+
+@test "S06: a metadata write failure stops the run before anything changes" {
+  mkdir -p "$SYS_UPDATE_STATE_DIR/runs"
+  chmod 555 "$SYS_UPDATE_STATE_DIR/runs"
+  run_update
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"metadata"* ]]
+  run grep -c 'nix flake update' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "S07: two runs in the same second get distinct run ids" {
+  freeze_date
+  run_update
+  [ "$status" -eq 0 ]
+  reset_repo
+  run_update
+  [ "$status" -eq 0 ]
+  [ "$(ls "$SYS_UPDATE_STATE_DIR"/runs/*.meta | wc -l)" -eq 2 ]
+  for m in "$SYS_UPDATE_STATE_DIR"/runs/*.meta; do
+    [[ "$(sed -n 's/^run_id=//p' "$m")" =~ ^20260101T000000Z-[0-9]+$ ]]
+  done
+}
+
+@test "S08: a failed last-run pointer write stops before the update" {
+  mkdir -p "$SYS_UPDATE_STATE_DIR/last-run"
+  run_update
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"last-run"* ]]
+  run grep -c 'nix flake update' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "S08: a failed snapshot leaves the previous last-run pointer alone" {
+  run_update
+  [ "$status" -eq 0 ]
+  before="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  reset_repo
+  export CHEZMOI_MANAGED_FAIL=1
+  run_update
+  [ "$status" -ne 0 ]
+  [ "$(cat "$SYS_UPDATE_STATE_DIR/last-run")" = "$before" ]
+}
+
+@test "S09: the last-run record is complete, atomic and carries the run status" {
+  run_update
+  [ "$status" -eq 0 ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  [ -f "$meta" ]
+  [ -z "$(ls "$SYS_UPDATE_STATE_DIR" | grep 'last-run.tmp' || true)" ]
+  for key in run_id repo host hm_profile hm_path_before hm_gen_before lock_was_clean flake_lock_backup snapshot_dir; do
+    grep -q "^$key=." "$meta"
+  done
+  [ "$(sed -n 's/^hm_gen_before=//p' "$meta")" = 1 ]
+  [ "$(sed -n 's/^hm_profile=//p' "$meta")" = "$HOME/.local/state/nix/profiles/home-manager" ]
+  [ "$(sed -n 's/^lock_was_clean=//p' "$meta")" = 1 ]
+  grep -q '^status=started$' "$meta"
+  [ "$(sed -n 's/^status=//p' "$meta" | tail -1)" = done ]
+  [ "$(sed -n 's/^exit_code=//p' "$meta" | tail -1)" = 0 ]
+}
+
+@test "S09: a run that fails records its exit code" {
+  export FAIL_HOST_BUILD=1
+  run_update
+  [ "$status" -eq 1 ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  [ "$(sed -n 's/^exit_code=//p' "$meta" | tail -1)" = 1 ]
+}
+
+@test "S45: pruning removes the oldest runs' files and keeps the newest" {
+  export SYS_UPDATE_KEEP_RUNS=2
+  runs="$SYS_UPDATE_STATE_DIR/runs"
+  mkdir -p "$runs"
+  for d in 20250101 20250102 20250103 20250104; do
+    id="${d}T000000Z-1"
+    for ext in log meta flake.lock brave.json; do : > "$runs/$id.$ext"; done
+    mkdir -p "$SYS_UPDATE_STATE_DIR/gcroots/$id"
+  done
+  run_update
+  [ "$status" -eq 0 ]
+  for d in 20250101 20250102 20250103; do
+    [ -z "$(ls "$runs" | grep "^${d}T" || true)" ]
+    [ ! -e "$SYS_UPDATE_STATE_DIR/gcroots/${d}T000000Z-1" ]
+  done
+  [ -e "$runs/20250104T000000Z-1.meta" ]
+  [ -d "$SYS_UPDATE_STATE_DIR/gcroots/20250104T000000Z-1" ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  [ -f "$meta" ]
+}
+
+@test "S45: pruning never removes the run that last-run points at" {
+  export SYS_UPDATE_KEEP_RUNS=1
+  run_update
+  [ "$status" -eq 0 ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  [ -f "$meta" ]
+  [ -f "${meta%.meta}.log" ]
+}
+
+@test "S48: a step sees no inherited lock descriptor while the lock is held" {
+  cat > "$STUBS/nix" <<'STUB'
+#!/usr/bin/env bash
+if [[ "$*" == "flake update"* ]]; then
+  out="$BATS_TEST_TMPDIR/step.out"
+  : > "$out"
+  [[ -e /proc/$$/fd/9 ]] && echo fd9-open >> "$out"
+  for fd in /proc/$$/fd/*; do
+    [[ "$(readlink -f "$fd" 2>/dev/null)" == "$SYS_UPDATE_STATE_DIR/lock" ]] && echo "lock-fd-inherited $fd" >> "$out"
+  done
+  if flock -n "$SYS_UPDATE_STATE_DIR/lock" true; then echo lock-free >> "$out"; else echo lock-held >> "$out"; fi
+  echo "reexec=${SYS_UPDATE_REEXEC-unset} runid=${SYS_UPDATE_RUN_ID-unset} pulled=${SYS_UPDATE_PULLED_FROM-unset}" >> "$out"
+  exit 1
+fi
+exit 0
+STUB
+  run env SYS_UPDATE_REEXEC=1 SYS_UPDATE_RUN_ID=zzz SYS_UPDATE_PULLED_FROM=abc \
+    PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup --skip-verify
+  [ "$status" -eq 1 ]
+  grep -q '^lock-held$' "$BATS_TEST_TMPDIR/step.out"
+  run grep -E 'fd9-open|lock-fd-inherited' "$BATS_TEST_TMPDIR/step.out"
+  [ "$status" -eq 1 ]
+  grep -q 'reexec=unset runid=unset pulled=unset' "$BATS_TEST_TMPDIR/step.out"
+}
+
+@test "S48: SIGTERM exits 143, records it and frees the lock" {
+  export STUB_TERM_AFTER_UPDATE=1
+  run_update
+  [ "$status" -eq 143 ]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  [ "$(sed -n 's/^exit_code=//p' "$meta" | tail -1)" = 143 ]
+}
+
+@test "G-03: SIGHUP exits 129 and records a non-zero exit code" {
+  export STUB_HUP_AFTER_UPDATE=1
+  run_update
+  [ "$status" -eq 129 ]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  [ "$(sed -n 's/^exit_code=//p' "$meta" | tail -1)" = 129 ]
+}
+
+@test "G-04: a flake.lock backup failure stops before PREPARE and leaves no started record" {
+  # A cp that refuses to write the flake.lock backup; everything else is real.
+  cat > "$STUBS/cp" <<'STUB'
+#!/usr/bin/env bash
+for a in "$@"; do [[ "$a" == *.flake.lock ]] && { echo "cp: cannot write $a" >&2; exit 1; }; done
+PATH="${PATH//$(dirname "$0"):/}"; exec cp "$@"
+STUB
+  chmod +x "$STUBS/cp"
+  run_update
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"backup failed"* ]]
+  [ ! -e "$SYS_UPDATE_STATE_DIR/last-run" ]
+  run grep -c 'nix flake update' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "G-09: a failed nix flake update stops the run and leaves the lock uncommitted" {
+  export FAIL_FLAKE_UPDATE=1
+  run_update
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"nix flake update failed"* ]]
+  [[ "$output" == *"cannot update inputs"* ]]
+  [ "$(commits)" -eq 1 ]
+  ! grep -q 'home-manager switch\|chezmoi apply' "$STUB_LOG"
+}
+
+@test "S48: the progress ticker does not keep the lock after SIGINT on a terminal" {
+  command -v script >/dev/null || skip "script(1) not available"
+  export STUB_INT_AFTER_UPDATE=1
+  cmd="$(printf 'bash %q --apply --yes --no-cleanup --skip-verify; rc=$?; if flock -n %q true; then echo LOCK_FREE; else echo LOCK_HELD; fi; echo "rc=$rc"' \
+    "$FAKE/ops/update-all.sh" "$SYS_UPDATE_STATE_DIR/lock")"
+  # bats -j runs tests as background jobs, which start with SIGINT ignored,
+  # and bash can neither trap nor reset a signal ignored at startup. Restore
+  # the default disposition so the trap under test can see the interrupt.
+  # script(1) runs the command with $SHELL; pin bash so a login fish (which
+  # rewrites PATH and drops the stubs) is never in between.
+  run env SHELL="$(command -v bash)" \
+    script -qec "env --default-signal=INT bash -c $(printf '%q' "$cmd")" /dev/null
+  [[ "$output" == *"LOCK_FREE"* ]]
+  [[ "$output" == *"rc=130"* ]]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+}
+
+# ── T-0010 host, profile path, PREPARE gaps, lefthook ───────────────────────
+
+last_meta() { cat "$SYS_UPDATE_STATE_DIR/last-run"; }
+meta_value() { sed -n "s/^$1=//p" "$(last_meta)" | tail -1; }
+
+# A Home Manager profile directory at <root>/nix/profiles, generation <n>.
+make_profile_dir() {
+  local dir="$1" gen="$2"
+  mkdir -p "$dir"
+  ln -s "$GEN_DIR" "$dir/home-manager-$gen-link"
+  ln -s "home-manager-$gen-link" "$dir/home-manager"
+}
+
+@test "S12: the Home Manager profile follows XDG_STATE_HOME" {
+  export XDG_STATE_HOME="$BATS_TEST_TMPDIR/xdg"
+  export STUB_PROFILE_DIR="$XDG_STATE_HOME/nix/profiles"
+  make_profile_dir "$STUB_PROFILE_DIR" 7
+  run_update
+  [ "$status" -eq 0 ]
+  [ "$(meta_value hm_profile)" = "$XDG_STATE_HOME/nix/profiles/home-manager" ]
+  [ "$(meta_value hm_gen_before)" = 7 ]
+}
+
+@test "S12: without an XDG profile directory the per-user Nix profile directory is used" {
+  export XDG_STATE_HOME="$BATS_TEST_TMPDIR/no-such-xdg"
+  user="${USER:-$(id -un)}"
+  export STUB_PROFILE_DIR="$NIX_STATE_DIR/profiles/per-user/$user"
+  make_profile_dir "$STUB_PROFILE_DIR" 5
+  run_update
+  [ "$status" -eq 0 ]
+  [ "$(meta_value hm_profile)" = "$STUB_PROFILE_DIR/home-manager" ]
+  [ "$(meta_value hm_gen_before)" = 5 ]
+}
+
+@test "S12: no profile directory at all stops an apply before anything changes" {
+  export XDG_STATE_HOME="$BATS_TEST_TMPDIR/no-such-xdg"
+  run_update
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"home-manager profile"* ]]
+  [[ "$output" == *"stopped before"* ]]
+  run grep -c 'nix flake update' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "S12: no profile directory is only a warning in report mode" {
+  export XDG_STATE_HOME="$BATS_TEST_TMPDIR/no-such-xdg"
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"home-manager profile"* ]]
+}
+
+@test "S13: an empty second build result stops before dotfiles or the switch" {
+  export STUB_HM_OUT_EMPTY=1
+  run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"host build"* ]]
+  run grep -c '^chezmoi apply\|^home-manager switch' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "S14: a failing second build stops before dotfiles or the switch" {
+  export FAIL_PRINT_OUT=1
+  run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"host build"* ]]
+  run grep -c '^chezmoi apply\|^home-manager switch' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "S14: a second build result that is not a directory stops the update" {
+  export STUB_HM_OUT="$BATS_TEST_TMPDIR/does-not-exist"
+  run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"host build"* ]]
+  run grep -c '^chezmoi apply\|^home-manager switch' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "S15: a chezmoi status failure is not read as 'no conflicts'" {
+  export CHEZMOI_STATUS_FAIL=1
+  run_update
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"chezmoi status"* ]]
+  [[ "$output" == *"stopped before"* ]]
+  run grep -c 'nix flake update' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "S15: a chezmoi status failure is a warning in report mode" {
+  export CHEZMOI_STATUS_FAIL=1
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"chezmoi status"* ]]
+}
+
+@test "S16: the flake.lock hash written by the update is recorded, even when a later step fails" {
+  export FAIL_HOST_BUILD=1
+  run_update
+  [ "$status" -ne 0 ]
+  # The failed run put the pre-run lock back, so the recorded hash is the one
+  # it wrote, not the one on disk now.
+  [ -n "$(meta_value flake_lock_hash_written)" ]
+  [ "$(meta_value flake_lock_hash_written)" != "$(git -C "$FAKE" hash-object nix/flake.lock)" ]
+  git -C "$FAKE" diff --quiet -- nix/flake.lock
+}
+
+@test "S17: the Brave release hash is recorded after the writer, even when it fails" {
+  prepare_brave_lock
+  original="$(git -C "$FAKE" hash-object nix/packages/brave/release.json)"
+  FAIL_BRAVE_UPDATE=1 run_update
+  [ "$status" -ne 0 ]
+  [ "$(meta_value brave_release_hash_written)" = "$original" ]
+  reset_repo
+  run_update
+  [ "$status" -eq 0 ]
+  [ "$(meta_value brave_release_hash_written)" = "$(git -C "$FAKE" hash-object nix/packages/brave/release.json)" ]
+  [ "$(meta_value brave_release_hash_written)" != "$original" ]
+}
+
+@test "S46: lefthook runs in a repository path containing a quote and a space" {
+  cat > "$STUBS/lefthook" <<'STUB'
+#!/usr/bin/env bash
+printf 'lefthook %s\n' "$*" >> "$STUB_LOG"
+pwd -P >> "$STUB_LOG"
+exit 0
+STUB
+  run_update
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"git hooks"*"synced"* ]]
+  grep -q '^lefthook install$' "$STUB_LOG"
+  grep -qxF "$(cd "$FAKE" && pwd -P)" "$STUB_LOG"
+}
+
+@test "S51: an empty Home Manager package set counts as zero packages, not one" {
+  run_update
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"0 Home Manager packages recorded"* ]]
 }

@@ -16,12 +16,16 @@
 #   HOST_PROFILE=wsl bash ops/detect-host.sh
 #
 # Test overrides: DETECT_HOST_PROC_VERSION (default /proc/version) and
-# DETECT_HOST_OSRELEASE (default /proc/sys/kernel/osrelease).
+# DETECT_HOST_OSRELEASE (default /proc/sys/kernel/osrelease),
+# DETECT_HOST_WSL_INTEROP (default /proc/sys/fs/binfmt_misc/WSLInterop) and
+# DETECT_HOST_WSL_RUN (default /run/WSL).
 
 set -euo pipefail
 
 proc_version="${DETECT_HOST_PROC_VERSION:-/proc/version}"
 osrelease="${DETECT_HOST_OSRELEASE:-/proc/sys/kernel/osrelease}"
+wsl_interop="${DETECT_HOST_WSL_INTEROP:-/proc/sys/fs/binfmt_misc/WSLInterop}"
+wsl_run="${DETECT_HOST_WSL_RUN:-/run/WSL}"
 
 die() {
   echo "detect-host: $*" >&2
@@ -56,13 +60,18 @@ kernel_releases() {
 
 # Print 2 (WSL2), 1 (WSL1) or none. The repo supports WSL2 only: WSL1 has no
 # real Linux kernel or systemd, so Nix and the Home Manager user timers do
-# not work there. WSL2 kernels say "microsoft-standard" (or "WSL2"); WSL1
-# reports a fake 4.4.0-*-Microsoft kernel. A kernel with neither marker is
-# WSL2 only if WSL_DISTRO_NAME is set and the kernel is 5.x or newer (custom
-# WSL2 builds); an older unmarked kernel under WSL_DISTRO_NAME is ambiguous
-# and fails. Markers that disagree also fail.
+# not work there. Rules, in order:
+#   - "microsoft-standard" or "wsl2" in a release: WSL2.
+#   - such a marker together with a plain "microsoft" release: ambiguous.
+#   - a "microsoft" release with kernel major < 5 (WSL1's fake 4.4.0-*-Microsoft
+#     kernel): WSL1. A "microsoft" release on 5.x or newer is ambiguous.
+#   - no marker, WSL_DISTRO_NAME set: WSL2 only when the kernel is 5.x or newer
+#     AND a WSL filesystem marker exists (WSLInterop or /run/WSL), because the
+#     env var alone is inheritable. Otherwise ambiguous.
+#   - nothing WSL-like: none.
+# Ambiguity always fails with guidance to set HOST_PROFILE.
 detect_wsl_version() {
-  local rel releases v2=0 v1=0 major
+  local rel releases v2=0 v1=0 v1major=0 major
   releases="$(kernel_releases)" || exit 1
   while IFS= read -r rel; do
     shopt -s nocasematch
@@ -70,22 +79,28 @@ detect_wsl_version() {
       v2=1
     elif [[ "$rel" == *microsoft* ]]; then
       v1=1
+      v1major="${rel%%.*}"
     fi
     shopt -u nocasematch
   done <<<"$releases"
+  rel="$(head -n1 <<<"$releases")"
+  major="${rel%%.*}"
   if ((v1 && v2)); then
-    die "ambiguous WSL kernel: markers disagree (${releases//$'\n'/ }); set HOST_PROFILE explicitly"
+    die "ambiguous WSL kernel: markers disagree (${releases//$'\n'/ }); set HOST_PROFILE explicitly (e.g. HOST_PROFILE=wsl)"
   elif ((v2)); then
     echo 2
   elif ((v1)); then
-    echo 1
+    if [[ "$v1major" =~ ^[0-9]+$ ]] && ((v1major < 5)); then
+      echo 1
+    else
+      die "ambiguous kernel release '$rel': Microsoft marker without microsoft-standard on a 5.x+ kernel; set HOST_PROFILE explicitly (e.g. HOST_PROFILE=wsl)"
+    fi
   elif [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
-    major="$(head -n1 <<<"$releases")"
-    major="${major%%.*}"
-    if [[ "$major" =~ ^[0-9]+$ ]] && ((major >= 5)); then
+    if [[ "$major" =~ ^[0-9]+$ ]] && ((major >= 5)) &&
+      [[ -e "$wsl_interop" || -e "$wsl_run" ]]; then
       echo 2
     else
-      die "ambiguous kernel under WSL_DISTRO_NAME=$WSL_DISTRO_NAME (release $(head -n1 <<<"$releases")); set HOST_PROFILE explicitly"
+      die "ambiguous: WSL_DISTRO_NAME=$WSL_DISTRO_NAME but release '$rel' has no WSL marker and no WSL filesystem marker confirms WSL2; set HOST_PROFILE explicitly (e.g. HOST_PROFILE=wsl)"
     fi
   else
     echo none

@@ -33,7 +33,7 @@ binding() { # binding <mode> <key> -> the command bound to it
 
 @test "CDPATH offers workspace folders but is not exported to scripts" {
     grep -qx 'set -g CDPATH . $HOME/Projects' "$CFG"
-    ! grep -qE 'set -gx CDPATH|set -Ux CDPATH|export CDPATH' "$CFG"
+    if grep -qE 'set -gx CDPATH|set -Ux CDPATH|export CDPATH' "$CFG"; then echo 'assertion failed: expected no match' >&2; return 1; fi
     home="$BATS_TEST_TMPDIR/home"; mkdir -p "$home/Projects/app-alpha" "$BATS_TEST_TMPDIR/elsewhere"
     run env HOME="$home" fish --no-config -c "cd $BATS_TEST_TMPDIR/elsewhere; set -g CDPATH . \$HOME/Projects; complete -C 'cd app-al'"
     [[ "$output" == *"app-alpha/"* ]]

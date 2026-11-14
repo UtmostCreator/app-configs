@@ -114,7 +114,7 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
 
 @test "chezmoi is applied without --force unless it is asked for" {
   run_update
-  ! grep -q 'chezmoi apply.*--force' "$STUB_LOG"
+  if grep -q 'chezmoi apply.*--force' "$STUB_LOG"; then echo 'assertion failed: expected no match' >&2; return 1; fi
   reset_repo
   run_update --force
   grep -q 'chezmoi apply.*--force' "$STUB_LOG"
@@ -134,8 +134,8 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
   # names a way to inspect the edit and a way past it
   [[ "$output" == *"chezmoi diff"* ]]
   [[ "$output" == *"--force"* ]]
-  ! grep -q 'nix flake update' "$STUB_LOG"
-  ! grep -q 'chezmoi apply' "$STUB_LOG"
+  if grep -q 'nix flake update' "$STUB_LOG"; then echo 'assertion failed: expected no match' >&2; return 1; fi
+  if grep -q 'chezmoi apply' "$STUB_LOG"; then echo 'assertion failed: expected no match' >&2; return 1; fi
   [ "$(commits)" -eq 1 ]
 }
 
@@ -156,7 +156,7 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
 
 @test "the flake lock is only checked for this host unless --full-check" {
   run_update
-  ! grep -q 'all-systems' "$STUB_LOG"
+  if grep -q 'all-systems' "$STUB_LOG"; then echo 'assertion failed: expected no match' >&2; return 1; fi
   reset_repo
   run_update --full-check
   grep -q 'flake check --all-systems' "$STUB_LOG"
@@ -181,7 +181,7 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
   run_update
   [ "$status" -ne 0 ]
   [[ "$output" == *"host build"* ]]
-  ! grep -q 'chezmoi apply\|home-manager switch\|mise upgrade' "$STUB_LOG"
+  if grep -q 'chezmoi apply\|home-manager switch\|mise upgrade' "$STUB_LOG"; then echo 'assertion failed: expected no match' >&2; return 1; fi
   [ "$(commits)" -eq 1 ]
 }
 

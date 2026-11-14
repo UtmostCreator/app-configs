@@ -37,7 +37,7 @@ macos_only='Library/Application Support|/Applications/Herd|/opt/homebrew'
 @test "fish (linux): parses, no macOS paths, keeps 1Password helpers" {
     f="$(render linux dot_config/fish/config.fish.tmpl)"
     fish -n "$f"
-    ! grep -Eq "$macos_only" "$f"
+    if grep -Eq "$macos_only" "$f"; then echo 'assertion failed: expected no match' >&2; return 1; fi
     grep -q "op item get 'GitHub NPM Token'" "$f"
     run fish --no-config -c "source (sed -n '/^function composer/,/^end/p' $f | psub); and source (sed -n '/^function op-refresh/,/^end/p' $f | psub); and functions -q composer op-refresh; and echo ok"
     [ "$output" = "ok" ]
@@ -66,8 +66,8 @@ macos_only='Library/Application Support|/Applications/Herd|/opt/homebrew'
     [ -n "${BATS_ZSH:-}" ] || skip "zsh unavailable"
     f="$(render linux dot_zshrc.tmpl)"
     "$BATS_ZSH" -n "$f"
-    ! grep -Eq "$macos_only" "$f"
-    ! grep -q '^brewup()' "$f"
+    if grep -Eq "$macos_only" "$f"; then echo 'assertion failed: expected no match' >&2; return 1; fi
+    if grep -q '^brewup()' "$f"; then echo 'assertion failed: expected no match' >&2; return 1; fi
     grep -q 'zsh-syntax-highlighting.zsh' "$f"
     grep -q '\[ -r "$ZSH/oh-my-zsh.sh" \]' "$f"
 }

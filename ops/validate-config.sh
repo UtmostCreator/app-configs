@@ -504,16 +504,17 @@ fi
 # 13. (--eval only) The same policy on the *evaluated* Home Manager config, for
 # what text cannot see: let-bound/merged attrsets, xdg.configFile = <expr>,
 # options enabled by other modules or defaults, and package names after
-# overlays. One `nix eval --json` per profile (~1 s each, ~3 s total here) is
+# overlays. One `nix eval --json` per profile (~1 s each, ~4 s total here) is
 # too slow and too dependent on the nix store/network for the pre-commit hook,
-# so the default run skips it; CI runs `bash ops/validate-config.sh --eval`.
+# so the default run skips it. It is meant for CI, but ops/ci.sh does not
+# run it yet (wiring it needs the user's approval).
 # Needs nix and jq; their absence is a failure, not a skip.
 # Tolerated, not declared by us: the home-manager package that
 # programs.home-manager adds to home.packages, programs.man (Home Manager default) and
 # services.vicinae (renamed alias of programs.vicinae); xdg keys Home Manager
 # generates itself (dconf/.keep, environment.d/10-home-manager.conf,
 # nix/nix.conf).
-EVAL_PROFILES="${VALIDATE_EVAL_PROFILES:-linux-desktop linux-cli wsl}"
+EVAL_PROFILES="${VALIDATE_EVAL_PROFILES:-linux-desktop linux-cli wsl macos}"
 # shellcheck disable=SC2016 # Nix source, not shell: no expansion wanted
 EVAL_QUERY='cfg: let
   inherit (builtins) attrNames filter map isAttrs tryEval;
@@ -540,11 +541,15 @@ if ((EVAL)); then
   else
     e0=$ERRORS
     for profile in $EVAL_PROFILES; do
-      if ! json="$(nix eval --no-eval-cache --json "path:$ROOT_DIR/nix#homeConfigurations.$profile.config" --apply "$EVAL_QUERY" 2>/dev/null)" ||
+      eval_err="$(mktemp)"
+      if ! json="$(nix eval --no-eval-cache --json "path:$ROOT_DIR/nix#homeConfigurations.$profile.config" --apply "$EVAL_QUERY" 2>"$eval_err")" ||
          ! jq -e 'has("packages") and has("programs") and has("services") and has("xdg")' <<<"$json" >/dev/null 2>&1; then
         err "nix eval failed for homeConfigurations.$profile"
+        tail -n 5 "$eval_err" | sed 's/^/      /' >&2
+        rm -f "$eval_err"
         continue
       fi
+      rm -f "$eval_err"
       # programs.home-manager.enable (allowed) puts the home-manager package into
       # home.packages itself, so that one name is expected when it is enabled.
       hm_self=0

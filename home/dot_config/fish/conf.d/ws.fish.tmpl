@@ -75,8 +75,13 @@ function log-workspace
     bash "$WS_PROJECTS_DIR/logging/watch/run.sh" $argv
 end
 
+# log-errors lives in restsift now (the PHP copy here was retired).
 function log-errors
-    bash "$WS_PROJECTS_DIR/logging/errors/run.sh" $argv
+    if not command -q res
+        echo "log-errors: needs restsift (res log-errors); install restsift" >&2
+        return 127
+    end
+    res log-errors $argv
 end
 
 function kill-logs

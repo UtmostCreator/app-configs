@@ -23,7 +23,6 @@ python3
 ripgrep
 shellcheck
 parallel
-php
 lnav
 tmux
 curl

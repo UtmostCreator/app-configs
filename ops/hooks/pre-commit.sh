@@ -26,23 +26,6 @@ if [[ -n "$staged_files" ]]; then
     done <<<"$staged_files"
 fi
 
-# PHP lint is a convenience check, not a security gate, so a missing php
-# binary stays a skip (unlike the secret scan below, which fails closed).
-if command -v php >/dev/null 2>&1; then
-    changed_php="$(git diff --cached --name-only --diff-filter=ACM | rg '\.php$' || true)"
-    if [[ -n "$changed_php" ]]; then
-        while IFS= read -r file; do
-            [[ -n "$file" ]] || continue
-            tmp_file="$(mktemp "${TMPDIR:-/tmp}/app-configs-php-lint.XXXXXX.php")"
-            git show ":$file" >"$tmp_file"
-            php -l "$tmp_file" >/dev/null
-            rm -f "$tmp_file"
-        done <<<"$changed_php"
-    fi
-else
-    echo "[hook] php binary not found (skip lint)"
-fi
-
 if command -v gitleaks >/dev/null 2>&1; then
     gitleaks protect --staged --redact --verbose
 elif command -v trufflehog >/dev/null 2>&1; then

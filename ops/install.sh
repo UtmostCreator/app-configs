@@ -195,7 +195,9 @@ fi
 # ── 9. lefthook ─────────────────────────────────────────────────────────────
 step "lefthook (git hooks)"
 if [[ -e "$REPO_ROOT/.git" ]]; then
-  run sh -c "cd '$REPO_ROOT' && lefthook install"
+  # The path is an argument ($1), never part of the script text, so quotes or
+  # shell syntax in it cannot break or inject (same form as update-all.sh).
+  run sh -c 'cd "$1" && lefthook install' sh "$REPO_ROOT"
 else
   warn "not a git checkout; skipping lefthook install"
 fi

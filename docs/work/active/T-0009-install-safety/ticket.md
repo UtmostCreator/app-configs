@@ -48,7 +48,8 @@ Only the files listed above. Unrelated findings are reported, not fixed.
 
 ## Progress
 
-- 2026-11-14: Landed on main (integration tip 2f93e0f). Item #7 is decided as "rotate the hm-bak safely, never overwrite, stop if rotation cannot preserve the original"; still to be implemented.
+- 2026-11-14: Landed on main (integration tip 2f93e0f). ~~Item #7 is decided as "rotate the hm-bak safely, never overwrite, stop if rotation cannot preserve the original"~~ (superseded, see the corrected #7 decision below); still to be implemented.
 - 2026-11-14: Decisions recorded.
-  - #7 (hm-bak): rotate safely, never overwrite, stop if rotation cannot preserve the original. Priority P2, to fix before repeat-install acceptance.
+  - ~~#7 (hm-bak): rotate safely, never overwrite, stop if rotation cannot preserve the original. Priority P2, to fix before repeat-install acceptance.~~ Superseded by the corrected decision below.
   - trusted-users (new follow-up, noted here instead of a new ticket): audit dependencies, then remove unnecessary privileges (`ops/system-setup.sh`, `ops/readiness.sh`, docs). Priority P2.
+  - **#7 decision (corrected by the user, 2026-11-14):** preserve existing `.hm-bak` backups and provide a manual resolution path, meaning a clear message naming the file to move. No automatic overwrite or rotation without a separately justified change. This supersedes the earlier "rotate safely" line above. Priority P2, to fix before repeat-install acceptance: the correction changed the approach, not the priority. The `trusted-users` audit stays as recorded.

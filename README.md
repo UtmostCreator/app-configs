@@ -32,7 +32,8 @@ Neovim, VS Code, Git and SSH.
   `flake.lock`.
 - **Checks that say where you stand.** `sys-readiness`, `ops/doctor.sh`,
   `ops/validate-config.sh`, Bats tests and Git hooks (secret scan, identity
-  guard, config validation).
+  guard, config validation). GitHub Actions runs the same gate as
+  `mise run ci:local` on every push to `main` and every pull request.
 
 ## Quick start
 
@@ -127,11 +128,18 @@ Rationale and boundaries: [`tool-ownership.md`](docs/architecture/tool-ownership
 | `mise run sync` / `sync:apply` | no / **yes** | Preview / snapshot + apply chezmoi, HM/darwin, mise, VS Code extensions, Lefthook |
 | `mise run apply` | **yes** | chezmoi only, no Nix or mise side effects |
 | `mise run doctor` / `repo:check` | no | Health check / doctor + validator + optional flake check |
+| `mise run ci` / `ci:local` | no | Full gate: validator, `lint:shell`, all tests, flake check, host evaluation / the same in a clean, CI-identical environment |
+| `mise run test:bash` / `lint:shell` | no | All test suites (bats, PHP, Python; scratch `HOME`) / `bash -n` on every script + ShellCheck |
+| `mise run arch:check` / `history:report` | no | restsift directory-structure check / sanitised report of your shell history |
 | `bash ops/uninstall.sh [--apply]` | no / **yes** | Report / remove; never removes Nix or snapshots |
 
 Each `sys-*` command wraps an `ops/*.sh` script and has a `mise run` equivalent
 (`install`, `update:apply`, `cleanup:apply`, `readiness`). Optional extras
 (dive, fx, navi, glow, gum): `mise run tools:optional:install`.
+
+Shell shortcuts (abbreviations, git aliases, port/log helpers):
+[`docs/reference/cli-shortcuts.md`](docs/reference/cli-shortcuts.md). WSL2
+setup and checks: [`docs/platforms/wsl/setup.md`](docs/platforms/wsl/setup.md).
 
 `sys-readiness` is opinionated: on NixOS it also expects fish as the login
 shell, a system GC timer, the `Europe/London` time zone and Tailscale.

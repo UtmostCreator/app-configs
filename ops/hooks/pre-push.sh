@@ -13,6 +13,10 @@ if [[ "${SKIP_HOOKS:-0}" == "1" ]]; then
     exit 0
 fi
 
+diff="$(mktemp "${TMPDIR:-/tmp}/app-configs-prepush.XXXXXX")"
+cr=$'\r' # CRLF files end markers with \r
+trap 'rm -f "$diff"' EXIT
+
 zero="0000000000000000000000000000000000000000"
 protected="${PUSH_PROTECTED_BRANCHES:-}"
 
@@ -34,13 +38,25 @@ while read -r local_ref local_sha remote_ref remote_sha; do
         range=("$remote_sha..$local_sha")
     fi
 
+    # Capture first: a failing rev-list inside process substitution would be
+    # hidden and the push would pass unchecked. Fail closed instead.
+    if ! shas="$(git rev-list "${range[@]}")"; then
+        echo "[pre-push] cannot list commits for $remote_ref (unknown remote sha?); blocking."
+        exit 1
+    fi
+
     while IFS= read -r sha; do
         [[ -n "$sha" ]] || continue
-        if git show --format= --unified=0 "$sha" | grep -qE '^\+(<{7}|>{7})( |$)'; then
+        # --diff-merges=first-parent so a merge commit shows what it brings in
+        # (plain `git show` on a merge prints a combined diff with `++` lines).
+        # Written to a temp file, not piped: `git show | grep -q` would SIGPIPE
+        # git on large diffs and pipefail would then report "no match".
+        git show --diff-merges=first-parent --format= --unified=0 "$sha" >"$diff"
+        if grep -aE "^\+(<{7}|>{7})( |${cr}?\$)" "$diff" >/dev/null; then
             echo "[pre-push] conflict markers added in commit $sha"
             exit 1
         fi
-    done < <(git rev-list "${range[@]}")
+    done <<<"$shas"
 done
 
 exit 0

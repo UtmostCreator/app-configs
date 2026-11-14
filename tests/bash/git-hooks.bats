@@ -56,6 +56,50 @@ msg() { printf '%s\n' "$1" >"$BATS_TEST_TMPDIR/msg"; bash "$HOOKS/commit-msg.sh"
     [ "$status" -eq 0 ]
 }
 
+@test "pre-push rejects conflict markers in a large commit (no SIGPIPE false pass)" {
+    cd "$WORK"
+    # Marker first, then well over the pipe buffer, so an early-exiting grep -q
+    # would SIGPIPE git show and (under pipefail) make the check look clean.
+    { printf '<<<<<<< HEAD\n'; seq 1 400000; } >big.txt
+    git add big.txt && git commit -q --no-verify -m "chore: big bad"
+    sha="$(git rev-parse HEAD)"
+    run bash -c "echo 'refs/heads/main $sha refs/heads/main 0000000000000000000000000000000000000000' | bash '$HOOKS/pre-push.sh'"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"conflict markers"* ]]
+}
+
+@test "pre-push rejects conflict markers that only a merge commit introduces" {
+    cd "$WORK"
+    base="$(git rev-parse HEAD)"
+    git checkout -q -b side
+    printf 's\n' >side.txt && git add side.txt && git commit -q -m "chore: side"
+    git checkout -q main
+    printf 'm\n' >main.txt && git add main.txt && git commit -q -m "chore: main"
+    git merge -q --no-ff --no-commit side
+    printf '<<<<<<< HEAD\nx\n' >evil.txt && git add evil.txt
+    git commit -q --no-verify -m "Merge branch 'side'"
+    sha="$(git rev-parse HEAD)"
+    run bash -c "echo 'refs/heads/main $sha refs/heads/main $base' | bash '$HOOKS/pre-push.sh'"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"conflict markers"* ]]
+}
+
+@test "pre-push fails closed when the pushed range cannot be listed" {
+    cd "$WORK"
+    sha="$(git rev-parse HEAD)"
+    run bash -c "echo 'refs/heads/main $sha refs/heads/main 1111111111111111111111111111111111111111' | bash '$HOOKS/pre-push.sh'"
+    [ "$status" -ne 0 ]
+}
+
+@test "pre-push rejects CRLF conflict markers" {
+    cd "$WORK"
+    printf '<<<<<<<\r\nx\r\n' >f.txt
+    git add f.txt && git commit -q --no-verify -m "chore: crlf"
+    sha="$(git rev-parse HEAD)"
+    run bash -c "echo 'refs/heads/main $sha refs/heads/main 0000000000000000000000000000000000000000' | bash '$HOOKS/pre-push.sh'"
+    [ "$status" -eq 1 ]
+}
+
 @test "pre-push protection is opt-in" {
     cd "$WORK"
     sha="$(git rev-parse HEAD)"

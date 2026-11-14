@@ -264,6 +264,9 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
 @test "macOS builds the darwin system before activation" {
   export HOST_PROFILE=macos
   cp "$STUBS/home-manager" "$STUBS/darwin-rebuild"
+  # The activation check reads the system link; there is no real one here.
+  ln -s "$STUB_HM_OUT" "$BATS_TEST_TMPDIR/current-system"
+  export SYS_UPDATE_DARWIN_SYSTEM_LINK="$BATS_TEST_TMPDIR/current-system"
   run_update
   [ "$status" -eq 0 ]
   grep -q 'nix build --no-link.*darwinConfigurations.macos.system' "$STUB_LOG"
@@ -863,9 +866,8 @@ make_profile_dir() {
   export FAIL_HOST_BUILD=1
   run_update
   [ "$status" -ne 0 ]
-  # The failed run put the pre-run lock back, so the recorded hash is the one
-  # it wrote, not the one on disk now.
-  [ -n "$(meta_value flake_lock_hash_written)" ]
+  # the failed run restored the old lock; the written content is kept as .failed
+  [ "$(meta_value flake_lock_hash_written)" = "$(git hash-object "$(meta_value flake_lock_backup).failed")" ]
   [ "$(meta_value flake_lock_hash_written)" != "$(git -C "$FAKE" hash-object nix/flake.lock)" ]
   git -C "$FAKE" diff --quiet -- nix/flake.lock
 }
@@ -901,4 +903,129 @@ STUB
   run_update
   [ "$status" -eq 0 ]
   [[ "$output" == *"0 Home Manager packages recorded"* ]]
+}
+
+# ── T-0010 Gate B: phases, EXIT restore, profile-target check (T3) ──────────
+
+# The statuses of the last run, in order, space separated.
+statuses() { sed -n 's/^status=//p' "$(cat "$SYS_UPDATE_STATE_DIR/last-run")" | paste -sd' ' -; }
+
+# A home-manager stub that fails; STUB_FAIL_HM_RELINK=1 moves the profile first.
+failing_home_manager() {
+  cat > "$STUBS/home-manager" <<'STUB'
+#!/usr/bin/env bash
+printf 'home-manager %s\n' "$*" >> "$STUB_LOG"
+if [[ "${STUB_FAIL_HM_RELINK:-0}" == 1 ]]; then
+  ln -sfn "$BATS_TEST_TMPDIR/hm-out" "$HOME/.local/state/nix/profiles/home-manager-2-link"
+  ln -sfn home-manager-2-link "$HOME/.local/state/nix/profiles/home-manager"
+fi
+echo "error: switch exploded" >&2
+exit 1
+STUB
+  chmod +x "$STUBS/home-manager"
+}
+
+@test "S20: a successful update records every phase, in order" {
+  run_update
+  [ "$status" -eq 0 ]
+  [ "$(statuses)" = "started prepared activating activated verify-skipped committed done" ]
+}
+
+@test "S18: a switch that leaves the profile elsewhere fails, even with --skip-verify" {
+  export STUB_HM_NO_RELINK=1
+  run_update
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"does not point at the built closure"* ]]
+  [ "$(commits)" -eq 1 ]
+  [ "$(statuses | awk '{print $NF}')" = "failed:activate" ]
+}
+
+@test "S19: a failed switch that moved the profile says so" {
+  failing_home_manager
+  export STUB_FAIL_HM_RELINK=1
+  run_update
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"the profile moved"* ]]
+  [[ "$output" == *"sys-update rollback"* ]]
+}
+
+@test "S21: a failure while preparing restores the lock the update wrote" {
+  export FAIL_HOST_BUILD=1
+  run_update
+  [ "$status" -eq 1 ]
+  grep -q '"rev":"old"' "$FAKE/nix/flake.lock"
+  [ -z "$(git -C "$FAKE" status --porcelain)" ]
+  [ "$(statuses | awk '{print $NF}')" = "failed:prepare" ]
+}
+
+@test "S21: a failure while activating restores the lock and names the rollback" {
+  failing_home_manager
+  run_update
+  [ "$status" -eq 1 ]
+  grep -q '"rev":"old"' "$FAKE/nix/flake.lock"
+  [ "$(statuses | awk '{print $NF}')" = "failed:activate" ]
+  [[ "$output" == *"sys-update rollback"* ]]
+}
+
+@test "S22: a lock somebody else changed during the run is kept, not overwritten" {
+  failing_home_manager
+  export STUB_TOUCH_LOCK=1
+  run_update
+  [ "$status" -eq 1 ]
+  grep -q '"rev":"foreign"' "$FAKE/nix/flake.lock"
+  [[ "$output" == *"left in place"* ]]
+}
+
+@test "S23: a restore keeps the failed content as a .failed copy outside the repo" {
+  export FAIL_HOST_BUILD=1
+  run_update
+  [ "$status" -eq 1 ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  failed="$(sed -n 's/^flake_lock_backup=//p' "$meta").failed"
+  [ -f "$failed" ]
+  grep -q '"rev":"new"' "$failed"
+  [ -z "$(git -C "$FAKE" status --porcelain)" ]
+}
+
+@test "S49: an interrupt before the writer finished restores a lock that was clean" {
+  export STUB_TERM_AFTER_UPDATE=1
+  run_update
+  [ "$status" -eq 143 ]
+  grep -q '"rev":"old"' "$FAKE/nix/flake.lock"
+}
+
+@test "S50: an interrupt keeps a lock that had local edits before the run" {
+  printf '{"nodes":{"nixpkgs":{"locked":{"rev":"mine"}}}}\n' > "$FAKE/nix/flake.lock"
+  export STUB_TERM_AFTER_UPDATE=1
+  run_update --allow-dirty
+  [ "$status" -eq 143 ]
+  grep -q '"rev":"new"' "$FAKE/nix/flake.lock"
+  [[ "$output" == *"left in place"* ]]
+}
+
+@test "a failed snapshot is recorded as failed:snapshot" {
+  export CHEZMOI_MANAGED_FAIL=1
+  run_update
+  [ "$status" -ne 0 ]
+  meta="$(ls "$SYS_UPDATE_STATE_DIR"/runs/*.meta | head -1)"
+  [ "$(sed -n 's/^status=//p' "$meta" | tail -1)" = "failed:snapshot" ]
+}
+
+@test "maintenance runs after the lock is committed, so a failing one cannot block it" {
+  cat > "$STUBS/mise" <<'STUB'
+#!/usr/bin/env bash
+printf 'mise %s\n' "$*" >> "$STUB_LOG"
+if [[ "$1" == upgrade ]]; then
+  git -C "$FAKE_REPO" rev-list --count HEAD > "$BATS_TEST_TMPDIR/mise.commits"
+  exit 1
+fi
+exit 0
+STUB
+  chmod +x "$STUBS/mise"
+  export FAKE_REPO="$FAKE"
+  run_update
+  [ "$status" -eq 0 ]
+  [ "$(cat "$BATS_TEST_TMPDIR/mise.commits")" -eq 2 ]
+  [ "$(commits)" -eq 2 ]
+  [ "$(statuses)" = "started prepared activating activated verify-skipped committed done" ]
 }

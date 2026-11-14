@@ -55,7 +55,10 @@ case "$tool \$*" in
   "nix build"*)          [[ "\${FAIL_HOST_BUILD:-0}" == 1 ]] && exit 1
                           [[ "\$*" == *--print-out-paths* ]] && printf '%s\n' "\$STUB_HM_OUT" ;;
   "chezmoi status"*)      : ;;
-  "home-manager switch"*) [[ "\${FAIL_SWITCH:-0}" == 1 ]] && exit 1 ;;
+  "home-manager switch"*) [[ "\${FAIL_SWITCH:-0}" == 1 ]] && exit 1
+                          # a real switch moves the profile; the updater checks that it did
+                          ln -sfn "\$STUB_HM_OUT" "$HOME/.local/state/nix/profiles/home-manager-2-link"
+                          ln -sfn home-manager-2-link "$HOME/.local/state/nix/profiles/home-manager" ;;
 esac
 exit 0
 STUB

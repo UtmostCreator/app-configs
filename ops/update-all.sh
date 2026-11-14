@@ -8,9 +8,14 @@
 #   PRECHECK  canonical repo path, git state, upstream, tools, disk
 #   PLAN      what would run (this is all report mode does)
 #   SNAPSHOT  dotfiles, flake.lock, Home Manager generation, tool versions
-#   APPLY     git pull · flake update/check · chezmoi · home-manager ·
-#             nix profile · mise · hooks · Syncthing ignores
-#   VERIFY    generation, managed files, required commands, user services
+#   PREPARE   git pull · flake update/check · host build (nothing activated;
+#             a failure here restores flake.lock)
+#   ACTIVATE  chezmoi · home-manager / darwin-rebuild · the profile must then
+#             point at the closure PREPARE built (always checked)
+#   VERIFY    gate: the default browser works (skipped by --skip-verify)
+#   COMMIT    flake.lock, only after a verified activation
+#   MAINTAIN  nix profile · mise · hooks · Syncthing ignores (warn only)
+#   CHECKS    managed files, required commands, user services (advisory)
 #   CLEANUP   safe, non-destructive (ops/cleanup.sh)
 #   SUMMARY   package delta, warnings worth acting on, rollback handle
 #
@@ -32,7 +37,8 @@
 #   --force           chezmoi apply --force (overwrite local edits to targets)
 #   --gc              also reclaim generations older than KEEP_DAYS (14)
 #   --no-cleanup      skip the cleanup phase (same as NO_CLEANUP=1)
-#   --skip-verify     skip the post-update verification phase
+#   --skip-verify     skip the VERIFY gate and the CHECKS (the profile target
+#                     check still runs)
 #   --verbose, -v     mirror command output to the terminal
 #
 # Exit codes:
@@ -89,6 +95,12 @@ VERBOSE=0
 STATE_DIR="${SYS_UPDATE_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/sys-update}"
 RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 LOCK_OWNED=0   # 1 only once this process has taken the lock itself
+# 1 only for a process that created the run record it writes to: report mode,
+# rollback and a refused run never write to a run's metadata.
+RUN_META_OWNED=0
+# Where an apply is, for the EXIT handler: precheck, snapshot, prepare,
+# activate, verify, commit, maintain, checks, cleanup, summary.
+PHASE=precheck
 RUN_DIR="$STATE_DIR/runs"
 RUN_LOG="$RUN_DIR/$RUN_ID.log"
 RUN_META="$RUN_DIR/$RUN_ID.meta"
@@ -194,11 +206,79 @@ hm_generation() {
 }
 # meta_put returns the write status: a record that cannot be written is a
 # rollback handle that does not exist.
-meta_put() { [[ -n "${RUN_META:-}" ]] || return 1; printf '%s=%s\n' "$1" "$2" >> "$RUN_META"; }
+meta_put() { [[ "$RUN_META_OWNED" == 1 && -n "${RUN_META:-}" ]] || return 1; printf '%s=%s\n' "$1" "$2" >> "$RUN_META"; }
 meta_get() { sed -n "s/^$2=//p" "$1" | tail -1; }
 meta_failed() {
   ui_err "metadata" "cannot write '$1' to $(tilde "$RUN_META") — refusing to apply without a rollback record"
   exit 1
+}
+
+# set_status <value>: the run's phase marker, read by rollback.
+set_status() { meta_put status "$1"; }
+
+# restore_guarded <meta> <label> <file> <backup> <hash key>
+#
+# Puts a backup back only while the file still holds what this update wrote, so
+# an edit somebody else made in the meantime is never overwritten. The rule:
+#   file equals the backup                   -> nothing to do
+#   a hash was recorded (<hash key>)         -> restore only if the file still has it
+#   no hash recorded                         -> restore only if lock_was_clean=1
+#   anything else                            -> keep the file and warn
+# The safety of this guard rests on the .failed copy of what was replaced, kept
+# next to the backup: other agent sessions may edit this repo concurrently, and
+# the sys-update lock does not stop them.
+# Returns 0 when the file ends up as the backup (or was left correctly), 1 when
+# it was kept, 2 when the restore itself failed.
+# shellcheck disable=SC2329  # reached from on_exit
+
+restore_guarded() {
+  local meta="$1" label="$2" file="$3" backup="$4" key="$5" hash cur tmp="$3.tmp.$$"
+  [[ -n "$backup" && -f "$backup" ]] || return 0
+  cmp -s -- "$backup" "$file" 2>/dev/null && return 0
+  hash="$(meta_get "$meta" "$key")"
+  if [[ -n "$hash" ]]; then
+    cur="$(git hash-object -- "$file" 2>/dev/null || true)"
+    if [[ "$cur" != "$hash" ]]; then
+      ui_warn "$label" "changed since the update wrote it; left in place (previous content: $(tilde "$backup"))"
+      return 1
+    fi
+  elif [[ "$(meta_get "$meta" lock_was_clean)" != 1 ]]; then
+    ui_warn "$label" "had local edits before the update and no record of what it wrote; left in place (previous content: $(tilde "$backup"))"
+    return 1
+  fi
+  [[ -e "$file" ]] && cp -- "$file" "$backup.failed" 2>/dev/null
+  if cp -- "$backup" "$tmp" && mv -f -- "$tmp" "$file"; then
+    ui_ok "$label" "restored"
+    return 0
+  fi
+  rm -f -- "$tmp"
+  ui_err "$label" "restore failed"
+  return 2
+}
+
+# The files this run's update writes, restored from this run's backups.
+# shellcheck disable=SC2329  # reached from on_exit
+
+restore_run_files() {
+  restore_guarded "$RUN_META" "flake.lock" "$REPO_ROOT/nix/flake.lock" "$LOCK_BACKUP" flake_lock_hash_written
+  restore_guarded "$RUN_META" "Brave release" "$REPO_ROOT/nix/packages/brave/release.json" \
+    "$RUN_DIR/$RUN_ID.brave.json" brave_release_hash_written
+  return 0
+}
+
+# What a failed or interrupted run leaves behind, by phase. Idempotent: the
+# EXIT trap is the only caller.
+# shellcheck disable=SC2329  # reached from on_exit
+
+run_failed() {
+  case "$PHASE" in
+    snapshot) set_status failed:snapshot ;;
+    prepare)  restore_run_files; set_status failed:prepare ;;
+    activate) restore_run_files; set_status failed:activate
+              printf '  Roll back with: sys-update rollback   (Home Manager generation %s)\n' "${HM_GEN_BEFORE:-unknown}" ;;
+    verify)   set_status failed:verify ;;
+    *)        ui_warn "update" "stopped during the $PHASE phase; the update itself was already committed or applied" ;;
+  esac
 }
 
 # EXIT, INT, TERM, HUP, QUIT and PIPE are trapped before anything can take the lock or start a
@@ -212,7 +292,10 @@ on_exit() {
   # would hold the lock after this process is gone.
   # shellcheck disable=SC2046
   kill $(jobs -p) 2>/dev/null; wait 2>/dev/null
-  [[ -n "${RUN_META:-}" && -f "$RUN_META" ]] && meta_put exit_code "$rc" 2>/dev/null
+  if [[ "$RUN_META_OWNED" == 1 ]]; then
+    ((rc == 0)) || run_failed
+    meta_put exit_code "$rc" 2>/dev/null
+  fi
   ui_cleanup
   release_lock
   exit "$rc"
@@ -568,7 +651,7 @@ fi
 # ── 3. SNAPSHOT ─────────────────────────────────────────────────────────────
 
 HM_PKGS_BEFORE=""; PROFILE_PKGS_BEFORE=""; MISE_BEFORE=""; MISE_OK=0
-HM_GEN_BEFORE=""; SNAPSHOT_DIR=""
+HM_GEN_BEFORE=""; HM_PATH_BEFORE=""; SNAPSHOT_DIR=""; BUILD_OUT=""
 
 # Only a lock that matches HEAD is ours to commit afterwards; local edits to it
 # (possible under --allow-dirty) are the user's to keep or discard. Decided
@@ -584,6 +667,8 @@ fi
 
 if [[ "$MODE" == "apply" ]]; then
   ui_section "Snapshot"
+  PHASE=snapshot
+  RUN_META_OWNED=1
   # Every record is checked: a rollback handle that could not be written must
   # stop the run here, before anything is changed.
   meta_put run_id "$RUN_ID" || meta_failed run_id
@@ -663,6 +748,7 @@ if [[ "$MODE" == "apply" ]]; then
     done
     rm -rf -- "${STATE_DIR:?}/gcroots/$old_id"
   done
+  PHASE=prepare
 fi
 
 # ── 4. APPLY ────────────────────────────────────────────────────────────────
@@ -670,6 +756,12 @@ fi
 ui_section "$([[ "$MODE" == apply ]] && echo Updating || echo Plan)"
 STEP_FAILED=0
 step_fail() { ui_err "$1" "$2"; STEP_FAILED=1; }
+# phase_status <value>: record a phase marker; a lost marker is a warning here,
+# because only "activating" (set_status ... || meta_failed) must not be lost.
+phase_status() { set_status "$1" || ui_warn "metadata" "could not record status=$1"; }
+update_failed() {
+  printf '\n%sUpdate failed.%s Full log: %s\n' "$UI_C_ERR" "$UI_C_OFF" "${RUN_LOG:-n/a}"
+}
 
 # git pull ------------------------------------------------------------------
 if [[ "$DO_PULL" == 1 ]]; then
@@ -775,7 +867,7 @@ fi
 # A hand-installed `nix profile` package that ships a file Home Manager now
 # also ships makes the switch fail after home-manager-path is already gone
 # (git drops off PATH). Stop here instead, with the exact fix.
-if [[ "$STEP_FAILED" == 0 && "$MODE" == apply && "$HOST_PROFILE" != macos ]]; then
+if [[ "$STEP_FAILED" == 0 && "$MODE" == apply ]]; then
   # Fail closed: a build that exits non-zero, prints nothing or names a path
   # that is not a directory cannot be checked for collisions, so it stops here.
   BUILD_OUT=""
@@ -784,7 +876,7 @@ if [[ "$STEP_FAILED" == 0 && "$MODE" == apply && "$HOST_PROFILE" != macos ]]; th
   fi
   if [[ -z "$BUILD_OUT" || ! -d "$BUILD_OUT" ]]; then
     step_fail "host build" "could not resolve the built closure (nix build --print-out-paths failed or printed no directory) — nothing was applied"
-  else
+  elif [[ "$HOST_PROFILE" != macos ]]; then
     mapfile -t PROFILE_CONFLICTS < <(profile_hm_conflicts "$HOME/.nix-profile/manifest.json" "$BUILD_OUT/home-path")
     if ((${#PROFILE_CONFLICTS[@]})); then
       mapfile -t CONFLICT_PKGS < <(printf '%s\n' "${PROFILE_CONFLICTS[@]}" | cut -f1 | sort -u)
@@ -793,6 +885,31 @@ if [[ "$STEP_FAILED" == 0 && "$MODE" == apply && "$HOST_PROFILE" != macos ]]; th
     fi
   fi
 fi
+
+# ── 4b. ACTIVATE ────────────────────────────────────────────────────────────
+# PREPARE changed nothing but flake.lock and the Brave release file; a step that
+# failed up to here leaves nothing activated and the EXIT handler restores them.
+if [[ "$STEP_FAILED" == 1 ]]; then update_failed; exit 1; fi
+if [[ "$MODE" == "apply" ]]; then
+  phase_status prepared
+  # Recorded before anything is applied: rollback reads it to know the profile
+  # may have moved. PHASE is still "prepare", so a failed write restores the lock.
+  set_status activating || meta_failed status
+  PHASE=activate
+fi
+
+# check_activated_target — the activation is only real if the profile now is
+# the closure PREPARE built (a switch can exit 0 and leave the old generation).
+check_activated_target() {
+  local link want got
+  if [[ "$HOST_PROFILE" == macos ]]; then link="${SYS_UPDATE_DARWIN_SYSTEM_LINK:-/run/current-system}"
+  else link="$HM_PROFILE"; fi
+  want="$(readlink -f -- "$BUILD_OUT" 2>/dev/null || true)"
+  got="$(readlink -f -- "$link" 2>/dev/null || true)"
+  if [[ -n "$want" && "$got" == "$want" ]]; then return 0; fi
+  step_fail "activation" "$(tilde "$link") does not point at the built closure (expected ${want:-nothing}, found ${got:-nothing})"
+  return 1
+}
 
 # chezmoi -------------------------------------------------------------------
 if [[ "$STEP_FAILED" == 0 ]] && have chezmoi; then
@@ -814,7 +931,8 @@ fi
 if [[ "$STEP_FAILED" == 0 ]]; then
   if [[ "$HOST_PROFILE" == "macos" ]]; then
     if run_step "darwin-rebuild" darwin-rebuild switch --flake "$REPO_ROOT/nix#macos"; then
-      ui_scan_warnings; [[ "$MODE" == "apply" ]] && ui_ok "darwin-rebuild" "switched"
+      ui_scan_warnings
+      if [[ "$MODE" == "apply" ]] && check_activated_target; then ui_ok "darwin-rebuild" "switched"; fi
     else
       step_fail "darwin-rebuild" "switch failed"
     fi
@@ -823,13 +941,82 @@ if [[ "$STEP_FAILED" == 0 ]]; then
     # (ops/lib/hm-switch.sh); the conflict check already ran above.
     if run_step "home-manager" hm_switch_raw "$REPO_ROOT/nix" "$HOST_PROFILE"; then
       ui_scan_warnings
-      [[ "$MODE" == "apply" ]] && ui_ok "home-manager" "generation $(hm_generation || echo '?')"
+      if [[ "$MODE" == "apply" ]] && check_activated_target; then
+        ui_ok "home-manager" "generation $(hm_generation || echo '?')"
+      fi
     else
-      step_fail "home-manager" "switch failed — the previous generation is still active"
+      # Say whether the failed switch got as far as moving the profile.
+      _hm_now="$(profile_target "$HM_PROFILE")"
+      if [[ -n "$_hm_now" && "$_hm_now" != "$HM_PATH_BEFORE" ]]; then
+        step_fail "home-manager" "switch failed — the profile moved to $(tilde "$_hm_now"); roll back with: sys-update rollback"
+      else
+        step_fail "home-manager" "switch failed — the previous generation is still active"
+      fi
     fi
   fi
 fi
 
+if [[ "$STEP_FAILED" == 1 ]]; then update_failed; exit 1; fi
+if [[ "$MODE" == "apply" ]]; then
+  phase_status activated
+  PHASE=verify
+fi
+# ── 5. VERIFY (the gate) ────────────────────────────────────────────────────
+# What must hold for the update to be committed. The profile target check
+# above is part of it and cannot be skipped; --skip-verify skips what follows.
+
+if [[ "$MODE" == "apply" ]]; then
+  if [[ "$DO_VERIFY" == 1 ]]; then
+    if [[ "$HOST_PROFILE" == linux-desktop ]]; then
+      ui_section "Verification"
+      BROWSER_DEFAULTS_OK=1
+      for mime in x-scheme-handler/http x-scheme-handler/https text/html application/pdf; do
+        [[ "$(xdg-mime query default "$mime" 2>/dev/null)" == brave-browser.desktop ]] || BROWSER_DEFAULTS_OK=0
+      done
+      if [[ "$BROWSER_DEFAULTS_OK" == 1 ]] && brave --version >/dev/null 2>&1; then
+        ui_ok "default browser" "Brave (HTTP, HTTPS, HTML, PDF)"
+      else
+        ui_err "default browser" "Brave is unavailable or its default associations did not apply"
+        printf '\nUpdate verification failed. Full log: %s\n' "$RUN_LOG"
+        exit 1
+      fi
+    fi
+    phase_status verified
+  else
+    phase_status verify-skipped
+  fi
+fi
+
+# ── 6. COMMIT ───────────────────────────────────────────────────────────────
+# The update proved the new lock builds, activates and verifies. Leaving it
+# uncommitted would make the next run stop at the dirty-worktree gate on our
+# own output; committing it earlier would leave a lock that never ran.
+
+if [[ "$MODE" == "apply" ]]; then
+  PHASE=commit
+  COMMIT_STATE=commit-skipped
+  if [[ "$GIT_STATE" != "no-repo" ]] \
+    && ! git -C "$REPO_ROOT" diff --quiet HEAD -- "${UPDATE_FILES[@]}" 2>/dev/null; then
+    if [[ "$LOCK_WAS_CLEAN" != 1 ]]; then
+      ui_warn "flake.lock" "not committed (it had local edits before the update)"
+      ui_note warn git "flake.lock not committed: it had local edits before the update"
+    # --only commits the lock alone, whatever else is staged or modified.
+    elif run_step "flake.lock" git -C "$REPO_ROOT" commit --only -m "chore(nix): update flake inputs" -- "${UPDATE_FILES[@]}"; then
+      ui_ok "flake.lock" "committed ($(git -C "$REPO_ROOT" rev-parse --short HEAD))"
+      COMMIT_STATE=committed
+    else
+      ui_warn "flake.lock" "commit failed; the new lock is left uncommitted (see the run log)"
+      ui_note warn git "flake.lock not committed — commit it before the next sys-update"
+      COMMIT_STATE=commit-failed
+    fi
+  fi
+  phase_status "$COMMIT_STATE"
+  PHASE=maintain
+fi
+
+# ── 7. MAINTAIN ─────────────────────────────────────────────────────────────
+# Housekeeping after the update is committed: a failure here warns, it never
+# undoes or blocks the update.
 # homebrew ------------------------------------------------------------------
 # nix-darwin no longer upgrades Homebrew (autoUpdate/upgrade = false), so this
 # is the only place formulae and casks get upgraded. A failure warns rather
@@ -917,56 +1104,12 @@ if [[ "$STEP_FAILED" == 0 && -x "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" 
   fi
 fi
 
-# restore_written <meta hash key> <backup> <file>: put back the pre-run copy of
-# a lock this run rewrote, but only while the file still holds what this run
-# wrote (someone else's later edit is never overwritten).
-restore_written() {
-  local want have
-  want="$(meta_get "$RUN_META" "$1" 2>/dev/null)"
-  [[ -n "$want" && -f "$2" && -f "$3" ]] || return 1
-  have="$(git hash-object -- "$3" 2>/dev/null)" || return 1
-  [[ "$have" == "$want" ]] || return 1
-  cmp -s "$2" "$3" && return 1
-  cp "$2" "$3"
-}
-
-if [[ "$STEP_FAILED" == 1 ]]; then
-  # `nix flake update` and the Brave refresh already rewrote their locks. They
-  # were never applied, and left modified they would stop the next sys-update
-  # at the dirty-worktree gate: put back what the snapshot phase saved.
-  if [[ "$MODE" == apply ]]; then
-    LOCKS_RESTORED=0
-    restore_written flake_lock_hash_written "$LOCK_BACKUP" "$REPO_ROOT/nix/flake.lock" && LOCKS_RESTORED=1
-    restore_written brave_release_hash_written "$RUN_DIR/$RUN_ID.brave.json" \
-      "$REPO_ROOT/nix/packages/brave/release.json" && LOCKS_RESTORED=1
-    [[ "$LOCKS_RESTORED" == 1 ]] && ui_info "locks" "restored to their pre-update state (nothing was applied)"
-  fi
-  printf '\n%sUpdate failed.%s Full log: %s\n' "$UI_C_ERR" "$UI_C_OFF" "${RUN_LOG:-n/a}"
-  [[ -n "$HM_GEN_BEFORE" ]] && printf '  Roll back with: sys-update rollback   (Home Manager generation %s)\n' "$HM_GEN_BEFORE"
-  exit 1
-fi
-
-# commit the lock -----------------------------------------------------------
-# The update proved the new lock builds and activates. Leaving it uncommitted
-# would make the next run stop at the dirty-worktree gate on our own output.
-if [[ "$MODE" == "apply" && "$GIT_STATE" != "no-repo" ]] \
-  && ! git -C "$REPO_ROOT" diff --quiet HEAD -- "${UPDATE_FILES[@]}" 2>/dev/null; then
-  if [[ "$LOCK_WAS_CLEAN" != 1 ]]; then
-    ui_warn "flake.lock" "not committed (it had local edits before the update)"
-    ui_note warn git "flake.lock not committed: it had local edits before the update"
-  # --only commits the lock alone, whatever else is staged or modified.
-  elif run_step "flake.lock" git -C "$REPO_ROOT" commit --only -m "chore(nix): update flake inputs" -- "${UPDATE_FILES[@]}"; then
-    ui_ok "flake.lock" "committed ($(git -C "$REPO_ROOT" rev-parse --short HEAD))"
-  else
-    ui_warn "flake.lock" "commit failed; the new lock is left uncommitted (see the run log)"
-    ui_note warn git "flake.lock not committed — commit it before the next sys-update"
-  fi
-fi
-
-# ── 5. VERIFY ───────────────────────────────────────────────────────────────
+# ── 8. CHECKS (advisory) ────────────────────────────────────────────────────
+# Reported, never a reason to fail: the update is already committed.
 
 if [[ "$MODE" == "apply" && "$DO_VERIFY" == 1 ]]; then
-  ui_section "Verification"
+  PHASE=checks
+  ui_section "Checks"
 
   if [[ "$HOST_PROFILE" != "macos" ]]; then
     HM_GEN_AFTER="$(hm_generation || true)"
@@ -987,19 +1130,6 @@ if [[ "$MODE" == "apply" && "$DO_VERIFY" == 1 ]]; then
          ui_note warn chezmoi "managed files drifted after apply — run: chezmoi diff"; fi
   fi
 
-  if [[ "$HOST_PROFILE" == linux-desktop ]]; then
-    BROWSER_DEFAULTS_OK=1
-    for mime in x-scheme-handler/http x-scheme-handler/https text/html application/pdf; do
-      [[ "$(xdg-mime query default "$mime" 2>/dev/null)" == brave-browser.desktop ]] || BROWSER_DEFAULTS_OK=0
-    done
-    if [[ "$BROWSER_DEFAULTS_OK" == 1 ]] && brave --version >/dev/null 2>&1; then
-      ui_ok "default browser" "Brave (HTTP, HTTPS, HTML, PDF)"
-    else
-      ui_err "default browser" "Brave is unavailable or its default associations did not apply"
-      printf '\nUpdate verification failed. Full log: %s\n' "$RUN_LOG"
-      exit 1
-    fi
-  fi
 
   VERIFY_MISSING=()
   for t in nix git chezmoi mise fish rg fd jq; do have "$t" || VERIFY_MISSING+=("$t"); done
@@ -1028,6 +1158,8 @@ if [[ "$MODE" == "apply" && "$DO_VERIFY" == 1 ]]; then
          ui_note warn ai-auth "${AI_AUTH:-AI CLI login status unknown} — log in again before you travel (run: ai-auth-status)"; fi
   fi
 fi
+
+if [[ "$MODE" == "apply" ]]; then PHASE=cleanup; fi
 
 # ── 6. CLEANUP ──────────────────────────────────────────────────────────────
 

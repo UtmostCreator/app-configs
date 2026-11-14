@@ -73,3 +73,7 @@ mise.local.toml
 # Claude Code per-checkout state (local permissions, agent worktrees)
 .claude/settings.local.json
 .claude/worktrees/
+
+# Python bytecode (tests and tools import ops/*.py)
+__pycache__/
+*.pyc

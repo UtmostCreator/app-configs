@@ -47,3 +47,18 @@ Only the files listed above. Unrelated findings are reported, not fixed.
 ## Progress
 
 - 2026-11-14: Gate B is being replayed; the release audit is pending.
+- 2026-11-14: Gate B, T-0011 and R3 landed on main (23e3578, 1075fa3, 7067ba1, 4608ec0, e833b5e, eac6078, 1cc9f2a, 751528b, 95392e8, a2b6919, 016528e). Review: PASS WITH NOTES.
+  - R4-01 (major, present before Gate B): on hosts that never run update-brave (linux-cli, wsl, macOS), `restore_guarded`'s no-hash fallback with `lock_was_clean=1` lets rollback revert a Brave release bump committed by another session and auto-commit it as `chore(nix): roll back flake inputs`.
+    - Fix before the first rollback on linux-cli/wsl: restore a file with no recorded hash only from the EXIT handler, and only for a writer this run actually started. Add a linux-cli Brave rollback test.
+    - Until then: do not run `sys-update rollback` on linux-cli or wsl.
+  - Notes: R4-02 (guarded rm and clear `SNAPSHOT_ERR`), R4-03 (`nix-env` stub in `update-all-recovery.bats`), R4-04 (rollback commit subject mismatch), R4-05 (macOS rollback leaves a dirty worktree), R4-06 (the `dd80c28` `Integration:` note omits `hm_switch_raw`; landed as 23e3578).
+  - The release audit is still pending and is required before the first real `--apply` or `rollback`. Checklist:
+    1. Fix R4-01, or forbid rollback on linux-cli and wsl until it is fixed.
+    2. One real Linux `--apply` then `rollback`: the target check passes, the GC root exists, the rollback commit passes its hooks, and the next run starts clean.
+    3. The GC root survives garbage collection.
+    4. The VERIFY gate works in a real graphical session.
+    5. Re-exec after a real pull that moves HEAD.
+    6. Ctrl-C and `kill -9` mid-step leave no ticker, the next run is not refused, and no snapshot temp file is left behind.
+    7. linux-cli and wsl print "no runtime verification gate".
+    8. macOS is untested.
+    9. Nix 2.4 or newer is required.

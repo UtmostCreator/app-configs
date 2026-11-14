@@ -36,3 +36,11 @@ Wiring into ops/validate-config.sh or CI is a build-affecting edit; CI-definitio
 ## Progress
 
 - 2026-11-14: Not started.
+
+## Candidate entries
+
+- Shared stash used across worktrees.
+- Shared scratch file collisions.
+- Review ran only some test suites, which missed a cross-suite regression.
+- A broad `pkill -f` touched another session.
+- Waiting with `pgrep -f '<pattern>'` matched the waiter itself and left 64-minute stuck loops; instead wait on a PID or a file with a timeout.

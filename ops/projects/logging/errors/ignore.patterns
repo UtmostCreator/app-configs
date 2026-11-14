@@ -1,6 +1,0 @@
-# Repository noise rules. Expressions are case-insensitive PCRE fragments.
-Unable to set visibility for file
-Unable to read file from location:
-Unable to delete file located at
-source://
-Tour not found for code:\s*(?:[}\],]|$)

@@ -4,6 +4,8 @@
 #
 # Run:  bats tests/bash/ws-shell-parity.bats
 
+bats_require_minimum_version 1.5.0
+
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     # fish creates ~/.config/fish and ~/.local/share/fish even with --no-config.
@@ -46,4 +48,24 @@ fish_commands() {
     run bash -n "$REPO_ROOT/ops/projects/health/dashboard.sh"
     [ "$status" -eq 0 ]
     ! grep -q 'while true' "$ZSH_TMPL"
+}
+
+@test "log-errors delegates to restsift (res log-errors) in fish and zsh" {
+    command -v fish >/dev/null 2>&1 || skip "fish not installed"
+    stubs="$BATS_TEST_TMPDIR/bin"; mkdir -p "$stubs"
+    printf '#!/bin/sh\necho "res $*"\n' >"$stubs/res"; chmod +x "$stubs/res"
+    rendered="$BATS_TEST_TMPDIR/ws.fish"
+    chezmoi execute-template --source "$REPO_ROOT/home" --file "$FISH_TMPL" >"$rendered"
+    run env PATH="$stubs:$PATH" fish --no-config -c "source $rendered; log-errors --level error app.log"
+    [ "$status" -eq 0 ]
+    [ "$output" = "res log-errors --level error app.log" ]
+    grep -qE "^alias log-errors=['\"]res log-errors['\"]" <(chezmoi execute-template --source "$REPO_ROOT/home" --file "$ZSH_TMPL")
+}
+
+@test "log-errors without restsift says where it lives" {
+    command -v fish >/dev/null 2>&1 || skip "fish not installed"
+    rendered="$BATS_TEST_TMPDIR/ws.fish"
+    chezmoi execute-template --source "$REPO_ROOT/home" --file "$FISH_TMPL" >"$rendered"
+    run -127 env PATH="$(dirname "$(command -v fish)")" fish --no-config -c "source $rendered; log-errors x.log"
+    [[ "$output" == *"restsift"* ]]
 }

@@ -203,6 +203,6 @@ Project names are generic placeholders (`backend`, `web-frontend`, `integration`
 | `ws-components-local` | `workspace/components-local.sh` | `apply`/`refresh`/`watch`/`rollback`/`status`, `--start-dev` |
 | `ws-logs` / `ws-stop-logs` | `logging/watch/watch.sh` | Backend log watcher; npm output is captured continuously to `~/logs` |
 | `log-workspace` | `logging/watch/run.sh` | lnav investigation workspace (see `logging/README.md`) |
-| `log-errors` | `logging/errors/run.sh` | Error report over log files |
+| `log-errors` | `res log-errors` (restsift) | Error report over log files |
 
 Not ported: VPN/DNS workarounds, site uptime checks and SSH-environment launchers.

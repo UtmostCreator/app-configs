@@ -42,7 +42,7 @@ chmod 700 "$XDG_RUNTIME_DIR" "$TMUX_TMPDIR"
 printf '[user]\n\tname = bats\n\temail = bats@example.invalid\n[init]\n\tdefaultBranch = main\n[commit]\n\tgpgsign = false\n' \
     >"$HOME/.gitconfig"
 
-# The log-workspace / log-errors suites live next to their scripts; run
+# The log-workspace suite lives next to its scripts; run
 # them too, or they silently stop being exercised.
 args=(tests/bash ops/projects/logging/test)
 

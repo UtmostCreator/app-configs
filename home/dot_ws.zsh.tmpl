@@ -18,7 +18,7 @@
 #   ws-health           live health dashboard   ws-health-once  single snapshot
 #   ws-fix              interactive fix picker for health failures
 #   log-workspace       persistent lnav log investigation workspace
-#   log-errors          error report over log files/directories
+#   log-errors          error report over log files (restsift: res log-errors)
 #   kill-logs           stop log capture/watch processes
 
 WS_PROJECTS_DIR="${WS_PROJECTS_DIR:-{{ joinPath .chezmoi.sourceDir ".." "ops" "projects" }}}"
@@ -42,7 +42,7 @@ alias ws-components-local="bash $WS_PROJECTS_DIR/workspace/components-local.sh"
 alias ws-health-raw="bash $WS_HEALTH_DIR/monitor.sh"
 alias ws-fix="bash $WS_PROJECTS_DIR/workspace/fix.sh"
 alias log-workspace="bash $WS_LOGGING_DIR/watch/run.sh"
-alias log-errors="bash $WS_LOGGING_DIR/errors/run.sh"
+alias log-errors='res log-errors'  # lives in restsift now
 alias kill-logs="bash $WS_LOGGING_DIR/kill-logs.sh"
 
 unalias ws-health 2>/dev/null || true

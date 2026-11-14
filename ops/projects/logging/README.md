@@ -67,60 +67,9 @@ multiline exceptions, JSON/context values, ANSI output, and startup/build output
 
 ## Error reports
 
-`log-errors` uses the dependency-free PHP 8.2+ event parser to scan any number
-of explicit files or directories. Directory scans recursively include `.log`,
-rotated `.log.*`, and `.jsonl` files while skipping compressed logs and
-directory symlinks. Explicit files are accepted regardless of their extension.
-
-```bash
-log-errors storage/logs frontend.log
-log-errors --level WARNING --level ERROR --contains checkout storage/logs
-log-errors --pattern 'GraphQL|currency' --ignore 'known probe' app.log
-log-errors --group exact --full app.log
-log-errors --preview app.log
-log-errors --format json app.log > error-report.json
-log-errors --format jsonl app.log > error-groups.jsonl
-```
-
-The default selected levels are `ERROR`, `CRITICAL`, `ALERT`, and `EMERGENCY`.
-Selection is `(selected level OR --pattern)`, followed by every literal
-`--contains`, then CLI and repository noise exclusions. `--include-noise`
-disables only the repository rules. Matching and grouping always operate on the
-complete multiline event, so exception stacks are not discarded. JSON always
-contains the complete representative raw event; `--full` affects only human
-output. Very long one-line messages are shortened in the human summary so
-payloads do not overwhelm the screen; `--full` still prints the newest complete
-raw event without truncation.
-
-When human output is attached to a terminal, `log-errors` always opens an
-interactive, color-preserving `less` investigation view. Use arrow keys or
-Page Up/Page Down to scroll, `/` to search case-insensitively, `n`/`N` for the
-next/previous match, `&` to show only matching lines, and `m` followed by a
-letter to mark a position. Drag normally to select text and use the terminal's
-usual copy shortcut (`Cmd-C` on macOS or typically `Ctrl-Shift-C` on Linux).
-For a keyboard-selected range, press `ma` to mark one end, move to the other
-end, then press `|a` and enter `pbcopy` on macOS or `wl-copy` on Wayland Linux.
-Press `q` to close the report. `--no-pager` prints directly; redirection and
-JSON/JSONL output never invoke the pager. `--preview` also skips paging and
-forces ANSI styling so preview panes (for example `fzf --ansi`) keep severity
-colors and header emphasis. If `less` is unavailable, the report prints
-directly with a warning.
-
-Smart grouping conservatively replaces volatile identifiers while retaining
-application paths and ordinary numbers. Exact grouping ignores capture/event
-timestamps only. `--group none` emits each occurrence separately. Machine
-output schemas use version 1; JSONL contains only independent `error_group`
-records and produces empty stdout when there are no matches.
-
-Exit codes are `0` for a reliable scan (including no matches), `1` for an
-unexpected output or pager failure, `2` for invalid invocation, `3` when a
-recoverable read or declared-format failure made results partial, `4` for a
-missing/incompatible PHP runtime or required core resource, and `130` for an
-interrupt. Diagnostics and warnings are written to stderr.
-
-Run the dependency-free checks with:
-
-```bash
-php test/log-errors-unit.php
-bats test/log-errors.bats
-```
+`log-errors` now lives in restsift: the `log-errors` command (fish function,
+zsh alias) runs `res log-errors`, with the same flags (`--level`,
+`--contains`, `--ignore`, `--pattern`, `--group`, `--full`, `--format`,
+`--include-noise`, `--no-pager`, `--preview`). The PHP copy that lived here
+was retired on 2026-11-14; differences found when retiring it are tracked in
+restsift ticket T-0229.

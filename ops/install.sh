@@ -79,7 +79,10 @@ run()  {
     printf '[install:dry-run] would run: %s\n' "$*"
   else
     log "+ $*"
-    "$@"
+    local rc=0
+    "$@" || rc=$?
+    # An external failure must end in the same [install:error] line as our own.
+    ((rc == 0)) || { printf '[install:error] command failed (exit %s): %s\n' "$rc" "$*" >&2; exit "$rc"; }
   fi
 }
 
@@ -94,7 +97,10 @@ step "Preflight"
 for cmd in git bash; do
   have "$cmd" || fail "missing required command: $cmd"
 done
-HOST_PROFILE="${HOST_PROFILE:-$(bash "$REPO_ROOT/ops/detect-host.sh")}"
+if [[ -z "${HOST_PROFILE:-}" ]]; then
+  HOST_PROFILE="$(bash "$REPO_ROOT/ops/detect-host.sh")" \
+    || fail "ops/detect-host.sh failed; set HOST_PROFILE explicitly"
+fi
 case "$HOST_PROFILE" in
   macos|linux-desktop|linux-cli|wsl) ;;
   *) fail "unsupported HOST_PROFILE: $HOST_PROFILE" ;;
@@ -172,7 +178,13 @@ else
   else
     # Conflict check, then `home-manager switch -b hm-bak` (ops/lib/hm-switch.sh).
     log "+ $(hm_switch_describe "$REPO_ROOT/nix" "$HOST_PROFILE")"
-    hm_switch "$REPO_ROOT/nix" "$HOST_PROFILE" || fail "home-manager switch failed"
+    # The switch's own exit code is kept, like run() does for the other steps.
+    hm_rc=0
+    hm_switch "$REPO_ROOT/nix" "$HOST_PROFILE" || hm_rc=$?
+    ((hm_rc == 0)) || {
+      printf '[install:error] command failed (exit %s): %s\n' "$hm_rc" "$(hm_switch_describe "$REPO_ROOT/nix" "$HOST_PROFILE")" >&2
+      exit "$hm_rc"
+    }
   fi
 fi
 
@@ -189,7 +201,9 @@ if [[ -x "$REPO_ROOT/ops/vscode-extensions.sh" ]]; then
     run bash "$REPO_ROOT/ops/vscode-extensions.sh" --dry-run
   else
     # Optional step: one failed extension must not abort lefthook and doctor.
-    run bash "$REPO_ROOT/ops/vscode-extensions.sh" \
+    # Not run(): run() exits on failure and this step is only a warning.
+    log "+ bash $REPO_ROOT/ops/vscode-extensions.sh"
+    bash "$REPO_ROOT/ops/vscode-extensions.sh" \
       || warn "VS Code extensions: ops/vscode-extensions.sh failed; re-run it after install"
   fi
 else

@@ -6,6 +6,9 @@
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+    # fish creates ~/.config/fish and ~/.local/share/fish even with --no-config.
+    export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
+    unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_CACHE_HOME
     ZSH_TMPL="$REPO_ROOT/home/dot_ws.zsh.tmpl"
     FISH_TMPL="$REPO_ROOT/home/dot_config/fish/conf.d/ws.fish.tmpl"
 }

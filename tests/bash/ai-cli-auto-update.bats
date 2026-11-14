@@ -165,25 +165,38 @@ codex_state() { cat "$XDG_STATE_HOME/codex-auto-update/installed-version"; }
 
 # ── Home Manager units ──────────────────────────────────────────────────────
 
-hm_eval() {
-    nix eval --json --impure --expr "
-      let hm = (builtins.getFlake \"path:$REPO_ROOT/nix\").homeConfigurations.linux-desktop.config;
-      in $1"
+# Evaluate the unit facts once per file: every `nix eval` of path:nix copies
+# the flake into the store and re-evaluates it. A failure is recorded, not
+# raised, so the script tests above still run.
+setup_file() {
+    export HM_JSON="$BATS_FILE_TMPDIR/hm.json"
+    REPO_NIX="$(cd "$BATS_TEST_DIRNAME/../../nix" && pwd)" nix eval --json --impure --expr '
+      let hm = (builtins.getFlake "path:${builtins.getEnv "REPO_NIX"}").homeConfigurations.linux-desktop.config;
+      in {
+        timers = [ hm.systemd.user.timers.claude-auto-update.Timer hm.systemd.user.timers.codex-auto-update.Timer ];
+        force = builtins.map (n: hm.xdg.configFile."systemd/user/${n}".force) [
+          "claude-auto-update.service" "claude-auto-update.timer"
+          "codex-auto-update.service" "codex-auto-update.timer"
+          "timers.target.wants/claude-auto-update.timer"
+          "timers.target.wants/codex-auto-update.timer" ];
+      }' >"$HM_JSON" 2>"$BATS_FILE_TMPDIR/hm.err" || true
+}
+
+# hm_value <key>: one fact from the evaluation above.
+hm_value() {
+    [ -s "$HM_JSON" ] || { cat "$BATS_FILE_TMPDIR/hm.err" >&2; return 1; }
+    jq -c --arg k "$1" '.[$k]' "$HM_JSON"
 }
 
 @test "units: both timers are hourly calendar timers that catch up missed runs" {
-    run hm_eval '[ hm.systemd.user.timers.claude-auto-update.Timer hm.systemd.user.timers.codex-auto-update.Timer ]'
+    run hm_value timers
     [ "$status" -eq 0 ]
-    jq -e 'all(.[]; .OnCalendar == "hourly" and .Persistent == true
+    jq -e 'length == 2 and all(.[]; .OnCalendar == "hourly" and .Persistent == true
                     and (has("OnUnitActiveSec") | not))' <<<"$output"
 }
 
 @test "units: Home Manager may replace the old hand-made unit files" {
-    run hm_eval 'builtins.map (n: hm.xdg.configFile."systemd/user/${n}".force) [
-      "claude-auto-update.service" "claude-auto-update.timer"
-      "codex-auto-update.service" "codex-auto-update.timer"
-      "timers.target.wants/claude-auto-update.timer"
-      "timers.target.wants/codex-auto-update.timer" ]'
+    run hm_value force
     [ "$status" -eq 0 ]
-    jq -e 'all(. == true)' <<<"$output"
+    jq -e 'length == 6 and all(. == true)' <<<"$output"
 }

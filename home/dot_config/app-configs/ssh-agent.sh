@@ -33,33 +33,39 @@ esac
 
 _app_configs_ssh_uname="$(uname -s 2>/dev/null || echo unknown)"
 
+_app_configs_ssh_key_names() {
+    # One configured key per line. zsh does not word-split an unquoted
+    # expansion (bash does), so split explicitly on blanks in both shells.
+    printf '%s\n' "$APP_CONFIGS_SSH_KEYS" | tr -s ' \t' '\n\n' | grep -v '^$' || true
+}
+
 _app_configs_ssh_key_paths() {
     # Echo absolute paths of configured keys that exist on disk.
     local k
-    for k in $APP_CONFIGS_SSH_KEYS; do
+    while IFS= read -r k; do
         case "$k" in
             /*) [ -f "$k" ] && printf '%s\n' "$k" ;;
             *)  [ -f "$HOME/.ssh/$k" ] && printf '%s\n' "$HOME/.ssh/$k" ;;
         esac
-    done
+    done < <(_app_configs_ssh_key_names)
 }
 
 _app_configs_ssh_macos() {
-    # macOS path: agent is already running under launchd. Add keys to it
+    # macOS flow: agent is already running under launchd. Add keys to it
     # using the Keychain integration so the passphrase is stored once.
-    local fp loaded path
+    local fp loaded key_file
     loaded="$(ssh-add -l 2>/dev/null || true)"
-    while IFS= read -r path; do
-        [ -z "$path" ] && continue
-        fp="$(ssh-keygen -lf "$path" 2>/dev/null | awk '{print $2}')"
+    while IFS= read -r key_file; do
+        [ -z "$key_file" ] && continue
+        fp="$(ssh-keygen -lf "$key_file" 2>/dev/null | awk '{print $2}')"
         if [ -n "$fp" ] && printf '%s' "$loaded" | grep -q "$fp"; then
             continue
         fi
         # --apple-use-keychain is the modern flag; -K is the legacy alias.
-        if ssh-add --apple-use-keychain "$path" >/dev/null 2>&1; then
+        if ssh-add --apple-use-keychain "$key_file" >/dev/null 2>&1; then
             :
         else
-            ssh-add -K "$path" >/dev/null 2>&1 || ssh-add "$path"
+            ssh-add -K "$key_file" >/dev/null 2>&1 || ssh-add "$key_file"
         fi
     done < <(_app_configs_ssh_key_paths)
 }
@@ -69,12 +75,12 @@ _app_configs_ssh_linux_keychain() {
     # Pass key basenames (no path) — keychain resolves them under ~/.ssh.
     local keys=""
     local k
-    for k in $APP_CONFIGS_SSH_KEYS; do
+    while IFS= read -r k; do
         case "$k" in
             /*) [ -f "$k" ] && keys="$keys $k" ;;
             *)  [ -f "$HOME/.ssh/$k" ] && keys="$keys $k" ;;
         esac
-    done
+    done < <(_app_configs_ssh_key_names)
     # shellcheck disable=SC2086
     eval "$(keychain --eval --quiet --agents ssh $keys)"
 }
@@ -99,15 +105,15 @@ _app_configs_ssh_linux_plain() {
         . "$env_file" >/dev/null
     fi
     # Load any configured keys that aren't loaded yet.
-    local loaded fp path
+    local loaded fp key_file
     loaded="$(ssh-add -l 2>/dev/null || true)"
-    while IFS= read -r path; do
-        [ -z "$path" ] && continue
-        fp="$(ssh-keygen -lf "$path" 2>/dev/null | awk '{print $2}')"
+    while IFS= read -r key_file; do
+        [ -z "$key_file" ] && continue
+        fp="$(ssh-keygen -lf "$key_file" 2>/dev/null | awk '{print $2}')"
         if [ -n "$fp" ] && printf '%s' "$loaded" | grep -q "$fp"; then
             continue
         fi
-        ssh-add "$path"
+        ssh-add "$key_file"
     done < <(_app_configs_ssh_key_paths)
 }
 
@@ -129,5 +135,5 @@ case "$_app_configs_ssh_uname" in
 esac
 
 unset _app_configs_ssh_uname
-unset -f _app_configs_ssh_key_paths _app_configs_ssh_macos \
+unset -f _app_configs_ssh_key_names _app_configs_ssh_key_paths _app_configs_ssh_macos \
     _app_configs_ssh_linux_keychain _app_configs_ssh_linux_plain 2>/dev/null || true

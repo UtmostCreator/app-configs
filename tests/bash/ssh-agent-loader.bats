@@ -115,3 +115,38 @@ load_agent_fish() {
     # the agent env file itself stays private
     [ "$(stat -c %a "$HOME/.ssh/agent.env")" = "600" ]
 }
+
+# --- multi-key splitting (zsh does not word-split unquoted expansions) ------
+#
+# The loader is sourced by zsh from ~/.zshrc, so a multi-key list must load
+# every key there too. zsh is optional on the host: the zsh test skips when it
+# is missing, and the bash tests below cover the same loader code path plus a
+# static guard against reintroducing the bare `for k in $VAR` split.
+
+multi_key_setup() {
+    : >"$HOME/.ssh/k1"; : >"$HOME/.ssh/k2"
+    stub ssh-add '[ "$1" = -l ] && exit "${SSH_ADD_L_STATUS:-0}"; echo "$*" >>"$HOME/added.log"; exit 0'
+    printf 'SSH_AUTH_SOCK=/tmp/live.sock; export SSH_AUTH_SOCK;\n' >"$HOME/.ssh/agent.env"
+}
+
+@test "zsh: every key in a multi-key APP_CONFIGS_SSH_KEYS is loaded" {
+    command -v zsh >/dev/null || skip "zsh not installed (run with zsh on PATH to exercise this)"
+    multi_key_setup
+    APP_CONFIGS_SSH_KEYS="k1 k2" SSH_ADD_L_STATUS=1 PATH="$STUBS:$PATH" \
+        zsh -f -i -c '. "$1"' _ "$SCRIPT" 2>/dev/null
+    grep -qF "$HOME/.ssh/k1" "$HOME/added.log"
+    grep -qF "$HOME/.ssh/k2" "$HOME/added.log"
+}
+
+@test "bash: every key in a multi-key APP_CONFIGS_SSH_KEYS is loaded" {
+    multi_key_setup
+    APP_CONFIGS_SSH_KEYS="k1   k2" SSH_ADD_L_STATUS=1 PATH="$STUBS:$PATH" \
+        bash --norc --noprofile -i -c '. "$1"' _ "$SCRIPT" 2>/dev/null
+    grep -qF "$HOME/.ssh/k1" "$HOME/added.log"
+    grep -qF "$HOME/.ssh/k2" "$HOME/added.log"
+}
+
+@test "loader never word-splits APP_CONFIGS_SSH_KEYS with a bare for-loop" {
+    run grep -nE 'for [a-z_]+ in \$APP_CONFIGS_SSH_KEYS' "$SCRIPT"
+    [ "$status" -eq 1 ]
+}

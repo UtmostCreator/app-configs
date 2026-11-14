@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# gh-stars-export: back up the repositories you starred on GitHub (gh + jq).
+# Ported from personal scripts; it was typed 7 times before it existed here.
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: gh-stars-export [--format clean|full|both] [--out <path>] [--out-dir <dir>]
+
+Exports all repositories starred by the authenticated GitHub CLI user.
+
+Options:
+  --format clean   Write compact repo metadata JSON (default)
+  --format full    Write full GitHub API star objects JSON
+  --format both    Write github-stars.json and github-stars.full.json
+  --out <path>     Output file for clean or full formats
+  --out-dir <dir>  Output directory for --format both (default: current dir)
+  -h, --help       Show this help
+
+Examples:
+  gh-stars-export
+  gh-stars-export --format full --out github-stars.full.json
+  gh-stars-export --format both --out-dir ./backups
+
+Requirements: gh auth login, jq
+USAGE
+}
+
+has_cmd() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+require_cmd() {
+  if ! has_cmd "$1"; then
+    echo "Missing required command: $1" >&2
+    exit 127
+  fi
+}
+
+FORMAT="clean"
+OUT_PATH=""
+OUT_DIR="."
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --format)
+      FORMAT="${2:-}"
+      shift 2
+      ;;
+    --format=*)
+      FORMAT="${1#--format=}"
+      shift
+      ;;
+    --out)
+      OUT_PATH="${2:-}"
+      shift 2
+      ;;
+    --out=*)
+      OUT_PATH="${1#--out=}"
+      shift
+      ;;
+    --out-dir)
+      OUT_DIR="${2:-}"
+      shift 2
+      ;;
+    --out-dir=*)
+      OUT_DIR="${1#--out-dir=}"
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+done
+
+case "$FORMAT" in
+  clean|full|both) ;;
+  *)
+    echo "Invalid --format: $FORMAT" >&2
+    usage >&2
+    exit 2
+    ;;
+esac
+
+if [[ "$FORMAT" == "both" && -n "$OUT_PATH" ]]; then
+  echo "--out cannot be used with --format both; use --out-dir instead" >&2
+  exit 2
+fi
+
+require_cmd gh
+require_cmd jq
+
+if ! gh auth status >/dev/null 2>&1; then
+  echo "GitHub CLI is not authenticated. Run: gh auth login" >&2
+  exit 1
+fi
+
+mkdir -p "$OUT_DIR"
+
+# Remove temp files on any exit, including a jq failure halfway through.
+TMP_FILES=()
+cleanup() { ((${#TMP_FILES[@]})) && rm -f "${TMP_FILES[@]}"; return 0; }
+trap cleanup EXIT
+
+fetch_stars() {
+  gh api \
+    -H "Accept: application/vnd.github.star+json" \
+    --paginate \
+    --slurp \
+    "/user/starred?per_page=100&sort=created&direction=desc"
+}
+
+clean_filter='add | map({
+  starred_at,
+  full_name: .repo.full_name,
+  url: .repo.html_url,
+  description: .repo.description,
+  language: .repo.language,
+  stars: .repo.stargazers_count,
+  forks: .repo.forks_count,
+  topics: .repo.topics,
+  archived: .repo.archived,
+  pushed_at: .repo.pushed_at,
+  created_at: .repo.created_at
+})'
+
+write_json() {
+  local filter="$1"
+  local output="$2"
+
+  local tmp
+  tmp="$(mktemp "${output}.tmp.XXXXXX")"
+  TMP_FILES+=("$tmp")
+  fetch_stars | jq "$filter" >"$tmp"
+  mv "$tmp" "$output"
+  printf 'Wrote %s\n' "$output"
+}
+
+case "$FORMAT" in
+  clean)
+    write_json "$clean_filter" "${OUT_PATH:-github-stars.json}"
+    ;;
+  full)
+    write_json 'add' "${OUT_PATH:-github-stars.full.json}"
+    ;;
+  both)
+    raw_tmp="$(mktemp "$OUT_DIR/github-stars.raw.XXXXXX")"
+    full_tmp="$(mktemp "$OUT_DIR/github-stars.full.XXXXXX")"
+    clean_tmp="$(mktemp "$OUT_DIR/github-stars.clean.XXXXXX")"
+    TMP_FILES+=("$raw_tmp" "$full_tmp" "$clean_tmp")
+    fetch_stars >"$raw_tmp"
+    jq 'add' "$raw_tmp" >"$full_tmp"
+    jq "$clean_filter" "$raw_tmp" >"$clean_tmp"
+    # Replace both outputs only after both were produced.
+    mv "$full_tmp" "$OUT_DIR/github-stars.full.json"
+    mv "$clean_tmp" "$OUT_DIR/github-stars.json"
+    printf 'Wrote %s\n' "$OUT_DIR/github-stars.full.json"
+    printf 'Wrote %s\n' "$OUT_DIR/github-stars.json"
+    ;;
+esac

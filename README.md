@@ -28,8 +28,8 @@ Neovim, VS Code, Git and SSH.
 - **Separate preview and apply paths.** Install, update, system setup, cleanup
   and uninstall each have a mode that only reports what would change.
 - **Recovery points.** Managed files are snapshotted before every apply, and
-  `sys-update rollback` restores the previous Home Manager generation and
-  `flake.lock`.
+  `sys-update rollback` switches back to the previous Home Manager generation
+  and restores `flake.lock`.
 - **Checks that say where you stand.** `sys-readiness`, `ops/doctor.sh`,
   `ops/validate-config.sh`, Bats tests and Git hooks (secret scan, identity
   guard, config validation). GitHub Actions runs the same gate as
@@ -120,7 +120,7 @@ Rationale and boundaries: [`tool-ownership.md`](docs/architecture/tool-ownership
 | `sys-readiness` | no | Is this host fully configured? |
 | `bash ops/update-all.sh` | no | Report the full update plan |
 | `sys-update` | **yes** | Update apps, CLI packages, dotfiles and hooks |
-| `sys-update rollback` | **yes** | Restore the previous Home Manager generation + `flake.lock` |
+| `sys-update rollback` | **yes** | Switch Home Manager back to the previous generation and restore `flake.lock` (takes the update lock) |
 | `sys-update-log` | no | Show the last update run's log (fish) |
 | `sys-setup` / `sudo sys-setup --apply` | no / **yes** | Preview / apply the NixOS system layer and rebuild |
 | `sys-cleanup` | **yes** | De-dup the Nix store and prune caches; keeps all rollbacks |
@@ -157,11 +157,16 @@ What the safety net covers, and what it does not:
 - **`sys-update` refuses to start** on a dirty worktree (`--allow-dirty`
   overrides) or when a managed file was edited by hand: port the edit into
   `home/`, or let the repo win with `--force`.
-- **`sys-update rollback`** restores the previous Home Manager generation and
-  `flake.lock`, and prints the snapshot path for dotfiles, which you restore
-  manually.
+- **`sys-update rollback`** switches Home Manager back to the previous
+  generation (checking that the profile really moved) and restores `flake.lock`
+  unless it was edited since the update. It takes the same lock as an update,
+  so it cannot run next to one. It prints the snapshot path for dotfiles, which
+  you restore manually. On macOS the files are restored and the system switch
+  is manual.
 - **Cleanup keeps rollbacks.** `sys-cleanup` never removes generations;
-  `--gc` removes only those older than `KEEP_DAYS`.
+  `--gc` removes only those older than `KEEP_DAYS`, and never the generation
+  the last update replaced: it is pinned by a GC root under
+  `~/.local/state/sys-update/gcroots` (roots older than `KEEP_DAYS` expire).
 
 ## Repository layout
 

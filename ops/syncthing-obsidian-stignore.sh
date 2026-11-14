@@ -59,7 +59,8 @@ done
 syncthing_config_paths() {
   printf '%s\n' \
     "$HOME/.local/state/syncthing/config.xml" \
-    "$HOME/.config/syncthing/config.xml"
+    "$HOME/.config/syncthing/config.xml" \
+    "$HOME/Library/Application Support/Syncthing/config.xml"
 }
 
 configured_folders() {
@@ -150,12 +151,18 @@ while IFS= read -r FOLDER; do
   fi
 
 # --- 2) Collect existing conflict files ------------------------------------
+  # No associative array (bash 4): macOS ships bash 3.2. The patterns overlap,
+  # so de-duplicate with a linear scan; conflict lists are short.
   conflicts=()
-  declare -A seen_conflicts=()
   for pattern in '*.sync-conflict-*' '*sync-conflict-*' 'data-sync-conflict.*'; do
     while IFS= read -r -d '' f; do
-      if [[ -z "${seen_conflicts[$f]:-}" ]]; then
-        seen_conflicts[$f]=1
+      already=0
+      if [[ ${#conflicts[@]} -gt 0 ]]; then
+        for seen in "${conflicts[@]}"; do
+          if [[ "$seen" == "$f" ]]; then already=1; break; fi
+        done
+      fi
+      if [[ "$already" -eq 0 ]]; then
         conflicts+=("$f")
       fi
     done < <(find "$FOLDER" -type f -name "$pattern" -print0 2>/dev/null)

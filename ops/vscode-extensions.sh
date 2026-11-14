@@ -108,7 +108,9 @@ log "code CLI: $code_bin"
 installed="$("$code_bin" --list-extensions 2>/dev/null | tr '[:upper:]' '[:lower:]' || true)"
 missing=()
 for extension in "${extensions[@]}"; do
-  if ! grep -Fxq "${extension,,}" <<<"$installed"; then
+  # tr rather than a bash 4 case expansion: install.sh runs this with macOS's bash 3.2.
+  lower_extension="$(printf '%s' "$extension" | tr '[:upper:]' '[:lower:]')"
+  if ! grep -Fxq "$lower_extension" <<<"$installed"; then
     missing+=("$extension")
   fi
 done

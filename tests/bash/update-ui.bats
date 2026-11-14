@@ -181,3 +181,43 @@ setup() {
   ui_cleanup
   [ "$(find "$TMPDIR" -name 'sys-update-step.*' | wc -l)" -eq 0 ]
 }
+
+@test "the progress ticker exits when the process it watches is gone, not when its parent is" {
+  run bash -c '
+    source "$1/ops/lib/update-ui.sh"; ui_init ""
+    UI_TICK=0.05
+    sleep 30 3>&- & watched=$!            # stands in for the updater
+    _ui_progress step /dev/null "$watched" > /dev/null 2>&1 & ticker=$!
+    kill "$watched"; wait "$watched" 2>/dev/null
+    for _ in $(seq 60); do
+      kill -0 "$ticker" 2>/dev/null || { echo ticker-gone; exit 0; }
+      sleep 0.05
+    done
+    kill "$ticker"; echo ticker-alive
+  ' _ "$REPO_ROOT"
+  [ "$status" -eq 0 ]
+  [ "$output" = ticker-gone ]
+}
+
+@test "ui_run hands the ticker the pid of the shell running the update" {
+  run bash -c '
+    source "$1/ops/lib/update-ui.sh"; ui_init ""
+    UI_PROGRESS=1 UI_TICK=0.05
+    _ui_progress() { printf "%s\n" "$3" > "$2.watched"; sleep 5; }
+    ui_run step sleep 0.4 > /dev/null
+    printf "main=%s ticker-watched=%s\n" "$$" "$(cat "$UI_LAST_LOG.watched")"
+  ' _ "$REPO_ROOT"
+  [ "$status" -eq 0 ]
+  main="${output#main=}"; main="${main%% *}"
+  [ "$output" = "main=$main ticker-watched=$main" ]
+}
+
+@test "the progress ticker draws nothing without a numeric pid to watch" {
+  run bash -c '
+    source "$1/ops/lib/update-ui.sh"; ui_init ""
+    UI_TICK=0.05
+    _ui_progress step /dev/null
+    echo "rc=$?"
+  ' _ "$REPO_ROOT"
+  [ "$output" = "rc=1" ]
+}

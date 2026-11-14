@@ -43,7 +43,17 @@ switch (uname -s)
     case Linux FreeBSD OpenBSD NetBSD '*'
         if type -q keychain
             # Passphrase asked once per boot, reused across every shell.
-            keychain --eval --quiet --agents ssh $APP_CONFIGS_SSH_KEYS | source
+            # Pass only keys that exist (the bash twin filters the same way);
+            # keychain resolves bare names under ~/.ssh.
+            set -l keys
+            for k in $APP_CONFIGS_SSH_KEYS
+                if string match -q '/*' -- $k
+                    test -f $k; and set -a keys $k
+                else
+                    test -f $HOME/.ssh/$k; and set -a keys $k
+                end
+            end
+            keychain --eval --quiet --agents ssh $keys | source
         else
             # Fallback: persistent agent env file shared across shells.
             set -l env_file $HOME/.ssh/agent.env

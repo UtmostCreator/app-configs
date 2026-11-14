@@ -95,6 +95,8 @@ _app_configs_ssh_linux_plain() {
     if [ "$agent_status" -eq 2 ]; then
         # Agent unreachable. Start a fresh one and persist its env.
         (umask 077; ssh-agent -s >"$env_file")
+        # A pre-existing file keeps its old mode through `>`.
+        chmod 600 "$env_file"
         # shellcheck disable=SC1090
         . "$env_file" >/dev/null
     fi

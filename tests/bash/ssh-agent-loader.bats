@@ -115,3 +115,31 @@ load_agent_fish() {
     # the agent env file itself stays private
     [ "$(stat -c %a "$HOME/.ssh/agent.env")" = "600" ]
 }
+
+@test "bash: a pre-existing world-readable agent.env becomes 0600 when the agent is replaced" {
+    printf 'SSH_AUTH_SOCK=/tmp/dead.sock; export SSH_AUTH_SOCK;\n' >"$HOME/.ssh/agent.env"
+    chmod 644 "$HOME/.ssh/agent.env"
+    SSH_ADD_L_STATUS=2 run load_agent
+    [ -f "$HOME/agent-started" ]
+    [ "$(stat -c %a "$HOME/.ssh/agent.env")" = "600" ]
+}
+
+# keychain gets only the configured keys that exist, in bash and fish alike.
+@test "bash: keychain is passed only configured keys that exist" {
+    stub keychain 'printf "%s\n" "$*" >"$HOME/keychain-args"'
+    touch "$HOME/.ssh/present"
+    APP_CONFIGS_SSH_KEYS="present missing" run load_agent
+    [ "$status" -eq 0 ]
+    [ "$(cat "$HOME/keychain-args")" = "--eval --quiet --agents ssh present" ]
+}
+
+@test "fish: keychain is passed only configured keys that exist" {
+    command -v fish >/dev/null || skip "fish not installed"
+    stub keychain 'printf "%s\n" "$*" >"$HOME/keychain-args"'
+    touch "$HOME/.ssh/present"
+    local fish_script="$REPO_ROOT/home/dot_config/fish/conf.d/ssh-agent.fish"
+    for tool in fish bash cat awk touch chmod; do ln -sf "$(command -v "$tool")" "$STUBS/$tool"; done
+    run env PATH="$STUBS" HOME="$HOME" XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" \
+        "$STUBS/fish" --no-config -i -c 'set -g APP_CONFIGS_SSH_KEYS present missing; source $argv[1]' "$fish_script"
+    [ "$(cat "$HOME/keychain-args")" = "--eval --quiet --agents ssh present" ]
+}

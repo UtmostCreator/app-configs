@@ -23,6 +23,11 @@ esac
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 # shellcheck source=ops/lib/hm-switch.sh
 source "$repo_root/ops/lib/hm-switch.sh"
+# shellcheck source=ops/lib/preflight.sh
+source "$repo_root/ops/lib/preflight.sh"
+# Test guard (ops/lib/preflight.sh): an apply run under bats must stay inside
+# the test's scratch directory.
+[[ "$apply" == 1 ]] && preflight_bats_guard update-codebase-memory-mcp "to apply" "$repo_root"
 # shellcheck source=ops/lib/state-lock.sh
 source "$repo_root/ops/lib/state-lock.sh"
 

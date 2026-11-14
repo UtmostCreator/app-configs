@@ -104,7 +104,8 @@ All with an absolute-path override `path:$OV`:
   writes ./result); the same with `--flake "./nix#linux-cli"` from the spike. The
   home-manager script at /nix/store/244wxpdn0r4i12hmw88d8v8dv815g8jr-home-manager
   collects `--override-input` into PASSTHROUGH_OPTS (lines 1160-1164) and appends it to
-  its nix calls. The `home-manager build` command has no `-o` option.
+  its nix calls. The `home-manager build` command has no `-o` option; it links ./result
+  in the current directory, and `--no-out-link` (mapped to `--no-link`) skips the link.
 - darwin-rebuild is not installed here and cannot run on Linux. Code-inspected in the
   pinned nix-darwin source (rev ff0e21a4...), file pkgs/nix-tools/darwin-rebuild.sh:
   `--override-input` is case-handled (lines 98-102) into extraLockFlags, and the build
@@ -123,9 +124,11 @@ inspected only, runtime unknown (AC14).
 - Nix prints, on stderr, for every override run, a block
   `warning: not writing modified lock file of flake '...'`, `Updated input 'selection':`,
   the old and new ref with `lastModified` and `narHash` of the override dir. With an
-  explicit `--no-write-lock-file` the "not writing" line disappears but the
-  "Updated input" lines still print. So `--no-write-lock-file` is not needed for safety
-  (override already implies it, matching the ticket) but it does not silence the noise.
+  explicit `--no-write-lock-file` the "not writing modified lock file" line is still
+  printed (correction after review: it was counted in all 8 flag combinations on Nix
+  2.34.7), together with the "Updated input" lines. So `--no-write-lock-file` is not
+  needed for safety (override already implies it, matching the ticket) and it does not
+  silence the noise.
 - Design fact: scripts that parse nix stderr, or tests asserting empty stderr, will see
   this block whenever a local selection is in use.
 
@@ -195,6 +198,6 @@ Verdict: PROVEN on 2.34.7 for path:, git and store refs; older versions unknown.
    `--no-write-lock-file`.
 5. darwin-rebuild behaviour, and minimum Nix version, are unverified.
 6. The home-manager `build` subcommand cannot take `-o`; it links ./result in the
-   current directory.
+   current directory unless `--no-out-link` is passed.
 7. Adding the input changes no drvPath, but only while nothing consumes it; any T2
    consumer must keep an empty file equal to no selection.

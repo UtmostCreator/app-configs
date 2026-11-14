@@ -19,6 +19,9 @@ setup() {
 @test "matching user passes the username check" {
     expected="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$REPO_ROOT/nix/vars/default.nix")"
     run env USER="$expected" DRY_RUN=1 HOST_PROFILE=wsl bash "$REPO_ROOT/ops/install.sh"
+    # A crash would also print no "does not match": require a real dry run.
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Mode:  dry-run"* ]]
     [[ "$output" != *"does not match"* ]]
 }
 
@@ -39,6 +42,8 @@ setup() {
     expected="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$REPO_ROOT/nix/vars/default.nix")"
     run env USER="$expected" DRY_RUN=1 HOST_PROFILE=wsl \
         DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version" bash "$REPO_ROOT/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Mode:  dry-run"* ]]
     [[ "$output" != *"WSL1"* ]]
 }
 

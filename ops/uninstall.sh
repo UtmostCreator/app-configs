@@ -35,10 +35,15 @@ for arg in "$@"; do
   esac
 done
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=ops/lib/preflight.sh
+source "$REPO_ROOT/ops/lib/preflight.sh"
+# Test guard: an apply run under bats must stay inside the test's scratch dir.
+[[ "$MODE" == "apply" ]] && preflight_bats_guard uninstall "to apply" "$REPO_ROOT"
+
 log()  { printf '[uninstall:%s] %s\n' "$MODE" "$*"; }
 note() { printf '   %s\n' "$*"; }
 
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SNAPSHOT_ROOT="${DOTFILES_SNAPSHOT_ROOT:-$HOME/.local/state/dotfiles-snapshots}"
 
 echo
@@ -49,8 +54,12 @@ echo
 # Snapshot inventory
 if [[ -d "$SNAPSHOT_ROOT" ]]; then
   log "Existing snapshots ($SNAPSHOT_ROOT):"
-  if find "$SNAPSHOT_ROOT" -maxdepth 1 -mindepth 1 -type d -printf '%f\n' \
-       2>/dev/null | sort | sed 's/^/   /'; then :; fi
+  # A glob loop, not `find -printf`: BSD find (macOS) has no -printf.
+  for snap in "$SNAPSHOT_ROOT"/*/; do
+    [[ -d "$snap" ]] || continue
+    snap="${snap%/}"
+    printf '   %s\n' "${snap##*/}"
+  done | LC_ALL=C sort
 else
   log "No snapshots directory at $SNAPSHOT_ROOT — nothing to restore from."
 fi

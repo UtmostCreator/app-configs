@@ -54,13 +54,12 @@ while (($#)); do
   shift
 done
 
-# Test guard: under bats, never mutate the real home. An install test that
-# forgot dry-run (or a broken parser) once ran a real install and Home Manager
-# switch on the developer's machine.
-if [[ -n "${BATS_TEST_TMPDIR:-}" && "$DRY_RUN" != 1 && "$HOME" != "$BATS_TEST_TMPDIR"* ]]; then
-  printf '[install:error] refusing a real install from a bats test (HOME=%s); use --dry-run or a scratch HOME\n' "$HOME" >&2
-  exit 3
-fi
+# shellcheck source=ops/lib/preflight.sh
+source "$REPO_ROOT/ops/lib/preflight.sh"
+
+# Test guard (ops/lib/preflight.sh): under bats, never mutate the real home or
+# the real repository.
+[[ "$DRY_RUN" == 1 ]] || preflight_bats_guard install "a real install" "$REPO_ROOT"
 
 log()  { printf '[install] %s\n' "$*"; }
 step() { printf '\n[install] ── %s ──\n' "$*"; }
@@ -91,37 +90,13 @@ case "$HOST_PROFILE" in
   macos|linux-desktop|linux-cli|wsl) ;;
   *) fail "unsupported HOST_PROFILE: $HOST_PROFILE" ;;
 esac
-# The wsl profile means WSL2. Refuse WSL1 before installing anything.
-if [[ "$HOST_PROFILE" == wsl && "$(bash "$REPO_ROOT/ops/detect-host.sh" --wsl-version)" == 1 ]]; then
-  fail "WSL1 is not supported (no systemd, no real Linux kernel for Nix). Convert from PowerShell: wsl --set-version <distro> 2   (list distros: wsl --list --verbose)"
-fi
-
-# Home Manager builds for the username in nix/vars/default.nix. A different
-# login user (common on WSL, where the distro asks for a new name) would only
-# fail later inside home-manager switch, so stop here with the fix.
-nix_user="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$REPO_ROOT/nix/vars/default.nix")"
-login_user="${USER:-$(id -un)}"
-if [[ -n "$nix_user" && "$login_user" != "$nix_user" ]]; then
-  fail "login user '$login_user' does not match username '$nix_user' in nix/vars/default.nix. Log in as '$nix_user' (WSL: create that user and set it as [user] default in /etc/wsl.conf), or change username and homeDirectory there."
-fi
+preflight_host_checks "$REPO_ROOT" "$HOST_PROFILE"
 log "Repo:  $REPO_ROOT"
 log "Host:  $HOST_PROFILE"
 log "NixOS: $(is_nixos && echo yes || echo no)"
 log "Mode:  $([[ "$DRY_RUN" == 1 ]] && echo dry-run || echo APPLY)"
 
-# Personal data must exist (chezmoi + flake need it). Create it from the
-# example when missing so installation can proceed unattended. The Git template
-# treats the example identity as unset until the user replaces it.
-if [[ ! -f "$REPO_ROOT/home/.chezmoidata/personal.yaml" ]]; then
-  if [[ -f "$REPO_ROOT/home/personal.yaml.example" ]]; then
-    warn "home/.chezmoidata/personal.yaml missing; seeding from example for host '$HOST_PROFILE'. Git identity remains unset until you edit it."
-    run bash "$REPO_ROOT/ops/seed-personal-yaml.sh" \
-      "$REPO_ROOT/home/personal.yaml.example" \
-      "$REPO_ROOT/home/.chezmoidata/personal.yaml" "$HOST_PROFILE"
-  else
-    fail "no personal.yaml and no example to seed from"
-  fi
-fi
+preflight_personal_yaml "$REPO_ROOT" "$HOST_PROFILE" run
 
 # ── 2. Nix ──────────────────────────────────────────────────────────────────
 step "Nix"
@@ -134,13 +109,7 @@ else
   run sh -c "curl --proto '=https' --tlsv1.2 -sSf -L https://install.determinate.systems/nix | sh -s -- install --no-confirm"
 fi
 
-# Refresh PATH so freshly installed nix-profile tools are visible.
-for f in /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh \
-         "$HOME/.nix-profile/etc/profile.d/nix.sh" /etc/profile.d/nix.sh; do
-  # shellcheck disable=SC1090
-  [[ -r "$f" ]] && . "$f" || true
-done
-export PATH="$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH"
+preflight_refresh_nix_path
 have nix || { [[ "$DRY_RUN" == 1 ]] || fail "nix still not on PATH after install"; }
 
 # ── 3. base tools ───────────────────────────────────────────────────────────

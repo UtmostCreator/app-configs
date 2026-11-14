@@ -262,7 +262,7 @@ BOTTOM_ROWS=$(( TOTAL_ROWS - LOG_ROWS - 1 ))
 
 if [ "$BOTTOM_ROWS" -lt 10 ]; then
   echo "Terminal is too short for this layout"
-  tmux kill-session -t "$SESSION" 2>/dev/null || true
+  tmux kill-session -t "=$SESSION" 2>/dev/null || true
   exit 1
 fi
 
@@ -275,7 +275,7 @@ BACKEND_ROWS=$(( BOTTOM_ROWS - UI_ROWS - 1 ))
 
 if [ "$BACKEND_ROWS" -lt 3 ]; then
   echo "Terminal is too short for the left column layout"
-  tmux kill-session -t "$SESSION" 2>/dev/null || true
+  tmux kill-session -t "=$SESSION" 2>/dev/null || true
   exit 1
 fi
 
@@ -285,7 +285,7 @@ FRONTEND_GROUP_ROWS=$(( BOTTOM_ROWS - PAYMENTS_ROWS - 1 ))
 
 if [ "$FRONTEND_GROUP_ROWS" -lt 6 ]; then
   echo "Terminal is too short for the right column layout"
-  tmux kill-session -t "$SESSION" 2>/dev/null || true
+  tmux kill-session -t "=$SESSION" 2>/dev/null || true
   exit 1
 fi
 
@@ -295,7 +295,7 @@ INTEGRATION_ROWS=$(( FRONTEND_GROUP_ROWS - FRONTEND_ROWS - 1 ))
 
 if [ "$INTEGRATION_ROWS" -lt 3 ]; then
   echo "Terminal is too short for the frontend/integration layout"
-  tmux kill-session -t "$SESSION" 2>/dev/null || true
+  tmux kill-session -t "=$SESSION" 2>/dev/null || true
   exit 1
 fi
 
@@ -343,10 +343,10 @@ send_backend_verify_then_git_workflow "$P_BACKEND"
 tmux select-window -t "$WINDOW_TARGET"
 tmux select-pane -t "$P_BACKEND"
 
-if [ -n "${TMUX:-}" ]; then
-  tmux switch-client -t "$SESSION"
-elif [ "$DETACHED" = "1" ]; then
+if [ "$DETACHED" = "1" ]; then
   echo "tmux session $SESSION started in detached mode"
+elif [ -n "${TMUX:-}" ]; then
+  tmux switch-client -t "=$SESSION"
 else
-  tmux attach-session -t "$SESSION"
+  tmux attach-session -t "=$SESSION"
 fi

@@ -124,7 +124,7 @@ start_background_frontend() {
 }
 
 pane_id=""
-if tmux has-session -t "$SESSION" 2>/dev/null; then
+if tmux has-session -t "=$SESSION" 2>/dev/null; then
   pane_id="$(find_tmux_pane || true)"
 fi
 

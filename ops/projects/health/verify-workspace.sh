@@ -486,7 +486,7 @@ _first_alive_pane() {
     return 1
 }
 
-if tmux has-session -t "$SESSION" 2>/dev/null; then
+if tmux has-session -t "=$SESSION" 2>/dev/null; then
     _ok "tmux session" "ws-dev is running"
 else
     _fail "tmux session" "session not found" "ws"

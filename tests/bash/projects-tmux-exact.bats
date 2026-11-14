@@ -43,7 +43,8 @@ stub_tmux() {
     stub tmux 'printf "%s\n" "$*" >>"'"$LOG"'"
 case "$1" in
   has-session) [ "${HAS:-0}" = 1 ] ;;
-  display-message|split-window) echo "%1" ;;
+  display-message) case "$*" in *pane_id*) echo "%1" ;; *) echo 40 ;; esac ;;
+  split-window) echo "%1" ;;
 esac'
 }
 
@@ -99,6 +100,21 @@ exit 0'
     [ "$status" -eq 0 ]
     run grep -c 'switch-client\|attach-session' "$LOG"
     [ "$output" = "0" ]
+}
+
+@test "master.sh: new session + --detached inside \$TMUX does not switch-client" {
+    stub_tmux
+    run env PATH="$STUBS:$PATH" TMUX=/fake,1,0 bash "$P/tmux/master.sh" --detached
+    [ "$status" -eq 0 ]
+    run grep -c 'switch-client\|attach-session' "$LOG"
+    [ "$output" = "0" ]
+}
+
+@test "master.sh: new session inside \$TMUX switches with an exact target" {
+    stub_tmux
+    run env PATH="$STUBS:$PATH" TMUX=/fake,1,0 bash "$P/tmux/master.sh"
+    [ "$status" -eq 0 ]
+    grep -Fxq 'switch-client -t =ws-dev' "$LOG"
 }
 
 @test "master.sh: running session attaches with an exact target" {

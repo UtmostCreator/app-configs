@@ -8,7 +8,7 @@ source "$SCRIPT_DIR/../lib.sh"
 
 PROJ_CHECK_NAME="tmux-master-session"
 SECTION="tmux"
-if ! SESSION="$(proj_tmux_session master_session dev-workspace)" || [[ -z "$SESSION" ]]; then
+if ! SESSION="$(proj_tmux_session master_session dev-workspace)"; then
   proj_emit fail "$SECTION" "cannot read tmux.master_session from $PROJECTS_CONFIG"
   exit 0
 fi

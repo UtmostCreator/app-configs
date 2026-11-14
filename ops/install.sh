@@ -26,7 +26,8 @@
 #
 # Usage:
 #   bash ops/install.sh                 # full unattended install
-#   DRY_RUN=1 bash ops/install.sh       # show what would happen, mutate nothing
+#   bash ops/install.sh --dry-run       # show what would happen, mutate nothing
+#   DRY_RUN=1 bash ops/install.sh       # same as --dry-run
 #   HOST_PROFILE=linux-cli bash ops/install.sh
 #
 # Exit codes: 0 on success; non-zero on the first required-step failure.
@@ -35,6 +36,31 @@ set -euo pipefail
 
 DRY_RUN="${DRY_RUN:-0}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Arguments. sys-install passes "$@" through; before this parser existed,
+# `sys-install --dry-run` silently ran the full install.
+while (($#)); do
+  case "$1" in
+    -n | --dry-run) DRY_RUN=1 ;;
+    -h | --help)
+      sed -n '2,/^# Exit codes/p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      exit 0
+      ;;
+    *)
+      printf '[install:error] unknown argument: %s (try --help)\n' "$1" >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+
+# Test guard: under bats, never mutate the real home. An install test that
+# forgot dry-run (or a broken parser) once ran a real install and Home Manager
+# switch on the developer's machine.
+if [[ -n "${BATS_TEST_TMPDIR:-}" && "$DRY_RUN" != 1 && "$HOME" != "$BATS_TEST_TMPDIR"* ]]; then
+  printf '[install:error] refusing a real install from a bats test (HOME=%s); use --dry-run or a scratch HOME\n' "$HOME" >&2
+  exit 3
+fi
 
 log()  { printf '[install] %s\n' "$*"; }
 step() { printf '\n[install] ── %s ──\n' "$*"; }

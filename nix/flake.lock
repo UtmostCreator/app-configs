@@ -253,10 +253,23 @@
         "nix-openclaw": "nix-openclaw",
         "nixpkgs": "nixpkgs_2",
         "nixpkgs-last-good": "nixpkgs-last-good",
+        "selection": "selection",
         "treefmt-nix": "treefmt-nix",
         "vicinae": "vicinae",
         "vicinae-extensions": "vicinae-extensions"
       }
+    },
+    "selection": {
+      "flake": false,
+      "locked": {
+        "path": "./selection",
+        "type": "path"
+      },
+      "original": {
+        "path": "./selection",
+        "type": "path"
+      },
+      "parent": []
     },
     "soulver-cpp": {
       "inputs": {

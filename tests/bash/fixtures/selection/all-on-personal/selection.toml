@@ -1,0 +1,6 @@
+profile = "personal"
+
+[groups]
+media = true
+security = true
+go = true

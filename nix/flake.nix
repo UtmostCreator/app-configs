@@ -52,6 +52,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.home-manager.follows = "home-manager";
     };
+
+    # Local install selection (T-0042). The committed default is the empty
+    # file nix/selection/selection.toml, which means "no selection". Scripts
+    # that find ~/.config/app-configs/selection/selection.toml pass
+    # `--override-input selection path:<dir>`; the override implies
+    # --no-write-lock-file, so this lock node never changes. Read only by
+    # nix/modules/home/profile.nix via builtins.fromTOML.
+    selection = {
+      url = "path:./selection";
+      flake = false;
+    };
   };
 
   outputs =

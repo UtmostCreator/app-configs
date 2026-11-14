@@ -1,0 +1,6 @@
+profile = "work"
+
+[groups]
+media = false
+security = false
+go = false

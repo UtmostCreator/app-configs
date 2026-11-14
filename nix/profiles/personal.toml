@@ -1,0 +1,7 @@
+# Group toggles for this profile (T-0042). The file name is a myConfig.profile
+# value. Every group declared in nix/modules/home/profile.nix is listed here.
+# A group set to false removes its packages; core tools are never in a group.
+[groups]
+media = true
+security = true
+go = true

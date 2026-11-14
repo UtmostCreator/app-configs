@@ -1689,17 +1689,57 @@ started_run_with_new_lock() {
   backup="$(sed -n 's/^flake_lock_backup=//p' "$meta")"
   ln -s /nonexistent-dir/copy "$backup.failed"
   do_rollback_cmd
+  [ "$status" -eq 1 ]
   grep -q '"rev":"new"' "$FAKE/nix/flake.lock"
   [[ "$output" == *"could not keep a copy"* ]]
+  [[ "$output" == *"incomplete"* ]]
+  [[ "$output" != *"left in place)"* ]]
+  [ "$(meta_value status)" != rolled-back ]
+}
+
+@test "F-02: the same failure in a rollback of a failed run is incomplete, not kept" {
+  started_run_with_new_lock
+  backup="$(sed -n 's/^flake_lock_backup=//p' "$meta")"
+  ln -s /nonexistent-dir/copy "$backup.failed"
+  do_rollback_cmd
+  [ "$status" -eq 1 ]
+  grep -q '"rev":"new"' "$FAKE/nix/flake.lock"
+  [[ "$output" == *"could not be restored"* ]]
+  [[ "$output" != *"edited since the failed run"* ]]
+}
+
+@test "no sys-update-snapshot temp file is left after an apply, successful or not" {
+  export TMPDIR="$BATS_TEST_TMPDIR/scratch-tmp"
+  mkdir -p "$TMPDIR"
+  run_update
+  [ "$status" -eq 0 ]
+  [ -z "$(ls "$TMPDIR" | grep '^sys-update-snapshot\.' || true)" ]
+  reset_repo
+  export CHEZMOI_MANAGED_FAIL=1
+  run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"snapshot failed"* ]]
+  [ -z "$(ls "$TMPDIR" | grep '^sys-update-snapshot\.' || true)" ]
 }
 
 @test "N-01: a host without a verify gate records runtime_verified=n/a" {
   export HOST_PROFILE=linux-cli
   printf '#!/usr/bin/env bash\nexit 0\n' > "$STUBS/systemctl"
   printf '#!/usr/bin/env bash\necho ok\n' > "$STUBS/ai-auth-status"
-  chmod +x "$STUBS/systemctl" "$STUBS/ai-auth-status"
+  # quiet nix and home-manager stubs, so the final verdict carries no warnings
+  printf '#!/usr/bin/env bash\n[[ "$*" == *--print-out-paths* ]] && echo "%s"\nexit 0\n' "$BATS_TEST_TMPDIR/hm-out" > "$STUBS/nix"
+  printf '#!/usr/bin/env bash\nln -sfn "%s" "%s/home-manager-2-link"\nln -sfn home-manager-2-link "%s/home-manager"\nexit 0\n' \
+    "$BATS_TEST_TMPDIR/hm-out" "$HOME/.local/state/nix/profiles" "$HOME/.local/state/nix/profiles" > "$STUBS/home-manager"
+  chmod +x "$STUBS/systemctl" "$STUBS/ai-auth-status" "$STUBS/nix" "$STUBS/home-manager"
+  # the core-commands check must not depend on what this machine has installed
+  for t in fish rg fd; do printf '#!/usr/bin/env bash\nexit 0\n' > "$STUBS/$t"; chmod +x "$STUBS/$t"; done
+  # no Syncthing step: it needs a real config and would end the run with a warning
+  git -C "$FAKE" rm -q ops/syncthing-obsidian-stignore.sh
+  git -C "$FAKE" commit -q -m "drop the syncthing step"
   run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup
   [ "$status" -eq 0 ]
+  [[ "$output" == *"updated"*"(no runtime verification gate for linux-cli)"* ]]
   [ "$(meta_value runtime_verified)" = "n/a" ]
   [[ "$output" == *"no runtime verification gate for linux-cli"* ]]
+  [[ "$output" != *"and verified"* ]]
 }

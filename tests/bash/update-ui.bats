@@ -205,7 +205,9 @@ setup() {
     UI_PROGRESS=1 UI_TICK=0.05
     _ui_progress() { printf "%s\n" "$3" > "$2.watched"; sleep 5; }
     ui_run step sleep 0.4 > /dev/null
-    printf "main=%s ticker-watched=%s\n" "$$" "$(cat "$UI_LAST_LOG.watched")"
+    watched_file="$UI_LAST_LOG.watched"
+    printf "main=%s ticker-watched=%s\n" "$$" "$(cat "$watched_file")"
+    rm -f -- "$watched_file"; ui_cleanup
   ' _ "$REPO_ROOT"
   [ "$status" -eq 0 ]
   main="${output#main=}"; main="${main%% *}"

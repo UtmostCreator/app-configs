@@ -118,8 +118,25 @@
         };
     in
     {
-      # `nix fmt` formats the tree; `nix flake check` verifies formatting.
+      # `nix fmt` formats the tree.
       formatter = forAllSystems (system: treefmtEval.${system}.config.build.wrapper);
+
+      # CHECK LEVELS (what each command proves, cheapest first):
+      #   1. EVALUATION, any host: `nix flake check ./nix --all-systems --no-build`
+      #      evaluates every system's checks, so a module broken for another
+      #      platform fails here, but nothing is built and no remote builder is
+      #      needed. The home-*/darwin-* checks below are writeText sentinels
+      #      over a drvPath: tiny per-system derivations that this level never
+      #      builds.
+      #   2. NATIVE CHECK BUILD: plain `nix flake check ./nix` builds only the
+      #      current system's checks (formatting plus the sentinels); other
+      #      systems, e.g. aarch64-darwin on Linux, are skipped. Building a
+      #      sentinel does NOT build the host closure; it only proves the
+      #      configuration evaluates.
+      #   3. REAL BUILD: `nix build --no-link
+      #      ./nix#homeConfigurations.<profile>.activationPackage` builds the
+      #      closure. CI does this for linux-cli and wsl; sys-update builds
+      #      the real host. Darwin closures need a darwin builder.
       checks = forAllSystems (
         system:
         {
@@ -128,8 +145,10 @@
         // nixpkgs.lib.mapAttrs' (
           name: profile:
           nixpkgs.lib.nameValuePair "home-${name}" (
-            # Force evaluation of each matching profile, without building every
-            # host's closure or making --all-systems require remote builders.
+            # Evaluation-level check only (see CHECK LEVELS above): forces
+            # evaluation of the profile without building its closure. The
+            # sentinel is itself a per-system derivation, so building it for
+            # another system (no --no-build) needs a builder for that system.
             nixpkgs.legacyPackages.${system}.writeText "home-${name}-evaluation" (
               builtins.unsafeDiscardStringContext self.homeConfigurations.${name}.activationPackage.drvPath
             )
@@ -141,6 +160,12 @@
           );
         }
       );
+
+      # Pinned nix-darwin CLI (from the nix-darwin input) so bootstrap can run
+      # it before darwin-rebuild is installed:
+      #   sudo nix run <repo>/nix#darwin-rebuild -- switch --flake <repo>/nix#macos
+      packages.${vars.profiles.macos.system}.darwin-rebuild =
+        nix-darwin.packages.${vars.profiles.macos.system}.darwin-rebuild;
 
       homeConfigurations = {
         linux-desktop = mkProfile "linux-desktop";

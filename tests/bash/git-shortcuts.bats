@@ -108,3 +108,18 @@ new_repo() {
     [ -f "$f" ]
     [ -z "$(grep -vE '^(#.*)?$' "$f")" ]
 }
+
+@test "acp stages tracked changes, commits with hooks, and pushes" {
+    ORIGIN="$BATS_TEST_TMPDIR/o.git"; git init -q --bare -b main "$ORIGIN"
+    git clone -q "$ORIGIN" "$BATS_TEST_TMPDIR/w" 2>/dev/null; cd "$BATS_TEST_TMPDIR/w"
+    echo a >tracked; git add tracked; git -c commit.gpgsign=false commit -q -m init; git push -q origin main
+    echo b >tracked; echo new >untracked
+    run git -c commit.gpgsign=false acp "fix: change tracked"
+    [ "$status" -eq 0 ]
+    [ "$(git log -1 --format=%s origin/main)" = "fix: change tracked" ]
+    [ "$(git show --name-only --format= HEAD)" = "tracked" ]      # untracked not swept in
+    [[ "$(value acp)" != *--no-verify* ]]
+    run git acp
+    [ "$status" -ne 0 ]
+    [[ "$output" == *'usage: git acp'* ]]
+}

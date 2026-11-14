@@ -62,3 +62,9 @@ Only the files listed above. Unrelated findings are reported, not fixed.
     7. linux-cli and wsl print "no runtime verification gate".
     8. macOS is untested.
     9. Nix 2.4 or newer is required.
+
+- 2026-11-14: R4-01 fixed in `ae18daf` (`fix(update-all): restore only files this run wrote`); review PASS WITH NOTES; **R4-01 closed** in the release checklist.
+  - New notes: R5-01 (a pre-Gate-A record rollback only switches the profile and says "never wrote it"), R5-02 (early-exit wording should be based on `ROLLBACK_RESTORED`), R5-03 (the incomplete path should print the settle hint).
+  - Still open: R4-02, R4-03 and R4-05.
+  - Release checklist addition: the first real rollback must target a run recorded by this code (a fresh `--apply`).
+  - User priority: release audit P0, before production; destructive fault-injection in an isolated environment, not the daily-driver install.

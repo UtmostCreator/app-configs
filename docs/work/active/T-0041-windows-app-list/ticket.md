@@ -2,7 +2,7 @@ Source: local
 
 # T-0041: Windows-side copy-only app list (docs)
 
-Status: BLOCKED: awaiting user approval of the Windows-scope change
+Status: open (approved by user 2026-11-14: documentation only)
 (`docs/plans/migration/implementation.md` Appendix A excludes Windows package managers).
 Depends on: user approval. No WSL2 ticket depends on this one.
 Sequencing: edits implementation.md; do not run in parallel with T-0039.
@@ -89,3 +89,14 @@ Deferred:
 - Installing anything; scripts; DSC.
 - docs/architecture/tool-ownership.md belongs to T-0022; if approved, one sentence
   there ("copy-only list, not managed").
+
+## Decision
+
+2026-11-14, user: approved (this records the approval required by AC1).
+- Approved as a copy-only catalogue, with the Appendix A amendment.
+- Manual PowerShell and winget only.
+- No automated winget, registry, DSC or native Windows layer.
+- Each id must be verified with `winget show --id <id> --exact` or marked unverified.
+- No automatic install, removal or update.
+- Windows Terminal and WSL2 provisioning stay separate from Home Manager.
+- Priority P1.

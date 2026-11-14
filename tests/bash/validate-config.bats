@@ -458,3 +458,51 @@ eval_with() {
     [ "$status" -eq 2 ]
     [[ "$output" == *"usage:"* ]]
 }
+
+# --- fail-closed and quoting regressions (review follow-ups) ---------------
+
+@test "rule 9: an awk that errors is a scan failure, not a pass" {
+    printf '#!/bin/sh\ncase "$1" in -F*) exit 2;; esac\nexec %s "$@"\n' "$(command -v awk)" >"$STUBS/awk"
+    chmod +x "$STUBS/awk"
+    git -C "$R" add -A
+    PATH="$STUBS:$PATH" run bash "$R/ops/validate-config.sh"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"audit doc scan failed"* ]]
+    [[ "$output" != *"[OK]   audit doc"* ]]
+}
+
+@test "a failing find means no [OK] for the nix rules" {
+    printf '#!/bin/sh\nexit 1\n' >"$STUBS/find"; chmod +x "$STUBS/find"
+    git -C "$R" add -A
+    PATH="$STUBS:$PATH" run bash "$R/ops/validate-config.sh"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"find failed"* ]]
+    [[ "$output" != *"[OK]   only allowlisted"* ]]
+    [[ "$output" != *"[OK]   bootstrap"* ]]
+    [[ "$output" != *"[OK]   xdg"* ]]
+    [[ "$output" != *"[OK]   no xdg.configFile target"* ]]
+}
+
+@test "git missing from PATH fails closed" {
+    mkdir "$BATS_TEST_TMPDIR/empty"
+    cd "$R"
+    PATH="$BATS_TEST_TMPDIR/empty" run "$(command -v bash)" "$R/ops/validate-config.sh"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"git not found"* ]]
+}
+
+@test "rule 6: quoted attribute names of allowlisted modules pass, others fail" {
+    nixmod ok.nix 'programs."home-manager".enable = true;
+  services."syncthing".enable = true;
+  programs."vicinae" = { enable = true; };'
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    nixmod ok.nix 'programs."vicinae.x".enable = true;'
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"forbidden programs.<x>.enable"* ]]
+    nixmod ok.nix 'programs."git".enable = true;'
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"forbidden programs.<x>.enable"* ]]
+}

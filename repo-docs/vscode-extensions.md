@@ -12,9 +12,14 @@ Workflow:
      skips `~/.config/Code` on the `wsl` host profile.
 
    Sources live under `home/dot_config/Code/User/` and
-   `home/Library/Application Support/Code/User/` in the repo. Both
-   `settings.json.tmpl` wrappers fold full vs minimal via the `.minimal`
-   key in `home/.chezmoidata/personal.yaml`.
+   `home/Library/Application Support/Code/User/` in the repo. VS Code
+   rewrites `settings.json` itself, so both are `modify_settings.json.tmpl`
+   scripts (`home/.chezmoitemplates/vscode/modify-settings.sh`): the repo keys
+   from `settings.full.json`, or `settings.minimal.json` when `.minimal` is
+   set in `home/.chezmoidata/personal.yaml`, are merged over the live file,
+   and keys VS Code or you added are kept. A key removed from the repo stays
+   in the live file until you delete it there. `keybindings.json` is still a
+   plain template.
 
 2. Extensions themselves are installed by `ops/vscode-extensions.sh` during
    `bash ops/bootstrap.sh --yes`, `bash ops/install.sh`, and

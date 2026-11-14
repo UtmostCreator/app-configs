@@ -41,6 +41,21 @@ dirty_it() {
   [[ "$output" == *"--allow-dirty"* ]]
 }
 
+@test "the abort lists the changed paths so the cause is visible" {
+  dirty_it
+  run bash "$FAKE/ops/update-all.sh" --apply --yes
+  [[ "$output" == *"Changed:"* ]]
+  [[ "$output" == *"M nix/flake.lock"* ]]
+  [[ "$output" == *"?? untracked"* ]]
+}
+
+@test "the changed-path list is capped with a count of the rest" {
+  for i in $(seq 1 15); do printf 'x\n' >"$FAKE/scratch-$i"; done
+  run bash "$FAKE/ops/update-all.sh" --apply --yes
+  [ "$(grep -c '?? scratch-' <<<"$output")" -eq 10 ]
+  [[ "$output" == *"and 5 more"* ]]
+}
+
 @test "--allow-dirty converts the gate into a recorded warning" {
   dirty_it
   run bash "$FAKE/ops/update-all.sh" --allow-dirty

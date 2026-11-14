@@ -66,6 +66,22 @@ exit 0
 STUB
     chmod +x "$STUBS/$tool"
   done
+  # The updater pins the running generation with a GC root; the stub makes the
+  # link without touching a real store.
+  cat > "$STUBS/nix-store" <<'STUB'
+#!/usr/bin/env bash
+target="" root=""
+while (($#)); do
+  case "$1" in
+    --realise) target="$2"; shift ;;
+    --add-root) root="$2"; shift ;;
+  esac
+  shift
+done
+if [[ -n "$root" ]]; then mkdir -p "$(dirname "$root")"; ln -sfn "$target" "$root"; fi
+exit 0
+STUB
+  chmod +x "$STUBS/nix-store"
   PATH="$STUBS:$PATH"
 }
 

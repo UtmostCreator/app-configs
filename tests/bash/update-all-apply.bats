@@ -1464,3 +1464,122 @@ ACT
   [[ "$output" == *"not rolled back automatically"* ]]
   grep -q '"rev":"old"' "$FAKE/nix/flake.lock"
 }
+
+# ── T-0010 Gate B: GC roots for the rollback target (T6) ────────────────────
+
+# A cleanup stub the updater will run (committed, so the worktree stays clean).
+# It records its arguments; STUB_CLEANUP_COLLECTS=1 also deletes the previous
+# generation, the way a garbage collection would.
+install_cleanup_stub() {
+  cat > "$FAKE/ops/cleanup.sh" <<'STUB'
+#!/usr/bin/env bash
+printf 'cleanup %s\n' "$*" >> "$STUB_LOG"
+[[ "${STUB_CLEANUP_COLLECTS:-0}" == 1 ]] && rm -rf "$GEN_DIR_TO_COLLECT"
+exit 0
+STUB
+  chmod +x "$FAKE/ops/cleanup.sh"
+  git -C "$FAKE" add ops/cleanup.sh
+  git -C "$FAKE" commit -q -m 'cleanup stub'
+}
+
+run_with_cleanup() { run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes --skip-verify "$@"; }
+
+@test "S41: the Home Manager generation about to be replaced is pinned by a GC root" {
+  run_update
+  [ "$status" -eq 0 ]
+  id="$(meta_value run_id)"
+  root="$SYS_UPDATE_STATE_DIR/gcroots/$id/hm"
+  [ "$(meta_value gcroot)" = "$root" ]
+  [ -L "$root" ]
+  [ "$(readlink -f "$root")" = "$(readlink -f "$GEN_DIR")" ]
+  grep -q "^nix-store --realise $GEN_DIR --add-root $root\$" "$STUB_LOG"
+  ! grep -q -- '--indirect' "$STUB_LOG"
+}
+
+@test "S41b: with no previous generation there is nothing to pin and the run records gcroot=none" {
+  rm "$HOME/.local/state/nix/profiles/home-manager"
+  run_update
+  [ "$status" -eq 0 ]
+  [ "$(meta_value gcroot)" = none ]
+  run grep -c '^nix-store --realise' "$STUB_LOG"
+  [ "$output" = 0 ]
+}
+
+@test "S41: on macOS the running darwin system is pinned too" {
+  export HOST_PROFILE=macos
+  cp "$STUBS/home-manager" "$STUBS/darwin-rebuild"
+  ln -s "$STUB_HM_OUT" "$BATS_TEST_TMPDIR/current-system"
+  export SYS_UPDATE_DARWIN_SYSTEM_LINK="$BATS_TEST_TMPDIR/current-system"
+  run_update
+  [ "$status" -eq 0 ]
+  id="$(meta_value run_id)"
+  [ "$(meta_value darwin_system_before)" = "$(readlink -f "$STUB_HM_OUT")" ]
+  [ "$(meta_value darwin_gcroot)" = "$SYS_UPDATE_STATE_DIR/gcroots/$id/darwin" ]
+  [ -L "$SYS_UPDATE_STATE_DIR/gcroots/$id/darwin" ]
+}
+
+@test "S42: a GC root that cannot be created stops the update before anything changes" {
+  export FAIL_GCROOT=1
+  run_update
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"cannot pin"* ]]
+  [[ "$output" == *"cannot add root"* ]]
+  run grep -c '^nix flake update\|^chezmoi apply\|^home-manager switch' "$STUB_LOG"
+  [ "$output" = 0 ]
+  [ ! -e "$SYS_UPDATE_STATE_DIR/last-run" ]
+}
+
+@test "S43: cleanup is told which Home Manager generation to protect" {
+  install_cleanup_stub
+  : > "$STUB_LOG"
+  run_with_cleanup
+  [ "$status" -eq 0 ]
+  grep -q '^cleanup --apply --yes --protect-hm-generation 1$' "$STUB_LOG"
+}
+
+@test "S43: no protect flag when the generation number is unknown" {
+  install_cleanup_stub
+  # a profile that is not a numbered generation link has no number to protect
+  ln -sfn "$GEN_DIR" "$HOME/.local/state/nix/profiles/home-manager"
+  : > "$STUB_LOG"
+  run_with_cleanup
+  [ "$status" -eq 0 ]
+  grep -q '^cleanup --apply --yes$' "$STUB_LOG"
+}
+
+@test "S44: a previous generation that cleanup collected is reported as a lost rollback handle" {
+  install_cleanup_stub
+  export STUB_CLEANUP_COLLECTS=1 GEN_DIR_TO_COLLECT="$GEN_DIR"
+  run_with_cleanup
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no longer in the store"* ]]
+  [ "$(meta_value rollback_handle)" = lost ]
+}
+
+@test "S44: an intact previous generation records no lost handle" {
+  install_cleanup_stub
+  run_with_cleanup
+  [ "$status" -eq 0 ]
+  [ -z "$(meta_value rollback_handle)" ]
+}
+
+@test "S45: GC roots older than KEEP_DAYS are removed, younger ones and the new run's stay" {
+  roots="$SYS_UPDATE_STATE_DIR/gcroots"
+  mkdir -p "$roots/20250101T000000Z-1" "$roots/20260101T000000Z-2"
+  touch -d '30 days ago' "$roots/20250101T000000Z-1"
+  touch -d '2 days ago' "$roots/20260101T000000Z-2"
+  run_update
+  [ "$status" -eq 0 ]
+  [ ! -e "$roots/20250101T000000Z-1" ]
+  [ -d "$roots/20260101T000000Z-2" ]
+  [ -L "$roots/$(meta_value run_id)/hm" ]
+}
+
+@test "S45: KEEP_DAYS from the environment sets the GC root lifetime" {
+  roots="$SYS_UPDATE_STATE_DIR/gcroots"
+  mkdir -p "$roots/20260101T000000Z-2"
+  touch -d '3 days ago' "$roots/20260101T000000Z-2"
+  KEEP_DAYS=1 run_update
+  [ "$status" -eq 0 ]
+  [ ! -e "$roots/20260101T000000Z-2" ]
+}

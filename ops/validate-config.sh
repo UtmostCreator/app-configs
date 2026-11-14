@@ -4,7 +4,11 @@
 # Enforces only v2 active rules. Does NOT:
 #  - flag Windows native files (they're explicitly deferred / untouched)
 #  - flag direnv unless Phase 3 explicitly dropped it (we did, so we flag it
-#    in nix/modules/home/* only; mentioning direnv in docs is fine)
+#    in Home Manager package lists only; mentioning direnv in docs is fine)
+#
+# Nix scan scope: programs.* in nix/modules/**, nix/lib and nix/hosts/*/home.nix;
+# services.*, home.packages and xdg.configFile only in the Home Manager files
+# among those (everything except nix/modules/nixos and nix/modules/darwin).
 #
 # Exits non-zero if any invariant is violated. Fails closed: a tool that
 # cannot run (git missing, `git ls-files` failing) is a violation, not a pass.
@@ -162,7 +166,9 @@ function record(f, i,   mid, rest, key, isoff) {
   if (f ~ /\.enable$/ && (f ~ /^programs\./ || f ~ /^services\./)) {
     rhs_scan(i + 2)
     isoff = (RHS == "false" || RHS ~ /^(lib\.)?mk[A-Za-z]+( [0-9]+)? false$/)
-    mid = f; sub(/^[a-z]+\./, "", mid); sub(/\.enable$/, "", mid); sub(/\..*$/, "", mid)  # first segment: the module
+    mid = f; sub(/^[a-z]+\./, "", mid); sub(/\.enable$/, "", mid);
+    if (substr(mid, 1, 1) == "\"") { match(mid, /^"[^"]*"/); mid = substr(mid, 2, RLENGTH - 2) }
+    else sub(/\..*$/, "", mid)  # the module name, unquoted
     if (f ~ /^programs\./) {
       if (!(mid in AP) && !isoff) print "PROGRAM|" where(i) "|" f " = " RHS
     } else if (hm == 1 && !(mid in AS) && !isoff) {
@@ -290,7 +296,8 @@ fi
 #      `false`. services.* is only checked in Home Manager files; NixOS and
 #      nix-darwin modules legitimately enable system services.
 #   7. mise, chezmoi, home-manager, lefthook (bootstrap-installed) must not be
-#      in home.packages or in any `with pkgs; [ ... ]` list.
+#      in home.packages or after any `with pkgs;` (scanned up to the end of the
+#      enclosing bracket or the next `;`, so `with pkgs; mise` is caught too).
 #   8. direnv (Phase 3: DROPPED) likewise.
 ALLOWED_PROGRAMS="home-manager vicinae openclaw"
 ALLOWED_SERVICES="syncthing"
@@ -305,6 +312,7 @@ done
 if ((${#nix_dirs[@]} > 0)); then
   if ! nix_files="$(find "${nix_dirs[@]}" -type f \( -path 'nix/hosts/*' -name home.nix -o -path 'nix/modules/*' -name '*.nix' -o -path 'nix/lib/*' -name '*.nix' \) | LC_ALL=C sort)"; then
     err "find failed; cannot scan nix modules"
+    scan_failed=1
     nix_files=""
   fi
   while IFS= read -r f; do
@@ -356,17 +364,20 @@ for f in repo-docs/migration-source-of-truth.md repo-docs/migration-package-owne
     err "audit doc missing: $f"
   elif ! grep -q '[^[:space:]]' "$f"; then
     err "audit doc is empty: $f"
-  elif awk -F'|' '
+  else
+    awk -F'|' '
       /^[[:space:]]*\|/ {
         for (i = 2; i < NF; i++) {
           c = tolower($i); gsub(/^[ \t]+|[ \t]+$/, "", c)
           if (c ~ /^(tbd|tbc)[ ]*([(:,;.?!\[-].*)?$/ || c == "todo" || c ~ /^\?+$/) { found = 1 }
         }
       }
-      END { exit found ? 0 : 1 }' "$f"; then
-    err "audit doc has unresolved TBD table cells: $f"
-  else
-    ok "audit doc present and resolved: $f"
+      END { exit found ? 10 : 0 }' "$f"
+    case $? in
+      0) ok "audit doc present and resolved: $f" ;;
+      10) err "audit doc has unresolved TBD table cells: $f" ;;
+      *) err "audit doc scan failed: $f" ;; # awk error: fail closed
+    esac
   fi
 done
 
@@ -486,7 +497,7 @@ check_xdg_collisions() {
 
 e0=$ERRORS
 check_xdg_collisions "$XDG_TEXT_KEYS"
-if ((ERRORS == e0)); then
+if ((ERRORS == e0 && scan_failed == 0)); then
   ok "no xdg.configFile target is also a live chezmoi source"
 fi
 

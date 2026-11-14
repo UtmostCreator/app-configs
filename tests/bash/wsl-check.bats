@@ -7,6 +7,9 @@ setup() {
     STUBS="$BATS_TEST_TMPDIR/bin"
     WIN="$BATS_TEST_TMPDIR/mnt/c/Program Files/nodejs"
     mkdir -p "$STUBS" "$WIN"
+    # Isolate from the host: no inherited WSL env or WSL filesystem markers.
+    unset WSL_DISTRO_NAME
+    export DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-wsl-run" DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-wsl-interop"
     for t in bash cat grep sed head; do ln -s "$(command -v "$t")" "$STUBS/$t"; done
     printf 'systemd\n' >"$BATS_TEST_TMPDIR/comm"
     export WSL_CHECK_PROC1_COMM="$BATS_TEST_TMPDIR/comm"
@@ -14,6 +17,7 @@ setup() {
     export WSL_CHECK_WINDOWS_PREFIX="$BATS_TEST_TMPDIR/mnt/"
     printf 'Linux version 6.6.87.2-microsoft-standard-WSL2 #1 SMP\n' >"$BATS_TEST_TMPDIR/version"
     export DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version"
+    export DETECT_HOST_OSRELEASE="$BATS_TEST_TMPDIR/no-osrelease"
 }
 
 check() { PATH="$1" run "$STUBS/bash" "$SCRIPT"; }

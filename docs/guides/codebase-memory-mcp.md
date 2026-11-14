@@ -27,7 +27,15 @@ When the installed version differs, the updater runs Home Manager for the
 detected host and restarts the dashboard. Home Manager applies the current
 configuration in this checkout, including other local configuration edits.
 No flake inputs are updated, and no changes are committed or pushed.
-Failed activation leaves the release lock available for retry on the next run.
+On macOS the updater only runs `home-manager switch`: the dashboard service is
+a Linux systemd user unit, so there is no restart or dashboard probe.
+
+If `home-manager switch` fails, the updater restores the previous
+`release.json` when this run changed it. If the switch succeeds but the
+restart, dashboard probe or version check then fails, the new generation stays
+active while the lock is restored (again only when this run changed it). The updater prints that state on stderr with the recovery command
+(`home-manager switch` with the restored lock, or pick an earlier entry from
+`home-manager generations`).
 The checkout must remain at `~/Projects/app-configs` for the timer to find it.
 
 ```bash

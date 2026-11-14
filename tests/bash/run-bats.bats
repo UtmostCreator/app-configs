@@ -33,3 +33,11 @@ setup() {
     [ "$status" -eq 3 ]
     [[ "$output" == *"bats-stub tests/bash"* ]]
 }
+
+@test "run-bats also runs the logging suites under ops/projects/logging/test" {
+    printf '#!/usr/bin/env bash\necho "bats-stub $*"\n' >"$STUB/bats"
+    chmod +x "$STUB/bats"
+    run env PATH="$STUB" bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"bats-stub tests/bash ops/projects/logging/test"* ]]
+}

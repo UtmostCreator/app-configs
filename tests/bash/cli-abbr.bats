@@ -79,3 +79,11 @@ SH
     run env PATH="$stubs:$PATH" fish --no-config -c "function z; return 1; end; source $FISH_FILE; zc nowhere"
     [ "$status" -ne 0 ]
 }
+
+@test "hms switches Home Manager for this host from the dotfiles flake" {
+    stubs="$BATS_TEST_TMPDIR/bin"; mkdir -p "$stubs" "$BATS_TEST_TMPDIR/dots/ops"
+    printf '#!/bin/sh\necho "home-manager $*"\n' >"$stubs/home-manager"; chmod +x "$stubs/home-manager"
+    printf '#!/bin/sh\necho wsl\n' >"$BATS_TEST_TMPDIR/dots/ops/detect-host.sh"
+    run env PATH="$stubs:$PATH" DOTFILES_DIR="$BATS_TEST_TMPDIR/dots" fish --no-config -c "source $FISH_FILE; hms --show-trace"
+    [ "$output" = "home-manager switch -b hm-bak --flake $BATS_TEST_TMPDIR/dots/nix#wsl --show-trace" ]
+}

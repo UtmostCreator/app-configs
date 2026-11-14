@@ -60,7 +60,6 @@
       "nimble-commander" # dual-pane file manager
 
       # ── Menu bar and system utilities ────────────────────
-      "flameshot"
       "jordanbaird-ice@beta"
       "notunes"
       "stats"

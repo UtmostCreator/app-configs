@@ -136,12 +136,21 @@ finishes in **1–3 minutes**.
 
 ### Is it truly "one click, walk away"?
 
-Yes for the **user environment** — `ops/install.sh` needs no prompts and no
-`sudo`. The **only** manual step that needs you is the optional **system**
-rebuild (fish login shell, GC timer, trusted-users, Europe/London time zone), because it requires `sudo`
-and edits `/etc/nixos`. The installer **detects** whether that is needed and
-prints the exact `sudo nixos-rebuild switch --flake /etc/nixos#nixos` command at
-the end. See `docs/platforms/nixos/rebuild.md`.
+Yes for the **user environment** — `ops/install.sh` needs no prompts, and no
+`sudo` on Linux and WSL (macOS needs `sudo` for the nix-darwin switch and checks
+it before changing anything). The **only** manual step that needs you is the
+optional **system** rebuild, because it requires `sudo` and edits `/etc/nixos`.
+On NixOS the installer **detects** whether that is needed by checking the live
+system for the fish login shell, an active `nix-gc.timer` (`nix-optimise.timer`
+alone does not count) and the Europe/London time zone, and prints the exact
+`sudo nixos-rebuild switch --flake /etc/nixos#nixos` command at the end. It does
+not check or recommend `trusted-users`.
+
+The last line tells you how it went: `Install complete` only when every step
+succeeded; otherwise `finished with degraded steps` and one `degraded:` line per
+step (VS Code extensions, Syncthing, ssh-agent, a pending system rebuild) with
+the command to re-run. Degraded steps still exit 0; a failed required step exits
+non-zero with an `[install:error]` line. See `docs/platforms/nixos/rebuild.md`.
 
 ### Complete-the-build steps (run after install on NixOS)
 

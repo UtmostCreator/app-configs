@@ -30,9 +30,17 @@
 #   DRY_RUN=1 bash ops/install.sh       # same as --dry-run (DRY_RUN must be 0 or 1)
 #   HOST_PROFILE=linux-cli bash ops/install.sh
 #
-# Exit codes: 0 on success; non-zero on the first required-step failure.
-# Optional steps (VS Code, Syncthing, ssh-agent) and a pending NixOS system
-# rebuild exit 0 but are listed as degraded instead of "Install complete".
+# Exit codes:
+#   0  success, or finished with degraded steps (listed instead of
+#      "Install complete": VS Code, Syncthing, ssh-agent, a pending NixOS
+#      system rebuild)
+#   1  a required-step failure ([install:error]); an external command that
+#      fails exits with its own code
+#   2  bad argument, or DRY_RUN is not 0 or 1
+#   3  refused: a bats test tried a real install against the real HOME
+#
+# macOS apply needs sudo (nix-darwin switch); it is checked before anything
+# changes. Linux and WSL never use sudo here.
 
 set -euo pipefail
 
@@ -45,7 +53,7 @@ while (($#)); do
   case "$1" in
     -n | --dry-run) DRY_RUN=1 ;;
     -h | --help)
-      sed -n '2,/^# Exit codes/p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,/^$/{/^$/!p;}' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
       ;;
     *)
@@ -362,8 +370,10 @@ if is_nixos; then
   cur_shell="$({ getent passwd "$(id -un)" 2>/dev/null || true; } | cut -d: -f7)"
   cur_shell="${cur_shell:-${SHELL:-unknown}}"
   [[ "$cur_shell" == *fish* ]] || { warn "fish is not yet the system login shell (now: $cur_shell)"; need_rebuild=1; }
-  # No trusted-users check or advice on purpose: a trusted user can act as root
-  # through the Nix daemon, so this installer must never suggest adding anyone.
+  # install.sh itself neither checks nor recommends trusted-users: a trusted
+  # user can act as root through the Nix daemon. The remaining risk is outside
+  # this file: the sys-setup helper recommended below (ops/system-setup.sh)
+  # still manages that setting, and that is a separate decision.
   # nix-optimise.timer only dedups the store; it does not collect garbage.
   systemctl is-active nix-gc.timer >/dev/null 2>&1 \
     || { warn "system nix-gc.timer is not active (nix-optimise.timer alone does not collect garbage)"; need_rebuild=1; }

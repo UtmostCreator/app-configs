@@ -55,13 +55,8 @@ fi
 
 [tasks."test:bash"]
 description = "Run bats tests for shell scripts (deterministic, no live hardware)"
-run = """
-if command -v bats >/dev/null 2>&1; then
-  bats tests/bash
-else
-  echo 'missing: bats (install via Nix); skipping shell tests'
-fi
-"""
+# Fails when bats is missing (see ops/run-bats.sh); it never reports a skip as success.
+run = "bash ops/run-bats.sh"
 
 [tasks."repo:validate"]
 description = "Architecture invariant guard"

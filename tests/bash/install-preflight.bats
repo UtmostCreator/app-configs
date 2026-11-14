@@ -39,3 +39,35 @@ setup() {
         DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version" bash "$REPO_ROOT/ops/install.sh"
     [[ "$output" != *"WSL1"* ]]
 }
+
+@test "--dry-run is honoured (sys-install passes its args through)" {
+    expected="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$REPO_ROOT/nix/vars/default.nix")"
+    run env -u DRY_RUN USER="$expected" HOST_PROFILE=wsl bash "$REPO_ROOT/ops/install.sh" --dry-run
+    [[ "$output" == *"Mode:  dry-run"* ]]
+    [[ "$output" == *"[install:dry-run] would run"* ]]
+}
+
+@test "--help prints usage and changes nothing" {
+    run bash "$REPO_ROOT/ops/install.sh" --help
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Usage:"* ]]
+    [[ "$output" != *"Preflight"* ]]
+}
+
+@test "unknown arguments stop before anything runs" {
+    run bash "$REPO_ROOT/ops/install.sh" --apply
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"unknown argument: --apply"* ]]
+    [[ "$output" != *"Preflight"* ]]
+}
+
+@test "under bats a real install against the real HOME is refused" {
+    # A HOME outside this test's scratch dir stands in for the real one
+    # (run-bats.sh gives the whole suite a scratch HOME).
+    outside="${BATS_RUN_TMPDIR:-/tmp}/outside-home-$$"
+    run env -u DRY_RUN HOME="$outside" bash "$REPO_ROOT/ops/install.sh"
+    [ "$status" -eq 3 ]
+    [ ! -e "$outside" ]   # nothing was created there
+    [[ "$output" == *"refusing a real install from a bats test"* ]]
+    [[ "$output" != *"Preflight"* ]]
+}

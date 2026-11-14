@@ -1583,3 +1583,69 @@ run_with_cleanup() { run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" 
   [ "$status" -eq 0 ]
   [ ! -e "$roots/20260101T000000Z-2" ]
 }
+
+# ── T-0011: the progress ticker follows the updater, not its parent ─────────
+
+# Runs the updater on a pseudo-terminal (so the progress ticker is on) inside a
+# wrapper that, once the updater is gone, reports whether the ticker it forked
+# is still alive and whether the lock is free, without closing the terminal.
+# STUB_KILL_MODE (kill9|int|term|none) is what the stubbed `nix flake update`
+# does to the updater; it records the updater's children (the ticker) first.
+pty_update() {
+  local w="$BATS_TEST_TMPDIR/wrapper.sh" pids="$BATS_TEST_TMPDIR/ticker.pids"
+  cat > "$STUBS/nix" <<'STUB'
+#!/usr/bin/env bash
+if [[ "$*" == "flake update"* ]]; then
+  pgrep -P "$PPID" | grep -vx "$$" > "$BATS_TEST_TMPDIR/ticker.pids"
+  case "${STUB_KILL_MODE:-none}" in
+    kill9) kill -9 "$PPID"; sleep 1 ;;
+    int)   kill -INT "$PPID" ;;
+    term)  kill -TERM "$PPID" ;;
+  esac
+fi
+[[ "$*" == *--print-out-paths* ]] && echo "$STUB_HM_OUT"
+exit 0
+STUB
+  chmod +x "$STUBS/nix"
+  {
+    # bats -j starts tests with SIGINT ignored, and bash cannot trap a signal
+    # ignored at startup: restore the default so the INT mode can be seen.
+    printf 'env --default-signal=INT bash %q --apply --yes --no-cleanup --skip-verify\nrc=$?\n' "$FAKE/ops/update-all.sh"
+    printf 'for _ in $(seq 40); do\n  alive=0\n  for p in $(cat %q 2>/dev/null); do kill -0 "$p" 2>/dev/null && alive=1; done\n  [ "$alive" = 0 ] && break\n  sleep 0.1\ndone\n' "$pids"
+    printf 'if [ "$alive" = 0 ]; then echo TICKER_GONE; else echo TICKER_ALIVE; fi\n'
+    printf 'if flock -n %q true; then echo LOCK_FREE; else echo LOCK_HELD; fi\n' "$SYS_UPDATE_STATE_DIR/lock"
+    printf 'echo "rc=$rc"\n'
+  } > "$w"
+  run script -qec "bash $w" /dev/null
+}
+
+@test "T-0011: after SIGKILL of the updater the ticker exits and the next run gets the lock" {
+  command -v script >/dev/null || skip "script(1) not available"
+  export STUB_KILL_MODE=kill9
+  pty_update
+  [ -s "$BATS_TEST_TMPDIR/ticker.pids" ]
+  [[ "$output" == *"TICKER_GONE"* ]]
+  [[ "$output" == *"LOCK_FREE"* ]]
+  [[ "$output" == *"rc=137"* ]]
+  # the next run is not refused
+  export STUB_KILL_MODE=none
+  run_update
+  [ "$status" -eq 0 ]
+}
+
+@test "T-0011: a normal exit, SIGINT and SIGTERM leave no ticker behind" {
+  command -v script >/dev/null || skip "script(1) not available"
+  for mode in none int term; do
+    reset_repo
+    export STUB_KILL_MODE="$mode"
+    pty_update
+    [ -s "$BATS_TEST_TMPDIR/ticker.pids" ]
+    [[ "$output" == *"TICKER_GONE"* ]]
+    [[ "$output" == *"LOCK_FREE"* ]]
+    case "$mode" in
+      none) [[ "$output" == *"rc=0"* ]] ;;
+      int)  [[ "$output" == *"rc=130"* ]] ;;
+      term) [[ "$output" == *"rc=143"* ]] ;;
+    esac
+  done
+}

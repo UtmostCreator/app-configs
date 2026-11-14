@@ -101,7 +101,9 @@ ui_run() {
     status="${PIPESTATUS[0]}"
   else
     if [[ "$UI_PROGRESS" == 1 ]]; then
-      _ui_progress "$label" "$tmp" & ticker=$!
+      # $$ is the shell that runs the update: inside the forked ticker $PPID
+      # would name that shell's parent, which can outlive a killed updater.
+      _ui_progress "$label" "$tmp" "$$" & ticker=$!
     fi
     "$@" > "$tmp" 2>&1 < /dev/null
     status=$?
@@ -126,12 +128,17 @@ ui_cleanup() {
   return 0
 }
 
-# _ui_progress <label> <capture> — redraws "… label  running m:ss" until
-# killed. The run log only gets a step's output once it finishes, so the hint
-# points at the live per-step capture instead.
+# _ui_progress <label> <capture> <pid> — redraws "… label  running m:ss" until
+# killed, or until <pid> (the shell running the update) is gone. The pid is
+# passed in because inside a forked ticker $PPID is not the shell that forked
+# it: it is that shell's own parent, which survives a SIGKILL of the update and
+# would keep an orphaned ticker alive. Without a numeric pid nothing is drawn.
+# The run log only gets a step's output once it finishes, so the hint points at
+# the live per-step capture instead.
 _ui_progress() {
-  local label="$1" log="$2" start=$SECONDS parent=$PPID elapsed
-  while kill -0 "$parent" 2>/dev/null; do
+  local label="$1" log="$2" watched="${3:-}" start=$SECONDS elapsed
+  [[ "$watched" =~ ^[0-9]+$ ]] || return 1
+  while kill -0 "$watched" 2>/dev/null; do
     elapsed=$((SECONDS - start))
     printf '\r\033[K  %s…%s %-*s %srunning %d:%02d · tail -f %s%s' \
       "$UI_C_DIM" "$UI_C_OFF" "$UI_LABEL_WIDTH" "$label" \

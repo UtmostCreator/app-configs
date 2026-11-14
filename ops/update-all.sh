@@ -348,6 +348,8 @@ on_exit() {
   # would hold the lock after this process is gone.
   # shellcheck disable=SC2046
   kill $(jobs -p) 2>/dev/null; wait 2>/dev/null
+  # An interrupt during the snapshot leaves its stderr temp file behind.
+  [[ -n ${SNAPSHOT_ERR:-} ]] && rm -f -- "$SNAPSHOT_ERR"
   if [[ "$RUN_META_OWNED" == 1 ]]; then
     ((rc == 0)) || run_failed
     meta_put exit_code "$rc" 2>/dev/null
@@ -855,6 +857,8 @@ fi
 
 HM_PKGS_BEFORE=""; PROFILE_PKGS_BEFORE=""; MISE_BEFORE=""; MISE_OK=0
 HM_GEN_BEFORE=""; HM_PATH_BEFORE=""; SNAPSHOT_DIR=""; BUILD_OUT=""
+# The snapshot script's stderr file; on_exit removes it if the run stops mid-snapshot.
+SNAPSHOT_ERR=""
 
 # Only a lock that matches HEAD is ours to commit afterwards; local edits to it
 # (possible under --allow-dirty) are the user's to keep or discard. Decided
@@ -952,7 +956,7 @@ if [[ "$MODE" == "apply" ]]; then
     cat "$SNAPSHOT_ERR" >> "$RUN_LOG"
     UI_LAST_LOG="$SNAPSHOT_ERR"
     ui_err "dotfiles" "snapshot failed — refusing to apply without a way back"
-    rm -f -- "${SNAPSHOT_ERR:?}"; UI_LAST_LOG=""
+    [[ -n ${SNAPSHOT_ERR:-} ]] && rm -f -- "$SNAPSHOT_ERR"; UI_LAST_LOG=""
     exit 1
   fi
 

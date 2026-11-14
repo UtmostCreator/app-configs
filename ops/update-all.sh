@@ -284,6 +284,12 @@ fi
 if [[ "$PRECHECK_FAILED" == 1 ]]; then
   printf '\n%sUpdate stopped before anything was changed.%s\n\n' "$UI_C_BOLD" "$UI_C_OFF"
   if [[ "$GIT_STATE" == "dirty" && "$ALLOW_DIRTY" != 1 ]]; then
+    # Name the files: a bare count sends people to --allow-dirty instead of
+    # committing (or porting) the actual change.
+    mapfile -t _changed < <(git -C "$REPO_ROOT" status --short --untracked-files=all 2>/dev/null)
+    printf '  Changed:\n'
+    printf '    %s\n' "${_changed[@]:0:10}"
+    (( ${#_changed[@]} > 10 )) && printf '    … and %d more\n' "$(( ${#_changed[@]} - 10 ))"
     printf '  Resolve:   git -C %s status\n' "$REPO_ROOT"
     printf '             git -C %s commit -am "chore(config): local changes"\n' "$REPO_ROOT"
     printf '             git -C %s stash push -u -m "before sys-update"\n' "$REPO_ROOT"

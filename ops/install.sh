@@ -27,10 +27,12 @@
 # Usage:
 #   bash ops/install.sh                 # full unattended install
 #   bash ops/install.sh --dry-run       # show what would happen, mutate nothing
-#   DRY_RUN=1 bash ops/install.sh       # same as --dry-run
+#   DRY_RUN=1 bash ops/install.sh       # same as --dry-run (DRY_RUN must be 0 or 1)
 #   HOST_PROFILE=linux-cli bash ops/install.sh
 #
 # Exit codes: 0 on success; non-zero on the first required-step failure.
+# Optional steps (VS Code, Syncthing, ssh-agent) and a pending NixOS system
+# rebuild exit 0 but are listed as degraded instead of "Install complete".
 
 set -euo pipefail
 
@@ -96,6 +98,12 @@ is_nixos() {
     || grep -qi '^ID=nixos' "${INSTALL_OS_RELEASE:-/etc/os-release}" 2>/dev/null
 }
 have()     { command -v "$1" >/dev/null 2>&1; }
+
+# Optional steps may fail without aborting; each failure is recorded here and
+# listed in the final summary, so a partial install never ends in "Install
+# complete" (same idea as DEGRADED in ops/bootstrap.sh).
+DEGRADED=()
+degrade() { DEGRADED+=("$1"); warn "$2"; }
 
 # Temp files and dirs created below, removed on exit.
 CLEANUP=()
@@ -247,7 +255,8 @@ if [[ -x "$REPO_ROOT/ops/vscode-extensions.sh" ]]; then
     # Not run(): run() exits on failure and this step is only a warning.
     log "+ bash $REPO_ROOT/ops/vscode-extensions.sh"
     bash "$REPO_ROOT/ops/vscode-extensions.sh" \
-      || warn "VS Code extensions: ops/vscode-extensions.sh failed; re-run it after install"
+      || degrade "VS Code extensions (re-run: bash ops/vscode-extensions.sh)" \
+           "VS Code extensions: ops/vscode-extensions.sh failed; re-run it after install"
   fi
 else
   warn "ops/vscode-extensions.sh missing or not executable; skipping"
@@ -257,14 +266,18 @@ fi
 # Stops Syncthing from syncing .obsidian folders by installing the repo-tracked
 # managed .stignore block into configured Syncthing folders. The helper is a
 # safe no-op when Syncthing folders do not exist yet, so this step never blocks
-# the install. Folder config stays user-owned in the Web UI.
+# the install. Folder config stays user-owned in the Web UI. Linux only: the
+# helper writes Linux Syncthing paths, so macOS skips it.
 step "Syncthing Obsidian global .stignore"
-if [[ -x "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" ]]; then
+if [[ "$HOST_PROFILE" == macos ]]; then
+  log "skipped (Linux-only helper; host is macOS)"
+elif [[ -x "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" ]]; then
   if [[ "$DRY_RUN" == 1 ]]; then
     run bash "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh"
   else
     bash "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" --apply \
-      || warn "syncthing-obsidian-stignore returned non-zero (review)"
+      || degrade "Syncthing .stignore (re-run: bash ops/syncthing-obsidian-stignore.sh --apply)" \
+           "syncthing-obsidian-stignore returned non-zero (review)"
   fi
 else
   warn "ops/syncthing-obsidian-stignore.sh missing or not executable; skipping"
@@ -286,7 +299,9 @@ if [[ "$HOST_PROFILE" != "wsl" ]] && [[ -x "$REPO_ROOT/ops/unix/ssh-agent-setup.
   if [[ "$DRY_RUN" == 1 ]]; then
     log "would: bash ops/unix/ssh-agent-setup.sh"
   else
-    bash "$REPO_ROOT/ops/unix/ssh-agent-setup.sh" || warn "ssh-agent-setup returned non-zero (review)"
+    bash "$REPO_ROOT/ops/unix/ssh-agent-setup.sh" \
+      || degrade "ssh-agent-setup (re-run: bash ops/unix/ssh-agent-setup.sh)" \
+           "ssh-agent-setup returned non-zero (review)"
   fi
 else
   log "skipped (WSL or helper absent)"
@@ -299,9 +314,6 @@ if [[ "$DRY_RUN" == 1 ]]; then
 else
   run bash "$REPO_ROOT/ops/doctor.sh"
 fi
-
-step "Done"
-log "Install complete (host=$HOST_PROFILE, mode=$([[ "$DRY_RUN" == 1 ]] && echo dry-run || echo apply))."
 
 # ── NixOS system-rebuild advisory (NOT run automatically — needs sudo) ───────
 # The user environment is fully installed above. System-level settings (fish
@@ -329,6 +341,7 @@ if is_nixos; then
     || { warn "system time zone is ${cur_timezone:-unknown}, not Europe/London"; need_rebuild=1; }
 
   if [[ "$need_rebuild" == 1 ]]; then
+    DEGRADED+=("system layer (run: sudo bash $REPO_ROOT/ops/system-setup.sh --apply)")
     log "To finish system setup, run the automated helper:"
     log "    sudo bash $REPO_ROOT/ops/system-setup.sh --apply   (alias: sudo sys-setup --apply)"
     log "It writes /etc/nixos/app-configs-extra.nix, wires it in, and runs nixos-rebuild."
@@ -342,4 +355,19 @@ if is_nixos; then
   log "Update everything (brewup):  mise run update:apply"
   log "Safe cleanup (keep rollbacks): mise run cleanup:apply"
   log "See docs/getting-started/install.md and docs/platforms/nixos/rebuild.md."
+fi
+
+# ── Summary ─────────────────────────────────────────────────────────────────
+# Printed last, after every step and the NixOS advisory, so "complete" is only
+# claimed when nothing was degraded.
+step "Done"
+if [[ "$DRY_RUN" == 1 ]]; then
+  log "Dry run finished; nothing was changed. Re-run without --dry-run to apply."
+elif ((${#DEGRADED[@]} > 0)); then
+  log "finished with degraded steps (not a clean success):"
+  for degraded_step in "${DEGRADED[@]}"; do
+    log "  degraded: $degraded_step"
+  done
+else
+  log "Install complete (host=$HOST_PROFILE, mode=apply)."
 fi

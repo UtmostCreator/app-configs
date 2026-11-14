@@ -426,3 +426,81 @@ esac'
     [ "$status" -eq 0 ]
     [[ "$output" != *"nix-gc.timer is not active"* ]]
 }
+
+# ── OS gating and the completion message ────────────────────────────────────
+
+# helpers_present: optional helpers exist and log their calls.
+helpers_present() {
+    mkdir -p "$FAKE/ops/unix"
+    stub "$FAKE/ops/syncthing-obsidian-stignore.sh" 'echo "syncthing $*" >>"$STUB_LOG"'
+    stub "$FAKE/ops/unix/ssh-agent-setup.sh" 'echo "ssh-agent $*" >>"$STUB_LOG"'
+    stub "$FAKE/ops/vscode-extensions.sh" 'echo "vscode $*" >>"$STUB_LOG"'
+}
+
+@test "the Linux-only Syncthing helper is not run on macOS" {
+    make_repo repo
+    helpers_present
+    run env USER=utmostcreator DRY_RUN=1 HOST_PROFILE=macos bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"syncthing-obsidian-stignore"* ]]
+}
+
+@test "the Syncthing helper still runs on Linux, in dry-run and for real" {
+    make_repo repo
+    helpers_present
+    run env USER=utmostcreator DRY_RUN=1 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would run: bash $FAKE/ops/syncthing-obsidian-stignore.sh"* ]]
+    run env USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    grep -q '^syncthing --apply$' "$STUB_LOG"
+}
+
+@test "a clean install ends with Install complete" {
+    make_repo repo
+    helpers_present
+    run env INSTALL_NIXOS_MARKER=none INSTALL_OS_RELEASE=none USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Install complete (host=linux-cli, mode=apply)."* ]]
+    [[ "$output" != *"degraded"* ]]
+}
+
+@test "a dry run never says Install complete" {
+    make_repo repo
+    run env USER=utmostcreator DRY_RUN=1 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Dry run finished; nothing was changed."* ]]
+    [[ "$output" != *"Install complete"* ]]
+}
+
+@test "a failed ssh-agent helper is listed as degraded, not as a complete install" {
+    make_repo repo
+    helpers_present
+    stub "$FAKE/ops/unix/ssh-agent-setup.sh" 'exit 1'
+    run env INSTALL_NIXOS_MARKER=none INSTALL_OS_RELEASE=none USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"finished with degraded steps (not a clean success)"* ]]
+    [[ "$output" == *"degraded: ssh-agent-setup"* ]]
+    [[ "$output" != *"Install complete"* ]]
+}
+
+@test "failed VS Code and Syncthing helpers are listed as degraded" {
+    make_repo repo
+    helpers_present
+    stub "$FAKE/ops/vscode-extensions.sh" 'exit 1'
+    stub "$FAKE/ops/syncthing-obsidian-stignore.sh" 'exit 1'
+    run env INSTALL_NIXOS_MARKER=none INSTALL_OS_RELEASE=none USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"degraded: VS Code extensions"* ]]
+    [[ "$output" == *"degraded: Syncthing"* ]]
+    [[ "$output" != *"Install complete"* ]]
+}
+
+@test "a pending NixOS system rebuild is degraded and printed before any completion line" {
+    nixos_host
+    helpers_present
+    run env $NIXOS USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"degraded: system layer"* ]]
+    [[ "$output" != *"Install complete"* ]]
+}

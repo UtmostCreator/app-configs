@@ -349,7 +349,7 @@ applications + CLI tools + dotfiles**, not just dotfiles:
 | `sys-cleanup --gc` | `sys-cleanup-gc` | + remove aged generations (keeps recent) |
 | `sudo sys-setup --apply` | — | Apply the NixOS SYSTEM layer Home Manager cannot: fish login shell, trusted-users, declarative GC, timezone, then `nixos-rebuild switch`. Run WITHOUT `--apply` (no sudo) for a report-only preview. Does NOT touch user-layer config. |
 | — | `sys-doctor` / `syscd` | Health check / cd into the repo |
-| — | `sys-readiness` | Report whether the system layer is active (login shell, trusted-users, GC timers) |
+| `sys-readiness` | `sys-readiness` | Report whether the system layer is active (login shell, trusted-users, GC timers) |
 
 ### Which command applies what (important)
 

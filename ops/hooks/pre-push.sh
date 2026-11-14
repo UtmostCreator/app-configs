@@ -36,7 +36,10 @@ while read -r local_ref local_sha remote_ref remote_sha; do
 
     while IFS= read -r sha; do
         [[ -n "$sha" ]] || continue
-        if git show --format= --unified=0 "$sha" | grep -qE '^\+(<{7}|>{7})( |$)'; then
+        # No `grep -q`: it exits at the first match, `git show` then dies of
+        # SIGPIPE (141) and, under pipefail, the whole condition reads as
+        # "no match" once the diff exceeds the pipe buffer. Let grep drain it.
+        if git show --format= --unified=0 "$sha" | grep -E '^\+(<{7}|>{7})( |$)' >/dev/null; then
             echo "[pre-push] conflict markers added in commit $sha"
             exit 1
         fi

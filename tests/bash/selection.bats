@@ -20,6 +20,10 @@ setup_file() {
     drv linux-cli empty >"$BATS_FILE_TMPDIR/drv-empty-linux-cli" 2>/dev/null || true
     drv linux-cli all-on-work >"$BATS_FILE_TMPDIR/drv-all-on-work-linux-cli" 2>/dev/null || true
     drv linux-desktop all-on-personal >"$BATS_FILE_TMPDIR/drv-all-on-personal-linux-desktop" 2>/dev/null || true
+    local f
+    for f in default media-go-off all-false; do
+        pkgs linux-cli "$f" >"$BATS_FILE_TMPDIR/pkgs-$f.json" 2>/dev/null || true
+    done
 }
 
 setup() {
@@ -46,6 +50,14 @@ hmjson() {
     local args=()
     mapfile -t args < <(sel "$2")
     timeout 600 nix eval --json "path:$REPO_ROOT/nix#homeConfigurations.$1.config.$3" "${args[@]}"
+}
+
+# pkgs <host> <fixture>: sorted package names of home.packages, as JSON.
+pkgs() {
+    local args=()
+    mapfile -t args < <(sel "$2")
+    timeout 600 nix eval --json "path:$REPO_ROOT/nix#homeConfigurations.$1.config.home.packages" \
+        "${args[@]}" --apply 'ps: map (x: x.pname or x.name or "") ps' | jq -c 'sort'
 }
 
 recorded() { cat "$BATS_FILE_TMPDIR/drv-$1" 2>/dev/null; }
@@ -120,4 +132,47 @@ recorded() { cat "$BATS_FILE_TMPDIR/drv-$1" 2>/dev/null; }
     run hmjson linux-cli groups-without-profile myConfig.groups
     [ "$status" -ne 0 ]
     [[ "$output" == *"'profile' is missing"* ]]
+}
+
+# Package names (pname) each group gates. Keep in step with the lib.optionals
+# blocks in nix/modules/home/cli.nix and dev.nix.
+MEDIA='["ffmpeg","imagemagick","viu","yt-dlp"]'
+SECURITY='["osv-scanner","trivy"]'
+GO='["delve","go","go-arch-lint","gofumpt","golangci-lint","gopls","goreleaser","gotestsum","gotools","govulncheck","gremlins","mockgen"]'
+
+pk() { cat "$BATS_FILE_TMPDIR/pkgs-$1.json"; }
+
+@test "default packages include every gated package" {
+    [ -s "$BATS_FILE_TMPDIR/pkgs-default.json" ]
+    run jq -e --argjson g "$MEDIA" --argjson s "$SECURITY" --argjson o "$GO" \
+        '($g + $s + $o) - . == []' "$BATS_FILE_TMPDIR/pkgs-default.json"
+    [ "$status" -eq 0 ]
+}
+
+@test "media=false and go=false: ffmpeg and go are gone, core tools stay" {
+    [ -s "$BATS_FILE_TMPDIR/pkgs-media-go-off.json" ]
+    run jq -e '((["ffmpeg","go"] - . == ["ffmpeg","go"])
+         and (["fish","ripgrep","fd","jq","git"] - . == [])
+         and (["trivy","osv-scanner"] - . == []))' "$BATS_FILE_TMPDIR/pkgs-media-go-off.json"
+    [ "$status" -eq 0 ]
+}
+
+@test "media=false and go=false remove exactly the media and go packages" {
+    run jq -e --slurpfile off "$BATS_FILE_TMPDIR/pkgs-media-go-off.json" \
+        --argjson g "$MEDIA" --argjson o "$GO" \
+        '(. - $off[0] | sort) == (($g + $o) | sort)' "$BATS_FILE_TMPDIR/pkgs-default.json"
+    [ "$status" -eq 0 ]
+}
+
+@test "all groups off remove exactly the gated packages and keep the tools the ops scripts need" {
+    [ -s "$BATS_FILE_TMPDIR/pkgs-all-false.json" ]
+    run jq -e --slurpfile off "$BATS_FILE_TMPDIR/pkgs-all-false.json" \
+        --argjson g "$MEDIA" --argjson s "$SECURITY" --argjson o "$GO" \
+        '(. - $off[0] | sort) == (($g + $s + $o) | sort)' "$BATS_FILE_TMPDIR/pkgs-default.json"
+    [ "$status" -eq 0 ]
+    # Home Manager side of what update-all, readiness and doctor check:
+    # home-manager, git, jq, yq, gitleaks, and the readiness/doctor samples.
+    run jq -e '["home-manager","git","jq","yq-go","gitleaks","fish","neovim","ripgrep","fd","bat","eza","fzf","zoxide","starship","atuin","tmux","lazygit","delta","gh","nodejs","php-with-extensions","docker","stripe-cli","repomix","scc","bats","actionlint","ShellCheck","shfmt","lychee","curl"] - . == []' \
+        "$BATS_FILE_TMPDIR/pkgs-all-false.json"
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
 }

@@ -95,10 +95,19 @@ in
       lnav
       lychee
       markdownlint-cli # Markdown style linter; binary: markdownlint
-      # ── Security / vulnerability scanning (opt-in via VERIFY_SECURITY=1 or
-      #    AI_VERIFY_SCOPE=all in the AI verify scripts; not run by default) ──
-      trivy # filesystem/container/IaC vulnerability scanning
-      osv-scanner # dependency vulnerability scanning against the OSV database
+    ])
+    # ── Security / vulnerability scanning (opt-in via VERIFY_SECURITY=1 or
+    #    AI_VERIFY_SCOPE=all in the AI verify scripts; not run by default) ──
+    # Group `security` (myConfig.groups.security, nix/modules/home/profile.nix).
+    # Spliced in place: list order feeds the Home Manager generation derivation.
+    ++ lib.optionals config.myConfig.groups.security (
+      with pkgs;
+      [
+        trivy # filesystem/container/IaC vulnerability scanning
+        osv-scanner # dependency vulnerability scanning against the OSV database
+      ]
+    )
+    ++ (with pkgs; [
       composer-require-checker # verify composer.json declares every used symbol (VERIFY_FULL gate)
       # ── Nix config maintenance toolchain (keeps this flake disciplined) ──
       deadnix # find unused Nix bindings
@@ -138,24 +147,31 @@ in
       watchexec # rerun on file change (fish `patw` for focused artisan tests)
       xh # readable HTTP client for manual API calls; keep curl for scripts
       hyperfine # benchmark commands (warmups + runs) before claiming a speedup
-      # ── Go development toolchain (for the ya-under-control Go rewrite) ──
-      #    Installed here so `home-manager switch` provisions the full stack
-      #    reproducibly across hosts. golangci-lint bundles staticcheck, govet,
-      #    errcheck, ineffassign and unused, so no standalone staticcheck is
-      #    listed. Enforced by ya-under-control/.lefthook.yml + CI.
-      go # Go toolchain: compiler, gofmt, go vet, go test, go mod, go fix
-      gopls # official Go language server (IDE intelligence, renames, code actions)
-      golangci-lint # unified lint runner (staticcheck/govet/errcheck/ineffassign/unused/...)
-      gofumpt # stricter, opinionated gofmt superset
-      gotools # goimports (import management) + other golang.org/x/tools binaries
-      govulncheck # reachability-aware vulnerability scanning (govulncheck ./...)
-      go-arch-lint # architecture dependency linter driven by .go-arch-lint.yml
-      delve # dlv: source-level Go debugger
-      gotestsum # readable test output + JUnit for CI
-      gremlins # pinned diff-scoped Go mutation testing (pre-commit quality gate)
-      goreleaser # single static cross-platform binary release pipeline
-      mockgen # go.uber.org/mock generator (typed interface mocks)
     ])
+    # ── Go development toolchain (for the ya-under-control Go rewrite) ──
+    # Group `go` (myConfig.groups.go, nix/modules/home/profile.nix); the last
+    # entries of the list, so the order is unchanged.
+    ++ lib.optionals config.myConfig.groups.go (
+      with pkgs;
+      [
+        #    Installed here so `home-manager switch` provisions the full stack
+        #    reproducibly across hosts. golangci-lint bundles staticcheck, govet,
+        #    errcheck, ineffassign and unused, so no standalone staticcheck is
+        #    listed. Enforced by ya-under-control/.lefthook.yml + CI.
+        go # Go toolchain: compiler, gofmt, go vet, go test, go mod, go fix
+        gopls # official Go language server (IDE intelligence, renames, code actions)
+        golangci-lint # unified lint runner (staticcheck/govet/errcheck/ineffassign/unused/...)
+        gofumpt # stricter, opinionated gofmt superset
+        gotools # goimports (import management) + other golang.org/x/tools binaries
+        govulncheck # reachability-aware vulnerability scanning (govulncheck ./...)
+        go-arch-lint # architecture dependency linter driven by .go-arch-lint.yml
+        delve # dlv: source-level Go debugger
+        gotestsum # readable test output + JUnit for CI
+        gremlins # pinned diff-scoped Go mutation testing (pre-commit quality gate)
+        goreleaser # single static cross-platform binary release pipeline
+        mockgen # go.uber.org/mock generator (typed interface mocks)
+      ]
+    )
     ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       pkgs.bubblewrap # bwrap: preferred Codex CLI Linux sandbox helper
       pkgs.mariadb # provides the `mysql` client; lighter than full mysql-client formula

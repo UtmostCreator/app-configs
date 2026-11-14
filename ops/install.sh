@@ -92,6 +92,11 @@ source "$REPO_ROOT/ops/lib/hm-switch.sh"
 is_nixos() { [[ -f /etc/NIXOS ]] || grep -qi '^ID=nixos' /etc/os-release 2>/dev/null; }
 have()     { command -v "$1" >/dev/null 2>&1; }
 
+# Temp files and dirs created below, removed on exit.
+CLEANUP=()
+cleanup() { ((${#CLEANUP[@]} == 0)) || rm -rf -- "${CLEANUP[@]}"; }
+trap cleanup EXIT
+
 # ── 1. preflight ────────────────────────────────────────────────────────────
 step "Preflight"
 for cmd in git bash; do
@@ -156,16 +161,28 @@ run nix flake check "$REPO_ROOT/nix"
 
 # ── 5. chezmoi ──────────────────────────────────────────────────────────────
 step "chezmoi (init + snapshot + apply)"
+# `chezmoi init --source` does not persist the source directory, so every later
+# chezmoi call must carry --source too; otherwise diff/managed/apply read
+# ~/.local/share/chezmoi instead of this checkout.
 run chezmoi init --source="$REPO_ROOT"
 if [[ "$DRY_RUN" == 1 ]]; then
-  run sh -c "chezmoi diff || true"
+  run sh -c 'chezmoi --source="$1" diff || true' sh "$REPO_ROOT"
   log "would: snapshot \$HOME then chezmoi apply --force"
 else
   [[ -x "$REPO_ROOT/ops/snapshot-home.sh" ]] \
     || fail "ops/snapshot-home.sh missing or not executable"
-  run bash "$REPO_ROOT/ops/snapshot-home.sh"
+  # snapshot-home.sh runs `chezmoi managed` itself, so give it a chezmoi that
+  # always carries --source. The shim text is constant; the paths travel in
+  # the environment, never inside the script.
+  chezmoi_shim="$(mktemp -d)" || fail "cannot create a temp dir"
+  CLEANUP+=("$chezmoi_shim")
+  # shellcheck disable=SC2016  # the shim must expand these when it runs
+  printf '%s\n' '#!/bin/sh' 'exec "$INSTALL_REAL_CHEZMOI" --source="$INSTALL_REPO_ROOT" "$@"' >"$chezmoi_shim/chezmoi"
+  chmod +x "$chezmoi_shim/chezmoi"
+  INSTALL_REAL_CHEZMOI="$(command -v chezmoi)" INSTALL_REPO_ROOT="$REPO_ROOT" PATH="$chezmoi_shim:$PATH" \
+    run bash "$REPO_ROOT/ops/snapshot-home.sh"
   # --force: unattended. The snapshot above is the rollback safety net.
-  run chezmoi apply --force
+  run chezmoi --source="$REPO_ROOT" apply --force
 fi
 
 # ── 6. Home Manager / nix-darwin ────────────────────────────────────────────
@@ -192,7 +209,7 @@ fi
 step "mise (trust + install)"
 run mise trust "$REPO_ROOT"
 # On NixOS runtimes come from Nix; this is typically "all tools are installed".
-run mise install
+run sh -c 'cd "$1" && mise install' sh "$REPO_ROOT"
 
 # ── 8. VS Code extensions ───────────────────────────────────────────────────
 step "VS Code extensions"

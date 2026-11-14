@@ -477,3 +477,21 @@ run = "bash ops/projects/github/sync-main.sh"
 [tasks."projects:pr-watch"]
 description = "Poll GitHub for PR transitions on tracked repos (--once for single poll)"
 run = "bash ops/projects/github/pr-watch.sh"
+
+# ─── Audit (turns manual bug-hunting into repeatable checks) ────────────────
+
+[tasks.audit]
+description = "Full audit: CI gate, restsift deep checks, live machine checks (PASS/WARN/FAIL; exit 1 on FAIL)"
+run = "bash ops/audit.sh"
+
+[tasks."audit:ci"]
+description = "Audit: the deterministic gate (ops/ci.sh)"
+run = "bash ops/audit.sh --ci"
+
+[tasks."audit:deep"]
+description = "Audit: restsift arch, refactor, dupes, shell and git-history checks (needs res)"
+run = "bash ops/audit.sh --deep"
+
+[tasks."audit:live"]
+description = "Audit: read-only checks of this machine (chezmoi, systemd, nix profile, sys-update, cbm index)"
+run = "bash ops/audit.sh --live"

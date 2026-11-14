@@ -9,23 +9,30 @@
 # `.obsidian/` folder keeps notes syncing while making Obsidian settings local.
 #
 # HOW SYNCTHING USES THIS FILE
-# Syncthing reads `.stignore` from each synced folder root. With the leading
-# `(?d)` flag, ignored files are ALSO deletable so a leftover conflict file on
-# one device does not get re-propagated. Install this managed block on every
-# configured Syncthing folder (see ops/syncthing-obsidian-stignore.sh).
+# Syncthing reads `.stignore` from each synced folder root. The FIRST matching
+# rule wins, and each child is checked separately. With the leading `(?d)` flag,
+# an ignored file may be DELETED by Syncthing when it blocks the removal of a
+# directory. `(?d)` is used only for disposable metadata (.obsidian, .DS_Store,
+# Thumbs.db). The conflict-file rules have NO `(?d)` and MUST stay above every
+# `(?d)` rule, so a conflict file inside `.obsidian/` matches them first: it is
+# ignored (not synced) but never deleted by Syncthing, because a conflict file
+# can hold the only copy of an edit. Resolve those by hand. Effect: a directory
+# deleted on another device stays here while it holds a conflict file, and
+# Syncthing reports "contains ignored files". Install this managed block on
+# every configured Syncthing folder (see ops/syncthing-obsidian-stignore.sh).
 #
 # Patterns are relative to the folder root. `**` matches across directories.
+
+# --- Conflict files: not synced, NEVER deleted. Keep ABOVE every (?d) rule ---
+**.sync-conflict-*
+**sync-conflict-*
+**data-sync-conflict.*
 
 # --- Never sync Obsidian metadata folders anywhere in a Syncthing folder ----
 (?d).obsidian
 (?d).obsidian/**
 (?d)**/.obsidian
 (?d)**/.obsidian/**
-
-# --- Always drop any conflict files Syncthing already produced -------------
-(?d)**.sync-conflict-*
-(?d)**sync-conflict-*
-(?d)**data-sync-conflict.*
 
 # --- Common cross-tool noise ------------------------------------------------
 (?d)**/.DS_Store

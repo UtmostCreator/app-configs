@@ -5,8 +5,9 @@
 # 1. Installs the repo-tracked managed ignore block
 #    (reference/syncthing/obsidian.stignore) into every configured Syncthing
 #    folder root, so Syncthing stops syncing any `.obsidian/` directory.
-# 2. Sweeps any existing `*.sync-conflict-*`, `*sync-conflict-*`, or
-#    `data-sync-conflict.*` files in that folder.
+# 2. REPORTS any existing `*.sync-conflict-*`, `*sync-conflict-*`, or
+#    `data-sync-conflict.*` files in that folder. It NEVER deletes them: a
+#    conflict file can hold the only copy of an edit, so resolve each by hand.
 #
 # WHY a script and not Nix: this repo deliberately keeps Syncthing FOLDER config
 # user-owned in the Web UI (see nix/modules/home/gui.nix, services.syncthing),
@@ -18,11 +19,12 @@
 # - The .stignore install is idempotent and preserves non-managed rules.
 # - The managed block is kept first because Syncthing uses the first matching
 #   rule; this prevents older un-ignore rules from overriding these exclusions.
-# - Conflict-file deletion only ever targets known Syncthing conflict patterns.
+# - Conflict files are report-only. There is no delete or quarantine option;
+#   deleting them would need a new, explicit decision.
 #
 # USAGE
 #   bash ops/syncthing-obsidian-stignore.sh                 # dry-run, configured folders
-#   bash ops/syncthing-obsidian-stignore.sh --apply         # install + sweep all folders
+#   bash ops/syncthing-obsidian-stignore.sh --apply         # install + report all folders
 #   bash ops/syncthing-obsidian-stignore.sh --folder DIR    # custom folder root only
 #   SYNC_OBSIDIAN_DIR=DIR bash ops/syncthing-obsidian-stignore.sh --apply
 #
@@ -48,7 +50,7 @@ while [[ $# -gt 0 ]]; do
     --apply)  APPLY=1; shift ;;
     --folder) EXPLICIT_FOLDERS+=("${2:?--folder needs a path}"); shift 2 ;;
     -h|--help)
-      sed -n '2,30p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+      sed -n '2,32p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0 ;;
     *) fail "unknown argument: $1" ;;
   esac
@@ -106,7 +108,7 @@ target_folders() {
 
 folder_count=0
 changed_count=0
-removed_total=0
+conflicts_total=0
 
 while IFS= read -r FOLDER; do
   [[ -n "$FOLDER" ]] || continue
@@ -163,12 +165,12 @@ while IFS= read -r FOLDER; do
 
   log "Folder:        $FOLDER"
   log ".stignore:     $stignore_action"
-  log "Conflict files: ${#conflicts[@]} found"
+  log "Conflict files: ${#conflicts[@]} found (this script never deletes them)"
 
   if [[ "$APPLY" -eq 0 ]]; then
     rm -f "$desired"
     if [[ ${#conflicts[@]} -gt 0 ]]; then
-      log "Would remove:"
+      log "Conflict files (not deleted; resolve by hand):"
       printf '  %s\n' "${conflicts[@]}"
     fi
     continue
@@ -184,26 +186,20 @@ while IFS= read -r FOLDER; do
     log ".stignore already current: $DEST"
   fi
 
-  removed=0
-  for f in "${conflicts[@]}"; do
-    # Belt-and-braces: only ever delete genuine conflict files.
-    case "$f" in
-      *.sync-conflict-*|*sync-conflict-*|*data-sync-conflict.*)
-        rm -f -- "$f" && removed=$((removed + 1)) ;;
-      *)
-        warn "skipped non-conflict path: $f" ;;
-    esac
-  done
-  removed_total=$((removed_total + removed))
-  log "Removed $removed conflict file(s)."
+  if [[ ${#conflicts[@]} -gt 0 ]]; then
+    conflicts_total=$((conflicts_total + ${#conflicts[@]}))
+    warn "${#conflicts[@]} conflict file(s) left in place; resolve by hand:"
+    printf '  %s\n' "${conflicts[@]}" >&2
+    warn "For each: compare it with the original, keep the content you want, then delete the loser yourself."
+  fi
 done < <(target_folders)
 
 if [[ "$folder_count" -eq 0 ]]; then
   warn "No Syncthing folders found. Pass --folder DIR or set SYNC_OBSIDIAN_DIR."
 elif [[ "$APPLY" -eq 0 ]]; then
-  log "DRY-RUN (no changes). Re-run with --apply to install and sweep."
+  log "DRY-RUN (no changes). Re-run with --apply to install the .stignore."
 else
-  log "Done. Updated $changed_count folder(s); removed $removed_total conflict file(s)."
+  log "Done. Updated $changed_count folder(s); $conflicts_total conflict file(s) left in place (resolve by hand)."
   # The rescan advice only applies when a .stignore actually changed.
   if [[ "$changed_count" -gt 0 ]]; then
     log "Restart/rescan in the Syncthing Web UI (http://127.0.0.1:8384) if it"

@@ -19,3 +19,15 @@ setup() {
     [[ "$output" == *"x.bats:2: ! false"* ]]
     [[ "$output" != *"x.bats:7"* ]]
 }
+
+@test "logging tests never touch the tmux server you run them from" {
+    command -v tmux >/dev/null || { echo "tmux missing"; return 1; }
+    sock="$BATS_TEST_TMPDIR/real-tmux.sock"
+    tmux -S "$sock" new-session -d -s mine 'sleep 600'
+    # Inside tmux, TMUX names the client's server socket.
+    run env TMUX="$sock,99999,0" TMUX_PANE=%0 bats -f 'invalid arguments' \
+        "$REPO_ROOT/ops/projects/logging/test/log-workspace.bats"
+    alive=0; tmux -S "$sock" has-session -t mine 2>/dev/null && alive=1
+    tmux -S "$sock" kill-server 2>/dev/null || true
+    [ "$alive" -eq 1 ] || { echo "the test run killed the caller's tmux server"; return 1; }
+}

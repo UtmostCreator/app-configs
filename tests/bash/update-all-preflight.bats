@@ -3,6 +3,8 @@
 # The preflight contract of ops/update-all.sh: no mutation may happen until
 # every precondition passes.
 
+bats_require_minimum_version 1.5.0
+
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   # The --apply runs below rely on the preflight stopping; keep the real HOME
@@ -10,6 +12,12 @@ setup() {
   export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
   export SYS_UPDATE_STATE_DIR="$BATS_TEST_TMPDIR/state"
   export NO_COLOR=1
+  # Home Manager's profile directory is looked up under XDG_STATE_HOME, then
+  # under NIX_STATE_DIR; point both into the sandbox so the real ones never
+  # decide a result (the second holds a per-user profile directory).
+  export XDG_STATE_HOME="$BATS_TEST_TMPDIR/xdg-state"
+  export NIX_STATE_DIR="$BATS_TEST_TMPDIR/nix-state"
+  mkdir -p "$NIX_STATE_DIR/profiles/per-user/${USER:-$(id -un)}"
   FAKE="$BATS_TEST_TMPDIR/repo"
   mkdir -p "$FAKE"
   cp -a "$REPO_ROOT/ops" "$FAKE/ops"

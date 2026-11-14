@@ -13,7 +13,11 @@ setup() {
   export HOME="$BATS_TEST_TMPDIR/home"
   export SYS_UPDATE_STATE_DIR="$HOME/.local/state/sys-update"
   export HOST_PROFILE=linux-desktop
+  # Never let the developer's real state directories leak into a run.
+  export XDG_STATE_HOME="$HOME/.local/state"
+  export NIX_STATE_DIR="$BATS_TEST_TMPDIR/nix-state"
   export STUB_LOG="$BATS_TEST_TMPDIR/calls.log"
+  : > "$STUB_LOG"
   # The updater commits the new lock; the fake $HOME has no git identity.
   export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
   mkdir -p "$HOME/.local/state/nix/profiles" "$HOME/.nix-profile"
@@ -26,12 +30,15 @@ setup() {
 #!/usr/bin/env bash
 printf 'activate %s
 ' "$*" >> "$STUB_LOG"
+[[ "${STUB_ACTIVATE_NO_RELINK:-0}" == 1 ]] \
+  || ln -sfn home-manager-1-link "${STUB_PROFILE_DIR:-$HOME/.local/state/nix/profiles}/home-manager"
 ACT
   chmod +x "$GEN_DIR/activate"
   ln -s "$GEN_DIR" "$HOME/.local/state/nix/profiles/home-manager-1-link"
   ln -s home-manager-1-link "$HOME/.local/state/nix/profiles/home-manager"
 
-  FAKE="$BATS_TEST_TMPDIR/repo"
+  # A quote and a space in the path: the updater must quote its own repo path.
+  FAKE="$BATS_TEST_TMPDIR/it's a repo"
   mkdir -p "$FAKE/nix"
   cp -a "$REPO_ROOT/ops" "$FAKE/ops"
   printf '{"nodes":{"nixpkgs":{"locked":{"rev":"old"}}}}\n' > "$FAKE/nix/flake.lock"
@@ -53,18 +60,80 @@ JSON
 #!/usr/bin/env bash
 printf '%s %s\n' "$tool" "\$*" >> "\$STUB_LOG"
 case "$tool \$*" in
-  "nix flake update"*)    printf '{"nodes":{"nixpkgs":{"locked":{"rev":"new"}}}}\n' > "$FAKE/nix/flake.lock" ;;
+  "nix flake update"*)    [[ "\${FAIL_FLAKE_UPDATE:-0}" == 1 ]] && { echo "error: cannot update inputs" >&2; exit 1; }
+                          printf '{"nodes":{"nixpkgs":{"locked":{"rev":"new"}}}}\n' > "$FAKE/nix/flake.lock"
+                          [[ "\${STUB_HUP_AFTER_UPDATE:-0}" == 1 ]] && kill -HUP "\$PPID"
+                          [[ "\${STUB_TERM_AFTER_UPDATE:-0}" == 1 ]] && kill -TERM "\$PPID"
+                          [[ "\${STUB_INT_AFTER_UPDATE:-0}" == 1 ]] && kill -INT "\$PPID" ;;
   "nix flake check"*)     printf 'warning: The check omitted these incompatible systems: aarch64-darwin\n' >&2 ;;
   "nix build"*)          [[ "\${FAIL_HOST_BUILD:-0}" == 1 ]] && exit 1
-                          [[ "\$*" == *--print-out-paths* && -n "\${STUB_HM_OUT:-}" ]] && printf '%s\n' "\$STUB_HM_OUT" ;;
+                          if [[ "\$*" == *--print-out-paths* ]]; then
+                            [[ "\${FAIL_PRINT_OUT:-0}" == 1 ]] && exit 1
+                            [[ "\${STUB_HM_OUT_EMPTY:-0}" == 1 ]] || printf '%s\n' "\${STUB_HM_OUT:-$BATS_TEST_TMPDIR/hm-out}"
+                          fi ;;
   "chezmoi managed"*)     [[ "\${CHEZMOI_MANAGED_FAIL:-0}" == 1 ]] && { echo "chezmoi: managed exploded" >&2; exit 1; } ;;
-  "chezmoi status"*)      printf '%s\n' "\${CHEZMOI_STATUS:- M dot_thing}" ;;
-  "home-manager switch"*) printf 'There are 394 unread and relevant news items.\n' ;;
+  "chezmoi status"*)      [[ "\${CHEZMOI_STATUS_FAIL:-0}" == 1 ]] && { echo "chezmoi: status exploded" >&2; exit 1; }
+                          printf '%s\n' "\${CHEZMOI_STATUS:- M dot_thing}" ;;
+  "chezmoi apply"*)       # STUB_TOUCH_LOCK=1: another session edits flake.lock mid-run
+                          [[ "\${STUB_TOUCH_LOCK:-0}" == 1 ]] && printf '{"nodes":{"nixpkgs":{"locked":{"rev":"foreign"}}}}\n' > "$FAKE/nix/flake.lock" ;;
+  "home-manager switch"*) printf 'There are 394 unread and relevant news items.\n'
+                          if [[ "\${STUB_HM_NO_RELINK:-0}" != 1 ]]; then
+                            ln -sfn "\${STUB_HM_OUT:-$BATS_TEST_TMPDIR/hm-out}" "\${STUB_PROFILE_DIR:-$HOME/.local/state/nix/profiles}/home-manager-2-link"
+                            ln -sfn home-manager-2-link "\${STUB_PROFILE_DIR:-$HOME/.local/state/nix/profiles}/home-manager"
+                          fi ;;
 esac
 exit 0
 STUB
     chmod +x "$STUBS/$tool"
   done
+
+  mkdir -p "$BATS_TEST_TMPDIR/hm-out"
+
+  # Tools the lifecycle work calls directly. None of them touches real state.
+  cat > "$STUBS/nix-store" <<'STUB'
+#!/usr/bin/env bash
+printf 'nix-store %s\n' "$*" >> "$STUB_LOG"
+[[ "${FAIL_GCROOT:-0}" == 1 ]] && { echo "nix-store: cannot add root" >&2; exit 1; }
+target="" root=""
+while (($#)); do
+  case "$1" in
+    --realise) target="$2"; shift ;;
+    --add-root) root="$2"; shift ;;
+    -q) exit 0 ;;
+  esac
+  shift
+done
+if [[ -n "$root" ]]; then mkdir -p "$(dirname "$root")"; ln -sfn "$target" "$root"; fi
+exit 0
+STUB
+  cat > "$STUBS/nix-env" <<'STUB'
+#!/usr/bin/env bash
+printf 'nix-env %s\n' "$*" >> "$STUB_LOG"
+profile="" target=""
+while (($#)); do
+  case "$1" in
+    --profile) profile="$2"; shift ;;
+    --set) target="$2"; shift ;;
+  esac
+  shift
+done
+if [[ -n "$profile" && -n "$target" ]]; then
+  ln -sfn "$target" "$profile-99-link"
+  ln -sfn "$(basename "$profile")-99-link" "$profile"
+fi
+exit 0
+STUB
+  cat > "$STUBS/xdg-mime" <<'STUB'
+#!/usr/bin/env bash
+[[ "${STUB_MIME_EMPTY:-0}" == 1 ]] && exit 0
+printf '%s\n' "${STUB_MIME-brave-browser.desktop}"
+STUB
+  cat > "$STUBS/brave" <<'STUB'
+#!/usr/bin/env bash
+[[ "${FAIL_BRAVE:-0}" == 1 ]] && exit 1
+echo "Brave Browser 1.0.0"
+STUB
+  chmod +x "$STUBS/nix-store" "$STUBS/nix-env" "$STUBS/xdg-mime" "$STUBS/brave"
   PATH="$STUBS:$PATH"
 }
 

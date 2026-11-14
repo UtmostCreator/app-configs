@@ -202,13 +202,15 @@ send_backend_verify_then_git_workflow() {
   run_bootstrap_in_pane "$pane_id" "$cmd"
 }
 
+# Parse every argument before acting, so an invalid one never follows a kill.
+FORCE="0"
 for arg in "$@"; do
   case "$arg" in
     --detached)
       DETACHED="1"
       ;;
     --force)
-      tmux kill-session -t "$SESSION" 2>/dev/null || true
+      FORCE="1"
       ;;
     *)
       echo "Unknown argument: $arg"
@@ -217,6 +219,8 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+[ "$FORCE" = "1" ] && { tmux kill-session -t "$SESSION" 2>/dev/null || true; }
 
 if tmux has-session -t "$SESSION" 2>/dev/null; then
   if [ -n "${TMUX:-}" ]; then

@@ -61,3 +61,17 @@ EOF
     grep -Fq 'ssh -- user@host.example:22 Enter' "$LOG"
 }
 
+@test "master.sh: --force with a later invalid arg does not kill the session" {
+    stub_tmux
+    run env PATH="$STUBS:$PATH" bash "$P/tmux/master.sh" --force --invalid
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"Unknown argument: --invalid"* ]]
+    ! grep -q 'kill-session' "$LOG"
+}
+
+@test "master.sh: --force with valid args still kills the session" {
+    stub_tmux
+    run env PATH="$STUBS:$PATH" bash "$P/tmux/master.sh" --force --detached
+    grep -q 'kill-session' "$LOG"
+}
+

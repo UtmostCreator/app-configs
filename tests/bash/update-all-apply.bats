@@ -1130,3 +1130,128 @@ run_verified() {
   [[ "$output" == *"changed during the update by something else"* ]]
   [ "$(statuses)" = "started prepared activating activated verify-skipped commit-skipped done" ]
 }
+
+# ── T-0010 Gate B: pull, re-exec and adoption (T4) ──────────────────────────
+
+# Give $FAKE a bare upstream with one new commit that changes the updater: the
+# new updater announces itself in $STUB_LOG, so a run of it is observable.
+fake_upstream_with_new_updater() {
+  local branch; branch="$(git -C "$FAKE" branch --show-current)"
+  git init -q --bare "$BATS_TEST_TMPDIR/origin.git"
+  git -C "$FAKE" remote add origin "$BATS_TEST_TMPDIR/origin.git"
+  git -C "$FAKE" push -q origin "$branch"
+  git -C "$FAKE" branch -q --set-upstream-to="origin/$branch" "$branch"
+  git clone -q "$BATS_TEST_TMPDIR/origin.git" "$BATS_TEST_TMPDIR/other"
+  sed -i '0,/^set -uo pipefail$/s//set -uo pipefail\nprintf "updater-version=2 reexec=%s\\n" "${SYS_UPDATE_REEXEC-unset}" >> "$STUB_LOG"/' \
+    "$BATS_TEST_TMPDIR/other/ops/update-all.sh"
+  git -C "$BATS_TEST_TMPDIR/other" -c user.email=t@t -c user.name=t commit -q -am "newer updater"
+  git -C "$BATS_TEST_TMPDIR/other" push -q origin "$branch"
+}
+
+@test "S28: a pull that moved HEAD continues in the updated updater" {
+  fake_upstream_with_new_updater
+  run_update
+  [ "$status" -eq 0 ]
+  [ "$(grep -c '^updater-version=2' "$STUB_LOG")" -eq 1 ]
+  grep -q '^updater-version=2 reexec=1$' "$STUB_LOG"
+  # one run: one record, one log, one update
+  [ "$(ls "$SYS_UPDATE_STATE_DIR"/runs/*.meta | wc -l)" -eq 1 ]
+  [ "$(grep -c '^nix flake update' "$STUB_LOG")" -eq 1 ]
+  [ "$(statuses)" = "started prepared activating activated verify-skipped committed done" ]
+  [[ "$output" == *"restarting in the updated version"* ]]
+}
+
+@test "S28: the re-executed updater appends to the run log of its parent" {
+  fake_upstream_with_new_updater
+  run_update
+  [ "$status" -eq 0 ]
+  log="$(ls "$SYS_UPDATE_STATE_DIR"/runs/*.log)"
+  [ "$(grep -c 'SYSTEM UPDATE\|== Preflight ==' "$log")" -ge 2 ]
+  grep -q '\[✓\] git pull' "$log"
+  grep -q '\[✓\] flake.lock: committed' "$log"
+}
+
+@test "S29: the re-exec happens before anything is snapshotted or changed" {
+  fake_upstream_with_new_updater
+  run_update
+  [ "$status" -eq 0 ]
+  first_marker="$(grep -n '^updater-version=2' "$STUB_LOG" | head -1 | cut -d: -f1)"
+  [ -n "$first_marker" ]
+  # nothing the update mutates ran before the new updater started
+  ! head -n "$first_marker" "$STUB_LOG" | grep -q '^nix flake update\|^nix build\|^chezmoi apply\|^home-manager switch\|^nix-store'
+}
+
+@test "S30: the lock is held across the re-exec and free afterwards" {
+  fake_upstream_with_new_updater
+  cat > "$STUBS/nix" <<'STUB'
+#!/usr/bin/env bash
+if [[ "$*" == "flake update"* ]]; then
+  if flock -n "$SYS_UPDATE_STATE_DIR/lock" true; then echo lock-free > "$BATS_TEST_TMPDIR/relock.out"
+  else echo lock-held > "$BATS_TEST_TMPDIR/relock.out"; fi
+fi
+[[ "$*" == *--print-out-paths* ]] && echo "$STUB_HM_OUT"
+exit 0
+STUB
+  chmod +x "$STUBS/nix"
+  run_update
+  [ "$status" -eq 0 ]
+  grep -q '^updater-version=2 reexec=1$' "$STUB_LOG"
+  [ "$(cat "$BATS_TEST_TMPDIR/relock.out")" = lock-held ]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+}
+
+@test "S30: a second update started while the re-exec'd one runs is refused" {
+  fake_upstream_with_new_updater
+  cat > "$STUBS/nix" <<'STUB'
+#!/usr/bin/env bash
+if [[ "$*" == "flake update"* ]]; then
+  bash "$FAKE_REPO/ops/update-all.sh" --apply --yes --no-cleanup --skip-verify > "$BATS_TEST_TMPDIR/second.out" 2>&1
+  echo "rc=$?" >> "$BATS_TEST_TMPDIR/second.out"
+fi
+[[ "$*" == *--print-out-paths* ]] && echo "$STUB_HM_OUT"
+exit 0
+STUB
+  chmod +x "$STUBS/nix"
+  export FAKE_REPO="$FAKE"
+  run_update
+  [ "$status" -eq 0 ]
+  grep -q '^updater-version=2 reexec=1$' "$STUB_LOG"
+  grep -q '^rc=5$' "$BATS_TEST_TMPDIR/second.out"
+}
+
+@test "S30: mkdir-mode lock ownership survives the re-exec" {
+  export SYS_UPDATE_FORCE_MKDIR_LOCK=1
+  fake_upstream_with_new_updater
+  run_update
+  [ "$status" -eq 0 ]
+  grep -q '^updater-version=2 reexec=1$' "$STUB_LOG"
+  [ ! -e "$SYS_UPDATE_STATE_DIR/lock.d" ]
+}
+
+@test "S30: the re-exec is a plain restart: no pull happens in the child" {
+  fake_upstream_with_new_updater
+  run_update
+  [ "$status" -eq 0 ]
+  grep -q '^updater-version=2 reexec=1$' "$STUB_LOG"
+  log="$(ls "$SYS_UPDATE_STATE_DIR"/runs/*.log)"
+  [ "$(grep -c '^\$ git .* pull' "$log")" -eq 1 ]
+}
+
+@test "report mode never writes to the run record named by a stray re-exec environment" {
+  run_update
+  [ "$status" -eq 0 ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  before="$(sha256sum "$meta")"
+  id="$(sed -n 's/^run_id=//p' "$meta")"
+  run env SYS_UPDATE_REEXEC=1 SYS_UPDATE_RUN_ID="$id" PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
+  [ "$status" -eq 0 ]
+  [ "$(sha256sum "$meta")" = "$before" ]
+}
+
+@test "a re-exec environment without an inherited lock is not adopted" {
+  run env SYS_UPDATE_REEXEC=1 SYS_UPDATE_RUN_ID=20260101T000000Z-4242 \
+    PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup --skip-verify
+  [ "$status" -eq 0 ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  [ "$(sed -n 's/^run_id=//p' "$meta")" != 20260101T000000Z-4242 ]
+}

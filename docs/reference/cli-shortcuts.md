@@ -28,10 +28,12 @@ fish abbreviations expand in place, so history keeps the full command.
 | `punit` `pint` | `./vendor/bin/phpunit`, `./vendor/bin/pint` |
 | `nr` `ni` | `npm run`, `npm install` |
 | `ll` `lt` | `eza -lah --git`, `eza --tree -L 2` |
+| `lg` | `lazygit` |
 | `reload` | `exec fish` (zsh: `exec zsh`) |
 
-Functions: `gi tst` runs `git st` (fixes the misplaced space), and `nreset`
-removes `node_modules`, `.nuxt`, `.next` and runs `npm ci`.
+Functions: `gi tst` runs `git st` (fixes the misplaced space); `nreset`
+removes `node_modules`, `.nuxt`, `.next` and runs `npm ci`; `patw <filter>`
+reruns one artisan test on every PHP change (watchexec).
 
 ## Git aliases (`dot_gitconfig.tmpl`)
 
@@ -41,17 +43,24 @@ removes `node_modules`, `.nuxt`, `.next` and runs `npm ci`.
 | `git sync [branch]` | update the default branch without leaving yours (pulls if you are on it) |
 | `git nb <name>` | new branch from a freshly fetched default branch |
 | `git rbd` | rebase the current branch onto the freshly fetched default branch |
-| `git pnv`, `git pfnv` | push without hooks; `pfnv` uses `--force-with-lease` |
-| `git ppr [args]` | push, then `gh pr create --fill` (e.g. `git ppr --base develop`) |
+| `git ppr [args]` | push (hooks run), then `gh pr create --fill` (e.g. `git ppr --base develop`) |
 | `git prreview`, `git prfiles [N]` | PRs waiting for my review; files in a PR |
 | `git merged-prs <base> [head]` | PR branches merged in a range (release notes) |
 | `git changed` | modified, staged and untracked files (NUL-separated) |
 | `git dnew` | diff stat including new files |
+| `git wtn <branch>` | new worktree `../<repo>-<branch>` on a new branch from fresh `origin/main` (no stash, no switch) |
 | `git wta` `wtl` `wtp` | `worktree add`, `list`, `prune` |
 | `git git ...` | runs `git ...` (typed `git` twice) |
 
 `help.autocorrect = prompt` offers the fix for typos such as `commi`, `stas`
-or `pul`.
+or `pul`. `commit.template` shows the conventional-commit format when you
+commit without `-m`.
+
+Safety rules (enforced by `tests/bash/git-shortcuts.bats`): no alias skips
+hooks (`--no-verify` is typed out on purpose), force pushes always use a
+lease (`git pf`), `git cleanf` and `git undohard` show what they would
+destroy and ask first, and no alias duplicates another or shadows a git
+command.
 
 ## Helpers (`~/.local/bin`, any shell)
 
@@ -64,6 +73,8 @@ or `pul`.
 | `topn [N]` | `sort \| uniq -c \| sort -nr \| head`, for any stdin |
 | `logtop FIELD [N] FILE...` | rank access logs by `ip`, `path`, `status`, `pathstatus` or `ua`; reads `.gz` |
 | `curl-timing URL` | status plus DNS, connect, TLS, TTFB and total time |
+| `xh` | readable HTTP client for manual API calls (`xh DELETE <url>`); keep curl in scripts |
+| `hyperfine 'a' 'b'` | benchmark two commands with warmups before claiming a speedup |
 | `rgc [rg args]` | ripgrep only changed files; `LZ=1 rgc` runs lizard on them |
 
 ## Not ported

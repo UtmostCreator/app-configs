@@ -25,6 +25,7 @@ UI_COUNT_SKIP=0
 UI_COUNT_INFO=0
 UI_NOTES=()
 UI_LABEL_WIDTH=20
+_UI_OWNED_LOG=""     # capture file ui_run created and may delete
 
 # ui_init <logfile> [verbose]
 ui_init() {
@@ -89,7 +90,11 @@ ui_run() {
     return 0
   fi
   local tmp status=0 ticker=""
-  tmp="$(mktemp "${TMPDIR:-/tmp}/sys-update-step.XXXXXX")"
+  # One capture file at a time: ui_err / ui_scan_warnings read it right after
+  # their step, so the previous one can go instead of leaking a file per step.
+  ui_cleanup
+  tmp="$(mktemp "${TMPDIR:-/tmp}/sys-update-step.XXXXXX")" || return 1
+  _UI_OWNED_LOG="$tmp"
   ui_log_only "" ; ui_log_only "\$ $*"
   if [[ "$UI_VERBOSE" == 1 ]]; then
     "$@" 2>&1 < /dev/null | tee "$tmp"
@@ -110,6 +115,17 @@ ui_run() {
   return "$status"
 }
 
+# ui_cleanup — remove the capture file of the most recent ui_run. Callers
+# should invoke it when the run ends (e.g. from their EXIT trap).
+ui_cleanup() {
+  if [[ -n "$_UI_OWNED_LOG" ]]; then
+    rm -f -- "$_UI_OWNED_LOG"
+    [[ "$UI_LAST_LOG" == "$_UI_OWNED_LOG" ]] && UI_LAST_LOG=""
+    _UI_OWNED_LOG=""
+  fi
+  return 0
+}
+
 # _ui_progress <label> <capture> — redraws "… label  running m:ss" until
 # killed. The run log only gets a step's output once it finishes, so the hint
 # points at the live per-step capture instead.
@@ -127,7 +143,7 @@ _ui_progress() {
 # ui_note <severity> <source> <message> — queued for the end-of-run block.
 ui_note() {
   local sev="$1" src="$2"; shift 2
-  local entry="$sev	$src	$*"
+  local entry="$sev"$'\t'"$src"$'\t'"$*"
   local existing
   for existing in "${UI_NOTES[@]}"; do
     [[ "$existing" == "$entry" ]] && return 0   # never repeat the same note
@@ -137,7 +153,7 @@ ui_note() {
 
 # ui_scan_warnings — classify the last step's output into notes.
 ui_scan_warnings() {
-  local file="${1:-$UI_LAST_LOG}" line classified
+  local file="${1:-$UI_LAST_LOG}" line classified sev src msg
   [[ -n "$file" && -s "$file" ]] || return 0
   declare -F classify_warning >/dev/null || return 0
   while IFS= read -r line; do
@@ -145,7 +161,7 @@ ui_scan_warnings() {
       IFS=$'\t' read -r sev src msg <<< "$classified"
       ui_note "$sev" "$src" "$msg"
     fi
-  done < <(grep -iE 'warning|warn |error|ERESOLVE|news items' "$file" 2>/dev/null | head -100)
+  done < <(grep -iE 'warning|warn |error|ERESOLVE|news item' "$file" 2>/dev/null | head -100)
 }
 
 ui_notes_report() {
@@ -155,7 +171,8 @@ ui_notes_report() {
   for entry in "${UI_NOTES[@]}"; do
     IFS=$'\t' read -r sev src msg <<< "$entry"
     case "$sev" in
-      warn) _ui_line "$UI_C_WARN" "!" "$src" "$msg" ;;
+      error) _ui_line "$UI_C_ERR"  "✗" "$src" "$msg" ;;
+      warn)  _ui_line "$UI_C_WARN" "!" "$src" "$msg" ;;
       *)    _ui_line "$UI_C_DIM"  "→" "$src" "$msg" ;;
     esac
   done

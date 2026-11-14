@@ -68,3 +68,5 @@ Only the files listed above. Unrelated findings are reported, not fixed.
   - Still open: R4-02, R4-03 and R4-05.
   - Release checklist addition: the first real rollback must target a run recorded by this code (a fresh `--apply`).
   - User priority: release audit P0, before production; destructive fault-injection in an isolated environment, not the daily-driver install.
+
+- 2026-11-14: release audit: PRE-DEPLOYMENT PASS — LIVE ROLLBACK PENDING (`evidence/release-audit-2026-11-14.md`); live apply/rollback needs a supervised run with separate authorisation.

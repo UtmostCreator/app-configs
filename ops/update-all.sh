@@ -373,15 +373,24 @@ if [[ "$MODE" == "apply" ]]; then
     fi
   fi
 
-  if [[ -x "$REPO_ROOT/ops/snapshot-home.sh" ]]; then
-    if ui_run "dotfiles" bash "$REPO_ROOT/ops/snapshot-home.sh"; then
-      SNAPSHOT_DIR="$(grep -oE '/[^ ]*dotfiles-snapshots/[0-9TZ]+' "$UI_LAST_LOG" | head -1)"
-      [[ -n "$SNAPSHOT_DIR" ]] && meta_put snapshot_dir "$SNAPSHOT_DIR"
-      ui_ok "dotfiles" "$(grep -oE '[0-9]+ copied' "$UI_LAST_LOG" | head -1) → $(tilde "${SNAPSHOT_DIR:-snapshot dir}")"
-    else
-      ui_err "dotfiles" "snapshot failed — refusing to apply without a way back"
-      exit 1
-    fi
+  # Fail closed: no snapshot script, or a failed snapshot, means no way back.
+  # --print-dir keeps stdout to the directory alone; stderr is shown on
+  # failure and always appended to the run log.
+  if [[ ! -x "$REPO_ROOT/ops/snapshot-home.sh" ]]; then
+    ui_err "dotfiles" "snapshot script missing or not executable — refusing to apply without a way back"
+    exit 1
+  fi
+  SNAPSHOT_ERR="$(mktemp "${TMPDIR:-/tmp}/sys-update-snapshot.XXXXXX")"
+  if SNAPSHOT_DIR="$("$REPO_ROOT/ops/snapshot-home.sh" --print-dir 2>"$SNAPSHOT_ERR" < /dev/null)" \
+      && [[ -n "$SNAPSHOT_DIR" && -d "$SNAPSHOT_DIR" ]]; then
+    cat "$SNAPSHOT_ERR" >> "$RUN_LOG"
+    meta_put snapshot_dir "$SNAPSHOT_DIR"
+    ui_ok "dotfiles" "snapshot → $(tilde "$SNAPSHOT_DIR")"
+  else
+    cat "$SNAPSHOT_ERR" >> "$RUN_LOG"
+    UI_LAST_LOG="$SNAPSHOT_ERR"
+    ui_err "dotfiles" "snapshot failed — refusing to apply without a way back"
+    exit 1
   fi
 
   printf '%s\n' "$RUN_META" > "$STATE_DIR/last-run" 2>/dev/null || true

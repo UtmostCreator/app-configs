@@ -5,6 +5,8 @@
 # a snapshot before mutation, a rollback handle afterwards, no raw output on
 # a clean run, and no attempt to upgrade packages another manager owns.
 
+bats_require_minimum_version 1.5.0
+
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   export NO_COLOR=1
@@ -55,6 +57,7 @@ case "$tool \$*" in
   "nix flake check"*)     printf 'warning: The check omitted these incompatible systems: aarch64-darwin\n' >&2 ;;
   "nix build"*)          [[ "\${FAIL_HOST_BUILD:-0}" == 1 ]] && exit 1
                           [[ "\$*" == *--print-out-paths* && -n "\${STUB_HM_OUT:-}" ]] && printf '%s\n' "\$STUB_HM_OUT" ;;
+  "chezmoi managed"*)     [[ "\${CHEZMOI_MANAGED_FAIL:-0}" == 1 ]] && { echo "chezmoi: managed exploded" >&2; exit 1; } ;;
   "chezmoi status"*)      printf '%s\n' "\${CHEZMOI_STATUS:- M dot_thing}" ;;
   "home-manager switch"*) printf 'There are 394 unread and relevant news items.\n' ;;
 esac
@@ -356,4 +359,40 @@ JSON
 @test "home-manager switch backs up files it would clobber" {
   run_update
   grep -q '^home-manager switch .*-b hm-bak' "$STUB_LOG"
+}
+
+@test "a missing snapshot script stops the apply before anything runs" {
+  rm "$FAKE/ops/snapshot-home.sh"
+  run_update --allow-dirty
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"snapshot"* ]]
+  ! grep -q '^home-manager switch' "$STUB_LOG"
+}
+
+@test "a non-executable snapshot script stops the apply" {
+  chmod -x "$FAKE/ops/snapshot-home.sh"
+  run_update --allow-dirty
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"snapshot"* ]]
+  ! grep -q '^home-manager switch' "$STUB_LOG"
+}
+
+@test "the snapshot dir is taken from --print-dir, not parsed from logs" {
+  export DOTFILES_SNAPSHOT_ROOT="$BATS_TEST_TMPDIR/my snaps"
+  run_update
+  [ "$status" -eq 0 ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  dir="$(sed -n 's/^snapshot_dir=//p' "$meta")"
+  [[ "$dir" == "$DOTFILES_SNAPSHOT_ROOT"/* ]]
+  [ -f "$dir/MANIFEST.txt" ]
+}
+
+@test "a failed snapshot stops before any update and shows the cause" {
+  export CHEZMOI_MANAGED_FAIL=1
+  run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"snapshot failed"* ]]
+  [[ "$output" == *"managed exploded"* ]]
+  run ! grep -q '^nix flake update' "$STUB_LOG"
+  run ! grep -q '^home-manager switch' "$STUB_LOG"
 }

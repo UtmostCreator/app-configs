@@ -455,6 +455,10 @@ alias lg='lazygit'
 alias reload='exec zsh'
 # <<< cli shortcuts
 
+# ssh-agent: one shared agent per boot (keychain on Linux, Keychain on macOS).
+# chezmoi owns this file, so ops/unix/ssh-agent-setup.sh no longer edits it.
+[ -f "$HOME/.config/app-configs/ssh-agent.sh" ] && . "$HOME/.config/app-configs/ssh-agent.sh"
+
 # Pin mise versions
 # eval "$(mise activate zsh)"
 export PATH="$HOME/.local/bin:$PATH"

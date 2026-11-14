@@ -388,3 +388,73 @@ collide() {
     validate
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
 }
+
+# --- --eval: the policy on the evaluated config (rule 13) ------------------
+
+GOOD_EVAL='{"packages":["jq","home-manager"],"programs":["home-manager","man","vicinae"],"services":["syncthing","vicinae"],"xdg":["flameshot/flameshot.ini","systemd/user/x.service","nix/nix.conf","dconf/.keep"]}'
+
+# eval_with <json>: stub nix to print the JSON for every profile; calls are logged
+eval_with() {
+    printf '%s\n' "$1" >"$BATS_TEST_TMPDIR/eval.json"
+    printf '#!/bin/sh\necho called >>"%s/nix.log"\ncat "%s/eval.json"\n' "$BATS_TEST_TMPDIR" "$BATS_TEST_TMPDIR" >"$STUBS/nix"
+    chmod +x "$STUBS/nix"
+    git -C "$R" add -A
+    PATH="$STUBS:$PATH" run bash "$R/ops/validate-config.sh" --eval
+}
+
+@test "--eval: a policy-conforming evaluated config passes, one eval per profile" {
+    eval_with "$GOOD_EVAL"
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"evaluated Home Manager config follows the policy"* ]]
+    [ "$(wc -l <"$BATS_TEST_TMPDIR/nix.log")" -eq 3 ]
+}
+
+@test "--eval: violations in the evaluated config fail" {
+    local json
+    local -a bad=(
+        '{"packages":["jq","mise"],"programs":[],"services":[],"xdg":[]}'
+        '{"packages":["direnv"],"programs":[],"services":[],"xdg":[]}'
+        '{"packages":["home-manager"],"programs":[],"services":[],"xdg":[]}'
+        '{"packages":[],"programs":["git"],"services":[],"xdg":[]}'
+        '{"packages":[],"programs":[],"services":["foo"],"xdg":[]}'
+        '{"packages":[],"programs":[],"services":[],"xdg":["fish/config.fish"]}'
+    )
+    for json in "${bad[@]}"; do
+        eval_with "$json"
+        [ "$status" -ne 0 ] || { echo "not rejected: $json"; return 1; }
+        [[ "$output" == *"evaluated"* ]] || { echo "unreported: $json: $output"; return 1; }
+    done
+}
+
+@test "--eval: an evaluated xdg key that is also a chezmoi source fails" {
+    mkdir -p "$R/home/dot_config/flameshot"
+    printf '[General]\n' >"$R/home/dot_config/flameshot/flameshot.ini"
+    eval_with "$GOOD_EVAL"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"collides with chezmoi source"* ]]
+}
+
+@test "--eval: a failing or garbled nix eval is a failure" {
+    printf '#!/bin/sh\nexit 1\n' >"$STUBS/nix"; chmod +x "$STUBS/nix"
+    git -C "$R" add -A
+    PATH="$STUBS:$PATH" run bash "$R/ops/validate-config.sh" --eval
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"nix eval failed"* ]]
+    eval_with 'not json'
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"nix eval failed"* ]]
+}
+
+@test "the default run never calls nix" {
+    printf '#!/bin/sh\necho called >>"%s/nix.log"\nexit 1\n' "$BATS_TEST_TMPDIR" >"$STUBS/nix"; chmod +x "$STUBS/nix"
+    validate_with_stubs() { git -C "$R" add -A; PATH="$STUBS:$PATH" run bash "$R/ops/validate-config.sh"; }
+    validate_with_stubs
+    [ "$status" -eq 0 ]
+    [ ! -e "$BATS_TEST_TMPDIR/nix.log" ]
+}
+
+@test "an unknown argument is a usage error" {
+    run bash "$R/ops/validate-config.sh" --bogus
+    [ "$status" -eq 2 ]
+    [[ "$output" == *"usage:"* ]]
+}

@@ -10,9 +10,22 @@
 # cannot run (git missing, `git ls-files` failing) is a violation, not a pass.
 #
 # Usage:
-#   bash ops/validate-config.sh
+#   bash ops/validate-config.sh           # fast text checks (pre-commit hook)
+#   bash ops/validate-config.sh --eval    # also check the evaluated Home Manager
+#                                         # config (needs nix + jq; for CI)
 
 set -uo pipefail
+
+EVAL=0
+for arg in "$@"; do
+  case "$arg" in
+    --eval) EVAL=1 ;;
+    *)
+      printf 'usage: validate-config.sh [--eval]\n' >&2
+      exit 2
+      ;;
+  esac
+done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR" || exit 1
@@ -475,6 +488,82 @@ e0=$ERRORS
 check_xdg_collisions "$XDG_TEXT_KEYS"
 if ((ERRORS == e0)); then
   ok "no xdg.configFile target is also a live chezmoi source"
+fi
+
+# 13. (--eval only) The same policy on the *evaluated* Home Manager config, for
+# what text cannot see: let-bound/merged attrsets, xdg.configFile = <expr>,
+# options enabled by other modules or defaults, and package names after
+# overlays. One `nix eval --json` per profile (~1 s each, ~3 s total here) is
+# too slow and too dependent on the nix store/network for the pre-commit hook,
+# so the default run skips it; CI runs `bash ops/validate-config.sh --eval`.
+# Needs nix and jq; their absence is a failure, not a skip.
+# Tolerated, not declared by us: the home-manager package that
+# programs.home-manager adds to home.packages, programs.man (Home Manager default) and
+# services.vicinae (renamed alias of programs.vicinae); xdg keys Home Manager
+# generates itself (dconf/.keep, environment.d/10-home-manager.conf,
+# nix/nix.conf).
+EVAL_PROFILES="${VALIDATE_EVAL_PROFILES:-linux-desktop linux-cli wsl}"
+# shellcheck disable=SC2016 # Nix source, not shell: no expansion wanted
+EVAL_QUERY='cfg: let
+  inherit (builtins) attrNames filter map isAttrs tryEval;
+  on = set: n: let r = tryEval (let v = set.${n}; in isAttrs v && (v.enable or false) == true); in r.success && r.value;
+  en = set: filter (on set) (attrNames set);
+in {
+  packages = map (p: p.pname or (builtins.parseDrvName p.name).name) cfg.home.packages;
+  programs = en cfg.programs;
+  services = en cfg.services;
+  xdg = attrNames cfg.xdg.configFile;
+}'
+
+in_list() { # in_list <word> <space-separated list>
+  local w="$1" x
+  for x in $2; do
+    [[ "$x" == "$w" ]] && return 0
+  done
+  return 1
+}
+
+if ((EVAL)); then
+  if ! command -v nix >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
+    err "--eval needs nix and jq on PATH"
+  else
+    e0=$ERRORS
+    for profile in $EVAL_PROFILES; do
+      if ! json="$(nix eval --no-eval-cache --json "path:$ROOT_DIR/nix#homeConfigurations.$profile.config" --apply "$EVAL_QUERY" 2>/dev/null)" ||
+         ! jq -e 'has("packages") and has("programs") and has("services") and has("xdg")' <<<"$json" >/dev/null 2>&1; then
+        err "nix eval failed for homeConfigurations.$profile"
+        continue
+      fi
+      # programs.home-manager.enable (allowed) puts the home-manager package into
+      # home.packages itself, so that one name is expected when it is enabled.
+      hm_self=0
+      jq -e '.programs | index("home-manager")' <<<"$json" >/dev/null 2>&1 && hm_self=1
+      while IFS= read -r name; do
+        [[ "$name" == "home-manager" && $hm_self -eq 1 ]] && continue
+        in_list "$name" "$BOOTSTRAP_TOOLS direnv" &&
+          err "[$profile] '$name' is in evaluated home.packages (bootstrap-installed or dropped tool)"
+      done < <(jq -r '.packages[]' <<<"$json")
+      while IFS= read -r name; do
+        in_list "$name" "$ALLOWED_PROGRAMS man" ||
+          err "[$profile] evaluated programs.$name.enable is true; allowed: $ALLOWED_PROGRAMS"
+      done < <(jq -r '.programs[]' <<<"$json")
+      while IFS= read -r name; do
+        in_list "$name" "$ALLOWED_SERVICES vicinae" ||
+          err "[$profile] evaluated services.$name.enable is true; allowed: $ALLOWED_SERVICES"
+      done < <(jq -r '.services[]' <<<"$json")
+      profile_keys="$(jq -r '.xdg[]' <<<"$json")"
+      while IFS= read -r name; do
+        [[ -z "$name" ]] && continue
+        in_list "$name" "dconf/.keep environment.d/10-home-manager.conf nix/nix.conf" && continue
+        xdg_key_allowed "$name" ||
+          err "[$profile] evaluated xdg.configFile.\"$name\" is not allowlisted"
+      done <<<"$profile_keys"
+      check_xdg_collisions "$profile_keys"
+    done
+    if ((ERRORS == e0)); then
+      ok "evaluated Home Manager config follows the policy ($EVAL_PROFILES)"
+    fi
+  fi
 fi
 
 echo

@@ -25,7 +25,7 @@ build exists, never installed on Linux.
 | VS Code | Nix(GUI-Linux) `vscode` | cask `visual-studio-code` | single IDE on all systems |
 | Firefox | Nix(GUI-Linux) | cask | browser (parity: cask enabled) |
 | Brave | Nix(GUI-Linux) official stable | cask `brave-browser@beta` | default browser; official release packaged by this repo |
-| Flameshot | Nix(GUI-Linux) | cask | screenshots |
+| Flameshot | Nix(GUI-Linux) | not shipped on macOS (cask removed) | screenshots |
 | Bruno | Nix(GUI-Linux) | cask | API client (Linux build exists) |
 | QDirStat / GrandPerspective | Nix(GUI-Linux) `qdirstat` | cask `grandperspective` | disk usage analyser (Linux also has GNOME Baobab) |
 | Double Commander / Nimble Commander | Nix(GUI-Linux) `doublecmd` | cask `nimble-commander` | dual-pane file manager |
@@ -56,7 +56,7 @@ free/freemium/paid label per OS and the reason it was picked or skipped.
 Terminal/shell: `fish`, `tmux`, `starship`, `atuin`, `zoxide`, `fzf`, `yazi`,
 `btop`.
 Search/files: `ripgrep` (rg), `ripgrep-all` (rga), `fd`, `bat`, `eza`,
-`tealdeer` (tldr), `jq`, `yq-go` (yq).
+`tlrc` (tldr), `jq`, `yq-go` (yq).
 Git/dev: `gh`, `lazygit`, `delta` (git-delta), `difftastic` (difft),
 `neovim` (nvim), `ast-grep`.
 Lint/test/security: `shellcheck`, `shfmt`, `actionlint`, `lychee`, `bats`,
@@ -82,8 +82,8 @@ For the persistent NixOS login shell, see `docs/platforms/nixos/install.md` (sys
 
 ## Optional / per-project (not auto-installed)
 
-- `mise run tools:optional:install` → `dive`, `fx`, `navi`, `glow`, `gum`
-  (via aqua).
+- `mise run tools:optional:install` → `dive`, `fx`, `gum`
+  (via aqua). `navi` and `glow` are Nix packages (`cli.nix`).
 - `direnv` is **DROPPED** (mise per-project env replaces it).
 - macOS-only, never installed on Linux: `duti` (default-app setter).
 

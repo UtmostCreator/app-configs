@@ -235,7 +235,7 @@ whole set on either OS. The owner of record is
 | Firefox | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
 | Ghostty | **Nix** | Homebrew cask | `gui.nix` / `darwin/homebrew.nix` |
 | VS Code | **Nix** (`vscode`) | Homebrew cask `visual-studio-code` | `gui.nix` / `darwin/homebrew.nix` — single IDE on all systems |
-| Flameshot | **Nix** | Homebrew cask | `gui.nix` (Linux) |
+| Flameshot | **Nix** (Linux) | not shipped on macOS | `gui.nix` (Linux) |
 | Brave | **Nix** (official stable, repo package) | Homebrew cask `brave-browser@beta` | `gui.nix` / `darwin/homebrew.nix` |
 | Obsidian | **Nix** (`obsidian`) | Homebrew cask `obsidian` | `gui.nix` / `darwin/homebrew.nix` |
 | USB audio diagnostics (`lsusb`, `aplay`, `speaker-test`, `wpctl`, `pavucontrol`) | **Nix** (`usbutils`, `alsa-utils`, `wireplumber`, `pavucontrol`) | system / optional | `gui.nix`; see `docs/reference/ora4-audio.md` |
@@ -245,7 +245,8 @@ whole set on either OS. The owner of record is
 | Sequel Ace, BBEdit, BetterDisplay, AeroSpace, Karabiner, Ice, AltTab, Stats, NoTunes, LinearMouse | **macOS-only** (no Linux equivalent shipped) | Homebrew cask | `nix/modules/darwin/homebrew.nix` |
 | repomix, files-to-prompt, code2prompt | npm / uv / cargo (per-project, optional) | same | not in Nix; see "AI context packers" below |
 | Claude Code (`claude`) | **native installer** (`~/.local/bin/claude`, `claude update`) | same | not in Nix by design; see "AI Workflow Critical Additions" |
-| dive, fx, navi, glow, gum | `mise run tools:optional:install` (aqua) | same | `mise.toml` optional task |
+| navi, glow, tldr (`tlrc`) | **Nix** | **Nix** | `cli.nix` |
+| dive, fx, gum | `mise run tools:optional:install` (aqua) | same | `mise.toml` optional task |
 | direnv | **DROPPED** (mise per-project env replaces it) | DROPPED | — |
 
 NixOS runtime rule (see `docs/platforms/nixos/install.md`): runtimes that mise would
@@ -273,7 +274,7 @@ cask bridge. Either way it is one apply command per host.
 > [`migration-package-ownership.md`](migration-package-ownership.md) for the
 > per-tool owner.
 >
-> Optional convenience tools (`dive`, `fx`, `navi`, `glow`, `gum`) are opt-in:
+> Optional convenience tools (`dive`, `fx`, `gum`) are opt-in (`navi` and `glow` come from Nix):
 >
 > ```bash
 > mise run tools:optional:install

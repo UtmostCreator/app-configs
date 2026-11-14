@@ -185,7 +185,6 @@
             nixpkgs.config.allowUnfree = true;
             nixpkgs.overlays = [ (import ./overlays { inherit inputs; }) ];
             system.primaryUser = vars.username;
-            users.users.${vars.username}.home = vars.profiles.macos.homeDirectory;
             home-manager.useGlobalPkgs = true;
             home-manager.useUserPackages = true;
             home-manager.extraSpecialArgs = {

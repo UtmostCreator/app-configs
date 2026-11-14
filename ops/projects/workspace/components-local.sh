@@ -5,11 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "$SCRIPT_DIR/config.sh"
 
-ACTIVE_NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || true)"
-if [[ "$ACTIVE_NODE_MAJOR" != "22" ]] && command -v mise >/dev/null 2>&1; then
-  exec mise exec "$WS_NODE_RUNTIME" -- bash "$0" "$@"
-fi
-
 APP_NAME="ws-components-local"
 STATE_DIR="$HOME/.local/state/$APP_NAME"
 STATE_FILE="$STATE_DIR/state.env"
@@ -52,6 +47,73 @@ fail() {
   echo "$*" >&2
   exit 1
 }
+
+# Answer --help and reject unknown commands/options before the Node re-exec
+# below, so neither path ever calls mise or touches workspace state. The apply
+# option list must match apply_workflow: an option accepted there but missing
+# here is rejected before the re-exec, so a valid call fails. The re-exec argv
+# tests in tests/bash/components-local-args.bats guard that for every option.
+precheck_args() {
+  local command_name="${1:-help}"
+
+  case "$command_name" in
+    help|-h|--help)
+      usage
+      exit 0
+      ;;
+    apply|refresh)
+      shift
+      while [[ $# -gt 0 ]]; do
+        case "$1" in
+          --component-test)
+            [[ $# -ge 2 ]] || fail "Missing value for --component-test"
+            shift 2
+            ;;
+          --skip-test|--start-dev|--keep-tarball)
+            shift
+            ;;
+          help|-h|--help)
+            usage
+            exit 0
+            ;;
+          *)
+            fail "Unknown option for $command_name: $1"
+            ;;
+        esac
+      done
+      ;;
+    watch)
+      [[ $# -eq 1 ]] || fail "watch does not accept options"
+      ;;
+    rollback|status)
+      # Neither takes options; they used to ignore them, so `rollback --help`
+      # ran a real rollback.
+      if [[ $# -gt 1 ]]; then
+        case "$2" in
+          help|-h|--help)
+            usage
+            exit 0
+            ;;
+          *)
+            usage >&2
+            exit 1
+            ;;
+        esac
+      fi
+      ;;
+    *)
+      usage >&2
+      exit 1
+      ;;
+  esac
+}
+
+precheck_args "$@"
+
+ACTIVE_NODE_MAJOR="$(node -p 'process.versions.node.split(".")[0]' 2>/dev/null || true)"
+if [[ "$ACTIVE_NODE_MAJOR" != "22" ]] && command -v mise >/dev/null 2>&1; then
+  exec mise exec "$WS_NODE_RUNTIME" -- bash "$0" "$@"
+fi
 
 require_command() {
   local command_name="$1"

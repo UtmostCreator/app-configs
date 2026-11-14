@@ -449,7 +449,7 @@ description = "Restart only the frontend dev pane/process"
 run = "bash ops/projects/workspace/frontend/restart.sh"
 
 [tasks."projects:components:local"]
-description = "Pack ui-components and install it into web-frontend (usage: -- apply|refresh|watch|rollback|status [--start-dev])"
+description = "Pack ui-components and install it into web-frontend (usage: -- apply|refresh [--start-dev] | watch | rollback | status)"
 run = "bash ops/projects/workspace/components-local.sh"
 
 [tasks."projects:ssh"]

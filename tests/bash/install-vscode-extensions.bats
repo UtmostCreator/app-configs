@@ -28,9 +28,12 @@ setup() {
     : >"$FAKE/home/.chezmoidata/personal.yaml"
     NIX_USER="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$FAKE/nix/vars/default.nix")"
 
-    for tool in nix chezmoi home-manager mise; do
+    for tool in chezmoi home-manager mise; do
         stub "$STUBS/$tool" 'exit 0'
     done
+    # install.sh asks Nix for the username (nix eval --raw -f <file> username).
+    stub "$STUBS/nix" "[ \"\$1\" != eval ] || printf '%s' '$NIX_USER'
+exit 0"
     stub "$STUBS/lefthook" "touch '$MARKS/lefthook'"
     stub "$FAKE/ops/snapshot-home.sh" 'exit 0'
     stub "$FAKE/ops/doctor.sh" "touch '$MARKS/doctor'"

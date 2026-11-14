@@ -26,6 +26,17 @@ setup() {
         printf '#!/usr/bin/env bash\nprintf "%s %%s\\n" "$*" >> "$CALLS"\nexit 0\n' "$tool" >"$STUBS/$tool"
         chmod +x "$STUBS/$tool"
     done
+    # The login-user preflight asks `nix eval --raw -f <file> username`; answer
+    # it from the file (read-only, not recorded as a call).
+    cat >"$STUBS/nix" <<'STUB'
+#!/usr/bin/env bash
+if [[ "${1:-}" == eval ]]; then
+    sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$4"; exit 0
+fi
+printf 'nix %s\n' "$*" >> "$CALLS"
+exit 0
+STUB
+    chmod +x "$STUBS/nix"
     NIX_USER="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$REPO_ROOT/nix/vars/default.nix")"
     export USER="$NIX_USER"
 }

@@ -167,6 +167,7 @@ bs_fixture() {
 echo "$s \$* [pwd=\$PWD]" >>"$CALLS"
 case "\${STUB_FAIL:-}" in "$s \$1"*) exit 1 ;; esac
 if [ "$s" = nix ] && [ "\${1:-}" = --version ]; then echo "nix (stub) 2.0"; fi
+if [ "$s" = nix ] && [ "\${1:-}" = eval ]; then echo "\${USER:-\$(id -un)}"; fi
 exit 0
 STUB
         chmod +x "$BSTUBS/$s"

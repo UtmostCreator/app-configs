@@ -39,24 +39,45 @@ preflight_bats_guard() {
   exit 3
 }
 
-preflight_host_checks() {
+# Home Manager builds for the username in nix/vars/default.nix. A different
+# login user (common on WSL, where the distro asks for a new name) would only
+# fail later inside home-manager switch, so stop here with the fix. The value
+# is evaluated by Nix, not scraped with sed, so any valid way of writing the
+# attribute works and a broken file is an error, not "no check". Needs nix.
+preflight_check_login_user() {
+  local repo_root="$1" nix_user login_user
+  nix_user="$(nix eval --raw -f "$repo_root/nix/vars/default.nix" username 2>/dev/null)" \
+    || fail "cannot read username from nix/vars/default.nix (nix eval failed)"
+  [[ -n "$nix_user" ]] || fail "nix/vars/default.nix has an empty username"
+  login_user="${USER:-$(id -un)}"
+  if [[ "$login_user" != "$nix_user" ]]; then
+    fail "login user '$login_user' does not match username '$nix_user' in nix/vars/default.nix. Log in as '$nix_user' (WSL: create that user and set it as [user] default in /etc/wsl.conf), or change username and homeDirectory there."
+  fi
+}
+
+# The wsl profile means WSL2. Refuse WSL1 before installing anything.
+preflight_wsl_check() {
   local repo_root="$1" profile="$2"
-  # The wsl profile means WSL2. Refuse WSL1 before installing anything.
   if [[ "$profile" == wsl && "$(bash "$repo_root/ops/detect-host.sh" --wsl-version)" == 1 ]]; then
     fail "WSL1 is not supported (no systemd, no real Linux kernel for Nix). Convert from PowerShell: wsl --set-version <distro> 2   (list distros: wsl --list --verbose)"
   fi
+}
 
-  # Home Manager builds for the username in nix/vars/default.nix. A different
-  # login user (common on WSL, where the distro asks for a new name) would only
-  # fail later inside home-manager switch, so stop here with the fix.
-  local nix_user login_user
-  nix_user=""
-  if [[ -f "$repo_root/nix/vars/default.nix" ]]; then
-    nix_user="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$repo_root/nix/vars/default.nix")"
+# Combined host preflight (install.sh and bootstrap.sh): WSL1 refusal, then the
+# login-user check. With Nix installed the user is read with `nix eval`. Without
+# Nix (fresh machine) a best-effort sed match of nix/vars/default.nix stops on a
+# mismatch; the authoritative check is the caller's, once Nix exists.
+preflight_host_checks() {
+  local repo_root="$1" profile="$2"
+  preflight_wsl_check "$repo_root" "$profile"
+  if command -v nix >/dev/null 2>&1; then
+    preflight_check_login_user "$repo_root"
+    return 0
   fi
-  login_user="${USER:-$(id -un)}"
-  if [[ -n "$nix_user" && "$login_user" != "$nix_user" ]]; then
-    fail "login user '$login_user' does not match username '$nix_user' in nix/vars/default.nix. Log in as '$nix_user' (WSL: create that user and set it as [user] default in /etc/wsl.conf), or change username and homeDirectory there."
+  local early_user login_user="${USER:-$(id -un)}"
+  early_user="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$repo_root/nix/vars/default.nix" 2>/dev/null || true)"
+  if [[ -n "$early_user" && "$login_user" != "$early_user" ]]; then
+    fail "login user '$login_user' does not match username '$early_user' in nix/vars/default.nix. Log in as '$early_user' (WSL: create that user and set it as [user] default in /etc/wsl.conf), or change username and homeDirectory there."
   fi
 }
 

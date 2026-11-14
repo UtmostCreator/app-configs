@@ -9,6 +9,11 @@ setup() {
     # Isolate from the host: no inherited WSL env or WSL filesystem markers.
     unset WSL_DISTRO_NAME
     export DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-wsl-run" DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-wsl-interop"
+    # install.sh asks Nix for the username; the test never runs the real nix.
+    STUBS="$BATS_TEST_TMPDIR/bin"; mkdir -p "$STUBS"
+    export STUB_LOG="$BATS_TEST_TMPDIR/calls.log"
+    stub_nix
+    export PATH="$STUBS:$PATH"
 }
 
 @test "mismatched user fails before anything is installed" {
@@ -91,19 +96,45 @@ stub() {
     chmod +x "$1"
 }
 
+# stub_tool <name>: logs "<name> cwd=.. nixcfg=[..] args=.." to $STUB_LOG and
+# exits with $STUB_FAIL_<NAME> when that is set (dashes become underscores).
+stub_tool() {
+    local var="STUB_FAIL_$(printf '%s' "$1" | tr 'a-z-' 'A-Z_')"
+    stub "$STUBS/$1" "printf '%s cwd=%s nixcfg=[%s] args=%s\n' '$1' \"\$PWD\" \"\${NIX_CONFIG:-}\" \"\$*\" >>\"\$STUB_LOG\"
+[ -z \"\${$var:-}\" ] || exit \"\${$var}\"
+exit 0"
+}
+
+# stub_nix: answers `nix eval --raw -f <file> username` by reading the file,
+# `nix show-config` from $NIX_STUB_CONFIG, and fails eval when $NIX_STUB_EVAL_FAIL
+# is set. Everything else is logged and succeeds.
+stub_nix() {
+    stub "$STUBS/nix" "printf 'nix cwd=%s nixcfg=[%s] args=%s\n' \"\$PWD\" \"\${NIX_CONFIG:-}\" \"\$*\" >>\"\$STUB_LOG\"
+case \"\$1\" in
+  eval)
+    [ -z \"\${NIX_STUB_EVAL_FAIL:-}\" ] || exit 1
+    [ -z \"\${NIX_STUB_USERNAME:-}\" ] || { printf '%s' \"\$NIX_STUB_USERNAME\"; exit 0; }
+    sed -nE 's/^[[:space:]]*username = \"([^\"]+)\";.*/\\1/p' \"\$4\" ;;
+  show-config)
+    printf '%s\n' \"\${NIX_STUB_CONFIG-experimental-features = nix-command flakes}\" ;;
+  --version) echo 'nix (stub) 0' ;;
+esac
+[ -z \"\${STUB_FAIL_NIX:-}\" ] || exit \"\$STUB_FAIL_NIX\"
+exit 0"
+}
+
 # make_repo <dir-name> [username]: scratch repo under the test tmpdir.
 make_repo() {
     [ ! -x /nix/var/nix/profiles/default/bin/nix ] \
         || skip "a system Nix default profile would shadow the nix stub"
     FAKE="$BATS_TEST_TMPDIR/$1"
-    STUBS="$BATS_TEST_TMPDIR/bin"
     LOG="$BATS_TEST_TMPDIR/lefthook.log"
     mkdir -p "$FAKE/ops" "$FAKE/nix/vars" "$FAKE/home/.chezmoidata" "$FAKE/.git" "$STUBS"
     cp "$REPO_ROOT/ops/install.sh" "$FAKE/ops/install.sh"
     cp -R "$REPO_ROOT/ops/lib" "$FAKE/ops/lib"
     printf '{\n  username = "%s";\n}\n' "${2:-utmostcreator}" >"$FAKE/nix/vars/default.nix"
     : >"$FAKE/home/.chezmoidata/personal.yaml"
-    for tool in nix chezmoi home-manager mise; do stub "$STUBS/$tool" 'exit 0'; done
+    for tool in chezmoi home-manager mise; do stub_tool "$tool"; done
     stub "$STUBS/lefthook" "printf 'argv=%s cwd=%s\n' \"\$*\" \"\$PWD\" >>'$LOG'"
     for s in snapshot-home doctor; do stub "$FAKE/ops/$s.sh" 'exit 0'; done
     stub "$FAKE/ops/detect-timezone.sh" 'echo Europe/London'
@@ -173,4 +204,23 @@ make_repo() {
     [ ! -e "$outside" ]
     [ ! -e "$LOG" ]
     [[ "$output" == *"refusing a real install from a bats test"* ]]
+}
+
+# ── username comes from nix eval ────────────────────────────────────────────
+
+@test "a failing nix eval of the username is an error, not a skipped check" {
+    make_repo repo
+    run env USER=utmostcreator NIX_STUB_EVAL_FAIL=1 DRY_RUN=1 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"[install:error] cannot read username from nix/vars/default.nix"* ]]
+    [[ "$output" != *"── Nix ──"* ]]
+}
+
+@test "the username is whatever nix eval returns, not a sed match of the file" {
+    make_repo repo
+    printf '{ username = builtins.head [ "zed-user" ]; }\n' >"$FAKE/nix/vars/default.nix"
+    run env USER=someone-else NIX_STUB_USERNAME=zed-user DRY_RUN=1 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"does not match username 'zed-user' in nix/vars/default.nix"* ]]
+    grep -q 'args=eval --raw -f '"$FAKE"'/nix/vars/default.nix username' "$STUB_LOG"
 }

@@ -97,3 +97,18 @@ dirty_it() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"git add nix/modules/new.nix"* ]]
 }
+
+@test "under bats a clean apply against the real HOME is refused before mutation" {
+  outside="${BATS_RUN_TMPDIR:-/tmp}/outside-home-$$"
+  mkdir -p "$outside"
+  # Stub the required tools so the preflight passes on any host (a bare CI
+  # runner has no home-manager) and the run really reaches the guard.
+  local bin="$BATS_TEST_TMPDIR/guard-bin"; mkdir -p "$bin"
+  printf '#!/bin/sh\nexit 0\n' >"$bin/home-manager"
+  printf '#!/bin/sh\nexit 0\n' >"$bin/chezmoi"
+  chmod +x "$bin/home-manager" "$bin/chezmoi"
+  run env HOME="$outside" PATH="$bin:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes
+  [ "$status" -eq 3 ]
+  [[ "$output" == *"refusing to apply from a bats test"* ]]
+  [ -z "$(ls -A "$outside")" ]   # no snapshot or state written there
+}

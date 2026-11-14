@@ -37,7 +37,7 @@ main_worktree() {
 sync_one() {
   local id="$1"
   local dir
-  dir="$(proj_field "$id" dir)"
+  dir="$(proj_field "$id" dir)" || { sync_err "$id" "cannot read project config"; return 1; }
   [[ -z "$dir" ]] && { proj_log "skip $id (no dir)"; return 0; }
   dir="$(proj_expand_path "$dir")"
   if [[ ! -e "$dir/.git" ]]; then
@@ -93,7 +93,8 @@ rc=0
 if [[ $# -ge 1 ]]; then
   sync_one "$1" || rc=1
 else
-  for id in $(proj_ids); do
+  ids="$(proj_ids)" || proj_fail "cannot list projects from $PROJECTS_CONFIG"
+  for id in $ids; do
     sync_one "$id" || rc=1
   done
 fi

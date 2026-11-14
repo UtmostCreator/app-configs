@@ -11,7 +11,8 @@ source "$SCRIPT_DIR/../lib.sh"
 TRIES="$(proj_yq '.health.retries.http_tries // 5')"
 SLEEP="$(proj_yq '.health.retries.http_sleep_seconds // 2')"
 
-for id in $(proj_health_for_each_project http); do
+ids="$(proj_health_for_each_project http)" || exit 1
+for id in $ids; do
   url="$(proj_field "$id" health.http_url)"
   if [[ -z "$url" || "$url" == "null" ]]; then
     PROJ_CHECK_NAME="${id}-http" proj_emit warn "$id" "no health.http_url declared"

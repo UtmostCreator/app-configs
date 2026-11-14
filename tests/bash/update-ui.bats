@@ -91,6 +91,17 @@ setup() {
   [[ "$output" != *"/nix/store/xxx.drv"* ]]
 }
 
+@test "scanning a log also catches the singular news line" {
+  run bash -c '
+    source "$1/ops/lib/update-facts.sh"
+    source "$1/ops/lib/update-ui.sh"; ui_init "$2"
+    printf "%s\n" "There is 1 unread and relevant news item." > "$3"
+    UI_LAST_LOG="$3" ui_scan_warnings
+    ui_notes_report
+  ' _ "$REPO_ROOT" "$UI_LOG_FILE" "$BATS_TEST_TMPDIR/step.log"
+  [[ "$output" == *"1 unread news entry"* ]]
+}
+
 @test "dry-run mode announces commands instead of running them" {
   run bash -c '
     source "$1/ops/lib/update-ui.sh"; ui_init "$2"
@@ -133,4 +144,39 @@ setup() {
     ui_run "home-manager" sleep 0.3
   ' _ "$REPO_ROOT" "$UI_LOG_FILE"
   [[ "$output" != *"running"* ]]
+}
+
+@test "ui_note keeps severity, source and message as separate fields" {
+  run bash -c '
+    source "$1/ops/lib/update-ui.sh"; ui_init "$2"
+    ui_note warn "phoenix-cli" "peer conflict"
+    ui_notes_report
+  ' _ "$REPO_ROOT" "$UI_LOG_FILE"
+  [ "$status" -eq 0 ]
+  # warn renders with the warning glyph, source and message intact.
+  [[ "$output" == *"! phoenix-cli"*"peer conflict"* ]]
+  [[ "$output" != *'\t'* ]]
+}
+
+@test "ui_note renders an error note with the error glyph" {
+  run bash -c '
+    source "$1/ops/lib/update-ui.sh"; ui_init "$2"
+    ui_note error "log" "builder failed"
+    ui_notes_report
+  ' _ "$REPO_ROOT" "$UI_LOG_FILE"
+  [[ "$output" == *"✗ log"*"builder failed"* ]]
+}
+
+@test "ui_run does not accumulate capture files" {
+  export TMPDIR="$BATS_TEST_TMPDIR/tmp"; mkdir -p "$TMPDIR"
+  ui_init "$UI_LOG_FILE"
+  ui_run a echo one
+  ui_run b echo two
+  ui_run c echo three
+  [ "$(find "$TMPDIR" -name 'sys-update-step.*' | wc -l)" -le 1 ]
+  # The last capture stays readable for ui_err / ui_scan_warnings...
+  grep -q three "$UI_LAST_LOG"
+  # ...until the caller cleans up.
+  ui_cleanup
+  [ "$(find "$TMPDIR" -name 'sys-update-step.*' | wc -l)" -eq 0 ]
 }

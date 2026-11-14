@@ -1,5 +1,29 @@
 #!/usr/bin/env bash
+# doctor.sh: repo health check.
+#
+# Usage:
+#   bash ops/doctor.sh              # repo/developer health check
+#   bash ops/doctor.sh --preflight  # only what must exist BEFORE installation:
+#                                   # bash, git, curl and the repo structure.
+#                                   # Needs no Home-Manager-provided tool.
+#
+# Installed-state checks (nix, chezmoi, mise, home-manager, lefthook, jq, yq,
+# secret scanner) belong to ops/readiness.sh, not here. Scanner presence is
+# enforced by readiness.sh; doctor only advises.
+# Exit 0 = ok, 1 = errors found (counted on stderr), 64 = bad arguments (usage).
+
 set -euo pipefail
+
+PREFLIGHT=0
+for arg in "$@"; do
+    case "$arg" in
+        --preflight) PREFLIGHT=1 ;;
+        *)
+            echo "doctor.sh: unknown argument: $arg (usage: doctor.sh [--preflight])" >&2
+            exit 64
+            ;;
+    esac
+done
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ERRORS=0
@@ -7,8 +31,8 @@ ERRORS=0
 ok() { printf "[OK] %s\n" "$1"; }
 warn() { printf "[WARN] %s\n" "$1"; }
 fail() {
-    printf "[ERROR] %s\n" "$1"
-    ERRORS=1
+    printf "[ERROR] %s\n" "$1" >&2
+    ERRORS=$((ERRORS + 1))
 }
 
 check_required_bin() {
@@ -38,29 +62,21 @@ check_file() {
     fi
 }
 
-check_optional_file() {
-    local rel="$1"
-    if [[ -f "$ROOT_DIR/$rel" ]]; then
-        ok "file '$rel' present"
-    else
-        warn "file '$rel' missing"
-    fi
-}
-
 echo "== app-configs doctor =="
 
 echo "-- Required binaries --"
-for bin in bash git rg; do
+for bin in bash git curl; do
     check_required_bin "$bin"
 done
 
-echo "-- Optional binaries --"
-# These are developer conveniences, not bootstrap prerequisites. The dotfiles
-# bootstrap does not install or pin them (mise.toml pins no runtime), so a
-# missing one is a warning, never a failure.
-for bin in php just code repomix scc bats actionlint shellcheck shfmt lychee jq yq; do
-    check_optional_bin "$bin"
-done
+if [[ "$PREFLIGHT" -eq 0 ]]; then
+    echo "-- Optional binaries --"
+    # Developer conveniences, not bootstrap prerequisites. rg, jq, yq and the
+    # secret scanner come from Home Manager and are checked by readiness.sh.
+    for bin in php code repomix scc bats actionlint shellcheck shfmt lychee; do
+        check_optional_bin "$bin"
+    done
+fi
 
 # Core files owned by this repository.
 echo "-- Core files --"
@@ -89,26 +105,29 @@ for file in \
     check_file "$file"
 done
 
-echo "-- Optional workflow files --"
-for file in \
-    justfile \
-    Justfile \
-    repo-docs/install-dev-tools.sh; do
-    check_optional_file "$file"
-done
-
 cd "$ROOT_DIR"
 
-echo "-- Secret scanner availability --"
-if command -v gitleaks >/dev/null 2>&1; then
-    ok "gitleaks found"
-elif command -v trufflehog >/dev/null 2>&1; then
-    ok "trufflehog found"
-else
-    warn "no secret scanner found (install gitleaks or trufflehog)"
+if [[ "$PREFLIGHT" -eq 0 ]]; then
+    echo "-- Optional workflow files --"
+    if [[ -f "$ROOT_DIR/repo-docs/install-dev-tools.sh" ]]; then
+        ok "file 'repo-docs/install-dev-tools.sh' present"
+    else
+        warn "file 'repo-docs/install-dev-tools.sh' missing"
+    fi
+
+    echo "-- Secret scanner availability --"
+    # Advisory here; ops/readiness.sh enforces it, as the pre-commit hook does.
+    if command -v gitleaks >/dev/null 2>&1; then
+        ok "gitleaks found"
+    elif command -v trufflehog >/dev/null 2>&1; then
+        ok "trufflehog found"
+    else
+        warn "no secret scanner found (install gitleaks or trufflehog)"
+    fi
 fi
 
 if [[ "$ERRORS" -ne 0 ]]; then
+    echo "doctor: $ERRORS error(s)" >&2
     exit 1
 fi
 

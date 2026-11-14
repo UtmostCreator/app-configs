@@ -31,20 +31,26 @@ Base 972422f, Nix 2.34.7. Source of the arguments: ops/lib/selection.sh (the onl
 | ops/update-codebase-memory-mcp.sh | through hm_switch (covered); reached by the weekly timer via nix/modules/home/scripts/codebase-memory-mcp-update.sh with --apply |
 | ops/ci.sh, ops/validate-config.sh --eval, ops/ci-local.sh | deliberately without |
 
-## Sites left outside the write boundary (reported, not edited)
+## Review round 1 fixes: the two sites outside the Owned files
 
-These switch Home Manager or nix-darwin without the override. After a selection exists, running them applies the committed default and so reverts the selection until the next sys-update or install run.
+The user's recorded decision is that every build and switch entry point gets the same selection, so the write boundary was widened for exactly: mise.toml (the sync:apply and sync:dry-run lines), the hms function in cli.fish, tests/bash/cli-abbr.bats (additive) and tests/bash/single-owner.bats.
 
-| site | effect | covered by hm-switch.sh? |
-| --- | --- | --- |
-| mise.toml line 179, sync:apply on macOS: `darwin-rebuild switch --flake ./nix#macos` | switches without the selection | no |
-| mise.toml line 185, sync:apply on Linux: `hm_switch ./nix "$HOST"` | carries the selection | yes |
-| mise.toml line 112, sync:dry-run macOS: `darwin-rebuild check` | read-only preview of the default, not the selection | no (no mutation) |
-| mise.toml line 119, sync:dry-run Linux: `home-manager switch --dry-run` | read-only preview of the default | no (no mutation) |
-| home/dot_config/fish/conf.d/cli.fish line 92, function hms: `home-manager switch -b hm-bak --flake ...` | switches without the selection | no (interactive wrapper, listed in the single-owner allowlist) |
-| ops/tailscale-setup.sh and ops/system-setup.sh nixos-rebuild | NixOS system layer, not Home Manager; the selection does not apply | not applicable |
+| site | handling now |
+| --- | --- |
+| mise.toml sync:apply, macOS: darwin-rebuild switch | sources ops/lib/selection.sh, calls selection_args, appends the safe expansion |
+| mise.toml sync:apply, Linux | through hm_switch (unchanged, covered) |
+| mise.toml sync:dry-run, macOS darwin-rebuild check and Linux home-manager switch --dry-run | same args, so the preview matches what would apply |
+| cli.fish hms | bash -c sources selection.sh when the file exists, adds the args before the caller's own arguments (for example --show-trace); without a selection the command line is identical to before; a checkout without selection.sh behaves as before |
+| ops/tailscale-setup.sh, ops/system-setup.sh nixos-rebuild | NixOS system layer, selection does not apply |
 
-Suggested follow-up (not done): hms and the macOS sync:apply line need the same arguments, or to call hm_switch_raw.
+mise runs task bodies with `sh -c` (mise setting unix_default_inline_shell_args). selection.sh was run under `bash --posix` and the system sh here (bash 5.3 in posix mode, which is also how macOS runs bash 3.2 as sh): selection_args and the safe expansion work, also under `set -eu` with an empty array. Plain dash is not supported by hm-switch.sh either (arrays, mapfile), so sync:apply already needed a bash-compatible sh.
+
+Other review fixes:
+- G1: the single-owner selection rule now scans the same file set as rule 1 (ops, scripts, home, nix, mise.toml), has no hms exemption, removes a message call and its quoted string before matching (so `cmd || fail "..."` is judged on cmd), and has seeded cases for the || fail form, home-manager -b x switch and nix build "$FLAKE#$TARGET". The real tree reports exactly the four sites above before the fix and none after.
+- F2: selection_url_path percent-encodes % first, then space, ?, # in the path: URL. A real nix eval with --override-input on a directory named like `my sel?x#y%z` works (it failed with "invalid URI parameter" before). The printed form from selection_args_text is encoded too, so it has no raw space and can be pasted.
+- H1: the five exact-command-line suites (hm-switch, install-preflight, bootstrap-safety, audit, update-all-apply) pin APP_CONFIGS_SELECTION_DIR to a nonexistent path in setup. Chosen over exporting it in ops/run-bats.sh and ci-local.sh because a plain `bats tests/bash/<file>` must be safe too, and run-bats.sh only isolates HOME. With a real selection file under an exported XDG_CONFIG_HOME, the old hm-switch and bootstrap-safety files fail (2 failures) and the pinned ones pass. audit.bats runs the script under env -i, which already drops the variable and XDG_CONFIG_HOME, so its pin is belt and braces.
+- N2: the update-all-apply host-build failure stub now fails only when --override-input is present, and the test asserts the override was passed.
+- N1 (report-mode switch line via hm_switch_describe): not done. ui_run prints the command words; showing the override there needs a label change in update-all.sh and was optional. The host build line in the plan does show the override.
 
 ## Evidence
 
@@ -58,10 +64,12 @@ Suggested follow-up (not done): hms and the macOS sync:apply line need the same 
 
 | command | result |
 | --- | --- |
-| bash ops/run-bats.sh (full suite) | 1180 tests, rc 0 |
+| bash ops/run-bats.sh (full suite) | 1186 tests, rc 0 (round 1 fixes); 1180 before |
 | bash ops/lint-shell.sh | bash -n 113 files, shellcheck 25 files, no findings |
 | bash ops/ci-local.sh | PASS: validate-config, lint:shell, bats, nix flake check, all-systems check, linux activation build |
 | bash ops/update-all.sh (report mode, scratch worktree) | rc 0, nothing changed; with a selection directory the plan shows the host build with the override |
 | nix flake lock sha, git status | unchanged and clean |
 
-Not run: a real sys-update --apply, home-manager switch or darwin-rebuild (forbidden here); darwin-rebuild with the override on a Mac is still the AC14 human check. A selection directory whose path contains `?`, `#`, `%` or a space was not tested: path: URLs treat some of those specially. Behaviour is unknown.
+Also after round 1: fish -n on cli.fish ok, mise tasks ls parses (MISE_TRUSTED_CONFIG_PATHS, no trust), ci-local PASS, default drvPaths identical to the T1 baseline, lock sha 44847d34... unchanged.
+
+Not run: a real sys-update --apply, home-manager switch or darwin-rebuild (forbidden here); darwin-rebuild with the override on a Mac is still the AC14 human check.

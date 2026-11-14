@@ -52,14 +52,21 @@ for mode in default insert visual
     bind -M $mode \cE end-of-line
 end
 
-# Vi mode only assigns Ctrl-N to accept a Fish autosuggestion. Keep familiar
-# terminal keys available while typing. `forward-char-passive` explicitly does
-# not accept ghost text, so use the accepting motion for Right Arrow. Tab and
-# End accept a visible suggestion first, then retain completion/end-of-line
-# behavior when no suggestion exists.
+# Tab always completes: it lists the folders and files in the current
+# directory (and workspace folders via CDPATH below). It used to accept the
+# grey history suggestion first, so `cd p<Tab>` jumped to an old path instead
+# of offering the folders here. Accept a suggestion with Right, End, Ctrl-F
+# or vi's Ctrl-N. `forward-char-passive` would not accept ghost text, so
+# Right uses the accepting motion.
+bind -M insert tab complete
 bind -M insert right forward-char
-bind -M insert tab accept-autosuggestion or complete
 bind -M insert end accept-autosuggestion or end-of-line
+bind -M insert ctrl-f accept-autosuggestion
+
+# `cd <Tab>` also offers the folders under ~/Projects from anywhere (zoxide
+# `z` still jumps by frecency). Global, never exported: an exported CDPATH
+# makes bash's cd print paths, which breaks `$(cd dir && pwd)` in scripts.
+set -g CDPATH . $HOME/Projects
 
 # ─── Tool integrations (init order matters) ─────────────────────────────────
 # Starship prompt — single config shared with zsh/bash.

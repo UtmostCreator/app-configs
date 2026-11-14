@@ -26,6 +26,8 @@ if [[ -n "$staged_files" ]]; then
     done <<<"$staged_files"
 fi
 
+# PHP lint is a convenience check, not a security gate, so a missing php
+# binary stays a skip (unlike the secret scan below, which fails closed).
 if command -v php >/dev/null 2>&1; then
     changed_php="$(git diff --cached --name-only --diff-filter=ACM | rg '\.php$' || true)"
     if [[ -n "$changed_php" ]]; then
@@ -45,8 +47,23 @@ if command -v gitleaks >/dev/null 2>&1; then
     gitleaks protect --staged --redact --verbose
 elif command -v trufflehog >/dev/null 2>&1; then
     trufflehog git file://. --since-commit HEAD --results=verified,unknown --fail
+elif [[ "${APP_CONFIGS_ALLOW_MISSING_SCANNER:-}" == "1" ]]; then
+    # Deliberate bootstrap escape hatch: the commit goes through, but loudly.
+    {
+        echo "[hook] ************************************************************"
+        echo "[hook] WARNING: no secret scanner installed; staged changes were NOT scanned."
+        echo "[hook] APP_CONFIGS_ALLOW_MISSING_SCANNER=1 is set, so this commit is allowed."
+        echo "[hook] Use this only while bootstrapping; install gitleaks (sys-update) next."
+        echo "[hook] ************************************************************"
+    } >&2
 else
-    echo "[hook] neither gitleaks nor trufflehog found (skip secret scan)"
+    # Security gate: fail closed so a commit never looks scanned when it was not.
+    {
+        echo "[hook] no secret scanner found (need gitleaks or trufflehog); commit blocked."
+        echo "[hook] Install: gitleaks is provided by nix/modules/home/dev.nix; run sys-update."
+        echo "[hook] Bootstrap only: APP_CONFIGS_ALLOW_MISSING_SCANNER=1 git commit ... (skips the scan)"
+    } >&2
+    exit 1
 fi
 
 if [[ -n "$staged_files" ]]; then

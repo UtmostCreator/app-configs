@@ -92,3 +92,66 @@ msg() { printf '%s\n' "$1" >"$BATS_TEST_TMPDIR/msg"; bash "$HOOKS/commit-msg.sh"
     [[ "$output" == *"mise install"* ]]
     [[ "$output" != *"sys-update"* ]]
 }
+
+# --- pre-commit secret-scan gate -------------------------------------------
+# The hook resolves its repo from its own location, so copy it into the
+# scratch repo. PATH is a stub dir holding only the tools the hook needs, so
+# each test decides whether a secret scanner is "installed".
+precommit_env() {
+    mkdir -p "$WORK/ops/hooks"
+    cp "$HOOKS/pre-commit.sh" "$WORK/ops/hooks/pre-commit.sh"
+    STUB="$BATS_TEST_TMPDIR/bin"
+    mkdir -p "$STUB"
+    local t
+    for t in bash env git rg grep mktemp rm cat dirname; do
+        ln -sf "$(command -v "$t")" "$STUB/$t"
+    done
+}
+
+run_precommit() { run env PATH="$STUB" "$@" bash "$WORK/ops/hooks/pre-commit.sh"; }
+
+@test "pre-commit fails when no secret scanner is installed" {
+    precommit_env
+    cd "$WORK"
+    printf 'hello\n' >a.txt && git add a.txt
+    run_precommit
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"no secret scanner"* ]]
+    [[ "$output" == *"nix/modules/home/dev.nix"* ]]
+    [[ "$output" == *"APP_CONFIGS_ALLOW_MISSING_SCANNER=1"* ]]
+    [[ "$output" != *"pre-commit passed"* ]]
+}
+
+@test "pre-commit bypass env lets a scanner-less commit through with a loud warning" {
+    precommit_env
+    cd "$WORK"
+    printf 'hello\n' >a.txt && git add a.txt
+    run_precommit APP_CONFIGS_ALLOW_MISSING_SCANNER=1
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARNING"* ]]
+    [[ "$output" == *"NOT scanned"* ]]
+}
+
+@test "pre-commit rejects a staged fake secret when gitleaks is present" {
+    command -v gitleaks >/dev/null 2>&1 || skip "gitleaks not installed"
+    precommit_env
+    ln -sf "$(command -v gitleaks)" "$STUB/gitleaks"
+    cd "$WORK"
+    # Built at runtime so this file never contains a detectable key.
+    key="AKIA""QZ7XK3M2PL5NW4RT"
+    printf 'aws_access_key_id = %s\n' "$key" >creds.txt && git add creds.txt
+    run_precommit
+    [ "$status" -ne 0 ]
+    [[ "$output" != *"pre-commit passed"* ]]
+}
+
+@test "pre-commit passes a clean change when gitleaks is present" {
+    command -v gitleaks >/dev/null 2>&1 || skip "gitleaks not installed"
+    precommit_env
+    ln -sf "$(command -v gitleaks)" "$STUB/gitleaks"
+    cd "$WORK"
+    printf 'hello\n' >a.txt && git add a.txt
+    run_precommit
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"pre-commit passed"* ]]
+}

@@ -109,6 +109,17 @@ For real per-host secrets (SSH keys, API tokens), pick one of chezmoi's
 secret backends (age, 1Password, Bitwarden) and add it as a separate
 reviewed slice. Until then, do not bolt on a secrets layer.
 
+### Incomplete vs verified environment
+
+The verification gates fail closed: the `pre-commit` hook blocks a commit
+when neither `gitleaks` nor `trufflehog` is installed, and `mise run
+test:bash` fails when `bats` is missing. A fresh machine before the first
+`sys-update` is therefore an *incomplete* environment; while bootstrapping
+you may commit with `APP_CONFIGS_ALLOW_MISSING_SCANNER=1 git commit ...`,
+which prints a loud warning because the commit was not scanned. A
+*verified* environment has the tools from `nix/modules/home/dev.nix`
+installed, so every commit is scanned and the test task really runs.
+
 ## Dependency updates
 
 ```bash

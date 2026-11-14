@@ -4,6 +4,8 @@
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+    # Never let install.sh see the real HOME, even if DRY_RUN were lost.
+    export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
 }
 
 @test "mismatched user fails before anything is installed" {

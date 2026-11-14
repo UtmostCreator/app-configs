@@ -5,6 +5,9 @@
 
 setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
+  # The --apply runs below rely on the preflight stopping; keep the real HOME
+  # out of reach in case one ever gets further.
+  export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
   export SYS_UPDATE_STATE_DIR="$BATS_TEST_TMPDIR/state"
   export NO_COLOR=1
   FAKE="$BATS_TEST_TMPDIR/repo"

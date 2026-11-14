@@ -8,6 +8,8 @@ setup() {
     SCRIPT="$REPO_ROOT/ops/run-bats.sh"
     STUB="$BATS_TEST_TMPDIR/bin"
     mkdir -p "$STUB"
+    # the outer run's own setting must not leak into these runs
+    unset RUN_BATS_JOBS
     local t
     for t in bash env dirname mktemp mkdir chmod rm; do
         ln -sf "$(command -v "$t")" "$STUB/$t"
@@ -47,7 +49,7 @@ stub() {
 }
 
 @test "run-bats gives the suite a scratch HOME and git identity, then removes them" {
-    stub bats 'printf "%s\n" "$HOME" "${XDG_CONFIG_HOME:-unset}" "${GIT_CONFIG_GLOBAL:-unset}" "$XDG_RUNTIME_DIR" "$TMUX_TMPDIR" "${TMUX:-none}" "${SSH_AUTH_SOCK:-none}"
+    stub bats 'printf "%s\n" "$HOME" "${XDG_CONFIG_HOME:-unset}" "${GIT_CONFIG_GLOBAL:-unset}" "$XDG_RUNTIME_DIR" "$TMUX_TMPDIR" "${TMUX:-none}" "${SSH_AUTH_SOCK:-none}" "${XDG_CACHE_HOME:-unset}"
 [[ -d "$XDG_RUNTIME_DIR" && -d "$TMUX_TMPDIR" ]] || exit 9
 grep -q "email = bats@example.invalid" "$HOME/.gitconfig" || exit 8'
     ln -sf "$(command -v grep)" "$STUB/grep"
@@ -64,12 +66,15 @@ grep -q "email = bats@example.invalid" "$HOME/.gitconfig" || exit 8'
     [[ "${env_lines[4]}" == "$BATS_TEST_TMPDIR"/run-bats.*/tmux ]]
     [ "${env_lines[5]}" = none ]
     [ "${env_lines[6]}" = none ]
+    # set, not empty: GNU parallel would export it empty and Nix would then
+    # write its caches into the repository
+    [ "${env_lines[7]}" = "${env_lines[0]}/.cache" ]
     # the scratch tree is cleaned up after the run
     ! compgen -G "$BATS_TEST_TMPDIR/run-bats.*"
 }
 
 @test "run-bats fails when a test leaves files in the shared HOME" {
-    stub bats 'mkdir -p "$HOME/.cache/nix" "$HOME/.cache/fish"'
+    stub bats 'mkdir -p "$HOME/.cache/nix" "$HOME/.cache/fish" "$HOME/.parallel"'
     run env PATH="$STUB" bash "$SCRIPT"
     [ "$status" -eq 0 ]
 
@@ -84,4 +89,35 @@ grep -q "email = bats@example.invalid" "$HOME/.gitconfig" || exit 8'
     stub bats 'mkdir -p "$HOME/.config"; exit 4'
     run env PATH="$STUB" bash "$SCRIPT"
     [ "$status" -eq 4 ]
+}
+
+@test "run-bats runs in parallel when GNU parallel is available" {
+    stub bats 'echo "bats-stub $*"'
+    stub parallel 'echo "GNU parallel 20260822"'
+    stub nproc 'echo 6'
+    run env PATH="$STUB" bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"bats-stub --jobs 6 tests/bash ops/projects/logging/test"* ]]
+
+    run env PATH="$STUB" RUN_BATS_JOBS=3 bash "$SCRIPT"
+    [[ "$output" == *"bats-stub --jobs 3 tests/bash"* ]]
+}
+
+@test "run-bats stays sequential without GNU parallel, with RUN_BATS_JOBS=1, or when -j is given" {
+    stub bats 'echo "bats-stub $*"'
+    stub nproc 'echo 6'
+    run env PATH="$STUB" bash "$SCRIPT"
+    [[ "$output" == "bats-stub tests/bash ops/projects/logging/test" ]]
+
+    # moreutils' parallel is not GNU parallel and bats cannot drive it
+    stub parallel 'echo "parallel: moreutils"'
+    run env PATH="$STUB" bash "$SCRIPT"
+    [[ "$output" == "bats-stub tests/bash ops/projects/logging/test" ]]
+
+    stub parallel 'echo "GNU parallel 20260822"'
+    run env PATH="$STUB" RUN_BATS_JOBS=1 bash "$SCRIPT"
+    [[ "$output" == "bats-stub tests/bash ops/projects/logging/test" ]]
+
+    run env PATH="$STUB" bash "$SCRIPT" -j 2
+    [[ "$output" == "bats-stub tests/bash ops/projects/logging/test -j 2" ]]
 }

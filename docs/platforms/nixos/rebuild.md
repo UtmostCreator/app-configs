@@ -10,7 +10,7 @@ Two layers, two commands:
 
 | Layer | Owns | Apply with | In this repo? |
 | --- | --- | --- | --- |
-| User environment | CLI/GUI packages, dotfiles, fish/atuin/starship config | `home-manager switch --flake ./nix#linux-desktop` (automated by `ops/install.sh`) | **Yes** (`nix/`) |
+| User environment | CLI/GUI packages, dotfiles, fish/atuin/starship config | `home-manager switch -b hm-bak --flake ./nix#linux-desktop` (automated by `ops/install.sh`) | **Yes** (`nix/`) |
 | NixOS system | login shell, services, users, `nix.gc`, `trusted-users`, kernel, bootloader | `sudo nixos-rebuild switch` | **No** (`/etc/nixos/`) — you own it |
 
 > Why the split: a standalone Home Manager install (used here so the repo

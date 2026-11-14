@@ -7,6 +7,8 @@ case "${1:-}" in
   *) echo "Usage: $0 [--apply]" >&2; exit 2 ;;
 esac
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
+# shellcheck source=ops/lib/hm-switch.sh
+source "$repo_root/ops/lib/hm-switch.sh"
 release_lock="$repo_root/nix/packages/codebase-memory-mcp/release.json"
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/codebase-memory-mcp-update"
 mkdir -p "$state_dir"
@@ -41,7 +43,7 @@ if [[ "$apply" == 1 ]]; then
   installed="$(codebase-memory-mcp --version)"
   if [[ "$installed" != "codebase-memory-mcp $version" ]]; then
     profile="$(bash "$repo_root/ops/detect-host.sh")"
-    home-manager switch --flake "path:$repo_root/nix#$profile"
+    hm_switch "path:$repo_root/nix" "$profile"
     systemctl --user restart codebase-memory-mcp-ui.service
     curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 \
       --max-time 30 http://127.0.0.1:9749/ --output /dev/null

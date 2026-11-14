@@ -180,7 +180,9 @@ case "$HOST" in
     ;;
   *)
     command -v home-manager >/dev/null 2>&1 || { echo 'missing: home-manager'; exit 1; }
-    home-manager switch --flake "./nix#$HOST"
+    # Conflict check + `home-manager switch -b hm-bak` (shared with sys-update).
+    . ops/lib/hm-switch.sh
+    hm_switch ./nix "$HOST"
     ;;
 esac
 

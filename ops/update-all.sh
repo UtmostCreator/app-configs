@@ -41,8 +41,8 @@ set -uo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 # shellcheck source=ops/lib/update-facts.sh
 source "$REPO_ROOT/ops/lib/update-facts.sh"
-# shellcheck source=ops/lib/profile-conflicts.sh
-source "$REPO_ROOT/ops/lib/profile-conflicts.sh"
+# shellcheck source=ops/lib/hm-switch.sh
+source "$REPO_ROOT/ops/lib/hm-switch.sh"
 # shellcheck source=ops/lib/update-ui.sh
 source "$REPO_ROOT/ops/lib/update-ui.sh"
 # shellcheck source=ops/update-version-report.sh
@@ -501,14 +501,11 @@ fi
 # also ships makes the switch fail after home-manager-path is already gone
 # (git drops off PATH). Stop here instead, with the exact fix.
 if [[ "$STEP_FAILED" == 0 && "$MODE" == apply && "$HOST_PROFILE" != macos ]]; then
-  HM_OUT="$(nix build --no-link --print-out-paths "$REPO_ROOT/nix#$BUILD_TARGET" 2>/dev/null | tail -n1)"
-  if [[ -n "$HM_OUT" ]]; then
-    mapfile -t PROFILE_CONFLICTS < <(profile_hm_conflicts "$HOME/.nix-profile/manifest.json" "$HM_OUT/home-path")
-    if ((${#PROFILE_CONFLICTS[@]})); then
-      mapfile -t CONFLICT_PKGS < <(printf '%s\n' "${PROFILE_CONFLICTS[@]}" | cut -f1 | sort -u)
-      step_fail "nix profile" "${#CONFLICT_PKGS[@]} hand-installed package(s) collide with Home Manager: ${PROFILE_CONFLICTS[*]//$'\t'/ ships }"
-      printf '  Fix:       nix profile remove %s   (Home Manager now provides it), then sys-update\n' "${CONFLICT_PKGS[*]}"
-    fi
+  HM_CHECK_STATUS=0
+  hm_check_conflicts "$REPO_ROOT/nix" "$HOST_PROFILE" || HM_CHECK_STATUS=$?
+  if ((HM_CHECK_STATUS)); then
+    step_fail "nix profile" "$HM_CHECK_MSG"
+    printf '  Fix:       %s\n' "$HM_CHECK_FIX"
   fi
 fi
 
@@ -537,9 +534,9 @@ if [[ "$STEP_FAILED" == 0 ]]; then
       step_fail "darwin-rebuild" "switch failed"
     fi
   else
-    # -b: a file HM would clobber is moved to <file>.hm-bak instead of
-    # failing the switch.
-    if ui_run "home-manager" home-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HOST_PROFILE"; then
+    # The conflict check already ran above; hm_switch_raw is the shared
+    # `home-manager switch -b hm-bak` (ops/lib/hm-switch.sh).
+    if ui_run "home-manager" hm_switch_raw "$REPO_ROOT/nix" "$HOST_PROFILE"; then
       ui_scan_warnings
       [[ "$MODE" == "apply" ]] && ui_ok "home-manager" "generation $(hm_generation || echo '?')"
     else

@@ -50,6 +50,9 @@ fail() { printf '[bootstrap:error] %s\n' "$*" >&2; exit 1; }
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 HOST_PROFILE="${HOST_PROFILE:-$(bash "$REPO_ROOT/ops/detect-host.sh")}"
 
+# shellcheck source=ops/lib/hm-switch.sh
+source "$REPO_ROOT/ops/lib/hm-switch.sh"
+
 log "Repo: $REPO_ROOT"
 log "Host: $HOST_PROFILE"
 
@@ -170,8 +173,8 @@ if [[ "$HOST_PROFILE" == "macos" ]]; then
   DRY_CMD=(darwin-rebuild check --flake "$REPO_ROOT/nix#macos")
   switch_bin=darwin-rebuild
 else
-  SWITCH_CMD=(home-manager switch --flake "$REPO_ROOT/nix#$HOST_PROFILE")
-  DRY_CMD=(home-manager switch --flake "$REPO_ROOT/nix#$HOST_PROFILE" --dry-run)
+  SWITCH_CMD=(home-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HOST_PROFILE")
+  DRY_CMD=("${SWITCH_CMD[@]}" --dry-run)
   switch_bin=home-manager
 fi
 
@@ -186,7 +189,12 @@ else
   command -v "$switch_bin" >/dev/null 2>&1 \
     || fail "$switch_bin not on PATH; complete prior steps before --yes"
   log "Running: ${SWITCH_CMD[*]}"
-  "${SWITCH_CMD[@]}"
+  if [[ "$HOST_PROFILE" == "macos" ]]; then
+    "${SWITCH_CMD[@]}"
+  else
+    # Conflict check, then `home-manager switch -b hm-bak` (ops/lib/hm-switch.sh).
+    hm_switch "$REPO_ROOT/nix" "$HOST_PROFILE" || fail "home-manager switch failed"
+  fi
 fi
 
 # ─── 6. mise install ────────────────────────────────────────────────────────

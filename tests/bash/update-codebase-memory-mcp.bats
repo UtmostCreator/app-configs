@@ -5,6 +5,7 @@ setup() {
   FAKE="$BATS_TEST_TMPDIR/repo"
   mkdir -p "$FAKE/ops" "$FAKE/nix/packages/codebase-memory-mcp" "$BATS_TEST_TMPDIR/bin"
   cp "$REPO_ROOT/ops/update-codebase-memory-mcp.sh" "$FAKE/ops/"
+  cp -a "$REPO_ROOT/ops/lib" "$FAKE/ops/lib"
   cp "$REPO_ROOT/nix/packages/codebase-memory-mcp/release.json" "$FAKE/nix/packages/codebase-memory-mcp/"
   export RELEASE_FIXTURE="$BATS_TEST_TMPDIR/release.json"
   jq '{tag_name: ("v" + .version), draft: false, prerelease: false,
@@ -17,6 +18,8 @@ setup() {
 cat "$RELEASE_FIXTURE"
 STUB
   chmod +x "$BATS_TEST_TMPDIR/bin/curl"
+  # No nix profile under this HOME: the conflict check has nothing to inspect.
+  export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
   export XDG_STATE_HOME="$BATS_TEST_TMPDIR/state"
   export PATH="$BATS_TEST_TMPDIR/bin:$PATH"
 }
@@ -90,7 +93,7 @@ STUB
   chmod +x "$BATS_TEST_TMPDIR/bin/"{codebase-memory-mcp,home-manager,systemctl}
   run bash "$FAKE/ops/update-codebase-memory-mcp.sh" --apply
   [ "$status" -eq 0 ]
-  rg -F "home-manager switch --flake path:$FAKE/nix#linux-desktop" "$CALL_LOG"
+  rg -F "home-manager switch -b hm-bak --flake path:$FAKE/nix#linux-desktop" "$CALL_LOG"
   rg -F 'systemctl --user restart codebase-memory-mcp-ui.service' "$CALL_LOG"
   : > "$CALL_LOG"
   export FAIL_SWITCH=1

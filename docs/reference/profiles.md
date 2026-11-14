@@ -41,7 +41,7 @@ Edit the host's `home.nix` (e.g. `nix/hosts/linux-desktop/home.nix`):
 Then apply:
 
 ```bash
-home-manager switch -b backup --flake ./nix#linux-desktop
+home-manager switch -b hm-bak --flake ./nix#linux-desktop
 ```
 
 ## Verify

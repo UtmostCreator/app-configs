@@ -50,7 +50,11 @@ bash ops/snapshot-home.sh            # backs up $HOME files chezmoi manages
 chezmoi apply                            # see "chezmoi TTY conflict" below if it aborts
 
 # 3. Home Manager (standalone) — installs ~40 CLI packages + node
-home-manager switch --flake ./nix#linux-desktop
+home-manager switch -b hm-bak --flake ./nix#linux-desktop
+#   -b hm-bak moves a file Home Manager would clobber to <file>.hm-bak. If one
+#   already exists Home Manager aborts: move or delete the old .hm-bak first.
+#   `sys-install` / `sys-update` run the same switch (ops/lib/hm-switch.sh) and
+#   first check for nix-profile packages that collide with Home Manager's.
 
 # 4. mise runtimes (should be a near-instant no-op; see "mise compiles node")
 mise trust "$PWD"
@@ -149,7 +153,7 @@ bash ops/validate-config.sh
 > `nix/modules/home/dev.nix`) and **re-switch**:
 >
 > ```bash
-> home-manager switch --flake ./nix#linux-desktop
+> home-manager switch -b hm-bak --flake ./nix#linux-desktop
 > ```
 >
 > Then remove that tool's pin from the mise config so `mise install`
@@ -164,7 +168,7 @@ Practical checklist when adding a runtime on NixOS:
 
 1. `nix eval --raw nixpkgs#<pkg>.name` to confirm the package/version.
 2. Add `<pkg>` to `nix/modules/home/dev.nix` `home.packages`.
-3. `home-manager switch --flake ./nix#linux-desktop`.
+3. `home-manager switch -b hm-bak --flake ./nix#linux-desktop`.
 4. Ensure it is **not** also pinned in
    `home/dot_config/mise/config.toml.tmpl` (avoid a double-managed source).
 

@@ -2,8 +2,8 @@ let
   # Single-user design: one username for every profile and host. Change it
   # here and in the literal default in nix/modules/nixos/docker.nix (guarded by
   # tests/bash/nix-identity.bats); each homeDirectory below is derived from it.
-  # Keep this a plain `username = "...";` line: ops/install.sh parses it with
-  # sed until it switches to `nix eval`.
+  # ops/install.sh reads it with `nix eval --raw -f nix/vars/default.nix
+  # username`, so any valid way of defining the attribute works.
   username = "utmostcreator";
 in
 {

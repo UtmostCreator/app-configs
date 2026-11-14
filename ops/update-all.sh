@@ -311,6 +311,13 @@ if [[ "$PRECHECK_FAILED" == 1 ]]; then
   exit 1
 fi
 
+# Test guard: under bats, a run that passed the preflight must not mutate the
+# real home (an install test once switched Home Manager on the dev machine).
+if [[ -n "${BATS_TEST_TMPDIR:-}" && "$MODE" == apply && "$HOME" != "$BATS_TEST_TMPDIR"* ]]; then
+  printf '[sys-update] refusing to apply from a bats test with the real HOME (%s)\n' "$HOME" >&2
+  exit 3
+fi
+
 # ── 2. PLAN / confirmation ──────────────────────────────────────────────────
 
 if [[ "$MODE" == "apply" && "$ASSUME_YES" != 1 ]]; then

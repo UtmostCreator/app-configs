@@ -75,6 +75,9 @@ run()  {
   fi
 }
 
+# shellcheck source=ops/lib/hm-switch.sh
+source "$REPO_ROOT/ops/lib/hm-switch.sh"
+
 is_nixos() { [[ -f /etc/NIXOS ]] || grep -qi '^ID=nixos' /etc/os-release 2>/dev/null; }
 have()     { command -v "$1" >/dev/null 2>&1; }
 
@@ -174,7 +177,13 @@ step "Home Manager / nix-darwin switch"
 if [[ "$HOST_PROFILE" == "macos" ]]; then
   run darwin-rebuild switch --flake "$REPO_ROOT/nix#macos"
 else
-  run home-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HOST_PROFILE"
+  if [[ "$DRY_RUN" == 1 ]]; then
+    run "$(hm_switch_describe "$REPO_ROOT/nix" "$HOST_PROFILE")"
+  else
+    # Conflict check, then `home-manager switch -b hm-bak` (ops/lib/hm-switch.sh).
+    log "+ $(hm_switch_describe "$REPO_ROOT/nix" "$HOST_PROFILE")"
+    hm_switch "$REPO_ROOT/nix" "$HOST_PROFILE" || fail "home-manager switch failed"
+  fi
 fi
 
 # ── 7. mise ─────────────────────────────────────────────────────────────────

@@ -15,6 +15,10 @@ setup() {
   # The updater commits the new lock; the fake $HOME has no git identity.
   export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
   mkdir -p "$HOME/.local/state/nix/profiles" "$HOME/.nix-profile"
+  # What `nix build --print-out-paths` yields: the conflict check needs a real
+  # activation package with a home-path (an empty answer is an error).
+  export STUB_HM_OUT="$BATS_TEST_TMPDIR/hm-out-default"
+  mkdir -p "$STUB_HM_OUT/home-path/bin"
 
   # A previous Home Manager generation, so the rollback handle has something
   # real to point at.

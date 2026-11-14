@@ -56,7 +56,7 @@ run_with_os() {
     [ "$status" -eq 0 ]
     [ ! -f "$MARKS/herd" ]
     [[ "$output" == *"Skipping Herd"* ]]
-    [[ "$output" == *"Redis is running"* ]]
+    [[ "$output" == *"Redis container is running"* ]]
 }
 
 @test "ws-stack start on macOS still opens and starts Herd" {
@@ -98,4 +98,39 @@ run_with_os() {
     [ "$status" -eq 0 ]
     grep -qx 'stop' "$MARKS/colima"
     grep -qx 'start --cpu 2 --memory 2 --vm-type vz' "$MARKS/colima"
+}
+
+# ── Redis container: shared by both launchers (ws_ensure_redis) ─────────────
+
+@test "a missing Redis container is created, then reported running with its ID (both launchers)" {
+    for launcher in "$WS/start.sh" "$WS/stack/start.sh"; do
+        rm -f "$MARKS/created"
+        stub docker 'case "$*" in
+  info) exit 0 ;;
+  "container inspect"*) [ -f "'"$MARKS"'/created" ] || exit 1 ;;
+  run\ *) touch "'"$MARKS"'/created"; echo newid ;;
+  *"{{.Id}}"*) echo 0123456789abcdef ;;
+  *"{{.State.Status}}"*) echo running ;;
+esac
+exit 0'
+        run_with_os Linux "$launcher"
+        [ "$status" -eq 0 ]
+        [ -f "$MARKS/created" ]
+        [[ "$output" == *"Creating Redis container"* ]]
+        [[ "$output" == *"Redis container is running. ID: 0123456789ab"* ]]
+    done
+}
+
+@test "a Redis container that will not start stops either launcher with its status" {
+    for launcher in "$WS/start.sh" "$WS/stack/start.sh"; do
+        stub docker 'case "$*" in
+  *"{{.State.Status}}"*) echo exited ;;
+  *"{{.Id}}"*) echo 0123456789abcdef ;;
+esac
+exit 0'
+        run_with_os Linux "$launcher"
+        [ "$status" -ne 0 ]
+        [[ "$output" == *"Redis container is not running (status: exited)"* ]]
+        [[ "$output" != *"Starting backend"* ]]
+    done
 }

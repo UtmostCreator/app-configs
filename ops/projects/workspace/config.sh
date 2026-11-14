@@ -105,6 +105,29 @@ ws_ensure_docker() {
 	echo "Colima logs: $log_file"
 }
 
+# ws_ensure_redis: create the Redis container if missing, start it if
+# stopped, and confirm it runs. Shared by start.sh and stack/start.sh, which
+# carried identical copies.
+ws_ensure_redis() {
+	local name="$WS_REDIS_CONTAINER_NAME" status id
+	if ! docker container inspect "$name" >/dev/null 2>&1; then
+		echo "Creating Redis container..."
+		docker run -d --name "$name" -p "$WS_REDIS_PORT:$WS_REDIS_PORT" redis:alpine >/dev/null
+	fi
+	status="$(docker inspect -f '{{.State.Status}}' "$name")"
+	if [[ "$status" != running ]]; then
+		echo "Starting Redis container..."
+		docker start "$name" >/dev/null
+		status="$(docker inspect -f '{{.State.Status}}' "$name")"
+	fi
+	if [[ "$status" != running ]]; then
+		echo "[ERROR] Redis container is not running (status: $status)" >&2
+		return 1
+	fi
+	id="$(docker inspect -f '{{.Id}}' "$name" | cut -c1-12)"
+	echo "Redis container is running. ID: $id"
+}
+
 web_frontend_export_netlify_env() {
 	local app_dir="${1:-$WS_FRONTEND_APP_DIR}"
 	local key=""

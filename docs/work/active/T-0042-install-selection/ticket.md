@@ -2,7 +2,7 @@ Source: local
 
 # T-0042: Install selection: committed profiles, a local per-host selection, first-run choice (feature)
 
-Status: open (not started; user asked for tickets only; open questions below)
+Status: open (design approved; T1 spike not started)
 Wave: unassigned
 Depends on: none to start (T1 is a gate). T4 touches ops/update-all.sh; land it
 after T-0010 (now landed). Does not depend on T-0029..T-0033.
@@ -227,3 +227,24 @@ Negative (must not change)
   - Desktop-environment pieces (vicinae, GNOME, niri): T-0031 and T-0032.
   - Removing the selection directory in uninstall.sh: manual step, documented.
   - Writing an effective-selection file from Home Manager: would change the default drvPath.
+
+## Decisions (user, 2026-11-14)
+
+- Keep `work` and `personal`.
+- Both profiles start all-on, preserving the current effective configs.
+- A first-run prompt is approved for a first install on a TTY only, with no unattended prompts.
+- Approve the one-time `flake.lock` addition of the `selection` input only.
+- Initial groups: `media`, `security` and `go`. `aiContext` is deferred until a dependency and regression analysis.
+- macOS: `macInput` only (Karabiner-Elements, LinearMouse). Stop deploying the macOS-only LinearMouse config on Linux.
+- Non-TTY install writes no selection file and uses the defaults.
+- `--profile NAME` replaces group overrides, with a clear preview.
+- Keep `--profile`, but document the selection profile vs `HOST_PROFILE` distinction.
+- Extra acceptance constraints:
+  - no local selection means an identical activation derivation;
+  - invalid configurations fail before any system change;
+  - every build/switch entry point receives the same selection;
+  - no automatic macOS app uninstall or user-data deletion;
+  - `--dry-run` never persists a selection;
+  - any unexpected change to existing `flake.lock` inputs blocks the change.
+- Phase 0 (T1) must pass before later phases are authorised.
+- Priority P2, after the update/rollback baseline is stable.

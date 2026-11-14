@@ -35,7 +35,7 @@ closes, move its directory from [`active/`](active/README.md) to
 | [T-0038: Colima darwin-only; confirm the Docker Compose plugin (bug)](active/T-0038-colima-darwin-only/ticket.md) | open | 2026-11 |
 | [T-0039: Refresh the WSL2 docs (docs)](active/T-0039-wsl-docs-refresh/ticket.md) | open | 2026-11 |
 | [T-0040: Real WSL2 host acceptance pass (human verification)](active/T-0040-wsl-real-host-pass/ticket.md) | open | 2026-11 |
-| [T-0041: Windows-side copy-only app list (docs)](active/T-0041-windows-app-list/ticket.md) | BLOCKED | 2026-11 |
-| [T-0042 install-selection](active/T-0042-install-selection/ticket.md) | open (not started; questions pending) | 2026-11-14 |
+| [T-0041: Windows-side copy-only app list (docs)](active/T-0041-windows-app-list/ticket.md) | open (approved 2026-11-14: documentation only) | 2026-11 |
+| [T-0042 install-selection](active/T-0042-install-selection/ticket.md) | open (design approved; T1 spike not started) | 2026-11-14 |
 
 Archived tickets: see [archive/](archive/README.md).

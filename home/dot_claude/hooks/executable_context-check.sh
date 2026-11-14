@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # PreToolUse hook. Claude Code pipes a JSON object on stdin (session_id,
-# transcript_path, cwd, hook_event_name, tool_name, tool_input, ...) and
-# ALSO includes the same context_window block the statusline gets.
+# transcript_path, cwd, hook_event_name, tool_name, tool_input, ...). Unlike
+# the statusline input it has NO context_window block, so the hook used to
+# read 0 forever and never warned. Usage now comes from the transcript: the
+# last assistant message's input + cache-read + cache-creation tokens, which
+# is what the next request will carry. A context_window block still wins if
+# Claude Code ever starts sending one.
 #
 # Exit code contract (PreToolUse):
 #   exit 0, no output      -> tool proceeds silently
@@ -19,6 +23,18 @@ CRIT_AT=200000
 input="$(cat)"
 session_id=$(jq -r '.session_id // "unknown"' <<<"$input")
 used=$(jq -r '.context_window.total_input_tokens // 0' <<<"$input")
+if [[ "$used" == 0 ]]; then
+    transcript=$(jq -r '.transcript_path // empty' <<<"$input")
+    if [[ -n "$transcript" && -r "$transcript" ]]; then
+        # Only the tail: transcripts grow to many MB. Lines that are not JSON
+        # (or not usage records) are skipped.
+        used=$(tail -n 400 "$transcript" | jq -R -s -r '
+            [split("\n")[] | fromjson? | select(.message.usage? != null) | .message.usage]
+            | last // {}
+            | (.input_tokens // 0) + (.cache_read_input_tokens // 0) + (.cache_creation_input_tokens // 0)' 2>/dev/null || echo 0)
+    fi
+fi
+[[ "$used" =~ ^[0-9]+$ ]] || used=0
 
 state_dir="$HOME/.claude/hooks/.state"
 mkdir -p "$state_dir"

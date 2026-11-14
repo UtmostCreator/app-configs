@@ -30,15 +30,31 @@ git clone <your-fork-of-this-repo> ~/dotfiles && cd ~/dotfiles
 cp home/personal.yaml.example home/.chezmoidata/personal.yaml
 $EDITOR home/.chezmoidata/personal.yaml   # name, email, signingKey, hostProfile, gui
 
-# 2. Preview what bootstrap would do (no mutations)
+# 2. Preview what bootstrap would do (strictly read-only: prints "would:" lines)
 bash ops/bootstrap.sh                 # equivalent to: --dry-run
 
 # 3. Actually apply, after reviewing the preview
-bash ops/bootstrap.sh --yes
+bash ops/bootstrap.sh --apply         # asks up front, shows chezmoi diff, asks again
+bash ops/bootstrap.sh --yes           # no bootstrap prompt (the only way without a TTY)
 ```
 
-`--yes` is required to mutate. `CI=true` allows non-interactive apply on
-runners.
+Dry-run only inspects (host detection, `ops/doctor.sh --preflight`, tools on
+`PATH`) and prints the commands it would run; it does not run `chezmoi diff`.
+The diff is shown during `--apply`, before the second confirmation that gates
+`chezmoi apply`; declining there exits 1 with nothing applied (Nix and the
+bootstrap tools stay installed).
+
+Only the command line enables apply: the `MODE` and `CI` environment
+variables are ignored, `--apply` without a TTY fails unless `--yes` is given,
+and `--dry-run` cannot be combined with `--apply`/`--yes`. Unknown arguments
+exit 1. Apply previews the switch (`home-manager switch --dry-run`, or
+`nix build` of the nix-darwin system on macOS) and aborts if the preview
+fails. A failed optional step (for example ssh-agent setup) is listed as
+degraded in the summary instead of "bootstrap complete".
+
+On macOS the switch needs `sudo`. Bootstrap checks it before changing
+anything (`sudo -v` on a TTY, `sudo -n true` without one), so `--yes` without
+a TTY needs passwordless sudo; otherwise run it on a TTY.
 
 ## Per-host override
 

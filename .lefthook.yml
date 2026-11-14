@@ -3,10 +3,11 @@ pre-commit:
   commands:
     no-personal-yaml:
       run: |
-        if git diff --cached --name-only | grep -qE '^home/\.chezmoidata/personal\.yaml$'; then
-          echo "ERROR: home/.chezmoidata/personal.yaml is staged."
-          echo "It contains real identity values and must never be committed."
-          echo "Run: git restore --staged home/.chezmoidata/personal.yaml"
+        staged="$(git diff --cached --name-only | grep -E '^home/\.chezmoidata/(personal|personal\.local|projects)\.yaml$' || true)"
+        if [ -n "$staged" ]; then
+          echo "ERROR: private per-host data is staged: $staged"
+          echo "It contains real identity, hosts or paths and must never be committed."
+          echo "Run: git restore --staged $staged"
           exit 1
         fi
     shared-precommit:

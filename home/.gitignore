@@ -1,0 +1,6 @@
+# Private per-host chezmoi data: real identity, SSH hosts, repo paths, URLs.
+# Never committed (also refused by the no-private-data pre-commit check).
+# chezmoi ignores dotfiles in its source root, so this file is not deployed.
+.chezmoidata/personal.yaml
+.chezmoidata/personal.local.yaml
+.chezmoidata/projects.yaml

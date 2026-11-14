@@ -46,6 +46,8 @@ date sleep time timeout true false test bats shellcheck shfmt treefmt nixfmt sta
 gst gco gl gp gd gau gaa gai gcmsg gti it gi pa pat punit pint nr ni nreset reload
 tree glow mdcat jless fx gum lnav k9s
 scc lizard for if while read newgrp gsettings dconf wpctl pactl nix-instantiate pgrep lsusb repomix
+res restsift pw-play vicinae nautilus android-studio sync-start sync-stop sync-open gh-stars-export
+git-branch-origin reindex-cbm dsh-remote dsh-remote-status clipcopy wsl-open hyperfine xh zc patw lg
 """.split())
 
 GIT_SUB = set("""

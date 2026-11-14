@@ -118,7 +118,7 @@ first_install() { # first_install <host>
     first_install wsl
     [ "$status" -eq 0 ]
     [[ "$output" == *"seed-personal-yaml.sh"*"personal.yaml wsl"* ]]
-    [[ "$output" == *"home-manager switch --flake $FRESH/nix#wsl"* ]]
+    [[ "$output" == *"home-manager switch -b hm-bak --flake $FRESH/nix#wsl"* ]]
     [[ "$output" != *"darwin-rebuild"* ]]
     [ ! -e "$FRESH/home/.chezmoidata/personal.yaml" ]
 }

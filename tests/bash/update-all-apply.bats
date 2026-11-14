@@ -53,7 +53,8 @@ printf '%s %s\n' "$tool" "\$*" >> "\$STUB_LOG"
 case "$tool \$*" in
   "nix flake update"*)    printf '{"nodes":{"nixpkgs":{"locked":{"rev":"new"}}}}\n' > "$FAKE/nix/flake.lock" ;;
   "nix flake check"*)     printf 'warning: The check omitted these incompatible systems: aarch64-darwin\n' >&2 ;;
-  "nix build"*)          [[ "\${FAIL_HOST_BUILD:-0}" == 1 ]] && exit 1 ;;
+  "nix build"*)          [[ "\${FAIL_HOST_BUILD:-0}" == 1 ]] && exit 1
+                          [[ "\$*" == *--print-out-paths* && -n "\${STUB_HM_OUT:-}" ]] && printf '%s\n' "\$STUB_HM_OUT" ;;
   "chezmoi status"*)      printf '%s\n' "\${CHEZMOI_STATUS:- M dot_thing}" ;;
   "home-manager switch"*) printf 'There are 394 unread and relevant news items.\n' ;;
 esac
@@ -170,7 +171,7 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
 @test "the host closure builds before dotfiles are applied" {
   run_update
   [ "$status" -eq 0 ]
-  build_line="$(grep -n 'nix build --no-link.*homeConfigurations.linux-desktop.activationPackage' "$STUB_LOG" | cut -d: -f1)"
+  build_line="$(grep -n 'nix build --no-link.*homeConfigurations.linux-desktop.activationPackage' "$STUB_LOG" | head -n1 | cut -d: -f1)"
   apply_line="$(grep -n 'chezmoi apply' "$STUB_LOG" | cut -d: -f1)"
   [ "$build_line" -lt "$apply_line" ]
 }
@@ -336,4 +337,23 @@ STUB
   [ "$status" -eq 0 ]
   [[ "$output" == *"AI logins"*"Claude 3d left"* ]]
   [[ "$output" == *"log in again before you travel"* ]]
+}
+
+@test "a nix-profile entry that collides with Home Manager stops before the switch" {
+  pkg="$BATS_TEST_TMPDIR/parallel-pkg"; mkdir -p "$pkg/bin"; touch "$pkg/bin/parallel"
+  out="$BATS_TEST_TMPDIR/hm-out"; mkdir -p "$out/home-path/bin"; touch "$out/home-path/bin/parallel"
+  cat > "$HOME/.nix-profile/manifest.json" <<JSON
+{"elements":{"parallel":{"active":true,"originalUrl":"flake:nixpkgs","storePaths":["$pkg"]},
+             "home-manager-path":{"active":true,"storePaths":["/nix/store/bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb-home-manager-path"]}}}
+JSON
+  STUB_HM_OUT="$out" run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"nix profile remove parallel"* ]]
+  run grep -c '^home-manager switch' "$STUB_LOG"; [ "$output" = 0 ]
+  run grep -c '^chezmoi apply' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "home-manager switch backs up files it would clobber" {
+  run_update
+  grep -q '^home-manager switch .*-b hm-bak' "$STUB_LOG"
 }

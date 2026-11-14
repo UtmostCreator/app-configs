@@ -41,6 +41,8 @@ set -uo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 # shellcheck source=ops/lib/update-facts.sh
 source "$REPO_ROOT/ops/lib/update-facts.sh"
+# shellcheck source=ops/lib/profile-conflicts.sh
+source "$REPO_ROOT/ops/lib/profile-conflicts.sh"
 # shellcheck source=ops/lib/update-ui.sh
 source "$REPO_ROOT/ops/lib/update-ui.sh"
 # shellcheck source=ops/update-version-report.sh
@@ -221,6 +223,12 @@ else
       # sources of conflict (your edits, upstream commits, a new lock), which
       # is exactly what you do not want to untangle later.
       if [[ "$ALLOW_DIRTY" == 1 ]]; then
+        # Flakes ignore untracked files, so new files under nix/ would fail
+        # the flake check halfway through. Name them now.
+        mapfile -t UNTRACKED_NIX < <(git -C "$REPO_ROOT" ls-files --others --exclude-standard -- nix/ 2>/dev/null)
+        if ((${#UNTRACKED_NIX[@]})); then
+          precheck_fail "flake" "untracked files under nix/ are invisible to the flake; run: git add ${UNTRACKED_NIX[*]}"
+        fi
         ui_warn "worktree" "$GIT_MODIFIED modified, $GIT_UNTRACKED untracked — updating anyway (--allow-dirty)"
         ui_note warn git "updated from a dirty worktree: $GIT_MODIFIED modified, $GIT_UNTRACKED untracked"
         DO_PULL=0
@@ -471,6 +479,21 @@ if [[ "$STEP_FAILED" == 0 ]]; then
   fi
 fi
 
+# A hand-installed `nix profile` package that ships a file Home Manager now
+# also ships makes the switch fail after home-manager-path is already gone
+# (git drops off PATH). Stop here instead, with the exact fix.
+if [[ "$STEP_FAILED" == 0 && "$MODE" == apply && "$HOST_PROFILE" != macos ]]; then
+  HM_OUT="$(nix build --no-link --print-out-paths "$REPO_ROOT/nix#$BUILD_TARGET" 2>/dev/null | tail -n1)"
+  if [[ -n "$HM_OUT" ]]; then
+    mapfile -t PROFILE_CONFLICTS < <(profile_hm_conflicts "$HOME/.nix-profile/manifest.json" "$HM_OUT/home-path")
+    if ((${#PROFILE_CONFLICTS[@]})); then
+      mapfile -t CONFLICT_PKGS < <(printf '%s\n' "${PROFILE_CONFLICTS[@]}" | cut -f1 | sort -u)
+      step_fail "nix profile" "${#CONFLICT_PKGS[@]} hand-installed package(s) collide with Home Manager: ${PROFILE_CONFLICTS[*]//$'\t'/ ships }"
+      printf '  Fix:       nix profile remove %s   (Home Manager now provides it), then sys-update\n' "${CONFLICT_PKGS[*]}"
+    fi
+  fi
+fi
+
 # chezmoi -------------------------------------------------------------------
 if [[ "$STEP_FAILED" == 0 ]] && have chezmoi; then
   PENDING="$(chezmoi status 2>/dev/null | grep -c . || true)"
@@ -496,7 +519,9 @@ if [[ "$STEP_FAILED" == 0 ]]; then
       step_fail "darwin-rebuild" "switch failed"
     fi
   else
-    if ui_run "home-manager" home-manager switch --flake "$REPO_ROOT/nix#$HOST_PROFILE"; then
+    # -b: a file HM would clobber is moved to <file>.hm-bak instead of
+    # failing the switch.
+    if ui_run "home-manager" home-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HOST_PROFILE"; then
       ui_scan_warnings
       [[ "$MODE" == "apply" ]] && ui_ok "home-manager" "generation $(hm_generation || echo '?')"
     else

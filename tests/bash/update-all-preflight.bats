@@ -90,3 +90,10 @@ dirty_it() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"unknown"* ]]
 }
+
+@test "--allow-dirty still stops on untracked files under nix/ (the flake cannot see them)" {
+  mkdir -p "$FAKE/nix/modules"; printf '{ }\n' > "$FAKE/nix/modules/new.nix"
+  run bash "$FAKE/ops/update-all.sh" --apply --yes --allow-dirty
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"git add nix/modules/new.nix"* ]]
+}

@@ -10,6 +10,9 @@ setup() {
     unset WSL_DISTRO_NAME
     export DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-wsl-run" DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-wsl-interop"
     # install.sh asks Nix for the username; the test never runs the real nix.
+    # A caller's NIX_CONFIG (ops/ci-local.sh exports one) would leak into the
+    # stubs' feature handling and their logs.
+    unset NIX_CONFIG
     export STUBS="$BATS_TEST_TMPDIR/bin"; mkdir -p "$STUBS"
     export STUB_LOG="$BATS_TEST_TMPDIR/calls.log"
     stub_nix
@@ -112,7 +115,14 @@ stub_nix() {
     stub "$STUBS/nix" "printf 'nix cwd=%s nixcfg=[%s] args=%s\n' \"\$PWD\" \"\${NIX_CONFIG:-}\" \"\$*\" >>\"\$STUB_LOG\"
 case \"\$1\" in
   eval)
-    [ -z \"\${NIX_STUB_EVAL_FAIL:-}\" ] || exit 1
+    # Like a real Nix: eval needs nix-command, from nix.conf (NIX_STUB_CONFIG)
+    # or from NIX_CONFIG.
+    case \"\${NIX_STUB_CONFIG-experimental-features = nix-command flakes}
+\${NIX_CONFIG:-}\" in
+      *nix-command*) ;;
+      *) echo \"error: experimental Nix feature 'nix-command' is disabled\" >&2; exit 1 ;;
+    esac
+    [ -z \"\${NIX_STUB_EVAL_FAIL:-}\" ] || { echo 'error: stub eval failure' >&2; exit 1; }
     [ -z \"\${NIX_STUB_USERNAME:-}\" ] || { printf '%s' \"\$NIX_STUB_USERNAME\"; exit 0; }
     sed -nE 's/^[[:space:]]*username = \"([^\"]+)\";.*/\\1/p' \"\$4\" ;;
   show-config)
@@ -501,4 +511,34 @@ helpers_present() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"degraded: system layer"* ]]
     [[ "$output" != *"Install complete"* ]]
+}
+
+# ── round 1 review: features before the first eval, early user warning ──────
+
+@test "nix-command is enabled before the username eval on a Nix that lacks it" {
+    make_repo repo
+    run env USER=utmostcreator NIX_STUB_CONFIG="max-jobs = 4" DRY_RUN=1 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    echo "$output"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"cannot read username"* ]]
+    grep -q '^nix .*nixcfg=\[extra-experimental-features = nix-command flakes\] args=eval ' "$STUB_LOG"
+}
+
+@test "a failing username eval keeps the reason from nix in the error" {
+    make_repo repo
+    run env USER=utmostcreator NIX_STUB_EVAL_FAIL=1 DRY_RUN=1 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"cannot read username from nix/vars/default.nix"*"stub eval failure"* ]]
+}
+
+@test "without Nix a mismatched login user is warned about before personal.yaml is seeded" {
+    no_nix_host
+    rm "$FAKE/home/.chezmoidata/personal.yaml"
+    : >"$FAKE/home/personal.yaml.example"
+    stub "$FAKE/ops/seed-personal-yaml.sh" 'exit 0'
+    run env $NONIXOS USER=someone-else DRY_RUN=1 PATH="$RPATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"[install:warn] login user 'someone-else' differs from username 'utmostcreator'"*"best-effort"* ]]
+    before="${output%%best-effort*}"
+    [[ "$before" != *"seed-personal-yaml"* ]]
 }

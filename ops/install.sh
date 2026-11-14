@@ -123,12 +123,34 @@ case "$HOST_PROFILE" in
   macos|linux-desktop|linux-cli|wsl) ;;
   *) fail "unsupported HOST_PROFILE: $HOST_PROFILE" ;;
 esac
-# WSL1 refusal and the login-user check live in ops/lib/preflight.sh (shared
-# with bootstrap). Nix may not be installed yet (fresh machine): the user check
-# is then deferred until right after the Nix step, once Nix exists.
+# An existing Nix may lack nix-command/flakes, which `nix eval` and every later
+# step need. Enable them for this run only (NIX_CONFIG reaches every child
+# process); the user's nix.conf is not edited. This must run before the first
+# `nix eval`. If the probe itself fails, treat the features as missing.
+NIX_FEATURES_DONE=0
+ensure_nix_features() {
+  have nix || return 0
+  ((NIX_FEATURES_DONE == 0)) || return 0
+  NIX_FEATURES_DONE=1
+  local features
+  features="$(nix show-config 2>/dev/null | sed -n 's/^experimental-features = //p')" || true
+  if [[ " $features " != *" nix-command "* || " $features " != *" flakes "* ]]; then
+    warn "nix-command and flakes are not both enabled in this Nix; enabling them for this run only"
+    export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG$'\n'}extra-experimental-features = nix-command flakes"
+  fi
+}
+
 USER_CHECKED=0
-have nix && USER_CHECKED=1
-preflight_host_checks "$REPO_ROOT" "$HOST_PROFILE"
+# WSL1 refusal and the login-user check live in ops/lib/preflight.sh (shared
+# with bootstrap). Nix may not be installed yet (fresh machine): the
+# authoritative user check then runs right after the Nix step, once Nix exists.
+# Until then a best-effort sed match only warns, before anything is written.
+USER_CHECKED=0
+if have nix; then
+  ensure_nix_features
+  USER_CHECKED=1
+fi
+preflight_host_checks "$REPO_ROOT" "$HOST_PROFILE" warn
 log "Repo:  $REPO_ROOT"
 log "Host:  $HOST_PROFILE"
 log "NixOS: $(is_nixos && echo yes || echo no)"
@@ -160,22 +182,14 @@ preflight_refresh_nix_path
 have nix || { [[ "$DRY_RUN" == 1 ]] || fail "nix still not on PATH after install"; }
 if ((USER_CHECKED == 0)); then
   if have nix; then
+    ensure_nix_features
     preflight_check_login_user "$REPO_ROOT"
   else
     warn "nix is not installed (dry-run); the login-user check will run after a real install"
   fi
 fi
 
-# An existing Nix may lack nix-command/flakes, which every step below needs.
-# Enable them for this run only (NIX_CONFIG reaches every child process); the
-# user's nix.conf is not edited.
-if have nix; then
-  nix_features="$(nix show-config 2>/dev/null | sed -n 's/^experimental-features = //p')"
-  if [[ " $nix_features " != *" nix-command "* || " $nix_features " != *" flakes "* ]]; then
-    warn "nix-command and flakes are not both enabled in this Nix; enabling them for this run only"
-    export NIX_CONFIG="${NIX_CONFIG:+$NIX_CONFIG$'\n'}extra-experimental-features = nix-command flakes"
-  fi
-fi
+ensure_nix_features   # no-op when the preflight already did it
 
 # ── 3. base tools ───────────────────────────────────────────────────────────
 step "Base tools (chezmoi, mise, home-manager, lefthook)"

@@ -77,3 +77,9 @@ mise.local.toml
 # Python bytecode (tests and tools import ops/*.py)
 __pycache__/
 *.pyc
+
+# Private per-host project config (template: home/projects.yaml.example);
+# ops/validate-config.sh also rejects it if force-added.
+/home/.chezmoidata/projects.yaml
+# restsift regenerates its state; never commit it.
+/.restsift/state/

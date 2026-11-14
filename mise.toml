@@ -37,6 +37,10 @@ run = "bash ops/run-bats.sh"
 description = "Everything CI runs: invariants, shell lint, bats, flake check, host evaluation"
 run = "bash ops/ci.sh"
 
+[tasks."ci:local"]
+description = "Run the CI checks in a clean, CI-identical environment (pinned tools, empty HOME)"
+run = "bash ops/ci-local.sh"
+
 [tasks."arch:check"]
 description = "restsift arch check: directory structure, gated at error (policy: .directory-size.env)"
 run = "res arch check --grade source --loc --fragmentation --subdirs-warn-at 12 --depth-warn-at 6 --fail-on-findings --fail-grade error"

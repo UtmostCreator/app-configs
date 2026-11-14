@@ -1,0 +1,34 @@
+# nixpkgs attributes that make up the CI toolchain, resolved from the flake's
+# own lock (`nix shell --inputs-from ./nix nixpkgs#<attr>`). Used by
+# .github/workflows/ci.yml and ops/ci-local.sh. One attribute per line.
+bash
+coreutils
+findutils
+gnugrep
+gnused
+gawk
+gnutar
+gzip
+diffutils
+which
+less
+glibc.bin
+git
+bats
+fish
+chezmoi
+jq
+yq-go
+python3
+ripgrep
+shellcheck
+parallel
+php
+lnav
+tmux
+curl
+gitleaks
+lsof
+file
+util-linux
+procps

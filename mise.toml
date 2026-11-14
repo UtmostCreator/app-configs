@@ -33,6 +33,10 @@ description = "Run bats tests for shell scripts (deterministic, no live hardware
 # Fails when bats is missing (see ops/run-bats.sh); it never reports a skip as success.
 run = "bash ops/run-bats.sh"
 
+[tasks.ci]
+description = "Everything CI runs: invariants, shell lint, bats, flake check, host evaluation"
+run = "bash ops/ci.sh"
+
 [tasks."history:report"]
 description = "Sanitised shell-history workflow report for this machine (aggregates only)"
 run = 'python3 -I ops/history-report.py --auto --out "${XDG_STATE_HOME:-$HOME/.local/state}/history-report" && echo "open: ${XDG_STATE_HOME:-$HOME/.local/state}/history-report/report.md"'

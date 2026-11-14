@@ -224,3 +224,31 @@ make_repo() {
     [[ "$output" == *"does not match username 'zed-user' in nix/vars/default.nix"* ]]
     grep -q 'args=eval --raw -f '"$FAKE"'/nix/vars/default.nix username' "$STUB_LOG"
 }
+
+# ── external failures end in [install:error]; the snapshot fails closed ─────
+
+@test "an external command failure is reported as [install:error] with its exit code" {
+    make_repo repo
+    run env USER=utmostcreator STUB_FAIL_HOME_MANAGER=7 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 7 ]
+    [[ "$output" == *"[install:error] command failed (exit 7): home-manager switch"* ]]
+    [[ "$output" != *"Install complete"* ]]
+}
+
+@test "a failing snapshot stops the install before chezmoi apply" {
+    make_repo repo
+    stub "$FAKE/ops/snapshot-home.sh" 'echo "snapshot boom" >&2; exit 1'
+    run env USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"[install:error]"*"snapshot-home.sh"* ]]
+    ! grep -q 'args=apply' "$STUB_LOG"
+}
+
+@test "a missing snapshot helper stops the install before chezmoi apply" {
+    make_repo repo
+    rm "$FAKE/ops/snapshot-home.sh"
+    run env USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"[install:error] ops/snapshot-home.sh missing"* ]]
+    ! grep -q 'args=apply' "$STUB_LOG"
+}

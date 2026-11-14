@@ -79,14 +79,15 @@ hm_check_conflicts() {
 # failing the switch. Home Manager aborts when that backup already exists, so
 # the failure message names the way out.
 hm_switch_raw() {
-  local flake_dir="$1" profile="$2"
-  if home-manager switch -b "$HM_BACKUP_EXT" --flake "$flake_dir#$profile"; then
+  local flake_dir="$1" profile="$2" rc=0
+  home-manager switch -b "$HM_BACKUP_EXT" --flake "$flake_dir#$profile" || rc=$?
+  if ((rc == 0)); then
     return 0
   fi
   printf >&2 '%s\n' \
     "home-manager switch failed. If it reports that a *.$HM_BACKUP_EXT file already exists," \
     "Home Manager refuses to overwrite that earlier backup: move or delete it and re-run."
-  return 1
+  return "$rc"
 }
 
 hm_switch() {

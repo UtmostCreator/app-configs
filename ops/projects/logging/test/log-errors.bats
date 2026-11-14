@@ -6,6 +6,11 @@ setup() {
   FIXTURES="$BATS_TEST_DIRNAME/fixtures"
   TEST_ROOT="$BATS_TEST_TMPDIR/log-errors"
   mkdir -p "$TEST_ROOT"
+  # lnav (and the PHP helper) write config/state under HOME/XDG dirs; keep
+  # them in the test dir so the suite never touches a real or shared HOME.
+  export HOME="$BATS_TEST_TMPDIR/home"
+  export XDG_CONFIG_HOME="$HOME/.config" XDG_DATA_HOME="$HOME/.local/share" XDG_STATE_HOME="$HOME/.local/state"
+  mkdir -p "$HOME"
 }
 
 @test "multiple and overlapping inputs are inode-deduplicated in encounter order" {

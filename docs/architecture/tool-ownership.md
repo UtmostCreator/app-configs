@@ -30,7 +30,10 @@ Companion to `docs/plans/migration/implementation.md`. Companion audit docs:
 
 - `.chezmoiroot` at the repo root, containing exactly `home`.
 - Home Manager uses `home.packages = [ ... ]` only.
-  The **only** allowed `programs.<x>.enable` is `programs.home-manager.enable = true;`.
+  `programs.<x>` modules (`programs.x.enable = true;` or `programs.x = { ... };`)
+  are limited to an explicit allowlist: `home-manager`, `vicinae`, `openclaw`
+  (`PROGRAMS_ALLOWLIST` in `ops/validate-config.sh`). Adding another needs a
+  decision here and an allowlist entry.
 - Home Manager must NOT create or manage any of:
   `~/.zshrc`, `~/.config/fish/`, `~/.bashrc`, `~/.gitconfig`,
   `~/.config/starship/starship.toml`, `~/.config/mise/config.toml`,

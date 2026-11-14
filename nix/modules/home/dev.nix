@@ -150,7 +150,7 @@ in
     ])
     # ── Go development toolchain (for the ya-under-control Go rewrite) ──
     # Group `go` (myConfig.groups.go, nix/modules/home/profile.nix); the last
-    # entries of the list, so the order is unchanged.
+    # entries of the main package list, so the order is unchanged.
     ++ lib.optionals config.myConfig.groups.go (
       with pkgs;
       [

@@ -131,6 +131,8 @@ Rationale and boundaries: [`tool-ownership.md`](docs/architecture/tool-ownership
 | `mise run ci` / `ci:local` | no | Full gate: validator, `lint:shell`, all tests, flake check, host evaluation / the same in a clean, CI-identical environment |
 | `mise run test:bash` / `lint:shell` | no | All test suites (bats, PHP, Python; scratch `HOME`) / `bash -n` on every script + ShellCheck |
 | `mise run arch:check` / `history:report` | no | restsift directory-structure check / sanitised report of your shell history |
+| `mise run audit` | no | CI gate + restsift checks + live machine checks; PASS/WARN/FAIL, exit 1 on FAIL. See [`bug-detection.md`](docs/reference/bug-detection.md) |
+| `mise run audit:ci` / `audit:deep` / `audit:live` | no | Only the deterministic gate / restsift arch, refactor, dupes, shell, history (needs `res`) / read-only checks of this machine (also a weekly user timer) |
 | `bash ops/uninstall.sh [--apply]` | no / **yes** | Report / remove; never removes Nix or snapshots |
 
 Each `sys-*` command wraps an `ops/*.sh` script and has a `mise run` equivalent

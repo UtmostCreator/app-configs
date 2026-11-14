@@ -21,6 +21,7 @@ the topic you need.
 | Kanto ORA4 / USB audio validation | [`ora4-audio.md`](reference/ora4-audio.md) |
 | VS Code extensions | [`vscode-extensions.md`](../repo-docs/vscode-extensions.md) |
 | CLI shortcuts: abbreviations, git aliases, ports/logs/process helpers | [`cli-shortcuts.md`](reference/cli-shortcuts.md) |
+| How bugs are found: every check, the bug types it catches, where it runs (`mise run audit`) | [`bug-detection.md`](reference/bug-detection.md) |
 | WSL2 setup: wsl.conf, install, readiness checks, macOS differences | [`wsl/setup.md`](platforms/wsl/setup.md) |
 | Persistent SSH agent (Linux / macOS / WSL) | [`unix/QUICKSTART.md`](getting-started/unix-quickstart.md) and [`unix/ssh-agent-setup.md`](guides/ssh-agent-setup.md) |
 | Per-project VS Code workspace template | [`templates/vscode/`](../repo-docs/templates/vscode) |

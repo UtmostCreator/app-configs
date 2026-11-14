@@ -11,7 +11,9 @@
 #
 # Inert until `myConfig.docker.enable = true;`. Reproducible: contains zero
 # host-specific values. The user added to the "docker" group is overridable via
-# `myConfig.docker.user` (defaults to this repo's username in nix/vars).
+# `myConfig.docker.user`. The module is copied standalone into /etc/nixos by
+# ops/system-setup.sh, so it cannot import nix/vars; its default is a literal
+# kept equal to nix/vars/default.nix username by tests/bash/nix-identity.bats.
 #
 # NOTE: `sudo systemctl start docker` starts an already-installed daemon
 # imperatively. This module is the declarative equivalent: it installs and
@@ -32,7 +34,8 @@ in
       example = "alice";
       description = ''
         User added to the "docker" group so it can talk to the daemon socket
-        without sudo. Defaults to this repo's username (nix/vars/default.nix).
+        without sudo. Defaults to this repo's username (kept in sync with
+        nix/vars/default.nix by tests/bash/nix-identity.bats).
         Set to null to skip group management (e.g. when a host declares
         users.users.<name>.extraGroups elsewhere).
       '';

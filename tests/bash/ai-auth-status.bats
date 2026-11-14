@@ -188,11 +188,13 @@ hm_eval() {
 }
 
 @test "units: ai-auth-status is installed and checked every morning" {
-    run hm_eval '{
+    # --separate-stderr: nix may print notices on stderr (the GitHub runner
+    # does); only stdout is the JSON.
+    run --separate-stderr hm_eval '{
       cmd = builtins.any (p: (p.name or "") == "ai-auth-status") hm.home.packages;
       timer = hm.systemd.user.timers.ai-auth-check.Timer;
       exec = hm.systemd.user.services.ai-auth-check.Service.ExecStart; }'
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
     jq -e '.cmd and .timer.OnCalendar == "*-*-* 09:00:00" and .timer.Persistent
            and ([.exec] | flatten | .[0] | endswith("/bin/ai-auth-status --notify"))' <<<"$output"
 }

@@ -77,7 +77,8 @@ if is_nixos; then
   # Check the LIVE, activated system — authoritative regardless of which file
   # the settings live in (configuration.nix vs an imported module like
   # /etc/nixos/app-configs-extra.nix written by sys-setup).
-  cur_shell="$(getent passwd "$USER" | cut -d: -f7)"
+  cur_shell="$({ getent passwd "$USER" 2>/dev/null || true; } | cut -d: -f7)"
+  cur_shell="${cur_shell:-${SHELL:-unknown}}"
   if [[ "$cur_shell" == *fish* ]]; then ok "login shell is fish ($cur_shell)"
   else note "login shell is $cur_shell, not fish — run: sudo sys-setup --apply"; rebuild_needed=1; fi
 

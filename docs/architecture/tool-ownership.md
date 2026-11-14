@@ -10,8 +10,8 @@ Companion to `docs/plans/migration/implementation.md`. Companion audit docs:
 - **macOS** — primary, full coverage (Home Manager + nix-darwin + Homebrew casks)
 - **Linux desktop** — primary, full coverage (Home Manager standalone + GUI module)
 - **Linux CLI / headless** — CLI-only coverage (Home Manager standalone, no GUI)
-- **WSL2** — best-effort CLI-only, Linux-flavoured shell/dev only.
-  Windows-side tooling is out of scope.
+- **WSL2** — CLI/dev parity with macOS (WSL1 is refused); see
+  `docs/platforms/wsl/setup.md`. Windows-side tooling is out of scope.
 - **Windows native** — explicitly not supported.
 
 ## Ownership table
@@ -19,10 +19,11 @@ Companion to `docs/plans/migration/implementation.md`. Companion audit docs:
 | Tool | Owns | Never owns |
 |------|------|-----------|
 | **chezmoi** | Dotfiles in `~` and `~/.config/`. File rendering only — no orchestration. | Package installation, side effects beyond writing files. |
-| **mise** | Language runtimes (PHP, Node, pnpm via corepack), tool versions, per-project env vars, repo tasks (`mise run sync`, `sync:apply`, `doctor`, `lint:*`, `repo:*`). | OS packages, dotfile content. |
-| **Nix + Home Manager** | User-installed CLI packages via `home.packages` only. | Files chezmoi configures. Bootstrap-managed tools (`chezmoi`, `mise`, `home-manager`, `lefthook`). |
+| **mise** | Per-project runtime pins and env vars, repo tasks (`mise run sync`, `sync:apply`, `ci`, `test:bash`, `lint:*`, `repo:*`). | OS packages, dotfile content, the default PHP/Node/pnpm (Nix owns those). |
+| **Nix + Home Manager** | User-installed CLI packages via `home.packages`, including PHP, Composer, Node 22 and pnpm, and on Linux/WSL2 the CLIs macOS gets from casks (`op`, `copilot`). | Files chezmoi configures. Bootstrap-managed tools (`chezmoi`, `mise`, `home-manager`, `lefthook`). |
 | **nix-darwin** | macOS system defaults + Homebrew cask bridge for GUI apps. | Linux/WSL config. |
 | **Lefthook** | Git hooks. | Anything outside the git lifecycle. |
+| **GitHub Actions** (`.github/workflows/ci.yml`) | Running `ops/ci-local.sh` on pushes to `main` and pull requests. | Building or activating hosts (sys-update does that). |
 | **bootstrap.sh** | Initial cold-start orchestration on a new machine. | Day-to-day updates — that is `mise run sync` (preview) / `mise run sync:apply` (mutate). |
 
 ## Hard rules

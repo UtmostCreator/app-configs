@@ -622,6 +622,11 @@ if [[ "$STEP_FAILED" == 0 && -x "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" 
       else
         ui_ok "syncthing" ".stignore unchanged"
       fi
+      # The helper only reports conflict files; it never deletes them.
+      SYNC_CONFLICTS="$(grep -oE '[0-9]+ conflict file\(s\) left in place' "$UI_LAST_LOG" | tail -1 | grep -oE '^[0-9]+')"
+      if [[ "${SYNC_CONFLICTS:-0}" -gt 0 ]]; then
+        ui_warn "syncthing" "${SYNC_CONFLICTS} conflict file(s) kept — resolve by hand (bash ops/syncthing-obsidian-stignore.sh lists them)"
+      fi
     fi
   else
     ui_warn "syncthing" ".stignore refresh returned non-zero"

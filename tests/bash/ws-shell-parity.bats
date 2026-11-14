@@ -32,6 +32,24 @@ fish_commands() {
     [ "$status" -eq 0 ]
 }
 
+# name<TAB>command for every ws command that runs a bash script, with the
+# directory variables spelled out so the two shells compare equal.
+zsh_targets() {
+    sed -nE 's/^alias ([a-z-]+)="bash ([^"]+)"$/\1\t\2/p' "$ZSH_TMPL" |
+        sed -E 's#\$WS_(HEALTH|LOGGING)_DIR#$WS_PROJECTS_DIR/\L\1#' | sort
+}
+
+fish_targets() {
+    awk '/^function [a-z-]+/ { name = $2; next }
+         name != "" && /^ *bash / { sub(/^ *bash /, ""); gsub(/"/, ""); sub(/ *\$argv$/, ""); print name "\t" $0; name = "" }' "$FISH_TMPL" | sort
+}
+
+@test "each ws command runs the same script in fish and zsh" {
+    run diff <(zsh_targets) <(fish_targets)
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [ "$(zsh_targets | wc -l)" -ge 15 ]
+}
+
 @test "rendered fish file parses and defines ws functions" {
     command -v chezmoi >/dev/null 2>&1 || skip "chezmoi not installed"
     command -v fish >/dev/null 2>&1 || skip "fish not installed"

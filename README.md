@@ -164,9 +164,12 @@ What the safety net covers, and what it does not:
   you restore manually. On macOS the files are restored and the system switch
   is manual.
 - **Cleanup keeps rollbacks.** `sys-cleanup` never removes generations;
-  `--gc` removes only those older than `KEEP_DAYS`, and never the generation
-  the last update replaced: it is pinned by a GC root under
-  `~/.local/state/sys-update/gcroots` (roots older than `KEEP_DAYS` expire).
+  `--gc` removes only those older than `KEEP_DAYS`. The cleanup that
+  `sys-update` runs protects the generation it just replaced
+  (`--protect-hm-generation`); a standalone `sys-cleanup --gc` does not
+  protect that generation link, but the closure stays in the store because the
+  update pinned it with a GC root under `~/.local/state/sys-update/gcroots`
+  (roots older than `KEEP_DAYS` expire).
 
 ## Repository layout
 

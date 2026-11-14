@@ -209,7 +209,10 @@ changed while the update ran, is left for you to commit. If verification
 fails, the lock stays uncommitted and the run prints both ways out:
 `sys-update rollback`, or the `git commit --only` command that keeps it. A
 failed or interrupted run before activation restores the lock it wrote (unless
-it was edited meanwhile). Only one update or rollback runs at a time; a second
+it was edited meanwhile). A failure while activating restores the lock too, but
+the profile may already have moved to the new generation: the run then names
+`sys-update rollback`, which you need to get back to the previous generation.
+Only one update or rollback runs at a time; a second
 one exits 5.
 
 Command output goes to a per-run log under

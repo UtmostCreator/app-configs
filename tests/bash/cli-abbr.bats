@@ -27,7 +27,7 @@ zsh_aliases() { # same format, from the CLI block in the rendered .zshrc
     for want in $'gst\tgit st' $'gco\tgit co' $'gl\tgit pull' $'gp\tgit push' \
         $'gd\tgit diff' $'gau\tgit add -u' $'gaa\tgit add .' $'gai\tgit add -i' \
         $'gcmsg\tgit commit -m' $'pa\tphp artisan' $'pat\tphp artisan test' \
-        $'nr\tnpm run' $'ni\tnpm install' $'ll\teza -lah --git' $'reload\texec fish'; do
+        $'nr\tnpm run' $'ni\tnpm install' $'ll\teza -lah --git' $'reload\texec fish' $'lg\tlazygit'; do
         grep -qxF "$want" <<<"$output" || { echo "missing: $want"; return 1; }
     done
 }
@@ -57,4 +57,14 @@ SH
     [ "${lines[1]}" = "git pull --rebase" ]
     [ "${lines[2]}" = "git status" ]
     [ "${lines[3]}" = "git tag -l" ]
+}
+
+@test "patw reruns a focused artisan test on file changes via watchexec" {
+    stubs="$BATS_TEST_TMPDIR/bin"; mkdir -p "$stubs"
+    printf '#!/bin/sh\necho "watchexec $*"\n' >"$stubs/watchexec"; chmod +x "$stubs/watchexec"
+    run env PATH="$stubs:$PATH" fish --no-config -c "source $FISH_FILE; patw UserTest"
+    [ "$output" = "watchexec -e php -r -c -- php artisan test --filter=UserTest" ]
+    run env PATH="$stubs:$PATH" fish --no-config -c "source $FISH_FILE; patw"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"usage: patw"* ]]
 }

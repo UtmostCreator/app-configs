@@ -4,7 +4,7 @@ Evidence for AC1 (drvPaths), AC2, AC3, AC4, AC5 and AC9 after T2 (selection inpu
 
 ## drvPaths
 
-Command per cell (A is the activation package for the three Home Manager hosts and linux-desktop, or the darwin system):
+Command per cell (A is the activation package for the four Home Manager outputs, or the darwin system):
 
 ```
 nix eval --raw "path:$PWD/nix#homeConfigurations.<host>.activationPackage.drvPath" [--override-input selection path:<fixture dir>]

@@ -1,6 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+usage() {
+  cat <<'USAGE'
+Usage: bash ops/doctor.sh [-h|--help]
+Read-only toolchain and file check; takes no other arguments.
+USAGE
+}
+case "$#:${1:-}" in
+  0:) ;;
+  1:-h | 1:--help) usage; exit 0 ;;
+  *) printf 'doctor: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
+esac
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ERRORS=0
 

@@ -13,6 +13,18 @@
 # browsers) would take hours on a CI runner. sys-update builds the real host.
 set -uo pipefail
 
+usage() {
+  cat <<'USAGE'
+Usage: bash ops/ci.sh [-h|--help]
+Runs every pre-merge check; takes no other arguments.
+USAGE
+}
+case "$#:${1:-}" in
+  0:) ;;
+  1:-h | 1:--help) usage; exit 0 ;;
+  *) printf 'ci: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
+esac
+
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || exit 1
 

@@ -140,7 +140,8 @@ installed, so every commit is scanned and the test task really runs.
 
 ```bash
 # Refresh Nix inputs (typically quarterly)
-nix flake update ./nix
+nix flake update --flake ./nix              # all inputs
+# nix flake update nixpkgs --flake ./nix  # or selected inputs only
 nix flake check ./nix
 
 # Preview

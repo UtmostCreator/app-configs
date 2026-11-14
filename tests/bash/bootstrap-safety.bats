@@ -7,6 +7,9 @@ setup() {
     STUBS="$BATS_TEST_TMPDIR/bin"
     mkdir -p "$STUBS"
     PROC="$BATS_TEST_TMPDIR/version"
+    # Isolate from the host: no inherited WSL env or WSL filesystem markers.
+    unset WSL_DISTRO_NAME
+    export DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-wsl-run" DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-wsl-interop"
 }
 
 fake_uname() {
@@ -15,7 +18,7 @@ fake_uname() {
 }
 
 detect() {
-    PATH="$STUBS:$PATH" DETECT_HOST_PROC_VERSION="$PROC" run env -u HOST_PROFILE \
+    PATH="$STUBS:$PATH" DETECT_HOST_PROC_VERSION="$PROC" DETECT_HOST_OSRELEASE="$BATS_TEST_TMPDIR/no-osrelease" run env -u HOST_PROFILE \
         bash "$REPO_ROOT/ops/detect-host.sh"
 }
 

@@ -56,13 +56,25 @@
 
 set -uo pipefail
 
-# Re-exec contract with a parent sys-update (consumed by the pull/re-exec step):
-# read once and unset at once, so no step command ever inherits them.
-# shellcheck disable=SC2034  # read by the re-exec/adoption code
+# Re-exec contract. After a pull that moved HEAD, an apply restarts itself from
+# the pulled tree, before any configuration is touched, so the code that runs
+# the update is the code that was just fetched:
+#   exec env SYS_UPDATE_REEXEC=1 SYS_UPDATE_RUN_ID=<run id> \
+#            SYS_UPDATE_PULLED_FROM=<old HEAD> bash ops/update-all.sh <args> --no-pull --yes
+# Every version of this script keeps these promises, so an old parent can start
+# a new child and the reverse:
+#   - the child accepts --no-pull and --yes and the three variables above;
+#   - the child never pulls when SYS_UPDATE_REEXEC=1;
+#   - the child adopts the parent's lock (the inherited flock descriptor 9, or
+#     the mkdir lock whose owner is this pid and that run id) and its run id,
+#     else it is a fresh run;
+#   - the child appends to the parent's run log;
+#   - the child exits 2 on invalid arguments before changing anything.
+# The variables are read once and unset at once, so no step command inherits
+# them.
+ORIG_ARGS=("$@")
 REEXEC_CHILD="${SYS_UPDATE_REEXEC:-}"
-# shellcheck disable=SC2034
 PARENT_RUN_ID="${SYS_UPDATE_RUN_ID:-}"
-# shellcheck disable=SC2034
 PULLED_FROM="${SYS_UPDATE_PULLED_FROM:-}"
 unset SYS_UPDATE_REEXEC SYS_UPDATE_RUN_ID SYS_UPDATE_PULLED_FROM
 
@@ -102,9 +114,14 @@ RUN_META_OWNED=0
 # activate, verify, commit, maintain, checks, cleanup, summary.
 PHASE=precheck
 RUN_DIR="$STATE_DIR/runs"
-RUN_LOG="$RUN_DIR/$RUN_ID.log"
-RUN_META="$RUN_DIR/$RUN_ID.meta"
-LOCK_BACKUP="$RUN_DIR/$RUN_ID.flake.lock"
+# Everything a run owns is named "<run id>.*"; an adopted run id (re-exec) moves them.
+set_run_paths() {
+  RUN_LOG="$RUN_DIR/$RUN_ID.log"
+  RUN_META="$RUN_DIR/$RUN_ID.meta"
+  LOCK_BACKUP="$RUN_DIR/$RUN_ID.flake.lock"
+}
+set_run_paths
+ADOPTED=0      # 1 when this process continues a parent's run after a re-exec
 # Home Manager's own activate rule decides where its profile lives: the XDG
 # state directory when it exists, else the per-user Nix profile directory.
 HM_PROFILE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/nix/profiles"
@@ -158,9 +175,33 @@ lock_refuse_mkdir() {
   } >&2
 }
 
+# adopt_lock — a child started by the re-exec step inherits its parent's lock.
+# flock mode: descriptor 9 must be the lock file and flock -n 9 must succeed
+# (the same open file description re-locks, any other holder refuses).
+# mkdir mode: the owner file must name this pid (exec keeps it) and the
+# parent's run id. Anything else is not adoption and the caller takes a fresh
+# lock. The parent's run id must have the shape this script generates, so it
+# can never name a path outside the run directory.
+adopt_lock() {
+  [[ "$REEXEC_CHILD" == 1 && "$PARENT_RUN_ID" =~ ^[0-9]{8}T[0-9]{6}Z-[0-9]+$ ]] || return 1
+  if use_flock; then
+    [[ -e /proc/$$/fd/9 && /proc/$$/fd/9 -ef "$LOCK_FILE" ]] || return 1
+    flock -n 9 || return 1
+    LOCK_MODE=flock
+  else
+    [[ "$(cat "$LOCK_DIR/owner" 2>/dev/null)" == "$$ $PARENT_RUN_ID" ]] || return 1
+    LOCK_MODE="mkdir"
+  fi
+  RUN_ID="$PARENT_RUN_ID"
+  set_run_paths
+  ADOPTED=1
+  LOCK_OWNED=1
+}
+
 # acquire_lock exits 5 when the lock is held, 1 when it cannot be set up.
 acquire_lock() {
   mkdir -p "$STATE_DIR" || { printf 'sys-update: cannot create %s\n' "$STATE_DIR" >&2; exit 1; }
+  adopt_lock && return 0
   if use_flock; then
     LOCK_MODE=flock
     exec 9>"$LOCK_FILE" || { printf 'sys-update: cannot open %s\n' "$LOCK_FILE" >&2; exit 1; }
@@ -330,6 +371,9 @@ for arg in "$@"; do
   esac
 done
 
+# A re-exec'd child never pulls: the parent already did.
+[[ "$REEXEC_CHILD" == 1 ]] && DO_PULL=0
+
 # detect-host.sh validates an explicit HOST_PROFILE too and explains a failure
 # on stderr; there is no silent fallback to a desktop profile.
 # Rollback never reads the host profile, so it does not depend on detection.
@@ -452,7 +496,13 @@ do_rollback() {
 
 if [[ "$MODE" == "apply" ]]; then
   mkdir -p "$RUN_DIR" 2>/dev/null || true
-  ui_init "$RUN_LOG" "$VERBOSE"
+  if [[ "$ADOPTED" == 1 ]]; then
+    # The parent's log already holds its part of this run: append, never truncate.
+    ui_init "" "$VERBOSE"
+    UI_LOG="$RUN_LOG"
+  else
+    ui_init "$RUN_LOG" "$VERBOSE"
+  fi
 else
   ui_init "" "$VERBOSE"
   UI_DRY_RUN=1
@@ -652,6 +702,43 @@ if [[ "$MODE" == "apply" && "$ASSUME_YES" != 1 ]]; then
   [[ "$ans" == y || "$ans" == Y ]] || { echo "Aborted"; exit 1; }
 fi
 
+# ── 2b. PULL ────────────────────────────────────────────────────────────────
+# Before the snapshot and before anything is configured: if the pull brings in
+# a newer updater, the run restarts in it (see the re-exec contract at the top),
+# so the PRECHECK that gated this run is repeated by the code that will run it.
+
+# reexec_updated <old HEAD> — hands this run (lock, run id, run log) to the
+# updated script. A failed exec is a failed update, not a silent continuation
+# in the stale updater.
+reexec_updated() {
+  ui_info "git pull" "the updater changed; restarting in the updated version"
+  ui_cleanup
+  shopt -s execfail
+  exec env SYS_UPDATE_REEXEC=1 SYS_UPDATE_RUN_ID="$RUN_ID" SYS_UPDATE_PULLED_FROM="$1" \
+    bash "$REPO_ROOT/ops/update-all.sh" ${ORIG_ARGS[@]+"${ORIG_ARGS[@]}"} --no-pull --yes
+  ui_err "git pull" "cannot restart the updated updater (exec failed)"
+  exit 1
+}
+
+if [[ "$MODE" == "apply" && "$DO_PULL" == 1 ]]; then
+  PHASE=pull
+  ui_section "Repository"
+  HEAD_BEFORE="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
+  if run_step "git pull" git -C "$REPO_ROOT" pull --ff-only; then
+    HEAD_AFTER="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
+    if [[ "$HEAD_BEFORE" == "$HEAD_AFTER" ]]; then
+      ui_ok "git pull" "already current"
+    else
+      ui_ok "git pull" "$(git -C "$REPO_ROOT" rev-list --count "$HEAD_BEFORE..$HEAD_AFTER" 2>/dev/null || echo some) new commit(s)"
+      reexec_updated "$HEAD_BEFORE"
+    fi
+  else
+    # Offline or diverged must not stop a local-config update.
+    ui_warn "git pull" "failed (offline or diverged); continuing with local config"
+    ui_note warn git "could not fast-forward from $GIT_UPSTREAM — see the run log"
+  fi
+fi
+
 # ── 3. SNAPSHOT ─────────────────────────────────────────────────────────────
 
 HM_PKGS_BEFORE=""; PROFILE_PKGS_BEFORE=""; MISE_BEFORE=""; MISE_OK=0
@@ -768,21 +855,17 @@ update_failed() {
 }
 
 # git pull ------------------------------------------------------------------
-if [[ "$DO_PULL" == 1 ]]; then
-  HEAD_BEFORE="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
-  if run_step "git pull" git -C "$REPO_ROOT" pull --ff-only; then
-    if [[ "$MODE" == "apply" ]]; then
-      HEAD_AFTER="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || true)"
-      if [[ "$HEAD_BEFORE" == "$HEAD_AFTER" ]]; then ui_ok "git pull" "already current"
-      else ui_ok "git pull" "$(git -C "$REPO_ROOT" rev-list --count "$HEAD_BEFORE..$HEAD_AFTER" 2>/dev/null || echo some) new commit(s)"; fi
-    fi
-  else
-    # Offline or diverged must not stop a local-config update.
-    ui_warn "git pull" "failed (offline or diverged); continuing with local config"
-    ui_note warn git "could not fast-forward from $GIT_UPSTREAM — see the run log"
-  fi
-elif [[ "$GIT_STATE" != "no-repo" ]]; then
-  ui_skip "git pull" "$([[ "$GIT_STATE" == dirty ]] && echo 'worktree has local changes' || echo 'no upstream configured')"
+# An apply has already pulled (see PULL above); report mode only shows the step.
+if [[ "$MODE" == "report" && "$DO_PULL" == 1 ]]; then
+  run_step "git pull" git -C "$REPO_ROOT" pull --ff-only
+elif [[ "$DO_PULL" != 1 && "$GIT_STATE" != "no-repo" ]]; then
+  if [[ "$REEXEC_CHILD" == 1 ]]; then
+    _pull_why="pulled by the run that restarted this updater"
+    [[ "$PULLED_FROM" =~ ^[0-9a-f]{7,64}$ ]] && _pull_why="$_pull_why (repo was at ${PULLED_FROM:0:12})"
+  elif [[ "$GIT_STATE" == dirty ]]; then _pull_why="worktree has local changes"
+  elif [[ "$GIT_UPSTREAM_RC" == 0 && -n "$GIT_UPSTREAM" ]]; then _pull_why="--no-pull"
+  else _pull_why="no upstream configured"; fi
+  ui_skip "git pull" "$_pull_why"
 fi
 
 # flake inputs --------------------------------------------------------------

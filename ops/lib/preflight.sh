@@ -45,9 +45,14 @@ preflight_bats_guard() {
 # is evaluated by Nix, not scraped with sed, so any valid way of writing the
 # attribute works and a broken file is an error, not "no check". Needs nix.
 preflight_check_login_user() {
-  local repo_root="$1" nix_user login_user
-  nix_user="$(nix eval --raw -f "$repo_root/nix/vars/default.nix" username 2>/dev/null)" \
-    || fail "cannot read username from nix/vars/default.nix (nix eval failed)"
+  local repo_root="$1" nix_user login_user err why
+  err="$(mktemp)" || fail "cannot create a temp file"
+  if ! nix_user="$(nix eval --raw -f "$repo_root/nix/vars/default.nix" username 2>"$err")"; then
+    why="$(tail -n 3 "$err" | tr '\n' ' ')"
+    rm -f "$err"
+    fail "cannot read username from nix/vars/default.nix (nix eval failed: $why)"
+  fi
+  rm -f "$err"
   [[ -n "$nix_user" ]] || fail "nix/vars/default.nix has an empty username"
   login_user="${USER:-$(id -un)}"
   if [[ "$login_user" != "$nix_user" ]]; then
@@ -65,10 +70,17 @@ preflight_wsl_check() {
 
 # Combined host preflight (install.sh and bootstrap.sh): WSL1 refusal, then the
 # login-user check. With Nix installed the user is read with `nix eval`. Without
-# Nix (fresh machine) a best-effort sed match of nix/vars/default.nix stops on a
-# mismatch; the authoritative check is the caller's, once Nix exists.
+# Nix (fresh machine) the authoritative check has to wait until Nix exists, so a
+# best-effort sed match of nix/vars/default.nix runs instead. MODE, the third
+# argument, says what a mismatch does there: "fail" (the default, bootstrap)
+# stops; "warn" (install.sh, which re-checks after its Nix step) only warns.
+# Any other MODE is a caller bug and fails closed.
 preflight_host_checks() {
-  local repo_root="$1" profile="$2"
+  local repo_root="$1" profile="$2" mode="${3:-fail}"
+  case "$mode" in
+    fail | warn) ;;
+    *) fail "preflight_host_checks: unknown mode '$mode' (use fail or warn)" ;;
+  esac
   preflight_wsl_check "$repo_root" "$profile"
   if command -v nix >/dev/null 2>&1; then
     preflight_check_login_user "$repo_root"
@@ -76,7 +88,10 @@ preflight_host_checks() {
   fi
   local early_user login_user="${USER:-$(id -un)}"
   early_user="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$repo_root/nix/vars/default.nix" 2>/dev/null || true)"
-  if [[ -n "$early_user" && "$login_user" != "$early_user" ]]; then
+  [[ -n "$early_user" && "$login_user" != "$early_user" ]] || return 0
+  if [[ "$mode" == warn ]]; then
+    warn "login user '$login_user' differs from username '$early_user' in nix/vars/default.nix (best-effort early warning; the authoritative check runs once Nix is installed)"
+  else
     fail "login user '$login_user' does not match username '$early_user' in nix/vars/default.nix. Log in as '$early_user' (WSL: create that user and set it as [user] default in /etc/wsl.conf), or change username and homeDirectory there."
   fi
 }

@@ -68,3 +68,14 @@ SH
     [ "$status" -ne 0 ]
     [[ "$output" == *"usage: patw"* ]]
 }
+
+@test "zc jumps with zoxide, then starts the agent (default claude)" {
+    stubs="$BATS_TEST_TMPDIR/bin"; mkdir -p "$stubs" "$BATS_TEST_TMPDIR/proj"
+    for a in claude codex; do printf '#!/bin/sh\necho "%s in $(pwd) $*"\n' "$a" >"$stubs/$a"; chmod +x "$stubs/$a"; done
+    run env PATH="$stubs:$PATH" fish --no-config -c "function z; cd $BATS_TEST_TMPDIR/proj; end; source $FISH_FILE; zc proj"
+    [ "$output" = "claude in $BATS_TEST_TMPDIR/proj " ]
+    run env PATH="$stubs:$PATH" fish --no-config -c "function z; cd $BATS_TEST_TMPDIR/proj; end; source $FISH_FILE; zc proj codex --resume"
+    [ "$output" = "codex in $BATS_TEST_TMPDIR/proj --resume" ]
+    run env PATH="$stubs:$PATH" fish --no-config -c "function z; return 1; end; source $FISH_FILE; zc nowhere"
+    [ "$status" -ne 0 ]
+}

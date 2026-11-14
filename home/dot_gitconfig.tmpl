@@ -283,6 +283,9 @@
 	nb = "!f(){ [ -n \"${1:-}\" ] || { echo 'usage: git nb <branch>'; return 1; }; b=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##'); b=${b:-main}; git fetch origin \"$b\" && git switch --no-track -c \"$1\" \"origin/$b\"; }; f"
 	# git ppr [gh pr create args] -> push (hooks run), then open a PR filled from commits
 	ppr = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; git push && gh pr create --fill \"$@\"; }; f"
+	# git acp "msg" -> add tracked changes, commit (hooks run), push. Never `add .`:
+	# new files are staged on purpose.
+	acp = "!f(){ [ -n \"${1:-}\" ] || { echo 'usage: git acp \"<message>\"'; return 1; }; git add -u && git commit -m \"$1\" && git push; }; f"
 	# git prreview -> PRs waiting for my review; git prfiles [N] -> PR file list
 	prreview = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh pr list --search 'is:open review-requested:@me' \"$@\"; }; f"
 	prfiles = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; gh pr diff --name-only \"$@\"; }; f"

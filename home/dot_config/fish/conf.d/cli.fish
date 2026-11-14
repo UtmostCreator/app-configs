@@ -66,3 +66,17 @@ function patw --description 'watch PHP files and rerun php artisan test --filter
     end
     watchexec -e php -r -c -- php artisan test --filter=$argv[1] $argv[2..]
 end
+
+# zc <dir> [agent args...]: jump with zoxide, then start an AI agent there
+# (default claude). `z <dir>` followed by an agent was the top Linux pair.
+#   zc app-configs        zc api codex --resume
+function zc --description 'z <dir>, then start claude (or another agent) there'
+    if not set -q argv[1]
+        echo "usage: zc <dir> [agent] [args...]" >&2
+        return 2
+    end
+    z $argv[1]; or return
+    set -l agent claude
+    set -q argv[2]; and set agent $argv[2]
+    command $agent $argv[3..]
+end

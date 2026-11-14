@@ -107,8 +107,8 @@ poll_repo() {
       --arg updatedAt "$(jq -r '.updatedAt' <<<"$pr")" \
       '{review:$review, ci:$ci, mergeable:$mergeable, updatedAt:$updatedAt}')"
     prev_state="$(jq -c --arg k "$key" '.[$k] // empty' "$STATE_FILE")"
-    prev_review="$(jq -r '.review // empty' <<<"${prev_state:-{}}")"
-    prev_ci="$(jq -r '.ci // empty' <<<"${prev_state:-{}}")"
+    prev_review="$(jq -r '.review // empty' <<<"${prev_state:-"{}"}")"
+    prev_ci="$(jq -r '.ci // empty' <<<"${prev_state:-"{}"}")"
 
     if [[ -z "$prev_state" ]]; then
       printf '[pr-watch][NEW]      %s "%s" by @%s\n' "$key" "$title" "$author"

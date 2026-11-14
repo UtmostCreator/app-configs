@@ -17,8 +17,10 @@
 # (an empty array is an unbound variable under set -u before bash 4.4).
 #
 # The path is percent-encoded for the URL (space, ?, # and %), so a directory
-# name with those characters is neither misparsed nor taken for another path; the
-# printed form is therefore also safe to paste into a shell.
+# name with those characters is neither misparsed nor taken for another path.
+# Those four characters are the only ones encoded: a directory name holding other
+# shell-special characters (quote, $, backtick, ;) is printed as is, so the
+# printed form is not guaranteed safe to paste into a shell.
 # The directory is made absolute here, before any sudo: sudo may change HOME,
 # and a relative path would mean something else inside the build.
 # Validators, CI and `nix flake check` do not source this file: they evaluate
@@ -37,8 +39,8 @@ selection_dir() {
 # selection_url_path PATH: PATH with the characters that break a Nix `path:` URL
 # percent-encoded. `%` first, so the others are not encoded twice.
 selection_url_path() {
-  local p="$1" hash='#' q='?' space=' '
-  p="${p//%/%25}"
+  local p="$1" pct='%' hash='#' q='?' space=' '
+  p="${p//"$pct"/%25}"
   p="${p//"$space"/%20}"
   p="${p//"$q"/%3F}"
   p="${p//"$hash"/%23}"

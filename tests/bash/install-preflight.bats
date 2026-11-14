@@ -388,3 +388,41 @@ EOF
     [[ "$output" != *"| sh"* ]]
     [ ! -e "$STUB_LOG" ]
 }
+
+# ── NixOS system-layer advisory ─────────────────────────────────────────────
+
+# nixos_host: install.sh believes it runs on NixOS; systemctl reports
+# nix-optimise.timer active and nix-gc.timer active only when STUB_GC_ACTIVE is set.
+nixos_host() {
+    make_repo repo
+    : >"$BATS_TEST_TMPDIR/NIXOS"
+    NIXOS="INSTALL_NIXOS_MARKER=$BATS_TEST_TMPDIR/NIXOS"
+    stub "$STUBS/systemctl" '[ "$1" = is-active ] || exit 0
+case "$2" in
+  nix-gc.timer) [ -n "${STUB_GC_ACTIVE:-}" ] ;;
+  nix-optimise.timer) true ;;
+  *) false ;;
+esac'
+}
+
+@test "the NixOS advisory never suggests adding the user to trusted-users" {
+    nixos_host
+    run env $NIXOS USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"NixOS system layer"* ]]
+    [[ "$output" != *"trusted-users"* ]]
+}
+
+@test "nix-optimise.timer alone does not satisfy the GC timer check" {
+    nixos_host
+    run env $NIXOS USER=utmostcreator HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"nix-gc.timer is not active"* ]]
+}
+
+@test "an active nix-gc.timer passes the GC timer check" {
+    nixos_host
+    run env $NIXOS USER=utmostcreator STUB_GC_ACTIVE=1 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"nix-gc.timer is not active"* ]]
+}

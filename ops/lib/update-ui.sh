@@ -89,6 +89,10 @@ ui_run() {
     return 0
   fi
   local tmp status=0 ticker=""
+  # The previous step's capture is already in the run log and its caller has
+  # had its turn at UI_LAST_LOG. Reap it so a run leaves one capture, not one
+  # per step.
+  ui_cleanup
   tmp="$(mktemp "${TMPDIR:-/tmp}/sys-update-step.XXXXXX")"
   ui_log_only "" ; ui_log_only "\$ $*"
   if [[ "$UI_VERBOSE" == 1 ]]; then
@@ -108,6 +112,16 @@ ui_run() {
   [[ -n "$UI_LOG" ]] && cat "$tmp" >> "$UI_LOG"
   UI_LAST_LOG="$tmp"
   return "$status"
+}
+
+# ui_cleanup — remove the capture of the most recent ui_run. Callers run it
+# once at exit; ui_run itself reaps the previous step's capture.
+ui_cleanup() {
+  if [[ -n "$UI_LAST_LOG" && "${UI_LAST_LOG##*/}" == sys-update-step.* ]]; then
+    rm -f "$UI_LAST_LOG"
+  fi
+  UI_LAST_LOG=""
+  return 0
 }
 
 # _ui_progress <label> <capture> — redraws "… label  running m:ss" until

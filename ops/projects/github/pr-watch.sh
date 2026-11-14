@@ -74,12 +74,14 @@ poll_repo() {
   local repo="$1"
   local prs
   # statusCheckRollup gives us per-PR aggregated CI status without a
-  # second API call; mergedAt lets us distinguish merge vs close on
-  # the next poll.
-  prs="$(gh pr list --repo "$repo" --state open \
+  # second API call. A failed list (outage, auth, rate limit) must not look
+  # like "no open PRs": skip this repo and leave its state untouched.
+  if ! prs="$(gh pr list --repo "$repo" --state open --limit 200 \
     --json number,title,author,reviewDecision,mergeable,updatedAt,statusCheckRollup \
-    2>/dev/null || echo '[]')"
-  [[ -z "$prs" || "$prs" == "[]" ]] && return 0
+    2>/dev/null)" || [[ -z "$prs" ]]; then
+    proj_log "gh pr list failed for $repo — skipping this poll"
+    return 0
+  fi
 
   echo "$prs" | jq -c '.[]' | while read -r pr; do
     local num title author key prev_state new_state
@@ -138,16 +140,26 @@ poll_repo() {
   done
 
   # Detect closes/merges: any state-file key whose PR is no longer in
-  # the open list. We cannot tell merge from close here without an
-  # extra API call, so we ring pr_merged on either — and stop tracking
-  # the key. If you only want merge alerts, gate pr_merged in config.
+  # the open list (this also runs when no PR is open). One `gh pr view`
+  # decides: MERGED rings pr_merged, CLOSED is reported without a bell. On
+  # lookup failure or an OPEN answer the key is kept and retried next poll.
   local open_keys
   open_keys="$(echo "$prs" | jq -r --arg r "$repo" '.[] | "\($r)#\(.number)"')"
   jq -r 'keys[]' "$STATE_FILE" | while read -r k; do
     [[ "$k" != "$repo#"* ]] && continue
     if ! grep -Fxq "$k" <<<"$open_keys"; then
-      printf '[pr-watch][CLOSED]   %s\n' "$k"
-      bell_if_enabled pr_merged
+      local pr_state
+      pr_state="$(gh pr view "${k##*#}" --repo "$repo" --json state -q .state 2>/dev/null)" || continue
+      case "$pr_state" in
+        MERGED)
+          printf '[pr-watch][MERGED]   %s\n' "$k"
+          bell_if_enabled pr_merged
+          ;;
+        CLOSED)
+          printf '[pr-watch][CLOSED]   %s\n' "$k"
+          ;;
+        *) continue ;;
+      esac
       jq --arg k "$k" 'del(.[$k])' "$STATE_FILE" >"${STATE_FILE}.new" \
         && mv "${STATE_FILE}.new" "$STATE_FILE"
     fi

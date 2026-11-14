@@ -233,10 +233,12 @@ fi
 # ─── 5. Home Manager / nix-darwin ───────────────────────────────────────────
 if [[ "$HOST_PROFILE" == "macos" ]]; then
   # darwin-rebuild is not installed on a first run: use the pinned flake output.
+  # sudo resets the environment (no NIX_CONFIG), so the features go on the
+  # command line; darwin-rebuild adds them itself.
   if command -v darwin-rebuild >/dev/null 2>&1; then
     SWITCH_CMD=(sudo darwin-rebuild switch --flake "$REPO_ROOT/nix#macos")
   else
-    SWITCH_CMD=(sudo nix run "$REPO_ROOT/nix#darwin-rebuild" -- switch --flake "$REPO_ROOT/nix#macos")
+    SWITCH_CMD=(sudo nix --extra-experimental-features "nix-command flakes" run "$REPO_ROOT/nix#darwin-rebuild" -- switch --flake "$REPO_ROOT/nix#macos")
   fi
   DRY_CMD=(nix build --no-link "$REPO_ROOT/nix#darwinConfigurations.macos.system")
   switch_bin=nix

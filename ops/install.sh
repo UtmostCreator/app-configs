@@ -40,7 +40,8 @@
 #   3  refused: a bats test tried a real install against the real HOME
 #
 # macOS apply needs sudo (nix-darwin switch); it is checked before anything
-# changes. Linux and WSL never use sudo here.
+# changes. On Linux and WSL install.sh itself runs no sudo, but the Nix
+# installer may ask for it on a fresh non-NixOS host.
 
 set -euo pipefail
 
@@ -257,10 +258,13 @@ step "Home Manager / nix-darwin switch"
 if [[ "$HOST_PROFILE" == "macos" ]]; then
   # Same approach as ops/bootstrap.sh: the switch needs root, and darwin-rebuild
   # does not exist on a first run, so use the pinned flake output instead.
+  # sudo resets the environment, so NIX_CONFIG (the features enabled earlier)
+  # does not reach it: pass the features on the command line. darwin-rebuild
+  # adds them itself (flakeFlags in nix-darwin's darwin-rebuild.sh).
   if have darwin-rebuild; then
     run sudo darwin-rebuild switch --flake "$REPO_ROOT/nix#macos"
   else
-    run sudo nix run "$REPO_ROOT/nix#darwin-rebuild" -- switch --flake "$REPO_ROOT/nix#macos"
+    run sudo nix --extra-experimental-features 'nix-command flakes' run "$REPO_ROOT/nix#darwin-rebuild" -- switch --flake "$REPO_ROOT/nix#macos"
   fi
 else
   if [[ "$DRY_RUN" == 1 ]]; then
@@ -357,7 +361,7 @@ fi
 # ── NixOS system-rebuild advisory (NOT run automatically — needs sudo) ───────
 # The user environment is fully installed above. System-level settings (fish
 # login shell, GC timer, time zone) live in /etc/nixos and require an
-# explicit, privileged `nixos-rebuild`. We never run sudo unattended; instead we
+# explicit, privileged `nixos-rebuild`. On NixOS we never run sudo unattended; instead we
 # detect what is missing and print exact next steps. See docs/platforms/nixos/rebuild.md.
 if is_nixos; then
   step "NixOS system layer (live-state check)"

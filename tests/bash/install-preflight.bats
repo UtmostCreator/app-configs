@@ -562,7 +562,7 @@ helpers_present() {
     run env USER=utmostcreator HOST_PROFILE=macos bash "$FAKE/ops/install.sh"
     echo "$output"
     [ "$status" -eq 0 ]
-    grep -q "^sudo cwd=.* args=nix run $FAKE/nix#darwin-rebuild -- switch --flake $FAKE/nix#macos\$" "$STUB_LOG"
+    grep -q "^sudo cwd=.* args=nix --extra-experimental-features nix-command flakes run $FAKE/nix#darwin-rebuild -- switch --flake $FAKE/nix#macos\$" "$STUB_LOG"
     [ "$(grep -c 'home-manager' "$STUB_LOG")" -eq 0 ]
 }
 
@@ -590,7 +590,7 @@ helpers_present() {
     stub_tool sudo
     run env USER=utmostcreator STUB_FAIL_SUDO=1 DRY_RUN=1 HOST_PROFILE=macos bash "$FAKE/ops/install.sh"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"would run: sudo nix run $FAKE/nix#darwin-rebuild -- switch --flake $FAKE/nix#macos"* ]]
+    [[ "$output" == *"would run: sudo nix --extra-experimental-features nix-command flakes run $FAKE/nix#darwin-rebuild -- switch --flake $FAKE/nix#macos"* ]]
 }
 
 # ── round 1 review: seams, detect-host, temp cleanup, HOME guard ────────────

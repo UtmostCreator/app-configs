@@ -62,3 +62,14 @@ EOF2
     [ "$status" -eq 0 ]
     [ -z "$output" ]
 }
+
+@test "every WS_SCRIPT_* path in workspace/config.sh points at an existing script" {
+    WS_SCRIPTS_DIR="$REPO_ROOT/ops/projects/workspace"
+    # shellcheck source=/dev/null
+    source "$REPO_ROOT/ops/projects/workspace/config.sh"
+    missing=""
+    for v in $(compgen -v WS_SCRIPT_); do
+        [ -e "${!v}" ] || missing+=" $v=${!v}"
+    done
+    [ -z "$missing" ] || { echo "missing:$missing"; return 1; }
+}

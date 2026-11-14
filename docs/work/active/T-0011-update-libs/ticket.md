@@ -42,3 +42,4 @@ Only the files listed above. Unrelated findings are reported, not fixed.
 ## Progress
 
 - 2026-11-14: The ticker fix lands with T-0010.
+- 2026-11-14: The ticker fix landed with T-0010 (1cc9f2a, `fix(update-ui): watch the updater pid in the progress ticker`). The ticket stays active: that fix covers only the progress-ticker part, and the other findings above (ui_note tab, git_worktree_state, nix_* parsing, package_delta, classify_warning, profile-conflicts) are not shown as reproduced or fixed by the landed tests. It also waits on the T-0010 release audit.

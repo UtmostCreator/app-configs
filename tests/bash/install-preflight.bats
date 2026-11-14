@@ -13,6 +13,12 @@ setup() {
     # A caller's NIX_CONFIG (ops/ci-local.sh exports one) would leak into the
     # stubs' feature handling and their logs.
     unset NIX_CONFIG
+    # Results must not depend on the host: no real Nix profile, no real
+    # /etc/profile.d/nix.sh, and the host is not NixOS unless a test says so.
+    export INSTALL_NIX_DEFAULT_PROFILE="$BATS_TEST_TMPDIR/no-nix-profile" \
+        INSTALL_ETC_PROFILE_D="$BATS_TEST_TMPDIR/no-profile.d" \
+        INSTALL_NIXOS_MARKER="$BATS_TEST_TMPDIR/no-nixos-marker" \
+        INSTALL_OS_RELEASE="$BATS_TEST_TMPDIR/no-os-release"
     export STUBS="$BATS_TEST_TMPDIR/bin"; mkdir -p "$STUBS"
     export STUB_LOG="$BATS_TEST_TMPDIR/calls.log"
     stub_nix
@@ -138,8 +144,6 @@ exit 0"
 
 # make_repo <dir-name> [username]: scratch repo under the test tmpdir.
 make_repo() {
-    [ ! -x /nix/var/nix/profiles/default/bin/nix ] \
-        || skip "a system Nix default profile would shadow the nix stub"
     FAKE="$BATS_TEST_TMPDIR/$1"
     LOG="$BATS_TEST_TMPDIR/lefthook.log"
     mkdir -p "$FAKE/ops" "$FAKE/nix/vars" "$FAKE/home/.chezmoidata" "$FAKE/.git" "$STUBS"
@@ -355,7 +359,7 @@ no_nix_host() {
 #!/usr/bin/env bash
 out=""
 while [ $# -gt 0 ]; do [ "$1" = -o ] && out="$2"; shift; done
-printf 'curl\n' >>"$STUB_LOG"
+printf 'curl %s\n' "$out" >>"$STUB_LOG"
 [ -z "${STUB_FAIL_CURL:-}" ] || exit "$STUB_FAIL_CURL"
 cat >"$out" <<INST
 #!/bin/sh
@@ -580,4 +584,68 @@ helpers_present() {
     run env USER=utmostcreator STUB_FAIL_SUDO=1 DRY_RUN=1 HOST_PROFILE=macos bash "$FAKE/ops/install.sh"
     [ "$status" -eq 0 ]
     [[ "$output" == *"would run: sudo nix run $FAKE/nix#darwin-rebuild -- switch --flake $FAKE/nix#macos"* ]]
+}
+
+# ── round 1 review: seams, detect-host, temp cleanup, HOME guard ────────────
+
+@test "the Nix default profile bin comes from INSTALL_NIX_DEFAULT_PROFILE" {
+    make_repo repo
+    mkdir -p "$BATS_TEST_TMPDIR/profile/bin"
+    stub "$BATS_TEST_TMPDIR/profile/bin/lefthook" "echo 'from-profile' >>'$LOG'"
+    run env USER=utmostcreator INSTALL_NIX_DEFAULT_PROFILE="$BATS_TEST_TMPDIR/profile" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    [ "$(cat "$LOG")" = "from-profile" ]
+}
+
+@test "a failing detect-host is an [install:error], not a silent exit" {
+    make_repo repo
+    stub "$FAKE/ops/detect-host.sh" 'echo "detect boom" >&2; exit 4'
+    run env -u HOST_PROFILE USER=utmostcreator DRY_RUN=1 bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"[install:error] ops/detect-host.sh failed; set HOST_PROFILE explicitly"* ]]
+}
+
+@test "the chezmoi shim dir is removed after a successful install" {
+    make_repo repo
+    T="$BATS_TEST_TMPDIR/tmp"; mkdir -p "$T"
+    stub "$FAKE/ops/snapshot-home.sh" 'command -v chezmoi >>"$STUB_LOG"'
+    run env USER=utmostcreator TMPDIR="$T" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    grep -q "^$T/" "$STUB_LOG"           # the shim really lived in $T
+    [ -z "$(ls -A "$T")" ]
+}
+
+@test "the chezmoi shim dir is removed when the install fails later" {
+    make_repo repo
+    T="$BATS_TEST_TMPDIR/tmp"; mkdir -p "$T"
+    stub "$FAKE/ops/snapshot-home.sh" 'command -v chezmoi >>"$STUB_LOG"'
+    run env USER=utmostcreator TMPDIR="$T" STUB_FAIL_HOME_MANAGER=7 HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 7 ]
+    grep -q "^$T/" "$STUB_LOG"
+    [ -z "$(ls -A "$T")" ]
+}
+
+@test "the Nix installer temp file is removed on success" {
+    no_nix_host
+    T="$BATS_TEST_TMPDIR/tmp"; mkdir -p "$T"
+    run env $NONIXOS USER=utmostcreator TMPDIR="$T" PATH="$RPATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 0 ]
+    grep -q "^curl $T/" "$STUB_LOG"
+    [ -z "$(ls -A "$T")" ]
+}
+
+@test "the Nix installer temp file is removed when the download fails" {
+    no_nix_host
+    T="$BATS_TEST_TMPDIR/tmp"; mkdir -p "$T"
+    run env $NONIXOS USER=utmostcreator TMPDIR="$T" STUB_FAIL_CURL=22 PATH="$RPATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 22 ]
+    grep -q "^curl $T/" "$STUB_LOG"
+    [ -z "$(ls -A "$T")" ]
+}
+
+@test "the bats HOME guard rejects a path that climbs out with .." {
+    make_repo repo
+    run env -u DRY_RUN HOME="$BATS_TEST_TMPDIR/home/../../outside-$$" USER=utmostcreator PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -eq 3 ]
+    [ ! -e "$LOG" ]
 }

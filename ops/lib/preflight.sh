@@ -31,7 +31,8 @@ _preflight_under() {
 preflight_bats_guard() {
   local tag="$1" what="$2" repo_root="$3"
   [[ -n "${BATS_TEST_TMPDIR:-}" ]] || return 0
-  if _preflight_under "$HOME" "$BATS_TEST_TMPDIR" && _preflight_under "$repo_root" "$BATS_TEST_TMPDIR"; then
+  # A ".." segment could climb back out of the scratch dir, so it is refused too.
+  if [[ "$HOME" != */../* && "$HOME" != */.. ]] && _preflight_under "$HOME" "$BATS_TEST_TMPDIR" && _preflight_under "$repo_root" "$BATS_TEST_TMPDIR"; then
     return 0
   fi
   printf '[%s] refusing %s from a bats test (HOME=%s, repo=%s); use a dry run, or a scratch HOME and a repo copy under $BATS_TEST_TMPDIR\n' \
@@ -115,11 +116,14 @@ preflight_personal_yaml() {
 # NIX_PATH_REFRESH=0 so a real system Nix cannot shadow their PATH stubs.
 preflight_refresh_nix_path() {
   [[ "${NIX_PATH_REFRESH:-1}" == 0 ]] && return 0
-  local f
-  for f in /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh \
-           "$HOME/.nix-profile/etc/profile.d/nix.sh" /etc/profile.d/nix.sh; do
+  # INSTALL_NIX_DEFAULT_PROFILE / INSTALL_ETC_PROFILE_D are further test seams:
+  # they point at scratch paths so a host's real Nix profile cannot shadow the
+  # PATH stubs in the bats tests.
+  local f default_profile="${INSTALL_NIX_DEFAULT_PROFILE:-/nix/var/nix/profiles/default}"
+  for f in "$default_profile/etc/profile.d/nix-daemon.sh" \
+           "$HOME/.nix-profile/etc/profile.d/nix.sh" "${INSTALL_ETC_PROFILE_D:-/etc/profile.d}/nix.sh"; do
     # shellcheck disable=SC1090
     [[ -r "$f" ]] && . "$f" || true
   done
-  export PATH="$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH"
+  export PATH="$HOME/.nix-profile/bin:$default_profile/bin:$PATH"
 }

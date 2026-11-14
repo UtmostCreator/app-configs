@@ -187,6 +187,8 @@ else
   run sh "$nix_installer" install --no-confirm
 fi
 
+# Test seams INSTALL_NIX_DEFAULT_PROFILE / INSTALL_ETC_PROFILE_D / NIX_PATH_REFRESH=0
+# are honoured inside preflight_refresh_nix_path (ops/lib/preflight.sh).
 preflight_refresh_nix_path
 have nix || { [[ "$DRY_RUN" == 1 ]] || fail "nix still not on PATH after install"; }
 if ((USER_CHECKED == 0)); then

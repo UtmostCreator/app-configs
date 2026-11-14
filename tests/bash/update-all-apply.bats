@@ -1029,3 +1029,104 @@ STUB
   [ "$(commits)" -eq 2 ]
   [ "$(statuses)" = "started prepared activating activated verify-skipped committed done" ]
 }
+
+# ── T-0010 Gate B: VERIFY gate, commit order, --skip-verify (T3) ────────────
+
+# A run that keeps the VERIFY gate and the CHECKS, with a graphical session.
+# The tools the CHECKS call are stubbed so the real machine is never queried.
+run_verified() {
+  printf '#!/usr/bin/env bash\nif [[ -n "${STUB_FAILED_UNITS:-}" ]]; then echo "$STUB_FAILED_UNITS loaded failed failed x"; fi\nexit 0\n' > "$STUBS/systemctl"
+  printf '#!/usr/bin/env bash\necho "Claude 30d left · Codex signed in"\n' > "$STUBS/ai-auth-status"
+  chmod +x "$STUBS/systemctl" "$STUBS/ai-auth-status"
+  run env PATH="$STUBS:$PATH" DISPLAY=:0 WAYLAND_DISPLAY=wayland-0 XDG_SESSION_TYPE=wayland \
+    bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup "$@"
+}
+
+@test "S24: a verification failure keeps the lock uncommitted and offers both ways out" {
+  export FAIL_BRAVE=1
+  run_verified
+  [ "$status" -eq 1 ]
+  [ "$(commits)" -eq 1 ]
+  grep -q '"rev":"new"' "$FAKE/nix/flake.lock"
+  [ "$(statuses | awk '{print $NF}')" = "failed:verify" ]
+  [[ "$output" == *"sys-update rollback"* ]]
+  [[ "$output" == *'commit --only -m "chore(nix): update flake inputs" -- nix/flake.lock'* ]]
+}
+
+@test "S24: a verified update records verified and commits afterwards" {
+  run_verified
+  [ "$status" -eq 0 ]
+  [ "$(statuses)" = "started prepared activating activated verified committed done" ]
+  [ "$(meta_value runtime_verified)" = 1 ]
+  [ "$(commits)" -eq 2 ]
+  [[ "$(git -C "$FAKE" log -1 --format=%B)" != *"Not runtime-verified"* ]]
+}
+
+@test "S25a: a default-browser mapping that did not apply fails and names mimeapps.list" {
+  export STUB_MIME=firefox.desktop
+  run_verified
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"firefox.desktop"* ]]
+  [[ "$output" == *"mimeapps.list"* ]]
+  [ "$(commits)" -eq 1 ]
+}
+
+@test "S25b: an empty xdg-mime answer is advisory, not a failure" {
+  export STUB_MIME_EMPTY=1
+  run_verified
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"could not be judged"* ]]
+  [ "$(commits)" -eq 2 ]
+}
+
+@test "S25c: with no graphical session a wrong mapping is advisory" {
+  export STUB_MIME=firefox.desktop
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$STUBS/systemctl"
+  printf '#!/usr/bin/env bash\necho ok\n' > "$STUBS/ai-auth-status"
+  chmod +x "$STUBS/systemctl" "$STUBS/ai-auth-status"
+  run env PATH="$STUBS:$PATH" DISPLAY= WAYLAND_DISPLAY= XDG_SESSION_TYPE=tty \
+    bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"no graphical session"* ]]
+  [ "$(commits)" -eq 2 ]
+}
+
+@test "S25: a Brave that does not run is a hard failure even without a graphical session" {
+  export FAIL_BRAVE=1
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$STUBS/systemctl"
+  chmod +x "$STUBS/systemctl"
+  run env PATH="$STUBS:$PATH" DISPLAY= WAYLAND_DISPLAY= XDG_SESSION_TYPE=tty \
+    bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup
+  [ "$status" -eq 1 ]
+  [[ "$output" == *"brave --version failed"* ]]
+}
+
+@test "S26: --skip-verify records that the update was not runtime-verified" {
+  export FAIL_BRAVE=1
+  run_update
+  [ "$status" -eq 0 ]
+  [ "$(meta_value runtime_verified)" = 0 ]
+  [ "$(statuses)" = "started prepared activating activated verify-skipped committed done" ]
+  [[ "$(git -C "$FAKE" log -1 --format=%B)" == *"Not runtime-verified"* ]]
+  [ "$(git -C "$FAKE" log -1 --format=%s)" = "chore(nix): update flake inputs" ]
+  [[ "$output" == *"not runtime-verified"* ]]
+}
+
+@test "S27: a failing advisory check warns and never blocks the committed update" {
+  export STUB_FAILED_UNITS=broken.service
+  run_verified
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"broken.service"* ]]
+  [ "$(commits)" -eq 2 ]
+  [ "$(statuses)" = "started prepared activating activated verified committed done" ]
+}
+
+@test "a lock changed by something else during the run is not committed" {
+  export STUB_TOUCH_LOCK=1
+  run_update
+  [ "$status" -eq 0 ]
+  [ "$(commits)" -eq 1 ]
+  grep -q '"rev":"foreign"' "$FAKE/nix/flake.lock"
+  [[ "$output" == *"changed during the update by something else"* ]]
+  [ "$(statuses)" = "started prepared activating activated verify-skipped commit-skipped done" ]
+}

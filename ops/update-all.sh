@@ -43,6 +43,10 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 source "$REPO_ROOT/ops/lib/update-facts.sh"
 # shellcheck source=ops/lib/hm-switch.sh
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
+# shellcheck source=ops/lib/preflight.sh
+source "$REPO_ROOT/ops/lib/preflight.sh"
+# shellcheck source=ops/lib/state-lock.sh
+source "$REPO_ROOT/ops/lib/state-lock.sh"
 # shellcheck source=ops/lib/update-ui.sh
 source "$REPO_ROOT/ops/lib/update-ui.sh"
 # shellcheck source=ops/update-version-report.sh
@@ -80,13 +84,36 @@ for arg in "$@"; do
   esac
 done
 
-HOST_PROFILE="${HOST_PROFILE:-$(bash "$REPO_ROOT/ops/detect-host.sh" 2>/dev/null || echo linux-desktop)}"
-STATE_DIR="${SYS_UPDATE_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/sys-update}"
-RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)"
+fail() { printf 'sys-update: %s\n' "$*" >&2; exit 1; }
+
+# Test guard (ops/lib/preflight.sh), before anything else: under bats an apply
+# or rollback run must stay inside the test's scratch HOME and repo copy.
+if [[ "$MODE" == apply || "$SUBCOMMAND" == rollback ]]; then
+  preflight_bats_guard sys-update "to apply" "$REPO_ROOT"
+fi
+
+# Never guess the host: a wrong profile would build and activate the wrong
+# configuration. (Rollback re-activates a recorded generation and needs none.)
+if [[ "$SUBCOMMAND" != rollback ]]; then
+  if [[ -z "${HOST_PROFILE:-}" ]]; then
+    HOST_PROFILE="$(bash "$REPO_ROOT/ops/detect-host.sh" 2>/dev/null)" \
+      || fail "could not detect the host profile; set HOST_PROFILE=macos|linux-desktop|linux-cli|wsl"
+  fi
+  # The wsl profile means WSL2 (see ops/detect-host.sh --wsl-version).
+  if [[ "$HOST_PROFILE" == wsl && "$(bash "$REPO_ROOT/ops/detect-host.sh" --wsl-version)" == 1 ]]; then
+    fail "WSL1 is not supported (no systemd, no real Linux kernel for Nix). Convert from PowerShell: wsl --set-version <distro> 2   (list distros: wsl --list --verbose)"
+  fi
+fi
+HOST_PROFILE="${HOST_PROFILE:-}"
+STATE_DIR="$(sys_update_state_dir)"
+# Seconds are not unique: add the pid so two runs in one second cannot share a
+# log, meta file or lock backup.
+RUN_ID="$(date -u +%Y%m%dT%H%M%SZ)-$$"
 RUN_DIR="$STATE_DIR/runs"
 RUN_LOG="$RUN_DIR/$RUN_ID.log"
 RUN_META="$RUN_DIR/$RUN_ID.meta"
 LOCK_BACKUP="$RUN_DIR/$RUN_ID.flake.lock"
+BRAVE_BACKUP="$RUN_DIR/$RUN_ID.brave.json"
 HM_PROFILE="$HOME/.local/state/nix/profiles/home-manager"
 
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -132,6 +159,18 @@ do_rollback() {
 
   ui_section "Rolling back"
   local failed=0
+
+  # The update committed its new locks, so restoring the old ones leaves the
+  # worktree dirty and the next sys-update would refuse. Remember now, before
+  # touching anything, whether those files were clean: only then is the
+  # restore ours to commit.
+  local restore_files=() restore_clean=0
+  [[ -n "$lock" && -f "$lock" ]] && restore_files+=(nix/flake.lock)
+  [[ -n "$brave_backup" && -f "$brave_backup" ]] && restore_files+=(nix/packages/brave/release.json)
+  if ((${#restore_files[@]})) && git -C "$REPO_ROOT" rev-parse --git-dir >/dev/null 2>&1 \
+    && git -C "$REPO_ROOT" diff --quiet HEAD -- "${restore_files[@]}" 2>/dev/null; then
+    restore_clean=1
+  fi
   if [[ -n "$hm_path" && -x "$hm_path/activate" ]]; then
     if ui_run "home-manager" "$hm_path/activate"; then
       ui_ok "home-manager" "generation ${gen:-?} re-activated"
@@ -160,6 +199,17 @@ do_rollback() {
     fi
   fi
 
+  if ((${#restore_files[@]})) && [[ "$failed" == 0 ]] \
+    && ! git -C "$REPO_ROOT" diff --quiet HEAD -- "${restore_files[@]}" 2>/dev/null; then
+    if [[ "$restore_clean" != 1 ]]; then
+      ui_warn "locks" "not committed (they had local edits before the rollback): ${restore_files[*]}"
+    elif ui_run "locks" git -C "$REPO_ROOT" commit --only -m "chore(nix): roll back flake inputs" -- "${restore_files[@]}"; then
+      ui_ok "locks" "committed ($(git -C "$REPO_ROOT" rev-parse --short HEAD))"
+    else
+      ui_warn "locks" "restored but the commit failed; commit them before the next sys-update"
+    fi
+  fi
+
   if [[ -n "$snapshot" && -d "$snapshot" ]]; then
     ui_info "dotfiles" "restore with: cp -a $snapshot/. \$HOME/"
   fi
@@ -170,6 +220,14 @@ do_rollback() {
   fi
   ui_err "rollback" "incomplete"; exit 1
 }
+
+# One mutating run at a time, shared with the codebase-memory-mcp updater timer
+# (ops/lib/state-lock.sh). Held until this process exits.
+if [[ "$MODE" == apply || "$SUBCOMMAND" == rollback ]]; then
+  acquire_state_lock "$STATE_DIR" \
+    || fail "another sys-update (or the codebase-memory-mcp updater) is running; lock: $STATE_DIR/lock"
+fi
+trap ui_cleanup EXIT
 
 [[ "$SUBCOMMAND" == "rollback" ]] && do_rollback
 
@@ -431,6 +489,9 @@ LOCK_BEFORE="$(lock_inputs "$REPO_ROOT/nix/flake.lock")"
 LOCK_WAS_CLEAN=0
 UPDATE_FILES=(nix/flake.lock)
 [[ -f "$REPO_ROOT/nix/packages/brave/release.json" ]] && UPDATE_FILES+=(nix/packages/brave/release.json)
+# Also written by the weekly codebase-memory-mcp updater. It now commits its
+# own change, but a lock it left behind is committed here, not stranded.
+[[ -f "$REPO_ROOT/nix/packages/codebase-memory-mcp/release.json" ]] && UPDATE_FILES+=(nix/packages/codebase-memory-mcp/release.json)
 if [[ "$GIT_STATE" != "no-repo" ]] \
   && git -C "$REPO_ROOT" ls-files --error-unmatch nix/flake.lock >/dev/null 2>&1 \
   && git -C "$REPO_ROOT" diff --quiet HEAD -- "${UPDATE_FILES[@]}" 2>/dev/null; then
@@ -626,6 +687,21 @@ if [[ "$STEP_FAILED" == 0 && -x "$REPO_ROOT/ops/syncthing-obsidian-stignore.sh" 
 fi
 
 if [[ "$STEP_FAILED" == 1 ]]; then
+  # `nix flake update` and the Brave refresh already rewrote their locks. They
+  # were never applied, and left modified they would stop the next sys-update
+  # at the dirty-worktree gate: put back what the snapshot phase saved.
+  if [[ "$MODE" == apply ]]; then
+    LOCKS_RESTORED=0
+    if [[ -f "$LOCK_BACKUP" ]] && ! cmp -s "$LOCK_BACKUP" "$REPO_ROOT/nix/flake.lock" \
+      && cp "$LOCK_BACKUP" "$REPO_ROOT/nix/flake.lock"; then
+      LOCKS_RESTORED=1
+    fi
+    if [[ -f "$BRAVE_BACKUP" ]] && ! cmp -s "$BRAVE_BACKUP" "$REPO_ROOT/nix/packages/brave/release.json" \
+      && cp "$BRAVE_BACKUP" "$REPO_ROOT/nix/packages/brave/release.json"; then
+      LOCKS_RESTORED=1
+    fi
+    [[ "$LOCKS_RESTORED" == 1 ]] && ui_info "locks" "restored to their pre-update state (nothing was applied)"
+  fi
   printf '\n%sUpdate failed.%s Full log: %s\n' "$UI_C_ERR" "$UI_C_OFF" "${RUN_LOG:-n/a}"
   [[ -n "$HM_GEN_BEFORE" ]] && printf '  Roll back with: sys-update rollback   (Home Manager generation %s)\n' "$HM_GEN_BEFORE"
   exit 1

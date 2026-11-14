@@ -258,9 +258,20 @@ fi
 # unexplained EOF halfway through the update. Ask it here instead, while
 # nothing has been mutated. The first status column is "changed since chezmoi
 # wrote it", the second "apply would change it"; only both together prompt.
+# Targets owned by a modify_ script never prompt: chezmoi feeds them the live
+# file and writes the merge (e.g. ~/.claude/settings.json, VS Code's
+# settings.json), so an app rewriting them is expected, not a conflict.
 CHEZMOI_CONFLICTS=()
 if have chezmoi; then
-  mapfile -t CHEZMOI_CONFLICTS < <(chezmoi status 2>/dev/null | awk 'substr($0,1,1)=="M" && substr($0,2,1)!=" " {print substr($0,4)}')
+  mapfile -t _chezmoi_edited < <(chezmoi status 2>/dev/null | awk 'substr($0,1,1)=="M" && substr($0,2,1)!=" " {print substr($0,4)}')
+  if [[ "${#_chezmoi_edited[@]}" -gt 0 ]]; then
+    _chezmoi_dest="$(chezmoi target-path 2>/dev/null || true)"
+    for _target in "${_chezmoi_edited[@]}"; do
+      _source="$(chezmoi source-path "${_chezmoi_dest:-$HOME}/$_target" 2>/dev/null || true)"
+      [[ "${_source##*/}" == modify_* ]] && continue
+      CHEZMOI_CONFLICTS+=("$_target")
+    done
+  fi
   if [[ "${#CHEZMOI_CONFLICTS[@]}" -eq 0 ]]; then
     ui_ok "managed files" "no local edits"
   elif [[ "$CHEZMOI_FORCE" == 1 ]]; then

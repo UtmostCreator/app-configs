@@ -126,11 +126,11 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
 }
 
 @test "a hand-edited managed file stops the update before anything is mutated" {
-  export CHEZMOI_STATUS='MM .config/Code/User/settings.json'
+  export CHEZMOI_STATUS='MM .gitconfig'
   run_update
   [ "$status" -ne 0 ]
   [[ "$output" == *"stopped before"* ]]
-  [[ "$output" == *".config/Code/User/settings.json"* ]]
+  [[ "$output" == *".gitconfig"* ]]
   # names a way to inspect the edit and a way past it
   [[ "$output" == *"chezmoi diff"* ]]
   [[ "$output" == *"--force"* ]]
@@ -140,14 +140,14 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
 }
 
 @test "a hand edit that already matches the repo is not a conflict" {
-  export CHEZMOI_STATUS='M  .config/Code/User/settings.json'
+  export CHEZMOI_STATUS='M  .gitconfig'
   run_update
   [ "$status" -eq 0 ]
   grep -q 'chezmoi apply --no-tty' "$STUB_LOG"
 }
 
 @test "--force turns a hand-edited managed file into a warning and overwrites it" {
-  export CHEZMOI_STATUS='MM .config/Code/User/settings.json'
+  export CHEZMOI_STATUS='MM .gitconfig'
   run_update --force
   [ "$status" -eq 0 ]
   [[ "$output" == *"overwritten"* ]]

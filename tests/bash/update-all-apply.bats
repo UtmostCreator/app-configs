@@ -465,3 +465,164 @@ JSON
   run ! grep -q '^nix flake update' "$STUB_LOG"
   run ! grep -q '^home-manager switch' "$STUB_LOG"
 }
+
+# ── T-0010 lock, run id, metadata, pruning ──────────────────────────────────
+
+teardown() {
+  [[ -n "${HOLDER:-}" ]] && kill "$HOLDER" 2>/dev/null
+  chmod -R u+w "$BATS_TEST_TMPDIR" 2>/dev/null
+  return 0
+}
+
+# A live holder of the flock lock, standing in for another sys-update.
+hold_flock() {
+  mkdir -p "$SYS_UPDATE_STATE_DIR"
+  bash -c 'exec 9>"$1"; flock -n 9 || exit 1; echo ready; exec sleep 60' _ \
+    "$SYS_UPDATE_STATE_DIR/lock" 3>&- > "$BATS_TEST_TMPDIR/holder.out" &
+  HOLDER=$!
+  for _ in $(seq 100); do [[ -s "$BATS_TEST_TMPDIR/holder.out" ]] && return 0; sleep 0.05; done
+  return 1
+}
+
+no_rm_hint() { [[ ! "$1" =~ (^|[^a-z])rm[[:space:]] ]]; }
+
+@test "S01: a running update holds the flock lock: exit 5 and no rm hint" {
+  hold_flock
+  run_update
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"another sys-update"* ]]
+  no_rm_hint "$output"
+  [ -f "$SYS_UPDATE_STATE_DIR/lock" ]
+  run grep -c 'nix flake update' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "S02: the lock is free after a failure and the lock file is kept" {
+  export FAIL_HOST_BUILD=1
+  run_update
+  [ "$status" -ne 0 ]
+  [ -f "$SYS_UPDATE_STATE_DIR/lock" ]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+}
+
+@test "S02: a successful run leaves the lock file in place and free" {
+  run_update
+  [ "$status" -eq 0 ]
+  [ -f "$SYS_UPDATE_STATE_DIR/lock" ]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+}
+
+@test "S03: mkdir mode refuses a live foreign owner and prints the removal command" {
+  export SYS_UPDATE_FORCE_MKDIR_LOCK=1
+  sleep 60 3>&- & HOLDER=$!
+  mkdir -p "$SYS_UPDATE_STATE_DIR/lock.d"
+  printf '%s %s\n' "$HOLDER" "20260101T000000Z-$HOLDER" > "$SYS_UPDATE_STATE_DIR/lock.d/owner"
+  run_update
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"$HOLDER"* ]]
+  [[ "$output" == *"sleep"* ]]
+  [[ "$output" == *"rm -rf"*"lock.d"* ]]
+  [[ "$output" == *"reused"* ]]
+  [ -d "$SYS_UPDATE_STATE_DIR/lock.d" ]
+  run grep -c 'nix flake update' "$STUB_LOG"; [ "$output" = 0 ]
+}
+
+@test "S04: an owner-less lock directory counts as held" {
+  export SYS_UPDATE_FORCE_MKDIR_LOCK=1
+  mkdir -p "$SYS_UPDATE_STATE_DIR/lock.d"
+  run_update
+  [ "$status" -eq 5 ]
+  [[ "$output" == *"rm -rf"*"lock.d"* ]]
+  [ -d "$SYS_UPDATE_STATE_DIR/lock.d" ]
+}
+
+@test "S05: only the owner removes a mkdir lock" {
+  export SYS_UPDATE_FORCE_MKDIR_LOCK=1
+  # a refused run must not remove someone else's lock
+  mkdir -p "$SYS_UPDATE_STATE_DIR/lock.d"
+  printf '1 other-run\n' > "$SYS_UPDATE_STATE_DIR/lock.d/owner"
+  run_update
+  [ "$status" -eq 5 ]
+  [ "$(cat "$SYS_UPDATE_STATE_DIR/lock.d/owner")" = "1 other-run" ]
+  rm -rf "$SYS_UPDATE_STATE_DIR/lock.d"
+  # the owner removes its own lock after success and after failure
+  run_update
+  [ "$status" -eq 0 ]
+  [ ! -e "$SYS_UPDATE_STATE_DIR/lock.d" ]
+  reset_repo
+  FAIL_HOST_BUILD=1 run_update
+  [ "$status" -ne 0 ]
+  [ ! -e "$SYS_UPDATE_STATE_DIR/lock.d" ]
+}
+
+@test "S05: the mkdir lock owner file names this process and run id" {
+  export SYS_UPDATE_FORCE_MKDIR_LOCK=1
+  cat > "$STUBS/mise" <<'STUB'
+#!/usr/bin/env bash
+cat "$SYS_UPDATE_STATE_DIR/lock.d/owner" >> "$STUB_LOG"
+exit 0
+STUB
+  run_update
+  [ "$status" -eq 0 ]
+  grep -Eq '^[0-9]+ [0-9]{8}T[0-9]{6}Z-[0-9]+$' "$STUB_LOG"
+}
+
+@test "report mode takes no lock and says so when an update is running" {
+  hold_flock
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"update is running"* ]]
+}
+
+@test "S48: a step sees no inherited lock descriptor while the lock is held" {
+  cat > "$STUBS/nix" <<'STUB'
+#!/usr/bin/env bash
+if [[ "$*" == "flake update"* ]]; then
+  out="$BATS_TEST_TMPDIR/step.out"
+  : > "$out"
+  [[ -e /proc/$$/fd/9 ]] && echo fd9-open >> "$out"
+  for fd in /proc/$$/fd/*; do
+    [[ "$(readlink -f "$fd" 2>/dev/null)" == "$SYS_UPDATE_STATE_DIR/lock" ]] && echo "lock-fd-inherited $fd" >> "$out"
+  done
+  if flock -n "$SYS_UPDATE_STATE_DIR/lock" true; then echo lock-free >> "$out"; else echo lock-held >> "$out"; fi
+  echo "reexec=${SYS_UPDATE_REEXEC-unset} runid=${SYS_UPDATE_RUN_ID-unset} pulled=${SYS_UPDATE_PULLED_FROM-unset}" >> "$out"
+  exit 1
+fi
+exit 0
+STUB
+  run env SYS_UPDATE_REEXEC=1 SYS_UPDATE_RUN_ID=zzz SYS_UPDATE_PULLED_FROM=abc \
+    PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup --skip-verify
+  [ "$status" -eq 1 ]
+  grep -q '^lock-held$' "$BATS_TEST_TMPDIR/step.out"
+  run grep -E 'fd9-open|lock-fd-inherited' "$BATS_TEST_TMPDIR/step.out"
+  [ "$status" -eq 1 ]
+  grep -q 'reexec=unset runid=unset pulled=unset' "$BATS_TEST_TMPDIR/step.out"
+}
+
+@test "S48: SIGTERM exits 143, records it and frees the lock" {
+  export STUB_TERM_AFTER_UPDATE=1
+  run_update
+  [ "$status" -eq 143 ]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  [ "$(sed -n 's/^exit_code=//p' "$meta" | tail -1)" = 143 ]
+}
+
+@test "G-03: SIGHUP exits 129 and records a non-zero exit code" {
+  export STUB_HUP_AFTER_UPDATE=1
+  run_update
+  [ "$status" -eq 129 ]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  [ "$(sed -n 's/^exit_code=//p' "$meta" | tail -1)" = 129 ]
+}
+
+@test "S48: the progress ticker does not keep the lock after SIGINT on a terminal" {
+  command -v script >/dev/null || skip "script(1) not available"
+  export STUB_INT_AFTER_UPDATE=1
+  cmd="$(printf 'bash %q --apply --yes --no-cleanup --skip-verify; rc=$?; if flock -n %q true; then echo LOCK_FREE; else echo LOCK_HELD; fi; echo "rc=$rc"' \
+    "$FAKE/ops/update-all.sh" "$SYS_UPDATE_STATE_DIR/lock")"
+  run script -qec "$cmd" /dev/null
+  [[ "$output" == *"LOCK_FREE"* ]]
+  [[ "$output" == *"rc=130"* ]]
+  flock -n "$SYS_UPDATE_STATE_DIR/lock" true
+}

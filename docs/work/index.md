@@ -38,5 +38,6 @@ closes, move its directory from [`active/`](active/README.md) to
 | [T-0041: Windows-side copy-only app list (docs)](active/T-0041-windows-app-list/ticket.md) | open (approved 2026-11-14: documentation only) | 2026-11 |
 | [T-0042: Install selection: committed profiles, a local per-host selection, first-run choice (feature)](active/T-0042-install-selection/ticket.md) | open (T1–T8 on main; four human checks pending) | 2026-11-14 |
 | [T-0045: WSL: systemd requirement and codebase-memory-mcp units (bug)](active/T-0045-wsl-systemd-cbm/ticket.md) | open | 2026-11 |
+| [T-0046: macOS first-run readiness: blockers, fixes and a real-Mac verification order (bug)](active/T-0046-macos-first-run-readiness/ticket.md) | open | 2026-11 |
 
 Archived tickets: see [archive/](archive/README.md).

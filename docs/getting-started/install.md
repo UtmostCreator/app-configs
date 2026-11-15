@@ -7,6 +7,7 @@ NixOS handling.
 - Stack & ownership: `docs/architecture/tool-ownership.md`
 - App inventory (per OS): `docs/reference/app-catalog.md`
 - NixOS specifics & failure modes: `docs/platforms/nixos/install.md`
+- macOS setup and first-run status: `docs/platforms/macos/setup.md`
 - Cold-start runbook (manual, step-by-step): `docs/getting-started/bootstrap.md`
 
 ## 0. "Am I all set?" — check in one command

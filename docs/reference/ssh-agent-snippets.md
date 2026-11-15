@@ -43,8 +43,10 @@ set -Ux APP_CONFIGS_SSH_KEY_LIFETIME 24  # fish
 
 `0` or empty keeps keys until the agent dies; an invalid value (`abc`, `-1`)
 is ignored and the default kept. Not used on macOS (the Keychain stores the
-passphrase). Keys already loaded, or added via `AddKeysToAgent yes`, keep
-their old lifetime until the agent restarts (`keychain --clear`, or log out).
+passphrase). Keys already in a running agent keep their old lifetime until
+the agent restarts (`keychain --clear`, or log out). Keys added by ssh's own
+`AddKeysToAgent yes` get no lifetime whatever this variable says; use
+`AddKeysToAgent 8h` in `~/.ssh/config` to match.
 
 Bare names are resolved under `~/.ssh/`. Absolute paths are used as-is.
 Missing keys are silently skipped — safe to list keys that only exist on

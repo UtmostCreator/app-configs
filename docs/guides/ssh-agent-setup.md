@@ -158,9 +158,16 @@ Set it in three places, in order of precedence:
    ```
 
 A new lifetime applies to keys loaded after the change. Keys already in the
-running agent, or added through `AddKeysToAgent yes` (the macOS `Host *`
-block), keep their old lifetime until the agent restarts (`keychain --clear`,
-or log out and back in).
+running agent keep their old lifetime until the agent restarts
+(`keychain --clear`, or log out and back in).
+
+Keys that ssh itself adds through `AddKeysToAgent yes` (the macOS `Host *`
+block) get **no** lifetime, whatever this variable says. Use
+`AddKeysToAgent 8h` in `~/.ssh/config` to match the default.
+
+After a key expires, an already open shell or tmux pane has ssh ask for the
+passphrase on every use. Open a new shell, or run `keychain <key>`, to load it
+once again.
 
 ### Choosing the shell to wire
 

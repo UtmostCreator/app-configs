@@ -351,3 +351,19 @@ no_stash() {
     grep -qE '^[[:space:]]*#.*human-only convenience; agents never use (these|this)' "$BATS_FILE_TMPDIR/gitconfig"
     grep -qE '^[[:space:]]*#.*gsw.*gswr' "$BATS_FILE_TMPDIR/gitconfig"
 }
+
+@test "mainline lists first-parent history; cfgwhere shows where a setting comes from; filelog follows renames" {
+    [ "$(value mainline)" = "log --first-parent --oneline --decorate -30" ]
+    [ "$(value cfgwhere)" = "config --show-origin --show-scope --get" ]
+    [ "$(value filelog)" = "log --follow -p --" ]
+    new_repo
+    echo a >old.txt; git add old.txt; git commit -qm "add old"
+    git mv old.txt new.txt; git commit -qm "rename"
+    run git mainline
+    [[ "$output" == *"rename"* ]]
+    run git cfgwhere user.name
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"global"* ]]
+    run git filelog new.txt
+    [[ "$output" == *"add old"* ]]
+}

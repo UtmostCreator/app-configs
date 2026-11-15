@@ -88,6 +88,37 @@ lease (`git pf`), `git cleanf` and `git undohard` show what they would
 destroy and ask first, and no alias duplicates another or shadows a git
 command.
 
+## High-value git commands
+
+Each task maps to an alias from `dot_gitconfig.tmpl` or, where none exists, a
+native command.
+
+| Task | Alias or command |
+| --- | --- |
+| Find the commit that added or removed a string / matched a regex | `git pick <string>` (`log -S`), `git pickg <regex>` (`log -G`) |
+| Find the commit that broke something | `git bs`, `bg`, `bb`, `bsk`, `bsr`; `git bsrun <cmd>` automates it |
+| One folder per task | `git wtn <branch>`, `git wta`, `git wtl` |
+| Compare a patch series before and after a rebase | `git rdiff <base>..<old> <base>..<new>` |
+| Whitespace errors before committing | `git checkdiff` (`diff --check`); `git diff --cached --check` for staged changes |
+| Where did HEAD go (recover work) | `git rl`, `git rld` (local timestamps); `git lostcommits` (read-only) |
+| History of a line range or function | `git linelog 10,20:path`, `git linelog :func:path` |
+| Who last touched each line, ignoring whitespace and moves | `git praise <file>` (`blame -w -C -C`) |
+| Word-level diff | `git dw`, `git dcw` (staged) |
+| History of merges only | `git mainline` (`log --first-parent`, last 30) |
+| Commit with author and committer dates, no patch | `git show --format=fuller --no-patch <rev>` (native) |
+| Short status with branch | `git s` (`status -sb`) |
+| Where a setting comes from | `git cfgwhere rebase.autoStash` (value, scope and file) |
+| History of one file across renames | `git filelog <file>` (`log --follow -p --`) |
+| Worktrees and branch tracking | `git wtl` (`worktree list`), `git brv` (`branch -vv`) |
+
+`git fp` fetches and prunes branches only; `git fptags` also deletes local tags
+that are absent on the remote. `git cleanf` never deletes ignored files.
+
+Provisioned helper tools that pair with these (Nix, `dev.nix` and `cli.nix`):
+`lazygit` (TUI), `difftastic` (structural diff), `shellcheck` and `shfmt` (shell
+scripts), `hyperfine` (benchmarks), `watchexec` (rerun on change), `navi`
+(cheatsheets).
+
 ## Helpers (`~/.local/bin`, any shell)
 
 | Command | Does |

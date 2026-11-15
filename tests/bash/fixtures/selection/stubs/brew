@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Stub brew: `list --cask -1` prints $STUB_BREW_CASKS.
+# Stub brew: `list --cask -1` prints $STUB_BREW_CASKS, or fails when
+# STUB_BREW_FAIL is set.
 printf 'brew %s\n' "$*" >>"$STUB_LOG"
+[ -z "${STUB_BREW_FAIL:-}" ] || { echo 'Error: stub brew failure' >&2; exit 1; }
 case "$*" in
   "list --cask -1") [ -z "${STUB_BREW_CASKS:-}" ] || cat "$STUB_BREW_CASKS"; exit 0 ;;
 esac

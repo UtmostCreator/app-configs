@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Logging shim for git: one "git <args>" line per call to $STUB_LOG, then the
+# real git ($REAL_GIT) runs, so the tests can prove a read-only command never
+# commits, pulls or fetches while repo facts still come from a real repository.
+printf 'git %s\n' "$*" >>"$STUB_LOG"
+exec "${REAL_GIT:?}" "$@"

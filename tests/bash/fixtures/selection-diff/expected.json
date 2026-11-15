@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "command": "selection-diff",
+  "check": true,
+  "applied": false,
+  "outcome": "changes-pending",
+  "exit_code": 10,
+  "host": "linux-desktop",
+  "repo": {"rev": "unknown", "dirty": "unknown"},
+  "selection": {"file": "@TMP@/sel dir \"q\" back\\slash/selection.toml", "sha256": "f95a35b077a6f85d4132a564c9c16b1b2c510ef9434aa5b685d6362aa6612f18", "profile": "work", "groups": {"go": true, "media": false, "security": true}, "sources": {"file": "present", "profile": "local", "groups": {"go": "profile", "media": "local", "security": "profile"}}},
+  "applied_selection": null,
+  "installed": {"state": "ok", "generation": "@TMP@/home/.local/state/nix/profiles/home-manager-1-link", "generation_number": 1},
+  "record": {"state": "absent"},
+  "causes": {"selection_changed": "unknown", "repo_changed": "unknown", "generation_changed_outside": "unknown"},
+  "sources": {"packages": "ok", "hm_files": "ok", "chezmoi": "ok", "casks": "n/a"},
+  "counts": {"add": 1, "remove": 4, "change": 1, "keep": 14, "conflict": 0, "manual": 0, "unsupported": 0, "unknown": 0},
+  "entries": [
+    {"kind": "chezmoi", "name": ".config/foo", "operation": "change", "action": "chezmoi apply updates it", "from": "", "to": "", "group": "", "by_apply": true},
+    {"kind": "chezmoi", "name": ".config/new", "operation": "add", "action": "chezmoi apply creates it", "from": "", "to": "", "group": "", "by_apply": true},
+    {"kind": "package", "name": "ffmpeg", "operation": "remove", "action": "uninstall", "from": "7.0.1", "to": "", "group": "media", "by_apply": true},
+    {"kind": "package", "name": "imagemagick", "operation": "remove", "action": "uninstall", "from": "7.1.1", "to": "", "group": "media", "by_apply": true},
+    {"kind": "package", "name": "viu", "operation": "remove", "action": "uninstall", "from": "1.5.0", "to": "", "group": "media", "by_apply": true},
+    {"kind": "package", "name": "yt-dlp", "operation": "remove", "action": "uninstall", "from": "2024.5.27", "to": "", "group": "media", "by_apply": true}
+  ],
+  "limitations": [
+    "Nothing is built or activated, so a build or activation failure cannot be predicted.",
+    "Homebrew formulae, mise tools and nix profile entries are not compared.",
+    "The applied-state record is absent, so the causes of the changes are unknown."
+  ],
+  "notes": []
+}

@@ -91,6 +91,21 @@ Deviations from the design, and why
   could not be recorded. The rendering, the repo facts and the record read are not
   separately guarded; they only print or fall back to unknown.
 
+Per-check states (user decision after review)
+- Components packages, hm_files, chezmoi, casks, run and record each have a state:
+  in_sync, pending, unknown (missing information) or error (unexpected failure);
+  casks are not_applicable off macOS. Unknown is never pending, in sync or empty.
+- Exit codes are unchanged; 11 now also covers an incomplete assessment. The JSON has
+  `complete` and a `checks` object with a structured `reason` per component (it
+  replaces `sources`); verified counts survive one unknown component.
+- One function decides machine-data availability (missing, unreadable, available) by
+  -e/-L/-f/-r only and never opens home/.chezmoidata/personal.yaml. A present file with a
+  failing chezmoi is `error` with a fixed class, never the raw message. No placeholder
+  data, no fallback to another checkout, no private values in output.
+- Isolated tests generate dummy machine data in the fake repo; the real checkout
+  can return exit 0 (to be proven after merge, on main). A first install (no
+  generation) is pending with reason no_generation, since the comparison is complete.
+
 ## Owned files (write boundary)
 - ops/lib/selection-facts.sh (new), ops/lib/selection-diff.sh (new), ops/lib/install-record.sh (new)
 - ops/lib/selection-preview.sh (the facts moved out), ops/lib/selection.sh (a comment)

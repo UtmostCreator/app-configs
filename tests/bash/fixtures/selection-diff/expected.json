@@ -12,8 +12,16 @@
   "installed": {"state": "ok", "generation": "@TMP@/home/.local/state/nix/profiles/home-manager-1-link", "generation_number": 1},
   "record": {"state": "absent"},
   "causes": {"selection_changed": "unknown", "repo_changed": "unknown", "generation_changed_outside": "unknown"},
-  "sources": {"packages": "ok", "hm_files": "ok", "chezmoi": "ok", "casks": "n/a"},
-  "counts": {"add": 1, "remove": 4, "change": 1, "keep": 14, "conflict": 0, "manual": 0, "unsupported": 0, "unknown": 0},
+  "complete": true,
+  "checks": {
+    "packages": {"status": "pending"},
+    "hm_files": {"status": "in_sync"},
+    "chezmoi": {"status": "pending"},
+    "casks": {"status": "not_applicable"},
+    "run": {"status": "in_sync"},
+    "record": {"status": "unknown", "reason": "record_absent", "affects_exit": false}
+  },
+  "counts": {"add": 1, "remove": 4, "change": 1, "keep": 14, "conflict": 0, "manual": 0, "unsupported": 0, "unknown": 0, "error": 0},
   "entries": [
     {"kind": "chezmoi", "name": ".config/foo", "operation": "change", "action": "chezmoi apply updates it", "from": "", "to": "", "group": "", "by_apply": true},
     {"kind": "chezmoi", "name": ".config/new", "operation": "add", "action": "chezmoi apply creates it", "from": "", "to": "", "group": "", "by_apply": true},

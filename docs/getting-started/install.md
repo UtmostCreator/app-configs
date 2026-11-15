@@ -287,7 +287,7 @@ unknown, never as unchanged.
 | 1 | execution failure: nix missing, the declared state does not evaluate (the Nix error is on stderr), an internal error |
 | 2 | invalid arguments |
 | 10 | changes pending: any add, remove or change |
-| 11 | manual action required: any conflict (a chezmoi target edited here and in the repo, `MM`), any unknown source, an unfinished or failed last run |
+| 11 | action required: any conflict (a chezmoi target edited here and in the repo, `MM`), an incomplete assessment (a component that is `unknown` or `error`), an unfinished or failed last run |
 
 Precedence is 1, then 11, then 10, then 0. Codes 3 to 5 keep their meaning from
 the update itself. Homebrew casks that a deselected group leaves installed
@@ -309,7 +309,47 @@ unchanged items appear as counts:
 ```
 
 `repo.dirty` is `yes`, `no` or `unknown` (the same encoding as the record).
-Each source is `ok`, `unknown` or `n/a`. `causes` has two real answers and one
+`complete` is true only when every requested check completed. `checks` has one
+object per component (`packages`, `hm_files`, `chezmoi`, `casks`, `run`,
+`record`) with a `status` and, when it helps, a structured `reason`, a fixed
+`detail` and what is `required`:
+
+- `in_sync`: compared and equal. `pending`: compared and different (a `reason`
+  such as `no_generation` or `conflicts_present` may say why).
+- `unknown`: missing information prevents the comparison (`machine_data_missing`,
+  `machine_data_unreadable`, `chezmoi_missing`, `generation_unreadable`,
+  `brew_missing`, `run_unfinished`, `record_absent`, `record_invalid`,
+  `record_stale`).
+- `error`: the comparison failed unexpectedly (`chezmoi_failed` with a class such as
+  `state_locked` or `template_error`, `last_run_failed`).
+- `not_applicable`: casks off macOS.
+
+Unknown is never reported as pending, in sync or an empty list, and one unknown
+component does not erase the verified counts of the others. The `record` check
+is a limitation (`"affects_exit": false`): it never changes `complete` or the exit
+code. Example, a worktree without the machine-local data:
+
+```
+"complete": false,
+"checks": {
+  "packages": {"status": "in_sync"}, "hm_files": {"status": "in_sync"},
+  "chezmoi": {"status": "unknown", "reason": "machine_data_missing", "required": ["home/.chezmoidata/personal.yaml"]},
+  "casks": {"status": "not_applicable"}, "run": {"status": "in_sync"},
+  "record": {"status": "unknown", "reason": "record_absent", "affects_exit": false} }
+```
+
+and the text output says it plainly: `chezmoi: unknown — machine-local data missing
+(home/.chezmoidata/personal.yaml); 194 other items in sync; assessment incomplete`.
+
+chezmoi needs the machine-local file `home/.chezmoidata/personal.yaml`, which is
+gitignored and holds private values. One function decides whether it is there, by
+testing that it exists and is readable only: the diff never opens, reads, hashes or
+prints it, never creates a placeholder and never borrows another checkout's copy,
+so a git worktree reports it missing (exit 11) and the real checkout can report 0.
+If the file is present and `chezmoi status` still fails, the check is `error` with
+a fixed class, never the raw message (which could quote private values).
+
+`causes` has two real answers and one
 placeholder: `selection_changed` and `repo_changed` are `yes`, `no` or `unknown`
 (`unknown` whenever the record is not ok, a hash or revision is unknown, or the
 tree is dirty on both sides, since the uncommitted content may differ;

@@ -58,6 +58,9 @@ make_fake() {
     cp "$REPO_ROOT/nix/flake.lock" "$FAKE/nix/flake.lock"
     cp "$REPO_ROOT/.chezmoiroot" "$FAKE/"
     printf '{\n  username = "%s";\n}\n' "$UNAME" >"$FAKE/nix/vars/default.nix"
+    # Deterministic generated machine-local data with dummy values: the fake repo
+    # is an isolated test context and must never borrow the real checkout's file.
+    printf 'name: Test User\nemail: test@example.invalid\n' >"$FAKE/home/.chezmoidata/personal.yaml"
     local s
     for s in nix nix-store chezmoi git; do
         cp "$FIXD/stubs/$s" "$STUBS/$s"; chmod +x "$STUBS/$s"
@@ -213,12 +216,13 @@ refute_log() {
     sd --selection-diff
     [ "$status" -eq 11 ]
     [[ "$output" == *"UNKNOWN ("* ]]
-    [[ "$output" == *"Packages: unknown"* ]]
+    [[ "$output" == *"Packages: unknown — "* ]]
+    [[ "$output" == *"assessment incomplete"* ]]
     [[ "$output" != *"Packages: keep"* ]]
     sd --selection-diff --json
     [[ "$output" == *'"installed": {"state": "unknown"'* ]]
-    [[ "$output" == *'"packages": "unknown"'* ]]
-    [[ "$output" == *'"hm_files": "unknown"'* ]]
+    [[ "$output" == *'"packages": {"status": "unknown", "reason": "generation_unreadable"}'* ]]
+    [[ "$output" == *'"hm_files": {"status": "unknown", "reason": "generation_unreadable"}'* ]]
     [[ "$output" == *'"keep": 0'* ]]
 }
 
@@ -227,7 +231,7 @@ refute_log() {
     export STUB_CHEZMOI_STATUS_FAIL="timeout obtaining persistent state lock"
     sd --selection-diff
     [ "$status" -eq 11 ]
-    [[ "$output" == *"UNKNOWN (1)"* ]]
+    [[ "$output" == *"ERROR (1)"* ]]
     [[ "$output" == *"persistent state lock"* ]]
 }
 
@@ -343,7 +347,7 @@ refute_log() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"--selection-diff"* && "$output" == *"--json"* ]]
     printf '%s\n' "$output" | grep -Eq '^ *10 +changes pending'
-    printf '%s\n' "$output" | grep -Eq '^ *11 +manual action required'
+    printf '%s\n' "$output" | grep -Eq '^ *11 +action required'
     head -n 80 "$REPO_ROOT/ops/update-all.sh" | grep -Eq '^# +10 +changes pending'
 }
 
@@ -539,7 +543,7 @@ last_run() { # last_run <meta text>
     sd --selection-diff --json
     local keys
     keys="$(printf '%s\n' "$output" | grep -oE '^  "[a-z_]+"' | tr -d ' "' | tr '\n' ' ')"
-    [ "$keys" = "schema_version command check applied outcome exit_code host repo selection applied_selection installed record causes sources counts entries limitations notes " ]
+    [ "$keys" = "schema_version command check applied outcome exit_code host repo selection applied_selection installed record causes complete checks counts entries limitations notes " ]
     [ "$(printf '%s\n' "$output" | grep -o '"name": "[^"]*"' | head -n2 | tr '\n' ' ')" = '"name": "a" "name": "z" ' ]
 }
 
@@ -581,8 +585,8 @@ last_run() { # last_run <meta text>
     run bash -c '
         source "$1/ops/lib/selection.sh"; source "$1/ops/lib/selection-facts.sh"; source "$1/ops/lib/selection-diff.sh"
         w="$2/w"; mkdir -p "$w"; : >"$w/entries.sorted.tsv"
-        SELECTION_WORK="$w"; SD_RUN_BAD=0; SD_RECORD_STATE=ok
-        SD_SRC_PACKAGES=ok; SD_SRC_FILES=ok; SD_SRC_CHEZMOI=unknown; SD_SRC_CASKS="n/a"
+        SELECTION_WORK="$w"; SD_RECORD_STATE=ok
+        for c in packages hm_files casks run; do _sd_check $c in_sync; done; _sd_check chezmoi unknown machine_data_missing
         selection_diff_outcome; echo "outcome=$SD_OUTCOME exit=$SD_EXIT"
         mkdir "$w/entries.tsv"
         _sd_unknown_entry chezmoi x 2>/dev/null; echo "append=$?"' _ "$REPO_ROOT" "$BATS_TEST_TMPDIR"
@@ -610,6 +614,135 @@ last_run() { # last_run <meta text>
     sd --selection-diff
     [ "$status" -eq 1 ]
     [ -z "$output" ]
+}
+
+# ── per-check states and machine-local data ─────────────────────────────────
+
+@test "machine data missing: chezmoi is unknown with a structured reason, the rest stays verified, exit 11, chezmoi never runs" {
+    install_gen committed
+    rm "$FAKE/home/.chezmoidata/personal.yaml"
+    sd --selection-diff --json
+    [ "$status" -eq 11 ]
+    [[ "$output" == *'"complete": false'* ]]
+    [[ "$output" == *'"chezmoi": {"status": "unknown", "reason": "machine_data_missing", "required": ["home/.chezmoidata/personal.yaml"]}'* ]]
+    [[ "$output" == *'"packages": {"status": "in_sync"}'* ]]
+    [[ "$output" == *'"hm_files": {"status": "in_sync"}'* ]]
+    [[ "$output" == *'"keep": '[1-9]* ]]
+    [[ "$output" == *'"outcome": "action-required"'* ]]
+    refute_log '^chezmoi '
+    sd --selection-diff
+    [ "$status" -eq 11 ]
+    [[ "$output" == *"chezmoi: unknown — machine-local data missing (home/.chezmoidata/personal.yaml); "*" other items in sync; assessment incomplete"* ]]
+    [[ "$output" == *"RESULT: ACTION REQUIRED (exit 11): assessment incomplete"* ]]
+}
+
+@test "machine data unreadable: unknown with reason machine_data_unreadable" {
+    install_gen committed
+    chmod 000 "$FAKE/home/.chezmoidata/personal.yaml"
+    sd --selection-diff --json
+    chmod 600 "$FAKE/home/.chezmoidata/personal.yaml"
+    [ "$status" -eq 11 ]
+    [[ "$output" == *'"chezmoi": {"status": "unknown", "reason": "machine_data_unreadable", "required": ["home/.chezmoidata/personal.yaml"]}'* ]]
+    refute_log '^chezmoi '
+}
+
+@test "machine data empty or malformed (chezmoi fails): error chezmoi_failed with a fixed class, never the raw message" {
+    install_gen committed
+    : >"$FAKE/home/.chezmoidata/personal.yaml"
+    export STUB_CHEZMOI_STATUS_FAIL='template: .chezmoiignore:25:44: map has no entry for key "x"; value PRIVATE-CANARY-7'
+    sd --selection-diff --json
+    [ "$status" -eq 11 ]
+    [[ "$output" == *'"chezmoi": {"status": "error", "reason": "chezmoi_failed", "detail": "template_error"}'* ]]
+    [[ "$output" == *'"complete": false'* ]]
+    [[ "$output$stderr" != *PRIVATE-CANARY-7* ]]
+    sd --selection-diff
+    [[ "$output$stderr" != *PRIVATE-CANARY-7* ]]
+    [[ "$output" == *"ERROR (1)"* ]]
+    [[ "$output" == *"chezmoi: error — "* ]]
+}
+
+@test "valid machine data: chezmoi is verified, complete is true, the file is never read or changed" {
+    install_gen committed
+    printf 'name: PRIVATE-CANARY-9\nemail: x@example.invalid\n' >"$FAKE/home/.chezmoidata/personal.yaml"
+    local before
+    before="$(tree_sum "$FAKE/home")"
+    sd --selection-diff --json
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"complete": true'* ]]
+    [[ "$output" == *'"chezmoi": {"status": "in_sync"}'* ]]
+    [[ "$output$stderr" != *PRIVATE-CANARY-9* ]]
+    [ "$before" = "$(tree_sum "$FAKE/home")" ]
+    run grep -c PRIVATE-CANARY-9 "$STUB_LOG"
+    [ "$output" = 0 ]
+}
+
+@test "the machine-data decision only tests the file, it never opens it" {
+    local f="$REPO_ROOT/ops/lib/selection-diff.sh" body
+    body="$(awk '/^_sd_machine_data_state\(\) \{/ { f = 1 } f { print } f && /^}/ { exit }' "$f")"
+    [ -n "$body" ]
+    # every use of the path variable in the function is inside a [[ -e / -L / -f / -r ]] test
+    run bash -c 'printf "%s\n" "$1" | grep -n "\$f" | grep -v "\[\[" ' _ "$body"
+    [ "$status" -ne 0 ]
+    # nothing else in the library names the file, except the one assignment of its path
+    run bash -c 'grep -vE "^[[:space:]]*#" "$1" | grep "personal\.yaml" | grep -vc "SD_MACHINE_DATA_REL="' _ "$f"
+    [ "$output" = 0 ]
+    # and no command that reads content is given the path
+    run grep -nE '(cat|source|head|tail|sed|awk|grep|sha256sum|shasum|od|xxd)[[:space:]]+[^#|;]*(SD_MACHINE_DATA_REL|personal\.yaml)' "$f"
+    [ "$status" -ne 0 ]
+}
+
+@test "a temporary worktree without the machine data reports it missing and does not borrow the main checkout's file" {
+    printf 'home/.chezmoidata/personal.yaml\n' >"$FAKE/.gitignore"
+    real_git
+    printf 'name: PRIVATE-CANARY-3\n' >"$FAKE/home/.chezmoidata/personal.yaml"
+    "$REAL_GIT" -C "$FAKE" worktree add -q "$BATS_TEST_TMPDIR/wt" 2>&1
+    [ ! -e "$BATS_TEST_TMPDIR/wt/home/.chezmoidata/personal.yaml" ]
+    install_gen committed
+    local main="$FAKE"
+    FAKE="$BATS_TEST_TMPDIR/wt"
+    sd --selection-diff --json
+    FAKE="$main"
+    [ "$status" -eq 11 ]
+    [[ "$output" == *'"reason": "machine_data_missing"'* ]]
+    [[ "$output$stderr" != *PRIVATE-CANARY-3* ]]
+    refute_log '^chezmoi '
+}
+
+@test "first install: a missing generation is pending with reason no_generation, not unknown" {
+    sd --selection-diff --json
+    [ "$status" -eq 10 ]
+    [[ "$output" == *'"packages": {"status": "pending", "reason": "no_generation"}'* ]]
+    [[ "$output" == *'"complete": true'* ]]
+}
+
+@test "macOS without brew: casks unknown with reason brew_missing" {
+    HP=macos
+    install_gen mac-committed
+    sd --selection-diff --json
+    [ "$status" -eq 11 ]
+    [[ "$output" == *'"casks": {"status": "unknown", "reason": "brew_missing"}'* ]]
+}
+
+@test "macOS brew failing: casks unknown with reason brew_failed; other components stay verified" {
+    HP=macos; with_brew
+    install_gen mac-committed
+    export STUB_BREW_FAIL=1
+    sd --selection-diff --json
+    [ "$status" -eq 11 ]
+    [[ "$output" == *'"casks": {"status": "unknown", "reason": "brew_failed"}'* ]]
+    [[ "$output" == *'"packages": {"status": "in_sync"}'* ]]
+}
+
+@test "the last run: unfinished is unknown (run_unfinished), failed is error (last_run_failed); the record is a limitation only" {
+    install_gen committed
+    last_run 'run_id=r1\nstatus=activating\n'
+    sd --selection-diff --json
+    [ "$status" -eq 11 ]
+    [[ "$output" == *'"run": {"status": "unknown", "reason": "run_unfinished", "detail": "status activating"}'* ]]
+    [[ "$output" == *'"record": {"status": "unknown", "reason": "record_absent", "affects_exit": false}'* ]]
+    last_run 'run_id=r1\nstatus=failed:activate\nexit_code=1\n'
+    sd --selection-diff --json
+    [[ "$output" == *'"run": {"status": "error", "reason": "last_run_failed", "detail": "status failed:activate"}'* ]]
 }
 
 # ── the applied-state record ────────────────────────────────────────────────

@@ -18,7 +18,7 @@
 # the last-run record with sed, and never takes, waits for or probes the
 # sys-update lock. It never recovers an interrupted run.
 #
-# Three sources, each ok, unknown or n/a:
+# Three sources, each with a per-check state (in_sync, pending, unknown, error):
 #   Selected  the local selection.toml (present or absent), effective profile and
 #             groups with where each value comes from (local or profile)
 #   Declared  selection_facts in strict mode: an evaluation failure is exit 1
@@ -34,15 +34,15 @@
 #       an internal error (the reason is on stderr; stdout stays empty, or with
 #       --json holds a minimal envelope with outcome "failed" and an error)
 #   10  changes pending: any add, remove or change
-#   11  manual action required: any conflict, any unknown source, an unfinished
-#       or failed last run
+#   11  action required: any conflict, an incomplete assessment (a check that is
+#       unknown or error), an unfinished or failed last run
 # Homebrew casks that a deselected group leaves installed (cleanup = none) are
 # listed as manual but do not count towards the exit code. Exit 2 (invalid
 # arguments) is decided by update-all.sh before this file is loaded.
 
 SD_LIST_MAX=30
 # Names of the classes, in the order the text output prints their sections.
-SD_CLASSES=(remove conflict add change manual unsupported unknown)
+SD_CLASSES=(remove conflict add change manual unsupported unknown error)
 
 # Result variables of selection_diff_collect.
 SD_SEL_FILE=""
@@ -50,12 +50,17 @@ SD_SEL_STATE=""        # present | absent
 SD_SEL_SHA=""
 SD_PROFILE=""
 SD_PROFILE_SRC=""      # local | host-default
-SD_SRC_PACKAGES=""     # ok | unknown
-SD_SRC_FILES=""
-SD_SRC_CHEZMOI=""
-SD_SRC_CASKS=""        # ok | unknown | n/a
 SD_KEEP=0
-SD_RUN_BAD=0
+SD_COMPLETE=yes        # yes only when every requested check completed
+# Per-check state (the components of the diff). SD_ST_<c> is in_sync, pending,
+# unknown (missing information prevents the comparison) or error (the comparison
+# failed unexpectedly); not_applicable for casks off macOS. SD_RS_<c> is the
+# structured reason, SD_DT_<c> a fixed-vocabulary detail, SD_RQ_<c> what is
+# missing. Unknown is never pending, in sync or an empty collection.
+SD_CHECKS=(packages hm_files chezmoi casks run record)
+# The one machine-local file chezmoi needs. It is secret-bearing: this library
+# tests that it exists and is readable and never opens, reads, hashes or prints it.
+SD_MACHINE_DATA_REL="home/.chezmoidata/personal.yaml"
 SD_RECORD_STATE="absent"
 SD_CAUSE_SELECTION="unknown"   # yes | no | unknown, from the record
 SD_CAUSE_REPO="unknown"
@@ -200,10 +205,89 @@ _sd_classify_casks() {
 
 _sd_note() { SD_NOTES+=("$1"); }
 
-# _sd_unknown_entry KIND REASON: one entry for a source that could not be read.
-_sd_unknown_entry() {
-  printf '%s\t(all)\tunknown\t%s\t\t\t\tfalse\n' "$1" "$2" >>"$SELECTION_WORK/entries.tsv" || return 1
+# _sd_check COMPONENT STATUS [REASON [DETAIL [REQUIRED]]]
+_sd_check() {
+  printf -v "SD_ST_$1" '%s' "$2"
+  printf -v "SD_RS_$1" '%s' "${3:-}"
+  printf -v "SD_DT_$1" '%s' "${4:-}"
+  printf -v "SD_RQ_$1" '%s' "${5:-}"
 }
+_sd_get() { local n="SD_$1_$2"; printf '%s' "${!n:-}"; }
+
+# _sd_machine_data_state: the ONE decision on machine-local data. Prints
+# missing, unreadable or available, from -e, -L, -f and -r only. SAFETY: it must
+# never open, read, source, hash or print the file (it holds private values).
+_sd_machine_data_state() {
+  local f="$REPO_ROOT/$SD_MACHINE_DATA_REL"
+  if [[ ! -e "$f" ]]; then
+    if [[ -L "$f" ]]; then printf 'unreadable'; else printf 'missing'; fi
+  elif [[ ! -f "$f" || ! -r "$f" ]]; then printf 'unreadable'
+  else printf 'available'; fi
+}
+
+# _sd_chezmoi_class TEXT: a fixed error class for a chezmoi failure. The raw
+# line is never shown: a template or YAML error could quote private values.
+_sd_chezmoi_class() {
+  case "$1" in
+    *"persistent state lock"*) printf 'state_locked' ;;
+    *template*) printf 'template_error' ;;
+    *[Yy][Aa][Mm][Ll]*) printf 'machine_data_invalid' ;;
+    *) printf 'unspecified' ;;
+  esac
+}
+
+# _sd_reason_text REASON DETAIL: the sentence for a reason code.
+_sd_reason_text() {
+  case "$1" in
+    machine_data_missing)    printf 'machine-local data missing (%s)' "$SD_MACHINE_DATA_REL" ;;
+    machine_data_unreadable) printf 'machine-local data present but unreadable (%s)' "$SD_MACHINE_DATA_REL" ;;
+    chezmoi_missing)         printf 'chezmoi is not installed' ;;
+    chezmoi_failed)
+      case "$2" in
+        state_locked) printf 'chezmoi status failed: another chezmoi holds its persistent state lock' ;;
+        template_error) printf 'chezmoi status failed: a template could not be evaluated (class template_error)' ;;
+        machine_data_invalid) printf 'chezmoi status failed: the machine-local data looks invalid (class machine_data_invalid)' ;;
+        *) printf 'chezmoi status failed (class unspecified)' ;;
+      esac ;;
+    generation_unreadable)   printf 'the installed Home Manager generation could not be read' ;;
+    no_generation)           printf 'no Home Manager generation yet (first install): everything declared is pending' ;;
+    brew_missing)            printf 'brew is not installed, so the cask state is unknown' ;;
+    brew_failed)             printf 'brew list --cask failed, so the cask state is unknown' ;;
+    run_unfinished)          printf 'the last run has no exit code: it is still running or it was killed' ;;
+    last_run_failed)         printf 'the last run failed' ;;
+    record_absent)           printf 'no applied-state record' ;;
+    record_invalid)          printf 'the applied-state record is invalid' ;;
+    record_stale)            printf 'the applied-state record is for another generation' ;;
+    *)                       printf '%s' "$1" ;;
+  esac
+}
+
+# _sd_unknown_entry KIND TEXT [unknown|error]: one entry for a component that
+# could not be compared.
+_sd_unknown_entry() {
+  printf '%s\t(all)\t%s\t%s\t\t\t\tfalse\n' "$1" "${3:-unknown}" "$2" >>"$SELECTION_WORK/entries.tsv" || return 1
+}
+
+# _sd_pending KINDS: the add, remove and change entries of those kinds.
+_sd_pending() {
+  awk -F '\t' -v k="$1" 'index(" " k " ", " " $1 " ") && ($3 == "add" || $3 == "remove" || $3 == "change") { n++ } END { print n + 0 }' "$SELECTION_WORK/entries.tsv"
+}
+
+# _sd_finalize_checks: components not already unknown or error become in_sync or
+# pending from their entries; the record never affects completeness or the exit.
+_sd_finalize_checks() {
+  local c kinds n
+  for c in packages hm_files chezmoi casks; do
+    [[ -z "$(_sd_get ST "$c")" ]] || continue
+    case "$c" in packages) kinds=package ;; hm_files) kinds="file unit" ;; chezmoi) kinds=chezmoi ;; casks) kinds=cask ;; esac
+    n="$(_sd_pending "$kinds")" || return 1
+    if ((n > 0)); then printf -v "SD_ST_$c" pending; else printf -v "SD_ST_$c" in_sync; fi
+  done
+  if [[ "$(_sd_get ST chezmoi)" == pending && "$(_sd_count_op chezmoi conflict)" -gt 0 ]]; then
+    printf -v SD_RS_chezmoi '%s' conflicts_present
+  fi
+}
+_sd_count_op() { awk -F '\t' -v k="$1" -v op="$2" '$1 == k && $3 == op { n++ } END { print n + 0 }' "$SELECTION_WORK/entries.tsv"; }
 
 # Repo facts for the output; --no-optional-locks keeps git from refreshing the index.
 _sd_repo_facts() {
@@ -221,7 +305,7 @@ _sd_repo_facts() {
 # or was killed; a non-zero exit code or a failed:* status needs a person.
 _sd_run_state() {
   local last meta rid status exitc
-  SD_RUN_BAD=0
+  _sd_check run in_sync
   last="${STATE_DIR:-}/last-run"
   [[ -f "$last" ]] || return 0
   meta="$(sed -n '1p' "$last")"
@@ -233,12 +317,14 @@ _sd_run_state() {
   status="$(sed -n 's/^status=//p' "$meta" | tail -n 1)"
   exitc="$(sed -n 's/^exit_code=//p' "$meta" | tail -n 1)"
   rid="${rid:-unknown}"
+  # the status goes into the detail, restricted to a safe alphabet
+  status="${status//[!A-Za-z0-9:_-]/}"
   if [[ -z "$exitc" ]]; then
-    SD_RUN_BAD=1
+    _sd_check run unknown run_unfinished "status ${status:-none}"
     printf 'run\t%s\tmanual\t%s\t\t\t\tfalse\n' "$rid" \
       "last run has no exit code (status ${status:-none}): it is still running or it was killed; check sys-update-log before applying" >>"$SELECTION_WORK/entries.tsv" || return 1
   elif [[ "$exitc" != 0 || "$status" == failed:* ]]; then
-    SD_RUN_BAD=1
+    _sd_check run error last_run_failed "status ${status:-none}"
     case "$status" in
       failed:activate)
         printf 'run\t%s\tmanual\t%s\t\t\t\tfalse\n' "$rid" \
@@ -249,7 +335,6 @@ _sd_run_state() {
     esac
   fi
 }
-
 # _sd_file_keys FILE: the group keys named in a selection file.
 _sd_file_keys() { _sel_groups_of_file "$1" | cut -f1; }
 
@@ -314,16 +399,18 @@ selection_diff_collect() {
   done
 
   SD_KEEP=0
-  SD_SRC_PACKAGES=ok
-  SD_SRC_FILES=ok
+  for row in packages hm_files chezmoi casks; do _sd_check "$row" ""; done
   case "$SEL_I_STATE" in
     unknown)
-      SD_SRC_PACKAGES=unknown
-      SD_SRC_FILES=unknown
-      _sd_unknown_entry packages "the installed Home Manager generation could not be read" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
-      _sd_unknown_entry hm_files "the installed Home Manager generation could not be read" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
+      _sd_check packages unknown generation_unreadable
+      _sd_check hm_files unknown generation_unreadable
+      _sd_unknown_entry packages "$(_sd_reason_text generation_unreadable)" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
+      _sd_unknown_entry hm_files "$(_sd_reason_text generation_unreadable)" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
       ;;
     *)
+      # No generation yet (first install): the comparison is complete, everything
+      # declared is pending; the reason says why.
+      if [[ "$SEL_I_STATE" == none ]]; then _sd_check packages "" no_generation; _sd_check hm_files "" no_generation; fi
       local pk="$w/pkg-delta.tsv" n_same
       # Fail closed: this runs without -e, so every step is checked; a failed
       # write or awk is exit 1, never a quiet "in sync".
@@ -341,25 +428,36 @@ selection_diff_collect() {
       ;;
   esac
 
-  # chezmoi
-  SD_SRC_CHEZMOI=ok
-  _sel_chezmoi_status
-  if [[ "$SEL_CHEZMOI" == ok ]]; then
-    _sd_classify_chezmoi <"$w/chezmoi.out" >>"$w/entries.tsv" 2>"$w/chezmoi.keep" || { _sd_err "internal error: classifying chezmoi status failed"; return 1; }
-    row="$(tail -n 1 "$w/chezmoi.keep")"
-    [[ "$row" =~ ^[0-9]+$ ]] || { _sd_err "internal error: the chezmoi classifier gave no count"; return 1; }
-    SD_KEEP=$((SD_KEEP + row))
+  # chezmoi: needs machine-local data. Whether it is there is decided in one
+  # place and by existence and readability alone, never by opening the file.
+  local md
+  md="$(_sd_machine_data_state)"
+  if [[ "$md" != available ]]; then
+    _sd_check chezmoi unknown "machine_data_$md" "" "$SD_MACHINE_DATA_REL"
+    _sd_unknown_entry chezmoi "$(_sd_reason_text "machine_data_$md")" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
   else
-    SD_SRC_CHEZMOI=unknown
-    _sd_unknown_entry chezmoi "chezmoi status failed: $SEL_CHEZMOI_WHY" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
+    _sel_chezmoi_status
+    if [[ "$SEL_CHEZMOI" == ok ]]; then
+      _sd_classify_chezmoi <"$w/chezmoi.out" >>"$w/entries.tsv" 2>"$w/chezmoi.keep" || { _sd_err "internal error: classifying chezmoi status failed"; return 1; }
+      row="$(tail -n 1 "$w/chezmoi.keep")"
+      [[ "$row" =~ ^[0-9]+$ ]] || { _sd_err "internal error: the chezmoi classifier gave no count"; return 1; }
+      SD_KEEP=$((SD_KEEP + row))
+    elif [[ "$SEL_CHEZMOI_WHY" == "chezmoi not installed" ]]; then
+      _sd_check chezmoi unknown chezmoi_missing
+      _sd_unknown_entry chezmoi "$(_sd_reason_text chezmoi_missing)" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
+    else
+      row="$(_sd_chezmoi_class "$SEL_CHEZMOI_WHY")"
+      _sd_check chezmoi error chezmoi_failed "$row"
+      _sd_unknown_entry chezmoi "$(_sd_reason_text chezmoi_failed "$row")" error || { _sd_err "internal error: recording an unknown source failed"; return 1; }
+    fi
   fi
 
   # casks (macOS)
-  SD_SRC_CASKS="n/a"
+  _sd_check casks not_applicable
   if [[ "$HOST_PROFILE" == macos ]]; then
+    _sd_check casks ""
     _sel_brew_casks
     if [[ "$SEL_BREW" == ok ]]; then
-      SD_SRC_CASKS=ok
       { awk -F '\t' '$1 == "C" { print $2 }' "$w/c.tsv" | LC_ALL=C sort -u >"$w/casks-c.txt"; } || { _sd_err "internal error: reading the declared casks failed"; return 1; }
       awk -F '\t' '$1 == "X" { print $2 "\t" $3 }' "$w/m.tsv" >"$w/casks-gated.tsv" || { _sd_err "internal error: reading the gated casks failed"; return 1; }
       _sd_classify_casks "$w/casks-c.txt" "$w/casks-installed.txt" "$w/casks-gated.tsv" >>"$w/entries.tsv" 2>"$w/casks.counts" || { _sd_err "internal error: classifying casks failed"; return 1; }
@@ -367,8 +465,9 @@ selection_diff_collect() {
       row="$(awk '{ print $2 + 0 }' "$w/casks.counts")"
       if ((row > 0)); then _sd_note "unmanaged installed casks: $row (not declared and not gated by a group; left alone)"; fi
     else
-      SD_SRC_CASKS=unknown
-      _sd_unknown_entry casks "cask state unknown: brew is missing or failed" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
+      if command -v brew >/dev/null 2>&1; then row=brew_failed; else row=brew_missing; fi
+      _sd_check casks unknown "$row"
+      _sd_unknown_entry casks "$(_sd_reason_text "$row")" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
     fi
   fi
 
@@ -376,6 +475,7 @@ selection_diff_collect() {
   _sd_repo_facts
   _sd_record_state
 
+  _sd_finalize_checks || { _sd_err "internal error: deriving the check states failed"; return 1; }
   LC_ALL=C sort -t "$_SEL_TAB" -k1,1 -k2,2 -k3,3 "$w/entries.tsv" >"$w/entries.sorted.tsv" || { _sd_err "internal error: sorting the entries failed"; return 1; }
 }
 
@@ -392,6 +492,8 @@ _sd_record_state() {
   fi
   install_record_read "$current" >/dev/null
   SD_RECORD_STATE="$IR_STATE"
+  # The record is a limitation: it never changes completeness or the exit code.
+  if [[ "$SD_RECORD_STATE" == ok ]]; then _sd_check record in_sync; else _sd_check record unknown "record_$SD_RECORD_STATE"; fi
   [[ "$SD_RECORD_STATE" == ok ]] || return 0
   SD_CAUSE_GENERATION=no
   # An unhashable selection file (SD_SEL_SHA=unknown) cannot be compared.
@@ -421,7 +523,7 @@ _sd_record_state() {
 _sd_count() { awk -F '\t' -v op="$1" '$3 == op { n++ } END { print n + 0 }' "$SELECTION_WORK/entries.sorted.tsv"; }
 
 selection_diff_outcome() {
-  local add remove change conflict unknown
+  local add remove change conflict unknown c st
   add="$(_sd_count add)"; remove="$(_sd_count remove)"; change="$(_sd_count change)"
   conflict="$(_sd_count conflict)"; unknown="$(_sd_count unknown)"
   SD_LIMITS=()
@@ -430,10 +532,15 @@ selection_diff_outcome() {
   if [[ "$SD_RECORD_STATE" != ok ]]; then
     SD_LIMITS+=("The applied-state record is $SD_RECORD_STATE, so the causes of the changes are unknown.")
   fi
-  # A source that is unknown forces 11 by itself, even if its entry could not be
-  # recorded: unknown is never "in sync".
-  if ((conflict > 0 || unknown > 0)) || [[ "$SD_RUN_BAD" == 1 ]] \
-    || [[ "$SD_SRC_PACKAGES" == unknown || "$SD_SRC_FILES" == unknown || "$SD_SRC_CHEZMOI" == unknown || "$SD_SRC_CASKS" == unknown ]]; then
+  # Complete only when every requested check completed. A check that is unknown
+  # or error forces 11 by itself, even if its entry could not be recorded:
+  # unknown is never "in sync". The record is a limitation and does not count.
+  SD_COMPLETE=yes
+  for c in packages hm_files chezmoi casks run; do
+    st="$(_sd_get ST "$c")"
+    if [[ "$st" == unknown || "$st" == error ]]; then SD_COMPLETE=no; fi
+  done
+  if ((conflict > 0 || unknown > 0)) || [[ "$SD_COMPLETE" == no ]]; then
     SD_EXIT=11; SD_OUTCOME=action-required
   elif ((add + remove + change > 0)); then
     SD_EXIT=10; SD_OUTCOME=changes-pending
@@ -453,6 +560,7 @@ _sd_class_title() {
     manual)      printf 'MANUAL' ;;
     unsupported) printf 'UNSUPPORTED' ;;
     unknown)     printf 'UNKNOWN' ;;
+    error)       printf 'ERROR' ;;
   esac
 }
 _sd_class_blurb() {
@@ -463,7 +571,8 @@ _sd_class_blurb() {
     change)      printf 'the next sys-update --apply would change' ;;
     manual)      printf 'sys-update does not do these; they need you' ;;
     unsupported) printf 'in the selection, but not applicable on this host' ;;
-    unknown)     printf 'could not be determined, so nothing is claimed about them' ;;
+    unknown)     printf 'missing information prevents the comparison; nothing is claimed about these' ;;
+    error)       printf 'the comparison failed unexpectedly; nothing is claimed about these' ;;
   esac
 }
 
@@ -538,6 +647,21 @@ _sd_group_lines() {
   done
 }
 
+# _sd_text_line LABEL COMPONENT KINDS KEEP: the summary line of one component. An
+# unknown or error component says why and how much else was verified.
+_sd_text_line() {
+  local st
+  st="$(_sd_get ST "$2")"
+  case "$st" in
+    not_applicable | "") return 0 ;;
+    unknown | error)
+      printf '%s: %s — %s; %s other items in sync; assessment incomplete\n' "$1" "$st" \
+        "$(_sd_reason_text "$(_sd_get RS "$2")" "$(_sd_get DT "$2")")" "$SD_KEEP"
+      ;;
+    *) _sd_kind_summary "$1" ok "$3" "${4:-0}" ;;
+  esac
+}
+
 selection_diff_render_text() {
   local w="$SELECTION_WORK" row rows=() line c gl="" n
   printf 'SELECTION DIFF · %s   (read-only: nothing is built, written or applied)\n\n' "$HOST_PROFILE"
@@ -565,20 +689,12 @@ selection_diff_render_text() {
   fi
   _sd_group_lines
   printf '\n'
-  if [[ "$SD_SRC_PACKAGES" == unknown ]]; then _sd_kind_summary Packages unknown package 0
-  else _sd_kind_summary Packages ok package "$(awk -F '\t' '$1 == "summary" { print $5 }' "$w/pkg-delta.tsv")"; fi
-  if [[ "$SD_SRC_FILES" == unknown ]]; then _sd_kind_summary "HM files and units" unknown "file unit" 0
-  else
-    n="$(grep -c . "$w/c-files.tsv" || true)"
-    c="$(grep -cE '^(added|changed)' "$w/files-delta.tsv" || true)"
-    _sd_kind_summary "HM files and units" ok "file unit" "$((n > c ? n - c : 0))"
-  fi
-  if [[ "$SD_SRC_CHEZMOI" == unknown ]]; then _sd_kind_summary chezmoi unknown chezmoi 0
-  else _sd_kind_summary chezmoi ok chezmoi "$(tail -n 1 "$w/chezmoi.keep")"; fi
-  case "$SD_SRC_CASKS" in
-    ok) _sd_kind_summary Casks ok cask "$(awk '{ print $1 + 0 }' "$w/casks.counts")" ;;
-    unknown) _sd_kind_summary Casks unknown cask 0 ;;
-  esac
+  _sd_text_line Packages packages package "$(awk -F '\t' '$1 == "summary" { print $5 }' "$w/pkg-delta.tsv" 2>/dev/null)"
+  n="$(grep -c . "$w/c-files.tsv" 2>/dev/null || true)"
+  c="$(grep -cE '^(added|changed)' "$w/files-delta.tsv" 2>/dev/null || true)"
+  _sd_text_line "HM files and units" hm_files "file unit" "$((n > c ? n - c : 0))"
+  _sd_text_line chezmoi chezmoi chezmoi "$(tail -n 1 "$w/chezmoi.keep" 2>/dev/null)"
+  _sd_text_line Casks casks cask "$(awk '{ print $1 + 0 }' "$w/casks.counts" 2>/dev/null)"
   for c in "${SD_CLASSES[@]}"; do _sd_render_section "$c"; done
   printf '\nLimitations\n'
   for line in "${SD_LIMITS[@]}"; do printf '  %s\n' "$line"; done
@@ -590,7 +706,12 @@ selection_diff_render_text() {
   case "$SD_OUTCOME" in
     in-sync) printf 'RESULT: IN SYNC\n' ;;
     changes-pending) printf 'RESULT: CHANGES PENDING (exit 10): sys-update --apply would change the system\n' ;;
-    action-required) printf 'RESULT: ACTION REQUIRED (exit 11): resolve the items above before sys-update --apply\n' ;;
+    action-required)
+      if [[ "$SD_COMPLETE" == no ]]; then
+        printf 'RESULT: ACTION REQUIRED (exit 11): assessment incomplete; resolve the items above before sys-update --apply\n'
+      else
+        printf 'RESULT: ACTION REQUIRED (exit 11): resolve the items above before sys-update --apply\n'
+      fi ;;
   esac
 }
 
@@ -648,10 +769,26 @@ selection_diff_render_json() {
   printf '  "record": {"state": %s},\n' "$(_sd_js "$SD_RECORD_STATE")"
   printf '  "causes": {"selection_changed": %s, "repo_changed": %s, "generation_changed_outside": %s},\n' \
     "$(_sd_js "$SD_CAUSE_SELECTION")" "$(_sd_js "$SD_CAUSE_REPO")" "$(_sd_js "$SD_CAUSE_GENERATION")"
-  printf '  "sources": {"packages": %s, "hm_files": %s, "chezmoi": %s, "casks": %s},\n' \
-    "$(_sd_js "$SD_SRC_PACKAGES")" "$(_sd_js "$SD_SRC_FILES")" "$(_sd_js "$SD_SRC_CHEZMOI")" "$(_sd_js "$SD_SRC_CASKS")"
-  printf '  "counts": {"add": %s, "remove": %s, "change": %s, "keep": %s, "conflict": %s, "manual": %s, "unsupported": %s, "unknown": %s},\n' \
-    "$add" "$remove" "$change" "$SD_KEEP" "$conflict" "$manual" "$unsupported" "$unknown"
+  printf '  "complete": %s,\n' "$([[ "$SD_COMPLETE" == yes ]] && echo true || echo false)"
+  printf '  "checks": {'
+  local c first_c=1 obj req r
+  for c in "${SD_CHECKS[@]}"; do
+    obj="{\"status\": $(_sd_js "$(_sd_get ST "$c")")"
+    [[ -z "$(_sd_get RS "$c")" ]] || obj+=", \"reason\": $(_sd_js "$(_sd_get RS "$c")")"
+    [[ -z "$(_sd_get DT "$c")" ]] || obj+=", \"detail\": $(_sd_js "$(_sd_get DT "$c")")"
+    if [[ -n "$(_sd_get RQ "$c")" ]]; then
+      req=""
+      for r in $(_sd_get RQ "$c"); do req+="${req:+, }$(_sd_js "$r")"; done
+      obj+=", \"required\": [$req]"
+    fi
+    [[ "$c" != record ]] || obj+=", \"affects_exit\": false"
+    obj+="}"
+    if ((first_c)); then first_c=0; else printf ','; fi
+    printf '\n    %s: %s' "$(_sd_js "$c")" "$obj"
+  done
+  printf '\n  },\n'
+  printf '  "counts": {"add": %s, "remove": %s, "change": %s, "keep": %s, "conflict": %s, "manual": %s, "unsupported": %s, "unknown": %s, "error": %s},\n' \
+    "$add" "$remove" "$change" "$SD_KEEP" "$conflict" "$manual" "$unsupported" "$unknown" "$(_sd_count error)"
   # changed items only; keep and n/a items are counts
   first=1
   printf '  "entries": ['

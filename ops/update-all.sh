@@ -71,8 +71,9 @@
 #   4    host detection failed (set HOST_PROFILE)
 #   5    another sys-update holds the lock
 #   10   changes pending (--selection-diff only): any add, remove or change
-#   11   manual action required (--selection-diff only): any conflict, any
-#        unknown source, an unfinished or failed last run
+#   11   action required (--selection-diff only): any conflict, an incomplete
+#        assessment (a component that is unknown or error, such as missing
+#        machine-local data), an unfinished or failed last run
 #   129  hung up (SIGHUP)
 #   130  interrupted (SIGINT)
 #   131  quit (SIGQUIT)

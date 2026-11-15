@@ -53,7 +53,7 @@ reruns one artisan test on every PHP change (watchexec).
 | `git prreview`, `git prfiles [N]` | PRs waiting for my review; files in a PR |
 | `git merged-prs <base> [head]` | PR branches merged in a range (release notes) |
 | `git changed` | modified, staged and untracked files (NUL-separated) |
-| `git dnew` | diff stat including new files |
+| `git dnew` | read-only: diff stat of tracked changes plus the list of untracked files (the index is not touched) |
 | `git wtn <branch>` | new worktree `../<repo>-<branch>` on a new branch from fresh `origin/main` (no stash, no switch) |
 | `git wta` `wtl` `wtp` | `worktree add`, `list`, `prune` |
 | `git linelog START,END:path` | history of a line range (`git log -L`), e.g. `git linelog 10,20:src/app.php`; `git linelog :func:path` follows one function |

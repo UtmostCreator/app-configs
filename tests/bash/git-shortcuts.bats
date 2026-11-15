@@ -78,12 +78,14 @@ new_repo() {
     echo junk >untracked; echo '.env' >.gitignore; echo secret >.env
     run sh -c 'echo n | git cleanf'
     [ "$status" -ne 0 ]
-    [[ "$output" == *"Would remove"*".env"* ]]
+    [[ "$output" == *"Would remove"*"untracked"* ]]
+    [[ "$output" != *".env"* ]]
     [ -f .env ]
     [ -f untracked ]
     run sh -c 'echo y | git cleanf'
     [ "$status" -eq 0 ]
-    [ ! -e .env ] && [ ! -e untracked ] && [ -f tracked ]
+    # ignored files (.env) are never deleted
+    [ ! -e untracked ] && [ -f .env ] && [ -f tracked ]
 }
 
 @test "undohard shows the changes it would drop and needs confirmation" {
@@ -289,4 +291,63 @@ no_stash() {
     [ "$status" -eq 0 ]
     [ "$(git log --format=%s | head -n 2 | tr '\n' ,)" = "add b,add a," ]
     [ "$(git rev-list --count HEAD)" -eq 3 ]
+}
+
+# --- safety: fetch, clean, lost commits and new-file preview ----------------
+
+@test "fp keeps local-only tags; fptags is the explicit tag-pruning variant" {
+    up_fixture
+    git tag local-only
+    git fp
+    git rev-parse -q --verify refs/tags/local-only >/dev/null
+    [ "$(value fp)" = "fetch --prune" ]
+    [ "$(value fptags)" = "fetch --prune --prune-tags" ]
+    git fptags
+    run git rev-parse -q --verify refs/tags/local-only
+    [ "$status" -ne 0 ]
+}
+
+@test "cleann previews without ignored files and deletes nothing" {
+    new_repo
+    echo junk >untracked; echo '.env' >.gitignore; echo secret >.env
+    run git cleann
+    [[ "$output" == *"untracked"* ]]
+    [[ "$output" != *".env"* ]]
+    [ -f untracked ] && [ -f .env ]
+}
+
+@test "lostcommits lists a dropped commit and never writes .git/lost-found" {
+    new_repo
+    echo x >x; git add x; git commit -qm "dropped work"
+    git reset -q --hard HEAD~1
+    git reflog expire --expire=now --all
+    run git lostcommits
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"dropped work"* ]]
+    [ ! -e .git/lost-found ]
+}
+
+@test "lostcommits prints nothing, not HEAD, when nothing is unreachable" {
+    new_repo
+    run git lostcommits
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+    [ ! -e .git/lost-found ]
+}
+
+@test "dnew shows tracked stat and untracked files without touching the index" {
+    new_repo
+    echo more >>tracked; echo new >brandnew
+    ls_before="$(git ls-files -s)"; sum_before="$(cksum <.git/index)"
+    run git dnew
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"tracked"* ]]
+    [[ "$output" == *"brandnew"* ]]
+    [ "$(git ls-files -s)" = "$ls_before" ]
+    [ "$(cksum <.git/index)" = "$sum_before" ]
+}
+
+@test "acp, ppr and fco carry their guidance comments" {
+    grep -qE '^[[:space:]]*#.*human-only convenience; agents never use (these|this)' "$BATS_FILE_TMPDIR/gitconfig"
+    grep -qE '^[[:space:]]*#.*gsw.*gswr' "$BATS_FILE_TMPDIR/gitconfig"
 }

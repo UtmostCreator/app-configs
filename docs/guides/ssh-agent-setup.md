@@ -229,6 +229,41 @@ ssh-add -D       # drop all keys from the running agent
 keychain --clear # clear keychain cache; next shell will re-prompt
 ```
 
+## Troubleshooting
+
+Both recipes are opt-in edits to your own `~/.ssh/config`. The installer does
+not write them and its behaviour is unchanged.
+
+### "Permission denied to <other account>" (several accounts on one host)
+
+With several keys loaded, ssh offers every agent key in turn and the host
+accepts the first one it knows, which may belong to a different account. Pin
+the key for that host with `IdentitiesOnly yes` in a specific `Host` block,
+not in `Host *`:
+
+```ssh
+Host github-work
+    HostName github.com
+    User git
+    IdentityFile ~/.ssh/<work-key>
+    IdentitiesOnly yes
+```
+
+Then use `git@github-work:<org>/<repo>.git` as the remote. `ssh -T git@github-work`
+shows which account answered.
+
+### GitLab: "bad signature for RSA key" / host key warnings after an update
+
+Some OpenSSH and GitLab combinations fail when ssh rewrites known_hosts
+entries (`UpdateHostKeys`). Turn that off for the GitLab host only:
+
+```ssh
+Host gitlab.com
+    UpdateHostKeys no
+```
+
+Use your own GitLab hostname for a self-hosted instance.
+
 ## See also
 
 - `docs/guides/shell-setup.md` — Zsh/Starship/Oh-My-Zsh baseline.

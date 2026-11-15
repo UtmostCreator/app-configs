@@ -62,7 +62,7 @@ Verbs combine with nouns: `operator` + `motion-or-text-object`. Learn 4 verbs an
 ## 7. Code (LSP)
 | Key | Does |
 |---|---|
-| `gd` or `Ctrl+]` | go to definition |
+| `Ctrl+]` | go to definition (LSP, via tagfunc); native `gd` is only a text-based local declaration |
 | `grn` | rename symbol — your PhpStorm `Shift+F6` |
 | `grr` `gri` | references, implementation |
 | `gra` `grt` | code action (quick fix), type definition |
@@ -116,7 +116,13 @@ Three ways to append `;` to 40 lines. Counts are off-by-one traps: `39j` selects
 | `Ctrl+C` | does not copy. Use `y` to yank. |
 | `Ctrl+V` | does not paste in Normal mode; it is Visual Block. Use `p`. |
 
-## 13. Week-by-week focus
+## 13. Wrong-answer traps
+- Insert-mode `p` types a "p". Paste is Normal `p`, or Insert `<C-r>+`.
+- `gD` is not "go to implementation"; that is `gri`.
+- which-key `wk.register` is deprecated in v3 (compatibility shim only). Use `wk.add` / spec, or lazy.nvim `keys`.
+- Native `gd` is a text-based local declaration search. LSP definition is `Ctrl+]` (tagfunc).
+
+## 14. Week-by-week focus
 | Week | Focus |
 |---|---|
 | W1 | Modes and basic edits. Stop using arrow keys. |
@@ -126,5 +132,5 @@ Three ways to append `;` to 40 lines. Counts are off-by-one traps: `39j` selects
 | W5 | Marks (`ma` `'a`), jumplist (`Ctrl+O` `Ctrl+I`), the `[` / `]` family. |
 | W6 | LSP defaults end to end, then run `:Tutor` once more. |
 
-## 14. See also
+## 15. See also
 Full reference: `docs/reference/nvim/keymap.md`. Active plan: `docs/plans/nvim-defaults.md`.

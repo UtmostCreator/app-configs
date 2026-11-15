@@ -7,7 +7,7 @@
 > native equivalent exists. This document changes no configuration — it is documentation only.
 
 Source of the VS Code column: `home/.chezmoitemplates/vscode/keybindings.json`
-(178 unique positive bindings; all are covered below).
+(200 positive bindings; all are covered below, including the seven added in A3, O and section S). **Count method:** strip the comments from the file and parse it as JSON: 203 active entries, 3 of them negative (`-command` removals), so 200 positive entries, 176 unique key strings and 187 unique key+command pairs. Earlier drafts of these docs said 178; that figure was not reproducible.
 
 > **The `<leader>` column is illustrative, not binding.** This file names roughly 156
 > `<leader>` candidates so that every VS Code key has a documented Neovim counterpart.
@@ -98,11 +98,11 @@ family is the modern replacement for the older hand-rolled `gd`/`gr`/`gi` sets.
 | `Ctrl+Alt+B` | Go to Implementation (second binding) | `gri` | `native` | Duplicate binding in the source file. |
 | `Ctrl+Shift+B` | Go to Type Definition | `grt` | `native` | Unconditional global default since 0.11. |
 | `Alt+F7` | Find Usages (peek references) | `grr` | `native` | Populates the quickfix list; then `]q` / `[q` to walk it. |
-| `Ctrl+Alt+F7` | Find Usages (references view panel) | `grr` then `:copen` | `native` | Or `<leader>fr` for a Telescope/fzf-lua reference picker. |
-| `Ctrl+Shift+I` | Peek Definition | `<leader>gp` | `plugin` | No native peek window. Options: `glance.nvim`, `goto-preview`, or Telescope's preview pane. Native fallback: `Ctrl+]` then `Ctrl+O` to come back. |
+| `Ctrl+Alt+F7` | Find Usages (references view panel) | `grr` then `:copen` | `native` | Native `grr` already fills the quickfix list; no extra mapping is needed. |
+| `Ctrl+Shift+I` | Peek Definition | `<leader>gp` | `plugin` | No native peek window. Options: `glance.nvim`, `goto-preview`, or the snacks picker's preview pane. Native fallback: `Ctrl+]` then `Ctrl+O` to come back. |
 | `Ctrl+Alt+D` | Peek Definition (second binding) | `<leader>gp` | `plugin` | Same as above. |
 | `Ctrl+F12` | File structure / Go to Symbol in file | `gO` | `native` | Document symbols into the location list. Then `]l` / `[l`. |
-| `Ctrl+Alt+Shift+N` | Go to Symbol (workspace) | `<leader>fs` | `plugin` | `vim.lsp.buf.workspace_symbol()` exists natively but has no default key. Telescope `lsp_workspace_symbols` or fzf-lua. |
+| `Ctrl+Alt+Shift+N` | Go to Symbol (workspace) | `<leader>fs` | `plugin` | `vim.lsp.buf.workspace_symbol()` exists natively but has no default key. snacks picker `lsp_workspace_symbols`. |
 | `Ctrl+Alt+F12` | Focus Outline view | `gO` | `native` | Or `<leader>o` for a persistent outline panel (`aerial.nvim`, `outline.nvim`). |
 | `Alt+7` | Outline tool window | `gO` | `native` | See H6 for the panel-style alternative. |
 | `Ctrl+Down` | Next occurrence of symbol under cursor | `*` | `native` | `*` searches forward for the exact word under the cursor; `n` repeats. |
@@ -145,7 +145,7 @@ freeze, press `Ctrl+Q` to resume it. The flow control can be disabled shell-side
 | `Ctrl+Alt+N` | Inline variable/method | `gra` then pick "Inline" | `native` | Server-dependent. No dedicated native key for a specific refactor kind. |
 | `Ctrl+Alt+V` | Extract variable | `gra` (Visual) then pick | `native` | Select the expression in Visual mode first, then `gra`. |
 | `Ctrl+Alt+M` | Extract method/function | `gra` (Visual) then pick | `native` | Select the block in Visual mode first, then `gra`. |
-| `Ctrl+Alt+C` | Extract constant | `gra` (Visual) then pick | `native` | Server-dependent code action. |
+| `Ctrl+Alt+Shift+C` | Extract constant (`refactor.extract.constant` code action kind) | `gra` (Visual) then pick | `native` | Server-dependent code action. The only extract-constant binding in the source (`Ctrl+Alt+C` is the Copilot completions toggle, see O). |
 | `Ctrl+Alt+T` | Surround with | `<leader>s` family or `ys{motion}{char}` | `plugin` | `nvim-surround` or `mini.surround`. `ysiw"` wraps a word in quotes; `cs"'` changes quotes; `ds"` deletes them. Visual mode: `S"`. |
 | `Ctrl+Alt+O` | Optimize / organize imports | `<leader>oi` | `leader` | `vim.lsp.buf.code_action({ context = { only = { "source.organizeImports" } }, apply = true })`. No native key. |
 | `-` | Run codelens under cursor | `grx` | `native` | New unconditional default in 0.11. Requires the server to publish codelenses. |
@@ -193,8 +193,8 @@ freeze, press `Ctrl+Q` to resume it. The flow control can be disabled shell-side
 
 | VS Code key | Action | Neovim | Type | Notes / alternatives |
 |---|---|---|---|---|
-| `F2` | Next problem in files | `]d` | `native` | Default since 0.10. Accepts a count: `3]d` jumps three diagnostics forward. |
-| `Shift+F2` | Previous problem in files | `[d` | `native` | Accepts a count the same way. |
+| `F2` | Next problem in files | `]d` | `native` | Default since 0.10. Accepts a count: `3]d` jumps three diagnostics forward. (source binding commented out; not active) |
+| `Shift+F2` | Previous problem in files | `[d` | `native` | Accepts a count the same way. (source binding commented out; not active) |
 | `-` | Last diagnostic in the buffer | `]D` | `native` | New in 0.11. Jumps to the last diagnostic, not "next". |
 | `-` | First diagnostic in the buffer | `[D` | `native` | New in 0.11. |
 | `-` | Next ERROR only, skipping warnings | `<leader>]e` | `leader` | `vim.diagnostic.jump({ count = 1, severity = vim.diagnostic.severity.ERROR })`. No native severity-filtered key. |
@@ -304,7 +304,7 @@ more Neovim keys than VS Code bindings.
 | VS Code key | Action | Neovim | Type | Notes / alternatives |
 |---|---|---|---|---|
 | `Ctrl+F` | Find in file | `/` | `native` | `/pattern<CR>`. **CONFLICT:** `Ctrl+F` scrolls a page forward. |
-| `F3` | Find next match | `n` | `native` | Repeats in the original direction. |
+| `F3` | Find next match | `n` | `native` | Repeats in the original direction. **CONFLICT (source file):** `f3` is also bound to `workbench.action.debug.stepOver` when `inDebugMode` (a later entry in `keybindings.json`), so while debugging F3 steps over and find-next is shadowed. Native `n` is unaffected. |
 | `Shift+F3` | Find previous match | `N` | `native` | Repeats in the opposite direction. |
 | `Ctrl+F7` | Highlight usages of the symbol | `*` | `native` | `*` searches forward for the exact word under the cursor and highlights all matches when `hlsearch` is on. |
 | `-` | Search backwards | `?` | `native` | `?pattern<CR>`. `n` then goes backwards, `N` forwards. |
@@ -373,7 +373,7 @@ family, which is why several `leader`-free additions below are legitimate.
 
 | VS Code key | Action | Neovim | Type | Notes / alternatives |
 |---|---|---|---|---|
-| `F2` / `Shift+F2` | Next / previous diagnostic | `]d` / `[d` | `native` | Accepts a count. See B1. |
+| `F2` / `Shift+F2` | Next / previous diagnostic | `]d` / `[d` | `native` | Accepts a count. See B1. (source binding commented out; not active) |
 | `-` | First / last diagnostic in the buffer | `[D` / `]D` | `native` | New in 0.11. |
 | `-` | Next / previous quickfix entry | `]q` / `[q` | `native` | New core default in 0.11. |
 | `-` | First / last quickfix entry | `[Q` / `]Q` | `native` | Capital Q jumps to the ends of the list. |
@@ -658,7 +658,7 @@ Solution 3 generalises to arbitrarily complex per-line work.
 | VS Code key | Action | Neovim | Type | Notes / alternatives |
 |---|---|---|---|---|
 | `Ctrl+F` | Find | `/` | `native` | **CONFLICT:** `Ctrl+F` scrolls forward a page. |
-| `F3` | Find next | `n` | `native` | |
+| `F3` | Find next | `n` | `native` | **CONFLICT (source file):** `f3` is also bound to `workbench.action.debug.stepOver` when `inDebugMode` (a later entry in `keybindings.json`), so while debugging F3 steps over and find-next is shadowed. Native `n` is unaffected. |
 | `Shift+F3` | Find previous | `N` | `native` | |
 | `-` | Search backwards | `?` | `native` | |
 | `-` | Keep the cursor centred while searching | `nzzzv` | `leader` | A common `<leader>`-free remap is `nnoremap n nzzzv`, but that remaps a default and Strategy E forbids it. Use `n` then `zz`, or accept `set scrolloff=999`. |
@@ -666,7 +666,7 @@ Solution 3 generalises to arbitrarily complex per-line work.
 | `-` | Search only within a range | `:10,50g/pattern/p` | `native` | Or use Visual mode and `/\%V pattern`. |
 | `-` | Search for the current Visual selection | `y` then `/Ctrl+R"` | `native` | Yank, then paste the register into the search prompt. |
 | `-` | Very-magic regex (PCRE-like) | `/\vpattern` | `native` | `\v` makes `(`, `)`, `+`, `?`, `{` special without backslashes. `\V` is very-nomagic for literal strings. |
-| `-` | Fuzzy find within the current buffer | `<leader>/` | `plugin` | Telescope `current_buffer_fuzzy_find` or fzf-lua `blines`. |
+| `-` | Fuzzy find within the current buffer | `<leader>/` | `plugin` | snacks picker `lines`. |
 
 ### F2. In-buffer replace
 
@@ -688,12 +688,12 @@ Solution 3 generalises to arbitrarily complex per-line work.
 
 | VS Code key | Action | Neovim | Type | Notes / alternatives |
 |---|---|---|---|---|
-| `Ctrl+Shift+F` | Find in files | `<leader>fg` | `plugin` | Telescope `live_grep` or fzf-lua `live_grep`. Native equivalent: `:grep pattern` with `set grepprg=rg\ --vimgrep` then `:copen`. |
-| `Ctrl+Shift+H` | Open a search editor | `<leader>fG` | `plugin` | Telescope with `--fixed-strings`, or `:copen` after `:grep`. |
+| `Ctrl+Shift+F` | Find in files | `<leader>fg` | `plugin` | snacks `grep` source. Native equivalent: `:grep pattern` with `set grepprg=rg\ --vimgrep` then `:copen`. |
+| `Ctrl+Shift+H` | Open a search editor | `<leader>fG` | `plugin` | snacks `grep` source with `regex = false`, or `:copen` after `:grep`. |
 | `Alt+2` | Search tool window | `<leader>fg` | `plugin` | Same picker. See H6. |
 | `-` | Native project grep | `:grep -n pattern .` | `native-opt` | Requires `set grepprg=rg\ --vimgrep\ --smart-case` and `set grepformat=%f:%l:%c:%m`. Results land in the quickfix list; then `]q` / `[q`. |
 | `-` | Grep with the internal engine, no external tool | `:vimgrep /pattern/gj **/*.php` | `native` | Slower than ripgrep but needs nothing installed. The `j` flag stops it from jumping to the first hit. |
-| `-` | Grep for the word under the cursor | `:grep -w <cword>` | `native-opt` | Or `<leader>fw` in Telescope `grep_string`. |
+| `-` | Grep for the word under the cursor | `:grep -w <cword>` | `native-opt` | Or the snacks picker `grep_word`. |
 | `-` | Search only the files in the arglist | `:vimgrep /pattern/ ##` | `native` | `##` expands to every arglist file. |
 | `-` | Persist a quickfix list before running another search | `:colder` / `:cnewer` | `native` | Neovim keeps ten quickfix lists; `:colder` steps back to the previous one. |
 
@@ -732,14 +732,14 @@ migrating. See H5.
 
 | VS Code key | Action | Neovim | Type | Notes / alternatives |
 |---|---|---|---|---|
-| `Shift Shift` | Search Everywhere / Quick Open | `<leader><leader>` or `<leader>ff` | `plugin` | Telescope `find_files` or fzf-lua. The source file notes VS Code does not natively support a double-shift chord at all. |
+| `Shift Shift` | Search Everywhere / Quick Open | `<leader><leader>` or `<leader>ff` | `plugin` | snacks `smart` source (or `files`). The source file notes VS Code does not natively support a double-shift chord at all. |
 | `Ctrl+Shift+N` | Go to File | `<leader>ff` | `plugin` | Native equivalent: `:find **/name` with `set path+=**`. Genuinely usable, just slower to type. |
 | `Ctrl+Shift+A` | Show all commands (command palette) | `:` | `native` | The command line IS the command palette. `Ctrl+D` after a partial command lists completions; `Tab` cycles them; `:help :command` documents them. |
 | `Ctrl+N` | New untitled file | `:enew` | `native` | **CONFLICT:** `Ctrl+N` is Insert-mode "next completion". `:enew` opens an empty unnamed buffer; `:w path` names it on save. |
 | `-` | Open a specific file | `:e path/to/file` | `native` | `Tab` completes paths. `:e!` discards local changes and rereads from disk. |
 | `-` | Open a file relative to the current one | `:e %:h/other.php` | `native` | `%` is the current file, `:h` takes the head (directory). |
 | `-` | Native fuzzy-ish file open | `:find name` | `native-opt` | Requires `set path+=**` and `set wildmenu wildmode=longest:full,full`. |
-| `-` | Fuzzy find in the git-tracked file set | `<leader>fG` | `plugin` | Telescope `git_files`. Native: `:args \`git ls-files\`` then `]a` / `[a`. |
+| `-` | Fuzzy find in the git-tracked file set | `<leader>fG` | `plugin` | snacks picker `git_files`. Native: `:args \`git ls-files\`` then `]a` / `[a`. |
 | `-` | Open the file path under the cursor | `gf` | `native` | `Ctrl+W f` opens it in a split, `Ctrl+W gf` in a new tabpage. |
 | `-` | Reopen the current file as read-only | `:view %` | `native` | |
 
@@ -766,7 +766,7 @@ migrating. See H5.
 | `-` | Toggle between the two most recent buffers | `Ctrl+^` | `native` | Also written `Ctrl+6`. Faster than any picker for a two-file edit loop. |
 | `-` | List all buffers | `:ls` or `:buffers` | `native` | Then `:b {number}` or `:b partial-name`. |
 | `-` | Jump to a buffer by partial name | `:b conf` | `native` | Matches any buffer whose path contains `conf`. `Tab` disambiguates. |
-| `-` | Buffer picker | `<leader>fb` | `plugin` | Telescope `buffers` or fzf-lua. |
+| `-` | Buffer picker | `<leader>fb` | `plugin` | snacks picker `buffers`. |
 | `-` | Visible buffer line (tab bar) | `-` | `plugin` | `bufferline.nvim` or `barbar.nvim` if the VS Code tab strip is missed. `set showtabline=2` shows the native tabpage line, which is not the same thing. |
 | `Ctrl+0` | Focus the sidebar | `Ctrl+W W` or `<leader>e` | `native` | `Ctrl+W W` cycles windows; a file-explorer toggle is a `<leader>` addition. See G6. |
 
@@ -788,8 +788,8 @@ migrating. See H5.
 
 | VS Code key | Action | Neovim | Type | Notes / alternatives |
 |---|---|---|---|---|
-| `Ctrl+E` | Recent files | `<leader>fo` | `plugin` | Telescope `oldfiles` or fzf-lua. Native: `:browse oldfiles` then pick a number, backed by the shada file. **CONFLICT:** `Ctrl+E` scrolls down one line. |
-| `Ctrl+Shift+E` | All editors by most recently used | `<leader>fb` | `plugin` | Telescope `buffers` sorted by recency. Native: `:ls t` sorts by last-used time. |
+| `Ctrl+E` | Recent files | `<leader>fo` | `plugin` | snacks picker `recent`. Native: `:browse oldfiles` then pick a number, backed by the shada file. **CONFLICT:** `Ctrl+E` scrolls down one line. |
+| `Ctrl+Shift+E` | All editors by most recently used | `<leader>fb` | `plugin` | snacks picker `buffers` sorted by recency. Native: `:ls t` sorts by last-used time. |
 | `Ctrl+Shift+T` | Reopen the closed editor | `<leader>fo` then pick | `plugin` | No native "reopen last closed". `:browse oldfiles` is the native path. |
 | `-` | Native recent-files list | `:oldfiles` | `native` | Reads `v:oldfiles` from the shada file. `:browse oldfiles` makes it selectable. |
 | `-` | Command history | `q:` | `native` | Opens the command history as an editable buffer. Edit a line and press `Enter` to run it. |
@@ -807,7 +807,7 @@ migrating. See H5.
 | `-` | Open a directory as a buffer | `:e .` | `native` | netrw renders the directory listing. `-` in `oil.nvim` does the same with editable semantics. |
 | `-` | Directory tree panel | `<leader>e` | `plugin` | `nvim-tree`, `neo-tree`, or `oil.nvim`. All are optional; netrw works out of the box. |
 | `-` | Change the working directory to the current file | `:cd %:h` | `native` | `:lcd %:h` changes it only for the current window. `:pwd` shows it. |
-| `-` | Fuzzy browse from the current file's directory | `<leader>fd` | `plugin` | Telescope `find_files` with `cwd = vim.fn.expand("%:h")`. |
+| `-` | Fuzzy browse from the current file's directory | `<leader>fd` | `plugin` | snacks picker `files` with `cwd = vim.fn.expand("%:h")`. |
 
 ### G7. File operations
 
@@ -909,7 +909,7 @@ notion of a tab maps to a Neovim **buffer** (see G3). Use tabpages for workspace
 | VS Code key | Action | Neovim | Type | Notes / alternatives |
 |---|---|---|---|---|
 | `Alt+1` | Explorer | `<leader>e` | `native-opt` | netrw `:Explore` natively; a tree plugin for the panel feel. See G6. |
-| `Alt+2` | Search | `<leader>fg` | `plugin` | Telescope / fzf-lua live grep. Native: `:grep` plus `:copen`. See F3. |
+| `Alt+2` | Search | `<leader>fg` | `plugin` | snacks `grep` source. Native: `:grep` plus `:copen`. See F3. |
 | `Alt+3` | Source Control | `<leader>gg` | `plugin` | `neogit` or `vim-fugitive` (`:Git`). See K1. |
 | `Alt+4` | Run and Debug | `<leader>dd` | `plugin` | `nvim-dap` plus `nvim-dap-ui`. See L. |
 | `Alt+5` | Extensions | `:Lazy` | `plugin` | `lazy.nvim`'s UI. Also `:Mason` for LSP/DAP/linter binaries. |
@@ -1035,8 +1035,8 @@ good `diff` mode. Everything panel-shaped here is `plugin`. The VS Code source f
 | `Ctrl+Alt+G F` | Fetch | `<leader>gf` | `plugin` | Native: `:!git fetch`. |
 | `-` | Full-screen Git TUI | `<leader>gl` | `native` | `:terminal lazygit`. This is `native` because `:terminal` is core; `lazygit` is an external binary, not a Neovim plugin. Many people use only this and no Git plugin at all. |
 | `-` | Run any git command | `:!git {args}` | `native` | `:r !git log --oneline -20` reads the output straight into the buffer. |
-| `-` | Branch picker | `<leader>gb` | `plugin` | Telescope `git_branches`. |
-| `-` | Stash picker | `<leader>gS` | `plugin` | Telescope `git_stash`. |
+| `-` | Branch picker | `<leader>gb` | `plugin` | snacks picker `git_branches`. |
+| `-` | Stash picker | `<leader>gS` | `plugin` | snacks picker `git_stash`. |
 
 ### K2. Hunks
 
@@ -1062,7 +1062,7 @@ good `diff` mode. Everything panel-shaped here is `plugin`. The VS Code source f
 | `-` | Blame the current line | `<leader>gb` | `plugin` | `gitsigns.nvim` `blame_line`. Native: `:!git blame -L {line},{line} %`. |
 | `-` | Full-file blame in a split | `<leader>gB` | `plugin` | Fugitive `:Git blame` gives a scroll-bound blame column. |
 | `-` | Inline virtual-text blame | `current_line_blame = true` | `plugin` | `gitsigns.nvim` option. |
-| `-` | Browse commits | `<leader>gc` | `plugin` | Telescope `git_commits`, or `:terminal lazygit`. |
+| `-` | Browse commits | `<leader>gc` | `plugin` | snacks picker `git_log`, or `:terminal lazygit`. |
 | `-` | Open the current file as it was N commits ago | `:Gedit HEAD~3:%` | `plugin` | Fugitive. Native: `:r !git show HEAD~3:path` into a scratch buffer. |
 | `-` | Diff the working tree against HEAD | `:Gdiffsplit` | `plugin` | Native: `nvim -d <(git show HEAD:path) path` from the shell. |
 
@@ -1095,6 +1095,7 @@ for Xdebug). The VS Code function-key layout maps naturally onto a `<leader>d` p
 | `Shift+F10` | Run without debugging | `<leader>dr` | `plugin` | Or just `:terminal` and run the program directly. |
 | `Ctrl+Shift+F10` | Run without debugging (second binding) | `<leader>dr` | `plugin` | Duplicate binding in the source file. |
 | `F9` | Continue | `<leader>dc` | `plugin` | `nvim-dap` `continue()`. Same function as start, which is convenient. |
+| `F2` | Continue (`editorTextFocus && !terminalFocus`) | `<leader>dc` | `plugin` | `nvim-dap` `continue()`. Source: `workbench.action.debug.continue` bound to `f2`. **CONFLICT (source file):** `f2` as next-problem is only a commented-out entry, so in the live file F2 is debug-continue; the `F2` rows in B1 and the diagnostics section describe a disabled binding. `f9` also continues. |
 | `Ctrl+F2` | Stop debugging | `<leader>dq` | `plugin` | `nvim-dap` `terminate()`. |
 | `Ctrl+Shift+F2` | Restart debugging | `<leader>dR` | `plugin` | `nvim-dap` `restart()`. |
 | `Alt+4` | Run and Debug tool window | `<leader>du` | `plugin` | `nvim-dap-ui` `toggle()`. See H6. |
@@ -1105,12 +1106,12 @@ for Xdebug). The VS Code function-key layout maps naturally onto a `<leader>d` p
 
 | VS Code key | Action | Neovim | Type | Notes / alternatives |
 |---|---|---|---|---|
-| `F8` | Step over | `<leader>do` | `plugin` | `nvim-dap` `step_over()`. |
+| `F8` | Step over | `<leader>do` | `plugin` | `nvim-dap` `step_over()`. **CONFLICT (source file):** `f3` is also step over when `inDebugMode`, and `f3` is nextMatchFindAction when `editorFocus && !terminalFocus`; while debugging, F3 steps over and find-next is shadowed. |
 | `F7` | Step into | `<leader>di` | `plugin` | `nvim-dap` `step_into()`. |
 | `Shift+F8` | Step out | `<leader>dO` | `plugin` | `nvim-dap` `step_out()`. |
 | `-` | Step back (time-travel debugging) | `<leader>db` | `plugin` | `nvim-dap` `step_back()`, only if the adapter supports reverse execution. |
 | `-` | Go up / down the call stack | `<leader>d[` / `<leader>d]` | `plugin` | `nvim-dap` `up()` / `down()`. |
-| `-` | Keep the function keys as-is | `F7` / `F8` / `F9` | `leader` | Function keys are not Vim defaults, so binding `F7`-`F9` directly to DAP is permitted under Strategy E and preserves the muscle memory exactly. |
+| `-` | Function keys are not used | `<leader>d` group | `leader` | The plan deliberately does not use function keys (problematic-key item 13: inconsistent across terminals, a long reach, and `<leader>d` keeps the debug surface in one which-key menu). Use the `<leader>d` mappings above. |
 
 ### L3. Breakpoints
 
@@ -1188,21 +1189,23 @@ buffers, so every buffer command in G3 applies to them.
 
 ## O. AI
 
-The VS Code keybindings file contains **no AI bindings**, although it does adjust word motion
-`when: inChat && inputFocus`, which implies Copilot Chat is in use. Everything here is `plugin`.
+The VS Code keybindings file has a small set of Copilot / inline-suggestion bindings: the completions toggle (`Ctrl+Alt+C`), the inline-suggestion keys (`Alt+]` / `Alt+[`, `Ctrl+Alt+;`, `Ctrl+Alt+'`, and the `Ctrl+;` chords), and a Copilot Chat entry (`Ctrl+/` opens the context picker; it also adjusts word motion `when: inChat && inputFocus`). Everything here is `plugin`.
 
 | VS Code key | Action | Neovim | Type | Notes / alternatives |
 |---|---|---|---|---|
+| `Ctrl+Alt+;` / `Ctrl+;` `t` | Trigger inline suggestion | `-` | `plugin` | No native equivalent; plugin-specific (see the Copilot rows below). |
+| `Ctrl+Alt+'` / `Ctrl+;` `h` | Hide inline suggestion | `-` | `plugin` | No native equivalent; plugin-specific. `Esc` usually dismisses it. |
+| `Ctrl+;` `n` / `Ctrl+;` `p` | Show next / previous inline suggestion | `Alt+]` / `Alt+[` | `plugin` | `copilot.vim` defaults; plugin-specific. |
 | `-` | Inline completion suggestions | `-` | `plugin` | `copilot.lua` or `copilot.vim`. Accept with `Tab` or `Ctrl+J`; note the `Tab` conflict with snippet jumping described in A5. |
 | `-` | Accept the current suggestion | `Ctrl+J` | `plugin` | Prefer `Ctrl+J` over `Tab` to avoid the snippet and completion-popup collision. |
-| `-` | Next / previous suggestion | `Alt+]` / `Alt+[` | `plugin` | `copilot.vim` defaults. |
+| `Alt+]` / `Alt+[` | Next / previous suggestion | `Alt+]` / `Alt+[` | `plugin` | `copilot.vim` defaults. |
 | `-` | Dismiss the suggestion | `Ctrl+]` | `plugin` | **CONFLICT:** `Ctrl+]` is go-to-definition via `'tagfunc'`. Rebind the plugin, not Neovim. |
 | `-` | Open a chat panel | `<leader>aa` | `plugin` | `CopilotChat.nvim`, `avante.nvim`, `codecompanion.nvim`, or `gp.nvim`. |
 | `-` | Explain the selected code | `<leader>ae` | `plugin` | Visual mode, then the chat plugin's explain action. |
 | `-` | Ask about the selection | `<leader>ai` | `plugin` | Most chat plugins accept a Visual range. |
 | `-` | Generate or fix tests for the selection | `<leader>at` | `plugin` | Prompt-library feature of `CopilotChat.nvim` and `codecompanion.nvim`. |
 | `-` | Inline edit the selection with a prompt | `<leader>ax` | `plugin` | `avante.nvim` or `codecompanion.nvim` inline mode. |
-| `-` | Toggle AI completion off | `<leader>ac` | `plugin` | `:Copilot disable` / `:Copilot enable`. |
+| `Ctrl+Alt+C` | Toggle AI completion | `<leader>ac` | `plugin` | `:Copilot disable` / `:Copilot enable`. Source: `github.copilot.completions.toggle`. |
 | `-` | Check AI plugin status | `:Copilot status` | `plugin` | |
 
 ---
@@ -1292,7 +1295,7 @@ These bite during the first week and are not Neovim's fault.
 
 ---
 
-## S. Coverage index — the 178 VS Code bindings by section
+## S. Coverage index — the VS Code bindings by section
 
 Every positive binding in `home/.chezmoitemplates/vscode/keybindings.json` appears in exactly
 one of the sections below. Use this table to find where a specific key was translated.
@@ -1377,8 +1380,13 @@ one of the sections below. Use this table to find where a specific key was trans
 | `Ctrl+Alt+I` (reindent) | A4 |
 | `Shift+F6` (rename symbol / rename file) | A3, G7 |
 | `Ctrl+Alt+Shift+T` (refactor menu) | A3 |
+| `Ctrl+Alt+Shift+C` (extract constant) | A3 |
+| `Ctrl+Alt+;` / `Ctrl+Alt+'` (inline suggestion trigger / hide) | O |
+| `Ctrl+;` `t` / `n` / `p` / `h` (inline suggestion trigger / next / previous / hide) | O |
 | `Ctrl+Alt+N` (inline) | A3 |
-| `Ctrl+Alt+V` / `Ctrl+Alt+M` / `Ctrl+Alt+C` (extract variable / method / constant) | A3 |
+| `Ctrl+Alt+V` / `Ctrl+Alt+M` (extract variable / method) | A3 |
+| `Ctrl+Alt+C` (toggle Copilot completions) | O |
+| `Alt+]` / `Alt+[` (next / previous inline suggestion) | O |
 | `Ctrl+Alt+T` (surround with) | A3 |
 | `Alt+1` to `Alt+7`, `Alt+0` (tool windows) | H6 |
 | `Alt+F12` (terminal) | H6, N |
@@ -1398,7 +1406,9 @@ one of the sections below. Use this table to find where a specific key was trans
 | `Alt+F2` (rename file) | G7 |
 | `Ctrl+Down` / `Ctrl+Up` (word highlight next / previous) | A1, F5 |
 | `Ctrl+Shift+C` (copy file path) | G7 |
-| `F2` / `Shift+F2` (next / previous problem) | B1, C9 |
+| `F2` / `Shift+F2` (next / previous problem; source binding commented out, inactive) | B1, C9 |
+| `F2` (debug continue, `editorTextFocus && !terminalFocus`) | L1 |
+| `F3` (step over, `inDebugMode`; also find-next, see C5, F1) | L2 |
 | `Alt+Up` / `Alt+Down` (breadcrumbs) | A1 (use `gO`) |
 | `Ctrl+Shift+\` / `Ctrl+Alt+\` / `Ctrl+\` (splits) | H1 |
 | `Ctrl+1` / `Ctrl+2` / `Ctrl+3` (focus editor group) | H2 |

@@ -68,7 +68,7 @@ Adding a chezmoi-managed tmux config requires explicit user approval (section 9)
 
 | File | Content |
 |---|---|
-| `home/.chezmoitemplates/vscode/keybindings.json` | 178 unique positive bindings |
+| `home/.chezmoitemplates/vscode/keybindings.json` | 200 positive bindings (176 unique key strings; method in the `docs/reference/nvim/keymap.md` header) |
 | `home/.chezmoitemplates/vscode/settings.full.json` | 275 keys, 18 language overrides |
 | `home/.chezmoitemplates/vscode/settings.minimal.json` | minimal profile |
 
@@ -185,7 +185,7 @@ Measured from the user's actual VS Code keymap. **Do not recompute.**
 
 | Metric | Value |
 |---|---|
-| Unique positive bindings | 178 |
+| Unique positive bindings (earlier basis; recount in the `docs/reference/nvim/keymap.md` header) | 178 |
 | Semantically non-conflicting with Vim | 157 (88.2%) |
 | Conflicting with Vim | 21 |
 | — of which critical | 11 |

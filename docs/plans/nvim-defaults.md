@@ -23,8 +23,10 @@ decisions were incorporated here. This file is the strategy authority.
 
 ## 2. Why the strategy changed
 
+Figures in sections 2 and 4 use the earlier 178-entry basis; the current recount is in the `docs/reference/nvim/keymap.md` header.
+
 The previous plan tried to reproduce a PhpStorm/IntelliJ (Windows) keymap on top
-of Neovim: 178 unique bindings extracted from
+of Neovim: bindings extracted from
 `home/.chezmoitemplates/vscode/keybindings.json`, ported key-for-key. That plan
 was internally consistent, but it was solving the wrong problem.
 
@@ -153,8 +155,8 @@ risk to the migration if the item is left unaddressed.
 | 8 | `Shift Shift` | IntelliJ search-everywhere. **Impossible in a terminal**: terminals report key presses, not bare modifier presses, so a double-tap of Shift alone cannot be detected. | `<leader><leader>` as the smart/everything picker. Same double-tap ergonomics, same "one entry point to everything" role, on a key the terminal can actually see. | Medium |
 | 9 | `Alt+J` | IntelliJ add-selection-for-next-occurrence (multi-cursor). No native Neovim equivalent. | **Native Visual Block only, initially.** `Ctrl+V` then `I` or `A` covers roughly 80% of real multi-cursor use (column edits), and `:s` with a range plus `.`-repeat covers most of the rest. Re-evaluate multicursor.nvim after four weeks of daily use - not before. | Medium |
 | 10 | `Ctrl+D` | Duplicate line in the VS Code keymap. In Neovim it is scroll-half-page-down, a core navigation key. | `yyp` duplicates the current line (yank line, put). `yyP` duplicates upward. With a count, `3yyp` duplicates three lines. Shorter than the shortcut it replaces. | Low |
-| 11 | `Ctrl+B` | Goto-definition in the VS Code keymap. In Neovim it is scroll-page-back. | `gd` for goto-definition (LSP), or `Ctrl+]` which works via the `'tagfunc'` that Neovim's LSP client sets automatically on attach. Return with `Ctrl+O`. | Low |
-| 12 | `Ctrl+W` | Expand-selection in the VS Code keymap. In Neovim it is the **window command prefix** - splits, closing, resizing, navigation all live behind it. Losing it would be severe. | Keep the native meaning without exception. Selection expansion is better served by entering Visual with `v` and then using a text object: `an` / `in` for treesitter nodes via mini.ai, `i(`, `a"`, `ip`, `it` for structural selection. More precise than repeated expansion. | Low |
+| 11 | `Ctrl+B` | Goto-definition in the VS Code keymap. In Neovim it is scroll-page-back. | `Ctrl+]` for goto-definition (LSP), which works via the `'tagfunc'` that Neovim's LSP client sets automatically on attach. Return with `Ctrl+O`. Native `gd` is a text-based local declaration search, not LSP. | Low |
+| 12 | `Ctrl+W` | Expand-selection in the VS Code keymap. In Neovim it is the **window command prefix** - splits, closing, resizing, navigation all live behind it. Losing it would be severe. | Keep the native meaning without exception. Selection expansion is better served by entering Visual with `v` and then using a text object: `an` / `in` for treesitter nodes (native in Neovim 0.12, Visual and operator-pending; falls back to `vim.lsp.buf.selection_range()` without a parser), `i(`, `a"`, `ip`, `it` for structural selection. More precise than repeated expansion. | Low |
 | 13 | `F5`-`F12` | Debug controls (start, step over, step into, step out, continue). Neovim has **no native DAP** - debugging is entirely a plugin concern. | nvim-dap under `<leader>d`. The function keys are deliberately not used: they are inconsistent across terminals and desktop environments, they are a long reach, and `<leader>d` keeps the whole debug surface discoverable in one which-key menu. | Low |
 | 14 | `Ctrl+/` | Toggle comment. Most terminals transmit this as `Ctrl+_` (0x1F), and some transmit nothing distinguishable at all - so it is unreliable even if bound. | Native `gcc` (toggle line), `gc{motion}` (toggle over a motion, e.g. `gcap`), `gbc` (block comment). Built into Neovim since 0.10; no plugin, no binding, works everywhere. | Low |
 
@@ -359,8 +361,9 @@ exit gate passes. Tier 3 is explicitly optional and may be trimmed.
 | `refactoring.nvim` | Refactoring for JS/TS/Go/Python/Lua. **Not PHP** (see 7.3). |
 | `diffview.nvim` | Git diff and file history UI. |
 | `aerial.nvim` | Symbol outline. Complements the native `gO` document-symbol default. |
-| `mini.ai` | Extended text objects, including treesitter `an` / `in`. Closes problematic-key gap 12. |
+| `mini.ai` | Extended text objects. Gap 12 is closed by the native 0.12 treesitter `an` / `in`, not by mini.ai. mini.ai's defaults `around_next = 'an'` and `inside_next = 'in'` override those native objects, which Strategy E forbids, so configure `mappings = { around_next = '', inside_next = '' }` (or other keys). |
 | `mini.surround` | Surround operations. |
+| `nvim-ts-autotag` | Auto close and auto rename of HTML, Vue and JSX/TSX tags using treesitter. Needs no mappings, so the 32-mapping budget is unaffected; complements the Vue hybrid setup in 7.4. |
 | `flash.nvim` | Enhanced motions and search labels. |
 | `vim-tmux-navigator` | Seamless split navigation across Neovim and tmux, if tmux is in use. |
 | `hardtime.nvim` | Blocks repeated `hjkl` and arrow keys, forces efficient motions. **Enabled from week 2.** |

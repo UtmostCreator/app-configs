@@ -447,3 +447,134 @@ no_mutation() {
     [[ "$output" == *"refusing to write the host file"* ]]
     [ ! -e "$outside" ]
 }
+
+# -- drift between the host file and personal.yaml (T-0044 T3) -----------------------
+# chezmoi renders from home/.chezmoidata/personal.yaml (hostProfile, gui), not
+# from the host file. When the host comes from the host file and personal.yaml
+# disagrees, a warning says so BEFORE any chezmoi apply. It never edits the file.
+# The check reads only the ^hostProfile: and ^gui: keys, here from fixtures.
+
+pyaml() { # pyaml <hostProfile-line> <gui-line>: a fixture personal.yaml in $FAKE
+    {
+        printf 'name: Sentinel Name\nemail: sentinel@example.invalid\n# hostProfile: "ignored-comment"\n'
+        [ -z "$1" ] || printf '%s\n' "$1"
+        [ -z "$2" ] || printf '%s\n' "$2"
+        printf 'signingKey: SENTINEL-KEY-VALUE\n'
+    } >"$FAKE/home/.chezmoidata/personal.yaml"
+}
+
+drift() { # drift <repo> <profile>: run the library function, capture its lines
+    run bash -c 'source "$1/ops/lib/preflight.sh"; preflight_host_data_drift "$2" "$3"' _ "$REPO_ROOT" "$FAKE" "$2"
+}
+
+@test "drift: consistent linux-cli prints nothing and returns 0" {
+    pyaml 'hostProfile: "linux-cli"' 'gui: false'
+    drift x linux-cli
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
+
+@test "drift: consistent linux-desktop prints nothing" {
+    pyaml 'hostProfile: "linux-desktop"' 'gui: true'
+    drift x linux-desktop
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
+
+@test "drift: a missing hostProfile counts as linux-desktop (the chezmoiignore default)" {
+    pyaml '' 'gui: true'
+    drift x linux-desktop
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+    drift x linux-cli
+    [ "$status" -eq 1 ]
+    [[ "$output" == *'hostProfile: "linux-desktop"'* ]]
+}
+
+@test "drift: the warning shows the detected host, the configured values and the corrective action" {
+    pyaml 'hostProfile: "linux-desktop"' 'gui: true'
+    drift x linux-cli
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"detected host: linux-cli"* ]]
+    [[ "$output" == *'hostProfile: "linux-desktop"'* ]]
+    [[ "$output" == *"gui: true"* ]]
+    [[ "$output" == *'set hostProfile: "linux-cli" and gui: false'* ]]
+    [[ "$output" == *"chezmoi apply"* ]]
+    [[ "$output" == *"personal.yaml"* ]]
+}
+
+@test "drift: a gui mismatch alone is reported, with the value linux-desktop needs" {
+    pyaml 'hostProfile: "linux-desktop"' 'gui: false'
+    drift x linux-desktop
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"gui: false"* ]]
+    [[ "$output" == *'set hostProfile: "linux-desktop" and gui: true'* ]]
+}
+
+@test "drift: a missing gui counts as false" {
+    pyaml 'hostProfile: "linux-desktop"' ''
+    drift x linux-desktop
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"gui: false"* ]]
+}
+
+@test "drift: reads only hostProfile and gui, never prints other keys, never edits the file" {
+    pyaml 'hostProfile: "linux-desktop"' 'gui: true'
+    local before; before="$(sha256sum "$FAKE/home/.chezmoidata/personal.yaml")"
+    drift x linux-cli
+    [[ "$output" != *Sentinel* && "$output" != *SENTINEL* && "$output" != *ignored-comment* ]]
+    [ "$(sha256sum "$FAKE/home/.chezmoidata/personal.yaml")" = "$before" ]
+}
+
+@test "drift: unquoted values and trailing comments are read" {
+    pyaml 'hostProfile: linux-cli   # note' 'gui: false # none'
+    drift x linux-cli
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
+
+@test "drift: no personal.yaml means nothing to compare" {
+    rm -f "$FAKE/home/.chezmoidata/personal.yaml"
+    drift x linux-cli
+    [ "$status" -eq 0 ]
+    [ -z "$output" ]
+}
+
+@test "install: a host file that disagrees with personal.yaml warns before chezmoi runs and edits nothing" {
+    mkdir -p "$(dirname "$HF")"; echo linux-cli >"$HF"
+    pyaml 'hostProfile: "linux-desktop"' 'gui: true'
+    local before; before="$(sha256sum "$FAKE/home/.chezmoidata/personal.yaml")"
+    hinst
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"detected host: linux-cli"* ]]
+    [[ "$output" == *'set hostProfile: "linux-cli" and gui: false'* ]]
+    local warn_pos chezmoi_pos
+    warn_pos="$(printf '%s' "$output" | grep -bo 'detected host: linux-cli' | head -n1 | cut -d: -f1)"
+    chezmoi_pos="$(printf '%s' "$output" | grep -bo 'chezmoi (init' | head -n1 | cut -d: -f1)"
+    [ "$warn_pos" -lt "$chezmoi_pos" ]
+    [ "$(sha256sum "$FAKE/home/.chezmoidata/personal.yaml")" = "$before" ]
+    # the chezmoi apply stub ran only after the warning, never with a changed file
+    grep -q '^chezmoi' "$STUB_LOG"
+}
+
+@test "install: --host that disagrees with personal.yaml warns too (the file is now the source)" {
+    pyaml 'hostProfile: "linux-desktop"' 'gui: true'
+    hinst --host linux-cli --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"detected host: linux-cli"* ]]
+}
+
+@test "install: no warning when personal.yaml agrees, or when the host did not come from the file" {
+    mkdir -p "$(dirname "$HF")"; echo linux-cli >"$HF"
+    pyaml 'hostProfile: "linux-cli"' 'gui: false'
+    hinst
+    [[ "$output" != *"detected host"* ]]
+    rm -f "$HF"
+    pyaml 'hostProfile: "linux-cli"' 'gui: false'
+    hinst
+    [[ "$output" != *"detected host"* ]]
+    HENV=(HOST_PROFILE=linux-desktop)
+    mkdir -p "$(dirname "$HF")"; echo linux-cli >"$HF"
+    hinst
+    [[ "$output" != *"detected host"* ]]
+}

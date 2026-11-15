@@ -311,3 +311,19 @@ host_file_path_users() {
     run host_file_path_users "$copy"
     [ "$output" = ops/cleanup.sh ]
 }
+
+@test "every host consumer asks ops/detect-host.sh, so the host file reaches all of them" {
+    local f
+    for f in ops/update-all.sh ops/bootstrap.sh ops/install.sh ops/readiness.sh ops/audit.sh \
+        ops/update-codebase-memory-mcp.sh mise.toml home/dot_config/fish/conf.d/cli.fish; do
+        grep -q 'ops/detect-host.sh' "$REPO_ROOT/$f" || { echo "$f does not call ops/detect-host.sh"; return 1; }
+    done
+}
+
+@test "no script outside ops/detect-host.sh and ops/install.sh decides linux-desktop versus linux-cli itself" {
+    # Case labels and comparisons that consume a detected host are fine; a
+    # fallback assignment is not. Prints path:line for any HOST/HOST_PROFILE
+    # assignment of a linux-* literal.
+    run bash -c 'cd "$1" && git grep -nE "(HOST|HOST_PROFILE|host)=[\"'"'"']?linux-(desktop|cli)" -- ops home mise.toml ":!ops/detect-host.sh" ":!ops/install.sh" | grep -vE ":[0-9]+:[[:space:]]*#" || true' _ "$REPO_ROOT"
+    [ -z "$output" ] || { printf 'host fallback outside detect-host:\n%s\n' "$output"; return 1; }
+}

@@ -198,7 +198,7 @@ if [[ -n "${HOST_PROFILE:-}" ]]; then
   case "$HOST_PROFILE" in
     macos|linux-desktop|linux-cli|wsl)
       PROFILE="$HOST_PROFILE"
-      SOURCE=env
+      SOURCE="env"
       ;;
     *) die "unsupported HOST_PROFILE: $HOST_PROFILE" ;;
   esac
@@ -206,28 +206,28 @@ else
   case "$(uname -s)" in
     Darwin)
       PROFILE=macos
-      SOURCE=detected
+      SOURCE="detected"
       ;;
     Linux)
       wsl="$(detect_wsl_version)" || exit 1
       case "$wsl" in
         2)
           PROFILE=wsl
-          SOURCE=detected
+          SOURCE="detected"
           ;;
         1) die "WSL1 is not supported (no systemd, no real Linux kernel for Nix); convert with: wsl --set-version <distro> 2" ;;
         *)
           read_host_file
           if [[ -n "$HOST_FILE_VALUE" ]]; then
             PROFILE="$HOST_FILE_VALUE"
-            SOURCE=file
+            SOURCE="file"
           else
             default="${HOST_PROFILE_DEFAULT:-linux-desktop}"
             case "$default" in
               linux-desktop|linux-cli) PROFILE="$default" ;;
               *) die "unsupported HOST_PROFILE_DEFAULT: $default (use linux-desktop or linux-cli)" ;;
             esac
-            SOURCE=default
+            SOURCE="default"
           fi
           ;;
       esac

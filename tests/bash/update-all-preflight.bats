@@ -267,3 +267,84 @@ stub_required_tools() {
   [[ "$output" != *"set -uo pipefail"* ]]
   [[ "$output" != *"REPO_ROOT="* ]]
 }
+
+# -- remembered linux host (T-0044) ------------------------------------------------
+# update-all reads the host file through detect-host and warns, in report and in
+# apply output, when personal.yaml disagrees. The warning is in the Preflight
+# section, so it comes before the chezmoi step and before any change.
+
+host_file_fixture() { # host_file_fixture <value> <hostProfile-line> <gui-line>
+  export APP_CONFIGS_HOST_FILE="$BATS_TEST_TMPDIR/cfg/app-configs/host"
+  mkdir -p "$(dirname "$APP_CONFIGS_HOST_FILE")" "$FAKE/home/.chezmoidata"
+  printf '%s\n' "$1" >"$APP_CONFIGS_HOST_FILE"
+  printf 'name: Sentinel\n%s\n%s\n' "$2" "$3" >"$FAKE/home/.chezmoidata/personal.yaml"
+  # committed, so the worktree stays clean and the report is not cut short
+  git -C "$FAKE" add -A
+  git -C "$FAKE" -c user.email=t@t -c user.name=t commit -q -m personal
+  unset HOST_PROFILE WSL_DISTRO_NAME
+  echo 'Linux version 6.18.33 (b@h) (gcc) #1 SMP' >"$BATS_TEST_TMPDIR/proc-version"
+  echo 6.18.33 >"$BATS_TEST_TMPDIR/osrelease"
+  export DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/proc-version" DETECT_HOST_OSRELEASE="$BATS_TEST_TMPDIR/osrelease"
+  export DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-wsl-run" DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-wsl-interop"
+  mkdir -p "$BATS_TEST_TMPDIR/ubin"
+  printf '#!/bin/sh\necho Linux\n' >"$BATS_TEST_TMPDIR/ubin/uname"; chmod +x "$BATS_TEST_TMPDIR/ubin/uname"
+  export PATH="$BATS_TEST_TMPDIR/ubin:$PATH"
+}
+
+@test "report mode reports the host from the host file (linux-cli)" {
+  host_file_fixture linux-cli 'hostProfile: "linux-cli"' 'gui: false'
+  run bash "$FAKE/ops/update-all.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"SYSTEM UPDATE · linux-cli"* ]]
+  [[ "$output" != *"detected host"* ]]
+}
+
+@test "report mode warns about a personal.yaml that disagrees, with values and the fix, and edits nothing" {
+  host_file_fixture linux-cli 'hostProfile: "linux-desktop"' 'gui: true'
+  local before; before="$(cksum <"$FAKE/home/.chezmoidata/personal.yaml")"
+  run bash "$FAKE/ops/update-all.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"SYSTEM UPDATE · linux-cli"* ]]
+  [[ "$output" == *"detected host: linux-cli"* ]]
+  [[ "$output" == *'hostProfile: "linux-desktop"'* ]]
+  [[ "$output" == *"gui: true"* ]]
+  [[ "$output" == *'set hostProfile: "linux-cli" and gui: false'* ]]
+  [[ "$output" == *"chezmoi apply"* ]]
+  [[ "$output" != *Sentinel* ]]
+  [ "$(cksum <"$FAKE/home/.chezmoidata/personal.yaml")" = "$before" ]
+}
+
+@test "the warning comes before the chezmoi step in report output" {
+  host_file_fixture linux-cli 'hostProfile: "linux-desktop"' 'gui: true'
+  mkdir -p "$BATS_TEST_TMPDIR/cbin"
+  printf '#!/bin/sh\nexit 0\n' >"$BATS_TEST_TMPDIR/cbin/chezmoi"; chmod +x "$BATS_TEST_TMPDIR/cbin/chezmoi"
+  PATH="$BATS_TEST_TMPDIR/cbin:$PATH" run bash "$FAKE/ops/update-all.sh"
+  local warn_line chezmoi_line
+  warn_line="$(printf '%s\n' "$output" | grep -n 'detected host: linux-cli' | head -n1 | cut -d: -f1)"
+  chezmoi_line="$(printf '%s\n' "$output" | grep -n 'would run: chezmoi apply' | head -n1 | cut -d: -f1)"
+  [ -n "$warn_line" ]
+  [ -n "$chezmoi_line" ] || { echo "no chezmoi step line found:"; echo "$output"; return 1; }
+  [ "$warn_line" -lt "$chezmoi_line" ]
+}
+
+@test "apply mode shows the warning too, before it stops or changes anything" {
+  host_file_fixture linux-cli 'hostProfile: "linux-desktop"' 'gui: true'
+  dirty_it
+  run bash "$FAKE/ops/update-all.sh" --apply --yes
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"detected host: linux-cli"* ]]
+  [[ "$output" == *"stopped before"* ]]
+  local warn_pos stop_pos
+  warn_pos="$(printf '%s' "$output" | grep -bo 'detected host: linux-cli' | head -n1 | cut -d: -f1)"
+  stop_pos="$(printf '%s' "$output" | grep -bo 'stopped before' | head -n1 | cut -d: -f1)"
+  [ "$warn_pos" -lt "$stop_pos" ]
+}
+
+@test "no warning when HOST_PROFILE is set or the host file is absent" {
+  host_file_fixture linux-cli 'hostProfile: "linux-desktop"' 'gui: true'
+  HOST_PROFILE=linux-cli run bash "$FAKE/ops/update-all.sh"
+  [[ "$output" != *"detected host"* ]]
+  rm -f "$APP_CONFIGS_HOST_FILE"
+  run bash "$FAKE/ops/update-all.sh"
+  [[ "$output" != *"detected host"* ]]
+}

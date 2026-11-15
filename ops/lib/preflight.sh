@@ -21,6 +21,8 @@
 #                                             anything else fails closed.
 #   preflight_personal_yaml REPO_ROOT PROFILE RUNNER...
 #                                             seed personal.yaml when missing
+#   preflight_host_data_drift REPO_ROOT PROFILE  warning lines on stdout (exit 1) when
+#                                             personal.yaml disagrees with the host
 #   preflight_refresh_nix_path                make fresh nix-profile tools visible
 
 # True when $1 is inside $2, comparing as given and with $2 resolved, so a
@@ -153,6 +155,40 @@ preflight_personal_yaml() {
   [[ -f "$example" ]] || fail "no personal.yaml and no example to seed from"
   warn "home/.chezmoidata/personal.yaml missing; seeding from example for host '$profile'. Git identity remains unset until you edit it."
   "$@" bash "$repo_root/ops/seed-personal-yaml.sh" "$example" "$target" "$profile"
+}
+
+# Drift between the remembered host and personal.yaml. chezmoi renders from
+# home/.chezmoidata/personal.yaml (hostProfile, gui), not from the host file, so
+# a host chosen through the host file can disagree with it. Call this only when
+# `detect-host.sh --source` says file (install.sh: also after --host or the
+# question, which write the file). It reads only the ^hostProfile: and ^gui: keys
+# with sed, never prints other keys and never edits the file (seed-personal-yaml
+# stays write-once). A missing or empty hostProfile counts as linux-desktop (the
+# home/.chezmoiignore default), a missing gui as false. gui is expected true for
+# linux-desktop and false for linux-cli, the values seed-personal-yaml.sh writes.
+# Prints nothing and returns 0 when consistent (or there is no personal.yaml);
+# prints the warning lines on stdout and returns 1 on drift. Each caller shows
+# the lines its own way and must show them before any chezmoi apply.
+preflight_host_data_drift() {
+  local repo_root="$1" profile="$2" f cfg_profile cfg_gui want_gui shown_profile shown_gui
+  f="$repo_root/home/.chezmoidata/personal.yaml"
+  [[ -f "$f" ]] || return 0
+  case "$profile" in
+    linux-desktop) want_gui=true ;;
+    linux-cli) want_gui=false ;;
+    *) return 0 ;;
+  esac
+  cfg_profile="$(sed -n -E 's/^hostProfile:[[:space:]]*["'\'']?([A-Za-z0-9_-]*).*/\1/p' "$f" | head -n1)"
+  cfg_gui="$(sed -n -E 's/^gui:[[:space:]]*["'\'']?([A-Za-z]*).*/\1/p' "$f" | head -n1 | tr 'A-Z' 'a-z')"
+  shown_profile="\"$cfg_profile\""
+  shown_gui="$cfg_gui"
+  if [[ -z "$cfg_profile" ]]; then cfg_profile=linux-desktop; shown_profile='"linux-desktop" (not set; the chezmoi default)'; fi
+  if [[ -z "$cfg_gui" ]]; then cfg_gui=false; shown_gui='false (not set; the chezmoi default)'; fi
+  [[ "$cfg_profile" != "$profile" || "$cfg_gui" != "$want_gui" ]] || return 0
+  printf 'host mismatch: detected host: %s (from the host file), but home/.chezmoidata/personal.yaml has hostProfile: %s and gui: %s\n' "$profile" "$shown_profile" "$shown_gui"
+  printf 'chezmoi renders from personal.yaml, so a chezmoi apply would deploy the %s dotfiles on this %s machine\n' "$cfg_profile" "$profile"
+  printf 'fix (nothing was edited): set hostProfile: "%s" and gui: %s in home/.chezmoidata/personal.yaml, then run chezmoi apply\n' "$profile" "$want_gui"
+  return 1
 }
 
 # Refresh PATH so freshly installed nix-profile tools are visible. Tests set

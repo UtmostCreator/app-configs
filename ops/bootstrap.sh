@@ -123,6 +123,14 @@ bash "$REPO_ROOT/ops/doctor.sh" --preflight || fail "preflight failed; fix the e
 preflight_host_checks "$REPO_ROOT" "$HOST_PROFILE"
 preflight_personal_yaml "$REPO_ROOT" "$HOST_PROFILE" run
 
+# A host read from the host file can disagree with personal.yaml (chezmoi renders
+# from it): warn here, before the chezmoi apply. Bootstrap never asks or writes.
+if [[ "$(bash "$REPO_ROOT/ops/detect-host.sh" --source 2>/dev/null)" == file ]]; then
+  if ! host_drift="$(preflight_host_data_drift "$REPO_ROOT" "$HOST_PROFILE")"; then
+    while IFS= read -r host_drift_line; do warn "$host_drift_line"; done <<<"$host_drift"
+  fi
+fi
+
 # ─── Approval (apply only) ──────────────────────────────────────────────────
 # Only --yes approves non-interactively. CI and a missing TTY never approve.
 # Prompts go to stderr so redirected stdout cannot hide them.

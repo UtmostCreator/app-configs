@@ -472,3 +472,75 @@ mutated() { grep -Eq '^(nix profile|nix flake|chezmoi (init|apply)|mise (trust|i
     [[ "$output" == *WSL1* ]]
     if mutated; then return 1; fi
 }
+
+# -- remembered linux host (T-0044) ----------------------------------------------
+# bootstrap never asks and never writes the host file; it reads it through
+# detect-host and warns when personal.yaml disagrees, before chezmoi apply.
+
+bs_hostfile() { # bs_hostfile <value>: HOST_PROFILE unset, a pinned host file
+    export APP_CONFIGS_HOST_FILE="$BATS_TEST_TMPDIR/cfg/app-configs/host"
+    mkdir -p "$(dirname "$APP_CONFIGS_HOST_FILE")"
+    printf '%s\n' "$1" >"$APP_CONFIGS_HOST_FILE"
+    echo 'Linux version 6.18.33 (b@h) (gcc) #1 SMP' >"$BATS_TEST_TMPDIR/proc-version"
+    echo 6.18.33 >"$BATS_TEST_TMPDIR/osrelease"
+    printf '#!/bin/sh\necho Linux\n' >"$BSTUBS/uname"; chmod +x "$BSTUBS/uname"
+}
+
+bs_nohost() { # like bs, but HOST_PROFILE stays unset
+    run env -u HOST_PROFILE HOME="$HOME_T" PATH="$BPATH" \
+        DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/proc-version" DETECT_HOST_OSRELEASE="$BATS_TEST_TMPDIR/osrelease" \
+        bash "$FX/ops/bootstrap.sh" "$@" </dev/null
+}
+
+@test "bootstrap reports linux-cli from the host file and does not prompt or write" {
+    bs_fixture
+    bs_hostfile linux-cli
+    bs_nohost --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Host: linux-cli"* ]]
+    [ "$(cat "$APP_CONFIGS_HOST_FILE")" = linux-cli ]
+}
+
+@test "bootstrap warns before chezmoi when personal.yaml disagrees with the host file, and edits nothing" {
+    bs_fixture
+    bs_hostfile linux-cli
+    printf 'name: Sentinel\nhostProfile: "linux-desktop"\ngui: true\n' >"$FX/home/.chezmoidata/personal.yaml"
+    local before; before="$(cksum <"$FX/home/.chezmoidata/personal.yaml")"
+    bs_nohost --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"detected host: linux-cli"* ]]
+    [[ "$output" == *'hostProfile: "linux-desktop"'* ]]
+    [[ "$output" == *"gui: true"* ]]
+    [[ "$output" == *'set hostProfile: "linux-cli" and gui: false'* ]]
+    [[ "$output" != *Sentinel* ]]
+    local warn_pos chezmoi_pos
+    warn_pos="$(printf '%s' "$output" | grep -bo 'detected host: linux-cli' | head -n1 | cut -d: -f1)"
+    chezmoi_pos="$(printf '%s' "$output" | grep -bo 'would: chezmoi init' | head -n1 | cut -d: -f1)"
+    [ "$warn_pos" -lt "$chezmoi_pos" ]
+    [ "$(cksum <"$FX/home/.chezmoidata/personal.yaml")" = "$before" ]
+}
+
+@test "bootstrap --yes warns before the chezmoi apply stub runs" {
+    bs_fixture
+    bs_hostfile linux-cli
+    printf 'hostProfile: "linux-desktop"\ngui: true\n' >"$FX/home/.chezmoidata/personal.yaml"
+    bs_nohost --yes
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"detected host: linux-cli"* ]]
+    grep -q '^chezmoi apply' "$CALLS"
+    local warn_pos init_pos
+    warn_pos="$(printf '%s' "$output" | grep -bo 'detected host: linux-cli' | head -n1 | cut -d: -f1)"
+    init_pos="$(printf '%s' "$output" | grep -bo 'chezmoi init --source=' | head -n1 | cut -d: -f1)"
+    [ -n "$warn_pos" ] && [ -n "$init_pos" ] && [ "$warn_pos" -lt "$init_pos" ]
+}
+
+@test "bootstrap stays quiet when personal.yaml agrees, or HOST_PROFILE is set" {
+    bs_fixture
+    bs_hostfile linux-cli
+    printf 'hostProfile: "linux-cli"\ngui: false\n' >"$FX/home/.chezmoidata/personal.yaml"
+    bs_nohost --dry-run
+    [[ "$output" != *"detected host"* ]]
+    printf 'hostProfile: "linux-desktop"\ngui: true\n' >"$FX/home/.chezmoidata/personal.yaml"
+    bs --dry-run
+    [[ "$output" != *"detected host"* ]]
+}

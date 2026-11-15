@@ -786,6 +786,19 @@ else
   esac
 fi
 
+# The host read from the host file can disagree with personal.yaml (chezmoi renders
+# from it). Warn here, in the Preflight section, so it shows in report and apply
+# output before the chezmoi step. Warning only; personal.yaml is never edited.
+if [[ "$SUBCOMMAND" != rollback && "$(bash "$REPO_ROOT/ops/detect-host.sh" --source 2>/dev/null)" == file ]]; then
+  if ! _host_drift="$(preflight_host_data_drift "$REPO_ROOT" "$HOST_PROFILE")"; then
+    _host_drift_first=1
+    while IFS= read -r _host_drift_line; do
+      if [[ "$_host_drift_first" == 1 ]]; then ui_warn "host file" "$_host_drift_line"; _host_drift_first=0
+      else ui_info "host file" "$_host_drift_line"; fi
+    done <<<"$_host_drift"
+  fi
+fi
+
 # Required tools. In report mode a missing tool is information, not a failure:
 # the point of a report is to show what the update would do.
 REQUIRED=(git nix chezmoi)

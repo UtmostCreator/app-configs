@@ -312,10 +312,10 @@ step "Preflight"
 for cmd in git bash; do
   have "$cmd" || fail "missing required command: $cmd"
 done
-HOST_SOURCE=env
+HOST_SOURCE="env"
 if [[ -n "$OPT_HOST" ]]; then
   HOST_PROFILE="$OPT_HOST"
-  HOST_SOURCE=flag
+  HOST_SOURCE="flag"
   host_choice_commit "$(bash "$REPO_ROOT/ops/detect-host.sh" --host-file)" "$HOST_PROFILE"
 elif [[ -z "${HOST_PROFILE:-}" ]]; then
   HOST_PROFILE="$(bash "$REPO_ROOT/ops/detect-host.sh")" \
@@ -345,7 +345,7 @@ elif [[ -z "${HOST_PROFILE:-}" ]]; then
       host_default="$(host_guess)"
     fi
     host_choice_ask HOST_PROFILE "$host_default"
-    HOST_SOURCE=prompt
+    HOST_SOURCE="prompt"
     host_choice_commit "$host_file" "$HOST_PROFILE"
   fi
 fi
@@ -379,6 +379,16 @@ log "NixOS: $(is_nixos && echo yes || echo no)"
 log "Mode:  $([[ "$DRY_RUN" == 1 ]] && echo dry-run || echo APPLY)"
 
 preflight_personal_yaml "$REPO_ROOT" "$HOST_PROFILE" run
+
+# The host came from the host file (read, or just written by --host or the
+# question): warn, before any chezmoi apply, when personal.yaml disagrees.
+case "$HOST_SOURCE" in
+  file | flag | prompt)
+    if ! host_drift="$(preflight_host_data_drift "$REPO_ROOT" "$HOST_PROFILE")"; then
+      while IFS= read -r host_drift_line; do warn "$host_drift_line"; done <<<"$host_drift"
+    fi
+    ;;
+esac
 
 # ── 2. Nix ──────────────────────────────────────────────────────────────────
 step "Nix"

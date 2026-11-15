@@ -18,11 +18,11 @@ setup() {
     done
 }
 
-# ops/install.sh and the selection library it sources run on a fresh Mac under
+# ops/install.sh and the selection libraries it sources run on a fresh Mac under
 # /bin/bash 3.2 (the review of T5 found mapfile there).
-@test "install.sh and selection.sh use no bash 4 features" {
+@test "install.sh, selection.sh and selection-preview.sh use no bash 4 features" {
     local f
-    for f in ops/install.sh ops/lib/selection.sh; do
+    for f in ops/install.sh ops/lib/selection.sh ops/lib/selection-preview.sh; do
         if grep -nE '\$\{[A-Za-z_]+(,,|\^\^)' "$REPO_ROOT/$f"; then echo "$f: case-modifying expansion"; return 1; fi
         if grep -nE '(declare|local|typeset) +-[A-Za-z]*[An]|(^|[^[:alnum:]_])(mapfile|readarray)([^[:alnum:]_]|$)' "$REPO_ROOT/$f"; then echo "$f: bash 4 builtin"; return 1; fi
         if grep -nE '&>>|\|&' "$REPO_ROOT/$f"; then echo "$f: bash 4 redirection"; return 1; fi
@@ -32,11 +32,12 @@ setup() {
     done
 }
 
-@test "the selection library works with mapfile and readarray disabled" {
+@test "the selection libraries work with mapfile and readarray disabled" {
     run env HOME="$HOME" bash -c '
         enable -n mapfile readarray
         set -euo pipefail
         source "$1/ops/lib/selection.sh"
+        source "$1/ops/lib/selection-preview.sh"
         SELECTION_REPO_ROOT="$1"
         selection_valid_profile work
         if selection_valid_profile nope; then echo "accepted nope"; exit 1; fi

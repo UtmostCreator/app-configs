@@ -254,6 +254,8 @@ validate_fixture() {
     export APP_CONFIGS_SELECTION_DIR="$dir"
     # shellcheck source=ops/lib/selection.sh
     source "$REPO_ROOT/ops/lib/selection.sh"
+    # shellcheck source=ops/lib/selection-preview.sh
+    source "$REPO_ROOT/ops/lib/selection-preview.sh"
     SELECTION_REPO_ROOT="$REPO_ROOT" SELECTION_HOST="${2:-linux-cli}" SELECTION_WORK="$BATS_TEST_TMPDIR/work"
     run --separate-stderr selection_validate
 }
@@ -287,6 +289,7 @@ validate_fixture() {
 
 @test "the preview's state, members and check expressions evaluate against the real flake (linux-cli and macos)" {
     source "$REPO_ROOT/ops/lib/selection.sh"
+    source "$REPO_ROOT/ops/lib/selection-preview.sh"
     mkdir -p "$BATS_TEST_TMPDIR/w"
     SELECTION_REPO_ROOT="$REPO_ROOT"
     local host

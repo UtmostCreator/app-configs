@@ -780,39 +780,78 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
 # ── AC7g: only install.sh asks or previews ──────────────────────────────────
 
 # prompt_callers <root>: every file under ops, scripts, home, nix and mise.toml,
-# except install.sh and selection.sh, that names a prompt, preview or write
-# function of the install selection.
+# except install.sh and selection-preview.sh, that names a prompt, preview, write
+# or evaluation function of the install selection. selection.sh is not excepted:
+# it is the shared argument builder and holds none of them.
 prompt_callers() {
-    (cd "$1" && grep -rEl 'selection_(preview|prompt|present|write|read|facts)' ops scripts home nix mise.toml 2>/dev/null \
-        | grep -vE '^ops/(install\.sh|lib/selection\.sh)$' || true)
+    (cd "$1" && grep -rEl 'selection_(preview|prompt|present|write|read|facts|propose|validate|group_defaults|valid_profile|profile_of|hm_profile)' ops scripts home nix mise.toml 2>/dev/null \
+        | grep -vE '^ops/(install\.sh|lib/selection-preview\.sh)$' || true)
 }
 
-@test "AC7g: nothing but install.sh and selection.sh calls the preview, prompt or write functions" {
+# preview_sourcers <root>: every file that sources selection-preview.sh (a
+# comment that names it does not count), except install.sh.
+preview_sourcers() {
+    (cd "$1" && grep -rEl '^[^#]*(source|\.)[[:space:]]+[^#]*selection-preview\.sh' ops scripts home nix mise.toml 2>/dev/null \
+        | grep -vE '^ops/install\.sh$' || true)
+}
+
+@test "AC7g: nothing but install.sh and selection-preview.sh calls the preview, prompt or write functions" {
     run prompt_callers "$REPO_ROOT"
     [ -z "$output" ] || { echo "$output"; return 1; }
     grep -q 'selection_preview' "$REPO_ROOT/ops/install.sh"
+}
+
+@test "AC7g: only install.sh sources selection-preview.sh; update-all, bootstrap, hm-switch and audit never do" {
+    run preview_sourcers "$REPO_ROOT"
+    [ -z "$output" ] || { echo "$output"; return 1; }
+    grep -Eq '^source "\$REPO_ROOT/ops/lib/selection-preview\.sh"' "$REPO_ROOT/ops/install.sh"
+    local f
+    for f in ops/update-all.sh ops/bootstrap.sh ops/lib/hm-switch.sh ops/audit.sh; do
+        run grep -n 'selection-preview' "$REPO_ROOT/$f"
+        [ "$status" -ne 0 ] || { echo "$f names selection-preview"; return 1; }
+    done
 }
 
 @test "AC7g: seeded: a call from update-all.sh, bootstrap.sh or hm-switch.sh is caught" {
     local copy="$BATS_TEST_TMPDIR/seed"
     mkdir -p "$copy/ops/lib"
     cp "$REPO_ROOT/ops/install.sh" "$REPO_ROOT/ops/update-all.sh" "$copy/ops/"
-    cp "$REPO_ROOT/ops/lib/selection.sh" "$REPO_ROOT/ops/lib/hm-switch.sh" "$copy/ops/lib/"
+    cp "$REPO_ROOT/ops/lib/selection.sh" "$REPO_ROOT/ops/lib/selection-preview.sh" "$REPO_ROOT/ops/lib/hm-switch.sh" "$copy/ops/lib/"
     run prompt_callers "$copy"
     [ -z "$output" ]
     printf '\nselection_preview\n' >>"$copy/ops/update-all.sh"
     printf '\nselection_write x work\n' >>"$copy/ops/lib/hm-switch.sh"
+    printf '\nselection_validate\n' >>"$copy/ops/lib/selection.sh"
     run prompt_callers "$copy"
+    [[ "$output" == *"ops/update-all.sh"* ]]
+    [[ "$output" == *"ops/lib/hm-switch.sh"* ]]
+    [[ "$output" == *"ops/lib/selection.sh"* ]]
+}
+
+@test "AC7g: seeded: sourcing selection-preview.sh from another script is caught, a comment is not" {
+    local copy="$BATS_TEST_TMPDIR/seed"
+    mkdir -p "$copy/ops/lib"
+    cp "$REPO_ROOT/ops/install.sh" "$REPO_ROOT/ops/update-all.sh" "$copy/ops/"
+    cp "$REPO_ROOT/ops/lib/selection.sh" "$REPO_ROOT/ops/lib/selection-preview.sh" "$REPO_ROOT/ops/lib/hm-switch.sh" "$copy/ops/lib/"
+    run preview_sourcers "$copy"
+    [ -z "$output" ]
+    printf '# source ops/lib/selection-preview.sh is not allowed here\n' >>"$copy/ops/update-all.sh"
+    run preview_sourcers "$copy"
+    [ -z "$output" ]
+    printf '\nsource "$REPO_ROOT/ops/lib/selection-preview.sh"\n' >>"$copy/ops/update-all.sh"
+    printf '\n. "${BASH_SOURCE[0]%%/*}/selection-preview.sh"\n' >>"$copy/ops/lib/hm-switch.sh"
+    run preview_sourcers "$copy"
     [[ "$output" == *"ops/update-all.sh"* ]]
     [[ "$output" == *"ops/lib/hm-switch.sh"* ]]
 }
 
-@test "AC7g: sourcing selection.sh does not load the preview code" {
-    run env -i PATH="$TPATH" bash -c 'source "$1/ops/lib/selection.sh"; declare -F package_delta render_package_delta nix_toplevel_packages' _ "$REPO_ROOT"
+@test "AC7g: sourcing selection.sh or hm-switch.sh does not load the preview code" {
+    run env -i PATH="$TPATH" bash -c 'source "$1/ops/lib/selection.sh"; declare -F package_delta render_package_delta nix_toplevel_packages selection_preview selection_write selection_facts selection_prompt_loop selection_validate selection_propose' _ "$REPO_ROOT"
     [ "$status" -ne 0 ]
     [ -z "$output" ]
-    run env -i PATH="$TPATH" bash -c 'source "$1/ops/lib/hm-switch.sh"; declare -F render_package_delta' _ "$REPO_ROOT"
+    run env -i PATH="$TPATH" bash -c 'source "$1/ops/lib/hm-switch.sh"; declare -F render_package_delta selection_preview selection_write selection_prompt_loop' _ "$REPO_ROOT"
     [ "$status" -ne 0 ]
+    [ -z "$output" ]
 }
 
 # ── selection_write, selection_hm_profile and special paths ─────────────────
@@ -821,6 +860,7 @@ prompt_callers() {
     run env -i PATH="$TPATH" bash -c '
         set -euo pipefail
         source "$1/ops/lib/selection.sh"
+        source "$1/ops/lib/selection-preview.sh"
         selection_write "$2/a b" work media=false go=true security=false
         cat "$2/a b/selection.toml"
         selection_write "$2/a b" personal
@@ -834,6 +874,7 @@ prompt_callers() {
     mkdir -p "$APP_CONFIGS_SELECTION_DIR"; printf 'profile = "work"\n' >"$APP_CONFIGS_SELECTION_DIR/selection.toml"
     run env -i PATH="$TPATH" APP_CONFIGS_SELECTION_DIR="$APP_CONFIGS_SELECTION_DIR" bash -c '
         source "$1/ops/lib/selection.sh"
+        source "$1/ops/lib/selection-preview.sh"
         selection_write "$APP_CONFIGS_SELECTION_DIR" bogus; echo "rc1=$?"
         selection_write "$APP_CONFIGS_SELECTION_DIR" work "x y=false"; echo "rc2=$?"
         selection_write "$APP_CONFIGS_SELECTION_DIR" work "media=maybe"; echo "rc3=$?"' _ "$REPO_ROOT"
@@ -845,14 +886,14 @@ prompt_callers() {
 }
 
 @test "selection_hm_profile mirrors update-all: the XDG state profile, else the per-user Nix profile" {
-    run env -i PATH="$TPATH" HOME="$HOME_T" bash -c 'source "$1/ops/lib/selection.sh"; selection_hm_profile; echo "rc=$?"' _ "$REPO_ROOT"
+    run env -i PATH="$TPATH" HOME="$HOME_T" bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/selection-preview.sh"; selection_hm_profile; echo "rc=$?"' _ "$REPO_ROOT"
     [[ "$output" == *"rc=1"* ]]
     mkdir -p "$HOME_T/.local/state/nix/profiles"
-    run env -i PATH="$TPATH" HOME="$HOME_T" bash -c 'source "$1/ops/lib/selection.sh"; selection_hm_profile' _ "$REPO_ROOT"
+    run env -i PATH="$TPATH" HOME="$HOME_T" bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/selection-preview.sh"; selection_hm_profile' _ "$REPO_ROOT"
     [ "$output" = "$HOME_T/.local/state/nix/profiles/home-manager" ]
     rm -r "$HOME_T/.local/state"
     mkdir -p "$BATS_TEST_TMPDIR/nixstate/profiles/per-user/zed"
-    run env -i PATH="$TPATH" HOME="$HOME_T" USER=zed NIX_STATE_DIR="$BATS_TEST_TMPDIR/nixstate" bash -c 'source "$1/ops/lib/selection.sh"; selection_hm_profile' _ "$REPO_ROOT"
+    run env -i PATH="$TPATH" HOME="$HOME_T" USER=zed NIX_STATE_DIR="$BATS_TEST_TMPDIR/nixstate" bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/selection-preview.sh"; selection_hm_profile' _ "$REPO_ROOT"
     [ "$output" = "$BATS_TEST_TMPDIR/nixstate/profiles/per-user/zed/home-manager" ]
 }
 

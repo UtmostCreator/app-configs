@@ -224,7 +224,9 @@ the mechanism and why.
   `SELECTION_ARGS`; `tests/bash/single-owner.bats` fails when one omits it.
   Why: a selection applied by one script and dropped by the next would silently
   reinstall what the user removed. Only `ops/install.sh` prompts, writes the
-  file or prints the preview; `sys-update`, bootstrap and `hm-switch.sh` never do.
+  file or prints the preview, and that code lives in `ops/lib/selection-preview.sh`,
+  which only `ops/install.sh` sources; `sys-update`, bootstrap, audit and
+  `hm-switch.sh` never load or call it (`tests/bash/install-selection.bats`).
 - **Validation is Nix's.** Unknown keys, groups and profiles, `[groups]` without
   `profile`, and wrong types fail evaluation with a message that names the key.
   A module assertion in `profile.nix` forces every group, so a wrong type fails on

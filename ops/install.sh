@@ -134,6 +134,8 @@ run()  {
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
 # shellcheck source=ops/lib/selection.sh
 source "$REPO_ROOT/ops/lib/selection.sh"
+# shellcheck source=ops/lib/selection-preview.sh
+source "$REPO_ROOT/ops/lib/selection-preview.sh"
 SELECTION_REPO_ROOT="$REPO_ROOT"
 SELECTION_HOST=""   # set from HOST_PROFILE once it is known (Preflight)
 
@@ -141,9 +143,10 @@ SELECTION_HOST=""   # set from HOST_PROFILE once it is known (Preflight)
 have_tty() { [[ -t 0 && -t 2 ]]; }
 
 # selection_read VAR PROMPT: the one place anything is read from the terminal.
-# ops/lib/selection.sh never reads (a test in hm-switch.bats keeps it so); its
-# prompts call this function, which only install.sh defines. Prompt on stderr,
-# one line from stdin into VAR; returns 1 at end of input (a closed terminal, ^D).
+# ops/lib/selection.sh and selection-preview.sh never read (a test in
+# hm-switch.bats keeps it so); the prompts call this function, which only
+# install.sh defines. Prompt on stderr, one line from stdin into VAR; returns 1
+# at end of input (a closed terminal, ^D).
 selection_read() {
   local __sel_ans
   printf '%s' "$2" >&2
@@ -272,7 +275,7 @@ run nix flake check "$REPO_ROOT/nix"
 
 # ── 4b. install selection ───────────────────────────────────────────────────
 # Which groups and profile this host installs (nix/profiles/*.toml, the local
-# selection.toml, ops/lib/selection.sh). Everything here comes before chezmoi or
+# selection.toml, ops/lib/selection.sh, ops/lib/selection-preview.sh). Everything here comes before chezmoi or
 # any switch, and a selection that does not evaluate stops the install here.
 step "Selection"
 SELECTION_HOST="$HOST_PROFILE"

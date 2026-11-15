@@ -36,6 +36,6 @@ closes, move its directory from [`active/`](active/README.md) to
 | [T-0039: Refresh the WSL2 docs (docs)](active/T-0039-wsl-docs-refresh/ticket.md) | open | 2026-11 |
 | [T-0040: Real WSL2 host acceptance pass (human verification)](active/T-0040-wsl-real-host-pass/ticket.md) | open | 2026-11 |
 | [T-0041: Windows-side copy-only app list (docs)](active/T-0041-windows-app-list/ticket.md) | open (approved 2026-11-14: documentation only) | 2026-11 |
-| [T-0042 install-selection](active/T-0042-install-selection/ticket.md) | open (design approved; T1 spike not started) | 2026-11-14 |
+| [T-0042: Install selection: committed profiles, a local per-host selection, first-run choice (feature)](active/T-0042-install-selection/ticket.md) | open (T1-T8 implemented on feat/install-selection, not landed; AC14 on a real Mac and a real bash 3.2 run pending) | 2026-11-14 |
 
 Archived tickets: see [archive/](archive/README.md).

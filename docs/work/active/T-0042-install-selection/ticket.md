@@ -2,7 +2,7 @@ Source: local
 
 # T-0042: Install selection: committed profiles, a local per-host selection, first-run choice (feature)
 
-Status: open (design approved; T1 spike not started)
+Status: open (T1-T8 implemented on feat/install-selection, not landed; AC14 (real Mac) and a real bash 3.2 run pending)
 Wave: unassigned
 Depends on: none to start (T1 is a gate). T4 touches ops/update-all.sh; land it
 after T-0010 (now landed). Does not depend on T-0029..T-0033.
@@ -174,14 +174,14 @@ Negative (must not change)
   no AI attribution trailers.
 
 ## Plan
-- [ ] T1: Baseline drvPaths and a mechanism spike in a scratch copy (evidence/ only). AC0. Review before T2.
-- [ ] T2: Selection input, profiles and the groups option, no packages gated. AC1 (partial), AC4, AC5.
-- [ ] T3: Gate media, security and go in place. AC1, AC2, AC3, AC9.
-- [ ] T4: Pass the selection at every build/switch/eval call site; single-owner rule. AC5, AC8, AC-N1.
-- [ ] T5: sys-install `--profile`, `--reconfigure`, prompt, preview and write. AC6, AC7.
-- [ ] T6: Phase 1 docs and the index row. AC10.
-- [ ] T7: Phase 2 macInput casks and chezmoi gating. AC11, AC12, AC13 (AC14 human).
-- [ ] T8: Phase 3 WSL2 brief check. AC15.
+- [x] T1: Baseline drvPaths and a mechanism spike in a scratch copy (evidence/ only). AC0. Review before T2.
+- [x] T2: Selection input, profiles and the groups option, no packages gated. AC1 (partial), AC4, AC5.
+- [x] T3: Gate media, security and go in place. AC1, AC2, AC3, AC9.
+- [x] T4: Pass the selection at every build/switch/eval call site; single-owner rule. AC5, AC8, AC-N1.
+- [x] T5: sys-install `--profile`, `--reconfigure`, prompt, preview and write. AC6, AC7.
+- [x] T6: Phase 1 docs and the index row. AC10.
+- [x] T7: Phase 2 macInput casks and chezmoi gating. AC11, AC12, AC13 (AC14 human).
+- [x] T8: Phase 3 WSL2 brief check. AC15.
 
 ## Verification
 - `nix eval --raw "path:$PWD/nix#homeConfigurations.<p>.activationPackage.drvPath"` per

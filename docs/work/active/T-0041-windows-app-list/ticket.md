@@ -10,7 +10,7 @@ Sequencing: edits implementation.md; do not run in parallel with T-0039.
 
 ## Summary
 Once approved, document one list of Windows apps the user installs by hand with
-winget, limited to apps already used on macOS or Linux, plus a "Discarded or
+winget, limited to apps already used on macOS or Linux (plus dated, user-approved Windows-only exceptions listed under Decision), plus a "Discarded or
 deferred, and why" section. No automation: repo scripts never run winget,
 wsl.exe or PowerShell.
 
@@ -45,20 +45,25 @@ wsl.exe or PowerShell.
 | Flameshot | gui.nix; chezmoi flameshot.ini (macOS) | Flameshot.Flameshot |
 | Telegram | gui.nix telegram-desktop | Telegram.TelegramDesktop |
 | Double Commander | gui.nix doublecmd | alexx2000.DoubleCommander |
-| TrafficMonitor Lite | user decision 2026-11-15 (taskbar CPU/RAM/network meter; not declared on macOS or Linux) | zhongyang219.TrafficMonitor.Lite (verified 2026-11-15 against winget-pkgs: version 1.86, 2026-03-29) |
+| TrafficMonitor Lite | user decision 2026-11-15 (taskbar CPU/RAM/network meter; not declared on macOS or Linux) | zhongyang219.TrafficMonitor.Lite (found in winget-pkgs 2026-11-15, version 1.86, released 2026-03-29; unconfirmed by `winget show`, AC3) |
 
 TrafficMonitor Lite notes (user decision 2026-11-15):
-- The id was verified on 2026-11-15 against winget-pkgs; still confirm locally with
-  `winget show --id zhongyang219.TrafficMonitor.Lite --exact` before installing.
-- Portable zip, so it installs per user and needs no admin rights; it depends on
-  the VC++ redistributable. Lite has no hardware-monitor driver (the Full edition
-  uses LibreHardwareMonitor and needs admin; not chosen).
+- The id was found in winget-pkgs on 2026-11-15 (manifests/z/zhongyang219/TrafficMonitor/Lite/1.86,
+  released 2026-03-29). It stays unconfirmed until `winget show --id zhongyang219.TrafficMonitor.Lite --exact`
+  output is saved (AC3); run it before installing.
+- Portable zip, so it installs per user: the app itself needs no admin rights; its
+  VC++ redistributable dependency (Microsoft.VCRedist.2015+) installs machine-wide
+  and elevates if it isn't already present. Lite has no hardware-monitor driver
+  (the Full edition uses LibreHardwareMonitor and needs admin; not chosen).
 - Purpose: a taskbar CPU/RAM/network up-down meter. The taskbar window is opt-in
-  ("Show taskbar window" from the tray icon). By default only network speed
-  shows; enable CPU and RAM in its display settings.
+  ("Show Taskbar Window", reached by right-clicking the floating main window, per
+  the upstream README). By default only network speed shows; enable CPU and RAM
+  in its display settings. From 1.86 the Lite edition also shows GPU and disk;
+  upstream plans to stop shipping the Standard edition and move temperatures to
+  the Hardware Monitor plugin.
 - Known risk, unverified: Windows 11 users report the taskbar window not showing
-  (community reports, March to April 2026; unconfirmed). Version 1.85.1 added a
-  taskbar-overlap option.
+  (community reports, March to April 2026; unconfirmed). Version 1.85.1 added an
+  option to avoid overlapping the Windows 11 Widgets on the right.
 - Licence: "Anti 996", which is not OSI-approved.
 
 How to use: in PowerShell on Windows (never from WSL), one
@@ -72,7 +77,7 @@ Discarded:
 - AutoHotkey, Kanata: hotkey and remap scripts to maintain; karabiner and keyd configs do not port.
 - Raycast (Windows), Vicinae (Windows), PowerToys Run: duplicate launchers; Windows search is enough.
 - HeidiSQL: Windows-only.
-- System Informer: Windows-only and loads a kernel driver. Kept discarded on 2026-11-15 (user confirmed it is not for the default install): a powerful diagnostics tool, but unnecessary as a permanent toolbar monitor (winget `WinsiderSS.SystemInformer`, machine scope, needs admin, loads the KSystemInformer kernel driver).
+- System Informer: Windows-only and loads a kernel driver. Kept discarded on 2026-11-15 (user confirmed it is not for the default install): a powerful diagnostics tool, but unnecessary as a permanent taskbar monitor (winget `WinsiderSS.SystemInformer`, machine scope, needs admin, loads the KSystemInformer kernel driver).
 - Twinkle Tray: Windows-only and monitor-specific.
 - WezTerm: a second terminal; Windows Terminal is built in, and Ghostty has no Windows build.
 - A `windows/` layer (`setup.ps1`, `doctor.ps1`, DSC): repo-run PowerShell and an open-ended maintenance burden.
@@ -93,24 +98,30 @@ Deferred:
 - Adopt PowerToys (for Command Palette) as the Windows launcher, with Flow Launcher
   as the alternative? Context (user recommendation 2026-11-15): one launcher per
   OS, not several running permanently; Raycast is the macOS launcher (already a
-  cask) and Vicinae the Linux one. Per Microsoft Learn, Command Palette offers a
-  dock, performance monitoring, clipboard history, window switching and file
-  search. Flow Launcher is actively maintained (September 2026 releases).
-  PowerToys stays under "Deferred" until the user answers; nothing moves silently.
-- Candidate ids, UNVERIFIED: Microsoft.PowerToys and Flow-Launcher.Flow-Launcher.
-  Check each with `winget show --id <id> --exact`. PowerToys installs per machine
-  and may need admin (unverified).
+  cask) and Vicinae the Linux one.
+  - PowerToys Command Palette: per Microsoft Learn it offers a dock, performance
+    monitoring, clipboard history, window switching and file search.
+  - Flow Launcher: actively maintained; one September 2026 release, v2.1.4 on 2026-09-20.
+  - Adopting either reopens the existing discard reason "Windows search is enough".
+  - Both candidates are Windows-only exceptions under the scope rule.
+  - Command Palette's performance monitoring can pin CPU, memory and network to
+    its Dock, which overlaps TrafficMonitor's purpose.
+  - PowerToys stays under "Deferred" until the user answers; nothing moves silently.
+- Candidate ids, found in winget-pkgs 2026-11-15 but unconfirmed by `winget show`:
+  Microsoft.PowerToys and Flow-Launcher.Flow-Launcher. Check each with
+  `winget show --id <id> --exact`. PowerToys 0.99.1 in winget-pkgs ships both a
+  user-scope and a machine-scope installer; only the machine-scope one elevates.
 
 ## Acceptance criteria
 - AC1: the user's approval is recorded in this ticket before any edit.
-- AC2: every listed app is declared on macOS or Linux (file cited) or is a WSL prerequisite.
+- AC2: every listed app is declared on macOS or Linux (file cited), is a WSL prerequisite, or is a dated user-approved Windows-only exception listed under Decision.
 - AC3: every id is confirmed by the user's `winget show` output (saved as evidence) or marked unconfirmed.
 - AC4: apps.md states that nothing is automated and contains the full discarded/deferred section.
 - AC5: Appendix A is amended; the diff is docs only.
 
 ## Verification
 - `git diff --stat` (docs only)
-- A reviewer checks each row against nix/modules/home/gui.nix and nix/modules/darwin/homebrew.nix.
+- A reviewer checks each row against nix/modules/home/gui.nix and nix/modules/darwin/homebrew.nix; rows recorded as exceptions under Decision are accepted.
 - Human: `winget show` per id.
 
 ## Out of scope / notes
@@ -128,3 +139,7 @@ Deferred:
 - No automatic install, removal or update.
 - Windows Terminal and WSL2 provisioning stay separate from Home Manager.
 - Priority P1.
+
+2026-11-15, user: approved TrafficMonitor Lite as a Windows-only exception to the
+scope rule (a taskbar CPU/RAM/network meter; not declared on macOS or Linux).
+System Informer stays discarded. A launcher question is open (see Open questions).

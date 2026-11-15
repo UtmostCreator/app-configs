@@ -1,6 +1,6 @@
 # T-0042 T5 results: sys-install --profile, --reconfigure, prompt, preview and write
 
-Base 972422f, Nix 2.34.7, host linux-desktop (NixOS). Code: ops/lib/selection.sh (write, prompts, preview), ops/install.sh (flags and the "Selection" step), tests/bash/install-selection.bats (new, 77 tests after review round 1), stubs and TSV states under tests/bash/fixtures/selection/{stubs,state}.
+Base 972422f, Nix 2.34.7, host linux-desktop (NixOS). Code: ops/lib/selection.sh (write, prompts, preview), ops/install.sh (flags and the "Selection" step), tests/bash/install-selection.bats (new, 71 tests after review round 1, counted with `bats --count`), stubs and TSV states under tests/bash/fixtures/selection/{stubs,state}.
 
 ## Step 0: follow-ups from the T4 review
 
@@ -78,7 +78,7 @@ New tests against the tree before T5 (the test commit 534e520, ops files as at T
 
 | command | scope | result |
 | --- | --- | --- |
-| bats tests/bash/install-selection.bats | new suite | 62 tests pass |
+| bats tests/bash/install-selection.bats | new suite | 62 tests pass (before review round 1; 71 after it, from `bats --count`) |
 | bash ops/run-bats.sh | full suite | 1250 tests, rc 0 (first full run: 5 failures, see below) |
 | bash ops/lint-shell.sh | bash -n 113 files, shellcheck 25 files | no findings |
 | bash ops/validate-config.sh, and --eval | text and evaluated policy, 4 hosts | all invariants pass |

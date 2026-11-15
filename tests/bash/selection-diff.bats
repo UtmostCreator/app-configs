@@ -560,6 +560,74 @@ last_run() { # last_run <meta text>
     [[ "$output" == *'"unknown": 2'* ]]
 }
 
+# ── the applied-state record ────────────────────────────────────────────────
+
+# write_record: the record of the current generation, as install.sh writes it.
+write_record() {
+    bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/install-record.sh"; install_record_write install linux-desktop home-manager "$2" "$3"' \
+        _ "$REPO_ROOT" "$XDG_STATE_HOME/nix/profiles/home-manager" "$FAKE"
+}
+rec_env() { export APP_CONFIGS_STATE_DIR="$RECDIR"; }
+
+@test "record ok: the causes are filled, and a selection that changed since is named with its applied hash" {
+    real_git
+    rec_env
+    install_gen committed
+    write_record
+    sd --selection-diff --json
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"record": {"state": "ok"}'* ]]
+    [[ "$output" == *'"causes": {"selection_changed": "no", "repo_changed": "no", "generation_changed_outside": "no"}'* ]]
+    [[ "$output" == *'"applied_selection": null'* ]]
+    write_sel 'profile = "personal"\n'
+    sd --selection-diff --json
+    [[ "$output" == *'"causes": {"selection_changed": "yes", "repo_changed": "no"'* ]]
+    [[ "$output" == *'"applied_selection": {"file": "absent", "sha256": "none"}'* ]]
+    sd --selection-diff
+    [[ "$output" == *"Record:    ok; written by install"* ]]
+    [[ "$output" == *"selection changed since the last apply: yes"* ]]
+    [[ "$output" != *"Limitations"*"applied-state record is"* ]]
+}
+
+@test "record ok: a repo that moved since is a cause" {
+    real_git
+    rec_env
+    install_gen committed
+    write_record
+    printf 'more\n' >>"$FAKE/nix/vars/default.nix"
+    sd --selection-diff --json
+    [[ "$output" == *'"repo_changed": "yes"'* ]]
+}
+
+@test "record stale: the profile moved since, so every cause is unknown and the diff still works" {
+    rec_env
+    install_gen committed
+    write_record
+    cp -a "$XDG_STATE_HOME/nix/profiles/home-manager-1-link" "$XDG_STATE_HOME/nix/profiles/home-manager-2-link"
+    ln -sfn home-manager-2-link "$XDG_STATE_HOME/nix/profiles/home-manager"
+    sd --selection-diff --json
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"record": {"state": "stale"}'* ]]
+    [[ "$output" == *'"causes": {"selection_changed": "unknown", "repo_changed": "unknown", "generation_changed_outside": "unknown"}'* ]]
+    [[ "$output" == *"The applied-state record is stale, so the causes of the changes are unknown."* ]]
+}
+
+@test "record invalid or absent: unknown causes, an explicit state, never a false in sync for the attribution" {
+    rec_env
+    install_gen committed
+    mkdir -p "$RECDIR"
+    printf 'schema_version=9\nnonsense\n' >"$RECDIR/installed.meta"
+    sd --selection-diff --json
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'"record": {"state": "invalid"}'* ]]
+    [[ "$output" == *'"selection_changed": "unknown"'* ]]
+    sd --selection-diff
+    [[ "$output" == *"Record:    invalid (the causes of the changes are unknown)"* ]]
+    rm "$RECDIR/installed.meta"
+    sd --selection-diff
+    [[ "$output" == *"Record:    absent (the causes of the changes are unknown)"* ]]
+}
+
 # ── the wrappers prepend --apply ────────────────────────────────────────────
 
 render() { # render <template> <out>

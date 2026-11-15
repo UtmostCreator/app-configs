@@ -1811,3 +1811,61 @@ mk_selection() {
   run grep -nE 'selection_(preview|write|prompt)|read -p' "$REPO_ROOT/ops/update-all.sh" "$REPO_ROOT/ops/lib/hm-switch.sh" "$REPO_ROOT/ops/ci.sh"
   [ "$status" -ne 0 ]
 }
+
+# ── T-0043: the applied-state record ────────────────────────────────────────
+
+@test "T-0043: a successful apply writes the applied-state record after the commit, with the run id and the new generation" {
+  export APP_CONFIGS_STATE_DIR="$BATS_TEST_TMPDIR/app-state"
+  run_update
+  [ "$status" -eq 0 ]
+  rec="$APP_CONFIGS_STATE_DIR/installed.meta"
+  [ -f "$rec" ]
+  meta="$(cat "$SYS_UPDATE_STATE_DIR/last-run")"
+  grep -qx 'written_by=sys-update' "$rec"
+  grep -qx "run_id=$(sed -n 's/^run_id=//p' "$meta")" "$rec"
+  grep -qx 'host=linux-desktop' "$rec"
+  grep -qx 'generation_kind=home-manager' "$rec"
+  grep -qx "generation=$(readlink -f "$HOME/.local/state/nix/profiles/home-manager")" "$rec"
+  grep -qx "repo_rev=$(git -C "$FAKE" rev-parse HEAD)" "$rec"
+  grep -qx 'selection_file=absent' "$rec"
+  run bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/install-record.sh"; install_record_read "$2"' _ "$REPO_ROOT" "$(readlink -f "$HOME/.local/state/nix/profiles/home-manager")"
+  [ "$output" = ok ]
+  [ "$(ls -A "$APP_CONFIGS_STATE_DIR")" = installed.meta ]
+}
+
+@test "T-0043: the record is written only after the commit phase: the lock commit is already in HEAD" {
+  export APP_CONFIGS_STATE_DIR="$BATS_TEST_TMPDIR/app-state"
+  before="$(git -C "$FAKE" rev-parse HEAD)"
+  run_update
+  [ "$status" -eq 0 ]
+  [ "$(git -C "$FAKE" rev-parse HEAD)" != "$before" ]
+  grep -qx "repo_rev=$(git -C "$FAKE" rev-parse HEAD)" "$APP_CONFIGS_STATE_DIR/installed.meta"
+}
+
+@test "T-0043: a failed apply writes no record and leaves an existing one alone" {
+  export APP_CONFIGS_STATE_DIR="$BATS_TEST_TMPDIR/app-state"
+  export STUB_HM_NO_RELINK=1
+  run_update
+  [ "$status" -ne 0 ]
+  [ ! -e "$APP_CONFIGS_STATE_DIR/installed.meta" ]
+  mkdir -p "$APP_CONFIGS_STATE_DIR"
+  printf 'keep me\n' >"$APP_CONFIGS_STATE_DIR/installed.meta"
+  reset_repo
+  run_update
+  [ "$status" -ne 0 ]
+  [ "$(cat "$APP_CONFIGS_STATE_DIR/installed.meta")" = 'keep me' ]
+}
+
+@test "T-0043: report mode writes no record" {
+  export APP_CONFIGS_STATE_DIR="$BATS_TEST_TMPDIR/app-state"
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
+  [ ! -e "$APP_CONFIGS_STATE_DIR" ]
+}
+
+@test "T-0043: a record that cannot be written warns and does not fail the update" {
+  export APP_CONFIGS_STATE_DIR="$BATS_TEST_TMPDIR/app-state-is-a-file"
+  : >"$APP_CONFIGS_STATE_DIR"
+  run_update
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"applied-state record"* ]]
+}

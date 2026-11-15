@@ -134,6 +134,8 @@ run()  {
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
 # shellcheck source=ops/lib/selection.sh
 source "$REPO_ROOT/ops/lib/selection.sh"
+# shellcheck source=ops/lib/install-record.sh
+source "$REPO_ROOT/ops/lib/install-record.sh"
 # shellcheck source=ops/lib/selection-facts.sh
 source "$REPO_ROOT/ops/lib/selection-facts.sh"
 # shellcheck source=ops/lib/selection-preview.sh
@@ -440,6 +442,21 @@ else
       printf '[install:error] command failed (exit %s): %s\n' "$hm_rc" "$(hm_switch_describe "$REPO_ROOT/nix" "$HOST_PROFILE")" >&2
       exit "$hm_rc"
     }
+  fi
+fi
+
+# The applied-state record (ops/lib/install-record.sh, T-0043), only after the
+# switch above succeeded (a failure exits earlier) and never on a dry run. A
+# write that fails warns; it never fails the install.
+if [[ "$DRY_RUN" != 1 ]]; then
+  if [[ "$HOST_PROFILE" == "macos" ]]; then
+    install_record_write install "$HOST_PROFILE" darwin-system "${SYS_UPDATE_DARWIN_SYSTEM_LINK:-/run/current-system}" "$REPO_ROOT" \
+      || warn "applied-state record not written; sys-update --selection-diff will not know the causes of pending changes"
+  elif _rec_link="$(selection_hm_profile)"; then
+    install_record_write install "$HOST_PROFILE" home-manager "$_rec_link" "$REPO_ROOT" \
+      || warn "applied-state record not written; sys-update --selection-diff will not know the causes of pending changes"
+  else
+    warn "applied-state record not written: no Home Manager profile found"
   fi
 fi
 

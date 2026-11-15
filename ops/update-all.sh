@@ -113,6 +113,8 @@ source "$REPO_ROOT/ops/lib/preflight.sh"
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
 # shellcheck source=ops/lib/selection.sh
 source "$REPO_ROOT/ops/lib/selection.sh"
+# shellcheck source=ops/lib/install-record.sh
+source "$REPO_ROOT/ops/lib/install-record.sh"
 # shellcheck source=ops/lib/update-ui.sh
 source "$REPO_ROOT/ops/lib/update-ui.sh"
 # shellcheck source=ops/update-version-report.sh
@@ -1415,6 +1417,17 @@ if [[ "$MODE" == "apply" ]]; then
     fi
   fi
   phase_status "$COMMIT_STATE"
+  # The applied-state record (ops/lib/install-record.sh, T-0043): written only
+  # now, after the activation was verified (or the verification skipped) and the
+  # commit phase ended, so a failed run never leaves one. A write that fails
+  # warns; it never fails the update.
+  if [[ "$HOST_PROFILE" == macos ]]; then
+    _rec_kind=darwin-system; _rec_link="${SYS_UPDATE_DARWIN_SYSTEM_LINK:-/run/current-system}"
+  else
+    _rec_kind=home-manager; _rec_link="$HM_PROFILE"
+  fi
+  INSTALL_RECORD_RUN_ID="$RUN_ID" install_record_write sys-update "$HOST_PROFILE" "$_rec_kind" "$_rec_link" "$REPO_ROOT" \
+    || ui_warn "applied-state record" "not written; sys-update --selection-diff will not know the causes of pending changes"
   PHASE=maintain
 fi
 

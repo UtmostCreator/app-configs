@@ -83,7 +83,7 @@ fi
 curated=(
   ops/snapshot-home.sh ops/validate-config.sh ops/update-version-report.sh
   ops/lib/update-facts.sh ops/lib/update-ui.sh ops/lib/profile-conflicts.sh
-  ops/lib/selection.sh ops/lib/selection-facts.sh ops/lib/selection-diff.sh ops/lib/selection-preview.sh
+  ops/lib/selection.sh ops/lib/install-record.sh ops/lib/selection-facts.sh ops/lib/selection-diff.sh ops/lib/selection-preview.sh
   ops/generate-package-matrix.sh ops/doctor.sh
   ops/install.sh ops/update-all.sh ops/cleanup.sh ops/readiness.sh
   ops/system-setup.sh ops/tailscale-setup.sh ops/vscode-extensions.sh

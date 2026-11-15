@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
-# shellcheck disable=SC2034  # SELECTION_* and SEL_* are the inputs of selection-facts.sh
+# shellcheck disable=SC2034,SC2153  # SELECTION_*, SEL_* and IR_* belong to the libraries it uses
 # sys-update --selection-diff (T-0043): the read-only comparison of the declared
 # state (the committed profile with the local selection applied) with what is
 # installed, and what the next `sys-update --apply` would therefore add, remove
 # or change. Classifier, outcome and the two renderers (text and JSON).
 #
 # Sourced by ops/update-all.sh only, after ops/lib/selection-facts.sh (the
-# evaluation, the installed generation and the comparison helpers) and
-# ops/lib/update-facts.sh (package_delta). It defines functions only and never
+# evaluation, the installed generation and the comparison helpers),
+# ops/lib/update-facts.sh (package_delta) and ops/lib/install-record.sh. It defines functions only and never
 # reads the terminal. A grep rule in tests/bash/install-selection.bats keeps
 # every other script from sourcing it.
 #
@@ -24,8 +24,9 @@
 #   Declared  selection_facts in strict mode: an evaluation failure is exit 1
 #   Installed the Home Manager generation (ok, none, unknown), chezmoi status,
 #             on macOS `brew list --cask -1`
-# plus the run state (last-run and its record) and, once there is one, the
-# applied-state record (ops/lib/install-record.sh).
+# plus the run state (last-run and its record) and the applied-state record
+# (ops/lib/install-record.sh; absent, invalid or stale means the causes are
+# unknown, never "no").
 #
 # Exit codes (precedence 1 > 11 > 10 > 0):
 #   0   in sync
@@ -55,6 +56,10 @@ SD_SRC_CASKS=""        # ok | unknown | n/a
 SD_KEEP=0
 SD_RUN_BAD=0
 SD_RECORD_STATE="absent"
+SD_CAUSE_SELECTION="unknown"   # yes | no | unknown, from the record
+SD_CAUSE_REPO="unknown"
+SD_CAUSE_GENERATION="unknown"
+SD_APPLIED_SEL=""              # the record's selection (file state and hash), when it differs
 SD_REPO_REV="unknown"
 SD_REPO_DIRTY="unknown"
 SD_OUTCOME=""
@@ -63,14 +68,6 @@ SD_NOTES=()
 SD_LIMITS=()
 
 _sd_err() { printf 'selection-diff: %s\n' "$*" >&2; }
-
-_sd_sha256() {
-  # From stdin: with a file name sha256sum prefixes a backslash to the hash when
-  # the name holds one.
-  if command -v sha256sum >/dev/null 2>&1; then sha256sum <"$1" | cut -d' ' -f1
-  elif command -v shasum >/dev/null 2>&1; then shasum -a 256 <"$1" | cut -d' ' -f1
-  else printf 'unknown'; fi
-}
 
 # _sd_js TEXT: TEXT as a JSON string (quotes included). Escapes \ and " and
 # every control character; no jq.
@@ -276,7 +273,7 @@ selection_diff_collect() {
 
   # Selected
   SD_SEL_FILE="$(selection_dir)/selection.toml"
-  if [[ -f "$SD_SEL_FILE" ]]; then SD_SEL_STATE=present; SD_SEL_SHA="$(_sd_sha256 "$SD_SEL_FILE")"
+  if [[ -f "$SD_SEL_FILE" ]]; then SD_SEL_STATE=present; SD_SEL_SHA="$(install_record_sha256 "$SD_SEL_FILE" || printf unknown)"
   else SD_SEL_STATE=absent; SD_SEL_SHA=none; fi
   SD_PROFILE="$(_sel_state_profile "$w/c.tsv")"
   SD_PROFILE_SRC=host-default
@@ -373,9 +370,35 @@ selection_diff_collect() {
   LC_ALL=C sort -t "$_SEL_TAB" -k1,1 -k2,2 -k3,3 "$w/entries.tsv" >"$w/entries.sorted.tsv"
 }
 
-# The applied-state record. Not written or used yet by this version: absent.
+# The applied-state record (ops/lib/install-record.sh): when it is ok (valid and
+# for the current generation) it says why changes are pending. Absent, invalid
+# or stale, every cause stays "unknown": never a false "no".
 _sd_record_state() {
-  SD_RECORD_STATE=absent
+  local current
+  SD_CAUSE_SELECTION=unknown; SD_CAUSE_REPO=unknown; SD_CAUSE_GENERATION=unknown; SD_APPLIED_SEL=""
+  if [[ "$HOST_PROFILE" == macos ]]; then
+    current="$(readlink -f -- "${SYS_UPDATE_DARWIN_SYSTEM_LINK:-/run/current-system}" 2>/dev/null)" || current=""
+  else
+    current="$SEL_I_GEN"
+  fi
+  install_record_read "$current" >/dev/null
+  SD_RECORD_STATE="$IR_STATE"
+  [[ "$SD_RECORD_STATE" == ok ]] || return 0
+  SD_CAUSE_GENERATION=no
+  if [[ "$IR_SELECTION_SHA256" != "$SD_SEL_SHA" ]]; then
+    SD_CAUSE_SELECTION=yes
+    SD_APPLIED_SEL="$IR_SELECTION_FILE $IR_SELECTION_SHA256"
+  else
+    SD_CAUSE_SELECTION=no
+  fi
+  if [[ "$IR_REPO_REV" == unknown || "$SD_REPO_REV" == unknown ]]; then SD_CAUSE_REPO=unknown
+  elif [[ "$IR_REPO_REV" != "$SD_REPO_REV" ]]; then SD_CAUSE_REPO=yes
+  elif [[ "$IR_REPO_DIRTY" != unknown && "$SD_REPO_DIRTY" != unknown ]]; then
+    # the tree is "dirty" in the record as 1/0 and here as yes/no
+    if [[ "$IR_REPO_DIRTY" == 1 && "$SD_REPO_DIRTY" == yes ]] || [[ "$IR_REPO_DIRTY" == 0 && "$SD_REPO_DIRTY" == no ]]; then SD_CAUSE_REPO=no; else SD_CAUSE_REPO=yes; fi
+  else
+    SD_CAUSE_REPO=unknown
+  fi
 }
 
 # ── outcome ─────────────────────────────────────────────────────────────────
@@ -514,7 +537,15 @@ selection_diff_render_text() {
     none) printf 'Installed: none; no Home Manager generation yet\n' ;;
     *) printf 'Installed: unknown; the installed generation could not be read\n' ;;
   esac
-  printf 'Record:    %s\n\n' "$SD_RECORD_STATE"
+  if [[ "$SD_RECORD_STATE" == ok ]]; then
+    printf 'Record:    ok; written by %s at %s (run %s)\n' "$IR_WRITTEN_BY" "$IR_WRITTEN_AT" "$IR_RUN_ID"
+    printf 'Causes:    selection changed since the last apply: %s; repo changed: %s; generation changed outside sys-update: %s\n' \
+      "$SD_CAUSE_SELECTION" "$SD_CAUSE_REPO" "$SD_CAUSE_GENERATION"
+    if [[ -n "$SD_APPLIED_SEL" ]]; then printf 'Applied:   selection file %s (sha256 %s)\n' "${SD_APPLIED_SEL%% *}" "${SD_APPLIED_SEL#* }"; fi
+    printf '\n'
+  else
+    printf 'Record:    %s (the causes of the changes are unknown)\n\n' "$SD_RECORD_STATE"
+  fi
   _sd_group_lines
   printf '\n'
   if [[ "$SD_SRC_PACKAGES" == unknown ]]; then _sd_kind_summary Packages unknown package 0
@@ -589,12 +620,17 @@ selection_diff_render_json() {
   printf '  "selection": {"file": %s, "sha256": %s, "profile": %s, "groups": %s, "sources": {"file": %s, "profile": %s, "groups": %s}},\n' \
     "$(_sd_js "$SD_SEL_FILE")" "$(_sd_js "$SD_SEL_SHA")" "$(_sd_js "$SD_PROFILE")" "$gv" \
     "$(_sd_js "$SD_SEL_STATE")" "$(_sd_js "$SD_PROFILE_SRC")" "$gs"
-  printf '  "applied_selection": null,\n'
+  if [[ -n "$SD_APPLIED_SEL" ]]; then
+    printf '  "applied_selection": {"file": %s, "sha256": %s},\n' "$(_sd_js "${SD_APPLIED_SEL%% *}")" "$(_sd_js "${SD_APPLIED_SEL#* }")"
+  else
+    printf '  "applied_selection": null,\n'
+  fi
   gen_n="$(_sd_generation_number)"
   if [[ "$SEL_I_STATE" == ok ]]; then gen="$(_sd_js "$SEL_I_GEN")"; else gen=null; fi
   printf '  "installed": {"state": %s, "generation": %s, "generation_number": %s},\n' "$(_sd_js "$SEL_I_STATE")" "$gen" "${gen_n:-null}"
   printf '  "record": {"state": %s},\n' "$(_sd_js "$SD_RECORD_STATE")"
-  printf '  "causes": {"selection_changed": "unknown", "repo_changed": "unknown", "generation_changed_outside": "unknown"},\n'
+  printf '  "causes": {"selection_changed": %s, "repo_changed": %s, "generation_changed_outside": %s},\n' \
+    "$(_sd_js "$SD_CAUSE_SELECTION")" "$(_sd_js "$SD_CAUSE_REPO")" "$(_sd_js "$SD_CAUSE_GENERATION")"
   printf '  "sources": {"packages": %s, "hm_files": %s, "chezmoi": %s, "casks": %s},\n' \
     "$(_sd_js "$SD_SRC_PACKAGES")" "$(_sd_js "$SD_SRC_FILES")" "$(_sd_js "$SD_SRC_CHEZMOI")" "$(_sd_js "$SD_SRC_CASKS")"
   printf '  "counts": {"add": %s, "remove": %s, "change": %s, "keep": %s, "conflict": %s, "manual": %s, "unsupported": %s, "unknown": %s},\n' \

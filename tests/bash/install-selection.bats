@@ -777,6 +777,61 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     [ -z "$(ls -A "$TMPDIR")" ]
 }
 
+# ── T-0043: the applied-state record ────────────────────────────────────────
+
+@test "T-0043: a real install writes the applied-state record after the switch" {
+    export APP_CONFIGS_STATE_DIR="$BATS_TEST_TMPDIR/app-state"
+    install_gen work
+    inst --profile work
+    [ "$status" -eq 0 ]
+    local rec="$APP_CONFIGS_STATE_DIR/installed.meta"
+    [ -f "$rec" ]
+    grep -qx 'written_by=install' "$rec"
+    grep -qx 'run_id=none' "$rec"
+    grep -qx 'generation_kind=home-manager' "$rec"
+    grep -qx "generation=$(readlink -f "$XDG_STATE_HOME/nix/profiles/home-manager")" "$rec"
+    grep -qx 'selection_file=present' "$rec"
+    grep -qx "selection_sha256=$(sha256sum <"$APP_CONFIGS_SELECTION_DIR/selection.toml" | cut -d' ' -f1)" "$rec"
+    [ "$(ls -A "$APP_CONFIGS_STATE_DIR")" = installed.meta ]
+}
+
+@test "T-0043: the record does not exist yet when the switch runs" {
+    export APP_CONFIGS_STATE_DIR="$BATS_TEST_TMPDIR/app-state"
+    install_gen work
+    printf '#!/usr/bin/env bash\nprintf "home-manager %%s\\n" "$*" >>"$STUB_LOG"\n[ ! -e "$APP_CONFIGS_STATE_DIR/installed.meta" ] || echo record-before-switch >>"$STUB_LOG"\nexit 0\n' >"$STUBS/home-manager"
+    inst --profile work
+    [ "$status" -eq 0 ]
+    grep -q '^home-manager switch' "$STUB_LOG"
+    [ "$(grep -c record-before-switch "$STUB_LOG" || true)" -eq 0 ]
+    [ -f "$APP_CONFIGS_STATE_DIR/installed.meta" ]
+}
+
+@test "T-0043: a dry run writes no record" {
+    export APP_CONFIGS_STATE_DIR="$BATS_TEST_TMPDIR/app-state"
+    install_gen work
+    inst --dry-run --profile work
+    [ "$status" -eq 0 ]
+    [ ! -e "$APP_CONFIGS_STATE_DIR" ]
+}
+
+@test "T-0043: a failed switch writes no record" {
+    export APP_CONFIGS_STATE_DIR="$BATS_TEST_TMPDIR/app-state"
+    install_gen work
+    printf '#!/usr/bin/env bash\nexit 3\n' >"$STUBS/home-manager"
+    inst --profile work
+    [ "$status" -ne 0 ]
+    [ ! -e "$APP_CONFIGS_STATE_DIR" ]
+}
+
+@test "T-0043: a record that cannot be written warns and the install still succeeds" {
+    export APP_CONFIGS_STATE_DIR="$BATS_TEST_TMPDIR/app-state-is-a-file"
+    : >"$APP_CONFIGS_STATE_DIR"
+    install_gen work
+    inst --profile work
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"applied-state record"* ]]
+}
+
 # ── AC7g: only install.sh asks or previews ──────────────────────────────────
 
 # prompt_callers <root>: every file under ops, scripts, home, nix and mise.toml,
@@ -926,8 +981,37 @@ diff_sourcers() {
     run diff_sourcers "$REPO_ROOT"
     [ -z "$output" ] || { echo "$output"; return 1; }
     grep -Eq '^ *source "\$REPO_ROOT/ops/lib/selection-diff\.sh"' "$REPO_ROOT/ops/update-all.sh"
-    run grep -n 'selection-diff' "$REPO_ROOT/ops/install.sh"
+    run grep -n 'selection-diff\.sh' "$REPO_ROOT/ops/install.sh"
     [ "$status" -ne 0 ]
+}
+
+# record_sourcers <root>: every file that sources install-record.sh, except
+# install.sh and update-all.sh, the two writers.
+record_sourcers() {
+    (cd "$1" && grep -rEl '^[^#]*(source|\.)[[:space:]]+[^#]*install-record\.sh' ops scripts home nix mise.toml 2>/dev/null \
+        | grep -vE '^ops/(install|update-all)\.sh$' || true)
+}
+
+@test "T-0043: only install.sh and update-all.sh source install-record.sh, and both do" {
+    run record_sourcers "$REPO_ROOT"
+    [ -z "$output" ] || { echo "$output"; return 1; }
+    grep -Eq '^source "\$REPO_ROOT/ops/lib/install-record\.sh"' "$REPO_ROOT/ops/install.sh"
+    grep -Eq '^source "\$REPO_ROOT/ops/lib/install-record\.sh"' "$REPO_ROOT/ops/update-all.sh"
+}
+
+@test "T-0043: seeded: sourcing install-record.sh from another script is caught, a comment is not" {
+    local copy="$BATS_TEST_TMPDIR/seed"
+    mkdir -p "$copy/ops/lib"
+    cp "$REPO_ROOT/ops/install.sh" "$REPO_ROOT/ops/update-all.sh" "$copy/ops/"
+    cp "$REPO_ROOT/ops/lib/hm-switch.sh" "$copy/ops/lib/"
+    run record_sourcers "$copy"
+    [ -z "$output" ]
+    printf '# source ops/lib/install-record.sh is not allowed here\n' >>"$copy/ops/lib/hm-switch.sh"
+    run record_sourcers "$copy"
+    [ -z "$output" ]
+    printf '\nsource "$REPO_ROOT/ops/lib/install-record.sh"\n' >>"$copy/ops/lib/hm-switch.sh"
+    run record_sourcers "$copy"
+    [[ "$output" == *"ops/lib/hm-switch.sh"* ]]
 }
 
 @test "T-0043: seeded: sourcing selection-diff.sh from install.sh or a library is caught, update-all.sh and a comment are not" {

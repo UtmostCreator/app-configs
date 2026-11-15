@@ -30,7 +30,7 @@
 #   5. home-manager switch  OR darwin-rebuild switch (per host; previewed first)
 #   6. mise install                         (inside the repo)
 #   7. VS Code extensions (if code CLI is present)
-#   8. lefthook install
+#   8. git hooks (ops/install-git-hooks.sh, then --check)
 #   9. ops/unix/ssh-agent-setup.sh          (skipped on WSL; failure = degraded)
 #  10. ops/doctor.sh                        (must pass)
 #
@@ -301,13 +301,15 @@ if [[ -x "$REPO_ROOT/ops/vscode-extensions.sh" ]]; then
   fi
 fi
 
-# ─── 8. lefthook install ────────────────────────────────────────────────────
+# ─── 8. git hooks (no-stash guard) ──────────────────────────────────────────
+# Not `lefthook install`: its hooks fail open and stash (T-0051).
 if [[ -e "$REPO_ROOT/.git" ]]; then
   if [[ "$MODE" == "dry-run" ]]; then
-    log "would: lefthook install"
+    log "would: bash ops/install-git-hooks.sh (then --check)"
   else
     command -v lefthook >/dev/null 2>&1 || fail "lefthook not on PATH"
-    ( cd "$REPO_ROOT" && lefthook install )
+    bash "$REPO_ROOT/ops/install-git-hooks.sh" || fail "git hook install failed"
+    bash "$REPO_ROOT/ops/install-git-hooks.sh" --check || fail "git hook check failed"
   fi
 fi
 

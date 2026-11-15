@@ -78,6 +78,11 @@ hdr "Git aliases"
 n=$(git config --global --get-regexp '^alias\.' 2>/dev/null | wc -l)
 if [[ "$n" -gt 0 ]]; then ok "$n git aliases active"; else note "no git aliases (run: chezmoi apply)"; fi
 
+hdr "Git hooks (no-stash guard)"
+if [[ ! -e "$REPO_ROOT/.git" ]]; then note "not a git checkout; no hooks to check"
+elif bash "$REPO_ROOT/ops/install-git-hooks.sh" --check >/dev/null 2>&1; then ok "git hooks installed and intact"
+else bad "git hooks not intact (run: bash ops/install-git-hooks.sh from the main worktree)"; fi
+
 hdr "Health checks"
 if bash "$REPO_ROOT/ops/doctor.sh" >/dev/null 2>&1; then ok "doctor passes"; else bad "doctor failed (run: bash ops/doctor.sh)"; fi
 if bash "$REPO_ROOT/ops/validate-config.sh" >/dev/null 2>&1; then ok "validate-config passes"; else bad "validate-config failed"; fi

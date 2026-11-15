@@ -83,9 +83,14 @@ else
   log "Neither home-manager nor darwin-rebuild on PATH; nothing to roll back."
 fi
 
-# Lefthook hooks.
-if command -v lefthook >/dev/null 2>&1 && [[ -e "$REPO_ROOT/.git" ]]; then
-  log "lefthook: would run 'lefthook uninstall' from $REPO_ROOT."
+# Git hooks (T-0051). Never `lefthook uninstall`: with core.hooksPath set it
+# deletes the files in the hooks path.
+HOOKS_COMMON=""
+if [[ -e "$REPO_ROOT/.git" ]]; then
+  HOOKS_COMMON="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+fi
+if [[ -n "$HOOKS_COMMON" ]]; then
+  log "git hooks: would unset core.hooksPath if it is $HOOKS_COMMON/app-configs-hooks, delete that directory, and delete lefthook-generated hooks in $HOOKS_COMMON/hooks."
 fi
 
 # mise runtimes — keep on disk by default.
@@ -122,8 +127,19 @@ fi
 set -e
 command -v chezmoi >/dev/null 2>&1 && chezmoi forget || true
 command -v home-manager >/dev/null 2>&1 && home-manager uninstall || true
-if command -v lefthook >/dev/null 2>&1 && [[ -e "$REPO_ROOT/.git" ]]; then
-  ( cd "$REPO_ROOT" && lefthook uninstall ) || true
+if [[ -n "$HOOKS_COMMON" ]]; then
+  hooks_dest="$HOOKS_COMMON/app-configs-hooks"
+  # Only our own value is unset; a foreign core.hooksPath is left alone.
+  if [[ "$(git -C "$REPO_ROOT" config --local --get core.hooksPath 2>/dev/null || true)" == "$hooks_dest" ]]; then
+    git -C "$REPO_ROOT" config --local --unset core.hooksPath || true
+  fi
+  [[ ! -d "$hooks_dest" ]] || rm -rf "$hooks_dest"
+  # Stale lefthook-generated hooks, hook-set names only.
+  for h in pre-commit commit-msg pre-push post-merge; do
+    if [[ -f "$HOOKS_COMMON/hooks/$h" ]] && grep -q call_lefthook "$HOOKS_COMMON/hooks/$h" 2>/dev/null; then
+      rm -f "$HOOKS_COMMON/hooks/$h"
+    fi
+  done
 fi
 echo
 log "done. Nix and runtime data preserved."

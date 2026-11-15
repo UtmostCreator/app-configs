@@ -54,7 +54,7 @@ STUB
     cp -a "$REPO_ROOT/ops" "$FAKE/ops"
     cp "$REPO_ROOT/nix/vars/default.nix" "$FAKE/nix/vars/"
     : >"$FAKE/home/.chezmoidata/personal.yaml"
-    for helper in snapshot-home.sh doctor.sh vscode-extensions.sh unix/ssh-agent-setup.sh; do
+    for helper in snapshot-home.sh doctor.sh vscode-extensions.sh install-git-hooks.sh unix/ssh-agent-setup.sh; do
         printf '#!/usr/bin/env bash\nexit 0\n' >"$FAKE/ops/$helper"
     done
 }

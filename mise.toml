@@ -144,7 +144,7 @@ else
   echo 'missing: ops/vscode-extensions.sh'
 fi
 echo
-echo 'Would run: lefthook install'
+echo 'Would run: bash ops/install-git-hooks.sh (then --check)'
 """
 
 [tasks."sync:apply"]
@@ -195,7 +195,8 @@ esac
 
 mise install
 bash ops/vscode-extensions.sh
-lefthook install
+bash ops/install-git-hooks.sh
+bash ops/install-git-hooks.sh --check
 """
 
 [tasks."vscode:extensions"]

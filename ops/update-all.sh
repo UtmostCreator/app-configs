@@ -19,8 +19,9 @@
 #             also restores flake.lock, but the profile may already have
 #             moved: then run sys-update rollback
 #   VERIFY    gate: the default browser works (skipped by --skip-verify)
-#   COMMIT    flake.lock, only after a verified activation
-#   MAINTAIN  nix profile · mise · hooks · Syncthing ignores (warn only)
+#   COMMIT    flake.lock, only after a verified activation (the git hooks are
+#             installed and checked just before it, so the commit is guarded)
+#   MAINTAIN  nix profile · mise · Syncthing ignores (warn only)
 #   CHECKS    managed files, required commands, user services (advisory)
 #   CLEANUP   safe, non-destructive (ops/cleanup.sh)
 #   SUMMARY   package delta, warnings worth acting on, rollback handle
@@ -1398,6 +1399,21 @@ if [[ "$MODE" == "apply" ]]; then
   fi
 fi
 
+# git hooks -----------------------------------------------------------------
+# Before COMMIT: the first apply installs the guard before it commits the lock.
+if [[ "$STEP_FAILED" == 0 ]] && have lefthook && [[ -e "$REPO_ROOT/.git" ]]; then
+  # Not `lefthook install`: its hooks fail open and stash (T-0051). The
+  # installer cds to its own repo; the path is an argument, never spliced into
+  # a command string. It copies from the committed HEAD, so it runs after the
+  # pull, and --check proves the result.
+  if run_step "git hooks" bash "$REPO_ROOT/ops/install-git-hooks.sh" \
+    && run_step "git hooks check" bash "$REPO_ROOT/ops/install-git-hooks.sh" --check; then
+    [[ "$MODE" == "apply" ]] && ui_ok "git hooks" "synced"
+  else
+    ui_warn "git hooks" "git hook install or check failed (run: bash ops/install-git-hooks.sh)"
+  fi
+fi
+
 # ── 7. COMMIT ───────────────────────────────────────────────────────────────
 # The update proved the new lock builds, activates and verifies. Leaving it
 # uncommitted would make the next run stop at the dirty-worktree gate on our
@@ -1514,17 +1530,6 @@ if [[ "$STEP_FAILED" == 0 ]]; then
     fi
   else
     ui_skip "mise" "not on PATH"
-  fi
-fi
-
-# hooks ---------------------------------------------------------------------
-if [[ "$STEP_FAILED" == 0 ]] && have lefthook && [[ -e "$REPO_ROOT/.git" ]]; then
-  # The path travels as $1, never spliced into the command string.
-  # shellcheck disable=SC2016
-  if run_step "git hooks" sh -c 'cd "$1" && lefthook install' sh "$REPO_ROOT"; then
-    [[ "$MODE" == "apply" ]] && ui_ok "git hooks" "synced"
-  else
-    ui_warn "git hooks" "lefthook install failed"
   fi
 fi
 

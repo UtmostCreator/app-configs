@@ -36,7 +36,8 @@ setup() {
     # install.sh asks Nix for the username (nix eval --raw -f <file> username).
     stub "$STUBS/nix" "[ \"\$1\" != eval ] || printf '%s' '$NIX_USER'
 exit 0"
-    stub "$STUBS/lefthook" "touch '$MARKS/lefthook'"
+    stub "$STUBS/lefthook" 'exit 0'
+    stub "$FAKE/ops/install-git-hooks.sh" "touch '$MARKS/hooks'"
     stub "$FAKE/ops/snapshot-home.sh" 'exit 0'
     stub "$FAKE/ops/doctor.sh" "touch '$MARKS/doctor'"
     stub "$FAKE/ops/detect-timezone.sh" 'echo Europe/London'
@@ -54,6 +55,6 @@ stub() {
     echo "$output"
     [ "$status" -eq 0 ]
     [[ "$output" == *"[install:warn]"*"VS Code extension"* ]]
-    [ -f "$MARKS/lefthook" ]
+    [ -f "$MARKS/hooks" ]
     [ -f "$MARKS/doctor" ]
 }

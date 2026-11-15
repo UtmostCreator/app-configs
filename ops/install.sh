@@ -22,9 +22,10 @@
 #   6. home-manager switch  OR  darwin-rebuild switch  (per host)
 #   7. mise trust + mise install   (runtimes come from Nix on NixOS; near no-op)
 #   8. VS Code extensions (if code CLI is present)
-#   9. lefthook install
+#   9. git hooks     (ops/install-git-hooks.sh)
 #  10. ssh-agent-setup.sh (non-WSL)
 #  11. doctor.sh (must pass)
+#  12. ops/install-git-hooks.sh --check
 #
 # Usage:
 #   bash ops/install.sh                 # full unattended install
@@ -669,13 +670,14 @@ else
 fi
 
 # ── 9. lefthook ─────────────────────────────────────────────────────────────
-step "lefthook (git hooks)"
+step "git hooks (no-stash guard)"
 if [[ -e "$REPO_ROOT/.git" ]]; then
-  # The path is an argument ($1), never part of the script text, so quotes or
-  # shell syntax in it cannot break or inject (same form as update-all.sh).
-  run sh -c 'cd "$1" && lefthook install' sh "$REPO_ROOT"
+  # Not `lefthook install`: its hooks fail open and stash (T-0051). The
+  # installer cds to its own repo, and the path is an argument, never part of
+  # a script text, so quotes or shell syntax in it cannot break or inject.
+  run bash "$REPO_ROOT/ops/install-git-hooks.sh"
 else
-  warn "not a git checkout; skipping lefthook install"
+  warn "not a git checkout; skipping git hook install"
 fi
 
 # ── 10. ssh-agent helper (non-WSL) ──────────────────────────────────────────
@@ -698,6 +700,16 @@ if [[ "$DRY_RUN" == 1 ]]; then
   log "would: bash ops/doctor.sh"
 else
   run bash "$REPO_ROOT/ops/doctor.sh"
+fi
+
+# ── 12. git hooks check ─────────────────────────────────────────────────────
+step "git hooks (check)"
+if [[ ! -e "$REPO_ROOT/.git" ]]; then
+  log "skipped (not a git checkout)"
+elif [[ "$DRY_RUN" == 1 ]]; then
+  log "would: bash ops/install-git-hooks.sh --check"
+else
+  run bash "$REPO_ROOT/ops/install-git-hooks.sh" --check
 fi
 
 # ── NixOS system-rebuild advisory (NOT run automatically — needs sudo) ───────

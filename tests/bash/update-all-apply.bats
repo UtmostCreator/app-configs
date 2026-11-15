@@ -50,6 +50,9 @@ ACT
   FAKE="$BATS_TEST_TMPDIR/it's a repo"
   mkdir -p "$FAKE/nix"
   cp -a "$REPO_ROOT/ops" "$FAKE/ops"
+  # The hook installer has its own tests (githooks.bats); by default it must
+  # not put a guard on the fixture's own commits. S46 restores the real one.
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$FAKE/ops/install-git-hooks.sh"
   printf '{"nodes":{"nixpkgs":{"locked":{"rev":"old"}}}}\n' > "$FAKE/nix/flake.lock"
   printf '{ outputs = _: { }; }\n' > "$FAKE/nix/flake.nix"
   git -C "$FAKE" init -q
@@ -891,18 +894,37 @@ make_profile_dir() {
   [ "$(meta_value brave_release_hash_written)" != "$original" ]
 }
 
-@test "S46: lefthook runs in a repository path containing a quote and a space" {
+@test "S46: the git hooks are installed, then checked, in a repository path containing a quote and a space" {
   cat > "$STUBS/lefthook" <<'STUB'
 #!/usr/bin/env bash
 printf 'lefthook %s\n' "$*" >> "$STUB_LOG"
-pwd -P >> "$STUB_LOG"
 exit 0
 STUB
+  cp "$REPO_ROOT/ops/install-git-hooks.sh" "$FAKE/ops/install-git-hooks.sh"
+  printf 'pre-commit:\n  commands: {}\n' > "$FAKE/.lefthook.yml"
+  git -C "$FAKE" add -A && git -C "$FAKE" -c user.email=t@t -c user.name=t commit -q -m real-installer
   run_update
   [ "$status" -eq 0 ]
   [[ "$output" == *"git hooks"*"synced"* ]]
-  grep -q '^lefthook install$' "$STUB_LOG"
-  grep -qxF "$(cd "$FAKE" && pwd -P)" "$STUB_LOG"
+  # The real installer ran in the fixture repository: an absolute hooksPath
+  # under its git dir, and --check agrees.
+  [ "$(git -C "$FAKE" config --local core.hooksPath)" = "$(git -C "$FAKE" rev-parse --path-format=absolute --git-common-dir)/app-configs-hooks" ]
+  run bash "$FAKE/ops/install-git-hooks.sh" --check
+  [ "$status" -eq 0 ]
+  # The hooks were installed BEFORE the flake.lock commit, so that commit ran
+  # through the guard and reached lefthook.
+  grep -q '^lefthook run pre-commit --no-stage-fixed --no-auto-install$' "$STUB_LOG"
+  # lefthook itself is never asked to install or uninstall hooks.
+  run grep -E '^lefthook (un)?install' "$STUB_LOG"
+  [ "$status" -ne 0 ]
+}
+
+@test "S46b: a failing git hook check is a warning that says how to repair it" {
+  printf '#!/usr/bin/env bash\n[ "${1:-}" = --check ] && exit 1\nexit 0\n' > "$FAKE/ops/install-git-hooks.sh"
+  git -C "$FAKE" add -A && git -C "$FAKE" -c user.email=t@t -c user.name=t commit -q -m hooks-stub
+  run_update
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"git hook install or check failed"* ]]
 }
 
 @test "S51: an empty Home Manager package set counts as zero packages, not one" {

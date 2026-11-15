@@ -179,7 +179,7 @@ bs_fixture() {
     # keeps these tests about bootstrap itself.
     mkdir -p "$FX/home/.chezmoidata" && : >"$FX/home/.chezmoidata/personal.yaml"
     local s
-    for s in doctor.sh snapshot-home.sh unix/ssh-agent-setup.sh; do
+    for s in doctor.sh snapshot-home.sh install-git-hooks.sh unix/ssh-agent-setup.sh; do
         printf '#!/usr/bin/env bash\necho "%s $*" >>"%s"\n[ "${STUB_FAIL:-}" = "%s" ] && exit 1\nexit 0\n' \
             "$s" "$CALLS" "$s" >"$FX/ops/$s"
     done
@@ -212,7 +212,7 @@ bs_tty() { # bs_tty <answer> <args...>: stdin and stdout on a pty
         "env HOME=$HOME_T PATH=$BPATH HOST_PROFILE=${BS_HOST:-linux-cli} bash $FX/ops/bootstrap.sh $*"
 }
 
-mutated() { grep -Eq '^(nix profile|nix flake|chezmoi (init|apply)|mise (trust|install)|home-manager switch|lefthook install|sudo [^-]|snapshot-home|unix/ssh-agent)' "$CALLS"; }
+mutated() { grep -Eq '^(nix profile|nix flake|chezmoi (init|apply)|mise (trust|install)|home-manager switch|install-git-hooks|sudo [^-]|snapshot-home|unix/ssh-agent)' "$CALLS"; }
 
 @test "bootstrap dry-run is strictly read-only: plans only, creates nothing" {
     bs_fixture
@@ -268,6 +268,32 @@ mutated() { grep -Eq '^(nix profile|nix flake|chezmoi (init|apply)|mise (trust|i
     grep -q '^home-manager switch' "$CALLS"
     grep -qx 'doctor.sh ' "$CALLS"
     [[ "$output" == *"bootstrap complete"* ]]
+}
+
+@test "bootstrap --yes installs the git hooks, then checks them; lefthook install is never run" {
+    bs_fixture
+    bs --yes
+    [ "$status" -eq 0 ]
+    [ "$(grep -n '^install-git-hooks.sh $' "$CALLS" | cut -d: -f1)" -lt "$(grep -n '^install-git-hooks.sh --check$' "$CALLS" | cut -d: -f1)" ]
+    run grep -c '^lefthook install' "$CALLS"
+    [ "$output" = 0 ]
+}
+
+@test "bootstrap --yes stops when the git hook check fails" {
+    bs_fixture
+    printf '#!/usr/bin/env bash\necho "install-git-hooks.sh $*" >>"%s"\n[ "${1:-}" = --check ] && exit 1\nexit 0\n' "$CALLS" >"$FX/ops/install-git-hooks.sh"
+    bs --yes
+    [ "$status" -ne 0 ]
+    [[ "$output" != *"bootstrap complete"* ]]
+}
+
+@test "bootstrap dry-run only announces the git hook install" {
+    bs_fixture
+    bs --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would: bash ops/install-git-hooks.sh (then --check)"* ]]
+    run grep -c '^install-git-hooks' "$CALLS"
+    [ "$output" = 0 ]
 }
 
 @test "bootstrap with a local selection: preview and switch carry the override (linux)" {

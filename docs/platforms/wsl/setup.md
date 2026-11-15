@@ -119,4 +119,4 @@ tracked in `docs/plans/migration/followups.md` ("WSL validation").
 ## Install selection
 
 Optional tool groups (media, security, Go) can be left out; see "Choose what to install" in `docs/getting-started/install.md`.
-The selection file lives under the Linux `$HOME`, never under `/mnt/c`.
+The selection file is under `$HOME/.config`; an `XDG_CONFIG_HOME` on a Windows drive (`/mnt/<letter>`) is ignored.

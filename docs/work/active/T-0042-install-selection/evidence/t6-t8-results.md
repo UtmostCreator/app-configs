@@ -52,17 +52,30 @@ Suite sizes (`bats --count`): selection.bats 34, install-selection.bats 73, chez
 
 Not run: any real switch, `chezmoi apply`, `sys-update --apply`; a real macOS, bash 3.2 or WSL2 host; real brew.
 
+## Review round 1 follow-ups (final review: PASS WITH NOTES)
+
+- S1: members data on darwin now carries `X<TAB>group<TAB>cask` lines (casks with the group on minus casks with it off, from the darwin system). The present-state row counts those casks against `brew list --cask -1` (one brew call per run), the prompt label lists them, the outcome row says `keep N`, `add ...` or `stays installed N: names` (a deselected cask stays installed). Without brew the row says `casks <names> (cask state unknown)`. Tests (install-selection.bats, "S1: ..." x5, written first and failing before) and a real-Nix check in selection.bats that macos has 2 X lines for macInput and linux-cli none.
+- S2: profile.nix adds a module assertion `builtins.deepSeq config.myConfig.groups true`, so a wrong-typed group fails every host build. selection.bats "S2: ..." x2 (linux-cli, macos home and darwin system: message names `myConfig.groups.macInput`). All 5 default drvPaths, the empty and the all-on fixtures are unchanged (see checks).
+- S3, S4: human checks below rewritten.
+- S5, S7, D1-D4: install.md, tool-ownership.md and wsl/setup.md corrected (invalid files and the macOS chezmoi error text, macInput on Linux, wrong-type wording, personal apps on linux-desktop only, the PATH annotation only on a first install, the actual /mnt rule).
+- S6: `selection_dir` is silent; `selection_args` prints the /mnt note once per process (a `$(selection_dir)` subshell cannot keep a flag). Tests "S6: ..." x2.
+- S8: the template prints `# known profiles: ...`; two new parity tests (darwin Home Manager user's profile, and the list equals the files in nix/profiles).
+- D5: the ticket Status line (only that line) and the index row list the four pending human checks.
+
 ## Human checks
 
-1. AC14, real Mac with Determinate Nix. In a clean checkout of feat/install-selection:
+1. AC14, real Mac with Determinate Nix. THIS SWITCHES THE LIVE MAC. Rollback: re-run the switch without `--override-input`, or run `sudo darwin-rebuild --rollback`. In a clean checkout of feat/install-selection:
    ```
-   sha256sum nix/flake.lock          # expect 44847d34cfeb9d8e119e22934bcf8a12d97bc3b3187cd4c09088c4c15a61ceee
+   git status --short                 # expect no output
+   sha256sum nix/flake.lock           # expect 44847d34cfeb9d8e119e22934bcf8a12d97bc3b3187cd4c09088c4c15a61ceee
    mkdir -p /tmp/sel-check && printf 'profile = "work"\n\n[groups]\nmacInput = false\n' > /tmp/sel-check/selection.toml
-   sudo darwin-rebuild switch --flake "path:$PWD/nix#macos" --override-input selection path:/tmp/sel-check
-   sha256sum nix/flake.lock
+   nix eval --json "./nix#darwinConfigurations.macos.config.homebrew.casks" --override-input selection path:/tmp/sel-check --apply 'cs: map (c: c.name) cs'
+   sudo darwin-rebuild switch --flake "$PWD/nix#macos" --override-input selection path:/tmp/sel-check
+   git status --short                 # expect no output
+   sha256sum nix/flake.lock           # expect the same hash as above
    brew list --cask
    ```
-   Expect: the switch succeeds; both lock hashes equal; the lock is not modified; `git status` clean; karabiner-elements and linearmouse are NOT removed (Homebrew cleanup is none). Then repeat without `--override-input`: the switch succeeds and both casks are in the declared list (`brew bundle list --cask --file /etc/homebrew/Brewfile` or the activation output).
-2. Real /bin/bash 3.2 on a Mac. `/bin/bash --version` shows 3.2.x. Run `/bin/bash ops/install.sh --dry-run --profile work </dev/null` with `APP_CONFIGS_SELECTION_DIR` set to a scratch directory, then `/bin/bash ops/install.sh --dry-run` in a terminal with no selection file and answer `work`, Enter, Enter, Enter, Enter, `a`. Expect: no `unbound variable`, `mapfile`, `readarray` or `bad substitution` errors; the dry run ends with "dry run: would write ..."; nothing is written.
-3. macOS present-state and cask preview with real brew. With karabiner-elements and linearmouse installed, run `bash ops/install.sh --dry-run`, answer `n` at the macInput prompt, then `a`. Expect the "macOS casks" section to read exactly, for each: `karabiner-elements: stays installed (Homebrew cleanup = none); remove by hand: brew uninstall --cask karabiner-elements` (and the same for linearmouse), "unmanaged installed casks: N" to be a count only, and macInput to appear in the present-state table.
-4. WSL2 host. `bash ops/install.sh --dry-run` and `mise run sync:dry-run`. Expect: the selection line or "no local selection" line, no macInput in the table or prompts, the selection directory under /home/<user>/.config/app-configs/selection even with `XDG_CONFIG_HOME` unset, and no prompt in sync:dry-run. With `XDG_CONFIG_HOME=/mnt/c/Users/<you>/AppData` set, expect the note "selection: ignoring XDG_CONFIG_HOME=..." and the Linux path.
+   Expect: the `nix eval` list lacks karabiner-elements and linearmouse; the switch succeeds; `git status --short` is empty and the lock hash is unchanged; both casks are still installed (Homebrew cleanup is none). A second run with the `path:$PWD/nix#macos` flake form is optional. Then re-run the switch without `--override-input`: it succeeds and `nix eval` of the same attribute without the override lists both casks.
+2. Real /bin/bash 3.2 on a Mac. `/bin/bash --version` shows 3.2.x. Run `APP_CONFIGS_SELECTION_DIR=$(mktemp -d) /bin/bash ops/install.sh --dry-run --profile work </dev/null`, then, in a terminal with a scratch `APP_CONFIGS_SELECTION_DIR` that holds no file, `/bin/bash ops/install.sh --dry-run`. Expect: no `unbound variable`, `mapfile`, `readarray` or `bad substitution` errors; both runs end with `dry run: would write ...`; nothing is written.
+3. macOS present-state and cask preview with real brew. Install karabiner-elements and linearmouse first (or confirm they are installed). Run `APP_CONFIGS_SELECTION_DIR=$(mktemp -d) bash ops/install.sh --dry-run` in a terminal and answer, in the real prompt order: profile `Enter`, go `Enter`, macInput `n`, media `Enter`, security `Enter`, then `a`. Expect: the present-state table has a row `macInput installed 2/2 karabiner-elements linearmouse` and the prompt reads `Install group macInput (karabiner-elements linearmouse)?`; the outcome row reads `macInput stays installed 2: karabiner-elements linearmouse`; the "macOS casks" section reads, for each, `<name>: stays installed (Homebrew cleanup = none); remove by hand: brew uninstall --cask <name>`; "unmanaged installed casks: N" is a count only; the run ends with `dry run: would write ...` and the scratch directory stays empty. With brew off `PATH`, the macInput rows show the names and `cask state unknown`.
+4. WSL2 host. Run `bash ops/install.sh --dry-run </dev/null` and `mise run sync:dry-run`. Expect: the line `Selection: no local selection; using the committed default (nothing written)`, no macInput in the table or the outcome, no prompt, and no prompt in sync:dry-run. To see the selection path, run `env -u APP_CONFIGS_SELECTION_DIR bash ops/install.sh --dry-run --profile work </dev/null`: it prints `dry run: would write /home/<user>/.config/app-configs/selection/selection.toml` (the path comes from `--profile work`, not from a plain dry run). With `XDG_CONFIG_HOME=/mnt/c/Users/<you>/AppData` set, expect the note `selection: ignoring XDG_CONFIG_HOME=... using /home/<user>/.config` once and the same Linux path.

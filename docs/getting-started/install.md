@@ -132,9 +132,9 @@ fish, git, ripgrep and the tools `sys-update` needs are never in a group):
 
 **Profiles** are `work` and `personal` (the values of `myConfig.profile`). Each
 is a table of group toggles in `nix/profiles/work.toml` and
-`nix/profiles/personal.toml`; both turn every group on. `personal` also
-installs the personal-only apps (Vesktop, Telegram, Syncthing helpers,
-OpenClaw). This selection profile is not the same thing as `HOST_PROFILE`
+`nix/profiles/personal.toml`; both turn every group on. On `linux-desktop`,
+`personal` also installs the personal-only apps (Vesktop, Telegram, Syncthing
+helpers, OpenClaw); that set is empty on macOS, `linux-cli` and `wsl`. This selection profile is not the same thing as `HOST_PROFILE`
 (`macos`, `linux-desktop`, `linux-cli`, `wsl`), which says what kind of machine
 this is. The host default selection profile is `personal` on `linux-desktop`
 and `work` everywhere else.
@@ -155,9 +155,11 @@ go = false
 
 The committed `nix/selection/selection.toml` is empty and means "no selection".
 When your file exists the scripts pass it to Nix as
-`--override-input selection path:<dir>`; `flake.lock` is not touched. On WSL2
-the directory is always under the Linux `$HOME`: an `XDG_CONFIG_HOME` on a
-Windows drive (`/mnt/c/...`) is ignored with a note.
+`--override-input selection path:<dir>`; `flake.lock` is not touched. The
+directory comes from `XDG_CONFIG_HOME`, else `$HOME/.config`. On WSL2 an
+`XDG_CONFIG_HOME` on a Windows drive mount (`/mnt/<letter>/...`) is ignored in
+favour of `$HOME/.config`, with a note on stderr; any other location, and
+`APP_CONFIGS_SELECTION_DIR` (a test and preview override), is honoured as given.
 
 **Precedence**, first match wins: `--profile` flag, then the first-run prompt,
 then your local file, then the committed profile default, then the host default
@@ -167,8 +169,11 @@ profile.
 
 With no selection file, on a terminal, `sys-install` asks before it changes
 anything beyond Nix and the base tools. It prints a **present-state table**
-(for each group, how many of its packages are installed now, and any copy that
-is on `PATH` but not from Home Manager), asks for the profile (default: the
+(for each group, how many of its packages are installed now; on a first
+install, with no Home Manager generation yet, it also names any copy that is on
+`PATH` but not from Home Manager; on macOS the casks a group gates are counted
+against `brew list --cask`, or listed with "cask state unknown" when brew is
+not available), asks for the profile (default: the
 host's) and then each group (`[Y/n]` when the profile turns it on, `[y/N]`
 when off), prints a **preview**, and offers `[a]pply [c]hange selection
 [q]uit`:
@@ -215,12 +220,18 @@ bash ops/install.sh --dry-run          # prompt and preview; write and apply not
 #### Invalid files
 
 An unknown key, profile or group, `[groups]` without `profile`, or a group that
-is not `true`/`false` fails **before any change** (before `chezmoi apply` and
-any switch). The Nix error names the key, for example
+is not `true`/`false` fails Nix evaluation on every host (a module assertion
+forces every group, so `macInput = "no"` fails on Linux too), and therefore
+**before any change**: `install.sh` validates before `chezmoi apply` and the
+switch, and `sys-update`, `hms` and the sync tasks fail at their build, before
+anything is activated. The Nix error names the key, for example
 `unknown group 'bogus'`. Fix the file, or run `bash ops/install.sh --profile
-work` to replace it. On macOS the chezmoi ignore rules also read the file; a
-file that is not valid TOML fails that render, which the install has already
-rejected earlier.
+work` to replace it. On macOS the chezmoi ignore rules also read the file, so
+a file with broken TOML syntax makes `chezmoi` fail (the error names
+`.chezmoiignore ... fromToml`) and `sys-update` stop with
+`managed files: chezmoi status failed ...`; correct or remove the selection
+file. A `macInput` key in a selection file on Linux has no effect, and a
+reconfigure on Linux rewrites the file without it.
 
 #### What removal does
 

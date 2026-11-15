@@ -227,6 +227,9 @@ the mechanism and why.
   file or prints the preview; `sys-update`, bootstrap and `hm-switch.sh` never do.
 - **Validation is Nix's.** Unknown keys, groups and profiles, `[groups]` without
   `profile`, and wrong types fail evaluation with a message that names the key.
+  A module assertion in `profile.nix` forces every group, so a wrong type fails on
+  every host, not only where a module reads that group (`macInput` is read only
+  on macOS).
   Scripts and the chezmoi ignore file do not re-implement those checks.
 - **chezmoi** (`home/.chezmoiignore`) reads the same file for one decision:
   `macInput` from the local file, else the profile file in the repository, else

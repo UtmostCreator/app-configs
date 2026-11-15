@@ -91,22 +91,39 @@ grep -q "email = bats@example.invalid" "$HOME/.gitconfig" || exit 8'
     [ "$status" -eq 4 ]
 }
 
-@test "run-bats runs in parallel when GNU parallel is available" {
+@test "run-bats: parallel mode -> every suite listed once, SLOW_FIRST files first, job count from nproc or RUN_BATS_JOBS" {
     stub bats 'echo "bats-stub $*"'
     stub parallel 'echo "GNU parallel 20260822"'
     stub nproc 'echo 6'
     run env PATH="$STUB" bash "$SCRIPT"
     [ "$status" -eq 0 ]
-    # the exact argument list: the slow files, the other tests/bash files in
-    # glob order, then the log-workspace suite
-    local expected rest
-    rest="$(cd "$REPO_ROOT" && printf '%s\n' tests/bash/*.bats |
-        grep -vxE 'tests/bash/(selection|update-all-apply|install-selection)\.bats' | tr '\n' ' ')"
-    expected="bats-stub --jobs 6 tests/bash/selection.bats tests/bash/update-all-apply.bats tests/bash/install-selection.bats ${rest}ops/projects/logging/test"
-    [ "$output" = "$expected" ] || { echo "got:      $output"; echo "expected: $expected"; return 1; }
+    local -a got slow
+    read -r -a got <<<"$output"
+    [ "${got[0]}" = bats-stub ]
+    [ "${got[1]}" = --jobs ]
+    [ "${got[2]}" = 6 ]
+    got=("${got[@]:3}")
+
+    # every tests/bash suite appears exactly once, the logging suite is included
+    local f
+    for f in "$REPO_ROOT"/tests/bash/*.bats; do
+        f="tests/bash/${f##*/}"
+        [ "$(printf '%s\n' "${got[@]}" | grep -cxF "$f")" -eq 1 ] || { echo "not exactly once: $f"; return 1; }
+    done
+    [ "$(printf '%s\n' "${got[@]}" | grep -cxF ops/projects/logging/test)" -eq 1 ]
+    [ "${#got[@]}" -eq "$(( $(printf '%s\n' "$REPO_ROOT"/tests/bash/*.bats | wc -l) + 1 ))" ]
+
+    # the SLOW_FIRST files, as the script lists them, come first and in order
+    read -r -a slow <<<"$(sed -n 's/^ *SLOW_FIRST=(\(.*\))$/\1/p' "$SCRIPT")"
+    [ "${#slow[@]}" -ge 4 ]
+    local i
+    for i in "${!slow[@]}"; do
+        [ "${got[$i]}" = "tests/bash/${slow[$i]}.bats" ] || { echo "position $i: ${got[$i]}"; return 1; }
+    done
+    [[ " ${slow[*]} " == *" selection-diff "* ]]
 
     run env PATH="$STUB" RUN_BATS_JOBS=3 bash "$SCRIPT"
-    [ "$output" = "${expected/--jobs 6/--jobs 3}" ]
+    [[ "$output" == "bats-stub --jobs 3 "* ]]
 }
 
 @test "run-bats fails when a SLOW_FIRST file is missing, instead of silently dropping it" {

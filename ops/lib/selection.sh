@@ -214,10 +214,12 @@ _SEL_MEMBERS_BODY='cfgOf: mkMod: base: let force = v: { _type = "override"; prio
 _SEL_MEMBERS_HM="let gen = $_SEL_MEMBERS_BODY; in d: gen (e: e.config) (m: m) d"
 _SEL_MEMBERS_DARWIN="let gen = $_SEL_MEMBERS_BODY; in d: let u = builtins.head (builtins.attrNames d.config.home-manager.users); in gen (e: e.config.home-manager.users.\${u}) (m: { home-manager.users.\${u} = m; }) d"
 
-# The cheapest evaluation that forces the whole selection (every validation
-# throw is in the thunk that the profile option's condition reads).
-_SEL_CHECK_HM='m: m.profile'
-_SEL_CHECK_DARWIN='us: (builtins.head (builtins.attrValues us)).myConfig.profile'
+# The cheapest evaluation that forces the whole selection: the profile option's
+# condition reads the thunk with every validation throw, and deepSeq on the
+# groups forces each group's value, so a wrong type (media = "no") fails here
+# and not at the switch.
+_SEL_CHECK_HM='m: builtins.deepSeq m.groups m.profile'
+_SEL_CHECK_DARWIN='us: let m = (builtins.head (builtins.attrValues us)).myConfig; in builtins.deepSeq m.groups m.profile'
 
 _sel_flake() { printf '%s/nix' "$(_sel_repo)"; }
 
@@ -251,9 +253,10 @@ _sel_expr_state() { if [[ "$SELECTION_HOST" == macos ]]; then printf '%s' "$_SEL
 _sel_expr_members() { if [[ "$SELECTION_HOST" == macos ]]; then printf '%s' "$_SEL_MEMBERS_DARWIN"; else printf '%s' "$_SEL_MEMBERS_HM"; fi; }
 _sel_expr_check() { if [[ "$SELECTION_HOST" == macos ]]; then printf '%s' "$_SEL_CHECK_DARWIN"; else printf '%s' "$_SEL_CHECK_HM"; fi; }
 
-# _sel_show_err FILE: the Nix error, to stderr, capped.
+# _sel_show_err FILE: the Nix error, to stderr. Nix prints warnings and trace
+# frames first and the message that names the key last, so the end is kept.
 _sel_show_err() {
-  if [[ -s "$1" ]]; then sed -n '1,30p' "$1" >&2; else printf 'error: the evaluation failed without a message\n' >&2; fi
+  if [[ -s "$1" ]]; then grep -v '^warning:' "$1" | tail -n 25 >&2; else printf 'error: the evaluation failed without a message\n' >&2; fi
 }
 
 # selection_validate: evaluates the local selection (SELECTION_ARGS) far enough

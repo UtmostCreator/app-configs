@@ -4,9 +4,9 @@
 # https://code.claude.com/docs/en/statusline#available-data
 #
 # +A/-R is the live `git diff HEAD` line count (session edit counters outside git).
-# Wide:    project ⎇ branch* +A/-R | Model · effort:high | Ctx 55% · 548k/1M · LONG | 5h 72% ↻1h24m · 7d 41% ↻Tue
+# Wide:    [◆ agent |] project ⎇ branch* +A/-R | Model · effort:high | Ctx 55% · 548k/1M · LONG | 5h 72% ↻1h24m · 7d 41% ↻Tue
 #          WT name | PR #184 approved | $1.23 · 1h02m · Cache 91%   (only what exists)
-# Narrow:  project ⎇ branch* | Model:high | Ctx 55% | 5h 72% | 7d 41%    (COLUMNS < 120)
+# Narrow:  [◆ agent |] project ⎇ branch* | Model:high | Ctx 55% | 5h 72% | 7d 41%    (COLUMNS < 120)
 #          +A/-R · WT name · PR #184 approved · $1.23 · 1h02m · Cache 91%
 #
 # Ctx % is real context-window usage; LONG marks crossing the fixed 200k
@@ -133,7 +133,7 @@ eval "$(jq -r --argjson now "$NOW" '
       @sh "session_id=\(.session_id // "")",
       @sh "current_dir=\(.workspace.current_dir // .cwd // "")",
       @sh "model_name=\(.model.display_name // "unknown" | sub(" \\([^)]*context\\)$"; ""))",
-      @sh "agent_name=\(.agent.name // "" | if type == "string" then gsub("[[:cntrl:]]"; "") else "" end)",
+      @sh "agent_name=\(.agent | if type == "string" then . elif type == "object" then (.name? // "") else "" end | tostring | gsub("[[:cntrl:]]"; "") | if length > 20 then .[0:19] + "…" else . end)",
       @sh "effort=\(.effort.level // "")",
       @sh "ctx_pct=\($cw.used_percentage // (if $size > 0 then $used * 100 / $size else 0 end) | round)",
       @sh "ctx_used=\($used | tokens)",
@@ -329,7 +329,7 @@ fi
 # Lowest-priority segments go first when the terminal is too narrow; each
 # drop_* flag is switched on by fit level below.
 drop_left=0 drop_resets=0 drop_q7=0 drop_q5=0 drop_tokens=0 drop_effort=0 drop_counts=0
-drop_cache=0 drop_session=0
+drop_cache=0 drop_session=0 drop_agent=0
 
 render() {
     local q5="" q7="" q5_long="" q7_long="" ctx_long
@@ -351,6 +351,8 @@ render() {
     if (( ! drop_counts )); then
         repo_seg=$(join " " "$repo" "$git_counts")
     fi
+    local agent_part=$agent_tag
+    (( drop_agent )) && agent_part=""
     local cache_part=$cache_seg session_part=$session_seg
     (( drop_cache )) && cache_part=""
     (( drop_session )) && session_part=""
@@ -358,7 +360,7 @@ render() {
     extras=$(join " · " "$session_part" "$cache_part")
 
     if (( narrow )); then
-        line1=$(join " | " "$remote_control" "$agent_tag" "$repo_seg" "${BLUE}${model_name}${NC}${effort:+:$effort}" \
+        line1=$(join " | " "$remote_control" "$agent_part" "$repo_seg" "${BLUE}${model_name}${NC}${effort:+:$effort}" \
             "$ctx_short" "$q5" "$q7")
         line2=$(join " · " "$diff_seg" "$wt_seg" "$pr_seg" "$extras")
     else
@@ -372,7 +374,7 @@ render() {
         fi
         local effort_seg=""
         (( drop_effort )) || effort_seg="${effort:+ · effort:$effort}"
-        line1=$(join " | " "$remote_control" "$agent_tag" "$(join " " "$repo_seg" "$diff_seg")" \
+        line1=$(join " | " "$remote_control" "$agent_part" "$(join " " "$repo_seg" "$diff_seg")" \
             "${BLUE}${model_name}${NC}${effort_seg}" \
             "$ctx_long" "$(join " · " "$q5_long" "$q7_long")")
         line2=$(join " | " "$wt_seg" "$pr_seg" "$extras")
@@ -385,14 +387,16 @@ narrow=0
 (( cols < NARROW_BELOW )) && narrow=1
 
 # Line 1: raise the fit level until it fits (or nothing is left to drop).
-for level in 0 1 2 3 4 5 6; do
+for level in 0 1 2 3 4 5 6 7; do
     if (( narrow )); then
-        # 7d, then 5h, then the git counts.
+        # 7d, then 5h, then the git counts, and the agent tag last.
         drop_q7=$(( level >= 1 )) drop_q5=$(( level >= 2 )) drop_counts=$(( level >= 3 ))
+        drop_agent=$(( level >= 7 ))
     else
-        # Remaining tokens, reset times, 7d, token counts, effort, git counts.
+        # Remaining tokens, reset times, 7d, token counts, effort, git counts, agent tag.
         drop_left=$(( level >= 1 )) drop_resets=$(( level >= 2 )) drop_q7=$(( level >= 3 ))
         drop_tokens=$(( level >= 4 )) drop_effort=$(( level >= 5 )) drop_counts=$(( level >= 6 ))
+        drop_agent=$(( level >= 7 ))
     fi
     render
     (( $(width "$line1") <= cols )) && break

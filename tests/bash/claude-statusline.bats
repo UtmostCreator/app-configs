@@ -556,3 +556,22 @@ cache_file() {
     [[ "${lines[0]}" == "advanced-gym ⎇ main | "* ]]
     [[ "$output" != *"◆"* ]]
 }
+
+@test "agent: a long name is truncated and line 1 fits 60 columns" {
+    export COLUMNS=60
+    long=$(printf 'x%.0s' {1..40})
+    raw=$(payload "$(jq -n --arg n "$long" '{agent: {name: $n}}')" | bash "$SCRIPT" | head -1 | sed 's/\x1b\[[0-9;]*m//g')
+    [ "${#raw}" -le 60 ]
+    COLUMNS=200 run statusline "$(jq -n --arg n "$long" '{agent: {name: $n}}')"
+    [[ "${lines[0]}" == "◆ xxxxxxxxxxxxxxxxxxx… | "* ]]
+}
+
+@test "agent: a string agent, a non-object agent and control characters are tolerated" {
+    run statusline '{"agent": "reviewer"}'
+    [[ "${lines[0]}" == "◆ reviewer | "* ]]
+    run statusline '{"agent": 7}'
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"◆"* ]]
+    run statusline '{"agent": {"name": "a\u001b[31mb"}}'
+    [[ "${lines[0]}" == "◆ a[31mb | "* ]]
+}

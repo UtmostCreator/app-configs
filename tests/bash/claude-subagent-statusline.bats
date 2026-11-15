@@ -201,8 +201,56 @@ real_task() {
     [[ "${lines[1]}" == $'\033[0;90mmystery \033[0m'* ]]
 }
 
-@test "colour: narrow layout width ignores escape codes" {
-    input=$(jq -n --argjson a "$(real_task reviewer x)" '{columns: 20, tasks: [$a]}')
+@test "colour: narrow fit is decided on visible width: 23 columns keeps the effort initial, 22 drops it" {
+    input=$(jq -n --argjson a "$(real_task reviewer x)" '{columns: 23, tasks: [$a]}')
     run rows "$input"
+    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5:h ▶ 0%" ]
+    run rows "$(jq '.columns = 22' <<<"$input")"
     [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5 ▶ 0%" ]
+}
+
+# visible_widths <input-json>: display width of each row's content, ANSI stripped.
+visible_widths() {
+    bash "$SCRIPT" <<<"$1" | jq -r '.content' | sed 's/\x1b\[[0-9;]*m//g' | while IFS= read -r l; do printf '%s\n' "${#l}"; done
+}
+
+@test "width: rows with a long task label never exceed columns (60-167)" {
+    long='A very long task description that keeps going well past any sensible panel width'
+    for cols in 60 70 80 99 100 120 167; do
+        input=$(jq -n --argjson a "$(real_task reviewer "$long")" --argjson b "$(real_task researcher "$long")" \
+            --argjson c "$cols" '{columns: $c, tasks: [$a, $b]}')
+        while read -r w; do
+            [ "$w" -le "$cols" ] || { echo "cols=$cols width=$w"; false; }
+        done < <(visible_widths "$input")
+    done
+}
+
+@test "width: a task label is dropped when fewer than 8 columns remain" {
+    input=$(jq -n --argjson a "$(real_task reviewer 'Some task')" '{columns: 60, tasks: [$a]}')
+    run rows "$input"
+    [[ "$output" == *"· Some task" ]]
+    run rows "$(jq '.columns = 52' <<<"$input")"
+    [[ "$output" != *"Some task"* ]]
+}
+
+@test "robustness: missing status, non-string type and control characters do not blank the panel" {
+    input=$(jq -n --argjson a "$(real_task reviewer 'x')" \
+        '{columns: 120, tasks: [($a | del(.status)), ($a | .agentType = 42 | .id = "n"), ($a | .id = "c" | .label = "a\u001b[31mb\u0007c")]}')
+    run rows "$input"
+    [ "$status" -eq 0 ]
+    [ "${#lines[@]}" -eq 3 ]
+    [[ "${lines[2]}" == *"· a[31mbc" ]]
+}
+
+@test "parity: both scripts use the same colour for every agent type and the default" {
+    MAIN="$REPO_ROOT/home/dot_claude/executable_statusline.sh"
+    export GIT_CONFIG_GLOBAL=/dev/null CLAUDE_CONFIG_DIR="$BATS_TEST_TMPDIR/c" XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR" STATUSLINE_GIT_TTL=0 COLUMNS=200
+    for t in researcher architect implementer super-implementer reviewer orchestrator plan-writer release-auditor mystery; do
+        sub=$(bash "$SCRIPT" <<<"$(jq -n --argjson a "$(real_task "$t" x)" '{columns: 167, tasks: [$a]}')" \
+            | jq -r .content | sed -E 's/^\x1b\[([0-9;]*)m.*/\1/')
+        main=$(jq -n --arg t "$t" '{cwd: "/nonexistent", agent: {name: $t}}' | bash "$MAIN" | head -1 \
+            | sed -E 's/^\x1b\[([0-9;]*)m.*/\1/')
+        [ -n "$sub" ]
+        [ "$sub" = "$main" ] || { echo "$t: subagent=$sub main=$main"; false; }
+    done
 }

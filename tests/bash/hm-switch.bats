@@ -174,8 +174,8 @@ mk_selection() {
     [ "$output" = 'home-manager switch -b hm-bak --flake /repo/nix#p' ]
 }
 
-@test "selection: no prompt can run in hm-switch.sh, selection.sh or selection-preview.sh" {
-    run grep -nE '(^|[^[:alnum:]_])read[[:space:]]' "$REPO_ROOT/ops/lib/hm-switch.sh" "$REPO_ROOT/ops/lib/selection.sh" "$REPO_ROOT/ops/lib/selection-preview.sh"
+@test "selection: no prompt can run in hm-switch.sh, selection.sh, selection-facts.sh or selection-preview.sh" {
+    run grep -nE '(^|[^[:alnum:]_])read[[:space:]]' "$REPO_ROOT/ops/lib/hm-switch.sh" "$REPO_ROOT/ops/lib/selection.sh" "$REPO_ROOT/ops/lib/selection-facts.sh" "$REPO_ROOT/ops/lib/selection-preview.sh"
     [ "$status" -ne 0 ]
 }
 

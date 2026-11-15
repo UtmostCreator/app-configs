@@ -42,6 +42,7 @@ preview_bg() {
 preview_eval() {
     local host="$1" kind="$2" w="$BATS_FILE_TMPDIR/preview" rc=0
     source "$REPO_ROOT/ops/lib/selection.sh"
+    source "$REPO_ROOT/ops/lib/selection-facts.sh"
     source "$REPO_ROOT/ops/lib/selection-preview.sh"
     SELECTION_REPO_ROOT="$REPO_ROOT"
     SELECTION_HOST="$host"
@@ -324,6 +325,8 @@ validate_fixture() {
     export APP_CONFIGS_SELECTION_DIR="$dir"
     # shellcheck source=ops/lib/selection.sh
     source "$REPO_ROOT/ops/lib/selection.sh"
+    # shellcheck source=ops/lib/selection-facts.sh
+    source "$REPO_ROOT/ops/lib/selection-facts.sh"
     # shellcheck source=ops/lib/selection-preview.sh
     source "$REPO_ROOT/ops/lib/selection-preview.sh"
     SELECTION_REPO_ROOT="$REPO_ROOT" SELECTION_HOST="${2:-linux-cli}" SELECTION_WORK="$BATS_TEST_TMPDIR/work"

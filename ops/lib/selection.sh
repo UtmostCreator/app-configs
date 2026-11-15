@@ -7,9 +7,11 @@
 # Sourced by ops/lib/hm-switch.sh, ops/install.sh, ops/bootstrap.sh,
 # ops/update-all.sh and ops/audit.sh; by the mise sync tasks (mise.toml); and by
 # `bash -c` in the fish function hms (home/dot_config/fish/conf.d/cli.fish).
-# ops/install.sh also sources ops/lib/selection-preview.sh (write, prompts and
-# preview), which no other script may load or call; this file holds only the
-# builder, so a switch, a build or an audit never loads that code.
+# ops/install.sh also sources ops/lib/selection-facts.sh (the shared facts; the
+# read-only selection diff of ops/update-all.sh loads it too) and
+# ops/lib/selection-preview.sh (write, prompts and preview), which no other
+# script may load or call; this file holds only the builder, so a switch, a
+# build or an audit never loads that code.
 #
 #   selection_dir    prints the directory that may hold selection.toml
 #   selection_args   fills SELECTION_ARGS (empty when there is no local file)

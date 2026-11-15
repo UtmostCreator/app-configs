@@ -781,10 +781,11 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
 
 # prompt_callers <root>: every file under ops, scripts, home, nix and mise.toml,
 # except install.sh and selection-preview.sh, that names a prompt, preview, write
-# or evaluation function of the install selection. selection.sh is not excepted:
-# it is the shared argument builder and holds none of them.
+# function of the install selection. selection.sh is not excepted: it is the
+# shared argument builder and holds none of them. The facts (selection_facts and
+# the lookups) are guarded separately, by facts_callers.
 prompt_callers() {
-    (cd "$1" && grep -rEl 'selection_(preview|prompt|present|write|read|facts|propose|validate|group_defaults|valid_profile|profile_of|hm_profile)' ops scripts home nix mise.toml 2>/dev/null \
+    (cd "$1" && grep -rEl 'selection_(preview|prompt|present|write|read|propose|validate)' ops scripts home nix mise.toml 2>/dev/null \
         | grep -vE '^ops/(install\.sh|lib/selection-preview\.sh)$' || true)
 }
 
@@ -845,6 +846,75 @@ preview_sourcers() {
     [[ "$output" == *"ops/lib/hm-switch.sh"* ]]
 }
 
+# facts_callers <root>: every file under ops, scripts, home, nix and mise.toml
+# that names a facts function of ops/lib/selection-facts.sh, except the scripts
+# and libraries allowed to use it: install.sh, update-all.sh (--selection-diff)
+# and the three selection libraries.
+facts_callers() {
+    (cd "$1" && grep -rEl 'selection_(facts|group_defaults|valid_profile|profile_of|hm_profile|profiles)([^[:alnum:]_]|$)|_sel_(eval|facts|chezmoi_status|files_delta)' ops scripts home nix mise.toml 2>/dev/null \
+        | grep -vE '^ops/(install\.sh|update-all\.sh|lib/selection-(facts|preview|diff)\.sh)$' || true)
+}
+
+# facts_sourcers <root>: every file that sources selection-facts.sh (a comment
+# that names it does not count), except install.sh and update-all.sh.
+facts_sourcers() {
+    (cd "$1" && grep -rEl '^[^#]*(source|\.)[[:space:]]+[^#]*selection-facts\.sh' ops scripts home nix mise.toml 2>/dev/null \
+        | grep -vE '^ops/(install|update-all)\.sh$' || true)
+}
+
+@test "T-0043: nothing but install.sh, update-all.sh and the selection libraries calls the facts functions" {
+    run facts_callers "$REPO_ROOT"
+    [ -z "$output" ] || { echo "$output"; return 1; }
+    grep -q 'selection_facts' "$REPO_ROOT/ops/install.sh"
+}
+
+@test "T-0043: only install.sh and update-all.sh source selection-facts.sh; bootstrap, hm-switch and audit never do" {
+    run facts_sourcers "$REPO_ROOT"
+    [ -z "$output" ] || { echo "$output"; return 1; }
+    grep -Eq '^source "\$REPO_ROOT/ops/lib/selection-facts\.sh"' "$REPO_ROOT/ops/install.sh"
+    local f
+    for f in ops/bootstrap.sh ops/lib/hm-switch.sh ops/audit.sh ops/lib/selection.sh; do
+        run grep -n 'selection-facts' "$REPO_ROOT/$f"
+        [ "$status" -ne 0 ] || { echo "$f names selection-facts"; return 1; }
+    done
+}
+
+@test "T-0043: seeded: a facts call from hm-switch.sh or bootstrap.sh is caught, install.sh and update-all.sh are not" {
+    local copy="$BATS_TEST_TMPDIR/seed"
+    mkdir -p "$copy/ops/lib"
+    cp "$REPO_ROOT/ops/install.sh" "$REPO_ROOT/ops/update-all.sh" "$REPO_ROOT/ops/bootstrap.sh" "$copy/ops/"
+    cp "$REPO_ROOT/ops/lib/selection.sh" "$REPO_ROOT/ops/lib/selection-facts.sh" "$REPO_ROOT/ops/lib/selection-preview.sh" "$REPO_ROOT/ops/lib/hm-switch.sh" "$copy/ops/lib/"
+    run facts_callers "$copy"
+    [ -z "$output" ]
+    printf '\nselection_facts\n' >>"$copy/ops/lib/hm-switch.sh"
+    printf '\nselection_hm_profile\n' >>"$copy/ops/bootstrap.sh"
+    printf '\n_sel_eval x y z w\n' >>"$copy/ops/lib/selection.sh"
+    printf '\nselection_facts\n' >>"$copy/ops/update-all.sh"
+    run facts_callers "$copy"
+    [[ "$output" == *"ops/lib/hm-switch.sh"* ]]
+    [[ "$output" == *"ops/bootstrap.sh"* ]]
+    [[ "$output" == *"ops/lib/selection.sh"* ]]
+    [[ "$output" != *"ops/update-all.sh"* ]]
+}
+
+@test "T-0043: seeded: sourcing selection-facts.sh from another script is caught, a comment is not" {
+    local copy="$BATS_TEST_TMPDIR/seed"
+    mkdir -p "$copy/ops/lib"
+    cp "$REPO_ROOT/ops/install.sh" "$REPO_ROOT/ops/update-all.sh" "$copy/ops/"
+    cp "$REPO_ROOT/ops/lib/selection.sh" "$REPO_ROOT/ops/lib/selection-facts.sh" "$REPO_ROOT/ops/lib/hm-switch.sh" "$copy/ops/lib/"
+    run facts_sourcers "$copy"
+    [ -z "$output" ]
+    printf '# source ops/lib/selection-facts.sh is not allowed here\n' >>"$copy/ops/lib/hm-switch.sh"
+    run facts_sourcers "$copy"
+    [ -z "$output" ]
+    printf '\nsource "$REPO_ROOT/ops/lib/selection-facts.sh"\n' >>"$copy/ops/lib/hm-switch.sh"
+    printf '\n. "${BASH_SOURCE[0]%%/*}/selection-facts.sh"\n' >>"$copy/ops/lib/selection.sh"
+    run facts_sourcers "$copy"
+    [[ "$output" == *"ops/lib/hm-switch.sh"* ]]
+    [[ "$output" == *"ops/lib/selection.sh"* ]]
+    [[ "$output" != *"ops/update-all.sh"* ]]
+}
+
 @test "AC7g: sourcing selection.sh or hm-switch.sh does not load the preview code" {
     run env -i PATH="$TPATH" bash -c 'source "$1/ops/lib/selection.sh"; declare -F package_delta render_package_delta nix_toplevel_packages selection_preview selection_write selection_facts selection_prompt_loop selection_validate selection_propose' _ "$REPO_ROOT"
     [ "$status" -ne 0 ]
@@ -860,7 +930,7 @@ preview_sourcers() {
     run env -i PATH="$TPATH" bash -c '
         set -euo pipefail
         source "$1/ops/lib/selection.sh"
-        source "$1/ops/lib/selection-preview.sh"
+        source "$1/ops/lib/selection-facts.sh"; source "$1/ops/lib/selection-preview.sh"
         selection_write "$2/a b" work media=false go=true security=false
         cat "$2/a b/selection.toml"
         selection_write "$2/a b" personal
@@ -874,7 +944,7 @@ preview_sourcers() {
     mkdir -p "$APP_CONFIGS_SELECTION_DIR"; printf 'profile = "work"\n' >"$APP_CONFIGS_SELECTION_DIR/selection.toml"
     run env -i PATH="$TPATH" APP_CONFIGS_SELECTION_DIR="$APP_CONFIGS_SELECTION_DIR" bash -c '
         source "$1/ops/lib/selection.sh"
-        source "$1/ops/lib/selection-preview.sh"
+        source "$1/ops/lib/selection-facts.sh"; source "$1/ops/lib/selection-preview.sh"
         selection_write "$APP_CONFIGS_SELECTION_DIR" bogus; echo "rc1=$?"
         selection_write "$APP_CONFIGS_SELECTION_DIR" work "x y=false"; echo "rc2=$?"
         selection_write "$APP_CONFIGS_SELECTION_DIR" work "media=maybe"; echo "rc3=$?"' _ "$REPO_ROOT"
@@ -886,14 +956,14 @@ preview_sourcers() {
 }
 
 @test "selection_hm_profile mirrors update-all: the XDG state profile, else the per-user Nix profile" {
-    run env -i PATH="$TPATH" HOME="$HOME_T" bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/selection-preview.sh"; selection_hm_profile; echo "rc=$?"' _ "$REPO_ROOT"
+    run env -i PATH="$TPATH" HOME="$HOME_T" bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/selection-facts.sh"; source "$1/ops/lib/selection-preview.sh"; selection_hm_profile; echo "rc=$?"' _ "$REPO_ROOT"
     [[ "$output" == *"rc=1"* ]]
     mkdir -p "$HOME_T/.local/state/nix/profiles"
-    run env -i PATH="$TPATH" HOME="$HOME_T" bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/selection-preview.sh"; selection_hm_profile' _ "$REPO_ROOT"
+    run env -i PATH="$TPATH" HOME="$HOME_T" bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/selection-facts.sh"; source "$1/ops/lib/selection-preview.sh"; selection_hm_profile' _ "$REPO_ROOT"
     [ "$output" = "$HOME_T/.local/state/nix/profiles/home-manager" ]
     rm -r "$HOME_T/.local/state"
     mkdir -p "$BATS_TEST_TMPDIR/nixstate/profiles/per-user/zed"
-    run env -i PATH="$TPATH" HOME="$HOME_T" USER=zed NIX_STATE_DIR="$BATS_TEST_TMPDIR/nixstate" bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/selection-preview.sh"; selection_hm_profile' _ "$REPO_ROOT"
+    run env -i PATH="$TPATH" HOME="$HOME_T" USER=zed NIX_STATE_DIR="$BATS_TEST_TMPDIR/nixstate" bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/selection-facts.sh"; source "$1/ops/lib/selection-preview.sh"; selection_hm_profile' _ "$REPO_ROOT"
     [ "$output" = "$BATS_TEST_TMPDIR/nixstate/profiles/per-user/zed/home-manager" ]
 }
 

@@ -55,7 +55,12 @@ reruns one artisan test on every PHP change (watchexec).
 | `git dnew` | diff stat including new files |
 | `git wtn <branch>` | new worktree `../<repo>-<branch>` on a new branch from fresh `origin/main` (no stash, no switch) |
 | `git wta` `wtl` `wtp` | `worktree add`, `list`, `prune` |
+| `git linelog START,END:path` | history of a line range (`git log -L`), e.g. `git linelog 10,20:src/app.php`; `git linelog :func:path` follows one function |
 | `git git ...` | runs `git ...` (typed `git` twice) |
+
+`push.followTags` (push annotated tags that point at the pushed commits) is
+not enabled; `dot_gitconfig.tmpl` carries it commented out in `[push]`, and
+`git config --global push.followTags true` turns it on.
 
 `help.autocorrect = prompt` offers the fix for typos such as `commi`, `stas`
 or `pul`. `commit.template` shows the conventional-commit format when you

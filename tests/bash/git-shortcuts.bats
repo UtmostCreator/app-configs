@@ -150,3 +150,22 @@ new_repo() {
     [ "$status" -ne 0 ]
     [[ "$output" == *'usage: git acp'* ]]
 }
+
+@test "linelog is git log -L: history of a line range, as git linelog START,END:path (no second alias for it)" {
+    [ "$(value linelog)" = "log -L" ]
+    new_repo
+    printf 'one\ntwo\n' >f.txt
+    git add f.txt && git commit -qm "add f"
+    printf 'one\nTWO\n' >f.txt
+    git commit -qam "change line 2"
+    run git linelog 2,2:f.txt
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"change line 2"* ]]
+    [[ "$output" == *"add f"* ]]
+}
+
+@test "push.followTags is documented but not enabled (commented out)" {
+    run git config --global --get push.followTags
+    [ "$status" -eq 1 ]
+    grep -Eq '^[[:space:]]*#[[:space:]]*followTags[[:space:]]*=[[:space:]]*true' "$BATS_FILE_TMPDIR/gitconfig"
+}

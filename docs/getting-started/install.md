@@ -217,6 +217,8 @@ bash ops/install.sh --dry-run          # prompt and preview; write and apply not
   used. The run never blocks.
 - `sys-update`, `sys-install`, `hms` and `mise run sync:apply` all use the same
   stored selection, silently; none of them ever prompts.
+- To see what the next `sys-update` would do with your selection, without
+  applying anything, run `sys-update --selection-diff` (see below).
 
 #### Invalid files
 
@@ -248,6 +250,80 @@ reconfigure on Linux rewrites the file without it.
 - **Personal to work on `linux-desktop`:** choosing `work` removes the personal
   apps (Vesktop, Telegram, Syncthing and its helper commands, OpenClaw and its
   gateway unit). The preview lists them under "personal apps".
+
+#### See what the next update would change (`--selection-diff`)
+
+```bash
+sys-update --selection-diff            # read-only: what would the next --apply add, remove or change?
+sys-update --selection-diff --json     # the same, as one JSON envelope on stdout
+bash ops/update-all.sh --selection-diff
+```
+
+It compares the **declared** state (the committed profile with your local
+selection applied, evaluated with `--no-write-lock-file`) with what is
+**installed** (the Home Manager generation, `chezmoi status` and, on macOS,
+`brew list --cask`). It is strictly read-only: it builds nothing, writes
+nothing outside a temporary directory it removes, runs no pull, install or
+cleanup, never takes, waits for or probes the update lock (so it works while an
+update runs), and never recovers an interrupted run. Both `sys-update` wrappers
+(the command and the fish function) add `--apply`; `--selection-diff` always
+overrides it, in either argument order, so `sys-update --selection-diff` is a
+diff, never an apply. `--yes`, `--no-pull` and `--verbose` are accepted and
+ignored; `rollback`, `--force`, `--gc`, `--allow-dirty`, `--skip-verify`,
+`--full-check` and `--no-cleanup` are usage errors with it, and `--json` is only
+valid with it (exit 2).
+
+The text output shows where the selection comes from (the file, the profile and
+each group, as `local` or `profile`), the group totals, the packages, Home
+Manager files and units, chezmoi files and casks, then the sections **REMOVE**
+(first), **CONFLICT**, **ADD**, **CHANGE**, **MANUAL**, **UNSUPPORTED** and
+**UNKNOWN**, each capped at 30 lines plus `and N more`, the limitations, and a
+final `RESULT:` line. An item whose source could not be read is listed as
+unknown, never as unchanged.
+
+| Exit | Meaning |
+| --- | --- |
+| 0 | in sync |
+| 1 | execution failure: nix missing, the declared state does not evaluate (the Nix error is on stderr), an internal error |
+| 2 | invalid arguments |
+| 10 | changes pending: any add, remove or change |
+| 11 | manual action required: any conflict (a chezmoi target edited here and in the repo, `MM`), any unknown source, an unfinished or failed last run |
+
+Precedence is 1, then 11, then 10, then 0. Codes 3 to 5 keep their meaning from
+the update itself. Homebrew casks that a deselected group leaves installed
+(cleanup is `none`) are listed as manual (`remove by hand: brew uninstall --cask
+<name>`) and do **not** count towards the exit code.
+
+`--json` prints exactly one envelope on stdout (diagnostics go to stderr) with
+a stable key order, entries sorted with `LC_ALL=C`, and changed items only;
+unchanged items appear as counts:
+
+```
+{ "schema_version": 1, "command": "selection-diff", "check": true, "applied": false,
+  "outcome": "in-sync|changes-pending|action-required", "exit_code": 0|10|11, "host": ...,
+  "repo": {rev, dirty}, "selection": {file, sha256, profile, groups, sources},
+  "applied_selection": null | {file, sha256}, "installed": {state, generation, generation_number},
+  "record": {state}, "causes": {selection_changed, repo_changed, generation_changed_outside},
+  "sources": {packages, hm_files, chezmoi, casks}, "counts": {add, remove, change, keep,
+  conflict, manual, unsupported, unknown}, "entries": [...], "limitations": [...], "notes": [...] }
+```
+
+Each source is `ok`, `unknown` or `n/a`. The evaluations take about half a
+minute on a desktop host (measured at roughly 27 s: 19 s for the group members,
+8 s for the current state).
+
+**The applied-state record.** After a successful `sys-update --apply` (after
+the verification and the commit phase) and after a successful `sys-install`
+switch (never on a dry run), the machine writes
+`${XDG_STATE_HOME:-~/.local/state}/app-configs/installed.meta` (override the
+directory with `APP_CONFIGS_STATE_DIR`): eleven `key=value` lines holding the
+writer, the time, the run id, the host, the generation, the repo revision and
+whether `nix` and `home` were dirty, and the **sha256** of the selection file
+(never its content). It is machine-local state and is never committed; the write
+is atomic and a failed write only warns. `--selection-diff` reads it to say
+*why* something is pending (the selection changed, the repo changed). When the
+record is absent, invalid or stale (the profile moved since), the causes are
+reported as `unknown`, not as "no", and the diff still works.
 
 Not covered here: native Windows, and tools that mise installs.
 

@@ -227,6 +227,13 @@ the mechanism and why.
   file or prints the preview, and that code lives in `ops/lib/selection-preview.sh`,
   which only `ops/install.sh` sources; `sys-update`, bootstrap, audit and
   `hm-switch.sh` never load or call it (`tests/bash/install-selection.bats`).
+  The facts both the preview and the read-only `sys-update --selection-diff` use
+  (profiles and groups, the evaluation, the installed generation) live in
+  `ops/lib/selection-facts.sh`, which only `ops/install.sh` and `ops/update-all.sh`
+  source; the diff itself is `ops/lib/selection-diff.sh`, sourced by
+  `ops/update-all.sh` alone, and the applied-state record it reads is
+  `ops/lib/install-record.sh` (written by `ops/install.sh` and `ops/update-all.sh`
+  after a successful apply). The same test file guards each of these.
 - **Validation is Nix's.** Unknown keys, groups and profiles, `[groups]` without
   `profile`, and wrong types fail evaluation with a message that names the key.
   A module assertion in `profile.nix` forces every group, so a wrong type fails on

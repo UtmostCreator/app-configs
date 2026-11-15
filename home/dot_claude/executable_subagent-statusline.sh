@@ -28,11 +28,18 @@
 # STATUSLINE_NOW (epoch seconds) pins the clock for tests.
 set -euo pipefail
 
-jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" \
+# UTF-8 locale: "│" between groups and "·" within one; otherwise "|" and "-".
+case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
+    *[Uu][Tt][Ff]-8*|*[Uu][Tt][Ff]8*) sep="│" dot="·" ;;
+    *)                                sep="|" dot="-" ;;
+esac
+
+jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date +%s)}" \
     --argjson nocolor "$([[ -n "${NO_COLOR:-}" ]] && echo true || echo false)" '
     # NO_COLOR (set, non-empty) turns every escape code off; the layout is unchanged.
     def color($code): if $nocolor then . else "[\($code)m\(.)[0m" end;
-    def level_color: if . < 70 then "0;32" elif . < 90 then "0;33" else "0;31" end;
+    # Context scale: <70 green, 70-84 yellow, 85-94 orange, 95+ red.
+    def ctx_code: if . < 70 then "0;32" elif . < 85 then "0;33" elif . < 95 then "38;5;208" else "0;31" end;
     def tokens:
         if . >= 1000000 then "\((. / 100000 | floor) / 10)M"
         elif . >= 1000 then "\(. / 1000 | floor)k"
@@ -59,14 +66,13 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" \
     def family_color:
         if startswith("Opus") then "0;35" elif startswith("Son") then "0;36"
         elif startswith("Haiku") then "0;32" else "0" end;
-    # Narrow-row effort initial; unknown levels get none.
-    def eff_i: ({low: "l", medium: "m", high: "h", xhigh: "x", max: "M"})[.] // "";
-    # Elapsed-time tint for a running/pending row, by seconds running:
-    # <5m none, 5-10m faint yellow, 10-20m yellow, 20-30m orange, >=30m bold red.
-    # (Read as bands: the "15m" in the request is taken as the 10-20m band.)
+    # Effort initial after the model (Opus 5.5:H); "max" stays as written, unknown levels get none.
+    def eff_i: ({low: "L", medium: "M", high: "H", xhigh: "X", max: "max"})[.] // "";
+    # Runtime scale for a running/pending row, by seconds running: under 5m neutral,
+    # 5-15m yellow, 15-30m orange, 30m+ muted red (bright red is kept for failures).
     def age_code:
-        if . >= 1800 then "1;31" elif . >= 1200 then "38;5;208"
-        elif . >= 600 then "0;33" elif . >= 300 then "2;33" else "" end;
+        if . >= 1800 then "38;5;167" elif . >= 900 then "38;5;208"
+        elif . >= 300 then "0;33" else "" end;
     def elapsed:
         ($now - (. / 1000 | floor)) as $s
         | if $s < 60 then "\([$s, 0] | max)s"
@@ -80,57 +86,77 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" \
     (.columns // 999) as $cols
     | [(.tasks // [])[] | {
         id,
-        status,
-        name: ((.name // .agentType // .label // .description // "agent") | clean | truncate(15)),
+        status: ((.status // "" | tostring)),
+        base: ((.name // .agentType // .label // .description // "agent") | clean | truncate(15)),
         kind: (.agentType // .name // "" | clean),
         # Task text trails the row, only when the name column is not already it.
         task: (if (.name // .agentType) != null then (.label // "" | clean) else "" end),
         model: (if .model then .model | model_name else "" end),
-        effort: (if .effort == null then "inherit"
+        effort: (if .effort == null then ""
                  elif (.effort | type) == "number" then .effort | tokens
-                 else .effort end),
-        pct: (if (.contextWindowSize // 0) > 0
-              then (.tokenCount // 0) * 100 / .contextWindowSize + 0.5 | floor
-              else null end),
-        tokens: (.tokenCount // 0 | tokens),
+                 else (.effort | tostring | eff_i) end),
+        # Context % needs both a window size and a token count; with only a count,
+        # the raw "tok 298k" is shown, and with neither nothing is invented.
+        pct: (if (.contextWindowSize | type) == "number" and .contextWindowSize > 0
+                 and (.tokenCount | type) == "number"
+              then .tokenCount * 100 / .contextWindowSize + 0.5 | floor else null end),
+        tokens: (if (.tokenCount | type) == "number" then .tokenCount | tokens else null end),
         since: .startTime
-      }] as $rows
+      }] as $rows0
+    # Agents sharing a type are numbered #1, #2 ... in startTime, then id, order.
+    | ($rows0 | to_entries | map(.value + {idx: .key})) as $indexed
+    | ($indexed | group_by(.kind)
+       | map(if .[0].kind != "" and length > 1
+             then (sort_by([(.since // 0), (.id | tostring)]) | to_entries | map(.value + {n: (.key + 1)}))
+             else map(. + {n: 0}) end)
+       | add // [] | sort_by(.idx)) as $rows
+    | ($rows | map(.name = (.base + (if .n > 0 then " #\(.n)" else "" end)))) as $rows
     | ([$rows[].name | length] | max // 0) as $name_w
-    | ([$rows[].model | length] | max // 0) as $model_w
-    | ([$rows[].effort | length] | max // 0) as $effort_w
-    | ([$rows[] | (.model | sub("^Sonnet"; "Son")) + (if .model != "" and (.effort | eff_i) != "" then ":x" else "" end) | length] | max // 0) as $full_w
-    # Widest state ("▶ ctx 84% !"), so keeping or dropping the effort initial is one decision for all rows.
-    | ([$rows[] | 2 + (if .pct == null then (.tokens | length) + 4
-                       else 4 + (.pct | tostring | length) + 1 + (if .pct >= 80 then 2 else 0 end) end)] | max // 0) as $state_w
+    | ([$rows[] | (if .model == "" then "inherit" else .model + (if .effort != "" then ":" + .effort else "" end) end) | length] | max // 0) as $model_w
+    | ([$rows[] | (if .pct != null then 5 + (.pct | tostring | length) + (if .pct >= 80 then 2 else 0 end)
+                   elif .tokens != null then 4 + (.tokens | length) else 0 end)] | max // 0) as $ctx_w
+    | ([$rows[] | select((.status == "running" or .status == "pending") and .since != null)
+        | (.since | elapsed | length)] | max // 0) as $age_w
+    | ([$rows[] | (.model | sub("^Sonnet"; "Son")) + (if .model != "" and .effort != "" then ":x" else "" end) | length] | max // 0) as $full_w
     | ([$rows[].model | sub("^Sonnet"; "Son") | length] | max // 0) as $tag_w
     | $rows[]
-    | ((.status // "" | tostring) | icon) as [$glyph, $glyph_color]
+    | ((.status) | icon) as [$glyph, $glyph_color]
     | .pct as $p
-    | (if $p == null then "\(.tokens) tok"
-       else ("ctx \($p)%" | color($p | level_color))
-            + (if $p >= 80 then " " + ("!" | color("0;31")) else "" end)
-       end) as $ctx
-    | (($glyph | color($glyph_color)) + " " + $ctx) as $state
+    | (if $p != null
+       then ("ctx \($p)%" | color($p | ctx_code)) + (if $p >= 80 then " " + ("!" | color("0;31")) else "" end)
+       elif .tokens != null then "tok \(.tokens)" else "" end) as $ctx
+    | (if .pct != null then 5 + (.pct | tostring | length) + (if .pct >= 80 then 2 else 0 end)
+       elif .tokens != null then 4 + (.tokens | length) else 0 end) as $ctx_plain_w
     | (if (.status == "running" or .status == "pending") and .since != null
        then (.since | elapsed) as $e
             | ($now - (.since / 1000 | floor) | age_code) as $c
             | if $c == "" then $e else $e | color($c) end
        else "" end) as $age
+    | (if (.status == "running" or .status == "pending") and .since != null then (.since | elapsed | length) else 0 end) as $age_plain_w
     | (.kind | type_color) as $kind_c
     | (.model | sub("^Sonnet"; "Son") | family_color) as $model_c
+    | ($glyph | color($glyph_color)) as $g
     | (.name | rpad($name_w) | color($kind_c)) as $name
+    | (if .model == "" then "inherit" else .model + (if .effort != "" then ":" + .effort else "" end) end) as $model_plain
     | {id, content:
         (if $cols < 60 then
             ((.model | sub("^Sonnet"; "Son")) as $tag
-             | (if .model != "" and (.effort | eff_i) != ""
-                then $tag + ":" + (.effort | eff_i) else $tag end) as $full
-             | (if $name_w + 1 + $full_w + 1 + $state_w <= $cols
+             | (if .model != "" and .effort != "" and (.effort | test("^[A-Za-z]")) then $tag + ":" + .effort else $tag end) as $full
+             | (if 2 + $name_w + 1 + $full_w + 1 + $ctx_w <= $cols
                 then $full | rpad($full_w) else $tag | rpad($tag_w) end) as $mark
-             | ([$name, ($mark | tint($model_c)), $state] | map(select(length > 0)) | join(" ")))
+             | ([$g, $name, ($mark | tint($model_c)), $ctx] | map(select(length > 0)) | join(" ")))
          else
-            ($name + " " + ([(.model | rpad($model_w) | tint($model_c)), (.effort | rpad($effort_w)), $state, $age]
-                            | map(select(length > 0)) | join(" · "))) as $base
+            # Time group: runtime then context, padded so context aligns across rows.
+            (if $age_w > 0
+             then (if $age_plain_w > 0 then $age + (" " * ($age_w - $age_plain_w)) else " " * $age_w end)
+                  + (if $ctx != "" then " \($dot) " + $ctx else "" end)
+             else $ctx end) as $time
+            | ($model_plain | length) as $mw
+            | (([$g, $name, $time] | map(select(length > 0)) | join(" "))
+               + " \($sep) " + ($model_plain | tint($model_c))) as $base
             | ($cols - ($base | plain | length) - 3) as $room
-            | if .task != "" and $room >= 8 then $base + " · " + (.task | truncate([$room, 40] | min)) else $base end
+            | if .task != "" and $room >= 8
+              then ($base | sub("\\s+$"; "")) + (" " * ([$model_w - $mw, 0] | max)) + " \($sep) " + (.task | truncate([$room - ([$model_w - $mw, 0] | max), 40] | min))
+              else $base end
          end)}
 '

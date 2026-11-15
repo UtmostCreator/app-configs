@@ -93,37 +93,42 @@ session_file() {
     edit_tracked
     run statusline "$FULL"
     [ "$status" -eq 0 ]
-    [ "${#lines[@]}" -eq 1 ]
-    [ "$output" = "advanced-gym ⎇ main* +3/-2 | Opus 5 · effort:high | Ctx ██████░░░░ 55% · 548k/1M | 5h 72% ↻1h24m · 7d ████░░░░░░ 41% ↻Tue" ]
+    [ "${#lines[@]}" -eq 3 ]
+    [ "${lines[0]}" = "advanced-gym ⎇ main* │ Opus 5 high" ]
+    [ "${lines[1]}" = "Ctx ██████░░░░ 55% · 548k/1M │ 5h 72% ↻1h24m · 7d ████░░░░░░ 41% ↻Tue" ]
+    [ "${lines[2]}" = "Git +3/-2" ]
 }
 
 @test "clean tree has no dirty marker and no diff segment when nothing changed" {
     run statusline '{"cost": {"total_lines_added": 0, "total_lines_removed": 0}}'
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main | Opus 5 | "* ]]
+    [ "${lines[0]}" = "advanced-gym ⎇ main │ Opus 5" ]
+    [[ "$output" != *Git* ]]
 }
 
 @test "diff is the live working tree against HEAD, not the session's edit counters" {
     # The session counters claim edits, but the tree is clean: nothing to show.
     run statusline "$FULL"
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main | Opus 5 · effort:high | "* ]]
+    [ "${lines[0]}" = "advanced-gym ⎇ main │ Opus 5 high" ]
+    [[ "$output" != *Git* ]]
     # Staged and unstaged changes both count; committing clears the segment.
     edit_tracked
     git -C "$REPO" add f.txt
     echo d >>"$REPO/f.txt"
     run statusline "$FULL"
-    [[ "$output" == "advanced-gym ⎇ main* +4/-2 | "* ]]
+    [ "${lines[0]}" = "advanced-gym ⎇ main* │ Opus 5 high" ]
+    [[ "$output" == *"Git +4/-2" ]]
     git -C "$REPO" -c user.name=t -c user.email=t@t commit -q -am edit
     run statusline "$FULL"
-    [[ "$output" == "advanced-gym ⎇ main | Opus 5"* ]]
+    [[ "$output" == "advanced-gym ⎇ main │ Opus 5"* && "$output" != *Git* ]]
 }
 
 @test "untracked files mark the tree dirty but add no line counts" {
     touch "$REPO/untracked.txt"
     run statusline "$FULL"
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main* | Opus 5"* ]]
+    [[ "$output" == "advanced-gym ⎇ main* │ Opus 5"* ]]
 }
 
 @test "binary changes are skipped in the line counts" {
@@ -131,7 +136,7 @@ session_file() {
     git -C "$REPO" add b.bin
     run statusline
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main* | Opus 5"* ]]
+    [[ "$output" == "advanced-gym ⎇ main* │ Opus 5"* ]]
 }
 
 @test "outside a git repo the diff falls back to the session's edit counters" {
@@ -139,7 +144,8 @@ session_file() {
     run statusline "$(jq -n --arg d "$WORK/plain-dir" '{workspace: {project_dir: $d, current_dir: $d},
         cost: {total_lines_added: 428, total_lines_removed: 91}}')"
     [ "$status" -eq 0 ]
-    [[ "$output" == "plain-dir +428/-91 | Opus 5 | "* ]]
+    [ "${lines[0]}" = "plain-dir │ Opus 5" ]
+    [[ "$output" == *"Git +428/-91" ]]
 }
 
 @test "200k window, optional fields absent" {
@@ -150,13 +156,14 @@ session_file() {
         "exceeds_200k_tokens": false
     }'
     [ "$status" -eq 0 ]
-    [ "$output" = "advanced-gym ⎇ main | Sonnet 5 | Ctx █░░░░░░░░░ 8% · 16k/200k" ]
+    [ "$output" = "advanced-gym ⎇ main │ Sonnet 5
+Ctx █░░░░░░░░░ 8% · 16k/200k" ]
 }
 
 @test "null used_percentage is computed from tokens / window" {
     run statusline '{"context_window": {"used_percentage": null}}'
     [ "$status" -eq 0 ]
-    [[ "$output" == *"| Ctx ██████░░░░ 55% · 548k/1M" ]]
+    [[ "${lines[1]}" == "Ctx ██████░░░░ 55% · 548k/1M" ]]
 }
 
 @test "resets under an hour and a 7d reset within a day show countdowns" {
@@ -165,43 +172,43 @@ session_file() {
         "seven_day": {"used_percentage": 99, "resets_at": 1738438600}
     }}'
     [ "$status" -eq 0 ]
-    [[ "$output" == *"| 5h 90% ↻42m · 7d ██████████ 99% ↻5h10m" ]]
+    [[ "${lines[1]}" == *"│ 5h 90% ↻42m · 7d ██████████ 99% ↻5h10m" ]]
 }
 
 @test "only one quota window present shows only that window" {
     run statusline '{"rate_limits": {"seven_day": {"used_percentage": 12, "resets_at": 1738679200}}}'
     [ "$status" -eq 0 ]
-    [[ "$output" == *"548k/1M | 7d █░░░░░░░░░ 12% ↻Tue" ]]
+    [[ "${lines[1]}" == *"548k/1M │ 7d █░░░░░░░░░ 12% ↻Tue" ]]
 }
 
-@test "wide: worktree and PR go on a second line" {
+@test "wide: worktree and PR go on the third row" {
     run statusline "$EXTRAS"
     [ "$status" -eq 0 ]
-    [ "${#lines[@]}" -eq 2 ]
-    [ "${lines[1]}" = "WT ui-redesign | PR #184 approved" ]
+    [ "${#lines[@]}" -eq 3 ]
+    [ "${lines[2]}" = "WT ui-redesign · PR #184 approved" ]
 }
 
 @test "PR without review state and git worktree name from workspace" {
     run statusline '{"workspace": {"git_worktree": "feature-xyz"}, "pr": {"number": 7}}'
     [ "$status" -eq 0 ]
-    [ "${lines[1]}" = "WT feature-xyz | PR #7" ]
+    [ "${lines[2]}" = "WT feature-xyz · PR #7" ]
 }
 
-@test "narrow terminal: compact first line, diff/WT/PR on the second" {
+@test "compact layout (80-119 columns): identity and pressure share row 1, Git/WT/PR on row 2" {
     edit_tracked
     export COLUMNS=80
     run statusline "$(jq -n --argjson a "$FULL" --argjson b "$EXTRAS" '$a * $b')"
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 2 ]
-    [ "${lines[0]}" = "advanced-gym ⎇ main* | Opus 5:high | Ctx 55% | 5h 72% | 7d 41%" ]
-    [ "${lines[1]}" = "+3/-2 · WT ui-redesign · PR #184 approved" ]
+    [ "${lines[0]}" = "advanced-gym main* │ Opus 5:H │ Ctx 55% │ 5h 72% · 7d 41%" ]
+    [ "${lines[1]}" = "Git +3/-2 │ WT ui-redesign · PR #184 approved" ]
 }
 
 @test "narrow terminal with nothing extra prints a single line" {
     export COLUMNS=80
     run statusline
     [ "$status" -eq 0 ]
-    [ "$output" = "advanced-gym ⎇ main | Opus 5 | Ctx 55%" ]
+    [ "$output" = "advanced-gym main │ Opus 5 │ Ctx 55%" ]
 }
 
 # --- Project / branch -----------------------------------------------------------
@@ -210,7 +217,7 @@ session_file() {
     git -C "$REPO" worktree add -q -b wt-branch "$WORK/wt"
     run statusline "$(jq -n --arg c "$WORK/wt" '{workspace: {current_dir: $c}}')"
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ wt-branch | "* ]]
+    [[ "$output" == "advanced-gym ⎇ wt-branch │ "* ]]
 }
 
 @test "detached HEAD shows the short commit hash" {
@@ -218,21 +225,22 @@ session_file() {
     sha=$(git -C "$REPO" rev-parse --short HEAD)
     run statusline
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ $sha | "* ]]
+    [[ "$output" == "advanced-gym ⎇ $sha │ "* ]]
 }
 
 @test "outside a git repo shows only the project name" {
     mkdir -p "$WORK/plain-dir"
     run statusline "$(jq -n --arg d "$WORK/plain-dir" '{workspace: {project_dir: $d, current_dir: $d}}')"
     [ "$status" -eq 0 ]
-    [[ "$output" == "plain-dir | Opus 5 | "* ]]
+    [ "${lines[0]}" = "plain-dir │ Opus 5" ]
 }
 
 @test "falls back to cwd when workspace and context_window are absent" {
     run bash -c "jq -n --arg c '$REPO' '{cwd: \$c, model: {display_name: \"Sonnet\"}}' | bash '$SCRIPT' | sed 's/\x1b\[[0-9;]*m//g'"
     [ "$status" -eq 0 ]
     # Was "Ctx 0% · 0/200k": a missing context_window must not render as 0%.
-    [ "$output" = "advanced-gym ⎇ main | Sonnet | Ctx —" ]
+    [ "$output" = "advanced-gym ⎇ main │ Sonnet
+Ctx —" ]
 }
 
 # --- Remote Control -------------------------------------------------------------
@@ -242,7 +250,7 @@ session_file() {
     session_file 222 sess-1 session_01Abc
     run statusline '{"session_id": "sess-1"}'
     [ "$status" -eq 0 ]
-    [[ "${lines[0]}" == "RC | advanced-gym ⎇ main | Opus 5 | "* ]]
+    [ "${lines[0]}" = "RC │ advanced-gym ⎇ main │ Opus 5" ]
 }
 
 @test "remote control: narrow terminal keeps the tag" {
@@ -250,42 +258,42 @@ session_file() {
     session_file 222 sess-1 session_01Abc
     run statusline '{"session_id": "sess-1"}'
     [ "$status" -eq 0 ]
-    [ "$output" = "RC | advanced-gym ⎇ main | Opus 5 | Ctx 55%" ]
+    [ "$output" = "RC │ advanced-gym main │ Opus 5 │ Ctx 55%" ]
 }
 
 @test "remote control: a session that is not connected has no tag" {
     session_file 222 sess-1
     run statusline '{"session_id": "sess-1"}'
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    [[ "$output" == "advanced-gym ⎇ main │ "* ]]
 }
 
 @test "remote control: another session's connection does not tag this one" {
     session_file 111 other-session session_01Other
     run statusline '{"session_id": "sess-1"}'
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    [[ "$output" == "advanced-gym ⎇ main │ "* ]]
 }
 
 @test "remote control: the most recently updated file for the session wins" {
     session_file 111 sess-1 session_01Old 100   # stale file from before a resume
     session_file 222 sess-1 "" 200
     run statusline '{"session_id": "sess-1"}'
-    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    [[ "$output" == "advanced-gym ⎇ main │ "* ]]
     session_file 333 sess-1 session_01New 300
     run statusline '{"session_id": "sess-1"}'
-    [[ "$output" == "RC | advanced-gym"* ]]
+    [[ "$output" == "RC │ advanced-gym"* ]]
 }
 
 @test "remote control: unreadable session files and a missing dir are ignored" {
     printf '{ not json' >"$CLAUDE_CONFIG_DIR/sessions/333.json"
     run statusline '{"session_id": "sess-1"}'
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    [[ "$output" == "advanced-gym ⎇ main │ "* ]]
     rm -rf "$CLAUDE_CONFIG_DIR/sessions"
     run statusline '{"session_id": "sess-1"}'
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    [[ "$output" == "advanced-gym ⎇ main │ "* ]]
 }
 
 # --- Remaining context tokens -----------------------------------------------------
@@ -293,7 +301,7 @@ session_file() {
 @test "wide: remaining tokens come from remaining_percentage and sit after the token count" {
     run statusline '{"context_window": {"remaining_percentage": 45.2}}'
     [ "$status" -eq 0 ]
-    [[ "$output" == *"| Ctx ██████░░░░ 55% · 548k/1M · ~452k left"* ]]
+    [[ "${lines[1]}" == "Ctx ██████░░░░ 55% · 548k/1M · ~452k left" ]]
 }
 
 @test "remaining tokens are hidden when remaining_percentage is absent or null" {
@@ -333,13 +341,14 @@ ctx_color() {
     touch "$REPO/u1" "$REPO/u2"                  # untracked
     run statusline
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main* ●1 ✚1 …2 +2/-0 | "* ]]
+    [ "${lines[0]}" = "advanced-gym ⎇ main* │ Opus 5" ]
+    [ "${lines[2]}" = "Git ●1 ✚1 …2 +2/-0" ]
 }
 
 @test "git: a single changed path keeps the plain marker (no count breakdown)" {
     touch "$REPO/u1"
     run statusline
-    [[ "$output" == "advanced-gym ⎇ main* | "* ]]
+    [[ "$output" == "advanced-gym ⎇ main* │ "* ]]
 }
 
 # remote_setup: bare origin, main pushed and tracked.
@@ -352,20 +361,21 @@ remote_setup() {
 @test "git: ahead and behind the upstream, shown only when non-zero" {
     remote_setup
     run statusline
-    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    [ "${lines[0]}" = "advanced-gym ⎇ main │ Opus 5" ]
+    [[ "$output" != *Git* ]]
     git -C "$REPO" -c user.name=t -c user.email=t@t commit -q --allow-empty -m local
     run statusline
-    [[ "$output" == "advanced-gym ⎇ main ↑1 | "* ]]
+    [ "${lines[2]}" = "Git ↑1" ]
     # Another clone pushes; the script does not fetch, so it stays unaware.
     git clone -q -b main "$WORK/origin.git" "$WORK/other" 2>/dev/null
     git -C "$WORK/other" -c user.name=t -c user.email=t@t commit -q --allow-empty -m r1
     git -C "$WORK/other" -c user.name=t -c user.email=t@t commit -q --allow-empty -m r2
     git -C "$WORK/other" push -q origin HEAD:main
     run statusline
-    [[ "$output" == "advanced-gym ⎇ main ↑1 | "* ]]
+    [ "${lines[2]}" = "Git ↑1" ]
     git -C "$REPO" fetch -q origin
     run statusline
-    [[ "$output" == "advanced-gym ⎇ main ↑1↓2 | "* ]]
+    [ "${lines[2]}" = "Git ↑1↓2" ]
 }
 
 @test "git: the script never fetches or pulls" {
@@ -375,13 +385,13 @@ remote_setup() {
 @test "git results are cached for the TTL in a per-repo file under XDG_RUNTIME_DIR" {
     export STATUSLINE_GIT_TTL=5
     run statusline
-    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    [[ "$output" == "advanced-gym ⎇ main │ "* ]]
     touch "$REPO/a"
     run statusline
-    [[ "$output" == "advanced-gym ⎇ main | "* ]]          # still cached
+    [[ "$output" == "advanced-gym ⎇ main │ "* ]]          # still cached
     [ -n "$(find "$XDG_RUNTIME_DIR" -type f | head -1)" ]
     STATUSLINE_NOW=$((NOW + 6)) run statusline
-    [[ "$output" == "advanced-gym ⎇ main* | "* ]]         # expired
+    [[ "$output" == "advanced-gym ⎇ main* │ "* ]]         # expired
 }
 
 @test "git cache is per repo" {
@@ -389,42 +399,42 @@ remote_setup() {
     make_repo "$WORK/second" trunk
     run statusline
     run statusline "$(jq -n --arg d "$WORK/second" '{workspace: {project_dir: $d, current_dir: $d}}')"
-    [[ "$output" == "second ⎇ trunk | "* ]]
+    [[ "$output" == "second ⎇ trunk │ "* ]]
 }
 
 # --- Session cost and duration ------------------------------------------------------
 
-@test "cost and duration go on the second line only when present" {
+@test "cost and duration go on the third row only when present" {
     run statusline '{"cost": {"total_cost_usd": 1.234, "total_duration_ms": 3725000}}'
     [ "$status" -eq 0 ]
-    [ "${#lines[@]}" -eq 2 ]
-    [ "${lines[1]}" = '$1.23 · 1h02m' ]
+    [ "${#lines[@]}" -eq 3 ]
+    [ "${lines[2]}" = '$1.23 · 1h02m' ]
     run statusline '{"cost": {"total_cost_usd": 0.5, "total_duration_ms": 45000}}'
-    [ "${lines[1]}" = '$0.50 · 45s' ]
+    [ "${lines[2]}" = '$0.50 · 45s' ]
     run statusline '{"cost": {"total_duration_ms": 720000}}'
-    [ "${lines[1]}" = "12m" ]
+    [ "${lines[2]}" = "12m" ]
     run statusline '{"cost": {"total_lines_added": 1}}'
-    [ "${#lines[@]}" -eq 1 ]
+    [ "${#lines[@]}" -eq 2 ]
 }
 
 # --- Cache health -------------------------------------------------------------------
 
 @test "cache health shows the hit ratio, or cold, only when caching is observed" {
     run statusline '{"prompt_cache": {"caching_observed": true, "warm": true, "hit_ratio": 0.91}}'
-    [ "${lines[1]}" = "Cache 91%" ]
+    [ "${lines[2]}" = "Cache 91%" ]
     run statusline '{"prompt_cache": {"caching_observed": true, "warm": false, "hit_ratio": 0.91}}'
-    [ "${lines[1]}" = "Cache 91% cold" ]
+    [ "${lines[2]}" = "Cache 91% cold" ]
     run statusline '{"prompt_cache": {"caching_observed": true, "warm": true, "hit_ratio": null}}'
-    [ "${#lines[@]}" -eq 1 ]
+    [ "${#lines[@]}" -eq 2 ]
     run statusline '{"prompt_cache": {"caching_observed": false, "warm": false, "hit_ratio": 0}}'
-    [ "${#lines[@]}" -eq 1 ]
+    [ "${#lines[@]}" -eq 2 ]
 }
 
-@test "worktree, PR, cost and cache share the second line" {
+@test "worktree, PR, cost and cache share the third row" {
     run statusline "$(jq -n --argjson b "$EXTRAS" '$b * {
         cost: {total_cost_usd: 2, total_duration_ms: 60000},
         prompt_cache: {caching_observed: true, warm: true, hit_ratio: 0.5}}')"
-    [ "${lines[1]}" = 'WT ui-redesign | PR #184 approved | $2.00 · 1m · Cache 50%' ]
+    [ "${lines[2]}" = 'WT ui-redesign · PR #184 approved │ $2.00 · 1m · Cache 50%' ]
 }
 
 # --- Width adaptation ---------------------------------------------------------------
@@ -437,24 +447,29 @@ width() {
 
 FULLER='{"context_window": {"remaining_percentage": 45.2}}'
 
-@test "wide: drops bars first, then remaining tokens, then reset times, then 7d" {
+@test "full layout: precision goes first, bars, then reset times (layout pinned to full)" {
+    export CLAUDE_STATUSLINE_MODE=full
     git -C "$REPO" checkout -q -b feature/statusline-upgrade-with-a-rather-long-name
     edit_tracked
     full="$(jq -n --argjson a "$FULL" --argjson b "$FULLER" '$a * $b')"
     run statusline "$full"
-    [[ "${lines[0]}" == *"~452k left"* && "${lines[0]}" == *"Ctx ██████░░░░"* ]]
-    export COLUMNS=$(( $(width "${lines[0]}") - 1 ))
+    [ "${lines[1]}" = "Ctx ██████░░░░ 55% · 548k/1M · ~452k left │ 5h 72% ↻1h24m · 7d ████░░░░░░ 41% ↻Tue" ]
+    export COLUMNS=$(( $(width "${lines[1]}") - 1 ))
     run statusline "$full"
-    [ "${lines[0]}" = "advanced-gym ⎇ feature/statusline-upgrade-with-a-rather-long-name* +3/-2 | Opus 5 · effort:high | Ctx 55% · 548k/1M · ~452k left | 5h 72% ↻1h24m · 7d 41% ↻Tue" ]
-    export COLUMNS=$(( $(width "${lines[0]}") - 1 ))
+    [ "${lines[1]}" = "Ctx 55% · 548k/1M · ~452k left │ 5h 72% ↻1h24m · 7d 41% ↻Tue" ]
+    export COLUMNS=$(( $(width "${lines[1]}") - 1 ))
     run statusline "$full"
-    [ "${lines[0]}" = "advanced-gym ⎇ feature/statusline-upgrade-with-a-rather-long-name* +3/-2 | Opus 5 · effort:high | Ctx 55% · 548k/1M | 5h 72% ↻1h24m · 7d 41% ↻Tue" ]
-    export COLUMNS=$(( $(width "${lines[0]}") - 1 ))
-    run statusline "$full"
-    [[ "${lines[0]}" != *left* && "${lines[0]}" != *"↻"* && "${lines[0]}" == *"7d 41%"* ]]
-    export COLUMNS=$(( $(width "${lines[0]}") - 1 ))
-    run statusline "$full"
-    [[ "${lines[0]}" != *"7d"* && "${lines[0]}" == *"5h 72%"* ]]
+    [ "${lines[1]}" = "Ctx 55% · 548k/1M · ~452k left │ 5h 72% · 7d 41%" ]
+}
+
+@test "layouts step down with the width: full, compact, minimal" {
+    full="$(jq -n --argjson a "$FULL" --argjson b "$FULLER" '$a * $b')"
+    COLUMNS=120 run statusline "$full"
+    [ "${#lines[@]}" -eq 2 ] && [[ "${lines[1]}" == "Ctx █"* ]]
+    COLUMNS=119 run statusline "$full"
+    [ "${lines[0]}" = "advanced-gym main │ Opus 5:H │ Ctx 55% · 452k left │ 5h 72% · 7d 41%" ]
+    COLUMNS=79 run statusline "$full"
+    [ "${lines[0]}" = "advanced-gym main │ Opus:H │ Ctx 55% │ 5h 72% · 7d 41%" ]
 }
 
 @test "every line fits the terminal for widths down to 60" {
@@ -469,13 +484,13 @@ FULLER='{"context_window": {"remaining_percentage": 45.2}}'
     done
 }
 
-@test "narrow line drops 7d, then 5h, as the terminal shrinks" {
-    export COLUMNS=45
+@test "minimal layout drops the lower quota, then the other, as the terminal shrinks" {
+    export COLUMNS=44
     run statusline "$FULL"
-    [ "$output" = "advanced-gym ⎇ main | Opus 5:high | Ctx 55%" ]
-    export COLUMNS=56
+    [ "$output" = "advanced-gym main │ Opus:H │ Ctx 55%" ]
+    export COLUMNS=53
     run statusline "$FULL"
-    [ "$output" = "advanced-gym ⎇ main | Opus 5:high | Ctx 55% | 5h 72%" ]
+    [ "$output" = "advanced-gym main │ Opus:H │ Ctx 55% │ 5h 72%" ]
 }
 
 @test "the statusline does not print the permission/auto mode (native footer owns it)" {
@@ -507,7 +522,7 @@ cache_file() {
     run statusline
     [ "$status" -eq 0 ]
     [ ! -e "$marker" ]
-    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    [[ "$output" == "advanced-gym ⎇ main │ "* ]]
     # The first field is checked too.
     printf 'NOW[$(touch %s)]\tmain\t0\t0\t0\t0\t0\t0\t0\t0\n' "$marker" >"$file"
     run statusline
@@ -531,7 +546,7 @@ cache_file() {
     ln -s "$WORK/victim" "$TMPDIR/claude-statusline-$(id -u)"
     run statusline
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    [[ "$output" == "advanced-gym ⎇ main │ "* ]]
     [ -n "$(find "$WORK/victim" -maxdepth 0 -perm 755)" ]
     [ -z "$(find "$WORK/victim" -type f)" ]
 }
@@ -542,23 +557,23 @@ cache_file() {
 @test "agent: a --agent session shows a coloured tag at the start of line 1" {
     run statusline '{"agent": {"name": "orchestrator"}}'
     [ "$status" -eq 0 ]
-    [[ "${lines[0]}" == "◆ orchestrator | advanced-gym ⎇ main | Opus 5 | "* ]]
+    [ "${lines[0]}" = "◆ orchestrator │ advanced-gym ⎇ main │ Opus 5" ]
     raw=$(payload '{"agent": {"name": "orchestrator"}}' | bash "$SCRIPT" | head -1)
-    [[ "$raw" == $'\033[0;34m◆ orchestrator\033[0m | '* ]]
+    [[ "$raw" == $'\033[0;34m◆ orchestrator\033[0m │ '* ]]
 }
 
 @test "agent: unknown type is grey, and the tag follows RC and survives narrow widths" {
     export COLUMNS=80
     session_file 222 sess-1 session_01Abc
     run statusline '{"session_id": "sess-1", "agent": {"name": "mystery"}}'
-    [ "$output" = "RC | ◆ mystery | advanced-gym ⎇ main | Opus 5 | Ctx 55%" ]
+    [ "$output" = "RC │ ◆ mystery │ advanced-gym main │ Opus 5 │ Ctx 55%" ]
     raw=$(payload '{"agent": {"name": "mystery"}}' | bash "$SCRIPT" | head -1)
-    [[ "$raw" == $'\033[0;90m◆ mystery\033[0m | '* ]]
+    [[ "$raw" == $'\033[0;90m◆ mystery\033[0m │ '* ]]
 }
 
 @test "agent: no tag when the payload has no agent" {
     run statusline '{}'
-    [[ "${lines[0]}" == "advanced-gym ⎇ main | "* ]]
+    [[ "${lines[0]}" == "advanced-gym ⎇ main │ "* ]]
     [[ "$output" != *"◆"* ]]
 }
 
@@ -568,17 +583,17 @@ cache_file() {
     raw=$(payload "$(jq -n --arg n "$long" '{agent: {name: $n}}')" | bash "$SCRIPT" | head -1 | sed 's/\x1b\[[0-9;]*m//g')
     [ "${#raw}" -le 60 ]
     COLUMNS=200 run statusline "$(jq -n --arg n "$long" '{agent: {name: $n}}')"
-    [[ "${lines[0]}" == "◆ xxxxxxxxxxxxxxxxxxx… | "* ]]
+    [[ "${lines[0]}" == "◆ xxxxxxxxxxxxxxxxxxx… │ "* ]]
 }
 
 @test "agent: a string agent, a non-object agent and control characters are tolerated" {
     run statusline '{"agent": "reviewer"}'
-    [[ "${lines[0]}" == "◆ reviewer | "* ]]
+    [[ "${lines[0]}" == "◆ reviewer │ "* ]]
     run statusline '{"agent": 7}'
     [ "$status" -eq 0 ]
     [[ "$output" != *"◆"* ]]
     run statusline '{"agent": {"name": "a\u001b[31mb"}}'
-    [[ "${lines[0]}" == "◆ a[31mb | "* ]]
+    [[ "${lines[0]}" == "◆ a[31mb │ "* ]]
 }
 
 # --- Pressure colours, quota-first fitting, NO_COLOR, bars ----------------------------
@@ -627,7 +642,7 @@ cache_file() {
     session_file 222 sess-1 session_01Abc
     out=$(payload '{"session_id": "sess-1", "agent": {"name": "reviewer"}}' | NO_COLOR=1 bash "$SCRIPT")
     [[ "$out" != *$'\033'* ]]
-    [[ "$out" == "RC | ◆ reviewer | advanced-gym ⎇ main | Opus 5 | Ctx 55%" ]]
+    [[ "$out" == "RC │ ◆ reviewer │ advanced-gym main │ Opus 5 │ Ctx 55%" ]]
 }
 
 @test "NO_COLOR set but empty does not disable colour" {
@@ -651,16 +666,16 @@ cache_file() {
     [[ "$output" != *"5h"* && "$output" != *"7d"* ]]
 }
 
-# Narrow (below 120) quota priority: the higher-utilisation quota survives.
+# Minimal layout (below 80 columns) quota priority: the higher-utilisation quota survives.
 @test "narrow: the quota with the higher utilisation is kept, 7d or 5h" {
     export COLUMNS=50
     run statusline '{"rate_limits": {"five_hour": {"used_percentage": 20}, "seven_day": {"used_percentage": 70}}}'
-    [ "$output" = "advanced-gym ⎇ main | Opus 5 | Ctx 55% | 7d 70%" ]
+    [ "$output" = "advanced-gym main │ Opus │ Ctx 55% │ 7d 70%" ]
     run statusline '{"rate_limits": {"five_hour": {"used_percentage": 70}, "seven_day": {"used_percentage": 20}}}'
-    [ "$output" = "advanced-gym ⎇ main | Opus 5 | Ctx 55% | 5h 70%" ]
+    [ "$output" = "advanced-gym main │ Opus │ Ctx 55% │ 5h 70%" ]
     # tie: 7d goes first, as before
     run statusline '{"rate_limits": {"five_hour": {"used_percentage": 50}, "seven_day": {"used_percentage": 50}}}'
-    [ "$output" = "advanced-gym ⎇ main | Opus 5 | Ctx 55% | 5h 50%" ]
+    [ "$output" = "advanced-gym main │ Opus │ Ctx 55% │ 5h 50%" ]
 }
 
 @test "a quota at 85 percent or more is never dropped, at any width" {
@@ -669,12 +684,12 @@ cache_file() {
         '$a * $b * $c * {rate_limits: {five_hour: {used_percentage: 30}, seven_day: {used_percentage: 96}}}')"
     for cols in 200 160 120 100 80 60; do
         COLUMNS=$cols run statusline "$full"
-        [[ "${lines[0]}" == *"7d "*"96%"* ]] || { echo "cols=$cols: ${lines[0]}"; false; }
+        [[ "$output" == *"7d "*"96%"* ]] || { echo "cols=$cols: $output"; false; }
     done
     full="$(jq '.rate_limits = {five_hour: {used_percentage: 91}, seven_day: {used_percentage: 96}}' <<<"$full")"
     for cols in 100 60; do
         COLUMNS=$cols run statusline "$full"
-        [[ "${lines[0]}" == *"5h 91%"* && "${lines[0]}" == *"7d 96%"* ]] || { echo "cols=$cols: ${lines[0]}"; false; }
+        [[ "$output" == *"5h 91%"* && "$output" == *"7d 96%"* ]] || { echo "cols=$cols: $output"; false; }
     done
 }
 
@@ -710,10 +725,10 @@ cache_file() {
     [[ "$output" == *"7d ███░░░░░░░ 30%" && "$output" != *5h* ]]
     run statusline '{"rate_limits": "none", "context_window": "big", "cost": {"total_lines_added": "many", "total_lines_removed": 1.5}}'
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main | Opus 5 | Ctx —" ]]
+    [ "${lines[0]}" = "advanced-gym ⎇ main │ Opus 5" ] && [ "${lines[1]}" = "Ctx —" ]
     run statusline '{"cost": "free"}'
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+    [[ "$output" == "advanced-gym ⎇ main │ "* ]]
 }
 
 @test "odd line counts outside git: a string count is 0 and 1.5 rounds to 2" {
@@ -721,14 +736,16 @@ cache_file() {
     run statusline "$(jq -n --arg d "$WORK/plain-dir" '{workspace: {project_dir: $d, current_dir: $d},
         cost: {total_lines_added: "many", total_lines_removed: 1.5}}')"
     [ "$status" -eq 0 ]
-    [[ "$output" == "plain-dir +0/-2 | Opus 5 | "* ]]
+    [ "${lines[0]}" = "plain-dir │ Opus 5" ]
+    [[ "$output" == *"Git +0/-2" ]]
 }
 
 @test "string-valued effort, model, workspace, worktree, pr and prompt_cache do not blank the line" {
     run statusline '{"effort": "high", "model": "opus", "workspace": "here", "worktree": "wt",
         "pr": "184", "prompt_cache": "warm"}'
     [ "$status" -eq 0 ]
-    [[ "$output" == "advanced-gym ⎇ main | unknown | Ctx ██████░░░░ 55% · 548k/1M" ]]
+    [ "${lines[0]}" = "advanced-gym ⎇ main │ unknown" ]
+    [ "${lines[1]}" = "Ctx ██████░░░░ 55% · 548k/1M" ]
 }
 
 @test "a PR number that is not a number is omitted instead of printed" {
@@ -737,4 +754,108 @@ cache_file() {
     [[ "$output" != *PR* ]]
     run statusline '{"pr": {"number": 184.0, "review_state": "approved"}}'
     [[ "$output" == *"PR #184 approved" ]]
+}
+
+# --- Three rows, three layouts ---------------------------------------------------------
+
+# rich: the shape of a busy session (RC, agent, git counts, 7d quota, cost, cache).
+rich() {
+    local dir=$WORK/rich
+    rm -rf "$dir"; make_repo "$dir" main
+    touch "$dir/a" "$dir/b"; git -C "$dir" add a b
+    git -C "$dir" -c user.name=t -c user.email=t@t commit -q -m ab
+    echo x >"$dir/a"; git -C "$dir" add a; echo y >"$dir/b"; touch "$dir/u1" "$dir/u2"
+    session_file 222 sess-1 session_01Abc
+    jq -n --arg d "$dir" '{
+        session_id: "sess-1", cwd: $d, workspace: {project_dir: $d, current_dir: $d},
+        agent: {name: "orchestrator"},
+        model: {display_name: "Opus 5.5 (1M context)"}, effort: {level: "high"},
+        context_window: {total_input_tokens: 140000, context_window_size: 1000000,
+                         used_percentage: 14, remaining_percentage: 86},
+        rate_limits: {seven_day: {used_percentage: 92, resets_at: 1738679200}},
+        cost: {total_cost_usd: 294.30, total_duration_ms: 502260000},
+        prompt_cache: {caching_observed: true, warm: true, hit_ratio: 0.97}}'
+}
+
+@test "full layout (160 columns): identity, pressure, then git and telemetry rows" {
+    COLUMNS=160 run bash -c "$(declare -f rich make_repo session_file); WORK='$WORK' CLAUDE_CONFIG_DIR='$CLAUDE_CONFIG_DIR' rich | bash '$SCRIPT' | sed 's/\x1b\[[0-9;]*m//g'"
+    [ "${#lines[@]}" -eq 3 ]
+    [ "${lines[0]}" = "RC │ ◆ orchestrator │ rich ⎇ main* │ Opus 5.5 high" ]
+    [ "${lines[1]}" = "Ctx █░░░░░░░░░ 14% · 140k/1M · ~860k left │ 7d █████████░ 92% ↻Tue" ]
+    [ "${lines[2]}" = 'Git ●1 ✚1 …2 +2/-0 │ $294.30 · 139h31m · Cache 97%' ]
+}
+
+@test "compact layout (100 columns): rows 1 and 2 merge, shorter labels, effort initial" {
+    out=$(rich | COLUMNS=100 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
+    [ "$(wc -l <<<"$out")" -eq 2 ]
+    [ "$(sed -n 1p <<<"$out")" = "RC │ ◆ orchestrator │ rich main* │ Opus 5.5:H │ Ctx 14% · 860k left │ 7d 92%" ]
+    [ "$(sed -n 2p <<<"$out")" = 'Git ●1 ✚1 …2 +2/-0 │ $294.30 · 139h31m · Cache 97%' ]
+}
+
+@test "minimal layout (59 columns): no Git group, model without version, whole dollars" {
+    out=$(rich | COLUMNS=59 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
+    [ "$(wc -l <<<"$out")" -eq 2 ]
+    # 60 columns with the agent tag: it is the first whole metric to go on row 1,
+    # and row 3 keeps everything.
+    [ "$(sed -n 1p <<<"$out")" = "RC │ rich main* │ Opus:H │ Ctx 14% │ 7d 92%" ]
+    [ "$(sed -n 2p <<<"$out")" = '$294 · 139h31m │ Cache 97%' ]
+    out=$(rich | COLUMNS=60 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
+    [ "$(sed -n 1p <<<"$out")" = "RC │ ◆ orchestrator │ rich main* │ Opus:H │ Ctx 14% │ 7d 92%" ]
+}
+
+@test "every layout fits at 160, 120, 100, 80, 60 and 40 columns, never losing a quota at 85%+" {
+    for cols in 160 120 100 80 60 40; do
+        out=$(rich | COLUMNS=$cols bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
+        while IFS= read -r l; do
+            [ "$(width "$l")" -le "$cols" ] || { echo "cols=$cols width=$(width "$l"): $l"; false; }
+        done <<<"$out"
+        [[ "$out" == *"7d "*"92%"* ]] || { echo "cols=$cols lost 7d: $out"; false; }
+    done
+}
+
+@test "effort initials: high H, medium M, low L, xhigh X, max stays max" {
+    export COLUMNS=100
+    for pair in high:H medium:M low:L xhigh:X max:max; do
+        run statusline "{\"effort\": {\"level\": \"${pair%%:*}\"}}"
+        [[ "${lines[0]}" == *"Opus 5:${pair##*:}"* ]] || { echo "$pair: $output"; false; }
+    done
+    export COLUMNS=200
+    run statusline '{"effort": {"level": "max"}}'
+    [ "${lines[0]}" = "advanced-gym ⎇ main │ Opus 5 max" ]
+}
+
+@test "CLAUDE_STATUSLINE_MODE pins the layout regardless of width" {
+    CLAUDE_STATUSLINE_MODE=compact COLUMNS=200 run statusline "$FULL"
+    [ "${#lines[@]}" -eq 1 ]
+    [[ "${lines[0]}" == *"Opus 5:H │ Ctx 55%"* ]]
+    CLAUDE_STATUSLINE_MODE=full COLUMNS=100 run statusline "$FULL"
+    [[ "${lines[0]}" == *"Opus 5 high" ]]
+    CLAUDE_STATUSLINE_MODE=minimal COLUMNS=200 run statusline "$FULL"
+    [[ "${lines[0]}" == *"Opus:H │ Ctx 55% │ 5h 72% · 7d 41%" ]]
+    CLAUDE_STATUSLINE_MODE=bogus COLUMNS=200 run statusline "$FULL"
+    [ "${#lines[@]}" -eq 2 ]
+}
+
+@test "ASCII locale: groups are separated by | and details by -, no box-drawing characters" {
+    export LC_ALL=C COLUMNS=160
+    run bash -c "$(declare -f rich make_repo session_file); WORK='$WORK' CLAUDE_CONFIG_DIR='$CLAUDE_CONFIG_DIR' rich | bash '$SCRIPT' | sed 's/\x1b\[[0-9;]*m//g'"
+    [[ "${lines[1]}" == "Ctx #---------"* ]]
+    [[ "${lines[1]}" == "Ctx #--------- 14% - 140k/1M - ~860k left | 7d #########- 92%"* ]]
+    [[ "${lines[2]}" == *'| $294.30 - 139h31m - Cache 97%' ]]
+    [[ "$output" != *│* && "$output" != *·* ]]
+}
+
+@test "cache is plain when healthy and coloured only when low or cold" {
+    raw() { payload "{\"prompt_cache\": {\"caching_observed\": true, \"warm\": $2, \"hit_ratio\": $1}}" | bash "$SCRIPT" | tail -1; }
+    [[ "$(raw 0.97 true)" == "Cache 97%" ]]
+    [[ "$(raw 0.60 true)" == $'\033[0;33mCache 60%\033[0m' ]]
+    [[ "$(raw 0.30 true)" == $'\033[0;31mCache 30%\033[0m' ]]
+    [[ "$(raw 0.97 false)" == "Cache 97% "$'\033[0;33mcold\033[0m' ]]
+}
+
+@test "NO_COLOR keeps the three-row layout unchanged" {
+    colored=$(payload "$FULL" | bash "$SCRIPT")
+    plain=$(payload "$FULL" | NO_COLOR=1 bash "$SCRIPT")
+    [[ "$plain" != *$'\033'* ]]
+    [ "$plain" = "$(sed 's/\x1b\[[0-9;]*m//g' <<<"$colored")" ]
 }

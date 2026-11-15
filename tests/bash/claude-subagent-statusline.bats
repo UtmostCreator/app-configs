@@ -6,6 +6,8 @@
 # `columns` and `tasks[]` ({id, name, type, status, description, label,
 # startTime (epoch ms), model, effort, contextWindowSize, tokenCount, cwd});
 # stdout is one {"id", "content"} JSON line per row to override.
+# Row order: status glyph, agent type (#n when several share a type), runtime,
+# context, model:effort, task.
 #
 # Deterministic: the clock is pinned via STATUSLINE_NOW (epoch seconds).
 #
@@ -17,7 +19,8 @@ setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     SCRIPT="$REPO_ROOT/home/dot_claude/executable_subagent-statusline.sh"
     [ -f "$SCRIPT" ]
-    export STATUSLINE_NOW=$NOW
+    export STATUSLINE_NOW=$NOW LC_ALL=C.UTF-8
+    unset NO_COLOR
 }
 
 # rows <input-json>: run the script, print "id=content" per line, ANSI stripped.
@@ -47,14 +50,14 @@ FOUR_AGENTS() {
         '{columns: $cols, tasks: [$a, $b, $c, $d]}'
 }
 
-@test "aligned rows: name, model, effort, status, context %, elapsed while running" {
+@test "aligned rows: glyph, name, runtime, context, model and effort in fixed columns" {
     run rows "$(FOUR_AGENTS)"
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 4 ]
-    [ "${lines[0]}" = "a1=Explore      Sonnet 5 · high  · ▶ ctx 24% · 1m42" ]
-    [ "${lines[1]}" = "a2=UI-review    Opus 5   · xhigh · ▶ ctx 71% · 4m18" ]
-    [ "${lines[2]}" = "a3=Tests        Sonnet 5 · high  · ✓ ctx 36%" ]
-    [ "${lines[3]}" = "a4=Architecture Opus 5   · max   · ▶ ctx 84% ! · 7m31" ]
+    [ "${lines[0]}" = "a1=▶ Explore      1m42 · ctx 24% │ Sonnet 5:H" ]
+    [ "${lines[1]}" = "a2=▶ UI-review    4m18 · ctx 71% │ Opus 5:X" ]
+    [ "${lines[2]}" = "a3=✓ Tests             · ctx 36% │ Sonnet 5:H" ]
+    [ "${lines[3]}" = "a4=▶ Architecture 7m31 · ctx 84% ! │ Opus 5:max" ]
 }
 
 @test "every output line is valid {id, content} JSON" {
@@ -69,15 +72,25 @@ FOUR_AGENTS() {
         '{columns: 120, tasks: [$a, $b]}')
     run rows "$input"
     [ "$status" -eq 0 ]
-    [ "${lines[0]}" = "f=Fable Fable 5.1 · high · ▶ ctx 0% · 5s" ]
-    [ "${lines[1]}" = "h=Haiku Haiku 4.5 · low  · ✗ ctx 1%" ]
+    [ "${lines[0]}" = "f=▶ Fable 5s · ctx 0% │ Fable 5.1:H" ]
+    [ "${lines[1]}" = "h=✗ Haiku    · ctx 1% │ Haiku 4.5:L" ]
 }
 
-@test "inherited effort, unresolved model, and hours-long runtime" {
+@test "unresolved model shows inherit; no window size shows the raw token count, never a fake %" {
     input=$(jq -n --argjson a "$(task p Pending '' '' pending 12000 0 3720)" '{columns: 120, tasks: [$a]}')
     run rows "$input"
     [ "$status" -eq 0 ]
-    [ "$output" = "p=Pending inherit · ◷ 12k tok · 1h02" ]
+    [ "$output" = "p=◷ Pending 1h02 · tok 12k │ inherit" ]
+    input=$(jq -n --argjson a "$(task t Tok claude-opus-5 high running 298000 0 5)" '{columns: 120, tasks: [$a]}')
+    run rows "$input"
+    [ "$output" = "t=▶ Tok 5s · tok 298k │ Opus 5:H" ]
+    [[ "$output" != *"ctx"* ]]
+}
+
+@test "no token count at all: no context field is invented" {
+    input=$(jq -n --argjson a "$(task n None claude-opus-5 high running 0 200000 5 | jq 'del(.tokenCount)')" '{columns: 120, tasks: [$a]}')
+    run rows "$input"
+    [ "$output" = "n=▶ None 5s │ Opus 5:H" ]
 }
 
 @test "numeric effort budget and killed status" {
@@ -85,7 +98,7 @@ FOUR_AGENTS() {
         '{columns: 120, tasks: [$a | .effort = 32000]}')
     run rows "$input"
     [ "$status" -eq 0 ]
-    [ "$output" = "k=Budget Sonnet 5 · 32k · ■ ctx 10%" ]
+    [ "$output" = "k=■ Budget ctx 10% │ Sonnet 5:32k" ]
 }
 
 @test "falls back to label, then description, when name is missing" {
@@ -95,8 +108,8 @@ FOUR_AGENTS() {
         '{columns: 120, tasks: [$a, $b]}')
     run rows "$input"
     [ "$status" -eq 0 ]
-    [ "${lines[0]}" = "l=Lint Sonnet 5 · high · ▶ ctx 0% · 1s" ]
-    [ "${lines[1]}" = "d=desc Sonnet 5 · high · ▶ ctx 0% · 1s" ]
+    [ "${lines[0]}" = "l=▶ Lint 1s · ctx 0% │ Sonnet 5:H" ]
+    [ "${lines[1]}" = "d=▶ desc 1s · ctx 0% │ Sonnet 5:H" ]
 }
 
 @test "long names are truncated to keep rows aligned" {
@@ -104,61 +117,55 @@ FOUR_AGENTS() {
         '{columns: 120, tasks: [$a]}')
     run rows "$input"
     [ "$status" -eq 0 ]
-    [ "$output" = "t=a-very-long-ag… Sonnet 5 · high · ▶ ctx 0% · 1s" ]
+    [ "$output" = "t=▶ a-very-long-ag… 1s · ctx 0% │ Sonnet 5:H" ]
 }
 
-@test "narrow panel keeps name, compact model tag with effort initial, status, and context %" {
+@test "agents sharing a type are numbered #1, #2 by start time then id; singletons are not" {
+    input=$(jq -n \
+        --argjson a "$(real_task reviewer 'later' | jq '.id = "z1" | .startTime = (.startTime + 5000)')" \
+        --argjson b "$(real_task reviewer 'earlier' | jq '.id = "z2" | .startTime = (.startTime - 5000)')" \
+        --argjson c "$(real_task reviewer 'tie-b' | jq '.id = "b9"')" \
+        --argjson d "$(real_task reviewer 'tie-a' | jq '.id = "a9"')" \
+        --argjson e "$(real_task researcher 'solo' | jq '.id = "s1"')" \
+        '{columns: 160, tasks: [$a, $b, $c, $d, $e]}')
+    run rows "$input"
+    [[ "${lines[0]}" == "z1=▶ reviewer #4"* ]]
+    [[ "${lines[1]}" == "z2=▶ reviewer #1"* ]]
+    [[ "${lines[2]}" == "b9=▶ reviewer #3"* ]]
+    [[ "${lines[3]}" == "a9=▶ reviewer #2"* ]]
+    [[ "${lines[4]}" == "s1=▶ researcher "* && "${lines[4]}" != *"#"*"researcher"* && "${lines[4]}" != "s1=▶ researcher #"* ]]
+}
+
+@test "narrow panel (below 60 columns): glyph, name, compact model tag with effort initial, context" {
     run rows "$(FOUR_AGENTS | jq '.columns = 50')"
     [ "$status" -eq 0 ]
-    [ "${lines[3]}" = "a4=Architecture Opus 5:M ▶ ctx 84% !" ]
-    [ "${lines[2]}" = "a3=Tests        Son 5:h  ✓ ctx 36%" ]
-    [ "${lines[0]}" = "a1=Explore      Son 5:h  ▶ ctx 24%" ]
-    [ "${lines[1]}" = "a2=UI-review    Opus 5:x ▶ ctx 71%" ]
+    [ "${lines[0]}" = "a1=▶ Explore      Son 5:H  ctx 24%" ]
+    [ "${lines[1]}" = "a2=▶ UI-review    Opus 5:X ctx 71%" ]
+    [ "${lines[2]}" = "a3=✓ Tests        Son 5:H  ctx 36%" ]
+    [ "${lines[3]}" = "a4=▶ Architecture Opus 5:max ctx 84% !" ]
 }
 
 @test "narrow panel: compact tags for Sonnet 4.6, Haiku 4.5, and no effort initial when inherited" {
     run rows "$(jq -n --argjson a "$(task s Son claude-sonnet-4-6 '' running 1000 200000 5)" '{columns: 50, tasks: [$a]}')"
     [ "$status" -eq 0 ]
-    [ "$output" = "s=Son Son 4.6 ▶ ctx 1%" ]
+    [ "$output" = "s=▶ Son Son 4.6 ctx 1%" ]
     run rows "$(jq -n --argjson a "$(task h Haiku claude-haiku-4-5-20251001 low failed 1000 200000 5)" '{columns: 50, tasks: [$a]}')"
-    [ "$output" = "h=Haiku Haiku 4.5:l ✗ ctx 1%" ]
-}
-
-@test "narrow panel: effort initial is dropped when the row would not fit, the model tag stays" {
-    run rows "$(FOUR_AGENTS | jq '.columns = 28')"
-    [ "$status" -eq 0 ]
-    [ "${lines[3]}" = "a4=Architecture Opus 5 ▶ ctx 84% !" ]
-}
-
-@test "narrow panel: effort initials are unambiguous (medium m, max M, xhigh x)" {
-    input=$(jq -n \
-        --argjson a "$(task a A claude-opus-5 medium running 1000 200000 5)" \
-        --argjson b "$(task b B claude-opus-5 max running 1000 200000 5)" \
-        --argjson c "$(task c C claude-opus-5 xhigh running 1000 200000 5)" \
-        --argjson d "$(task d D claude-opus-5 low running 1000 200000 5)" \
-        --argjson e "$(task e E claude-opus-5 odd running 1000 200000 5)" \
-        '{columns: 50, tasks: [$a, $b, $c, $d, $e]}')
-    run rows "$input"
-    [ "${lines[0]}" = "a=A Opus 5:m ▶ ctx 1%" ]
-    [ "${lines[1]}" = "b=B Opus 5:M ▶ ctx 1%" ]
-    [ "${lines[2]}" = "c=C Opus 5:x ▶ ctx 1%" ]
-    [ "${lines[3]}" = "d=D Opus 5:l ▶ ctx 1%" ]
-    [ "${lines[4]}" = "e=E Opus 5   ▶ ctx 1%" ]
+    [ "$output" = "h=✗ Haiku Haiku 4.5:L ctx 1%" ]
 }
 
 @test "narrow panel: the effort initial is kept or dropped for every row at once" {
     run rows "$(FOUR_AGENTS | jq '.columns = 28')"
     [ "$status" -eq 0 ]
-    [ "${lines[0]}" = "a1=Explore      Son 5  ▶ ctx 24%" ]
-    [ "${lines[1]}" = "a2=UI-review    Opus 5 ▶ ctx 71%" ]
-    [ "${lines[2]}" = "a3=Tests        Son 5  ✓ ctx 36%" ]
-    [ "${lines[3]}" = "a4=Architecture Opus 5 ▶ ctx 84% !" ]
+    [ "${lines[0]}" = "a1=▶ Explore      Son 5  ctx 24%" ]
+    [ "${lines[1]}" = "a2=▶ UI-review    Opus 5 ctx 71%" ]
+    [ "${lines[2]}" = "a3=✓ Tests        Son 5  ctx 36%" ]
+    [ "${lines[3]}" = "a4=▶ Architecture Opus 5 ctx 84% !" ]
 }
 
 @test "narrow panel: a task without a model shows no tag" {
     input=$(jq -n --argjson a "$(task n Nomodel '' high running 1000 200000 5)" '{columns: 50, tasks: [$a]}')
     run rows "$input"
-    [ "${lines[0]}" = "n=Nomodel ▶ ctx 1%" ]
+    [ "${lines[0]}" = "n=▶ Nomodel ctx 1%" ]
 }
 
 @test "no tasks prints nothing" {
@@ -178,35 +185,35 @@ real_task() {
         tokenCount: 1200, startTime: $start, tokenSamples: [], cwd: "/tmp"}'
 }
 
-@test "real payload: agent type is the name, the model shows, the task label trails" {
+@test "real payload: type, runtime, context, model and the task label in that order" {
     input=$(jq -n --argjson a "$(real_task reviewer 'Check delegation nesting')" \
         '{columns: 167, agent_type: "orchestrator", tasks: [$a]}')
     run rows "$input"
     [ "$status" -eq 0 ]
-    [ "$output" = "aad0147d1d0ef9f0e=reviewer Sonnet 5.5 · high · ▶ ctx 0% · 1s · Check delegation nesting" ]
+    [ "$output" = "aad0147d1d0ef9f0e=▶ reviewer 1s · ctx 0% │ Sonnet 5.5:H │ Check delegation nesting" ]
 }
 
 @test "real payload: narrow panel drops the task label but keeps type and model" {
     input=$(jq -n --argjson a "$(real_task reviewer 'Check delegation nesting')" \
         '{columns: 50, tasks: [$a]}')
     run rows "$input"
-    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5:h ▶ ctx 0%" ]
+    [ "$output" = "aad0147d1d0ef9f0e=▶ reviewer Son 5.5:H ctx 0%" ]
 }
 
 @test "colour: a known agent type and its model family are coloured, unknown types are grey" {
     input=$(jq -n --argjson a "$(real_task reviewer x)" --argjson b "$(real_task mystery x)" \
         '{columns: 167, tasks: [$a, $b]}')
     run bash -c "bash '$SCRIPT' <<<'$input' | jq -r .content"
-    [ "${lines[0]}" = "$(printf '\033[0;33mreviewer\033[0m \033[0;36mSonnet 5.5\033[0m · high · \033[0;34m▶\033[0m \033[0;32mctx 0%%\033[0m · 1s · x')" ]
-    [[ "${lines[1]}" == $'\033[0;90mmystery \033[0m'* ]]
+    [ "${lines[0]}" = "$(printf '\033[0;34m▶\033[0m \033[0;33mreviewer\033[0m 1s · \033[0;32mctx 0%%\033[0m │ \033[0;36mSonnet 5.5:H\033[0m │ x')" ]
+    [[ "${lines[1]}" == *$'\033[0;90mmystery \033[0m'* ]]
 }
 
-@test "colour: narrow fit is decided on visible width: 27 columns keeps the effort initial, 26 drops it (exact fit incl. ctx)" {
+@test "colour: narrow fit is decided on visible width: exact fit keeps the effort initial, one less drops it" {
     input=$(jq -n --argjson a "$(real_task reviewer x)" '{columns: 27, tasks: [$a]}')
     run rows "$input"
-    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5:h ▶ ctx 0%" ]
+    [ "$output" = "aad0147d1d0ef9f0e=▶ reviewer Son 5.5:H ctx 0%" ]
     run rows "$(jq '.columns = 26' <<<"$input")"
-    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5 ▶ ctx 0%" ]
+    [ "$output" = "aad0147d1d0ef9f0e=▶ reviewer Son 5.5 ctx 0%" ]
 }
 
 # visible_widths <input-json>: display width of each row's content, ANSI stripped.
@@ -217,7 +224,7 @@ visible_widths() {
 @test "width: rows with a long task label never exceed columns (60-167)" {
     long='A very long task description that keeps going well past any sensible panel width'
     for cols in 60 70 80 99 100 120 167; do
-        input=$(jq -n --argjson a "$(real_task reviewer "$long")" --argjson b "$(real_task researcher "$long")" \
+        input=$(jq -n --argjson a "$(real_task reviewer "$long")" --argjson b "$(real_task researcher "$long" | jq '.id = "b"')" \
             --argjson c "$cols" '{columns: $c, tasks: [$a, $b]}')
         while read -r w; do
             [ "$w" -le "$cols" ] || { echo "cols=$cols width=$w"; false; }
@@ -228,8 +235,8 @@ visible_widths() {
 @test "width: a task label is dropped when fewer than 8 columns remain" {
     input=$(jq -n --argjson a "$(real_task reviewer 'Some task')" '{columns: 60, tasks: [$a]}')
     run rows "$input"
-    [[ "$output" == *"· Some task" ]]
-    run rows "$(jq '.columns = 52' <<<"$input")"
+    [[ "$output" == *"│ Some task" ]]
+    run rows "$(jq '.columns = 51' <<<"$input")"
     [[ "$output" != *"Some task"* ]]
 }
 
@@ -239,7 +246,7 @@ visible_widths() {
     run rows "$input"
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 3 ]
-    [[ "${lines[2]}" == *"· a[31mbc" ]]
+    [[ "${lines[2]}" == *"│ a[31mbc" ]]
 }
 
 @test "parity: both scripts use the same colour for every agent type and the default" {
@@ -247,7 +254,7 @@ visible_widths() {
     export GIT_CONFIG_GLOBAL=/dev/null CLAUDE_CONFIG_DIR="$BATS_TEST_TMPDIR/c" XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR" STATUSLINE_GIT_TTL=0 COLUMNS=200
     for t in researcher architect implementer super-implementer reviewer orchestrator plan-writer release-auditor mystery; do
         sub=$(bash "$SCRIPT" <<<"$(jq -n --argjson a "$(real_task "$t" x)" '{columns: 167, tasks: [$a]}')" \
-            | jq -r .content | sed -E 's/^\x1b\[([0-9;]*)m.*/\1/')
+            | jq -r .content | sed -E 's/^\x1b\[[0-9;]*m[^\x1b]*\x1b\[0m \x1b\[([0-9;]*)m.*/\1/')
         main=$(jq -n --arg t "$t" '{cwd: "/nonexistent", agent: {name: $t}}' | bash "$MAIN" | head -1 \
             | sed -E 's/^\x1b\[([0-9;]*)m.*/\1/')
         [ -n "$sub" ]
@@ -255,61 +262,81 @@ visible_widths() {
     done
 }
 
-@test "context is labelled ctx, with a trailing ! from 80 percent" {
-    input=$(jq -n --argjson a "$(task a A claude-opus-5 high running 20000 200000 5)" \
-        --argjson b "$(task b B claude-opus-5 high running 160000 200000 5)" \
-        --argjson c "$(task c C claude-opus-5 high running 158000 200000 5)" '{columns: 120, tasks: [$a, $b, $c]}')
-    run rows "$input"
-    [ "${lines[0]}" = "a=A Opus 5 · high · ▶ ctx 10% · 5s" ]
-    [ "${lines[1]}" = "b=B Opus 5 · high · ▶ ctx 80% ! · 5s" ]
-    [ "${lines[2]}" = "c=C Opus 5 · high · ▶ ctx 79% · 5s" ]
-}
+# --- Colour scales ---------------------------------------------------------------------
 
-# age_code <age-seconds> [NO_COLOR value]: the SGR code wrapped around the elapsed
-# time of a running row ("" when the elapsed time carries no colour).
+# code_of <age-seconds-or-pct-kind> ...: helpers pulling an SGR code out of raw output.
 age_code() {
     local raw
     raw=$(NO_COLOR="${2:-}" bash "$SCRIPT" <<<"$(jq -n --argjson a "$(task a A claude-opus-5 high running 1000 200000 "$1")" \
         '{columns: 120, tasks: [$a]}')" | jq -r .content)
-    if [[ "$raw" =~ \;\ ?$'\033'\[([0-9;]+)m[0-9hms]+$'\033'\[0m$ || "$raw" =~ $'\033'\[([0-9;]+)m[0-9hms]+$'\033'\[0m$ ]]; then
+    if [[ "$raw" =~ $'\033'\[([0-9;]+)m[0-9hms]+$'\033'\[0m\ · ]]; then
         printf %s "${BASH_REMATCH[1]}"
     fi
 }
 
-@test "elapsed tint: under 5m is uncoloured, then faint yellow, yellow, orange, bold red" {
+@test "runtime scale: under 5m neutral, 5-15m yellow, 15-30m orange, 30m+ muted red" {
     [ -z "$(age_code 0)" ]
     [ -z "$(age_code 299)" ]
-    [ "$(age_code 300)" = "2;33" ]
-    [ "$(age_code 599)" = "2;33" ]
-    [ "$(age_code 600)" = "0;33" ]
-    [ "$(age_code 1199)" = "0;33" ]
-    [ "$(age_code 1200)" = "38;5;208" ]
+    [ "$(age_code 300)" = "0;33" ]
+    [ "$(age_code 899)" = "0;33" ]
+    [ "$(age_code 900)" = "38;5;208" ]
     [ "$(age_code 1799)" = "38;5;208" ]
-    [ "$(age_code 1800)" = "1;31" ]
-    [ "$(age_code 7200)" = "1;31" ]
+    [ "$(age_code 1800)" = "38;5;167" ]
+    [ "$(age_code 7200)" = "38;5;167" ]
 }
 
-@test "elapsed tint: pending rows are tinted, finished rows show no elapsed time" {
+# ctx_code <tokens>: the SGR code on "ctx N%" for N = tokens / 2000 (200k window).
+ctx_code() {
+    bash "$SCRIPT" <<<"$(jq -n --argjson a "$(task a A claude-opus-5 high completed "$1" 200000 5)" '{columns: 120, tasks: [$a]}')" \
+        | jq -r .content | grep -o $'\033\\[[0-9;]*mctx' | sed -E 's/^\x1b\[([0-9;]*)mctx$/\1/'
+}
+
+@test "context scale: under 70 green, 70-84 yellow, 85-94 orange, 95+ red" {
+    [ "$(ctx_code 138000)" = "0;32" ]     # 69%
+    [ "$(ctx_code 140000)" = "0;33" ]     # 70%
+    [ "$(ctx_code 168000)" = "0;33" ]     # 84%
+    [ "$(ctx_code 170000)" = "38;5;208" ] # 85%
+    [ "$(ctx_code 188000)" = "38;5;208" ] # 94%
+    [ "$(ctx_code 190000)" = "0;31" ]     # 95%
+}
+
+@test "context is labelled ctx, with a trailing ! from 80 percent" {
+    input=$(jq -n --argjson a "$(task a A claude-opus-5 high completed 20000 200000 5)" \
+        --argjson b "$(task b B claude-opus-5 high completed 160000 200000 5)" \
+        --argjson c "$(task c C claude-opus-5 high completed 158000 200000 5)" '{columns: 120, tasks: [$a, $b, $c]}')
+    run rows "$input"
+    [ "${lines[0]}" = "a=✓ A ctx 10% │ Opus 5:H" ]
+    [ "${lines[1]}" = "b=✓ B ctx 80% ! │ Opus 5:H" ]
+    [ "${lines[2]}" = "c=✓ C ctx 79% │ Opus 5:H" ]
+}
+
+@test "runtime tint: pending rows are tinted, finished rows show no runtime" {
     input=$(jq -n --argjson a "$(task p P claude-opus-5 high pending 1000 200000 700)" \
         --argjson b "$(task c C claude-opus-5 high completed 1000 200000 700)" '{columns: 120, tasks: [$a, $b]}')
     run bash -c "bash '$SCRIPT' <<<'$input' | jq -r .content"
-    [[ "${lines[0]}" == *$'\033[0;33m11m40\033[0m' ]]
+    [[ "${lines[0]}" == *$'\033[0;33m11m40\033[0m'* ]]
     [[ "${lines[1]}" != *"11m40"* ]]
 }
 
-@test "elapsed tint: the visible text and width are unchanged by the colour" {
+@test "runtime tint: the visible text and width are unchanged by the colour" {
     input=$(jq -n --argjson a "$(task a Alpha claude-opus-5 high running 1000 200000 2000)" '{columns: 120, tasks: [$a]}')
     run rows "$input"
-    [ "$output" = "a=Alpha Opus 5 · high · ▶ ctx 1% · 33m20" ]
+    [ "$output" = "a=▶ Alpha 33m20 · ctx 1% │ Opus 5:H" ]
 }
 
 @test "NO_COLOR: no escape codes anywhere in a subagent row, text unchanged" {
     input=$(jq -n --argjson a "$(task a Alpha claude-opus-5 high running 150000 200000 2000)" '{columns: 120, tasks: [$a]}')
     out=$(NO_COLOR=1 bash "$SCRIPT" <<<"$input" | jq -r .content)
     [[ "$out" != *$'\033'* ]]
-    [ "$out" = "Alpha Opus 5 · high · ▶ ctx 75% · 33m20" ]
+    [ "$out" = "▶ Alpha 33m20 · ctx 75% │ Opus 5:H" ]
     [ -z "$(age_code 2000 1)" ]
-    [ "$(age_code 2000)" = "1;31" ]
+    [ "$(age_code 2000)" = "38;5;167" ]
+}
+
+@test "ASCII locale: groups are separated by | and details by -" {
+    input=$(jq -n --argjson a "$(real_task reviewer 'Check')" '{columns: 167, tasks: [$a]}')
+    out=$(LC_ALL=C bash "$SCRIPT" <<<"$input" | jq -r .content | sed 's/\x1b\[[0-9;]*m//g')
+    [ "$out" = "▶ reviewer 1s - ctx 0% | Sonnet 5.5:H | Check" ]
 }
 
 @test "a numeric or missing task status does not blank the panel" {
@@ -318,5 +345,5 @@ age_code() {
     run rows "$input"
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 2 ]
-    [ "${lines[0]}" = "a=A Opus 5 · high · · ctx 1%" ]
+    [ "${lines[0]}" = "a=· A ctx 1% │ Opus 5:H" ]
 }

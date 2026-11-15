@@ -3,11 +3,18 @@
 # (see `statusLine` in settings.json). Field reference:
 # https://code.claude.com/docs/en/statusline#available-data
 #
-# +A/-R is the live `git diff HEAD` line count (session edit counters outside git).
-# Wide:    [◆ agent |] project ⎇ branch* +A/-R | Model · effort:high | Ctx ██████░░░░ 55% · 548k/1M | 5h 72% ↻1h24m · 7d ███░░░░░░░ 41% ↻Tue
-#          WT name | PR #184 approved | $1.23 · 1h02m · Cache 91%   (only what exists)
-# Narrow:  [◆ agent |] project ⎇ branch* | Model:high | Ctx 55% | 5h 72% | 7d 41%    (COLUMNS < 120)
-#          +A/-R · WT name · PR #184 approved · $1.23 · 1h02m · Cache 91%
+# Three rows, three layouts (width picks one; CLAUDE_STATUSLINE_MODE=full|compact|minimal pins it):
+#   full (>=120)  RC │ ◆ agent │ project ⎇ branch* │ Opus 5.5 high
+#                 Ctx ██░░░░░░░░ 14% · 140k/1M · ~860k left │ 5h 72% ↻1h24m · 7d ████░░░░░░ 41% ↻Tue
+#                 Git ✚83 …87 +A/-R │ WT name · PR #184 approved │ $1.23 · 1h02m · Cache 91%
+#   compact (>=80) RC │ project branch* │ Opus 5.5:H │ Ctx 14% · 860k left │ 7d 92%
+#                 Git ✚83 …87 +A/-R │ $1.23 · 1h02m · Cache 91%
+#   minimal       project branch* │ Opus:H │ Ctx 14% │ 7d 92%
+#                 $1 · 1h02m │ Cache 91%
+# "+A/-R" is the live `git diff HEAD` line count (session edit counters outside git).
+# "│" and "·" become "|" and "-" in a non-UTF-8 locale. Effort is a word in full and an
+# initial in the others (H, M, L, X; max stays max). Cache is plain text when healthy
+# and coloured only when low (<80% yellow, <50% red) or cold.
 #
 # Ctx % is real context-window usage of the actual window (no fixed 200k
 # marker): colour by pressure, normal <75, watch 75-84, high 85-94, critical
@@ -50,7 +57,8 @@ NC=$'\033[0m'
 if [[ -n "${NO_COLOR:-}" ]]; then
     RED="" YELLOW="" GREEN="" BLUE="" MAGENTA="" ORANGE="" BOLD_RED="" CYAN="" GREY="" BOLD="" NC=""
 fi
-NARROW_BELOW=120
+FULL_MIN=120    # columns for the full layout
+COMPACT_MIN=80  # columns for the compact layout; below it, minimal
 
 # level_color <percent>: green below 70, yellow below 90, red otherwise.
 level_color() {
@@ -85,14 +93,16 @@ agent_color() {
     esac
 }
 
+# UTF-8 locale: "│" and "·" separators and block bars; otherwise "|", "-", "#".
+case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
+    *[Uu][Tt][Ff]-8*|*[Uu][Tt][Ff]8*) SEP="│" DOT="·" BAR_ON=█ BAR_OFF=░ ;;
+    *)                                SEP="|" DOT="-" BAR_ON='#' BAR_OFF='-' ;;
+esac
+
 # bar <percent>: ten cells, filled = round(percent / 10), clamped. UTF-8 blocks,
 # or "#" and "-" when the locale is not UTF-8.
 bar() {
-    local pct=$1 filled i out="" on=█ off=░
-    case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
-        *[Uu][Tt][Ff]-8*|*[Uu][Tt][Ff]8*) ;;
-        *) on='#' off='-' ;;
-    esac
+    local pct=$1 filled i out="" on=$BAR_ON off=$BAR_OFF
     filled=$(( (pct + 5) / 10 ))
     (( filled > 10 )) && filled=10
     (( filled < 0 )) && filled=0
@@ -298,11 +308,14 @@ if [[ -n "$current_dir" ]]; then
 fi
 
 repo="${GREEN}${project}${NC}"
+repo_short=$repo   # compact and minimal drop the ⎇ glyph
 git_counts=""
 if [[ -n "$branch" ]]; then
     repo+=" ${MAGENTA}⎇ ${branch}${NC}"
+    repo_short+=" ${MAGENTA}${branch}${NC}"
     if (( changed > 0 )); then
         repo+="${YELLOW}*${NC}"
+        repo_short+="${YELLOW}*${NC}"
     fi
     # +A/-R is the working tree against HEAD (staged and unstaged), read fresh
     # (within the cache TTL) so commits and edits made outside this session
@@ -351,22 +364,27 @@ if [[ -n "$pr_number" ]]; then
 fi
 
 # Session cost and duration, then prompt-cache health; each only when present.
-cost_seg="" dur_seg="" cache_seg=""
+cost_seg="" dur_seg="" cache_seg="" cost_whole_seg=""
 if [[ -n "$cost_cents" ]]; then
     printf -v cost_seg '$%d.%02d' $((cost_cents / 100)) $((cost_cents % 100))
 fi
 if [[ -n "$duration_s" ]]; then
     dur_seg=$(clock "$duration_s")
 fi
-session_seg=$(join " · " "$cost_seg" "$dur_seg")
+if [[ -n "$cost_cents" ]]; then
+    printf -v cost_whole_seg '$%d' $(( (cost_cents + 50) / 100 ))
+else
+    cost_whole_seg=""
+fi
 if [[ "$cache_observed" == true ]]; then
     cache_hit_seg=""
     if [[ -n "$cache_hit" ]]; then
-        if   (( cache_hit >= 80 )); then cache_color=$GREEN
+        # Healthy (80%+) is plain text; only low or cold caches are promoted by colour.
+        if   (( cache_hit >= 80 )); then cache_color=""
         elif (( cache_hit >= 50 )); then cache_color=$YELLOW
         else                             cache_color=$RED
         fi
-        cache_hit_seg="${cache_color}Cache ${cache_hit}%${NC}"
+        cache_hit_seg="${cache_color}Cache ${cache_hit}%${cache_color:+$NC}"
     fi
     cache_cold=""
     if [[ "$cache_warm" != true ]]; then
@@ -376,34 +394,53 @@ if [[ "$cache_observed" == true ]]; then
     cache_seg=$(join " " "$cache_hit_seg" "$cache_cold")
 fi
 
-# Lowest-priority segments go first when the terminal is too narrow; each
-# drop_* flag is switched on by fit level below. Of the two quotas, "weak" is
-# the one with the lower utilisation (7d on a tie; a lone quota is weak) and
-# "strong" the other; a quota at QUOTA_KEEP percent or more is never dropped.
+# Three logical rows, in one of three layouts picked from the terminal width
+# (or pinned with CLAUDE_STATUSLINE_MODE=full|compact|minimal):
+#   row 1  identity   RC │ ◆ agent │ project ⎇ branch* │ model effort
+#   row 2  pressure   Ctx bar % · used/total · ~left │ 5h .. · 7d ..
+#   row 3  git/telemetry   Git counts +A/-R │ WT/PR │ $cost · time · Cache
+# full (>=120 columns) is all three; compact (>=80) folds row 2 into row 1,
+# shortens labels and drops bars, resets and used/total; minimal folds the same
+# way, drops the model version and the Git group and rounds the cost. Within a
+# layout precision goes first (bars, resets, ~left); a layout that still does
+# not fit gives way to the next smaller one; whole metrics are dropped only in
+# minimal, as a last resort.
+#
+# Of the two quotas, "weak" is the lower utilisation (7d on a tie; a lone quota
+# is weak) and "strong" the other; a quota at QUOTA_KEEP percent or more is
+# never dropped.
 QUOTA_KEEP=85
 weak=q7 strong=q5
 if [[ -n "$q5_pct" && ( -z "$q7_pct" || "$q5_pct" -lt "$q7_pct" ) ]]; then
     weak=q5 strong=q7
 fi
-drop_bars=0 drop_left=0 drop_resets=0 drop_weak=0 drop_strong=0 drop_tokens=0 drop_effort=0
-drop_counts=0 drop_cache=0 drop_session=0 drop_agent=0
 
+# effort_initial <level>: H, M, L, X; "max" stays as written (no clash with M).
+effort_initial() {
+    case "$1" in
+        low) printf L ;; medium) printf M ;; high) printf H ;; xhigh) printf X ;;
+        *) printf %s "$1" ;;
+    esac
+}
+
+# render <layout>: sets rows (row1 row2 row3) from the drop_* flags.
 render() {
-    local q5="" q7="" q5_long="" q7_long="" ctx_long q7_label="7d"
-    if [[ -n "$q7_pct" ]] && (( ! narrow && ! drop_bars )); then
-        q7_label="7d $(bar "$q7_pct")"
+    local layout=$1 q5="" q7="" q_group ctx_group model_seg git_group extras_group tele_group
+    local label7="7d"
+    if [[ "$layout" == full ]]; then
+        (( drop_bars )) || { [[ -n "$q7_pct" ]] && label7="7d $(bar "$q7_pct")"; }
+        [[ -n "$q5_pct" ]] && q5="$(level_color "$q5_pct")5h ${q5_pct}%${NC}${q5_reset:+ ↻$q5_reset}"
+        [[ -n "$q7_pct" ]] && q7="$(level_color "$q7_pct")${label7} ${q7_pct}%${NC}${q7_reset:+ ↻$q7_reset}"
+        if (( drop_resets )); then
+            [[ -n "$q5_pct" ]] && q5="$(level_color "$q5_pct")5h ${q5_pct}%${NC}"
+            [[ -n "$q7_pct" ]] && q7="$(level_color "$q7_pct")${label7} ${q7_pct}%${NC}"
+        fi
+    else
+        [[ -n "$q5_pct" ]] && q5="$(level_color "$q5_pct")5h ${q5_pct}%${NC}"
+        [[ -n "$q7_pct" ]] && q7="$(level_color "$q7_pct")7d ${q7_pct}%${NC}"
     fi
-    if [[ -n "$q5_pct" ]]; then
-        q5="$(level_color "$q5_pct")5h ${q5_pct}%${NC}"
-        q5_long="${q5}${q5_reset:+ ↻$q5_reset}"
-        (( drop_resets )) && q5_long="$q5"
-    fi
-    if [[ -n "$q7_pct" ]]; then
-        q7="$(level_color "$q7_pct")7d ${q7_pct}%${NC}"
-        q7_long="$(level_color "$q7_pct")${q7_label} ${q7_pct}%${NC}${q7_reset:+ ↻$q7_reset}"
-        (( drop_resets )) && q7_long="$(level_color "$q7_pct")${q7_label} ${q7_pct}%${NC}"
-    fi
-    # Drop the weak quota, then the strong one, unless it is nearly exhausted.
+    # Last-resort quota drops (minimal only): the weak one, then the strong one,
+    # unless it is nearly exhausted.
     local name pct
     for name in q5 q7; do
         pct=${name}_pct
@@ -413,75 +450,134 @@ render() {
         if { [[ "$name" == "$weak" ]] && (( drop_weak )); } \
             || { [[ "$name" == "$strong" ]] && (( drop_strong )); }; then
             printf -v "$name" %s ""
-            printf -v "${name}_long" %s ""
         fi
     done
+    q_group=$(join " $DOT " "$q5" "$q7")
 
-    local repo_seg=$repo diff_seg=$diff
-    if (( ! drop_counts )); then
-        repo_seg=$(join " " "$repo" "$git_counts")
+    case "$layout" in
+        full)
+            ctx_group=$ctx_bar
+            (( drop_bars )) && ctx_group=$ctx_short
+            [[ -n "$ctx_used" && -n "$ctx_size" ]] && ctx_group+=" $DOT ${ctx_used}/${ctx_size}"
+            [[ -n "$ctx_left" ]] && ctx_group+=" $DOT ~${ctx_left} left" ;;
+        compact)
+            ctx_group=$ctx_short
+            [[ -n "$ctx_left" ]] && (( ! drop_left )) && ctx_group+=" $DOT ${ctx_left} left" ;;
+        *) ctx_group=$ctx_short ;;
+    esac
+
+    # Model: full name and effort word; compact keeps the name and an initial;
+    # minimal drops the version ("Opus 5.5" -> "Opus").
+    local mname=$model_name
+    [[ "$layout" == minimal ]] && mname=${model_name%% *}
+    model_seg="${BLUE}${mname}${NC}"
+    if [[ -n "$effort" ]] && (( ! drop_effort )); then
+        if [[ "$layout" == full ]]; then model_seg+=" $effort"
+        else model_seg+=":$(effort_initial "$effort")"; fi
     fi
-    local agent_part=$agent_tag
+
+    local rc_part=$remote_control agent_part=$agent_tag
+    (( drop_rc )) && rc_part=""
     (( drop_agent )) && agent_part=""
-    local cache_part=$cache_seg session_part=$session_seg
-    (( drop_cache )) && cache_part=""
-    (( drop_session )) && session_part=""
-    local extras
-    extras=$(join " · " "$session_part" "$cache_part")
-
-    if (( narrow )); then
-        local model_seg="${BLUE}${model_name}${NC}"
-        (( drop_effort )) || model_seg+="${effort:+:$effort}"
-        line1=$(join " | " "$remote_control" "$agent_part" "$repo_seg" "$model_seg" \
-            "$ctx_short" "$q5" "$q7")
-        line2=$(join " · " "$diff_seg" "$wt_seg" "$pr_seg" "$extras")
+    if [[ "$layout" == full ]]; then
+        row1=$(join " $SEP " "$rc_part" "$agent_part" "$repo" "$model_seg")
+        row2=$(join " $SEP " "$ctx_group" "$q_group")
     else
-        ctx_long=$ctx_bar
-        (( drop_bars )) && ctx_long=$ctx_short
-        if [[ -n "$ctx_used" && -n "$ctx_size" ]] && (( ! drop_tokens )); then
-            ctx_long+=" · ${ctx_used}/${ctx_size}"
-        fi
-        if [[ -n "$ctx_left" ]] && (( ! drop_left )); then
-            ctx_long+=" · ~${ctx_left} left"
-        fi
-        local effort_seg=""
-        (( drop_effort )) || effort_seg="${effort:+ · effort:$effort}"
-        line1=$(join " | " "$remote_control" "$agent_part" "$(join " " "$repo_seg" "$diff_seg")" \
-            "${BLUE}${model_name}${NC}${effort_seg}" \
-            "$ctx_long" "$(join " · " "$q5_long" "$q7_long")")
-        line2=$(join " | " "$wt_seg" "$pr_seg" "$extras")
+        row1=$(join " $SEP " "$rc_part" "$agent_part" "$repo_short" "$model_seg" "$ctx_group" "$q_group")
+        row2=""
     fi
+
+    git_group=""
+    if [[ "$layout" != minimal ]] && [[ -n "$git_counts$diff" ]]; then
+        git_group="Git $(join " " "$git_counts" "$diff")"
+    fi
+    extras_group=""
+    (( drop_extras )) || extras_group=$(join " $DOT " "$wt_seg" "$pr_seg")
+    local cost_part=$cost_seg dur_part=$dur_seg
+    [[ "$layout" == minimal ]] && cost_part=$cost_whole_seg
+    if (( drop_session )); then cost_part="" dur_part=""; fi
+    local cache_part=$cache_seg
+    (( drop_cache )) && cache_part=""
+    if [[ "$layout" == minimal ]]; then
+        tele_group=$(join " $SEP " "$(join " $DOT " "$cost_part" "$dur_part")" "$cache_part")
+    else
+        tele_group=$(join " $DOT " "$cost_part" "$dur_part" "$cache_part")
+    fi
+    row3=$(join " $SEP " "$git_group" "$extras_group" "$tele_group")
+}
+
+# set_flags <layout> <level>: what to give up at each fit level, cheapest first.
+set_flags() {
+    local layout=$1 level=$2
+    drop_bars=0 drop_resets=0 drop_left=0 drop_weak=0 drop_strong=0 drop_effort=0
+    drop_agent=0 drop_rc=0 drop_cache=0 drop_session=0 drop_extras=0
+    case "$layout" in
+        full)    drop_bars=$(( level >= 1 )) drop_resets=$(( level >= 2 )) ;;
+        compact) drop_left=$(( level >= 1 )) ;;
+    esac
+}
+
+# set_min_flags <row1-level> <row3-level>: minimal gives up whole metrics, row by
+# row so that a crowded row 1 never costs row 3 anything. Row 1 loses the lower
+# quota, the higher one (below QUOTA_KEEP), the agent tag, the effort and RC;
+# row 3 loses WT/PR, the cache, then cost and time.
+set_min_flags() {
+    drop_bars=0 drop_resets=0 drop_left=0
+    drop_weak=$(( $1 >= 1 )) drop_strong=$(( $1 >= 2 )) drop_agent=$(( $1 >= 3 ))
+    drop_effort=$(( $1 >= 4 )) drop_rc=$(( $1 >= 5 ))
+    drop_extras=$(( $2 >= 1 )) drop_cache=$(( $2 >= 2 )) drop_session=$(( $2 >= 3 ))
+}
+
+# fits: every non-empty row is within the terminal.
+fits() {
+    local r
+    for r in "$row1" "$row2" "$row3"; do
+        (( $(width "$r") <= cols )) || return 1
+    done
 }
 
 cols=${COLUMNS:-999}
 [[ "$cols" =~ ^[0-9]+$ ]] || cols=999
-narrow=0
-(( cols < NARROW_BELOW )) && narrow=1
 
-# Line 1: raise the fit level until it fits (or nothing is left to drop).
-for level in 0 1 2 3 4 5 6 7 8; do
-    if (( narrow )); then
-        # Weak quota, strong quota, git counts, effort, and the agent tag last.
-        drop_weak=$(( level >= 1 )) drop_strong=$(( level >= 2 )) drop_counts=$(( level >= 3 ))
-        drop_effort=$(( level >= 4 )) drop_agent=$(( level >= 5 ))
-    else
-        # Bars, remaining tokens, reset times, weak quota, token counts, effort,
-        # git counts, agent tag.
-        drop_bars=$(( level >= 1 )) drop_left=$(( level >= 2 )) drop_resets=$(( level >= 3 ))
-        drop_weak=$(( level >= 4 )) drop_tokens=$(( level >= 5 )) drop_effort=$(( level >= 6 ))
-        drop_counts=$(( level >= 7 )) drop_agent=$(( level >= 8 ))
-    fi
-    render
-    (( $(width "$line1") <= cols )) && break
-done
-# Line 2: cache health, then cost/duration.
-for level in 0 1 2; do
-    drop_cache=$(( level >= 1 )) drop_session=$(( level >= 2 ))
-    render
-    (( $(width "$line2") <= cols )) && break
-done
-
-printf '%s\n' "$line1"
-if [[ -n "$line2" ]]; then
-    printf '%s\n' "$line2"
+layouts=(full compact minimal)
+max_level=(2 1 0)
+start=0
+pinned=0
+if   (( cols < COMPACT_MIN )); then start=2
+elif (( cols < FULL_MIN ));    then start=1
 fi
+case "${CLAUDE_STATUSLINE_MODE:-}" in
+    full)    start=0 pinned=1 ;;
+    compact) start=1 pinned=1 ;;
+    minimal) start=2 pinned=1 ;;
+esac
+
+row1="" row2="" row3=""
+done=0
+for (( li = start; li <= 2 && ! done; li++ )); do
+    if (( li == 2 )); then
+        for (( a = 0; a <= 5; a++ )); do
+            set_min_flags "$a" 0
+            render minimal
+            (( $(width "$row1") <= cols && $(width "$row2") <= cols )) && break
+        done
+        for (( b = 0; b <= 3; b++ )); do
+            set_min_flags "$a" "$b"
+            render minimal
+            (( $(width "$row3") <= cols )) && break
+        done
+        break
+    fi
+    for (( level = 0; level <= max_level[li]; level++ )); do
+        set_flags "${layouts[li]}" "$level"
+        render "${layouts[li]}"
+        if fits; then done=1; break; fi
+    done
+    # A pinned layout stays; otherwise a layout that cannot fit gives way.
+    (( pinned )) && break
+done
+
+for r in "$row1" "$row2" "$row3"; do
+    [[ -n "$r" ]] && printf '%s\n' "$r"
+done
+exit 0

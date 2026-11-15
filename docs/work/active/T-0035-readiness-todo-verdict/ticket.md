@@ -7,7 +7,7 @@ Wave: 1
 Depends on: none (builds on T-0015 (landed); start from current main). T-0029 also lists ops/readiness.sh as downstream.
 Order: first in the WSL2 sequence. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. T-0035 must land before T-0040 step 10 (post-install readiness).
 
-Re-verified 2026-11-15 against main ed39171: none of the WSL2 tickets has been executed and every bug described is still present. User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
+Re-verified 2026-11-15 against main ed39171: this ticket's findings were re-checked and none of the WSL2 tickets has been executed. Claims changed: line references (verdict now at lines 124-136; README wording). User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
 
 ## Summary
 `sys-readiness` prints `ALL SET` and exits 0 even when it printed `[TODO]` lines.
@@ -19,7 +19,7 @@ shadowing, no Docker daemon) turns into a false green.
 - tests/bash/readiness.bats
 - docs/getting-started/install.md (verdict list near lines 25-32)
 - README.md (lines near 46-56)
-- docs/getting-started/install.md and README.md both still say "done exactly when ALL SET and exits 0"; both are in scope (see Findings)
+- docs/getting-started/install.md says "done exactly when ALL SET and exits 0" and README.md says "done when it prints ALL SET"; both are in scope (see Findings)
 
 ## Findings (review claims, unverified until reproduced: reproduce first; reject false positives with evidence)
 - `ops/readiness.sh:124-136` (main ed39171; the ticket first cited 116-127 at 4ba9437): the verdict uses only `err` and
@@ -27,7 +27,7 @@ shadowing, no Docker daemon) turns into a false green.
 - WSL2 TODOs reach `note()` through the `hdr "WSL2"` loop (`ops/readiness.sh` WSL block).
 - The header comment (`ops/readiness.sh` lines 9-12) lists only exits 0, 1, 2 and 64; add 3.
 - Contract: `docs/getting-started/install.md` (around lines 25-32) says "done exactly when
-  `sys-readiness` prints `ALL SET` and exits 0"; README.md (around lines 46-56) says the same.
+  `sys-readiness` prints `ALL SET` and exits 0"; README.md (around lines 46-56) says "done when it prints ALL SET" without mentioning exit 0; make the claim match the new verdict list.
 - New exit 3 drivers: T-0037's `code` check and any Docker TODO will turn WSL hosts into exit 3 until fixed.
 - TASK: check every caller of readiness (`ops/install.sh`, the `sys-install` wrapper, mise tasks) for code that treats a non-zero exit as failure, and decide for each whether 3 is success. If `tests/bash/ops-script-args.bats` or another bats file asserts the exit set, add 3.
 

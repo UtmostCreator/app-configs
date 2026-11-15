@@ -4,10 +4,10 @@ Source: local
 
 Status: open
 Wave: 1
-Depends on: none. The former T-0021 dependency is gone (no T-0021 folder exists in docs/work/active). `home/dot_bashrc.tmpl` lines 30-32 and `home/dot_zshrc.tmpl` lines 419-421 source the ssh-agent loader; do not touch those lines.
+Depends on: none. The former T-0021 dependency is gone: T-0021 was closed on 2026-11-14 and archived at docs/work/archive/2026/T-0021-ssh-agent-installer. `home/dot_bashrc.tmpl` lines 30-32 and `home/dot_zshrc.tmpl` lines 419-421 source the ssh-agent loader; do not touch those lines.
 Order: fourth. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. T-0036 must land before T-0040 step 11 (behaviour checks).
 
-Re-verified 2026-11-15 against main ed39171: none of the WSL2 tickets has been executed and every bug described is still present. User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
+Re-verified 2026-11-15 against main ed39171: this ticket's findings were re-checked and none of the WSL2 tickets has been executed. Claims changed: the T-0021 dependency is gone; wsl-open.bats exists. User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
 
 ## Summary
 fish sets `BROWSER=wsl-open` and an `open` function on WSL2; zsh and the bash

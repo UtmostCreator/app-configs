@@ -8,7 +8,7 @@ Depends on: none (it is used by T-0040 steps 6 and 12; its readiness.txt pass co
 Blocks: T-0039, T-0040
 Order: Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040.
 
-Re-verified 2026-11-15 against main ed39171: none of the WSL2 tickets has been executed and every bug described is still present. User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
+Re-verified 2026-11-15 against main ed39171: this ticket's findings were re-checked and none of the WSL2 tickets has been executed. Claims changed: the expected-TODO guidance in step 6 (see Design item 6). User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
 
 ## Summary
 Before any real WSL2 test, record the state of the distro and Windows so an
@@ -80,9 +80,10 @@ No repo script runs `wsl.exe`, `winget` or PowerShell.
    `bash ops/host-snapshot.sh --label after`.
 5. Compare: `diff -ru <before> <after>` (WSL);
    `Compare-Object (Get-Content before-winget.txt) (Get-Content after-winget.txt)` (Windows).
-6. Pass condition: `after/readiness.txt` shows `MISSING: 0` and either `exit: 0` or
-   `exit: 3` with every TODO explained (exit 3 exists once T-0035 lands; until
-   T-0035, T-0037 and T-0038 land, expect TODOs for `code`, Docker and Colima);
+6. Pass condition: `after/readiness.txt` shows `MISSING: 0` and `exit: 0`. Once
+   T-0035 has landed, `exit: 3` is acceptable only with explained TODOs (no Docker
+   engine chosen; `code` missing when Windows VS Code is not installed, a check
+   T-0037 adds). Before T-0035, exit 3 cannot occur;
    `systemd.txt` shows `systemd` as PID 1 and no failed user units;
    `hm-packages.txt` is non-empty; `wsl-conf.txt` matches setup.md.
 

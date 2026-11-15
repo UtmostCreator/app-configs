@@ -5,9 +5,9 @@ Source: local
 Status: open
 Wave: 1
 Depends on: none
-Order: third. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. T-0037 must land before T-0040 steps 8 (real install) and 13 (`sys-update --apply`).
+Order: third. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. T-0037 must land before T-0040 step 8 (the real install runs the extension step) and step 10 (the `code` check).
 
-Re-verified 2026-11-15 against main ed39171: none of the WSL2 tickets has been executed and every bug described is still present. User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
+Re-verified 2026-11-15 against main ed39171: this ticket's findings were re-checked and none of the WSL2 tickets has been executed. Claims changed: the caller analysis (the script exits 0 when `code` is missing; the real risk is a failing `--install-extension` when `code` is present). User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
 
 ## Summary
 On WSL2, git's editor and the extension installer both depend on the Windows
@@ -28,7 +28,7 @@ unknown.
   otherwise `git commit` without `-m` cannot start an editor.
 - VERIFIED: `ops/vscode-extensions.sh:21-37` uses any `code` on PATH (on WSL,
   the Windows shim under /mnt/c). `ops/install.sh` calls it and degrades on failure.
-- VERIFIED (callers): every caller of `ops/vscode-extensions.sh` is affected, so the WSL skip matters more than first stated: `mise.toml` sync:dry-run (around lines 141-144); sync:apply (around line 197), which is NOT guarded by `|| true`, so a missing `code` makes it die after the switch; the vscode:extensions tasks (around lines 203 and 207); and `ops/install.sh` (around lines 451-462, degrade-only).
+- VERIFIED (callers): `ops/vscode-extensions.sh` (around lines 101-103) exits 0 when `code` is missing, in apply and `--dry-run` mode, so a missing `code` is not a failure. The real risk is the opposite case: `code` IS on PATH (the Windows shim) and a `--install-extension` call fails. The script runs under `set -euo pipefail` (line 5; install loop around line 131), so it stops at the first failure. Callers: `mise.toml` sync:dry-run (around lines 141-144); sync:apply (around line 197, unguarded, running with errexit per `mise.toml` around lines 152-154, so it stops before `lefthook install` at line 198); the vscode:extensions tasks (around lines 203 and 207); `ops/bootstrap.sh` (around lines 286-291, unguarded, also `set -euo pipefail`); and `ops/install.sh` (around lines 451-462, degrade-only). `ops/update-all.sh` does NOT call it, so `sys-update` is not affected.
 - VERIFIED: `home/.chezmoiignore` already ignores `.config/Code` on wsl; `ops/wsl-check.sh` still has no `code` check and `ops/vscode-extensions.sh` still has no WSL skip.
 - UNKNOWN: whether `code --install-extension` run from WSL targets the Windows
   client or the WSL server. `docs/platforms/wsl/setup.md:103` says Windows-side
@@ -54,7 +54,7 @@ unknown.
   and names WSL2. Same with `--dry-run`.
 - AC3: With `HOST_PROFILE=linux-desktop` and the stub, the installer behaves as
   before (lists, then installs missing).
-- AC3b: the sync:apply path (mise.toml) no longer fails on WSL2 when `code` is missing: with `HOST_PROFILE=wsl` the installer exits 0 without calling `code`. Decide whether mise.toml itself needs a change (it is outside this ticket's owned files: record the decision here).
+- AC3b: with `HOST_PROFILE=wsl` and a recording stub `code` whose `--install-extension` fails, sync:apply, `ops/bootstrap.sh` and the installer no longer stop on the extension step, because the skip runs before any `code` call (covered by AC2). Decide whether mise.toml itself needs a change (outside this ticket's owned files: record the decision here).
 - AC4: existing `wsl-check.bats` and `install-vscode-extensions.bats` pass.
 - Regression tests fail on the old code and pass on the new; independent review
   PASS; one conventional commit per logical change; no AI attribution trailers.

@@ -7,7 +7,7 @@ Wave: 3
 Depends on: T-0034, T-0036, T-0037, T-0038 (so the docs describe merged behaviour); also T-0035 (exit-3 text) and T-0045 (systemd and CBM guidance). Exception: the wsl.conf row below is a first-boot risk, has no dependencies and may land first.
 Order: seventh. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. The wsl.conf fix must land before T-0040 step 3. Test order: T-0040.
 
-Re-verified 2026-11-15 against main ed39171: none of the WSL2 tickets has been executed and every bug described is still present. User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
+Re-verified 2026-11-15 against main ed39171: this ticket's findings were re-checked and none of the WSL2 tickets has been executed. Claims changed: added rows and line numbers (wsl.conf, clipboard, detection). User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
 
 ## Summary
 Fix stale and risky WSL2 statements and document the manual Windows
@@ -21,7 +21,7 @@ prerequisites. No behaviour change.
 ## Findings
 | Location | Stale or risky | Correction |
 | --- | --- | --- |
-| setup.md wsl.conf snippet (around lines 20-24) | CRITICAL, can land earlier: `#` comments follow values (`systemd=true`, `default=...`, `appendWindowsPath=true`). Whether WSL strips trailing comments is UNKNOWN, so this is a first-boot risk that blocks test step 3 | Move each comment to its own line above its key |
+| setup.md wsl.conf snippet (trailing comments on lines 24, 27 and 31) | CRITICAL, can land earlier: `#` comments follow values (`systemd=true`, `default=...`, `appendWindowsPath=true`). Whether WSL strips trailing comments is UNKNOWN, so this is a first-boot risk that blocks test step 3 | Move each comment to its own line above its key |
 | setup.md "Opening URLs and files" / BROWSER line | Says only fish sets BROWSER and `open` | Mention fish, zsh and bash after T-0036 |
 | setup.md verify table | No `code` row | Add the `code` check and its fix (T-0037) |
 | setup.md systemd and CBM | systemd is described only as running timers | State that systemd must be on before install and that the codebase-memory-mcp units run on WSL only with systemd (T-0045) |

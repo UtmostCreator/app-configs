@@ -5,8 +5,9 @@ Source: local
 Status: open
 Wave: 2
 Depends on: none to start. T-0035 (exit 3) is useful for the readiness verdict.
-Blocks: T-0039 (docs), T-0040 step 10
-Order: sixth. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2, not Wave 1), T-0039 (its wsl.conf fix may land first), T-0040 last. T-0045 must land before T-0040 step 10 (post-install checks). Full test order: T-0040.
+Blocks: T-0039 (docs), T-0040 steps 7, 10 and 12 (by option, see Order)
+Coordinates with: T-0010, which also covers ops/update-all.sh
+Order: sixth. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2, not Wave 1), T-0039 (its wsl.conf fix may land first), T-0040 last. Gates by option: (c) the install preflight before T-0040 step 7; (b) readiness before step 10; (a) the update-all false green before step 12. The whole of T-0045 therefore lands before step 7 unless it is split. Full test order: T-0040.
 
 Written 2026-11-15 against main ed39171 from a read-only research pass. Findings marked inferred or unknown are unproven.
 
@@ -26,7 +27,7 @@ The `wsl` and `linux-cli` profiles enable systemd user units (the codebase-memor
 - VERIFIED: the CBM package supports x86_64-linux and aarch64-darwin only, so ARM WSL is out of scope.
 - INFERRED: with systemd off, Home Manager activation probably prints "User systemd daemon not running. Skipping reload." and continues. Nothing in `ops/install.sh` or `ops/lib/preflight.sh` checks systemd. The only signal is the wsl-check TODO (around `ops/wsl-check.sh:24-30`), which sys-readiness shows only after install.
 - VERIFIED: `ops/update-all.sh` (around lines 1497-1501) runs `systemctl --user list-units --state=failed ... 2>/dev/null`. With systemd off this prints "no failed units": a false green.
-- VERIFIED: the CBM updater works on WSL only with systemd. It shares sys-update's lock, commits the release.json file (a dirty tracked file blocks sys-update), needs api.github.com, and its UI is the loopback server on 9749. `CBM_ALLOWED_ROOT` is `$HOME/Projects` (set in `nix/modules/home/dev.nix`), which may not exist on a fresh WSL home.
+- VERIFIED: only the CBM updater TIMER needs systemd; `ops/update-codebase-memory-mcp.sh --apply` can be run by hand. The updater shares sys-update's lock, commits the release.json file (a dirty tracked file blocks sys-update), and needs api.github.com. The loopback UI on port 9749 belongs to the UI service, not the updater. `CBM_ALLOWED_ROOT` is `$HOME/Projects` (set in `nix/modules/home/dev.nix`), which may not exist on a fresh WSL home; setup.md (around line 52) clones the repo to ~/app-configs, which is outside that root.
 - VERIFIED: qmd and openclaw are not evaluated for wsl. They are linux-desktop only through `profileOverlays` in `nix/flake.nix` (around line 115). A nix-openclaw or qmd bump therefore changes only the lock for wsl (it still needs fetching when the lock resolves). A breakage surfaces in `nix flake check --all-systems` on the linux-desktop sentinel, not on wsl. The bumps that do affect wsl are nixpkgs, home-manager and nixpkgs-last-good (the semgrep overlay).
 - UNKNOWN: whether the Determinate Nix installer on Linux works without systemd (it likely needs it).
 - UNKNOWN: whether WSL tolerates trailing comments in /etc/wsl.conf (tracked in T-0039; verify on a real host).
@@ -63,6 +64,7 @@ The `wsl` and `linux-cli` profiles enable systemd user units (the codebase-memor
 - Warn or fail for the systemd preflight on wsl?
 - Keep or gate the CBM units on headless hosts (wsl, linux-cli)?
 - Does WSL tolerate trailing comments in /etc/wsl.conf? (verify on a real host)
+- Is `CBM_ALLOWED_ROOT=$HOME/Projects` acceptable on WSL (missing ~/Projects on a fresh home; repo clone outside the root)? Observe in T-0040 step 10b.
 - What does the Determinate Nix installer do without systemd?
 
 ## Out of scope / notes

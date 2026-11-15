@@ -60,6 +60,7 @@ set -euo pipefail
 
 DRY_RUN="${DRY_RUN:-0}"
 OPT_PROFILE=""
+OPT_PROFILE_SET=0
 OPT_RECONFIGURE=0
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
@@ -74,9 +75,10 @@ while (($#)); do
         exit 2
       fi
       OPT_PROFILE="$2"
+      OPT_PROFILE_SET=1
       shift
       ;;
-    --profile=*) OPT_PROFILE="${1#--profile=}" ;;
+    --profile=*) OPT_PROFILE="${1#--profile=}"; OPT_PROFILE_SET=1 ;;
     --reconfigure) OPT_RECONFIGURE=1 ;;
     -h | --help)
       sed -n '2,/^$/{/^$/!p;}' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
@@ -89,6 +91,12 @@ while (($#)); do
   esac
   shift
 done
+
+# An empty value is a mistake (an unset shell variable), not "no flag".
+if ((OPT_PROFILE_SET)) && [[ -z "$OPT_PROFILE" ]]; then
+  printf '[install:error] --profile needs a profile name, got an empty value (try --help)\n' >&2
+  exit 2
+fi
 
 # DRY_RUN is a switch, not a truthy string: DRY_RUN=true used to mean "apply".
 case "$DRY_RUN" in
@@ -280,7 +288,7 @@ selection_cancel() {
   if [[ "$DRY_RUN" == 1 ]]; then
     printf '[install] cancelled at the selection step (dry run): nothing was changed\n' >&2
   else
-    printf '[install] cancelled at the selection step: no selection saved, no dotfiles applied, no switch run; Nix and base tools installed by earlier steps remain\n' >&2
+    printf '[install] cancelled at the selection step: no selection saved, no dotfiles applied, no switch run; what earlier steps did (Nix, base tools, preflight seeding of personal.yaml) remains\n' >&2
   fi
   exit 1
 }
@@ -289,6 +297,7 @@ selection_cancel() {
 selection_commit() {
   if [[ "$DRY_RUN" == 1 ]]; then
     log "dry run: would write $sel_file"
+    log "dry run: the real run then passes --override-input selection path:$(selection_url_path "$SELECTION_DIR") to the switch"
     return 0
   fi
   selection_write "$SELECTION_DIR" "$@" || fail "cannot write $sel_file"

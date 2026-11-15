@@ -834,10 +834,10 @@ prompt_callers() {
     no_sel_file
 }
 
-@test "N2: after a in a dry run the output says the real run passes the override" {
+@test "N2: after a in a dry run the output says the real run then passes the override" {
     inst_tty 'work\n\n\n\na\n' --dry-run
     [ "$status" -eq 0 ]
-    [[ "$output" == *"the real run passes --override-input selection path:$APP_CONFIGS_SELECTION_DIR"* ]]
+    [[ "$output" == *"the real run then passes --override-input selection path:$APP_CONFIGS_SELECTION_DIR"* ]]
 }
 
 @test "N4: on a first install the selection comparison lists no removals of what was never installed" {

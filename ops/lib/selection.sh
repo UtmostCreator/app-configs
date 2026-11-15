@@ -100,6 +100,25 @@ SELECTION_LIST_MAX=30
 
 _SEL_LIB_DIR="${BASH_SOURCE[0]%/*}"
 
+# This code runs under /bin/bash 3.2 on a fresh Mac (install.sh): no bash 4 array
+# builtins, associative arrays or case-modifying expansions; empty arrays are
+# expanded as ${a[@]+"${a[@]}"}; $'..' is never used inside ${..}.
+_SEL_TAB=$'\t'
+_SEL_NL=$'\n'
+
+# _sel_split NAME TEXT: the lines of TEXT, one array element each, into NAME
+# (the array of the calling function when it declares one). Parameter expansion
+# only: no bash 4 builtin and no read.
+_sel_split() {
+  local __sel_name="$1" __sel_rest="$2" __sel_line
+  eval "$__sel_name=()"
+  while [[ -n "$__sel_rest" ]]; do
+    __sel_line="${__sel_rest%%"$_SEL_NL"*}"
+    if [[ "$__sel_rest" == *"$_SEL_NL"* ]]; then __sel_rest="${__sel_rest#*"$_SEL_NL"}"; else __sel_rest=""; fi
+    eval "$__sel_name+=(\"\$__sel_line\")"
+  done
+}
+
 _sel_repo() {
   if [[ -n "$SELECTION_REPO_ROOT" ]]; then printf '%s' "$SELECTION_REPO_ROOT"; else (cd "$_SEL_LIB_DIR/../.." && pwd); fi
 }
@@ -117,7 +136,7 @@ selection_profiles() {
 
 selection_valid_profile() {
   local profiles=() p
-  mapfile -t profiles < <(selection_profiles)
+  _sel_split profiles "$(selection_profiles)"
   for p in "${profiles[@]+"${profiles[@]}"}"; do
     if [[ "$p" == "$1" ]]; then return 0; fi
   done
@@ -166,9 +185,13 @@ selection_write() {
   mv -f "$tmp" "$dir/selection.toml" || { rm -f "$tmp"; return 1; }
 }
 
-# selection_profile_of FILE: the profile named in a selection file, or nothing.
+# selection_profile_of FILE: the profile named in a selection file, double or
+# single quoted; "default" when it names none (an empty file is valid and means
+# the host's committed profile).
 selection_profile_of() {
-  sed -nE 's/^[[:space:]]*profile[[:space:]]*=[[:space:]]*"([^"]*)".*/\1/p' "$1" 2>/dev/null | head -n1
+  local p
+  p="$(sed -nE "s/^[[:space:]]*profile[[:space:]]*=[[:space:]]*[\"']([^\"']*)[\"'].*/\\1/p" "$1" 2>/dev/null | head -n1)"
+  printf '%s' "${p:-default}"
 }
 
 # ── the Home Manager profile of the installed generation ────────────────────
@@ -311,7 +334,7 @@ _sel_installed_files() {
   local root="$1/home-files" links=() p
   [[ -d "$root" ]] || return 1
   root="$(cd "$root" && pwd -P)" || return 1
-  mapfile -t links < <(find "$root" -type l | LC_ALL=C sort)
+  _sel_split links "$(find "$root" -type l | LC_ALL=C sort)"
   for p in "${links[@]+"${links[@]}"}"; do
     printf '%s\t%s\n' "${p#"$root"/}" "$(readlink "$p")"
   done
@@ -380,7 +403,7 @@ selection_facts() {
   SEL_HOST_PROFILE="$(awk -F '\t' '$1 == "H" { print $2; exit }' "$SELECTION_WORK/m.tsv")"
   SEL_HOST_PROFILE="${SEL_HOST_PROFILE:-work}"
   SEL_GROUPS=()
-  mapfile -t SEL_GROUPS < <(awk -F '\t' '$1 == "N" { print $2 }' "$SELECTION_WORK/m.tsv")
+  _sel_split SEL_GROUPS "$(awk -F '\t' '$1 == "N" { print $2 }' "$SELECTION_WORK/m.tsv")"
   _sel_state_packages "$SELECTION_WORK/c.tsv" >"$SELECTION_WORK/c-pkgs.tsv"
   _sel_read_installed
   SEL_HAVE_FACTS=1
@@ -411,12 +434,13 @@ selection_present_state() {
   SEL_PRESENT_SHOWN=1
   _sel_pnames "$SELECTION_WORK/i-pkgs.tsv" >"$SELECTION_WORK/i-names.txt"
   printf 'Present state (installed packages by group)\n'
-  sets=("${SEL_GROUPS[@]}")
+  sets=()
+  for g in "${SEL_GROUPS[@]+"${SEL_GROUPS[@]}"}"; do sets+=("$g"); done
   sets+=("@personal")
-  for g in "${sets[@]}"; do
+  for g in "${sets[@]+"${sets[@]}"}"; do
     label="$g"
     if [[ "$g" == @personal ]]; then label="personal apps"; fi
-    mapfile -t members < <(_sel_members_of "$g")
+    _sel_split members "$(_sel_members_of "$g")"
     m=${#members[@]}
     if [[ "$SEL_I_STATE" == unknown ]]; then
       printf '  %-14s installed unknown/%s (the installed generation could not be read)\n' "$label" "$m"
@@ -501,10 +525,10 @@ _sel_files_section() { # _sel_files_section HEADER MODE A B
   printf '%s\n' "$1"
   total="$(_sel_files_delta "$2" "$3" "$4" | grep -c . || true)"
   if ((total == 0)); then printf '    no changes\n'; return 0; fi
-  mapfile -t rows < <(_sel_files_delta "$2" "$3" "$4")
-  for row in "${rows[@]}"; do
-    kind="${row%%$'\t'*}"
-    target="${row#*$'\t'}"
+  _sel_split rows "$(_sel_files_delta "$2" "$3" "$4")"
+  for row in "${rows[@]+"${rows[@]}"}"; do
+    kind="${row%%"$_SEL_TAB"*}"
+    target="${row#*"$_SEL_TAB"}"
     if ((n < SELECTION_LIST_MAX)); then printf '    %-8s %s%s\n' "$kind" "$target" "$(_sel_unit_note "$target")"; fi
     n=$((n + 1))
   done
@@ -530,7 +554,7 @@ _sel_chezmoi_section() {
     printf '    unavailable (%s); after install: chezmoi diff\n' "${first:-chezmoi status failed}"
     return 0
   fi
-  mapfile -t lines <"$out"
+  _sel_split lines "$(cat "$out")"
   for line in "${lines[@]+"${lines[@]}"}"; do
     col="${line:1:1}"
     case "$col" in
@@ -544,7 +568,7 @@ _sel_chezmoi_section() {
   done
   if ((total == 0)); then printf '    no changes\n'; else
     printf '    added %s, modified %s, removed %s, scripts %s (%s paths)\n' "$added" "$modified" "$removed" "$scripts" "$total"
-    for line in "${lines[@]}"; do
+    for line in "${lines[@]+"${lines[@]}"}"; do
       col="${line:1:1}"
       case "$col" in A | M | D | R) ;; *) continue ;; esac
       if ((n < 20)); then printf '      %s %s\n' "$col" "${line:3}"; fi
@@ -568,19 +592,19 @@ _sel_casks_section() {
   else
     cp "$SELECTION_WORK/casks-c.txt" "$SELECTION_WORK/casks-p.txt"
   fi
-  mapfile -t casks <"$SELECTION_WORK/casks-p.txt"
+  _sel_split casks "$(cat "$SELECTION_WORK/casks-p.txt")"
   for c in "${casks[@]+"${casks[@]}"}"; do
     [[ -n "$c" ]] || continue
     if ! _sel_in_file "$c" "$installed"; then printf '    %s: add (installed at the next switch)\n' "$c"; fi
   done
-  mapfile -t casks <"$SELECTION_WORK/casks-c.txt"
+  _sel_split casks "$(cat "$SELECTION_WORK/casks-c.txt")"
   for c in "${casks[@]+"${casks[@]}"}"; do
     [[ -n "$c" ]] || continue
     if ! _sel_in_file "$c" "$SELECTION_WORK/casks-p.txt" && _sel_in_file "$c" "$installed"; then
       printf '    %s: stays installed (Homebrew cleanup = none); remove by hand: brew uninstall --cask %s\n' "$c" "$c"
     fi
   done
-  mapfile -t casks <"$installed"
+  _sel_split casks "$(cat "$installed")"
   for c in "${casks[@]+"${casks[@]}"}"; do
     [[ -n "$c" ]] || continue
     have_c=0; have_p=0
@@ -602,13 +626,14 @@ _sel_outcome_section() {
   fi
   _sel_pnames "$SELECTION_WORK/i-pkgs.tsv" >"$SELECTION_WORK/i-names.txt"
   _sel_pnames "$SELECTION_WORK/p-pkgs.tsv" >"$SELECTION_WORK/p-names.txt"
-  sets=("${SEL_GROUPS[@]}")
+  sets=()
+  for g in "${SEL_GROUPS[@]+"${SEL_GROUPS[@]}"}"; do sets+=("$g"); done
   sets+=("@personal")
-  for g in "${sets[@]}"; do
+  for g in "${sets[@]+"${sets[@]}"}"; do
     label="$g"
     if [[ "$g" == @personal ]]; then label="personal apps"; fi
     keep=0; off=0; adds=(); rems=()
-    mapfile -t names < <(_sel_members_of "$g")
+    _sel_split names "$(_sel_members_of "$g")"
     for n in "${names[@]+"${names[@]}"}"; do
       [[ -n "$n" ]] || continue
       local in_i=0 in_p=0
@@ -672,13 +697,19 @@ selection_preview() {
     printf '\n'
     _sel_outcome_section
     printf '\n'
-    _sel_pkg_section 'Packages, from your selection' "$SELECTION_WORK/c-pkgs.tsv" "$SELECTION_WORK/p-pkgs.tsv"
+    if [[ "$SEL_I_STATE" == none ]]; then
+      # Nothing is installed, so the selection removes nothing; what gets
+      # installed is the pending-changes block below and the outcome above.
+      printf 'Packages, from your selection\n    nothing is installed yet, so the selection removes nothing (see Outcome by group)\n'
+    else
+      _sel_pkg_section 'Packages, from your selection' "$SELECTION_WORK/c-pkgs.tsv" "$SELECTION_WORK/p-pkgs.tsv"
+    fi
     printf '\n'
   fi
   if [[ "$SEL_I_STATE" == unknown ]]; then
-    printf 'Packages, pending repo changes (would apply even with no selection change)\n    unknown (the installed generation could not be read)\n'
+    printf 'Packages, pending changes (repo, or a selection not yet applied)\n    unknown (the installed generation could not be read)\n'
   else
-    _sel_pkg_section 'Packages, pending repo changes (would apply even with no selection change)' "$SELECTION_WORK/i-pkgs.tsv" "$SELECTION_WORK/c-pkgs.tsv"
+    _sel_pkg_section 'Packages, pending changes (repo, or a selection not yet applied)' "$SELECTION_WORK/i-pkgs.tsv" "$SELECTION_WORK/c-pkgs.tsv"
   fi
   printf '\n'
   _sel_state_files "$SELECTION_WORK/c.tsv" >"$SELECTION_WORK/c-files.tsv"
@@ -688,9 +719,9 @@ selection_preview() {
     printf '\n'
   fi
   if [[ "$SEL_I_STATE" == unknown ]]; then
-    printf 'Home Manager files and services, pending repo changes\n    unknown (the installed generation could not be read)\n'
+    printf 'Home Manager files and services, pending changes (repo, or a selection not yet applied)\n    unknown (the installed generation could not be read)\n'
   else
-    _sel_files_section 'Home Manager files and services, pending repo changes' tree "$SELECTION_WORK/i-files.tsv" "$SELECTION_WORK/c-files.tsv"
+    _sel_files_section 'Home Manager files and services, pending changes (repo, or a selection not yet applied)' tree "$SELECTION_WORK/i-files.tsv" "$SELECTION_WORK/c-files.tsv"
   fi
   printf '\n'
   _sel_chezmoi_section
@@ -725,8 +756,8 @@ selection_prompt_init() {
   SEL_CUR_NAMES=(); SEL_CUR_VALUES=()
   if ((SEL_HAVE_FACTS)); then
     SEL_CUR_PROFILE="$(_sel_state_profile "$SELECTION_WORK/c.tsv")"
-    mapfile -t rows < <(_sel_state_groups "$SELECTION_WORK/c.tsv")
-    for row in "${rows[@]+"${rows[@]}"}"; do SEL_CUR_NAMES+=("${row%%$'\t'*}"); SEL_CUR_VALUES+=("${row#*$'\t'}"); done
+    _sel_split rows "$(_sel_state_groups "$SELECTION_WORK/c.tsv")"
+    for row in "${rows[@]+"${rows[@]}"}"; do SEL_CUR_NAMES+=("${row%%"$_SEL_TAB"*}"); SEL_CUR_VALUES+=("${row#*"$_SEL_TAB"}"); done
   else
     SEL_CUR_PROFILE="$SEL_HOST_PROFILE"
   fi
@@ -735,7 +766,7 @@ selection_prompt_init() {
 _sel_group_label() { # group -> "group (names)" with a few members
   local names=() n out
   if ((SEL_HAVE_FACTS)); then
-    mapfile -t names < <(_sel_members_of "$1")
+    _sel_split names "$(_sel_members_of "$1")"
   fi
   if ((${#names[@]} == 0)); then printf '%s' "$1"; return 0; fi
   if ((${#names[@]} > 6)); then
@@ -749,7 +780,7 @@ _sel_group_label() { # group -> "group (names)" with a few members
 # _sel_ask_profile: sets SEL_ANS_PROFILE. Returns 1 on quit or end of input.
 _sel_ask_profile() {
   local list="" p ans profiles=()
-  mapfile -t profiles < <(selection_profiles)
+  _sel_split profiles "$(selection_profiles)"
   for p in "${profiles[@]+"${profiles[@]}"}"; do list+="${list:+, }$p"; done
   while true; do
     selection_read ans "Profile ($list; q quits) [$SEL_CUR_PROFILE]: " || return 1
@@ -769,8 +800,8 @@ _sel_ask_groups() {
   local groups=() g def ans hint v row rows=()
   SEL_ANS_GROUPS=()
   if ((${#SEL_GROUPS[@]})); then groups=("${SEL_GROUPS[@]}"); else
-    mapfile -t rows < <(selection_group_defaults "$SEL_ANS_PROFILE")
-    for row in "${rows[@]+"${rows[@]}"}"; do groups+=("${row%%$'\t'*}"); done
+    _sel_split rows "$(selection_group_defaults "$SEL_ANS_PROFILE")"
+    for row in "${rows[@]+"${rows[@]}"}"; do groups+=("${row%%"$_SEL_TAB"*}"); done
   fi
   for g in "${groups[@]+"${groups[@]}"}"; do
     def="$(selection_group_defaults "$SEL_ANS_PROFILE" | awk -F '\t' -v g="$g" '$1 == g { print $2 }')"

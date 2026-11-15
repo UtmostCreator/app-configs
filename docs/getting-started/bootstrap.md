@@ -67,6 +67,15 @@ HOST_PROFILE_DEFAULT=linux-cli bash ops/bootstrap.sh
 HOST_PROFILE=wsl bash ops/bootstrap.sh
 ```
 
+On plain Linux the answer can also come from the remembered host file
+(`bash ops/detect-host.sh --host-file` prints its path), written by
+`sys-install --host linux-cli` or the first-run question. Order: `HOST_PROFILE`,
+macOS or WSL2 detection, the host file, `HOST_PROFILE_DEFAULT`, `linux-desktop`.
+Bootstrap never asks and never writes it. When the host comes from the file and
+`home/.chezmoidata/personal.yaml` disagrees, it warns before `chezmoi apply` with
+the detected host, the configured `hostProfile` and `gui`, and the fix. See
+"Remember linux-desktop or linux-cli" in `docs/getting-started/install.md`.
+
 ## After bootstrap (day-to-day)
 
 ```bash

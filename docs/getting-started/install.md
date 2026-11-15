@@ -104,6 +104,57 @@ bash ops/install.sh --dry-run                # or: DRY_RUN=1 bash ops/install.sh
 HOST_PROFILE=linux-cli bash ops/install.sh   # pin the host profile
 ```
 
+### Remember linux-desktop or linux-cli
+
+On plain Linux the host is `linux-desktop` or `linux-cli`, and nothing in the
+machine reliably says which. `ops/install.sh` therefore remembers it per
+machine in `${XDG_CONFIG_HOME:-$HOME/.config}/app-configs/host` (an
+`XDG_CONFIG_HOME` on a Windows drive, `/mnt/<letter>`, is ignored). The file
+holds one line, exactly `linux-desktop` or `linux-cli`; nothing else is
+allowed. It sits beside the `selection/` directory, is not a flake input and is
+not managed by chezmoi. `bash ops/detect-host.sh --host-file` prints the path
+and `--source` prints where the answer came from (`env`, `detected`, `file` or
+`default`).
+
+**Precedence**, first match wins: `HOST_PROFILE`, then macOS or WSL2 detection
+(the file is never read there), then the host file (plain Linux only), then
+`HOST_PROFILE_DEFAULT`, then `linux-desktop`. Every script (`sys-update`,
+bootstrap, the `mise` sync tasks, `hms`, readiness, audit) asks
+`ops/detect-host.sh`, so they all give the same answer. The file is exactly one
+line (only trailing whitespace is allowed; a leading blank line, a second line
+or a comment is invalid). An invalid file on plain Linux (empty, `wsl`, `macos`,
+anything else) makes `detect-host.sh` exit 1 with a message that names the file,
+the two accepted values and the fixes. `sys-update`, bootstrap, `sys-install`,
+`hms`, the `sync:apply` task and the Codebase Memory updater stop and show that
+message. Readiness and the `sync:dry-run` task hide detect-host's stderr and
+report the host as `unknown`, and the audit shows an empty host; none of the
+three changes anything.
+
+```bash
+bash ops/install.sh --host linux-cli    # write the file, never ask (also --host=linux-cli)
+bash ops/install.sh --reconfigure       # ask the host again first (default: the current value), then the selection
+```
+
+With no file, `install.sh` asks once on a terminal, with a default taken from
+whether a graphical session is running (`WAYLAND_DISPLAY`, `DISPLAY`,
+`XDG_SESSION_TYPE`, or `systemctl get-default` printing `graphical.target`),
+or, when no host file exists yet, a valid `HOST_PROFILE_DEFAULT` (it wins over
+that check), and writes the answer. Without a terminal it asks nothing, writes nothing, never
+blocks, and prints a hint to run `sys-install --host linux-cli`. `q` or end of
+input at the question exits 1 before anything changes. `--dry-run` asks but
+writes nothing and prints `dry run: would write <file> (<value>)`. `--host` is a
+usage error (exit 2, nothing written) with a conflicting `HOST_PROFILE` or on a
+detected macOS or WSL2 host. Bootstrap and `sys-update` never ask and never write
+the file.
+
+**Drift warning.** chezmoi renders from `home/.chezmoidata/personal.yaml`
+(`hostProfile`, `gui`), not from the host file. When the host came from the host
+file and `personal.yaml` disagrees, `install.sh`, `bootstrap.sh` and `sys-update`
+(report and apply) warn before any `chezmoi apply`, showing the detected host,
+the configured `hostProfile` and `gui`, and the fix: set `hostProfile: "<p>"` and
+`gui: true|false` in `personal.yaml`, then run `chezmoi apply`. The warning only
+reads those two keys and never edits `personal.yaml`.
+
 Equivalent mise task:
 
 ```bash

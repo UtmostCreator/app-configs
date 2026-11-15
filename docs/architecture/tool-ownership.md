@@ -192,6 +192,27 @@ services, users and system packages: login shell, `trusted-users`, the GC
 timer, time zone, Docker daemon and Tailscale (`ops/system-setup.sh:2-5`).
 Standalone Home Manager cannot set these and must not try.
 
+## Remembered linux host
+
+`linux-desktop` versus `linux-cli` cannot be detected, so plain Linux remembers
+it in `${XDG_CONFIG_HOME:-$HOME/.config}/app-configs/host` (one line, exactly
+one of the two values).
+
+- **`ops/detect-host.sh` is the only reader and owner of the path** (a rule in
+  `tests/bash/single-owner.bats`); every consumer asks it, and it sources no
+  library because tests copy it alone. It also resolves the path like
+  `ops/lib/selection.sh` does (a `/mnt/<letter>` `XDG_CONFIG_HOME` is ignored); a
+  parity test keeps the two directories equal.
+- **`ops/install.sh` is the only writer** (`host_choice_write`, a temp file in the
+  same directory then `mv -f`). Never a flake input and never chezmoi-managed:
+  the file sits beside `selection/`, which is a flake input.
+- **Precedence:** `HOST_PROFILE`, macOS or WSL2 detection (the file is never read
+  there), the file, `HOST_PROFILE_DEFAULT`, `linux-desktop`.
+- **`ops/lib/preflight.sh` owns the drift warning** (`preflight_host_data_drift`):
+  chezmoi renders from `personal.yaml`, so a host chosen through the file can
+  disagree with it. The check reads only `hostProfile` and `gui`, only warns,
+  and never edits `personal.yaml`.
+
 ## Install selection
 
 A host can leave optional tool groups out (`media`, `security`, `go`,

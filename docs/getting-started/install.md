@@ -79,13 +79,17 @@ git clone <your-fork> ~/dotfiles && cd ~/dotfiles
 bash ops/install.sh
 ```
 
-`ops/install.sh` is **fully unattended and idempotent**:
+`ops/install.sh` is **unattended and idempotent**. The one exception is the
+first run on a terminal with no stored selection, which asks what to install
+(see "Choose what to install" below); without a terminal, or with
+`--profile`, it never asks:
 
 - Detects the host; on **NixOS** it uses the system Nix and **skips** the
   Determinate Systems installer (which would conflict).
 - Installs base tools (`chezmoi`, `mise`, `home-manager`, `lefthook`) only if
   missing.
-- Validates the flake, **snapshots `$HOME`**, then `chezmoi apply --force`.
+- Validates the flake, resolves the install selection (below), **snapshots
+  `$HOME`**, then `chezmoi apply --force`.
 - Runs `home-manager switch` (or `darwin-rebuild switch` on macOS).
 - Runs `mise install`, `lefthook install`, the ssh-agent helper, and
   `doctor.sh` (must pass).
@@ -95,8 +99,8 @@ bash ops/install.sh
 Preview without mutating anything:
 
 ```bash
-DRY_RUN=1 bash ops/install.sh
-HOST_PROFILE=linux-cli bash ops/install.sh   # pin a profile
+bash ops/install.sh --dry-run                # or: DRY_RUN=1 bash ops/install.sh
+HOST_PROFILE=linux-cli bash ops/install.sh   # pin the host profile
 ```
 
 Equivalent mise task:
@@ -108,6 +112,130 @@ mise run install
 > Difference vs `ops/bootstrap.sh`: bootstrap defaults to a dry-run and
 > prompts before applying. `install.sh` is the non-interactive, NixOS-aware
 > "set and forget" path.
+
+### Choose what to install (install selection)
+
+Some tools are optional. A host can leave them out with a **local selection**
+that names a profile and, if wanted, switches individual groups off. With no
+selection, everything installs exactly as before: the committed profiles
+turn every group on, and the build output is identical.
+
+**Groups** (declared in `nix/modules/home/profile.nix`; core tools such as
+fish, git, ripgrep and the tools `sys-update` needs are never in a group):
+
+| Group | What it gates |
+| --- | --- |
+| `media` | ffmpeg, yt-dlp, imagemagick, viu |
+| `security` | trivy, osv-scanner |
+| `go` | the Go toolchain and Go tooling (go, gopls, golangci-lint, delve and the rest of the Go block in `nix/modules/home/dev.nix`) |
+| `macInput` | macOS only: the `karabiner-elements` and `linearmouse` casks and their configs. It has no effect on Linux and WSL2, and the Linux prompt does not offer it. |
+
+**Profiles** are `work` and `personal` (the values of `myConfig.profile`). Each
+is a table of group toggles in `nix/profiles/work.toml` and
+`nix/profiles/personal.toml`; both turn every group on. `personal` also
+installs the personal-only apps (Vesktop, Telegram, Syncthing helpers,
+OpenClaw). This selection profile is not the same thing as `HOST_PROFILE`
+(`macos`, `linux-desktop`, `linux-cli`, `wsl`), which says what kind of machine
+this is. The host default selection profile is `personal` on `linux-desktop`
+and `work` everywhere else.
+
+**The selection file** is per machine and never synced or committed:
+
+```text
+${XDG_CONFIG_HOME:-$HOME/.config}/app-configs/selection/selection.toml
+```
+
+```toml
+profile = "work"      # required whenever [groups] is present
+
+[groups]              # only the differences from the profile
+media = false
+go = false
+```
+
+The committed `nix/selection/selection.toml` is empty and means "no selection".
+When your file exists the scripts pass it to Nix as
+`--override-input selection path:<dir>`; `flake.lock` is not touched. On WSL2
+the directory is always under the Linux `$HOME`: an `XDG_CONFIG_HOME` on a
+Windows drive (`/mnt/c/...`) is ignored with a note.
+
+**Precedence**, first match wins: `--profile` flag, then the first-run prompt,
+then your local file, then the committed profile default, then the host default
+profile.
+
+#### First run, and what you are asked
+
+With no selection file, on a terminal, `sys-install` asks before it changes
+anything beyond Nix and the base tools. It prints a **present-state table**
+(for each group, how many of its packages are installed now, and any copy that
+is on `PATH` but not from Home Manager), asks for the profile (default: the
+host's) and then each group (`[Y/n]` when the profile turns it on, `[y/N]`
+when off), prints a **preview**, and offers `[a]pply [c]hange selection
+[q]uit`:
+
+- `a` writes only the differences from the profile defaults and continues;
+- `c` asks again with your answers pre-filled;
+- `q` (or end of input) stops with exit 1. It writes no selection and runs no
+  `chezmoi apply` and no switch. It does not undo what earlier steps already
+  did: Nix, the base tools and the seeded `personal.yaml` stay.
+
+The preview is read-only (evaluation only, nothing is built). Its sections:
+
+- **Outcome by group**: per group, what is kept, added or removed;
+- **Packages, from your selection** and **Packages, pending changes (repo, or a
+  selection not yet applied)**: the first lists only what your selection
+  changes against what is installed, the second lists everything else the next
+  switch would change, for example repo updates, or a selection you wrote
+  earlier and have not applied yet;
+- the same split for Home Manager files and services, plus a chezmoi file
+  count (not a diff; `chezmoi diff` shows it);
+- on macOS, **macOS casks**.
+
+#### Flags and later runs
+
+```bash
+bash ops/install.sh --profile work     # write profile = "work", drop group overrides, preview, continue
+bash ops/install.sh --reconfigure      # ask again, with the current values pre-selected (needs a terminal)
+bash ops/install.sh --dry-run          # prompt and preview; write and apply nothing
+```
+
+- `--profile NAME` never asks, also on a terminal. It **replaces** any group
+  overrides in your file (the preview says so) and continues. An unknown name
+  exits 2 before anything runs.
+- `--reconfigure` without a terminal exits 1 before any change.
+- `--dry-run` never writes a selection; answering `a` prints what it would write.
+- With a file already present, a plain run prints one line
+  (`Selection: <path> (profile X)`), asks nothing and shows no preview, but
+  still **validates** the file.
+- With no file and no terminal, nothing is written and the committed default is
+  used. The run never blocks.
+- `sys-update`, `sys-install`, `hms` and `mise run sync:apply` all use the same
+  stored selection, silently; none of them ever prompts.
+
+#### Invalid files
+
+An unknown key, profile or group, `[groups]` without `profile`, or a group that
+is not `true`/`false` fails **before any change** (before `chezmoi apply` and
+any switch). The Nix error names the key, for example
+`unknown group 'bogus'`. Fix the file, or run `bash ops/install.sh --profile
+work` to replace it. On macOS the chezmoi ignore rules also read the file; a
+file that is not valid TOML fails that render, which the install has already
+rejected earlier.
+
+#### What removal does
+
+- **Linux, WSL2 (Nix packages):** a deselected package leaves `PATH` at the next
+  switch. Files in `$HOME` and application data stay.
+- **macOS casks:** nothing is uninstalled. Homebrew cleanup is `none`, so a
+  deselected cask stays installed, and the preview says so for each one:
+  `stays installed (Homebrew cleanup = none); remove by hand: brew uninstall --cask <name>`.
+  With `macInput` off, chezmoi stops deploying the Karabiner and LinearMouse
+  configs but does not delete ones already in `~/.config`.
+- **Personal to work on `linux-desktop`:** choosing `work` removes the personal
+  apps (Vesktop, Telegram, Syncthing and its helper commands, OpenClaw and its
+  gateway unit). The preview lists them under "personal apps".
+
+Not covered here: native Windows, and tools that mise installs.
 
 ### What the next install looks like (timeline)
 
@@ -136,7 +264,8 @@ finishes in **1–3 minutes**.
 
 ### Is it truly "one click, walk away"?
 
-Yes for the **user environment** — `ops/install.sh` needs no prompts. On Linux
+Yes for the **user environment** — `ops/install.sh` needs no prompts once a
+selection exists (or with `--profile`, or without a terminal). On Linux
 and WSL it runs no `sudo` itself, though the Nix installer may ask for it on a
 fresh non-NixOS host; macOS needs `sudo` for the nix-darwin switch and checks it
 before changing anything. The **only** manual step that needs you is the
@@ -435,7 +564,8 @@ Notes:
 | Goal | Command |
 | --- | --- |
 | Install everything, unattended | `sys-install` · `mise run install` · `bash ops/install.sh` |
-| Preview install | `DRY_RUN=1 bash ops/install.sh` |
+| Preview install | `bash ops/install.sh --dry-run` · `DRY_RUN=1 bash ops/install.sh` |
+| Choose what to install | `bash ops/install.sh --reconfigure` · `bash ops/install.sh --profile work` |
 | Update everything (brewup) | `sys-update` · `mise run update:apply` |
 | Safe cleanup (keep rollbacks) | `sys-cleanup` · `mise run cleanup:apply` |
 | Reclaim aged generations | `sys-cleanup --gc` · `mise run cleanup:gc` |

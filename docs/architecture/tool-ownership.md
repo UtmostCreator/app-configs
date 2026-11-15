@@ -192,6 +192,53 @@ services, users and system packages: login shell, `trusted-users`, the GC
 timer, time zone, Docker daemon and Tailscale (`ops/system-setup.sh:2-5`).
 Standalone Home Manager cannot set these and must not try.
 
+## Install selection
+
+A host can leave optional tool groups out (`media`, `security`, `go`,
+`macInput`). Usage is in `docs/getting-started/install.md`; this section records
+the mechanism and why.
+
+- **Profiles and groups.** A committed profile is a value of
+  `myConfig.profile` (`work`, `personal`). `nix/profiles/<profile>.toml` lists
+  every group as a boolean; both files start all-true. Groups are options
+  `myConfig.groups.<g>` declared once in `nix/modules/home/profile.nix`, defaulted
+  from the effective profile's file. Packages are spliced in place with
+  `lib.optionals`, so list order, and with it the derivation, is unchanged when
+  every group is on. `homebrew.nix` reads the same option through the
+  Home Manager user, so one selection drives both layers. Core tools are never
+  in a group.
+- **The local selection is a flake input.** `inputs.selection` is
+  `path:./selection` with `flake = false`, defaulting to the empty committed
+  `nix/selection/selection.toml`. When
+  `${XDG_CONFIG_HOME:-$HOME/.config}/app-configs/selection/selection.toml` exists,
+  scripts add `--override-input selection path:<dir>`. Nix reads it with
+  `builtins.fromTOML`, so evaluation stays pure, and `--override-input` implies
+  `--no-write-lock-file`, so `nix/flake.lock` is never edited by a selection.
+  Rejected: one flake output per profile and group combination (2^n outputs, no
+  room for custom setups), `--impure` with `getEnv` (loses purity and pinning),
+  and a local file under `nix/` (git flake refs cannot see untracked files, and
+  `update-all.sh` refuses untracked files under `nix/`).
+- **`ops/lib/selection.sh` is the single owner** of the override arguments
+  (`selection_dir`, `selection_args`, `SELECTION_ARGS`). `hm-switch.sh` sources
+  it and every other host build, switch and eval call site in `ops/` appends
+  `SELECTION_ARGS`; `tests/bash/single-owner.bats` fails when one omits it.
+  Why: a selection applied by one script and dropped by the next would silently
+  reinstall what the user removed. Only `ops/install.sh` prompts, writes the
+  file or prints the preview; `sys-update`, bootstrap and `hm-switch.sh` never do.
+- **Validation is Nix's.** Unknown keys, groups and profiles, `[groups]` without
+  `profile`, and wrong types fail evaluation with a message that names the key.
+  Scripts and the chezmoi ignore file do not re-implement those checks.
+- **chezmoi** (`home/.chezmoiignore`) reads the same file for one decision:
+  `macInput` from the local file, else the profile file in the repository, else
+  the host default profile; the Karabiner and LinearMouse configs are ignored when
+  it is off and always on non-darwin hosts.
+  `tests/bash/chezmoiignore-selection.bats` keeps the host default mapping equal
+  to `myConfig.profile`.
+- **Removal is not uninstall.** Nix packages leave `PATH` at the next switch.
+  Homebrew cleanup stays `none`, so a deselected cask stays installed; the
+  preview prints the `brew uninstall --cask` command. `$HOME` data is never
+  deleted.
+
 ## Hard rules
 
 - `.chezmoiroot` at the repo root, containing exactly `home`.

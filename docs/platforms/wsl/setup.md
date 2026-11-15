@@ -115,3 +115,8 @@ is the lighter choice for CLI-only use.
 The WSL configuration builds and the install path is tested in dry-run mode
 on Linux, but nobody has activated it on real WSL yet. Open items are
 tracked in `docs/plans/migration/followups.md` ("WSL validation").
+
+## Install selection
+
+Optional tool groups (media, security, Go) can be left out; see "Choose what to install" in `docs/getting-started/install.md`.
+The selection file lives under the Linux `$HOME`, never under `/mnt/c`.

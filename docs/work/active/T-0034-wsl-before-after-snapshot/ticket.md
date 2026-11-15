@@ -4,11 +4,11 @@ Source: local
 
 Status: open
 Wave: 1
-Depends on: none (it is used by T-0040 steps 6 and 12; its readiness.txt pass condition depends on T-0035, T-0037 and T-0038)
+Depends on: none (it is used by T-0040 steps 6 and 12; its readiness.txt pass condition depends on T-0035 and T-0037)
 Blocks: T-0039, T-0040
 Order: Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040.
 
-Re-verified 2026-11-15 against main ed39171: this ticket's findings were re-checked and none of the WSL2 tickets has been executed. Claims changed: the expected-TODO guidance in step 6 (see Design item 6). User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
+Re-verified 2026-11-15 against main ed39171: this ticket's findings were re-checked and none of the WSL2 tickets has been executed. Claims changed: the expected-TODO guidance in step 6 (see the test-pass.md section, step 6). User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
 
 ## Summary
 Before any real WSL2 test, record the state of the distro and Windows so an

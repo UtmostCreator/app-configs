@@ -45,3 +45,17 @@ stub() { printf '#!/bin/sh\nexit 0\n' >"$S/$1"; chmod +x "$S/$1"; }
     [ "$status" -eq 64 ]
     [[ "$stderr" == *"unknown argument"* ]]
 }
+
+# The NixOS system block (READINESS_ASSUME_NIXOS=1 is a test seam that skips the
+# host OS probe). With every tool absent from PATH its systemctl/nix checks are
+# [TODO]; only the Tailscale line differs between profiles.
+@test "NixOS desktop host still asks for the Tailscale daemon" {
+    HOST_PROFILE=linux-desktop READINESS_ASSUME_NIXOS=1 PATH="$S" run bash "$SCRIPT"
+    [[ "$output" == *"Tailscale daemon inactive"* ]]
+}
+
+@test "NixOS-WSL: no Tailscale line, so Tailscale cannot make a rebuild pending" {
+    HOST_PROFILE=wsl READINESS_ASSUME_NIXOS=1 PATH="$S" run bash "$SCRIPT"
+    [[ "$output" == *"NixOS system layer"* ]]
+    [[ "$output" != *"Tailscale"* ]]
+}

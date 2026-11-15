@@ -33,7 +33,8 @@ note() { printf '  [TODO] %s\n' "$*"; warn=$((warn+1)); }
 bad()  { printf '  [MISS] %s\n' "$*"; err=$((err+1)); }
 hdr()  { printf '\n== %s ==\n' "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
-is_nixos() { [[ -f /etc/NIXOS ]] || grep -qi '^ID=nixos' /etc/os-release 2>/dev/null; }
+# READINESS_ASSUME_NIXOS=1 is a test seam: it skips the host OS probe.
+is_nixos() { [[ "${READINESS_ASSUME_NIXOS:-0}" == 1 ]] || [[ -f /etc/NIXOS ]] || grep -qi '^ID=nixos' /etc/os-release 2>/dev/null; }
 
 hdr "Core tooling"
 for t in nix home-manager chezmoi mise lefthook git jq yq; do
@@ -117,8 +118,12 @@ if is_nixos; then
   if [[ "$cur_timezone" == "Europe/London" ]]; then ok "system time zone is Europe/London"
   else note "system time zone is ${cur_timezone:-unknown}, not Europe/London — run: sudo sys-setup --apply"; rebuild_needed=1; fi
 
-  if systemctl is-active tailscaled >/dev/null 2>&1; then ok "Tailscale daemon active"
-  else note "Tailscale daemon inactive — run: sudo sys-setup --apply"; rebuild_needed=1; fi
+  # NixOS-WSL does not run Tailscale (sys-setup defaults ENABLE_TAILSCALE=0
+  # there), so a missing daemon must not make a rebuild pending.
+  if [[ "$HOST_PROFILE" != wsl ]]; then
+    if systemctl is-active tailscaled >/dev/null 2>&1; then ok "Tailscale daemon active"
+    else note "Tailscale daemon inactive — run: sudo sys-setup --apply"; rebuild_needed=1; fi
+  fi
 fi
 
 hdr "Summary"

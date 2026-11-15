@@ -1,0 +1,28 @@
+
+    # ─── Added by app-configs ops/system-setup.sh ───
+    # Module form: merges with your existing configuration.
+    { config, pkgs, lib, ... }:
+    {
+      # Docker daemon via the self-contained module copied next to this file
+      # (./app-configs-docker.nix). Copied rather than imported by absolute path
+      # because a pure-eval flake forbids importing outside /etc/nixos.
+      # myConfig.docker.enable turns on the daemon and adds alice to the
+      # docker group. Disable with ENABLE_DOCKER=0 when re-running this script.
+      imports = [ ./app-configs-docker.nix ];
+      myConfig.docker.enable = true;
+      myConfig.docker.user = "alice";
+      programs.fish.enable = true;
+      users.users."alice".shell = pkgs.fish;
+      nix.settings.trusted-users = [ "root" "alice" ];
+      nix.gc = { automatic = true; dates = "weekly"; options = "--delete-older-than 14d"; };
+      nix.optimise.automatic = true;
+      # Europe/London is the shipped default. mkForce makes this win over
+      # the stock installer line in /etc/nixos/configuration.nix (often
+      # America/New_York) without editing that file by hand. Override by
+      # re-running with SYSTEM_TIMEZONE=Area/City if this host needs a different zone.
+      time.timeZone = lib.mkForce "Europe/London";
+      # Private remote access for loopback-only developer services.
+      services.tailscale.enable = true;
+      # Keep user services available after logout and across headless boots.
+      users.users."alice".linger = true;
+    }

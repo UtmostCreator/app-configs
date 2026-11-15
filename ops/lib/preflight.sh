@@ -114,6 +114,11 @@ preflight_wsl_check() {
   fi
 }
 
+# The username line of nix/vars/default.nix, as an ERE (indent of spaces, then
+# `username = "<name>";`; a CRLF line still matches). tests/bash/nix-identity.bats
+# reads this literal and checks that it matches the vars file exactly once.
+PREFLIGHT_USERNAME_RE='^ *username = "([^"]+)";'
+
 # Combined host preflight (install.sh and bootstrap.sh): WSL1 refusal, then the
 # login-user check. With Nix installed the user is read with `nix eval`. Without
 # Nix (fresh machine) the authoritative check has to wait until Nix exists, so a
@@ -133,7 +138,7 @@ preflight_host_checks() {
     return 0
   fi
   local early_user login_user="${USER:-$(id -un)}"
-  early_user="$(sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$repo_root/nix/vars/default.nix" 2>/dev/null || true)"
+  early_user="$(sed -nE "s/${PREFLIGHT_USERNAME_RE}.*/\\1/p" "$repo_root/nix/vars/default.nix" 2>/dev/null || true)"
   [[ -n "$early_user" && "$login_user" != "$early_user" ]] || return 0
   if [[ "$mode" == warn ]]; then
     warn "login user '$login_user' differs from username '$early_user' in nix/vars/default.nix (best-effort early warning; the authoritative check runs once Nix is installed)"

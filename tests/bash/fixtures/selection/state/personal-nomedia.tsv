@@ -1,0 +1,28 @@
+P	personal
+G	go	true
+G	media	false
+G	security	true
+K	/nix/store/00000000000000000000000000000000-fish-3.7.1
+K	/nix/store/00000000000000000000000000000000-ripgrep-14.1.0
+K	/nix/store/00000000000000000000000000000000-jq-1.7.1
+K	/nix/store/00000000000000000000000000000000-git-2.45.0
+K	/nix/store/00000000000000000000000000000000-dummy-xdg-mime-dirs
+K	/nix/store/00000000000000000000000000000000-go-1.22.3
+K	/nix/store/00000000000000000000000000000000-gopls-0.15.3
+K	/nix/store/00000000000000000000000000000000-trivy-0.51.0
+K	/nix/store/00000000000000000000000000000000-osv-scanner-1.7.4
+K	/nix/store/00000000000000000000000000000000-vesktop-1.5.3
+K	/nix/store/00000000000000000000000000000000-telegram-desktop-5.1.7
+K	/nix/store/00000000000000000000000000000000-syncthing-1.27.7
+K	/nix/store/00000000000000000000000000000000-sync-open
+K	/nix/store/00000000000000000000000000000000-sync-start
+K	/nix/store/00000000000000000000000000000000-sync-stop
+K	/nix/store/00000000000000000000000000000000-openclaw-2026.1.1
+F	.config/fish/config.fish	/nix/store/00000000000000000000000000000000-fish-config-personal
+F	.config/mimeapps.list	/nix/store/00000000000000000000000000000000-mimeapps.list
+F	.config/systemd/user/nix-gc.timer	/nix/store/00000000000000000000000000000000-nix-gc.timer
+F	.config/systemd/user/nix-gc.service	/nix/store/00000000000000000000000000000000-nix-gc.service
+F	.local/share/vicinae/extensions/recents	/nix/store/00000000000000000000000000000000-recents
+F	.config/systemd/user/syncthing.service	/nix/store/00000000000000000000000000000000-syncthing.service
+F	.config/systemd/user/default.target.wants/syncthing.service	/nix/store/00000000000000000000000000000000-syncthing.service
+F	.openclaw/openclaw.json	/nix/store/00000000000000000000000000000000-openclaw-default.json

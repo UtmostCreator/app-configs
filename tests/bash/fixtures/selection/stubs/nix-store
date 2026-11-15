@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Stub nix-store: `-q --references <path>` prints $STUB_REFS_FILE (the packages
+# of the installed generation); STUB_NIX_STORE_FAIL=1 makes it fail.
+printf 'nix-store %s\n' "$*" >>"$STUB_LOG"
+[ -z "${STUB_NIX_STORE_FAIL:-}" ] || { echo 'error: stub nix-store failure' >&2; exit 1; }
+[ -n "${STUB_REFS_FILE:-}" ] && cat "$STUB_REFS_FILE"
+exit 0

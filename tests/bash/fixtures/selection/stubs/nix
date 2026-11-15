@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Stub nix for tests/bash/install-selection.bats. Logs one "nix <args>" line
+# per call to $STUB_LOG and answers from fixtures/selection/state:
+#   nix eval --raw -f FILE username      the username (install.sh's login check)
+#   nix eval ... <flake>#<attr> --apply  a state, the members, or the profile
+# The selection a call evaluates is the one named by --override-input; no
+# override means the committed default. STUB_NIX_FAIL_OVERRIDE=1 fails every
+# eval that carries an override of a directory other than $APP_CONFIGS_SELECTION_DIR
+# (the proposed selection).
+printf 'nix %s\n' "$*" >>"$STUB_LOG"
+FIX="${STUB_STATE_DIR:?}"
+case "${1:-}" in
+  --version) echo 'nix (stub) 0'; exit 0 ;;
+  show-config) echo 'experimental-features = nix-command flakes'; exit 0 ;;
+  eval) ;;
+  *) exit 0 ;;
+esac
+attr="" override="" file=""
+shift
+while (($#)); do
+  case "$1" in
+    -f) file="$2"; shift ;;
+    --override-input) override="$3"; shift 2 ;;
+    --option | --apply) shift ;;
+    --raw | --json) ;;
+    *) case "$1" in *'#'*) attr="${1#*#}" ;; esac ;;
+  esac
+  shift
+done
+if [ -n "$file" ]; then
+  sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$file"
+  exit 0
+fi
+dir=""
+if [ -n "$override" ]; then
+  dir="${override#path:}"
+  dir="${dir//%20/ }"; dir="${dir//%23/#}"; dir="${dir//%3F/?}"; dir="${dir//%25/%}"
+  if [ -n "${STUB_NIX_FAIL_OVERRIDE:-}" ] && [ "$dir" != "${APP_CONFIGS_SELECTION_DIR:-}" ]; then
+    echo "error: stub: evaluating the proposed selection failed" >&2
+    exit 1
+  fi
+  if grep -q bogus "$dir/selection.toml" 2>/dev/null; then
+    echo "error: selection.toml: unknown key 'bogus'; known keys: profile, groups" >&2
+    exit 1
+  fi
+fi
+key=committed
+if [ -n "$dir" ]; then
+  key="$(sed -nE 's/^profile = "([a-z]+)".*/\1/p' "$dir/selection.toml")"
+  if grep -Eq '^media = false' "$dir/selection.toml"; then key="$key-nomedia"; fi
+fi
+case "$attr" in
+  *.config.myConfig | *.config.home-manager.users) echo "${key%%-*}" | sed 's/committed/personal/'; exit 0 ;;
+  darwinConfigurations.macos.config) key="mac-$key" ;;
+  homeConfigurations.*.config) ;;
+  homeConfigurations.* | darwinConfigurations.macos) cat "$FIX/members.tsv"; exit 0 ;;
+  *) echo "error: stub: unexpected attribute $attr" >&2; exit 1 ;;
+esac
+[ -f "$FIX/$key.tsv" ] || { echo "error: stub: no state fixture $key.tsv" >&2; exit 1; }
+cat "$FIX/$key.tsv"

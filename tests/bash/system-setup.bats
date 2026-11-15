@@ -615,8 +615,10 @@ prepare_existing() {
   prepare_existing with-docker
   local failed='wsl-mnt-guard.service loaded failed failed Mount guard'
   run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)" STUB_REAL_RC=4 STUB_FAILED_UNITS="$failed"
-  [ "$status" -ne 0 ]
+  [ "$status" -eq 4 ]
   [[ "$output" == *"activated the new generation"* ]]
+  # N20: the way back, for anyone who rolls the generation back.
+  [[ "$output" == *"after that rollback, restore /etc/nixos from "*".app-configs-backup-"*"(manifest.tsv"* ]]
   [[ "$output" == *"wsl-mnt-guard.service"* ]]
   [[ "$output" == *"sudo nixos-rebuild switch --rollback"* ]]
   [[ "$output" != *"restored every touched file"* ]]
@@ -630,16 +632,28 @@ prepare_existing() {
   apply_setup
   printf '{ imports = [ ]; }\n' > "$FIX/configuration.nix"
   run_apply HOST_PROFILE=linux-desktop USER_NAME=alice STUB_REAL_RC=4 STUB_FAILED_UNITS='foo.service loaded failed failed Foo'
-  [ "$status" -ne 0 ]
+  [ "$status" -eq 4 ]
   [[ "$output" == *"foo.service"* ]]
   [ -f "$FIX/app-configs-extra.nix" ]
   [ -f "$FIX/app-configs-docker.nix" ]
   grep -qF 'app-configs-extra.nix' "$FIX/configuration.nix"
 }
 
-@test "any other switch failure (exit 1, 2, 3) restores exactly, as before" {
+@test "exit 2 on switch (the activate script failed, after the profile moved) also keeps the files and exits 2" {
+  apply_setup
+  prepare_existing with-docker
+  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)" STUB_REAL_RC=2 STUB_FAILED_UNITS='bar.service loaded failed failed Bar'
+  [ "$status" -eq 2 ]
+  [[ "$output" == *"activated the new generation"* ]]
+  [[ "$output" == *"bar.service"* ]]
+  [[ "$output" == *"sudo nixos-rebuild switch --rollback"* ]]
+  [[ "$output" != *"restored every touched file"* ]]
+  grep -qF 'environment.systemPackages = with pkgs; [ git curl ];' "$FIX/app-configs-extra.nix"
+}
+
+@test "any other switch failure (exit 1, 3, 100) restores exactly, as before" {
   local rc
-  for rc in 1 2 3; do
+  for rc in 1 3 100; do
     apply_setup
     prepare_existing with-docker
     before="$(state "$FIX")"

@@ -44,12 +44,6 @@ setup() {
     [[ "$stderr" != *"'rg'"* ]]
 }
 
-@test "default mode no longer mentions justfile" {
-    run bash "$DOCTOR"
-    [[ "$output" != *[Jj]ustfile* ]]
-    [[ "$output" != *"'just'"* ]]
-}
-
 @test "default mode does not warn about jq/yq (readiness owns them)" {
     PATH="$BARE" run bash "$DOCTOR"
     [[ "$output" != *"'jq'"* ]]

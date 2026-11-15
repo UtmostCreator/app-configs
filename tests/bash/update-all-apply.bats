@@ -521,6 +521,8 @@ no_rm_hint() { [[ ! "$1" =~ (^|[^a-z])rm[[:space:]] ]]; }
   no_rm_hint "$output"
   [ -f "$SYS_UPDATE_STATE_DIR/lock" ]
   run grep -c 'nix flake update' "$STUB_LOG"; [ "$output" = 0 ]
+  [ ! -s "$STUB_LOG" ]
+  [ "$(commits)" -eq 1 ]
 }
 
 @test "S02: the lock is free after a failure and the lock file is kept" {
@@ -616,6 +618,7 @@ STUB
   reset_repo
   run_update
   [ "$status" -eq 0 ]
+  [ "$(ls "$SYS_UPDATE_STATE_DIR"/runs/*.log | wc -l)" -eq 2 ]
   [ "$(ls "$SYS_UPDATE_STATE_DIR"/runs/*.meta | wc -l)" -eq 2 ]
   for m in "$SYS_UPDATE_STATE_DIR"/runs/*.meta; do
     [[ "$(sed -n 's/^run_id=//p' "$m")" =~ ^20260101T000000Z-[0-9]+$ ]]

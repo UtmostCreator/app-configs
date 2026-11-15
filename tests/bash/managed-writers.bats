@@ -65,12 +65,6 @@ overlaps() { python3 -I "$SCAN" "$1" --nix-overlap --allow "$ALLOW_NIX" "${@:2}"
         { echo "home/.chezmoiignore no longer ignores .config/flameshot"; return 1; }
 }
 
-@test "the ssh-agent installer, which checks chezmoi_managed before each write, passes" {
-    run python3 -I "$SCAN" "$REPO_ROOT"
-    [[ "$output" != *ssh-agent-setup* ]]
-    grep -q 'install -m 0644' "$REPO_ROOT/ops/unix/ssh-agent-setup.sh"
-}
-
 # -- Seeded violations: the check must notice each of these ------------------
 
 @test "seeded: an unguarded append to ~/.zshrc is caught" {

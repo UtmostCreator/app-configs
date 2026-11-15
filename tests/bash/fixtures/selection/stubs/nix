@@ -59,12 +59,14 @@ key=committed
 if [ -n "$dir" ]; then
   key="$(sed -nE 's/^profile = "([a-z]+)".*/\1/p' "$dir/selection.toml")"
   if grep -Eq '^media = false' "$dir/selection.toml"; then key="$key-nomedia"; fi
+  if grep -Eq '^macInput = false' "$dir/selection.toml"; then key="$key-noinput"; fi
 fi
 case "$attr" in
   *.config.myConfig | *.config.home-manager.users) echo "${key%%-*}" | sed 's/committed/personal/'; exit 0 ;;
   darwinConfigurations.macos.config) key="mac-$key" ;;
   homeConfigurations.*.config) ;;
-  homeConfigurations.* | darwinConfigurations.macos) cat "$FIX/members.tsv"; exit 0 ;;
+  darwinConfigurations.macos) cat "$FIX/mac-members.tsv"; exit 0 ;;
+  homeConfigurations.*) cat "$FIX/members.tsv"; exit 0 ;;
   *) echo "error: stub: unexpected attribute $attr" >&2; exit 1 ;;
 esac
 [ -f "$FIX/$key.tsv" ] || { echo "error: stub: no state fixture $key.tsv" >&2; exit 1; }

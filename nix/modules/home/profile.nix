@@ -16,6 +16,7 @@ let
     media = "Media tools: ffmpeg, yt-dlp, imagemagick, viu (nix/modules/home/cli.nix).";
     security = "Vulnerability scanners: trivy, osv-scanner (nix/modules/home/dev.nix).";
     go = "Go toolchain and tooling: the Go block in nix/modules/home/dev.nix.";
+    macInput = "macOS input apps: the karabiner-elements and linearmouse casks (nix/modules/darwin/homebrew.nix) and their chezmoi configs (home/.chezmoiignore). No effect on Linux.";
   };
   groupNames = builtins.attrNames groupDescriptions;
   profileNames = [

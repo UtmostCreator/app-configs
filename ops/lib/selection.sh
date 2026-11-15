@@ -230,18 +230,23 @@ selection_hm_profile() {
 #            A<TAB>outPath of the personal-only packages
 # Neither builds anything: outPath is computed, not realised.
 # shellcheck disable=SC2016  # Nix source: ${g} and \t are for Nix, not the shell
-_SEL_STATE_BODY='h: casks: builtins.concatStringsSep "\n" ([ ("P\t" + h.myConfig.profile) ] ++ map (g: "G\t" + g + "\t" + (if h.myConfig.groups.${g} then "true" else "false")) (builtins.attrNames h.myConfig.groups) ++ map (p: "K\t" + toString p) h.home.packages ++ map (f: "F\t" + f.target + "\t" + toString f.source) (builtins.filter (f: f.enable) (builtins.attrValues h.home.file)) ++ map (n: "C\t" + n) casks) + "\n"'
-_SEL_STATE_HM="let body = $_SEL_STATE_BODY; in c: body c []"
-_SEL_STATE_DARWIN="let body = $_SEL_STATE_BODY; in c: let u = builtins.head (builtins.attrNames c.home-manager.users); in body c.home-manager.users.\${u} (map (x: x.name) c.homebrew.casks)"
+_SEL_STATE_BODY='h: mac: casks: builtins.concatStringsSep "\n" ([ ("P\t" + h.myConfig.profile) ] ++ map (g: "G\t" + g + "\t" + (if h.myConfig.groups.${g} then "true" else "false")) (builtins.filter (g: mac || g != "macInput") (builtins.attrNames h.myConfig.groups)) ++ map (p: "K\t" + toString p) h.home.packages ++ map (f: "F\t" + f.target + "\t" + toString f.source) (builtins.filter (f: f.enable) (builtins.attrValues h.home.file)) ++ map (n: "C\t" + n) casks) + "\n"'
+_SEL_STATE_HM="let body = $_SEL_STATE_BODY; in c: body c false []"
+_SEL_STATE_DARWIN="let body = $_SEL_STATE_BODY; in c: let u = builtins.head (builtins.attrNames c.home-manager.users); in body c.home-manager.users.\${u} true (map (x: x.name) c.homebrew.casks)"
 
+# The macInput group gates macOS casks only, so a Linux host does not list it:
+# the state and members expressions take a `mac` flag (false for Home Manager
+# hosts, true for the darwin system) and drop macInput from the group names when
+# it is false. The option itself exists on every host (a selection file may set it).
+#
 # Members of each group: all groups on (profile work) minus that group off; the
 # personal-only set: all groups on, profile personal minus work. Each evaluation
 # extends the host configuration with the groups and the profile forced, so a
 # local selection cannot change the answer.
 # shellcheck disable=SC2016  # Nix source
-_SEL_MEMBERS_BODY='cfgOf: mkMod: base: let force = v: { _type = "override"; priority = 10; content = v; }; names = builtins.attrNames (cfgOf base).myConfig.groups; ext = profile: groups: base.extendModules { modules = [ (mkMod { myConfig.profile = force profile; myConfig.groups = builtins.mapAttrs (_: v: force v) groups; }) ]; }; allOn = builtins.listToAttrs (map (g: { name = g; value = true; }) names); pk = e: map toString (cfgOf e).home.packages; on = pk (ext "work" allOn); minus = a: b: builtins.filter (p: !(builtins.elem p b)) a; members = g: minus on (pk (ext "work" (allOn // { ${g} = false; }))); in builtins.concatStringsSep "\n" ([ ("H\t" + (cfgOf base).myConfig.profile) ] ++ map (g: "N\t" + g) names ++ builtins.concatMap (g: map (p: "G\t" + g + "\t" + p) (members g)) names ++ map (p: "A\t" + p) (minus (pk (ext "personal" allOn)) on)) + "\n"'
-_SEL_MEMBERS_HM="let gen = $_SEL_MEMBERS_BODY; in d: gen (e: e.config) (m: m) d"
-_SEL_MEMBERS_DARWIN="let gen = $_SEL_MEMBERS_BODY; in d: let u = builtins.head (builtins.attrNames d.config.home-manager.users); in gen (e: e.config.home-manager.users.\${u}) (m: { home-manager.users.\${u} = m; }) d"
+_SEL_MEMBERS_BODY='mac: cfgOf: mkMod: base: let force = v: { _type = "override"; priority = 10; content = v; }; names = builtins.filter (g: mac || g != "macInput") (builtins.attrNames (cfgOf base).myConfig.groups); ext = profile: groups: base.extendModules { modules = [ (mkMod { myConfig.profile = force profile; myConfig.groups = builtins.mapAttrs (_: v: force v) groups; }) ]; }; allOn = builtins.listToAttrs (map (g: { name = g; value = true; }) names); pk = e: map toString (cfgOf e).home.packages; on = pk (ext "work" allOn); minus = a: b: builtins.filter (p: !(builtins.elem p b)) a; members = g: minus on (pk (ext "work" (allOn // { ${g} = false; }))); in builtins.concatStringsSep "\n" ([ ("H\t" + (cfgOf base).myConfig.profile) ] ++ map (g: "N\t" + g) names ++ builtins.concatMap (g: map (p: "G\t" + g + "\t" + p) (members g)) names ++ map (p: "A\t" + p) (minus (pk (ext "personal" allOn)) on)) + "\n"'
+_SEL_MEMBERS_HM="let gen = $_SEL_MEMBERS_BODY; in d: gen false (e: e.config) (m: m) d"
+_SEL_MEMBERS_DARWIN="let gen = $_SEL_MEMBERS_BODY; in d: let u = builtins.head (builtins.attrNames d.config.home-manager.users); in gen true (e: e.config.home-manager.users.\${u}) (m: { home-manager.users.\${u} = m; }) d"
 
 # The cheapest evaluation that forces the whole selection: the profile option's
 # condition reads the thunk with every validation throw, and deepSeq on the

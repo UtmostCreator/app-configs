@@ -651,6 +651,26 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     grep -q '^brew list --cask -1$' "$STUB_LOG"
 }
 
+@test "AC13: on macOS the prompt offers macInput, and n lists both input casks as staying installed" {
+    with_brew
+    printf 'rectangle\nkarabiner-elements\nlinearmouse\n' >"$BATS_TEST_TMPDIR/casks"
+    export STUB_BREW_CASKS="$BATS_TEST_TMPDIR/casks"
+    HP=macos inst_tty 'work\n\nn\n\n\na\n' --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"macInput"* ]]
+    local s
+    s="$(section 'macOS casks')"
+    [[ "$s" == *"karabiner-elements: stays installed (Homebrew cleanup = none); remove by hand: brew uninstall --cask karabiner-elements"* ]]
+    [[ "$s" == *"linearmouse: stays installed (Homebrew cleanup = none); remove by hand: brew uninstall --cask linearmouse"* ]]
+    [[ "$output" == *"dry run: would write"* ]]
+}
+
+@test "AC13: on Linux the prompt never offers macInput" {
+    inst_tty 'work\n\n\n\na\n' --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"macInput"* ]]
+}
+
 @test "AC7d: macOS without brew says cask state unknown" {
     HP=macos inst --dry-run --profile work
     [ "$status" -eq 0 ]
@@ -882,7 +902,7 @@ no_mapfile() {
     no_mapfile
     with_brew
     printf 'rectangle\n' >"$BATS_TEST_TMPDIR/casks"; export STUB_BREW_CASKS="$BATS_TEST_TMPDIR/casks"
-    HP=macos inst_tty 'work\n\nn\n\na\n' --dry-run
+    HP=macos inst_tty 'work\n\n\nn\n\na\n' --dry-run
     [ "$status" -eq 0 ]
     [[ "$output" == *"dry run: would write"* ]]
     [[ "$output" == *"macOS casks"* ]]

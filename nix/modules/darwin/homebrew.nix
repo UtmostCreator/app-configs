@@ -1,4 +1,14 @@
-{ config, ... }:
+{
+  config,
+  lib,
+  vars,
+  ...
+}:
+let
+  # Install groups are options of the Home Manager user (nix/modules/home/profile.nix);
+  # the one local selection reaches the system layer through that user.
+  groups = config.home-manager.users.${vars.username}.myConfig.groups;
+in
 {
   # macOS Homebrew package declarations.
   #
@@ -51,8 +61,14 @@
       "aerospace"
       "alt-tab"
       "betterdisplay"
+    ]
+    # macInput group (myConfig.groups.macInput, nix/modules/home/profile.nix):
+    # spliced in place; list order feeds the darwin system derivation.
+    ++ lib.optionals groups.macInput [
       "karabiner-elements"
       "linearmouse"
+    ]
+    ++ [
 
       # ── Files, storage and transfer ──────────────────────
       # Free picks from docs/reference/app-options.yaml (paid options such

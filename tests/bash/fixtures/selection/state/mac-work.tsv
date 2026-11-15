@@ -1,5 +1,6 @@
 P	work
 G	go	true
+G	macInput	true
 G	media	true
 G	security	true
 K	/nix/store/00000000000000000000000000000000-fish-3.7.1

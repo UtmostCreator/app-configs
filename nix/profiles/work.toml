@@ -5,3 +5,4 @@
 media = true
 security = true
 go = true
+macInput = true

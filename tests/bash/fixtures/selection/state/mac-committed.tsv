@@ -1,5 +1,6 @@
 P	work
 G	go	true
+G	macInput	true
 G	media	true
 G	security	true
 K	/nix/store/00000000000000000000000000000000-fish-3.7.1
@@ -21,4 +22,5 @@ F	.config/systemd/user/nix-gc.timer	/nix/store/00000000000000000000000000000000-
 F	.config/systemd/user/nix-gc.service	/nix/store/00000000000000000000000000000000-nix-gc.service
 F	.local/share/vicinae/extensions/recents	/nix/store/00000000000000000000000000000000-recents
 C	rectangle
+C	karabiner-elements
 C	linearmouse

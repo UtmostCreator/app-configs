@@ -26,6 +26,48 @@ projects.yaml.example
 {{- $gui := default false .gui -}}
 
 {{- /*
+  macInput group (T-0042): whether the macOS input configs are deployed.
+  Host default profile: linux-desktop is "personal", every other host "work"
+  (kept equal to myConfig.profile by tests/bash/chezmoiignore-selection.bats).
+  Only darwin reads the selection, so an unreadable file cannot affect Linux.
+  macInput resolves from, in order:
+    1. [groups] macInput (a boolean) in the local selection file,
+       ${APP_CONFIGS_SELECTION_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/app-configs/selection}/selection.toml
+    2. the same key in nix/profiles/<profile>.toml next to this source tree,
+       where <profile> is the local file's `profile`, else the host default
+    3. true (the committed default, every group on)
+  A missing or empty local file, a missing key, a value that is not a boolean
+  and a profile name that is not a profile file all fall through. A file that
+  is not valid TOML fails the render on darwin; install.sh and the Nix build
+  reject such a file first.
+*/ -}}
+{{- $hostDefault := "work" -}}
+{{- if eq $hostProfile "linux-desktop" -}}{{- $hostDefault = "personal" -}}{{- end -}}
+{{- $macInput := false -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   $macInput = true -}}
+{{-   $selDir := env "APP_CONFIGS_SELECTION_DIR" -}}
+{{-   if not $selDir -}}
+{{-     $xdg := env "XDG_CONFIG_HOME" -}}
+{{-     if not $xdg -}}{{- $xdg = printf "%s/.config" (or (env "HOME") .chezmoi.homeDir) -}}{{- end -}}
+{{-     $selDir = printf "%s/app-configs/selection" $xdg -}}
+{{-   end -}}
+{{-   $local := dict -}}
+{{-   $selFile := printf "%s/selection.toml" $selDir -}}
+{{-   if stat $selFile -}}{{- $local = include $selFile | fromToml -}}{{- end -}}
+{{-   $profile := $hostDefault -}}
+{{-   if has (get $local "profile") (list "work" "personal") -}}{{- $profile = get $local "profile" -}}{{- end -}}
+{{-   $profileFile := printf "%s/../nix/profiles/%s.toml" .chezmoi.sourceDir $profile -}}
+{{-   if stat $profileFile -}}
+{{-     $fromProfile := dig "groups" "macInput" "unset" (include $profileFile | fromToml) -}}
+{{-     if kindIs "bool" $fromProfile -}}{{- $macInput = $fromProfile -}}{{- end -}}
+{{-   end -}}
+{{-   $fromLocal := dig "groups" "macInput" "unset" $local -}}
+{{-   if kindIs "bool" $fromLocal -}}{{- $macInput = $fromLocal -}}{{- end -}}
+{{- end }}
+# host default profile: {{ $hostDefault }}
+
+{{- /*
   .chezmoiignore patterns match against TARGET (destination) paths
   rooted at $HOME, not against source-tree names like dot_config/...
   Use ~/.config/<dir> form (without the literal "~/"), i.e. ".config/<dir>"
@@ -54,6 +96,15 @@ Library/**
 .config/ghostty/**
 # dsh-remote-setup drives systemd --user and ss; Linux/WSL only.
 .local/bin/dsh-remote-setup
+{{- end }}
+
+{{- if not $macInput }}
+# macInput off, or not darwin: the macOS input configs (Karabiner-Elements,
+# LinearMouse) are not deployed.
+.config/karabiner
+.config/karabiner/**
+.config/linearmouse
+.config/linearmouse/**
 {{- end }}
 
 {{- if eq $hostProfile "wsl" }}

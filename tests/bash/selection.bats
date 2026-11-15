@@ -20,6 +20,15 @@ setup_file() {
     drv linux-cli empty >"$BATS_FILE_TMPDIR/drv-empty-linux-cli" 2>"$BATS_FILE_TMPDIR/err-drv-empty-linux-cli" || true
     drv linux-cli all-on-work >"$BATS_FILE_TMPDIR/drv-all-on-work-linux-cli" 2>"$BATS_FILE_TMPDIR/err-drv-all-on-work-linux-cli" || true
     drv linux-desktop all-on-personal >"$BATS_FILE_TMPDIR/drv-all-on-personal-linux-desktop" 2>"$BATS_FILE_TMPDIR/err-drv-all-on-personal-linux-desktop" || true
+    # macOS: the same identities for the standalone Home Manager output and for the
+    # nix-darwin system (aarch64-darwin evaluates from Linux; nothing is built).
+    local k
+    for k in default empty all-on-work; do
+        drv macos "$k" >"$BATS_FILE_TMPDIR/drv-$k-macos" 2>"$BATS_FILE_TMPDIR/err-drv-$k-macos" || true
+        drvd "$k" >"$BATS_FILE_TMPDIR/drv-$k-darwin" 2>"$BATS_FILE_TMPDIR/err-drv-$k-darwin" || true
+    done
+    # linux-desktop: empty vs default, the host with the personal profile.
+    drv linux-desktop empty >"$BATS_FILE_TMPDIR/drv-empty-linux-desktop" 2>"$BATS_FILE_TMPDIR/err-drv-empty-linux-desktop" || true
     local f
     for f in default media-go-off all-false; do
         pkgs linux-cli "$f" >"$BATS_FILE_TMPDIR/pkgs-$f.json" 2>"$BATS_FILE_TMPDIR/err-pkgs-$f" || true
@@ -43,6 +52,21 @@ drv() {
     local args=()
     mapfile -t args < <(sel "$2")
     timeout 600 nix eval --raw "path:$REPO_ROOT/nix#homeConfigurations.$1.activationPackage.drvPath" "${args[@]}"
+}
+
+# drvd <fixture>: drvPath of darwinConfigurations.macos.system.
+drvd() {
+    local args=()
+    mapfile -t args < <(sel "$1")
+    timeout 600 nix eval --raw "path:$REPO_ROOT/nix#darwinConfigurations.macos.system.drvPath" "${args[@]}"
+}
+
+# casks <fixture>: the names in darwinConfigurations.macos homebrew.casks, as JSON.
+casks() {
+    local args=()
+    mapfile -t args < <(sel "$1")
+    timeout 600 nix eval --json "path:$REPO_ROOT/nix#darwinConfigurations.macos.config.homebrew.casks" \
+        "${args[@]}" --apply 'cs: map (c: c.name) cs'
 }
 
 # hmjson <host> <fixture> <attr under config>: evaluate to JSON.
@@ -81,14 +105,14 @@ recorded() {
         read = n: (builtins.fromTOML (builtins.readFile (dir + "/${n}.toml"))).groups;
       in { work = builtins.attrNames (read "work"); personal = builtins.attrNames (read "personal"); }'
     [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
-    run jq -e '.work == ["go","media","security"] and .personal == ["go","media","security"]' <<<"$output"
+    run jq -e '.work == ["go","macInput","media","security"] and .personal == ["go","macInput","media","security"]' <<<"$output"
     [ "$status" -eq 0 ]
 }
 
 @test "default: every group is on" {
     run --separate-stderr hmjson linux-cli default myConfig.groups
     [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
-    run jq -e '. == {go: true, media: true, security: true}' <<<"$output"
+    run jq -e '. == {go: true, macInput: true, media: true, security: true}' <<<"$output"
     [ "$status" -eq 0 ]
 }
 
@@ -119,7 +143,7 @@ recorded() {
 @test "group deltas override the profile defaults" {
     run --separate-stderr hmjson linux-cli media-go-off myConfig.groups
     [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
-    run jq -e '. == {go: false, media: false, security: true}' <<<"$output"
+    run jq -e '. == {go: false, macInput: true, media: false, security: true}' <<<"$output"
     [ "$status" -eq 0 ]
 }
 
@@ -214,7 +238,7 @@ pk() { cat "$BATS_FILE_TMPDIR/pkgs-$1.json"; }
     run --separate-stderr timeout 600 nix eval --json \
         "path:$REPO_ROOT/nix#homeConfigurations.linux-cli.config.myConfig.groups" "${SELECTION_ARGS[@]}"
     [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
-    run jq -e '. == {go: false, media: false, security: true}' <<<"$output"
+    run jq -e '. == {go: false, macInput: true, media: false, security: true}' <<<"$output"
     [ "$status" -eq 0 ]
 }
 
@@ -268,16 +292,124 @@ validate_fixture() {
     local host
     for host in linux-cli macos; do
         SELECTION_HOST="$host"
+        groups=3
+        if [ "$host" = macos ]; then groups=4; fi
         SELECTION_ARGS=()
         _sel_eval "$BATS_TEST_TMPDIR/w/state-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_state)" "$(_sel_expr_state)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
         _sel_eval "$BATS_TEST_TMPDIR/w/members-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_members)" "$(_sel_expr_members)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
         _sel_eval "$BATS_TEST_TMPDIR/w/check-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_check)" "$(_sel_expr_check)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
         grep -q "^P"$'\t' "$BATS_TEST_TMPDIR/w/state-$host"
-        [ "$(grep -c "^G"$'\t' "$BATS_TEST_TMPDIR/w/state-$host")" -eq 3 ]
+        # macInput exists on every host but only macOS offers it (it gates casks).
+        [ "$(grep -c "^G"$'\t' "$BATS_TEST_TMPDIR/w/state-$host")" -eq "$groups" ]
         [ "$(grep -c "^K"$'\t' "$BATS_TEST_TMPDIR/w/state-$host")" -gt 50 ]
         grep -q "^H"$'\t' "$BATS_TEST_TMPDIR/w/members-$host"
-        [ "$(grep -c "^N"$'\t' "$BATS_TEST_TMPDIR/w/members-$host")" -eq 3 ]
+        [ "$(grep -c "^N"$'\t' "$BATS_TEST_TMPDIR/w/members-$host")" -eq "$groups" ]
+        if [ "$host" = macos ]; then
+            grep -q "^N"$'\t'"macInput" "$BATS_TEST_TMPDIR/w/members-$host"
+        else
+            ! grep -q macInput "$BATS_TEST_TMPDIR/w/members-$host" "$BATS_TEST_TMPDIR/w/state-$host"
+        fi
         grep -q "^G"$'\t'"media"$'\t' "$BATS_TEST_TMPDIR/w/members-$host"
     done
     grep -q "^C"$'\t' "$BATS_TEST_TMPDIR/w/state-macos"
+}
+
+# ── Phase 2: macInput and the darwin outputs (AC11) ──
+
+@test "AC11: the macos Home Manager output is the same for no selection, an empty file and all groups on" {
+    [ -n "$(recorded default-macos)" ]
+    [ "$(recorded empty-macos)" = "$(recorded default-macos)" ]
+    [ "$(recorded all-on-work-macos)" = "$(recorded default-macos)" ]
+}
+
+@test "AC11: darwinConfigurations.macos.system is the same for no selection, an empty file and all groups on" {
+    [ -n "$(recorded default-darwin)" ]
+    [ "$(recorded empty-darwin)" = "$(recorded default-darwin)" ]
+    [ "$(recorded all-on-work-darwin)" = "$(recorded default-darwin)" ]
+}
+
+@test "linux-desktop with an empty selection file is the same as no selection" {
+    [ -n "$(recorded default-linux-desktop)" ]
+    [ "$(recorded empty-linux-desktop)" = "$(recorded default-linux-desktop)" ]
+}
+
+@test "AC11: macInput is on by default and gates exactly karabiner-elements and linearmouse, in place" {
+    run --separate-stderr casks default
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    local on="$output"
+    run jq -e 'index("karabiner-elements") != null and index("linearmouse") != null
+        and (index("betterdisplay") + 1 == index("karabiner-elements"))
+        and (index("karabiner-elements") + 1 == index("linearmouse"))' <<<"$on"
+    [ "$status" -eq 0 ] || { echo "$on"; return 1; }
+    run --separate-stderr casks mac-input-off
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    local off="$output"
+    run jq -e '(index("karabiner-elements") == null) and (index("linearmouse") == null)' <<<"$off"
+    [ "$status" -eq 0 ] || { echo "$off"; return 1; }
+    # Nothing else moves: the off list is the on list minus those two names.
+    run jq -e --argjson on "$on" '$on - ["karabiner-elements","linearmouse"] == .' <<<"$off"
+    [ "$status" -eq 0 ]
+}
+
+@test "macInput=false changes no Linux package set" {
+    run --separate-stderr pkgs linux-cli mac-input-off
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    [ "$output" = "$(pk default)" ]
+}
+
+@test "the Home Manager macos output also reads macInput from the selection" {
+    run --separate-stderr hmjson macos mac-input-off myConfig.groups.macInput
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    [ "$output" = false ]
+}
+
+# ── Phase 3: WSL2 (AC15) ──
+
+@test "AC15: the wsl profile evaluates with a non-default selection" {
+    run --separate-stderr hmjson wsl media-go-off myConfig.groups
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    run jq -e '. == {go: false, macInput: true, media: false, security: true}' <<<"$output"
+    [ "$status" -eq 0 ]
+    run --separate-stderr pkgs wsl media-go-off
+    [ "$status" -eq 0 ] || { echo "$stderr"; return 1; }
+    run jq -e '(["ffmpeg","go"] - . == ["ffmpeg","go"]) and (["fish","ripgrep","git"] - . == [])' <<<"$output"
+    [ "$status" -eq 0 ]
+}
+
+# selection_dir with a WSL-style environment. The directory must come from the
+# Linux $HOME; a Windows drive mount (/mnt/<letter>) is never a home for it.
+wsl_dir() {
+    env -u APP_CONFIGS_SELECTION_DIR -u XDG_CONFIG_HOME "$@" bash -c 'source "$1/ops/lib/selection.sh"; selection_dir' _ "$REPO_ROOT"
+}
+
+@test "AC15: selection_dir resolves under the Linux HOME" {
+    run --separate-stderr wsl_dir HOME=/home/x
+    [ "$status" -eq 0 ]
+    [ "$output" = /home/x/.config/app-configs/selection ]
+}
+
+@test "AC15: an XDG_CONFIG_HOME inside the Linux HOME is honoured" {
+    run --separate-stderr wsl_dir HOME=/home/x XDG_CONFIG_HOME=/home/x/cfg
+    [ "$status" -eq 0 ]
+    [ "$output" = /home/x/cfg/app-configs/selection ]
+}
+
+@test "AC15: an XDG_CONFIG_HOME under /mnt/c is ignored, with a note on stderr" {
+    run --separate-stderr wsl_dir HOME=/home/x XDG_CONFIG_HOME=/mnt/c/Users/x/AppData
+    [ "$status" -eq 0 ]
+    [ "$output" = /home/x/.config/app-configs/selection ]
+    [[ "$stderr" == *"/mnt/c"* ]]
+    [[ "$stderr" == *"XDG_CONFIG_HOME"* ]]
+}
+
+@test "AC15: any drive letter and the bare mount point are treated as Windows paths" {
+    run --separate-stderr wsl_dir HOME=/home/x XDG_CONFIG_HOME=/mnt/d
+    [ "$output" = /home/x/.config/app-configs/selection ]
+    run --separate-stderr wsl_dir HOME=/home/x XDG_CONFIG_HOME=/mnt/wsl/foo
+    [ "$output" = /mnt/wsl/foo/app-configs/selection ]
+}
+
+@test "AC15: APP_CONFIGS_SELECTION_DIR stays an explicit override" {
+    run --separate-stderr env HOME=/home/x APP_CONFIGS_SELECTION_DIR=/mnt/c/scratch bash -c 'source "$1/ops/lib/selection.sh"; selection_dir' _ "$REPO_ROOT"
+    [ "$output" = /mnt/c/scratch ]
 }

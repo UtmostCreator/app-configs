@@ -51,10 +51,10 @@ FOUR_AGENTS() {
     run rows "$(FOUR_AGENTS)"
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 4 ]
-    [ "${lines[0]}" = "a1=Explore      Sonnet 5 · high  · ▶ 24% · 1m42" ]
-    [ "${lines[1]}" = "a2=UI-review    Opus 5   · xhigh · ▶ 71% · 4m18" ]
-    [ "${lines[2]}" = "a3=Tests        Sonnet 5 · high  · ✓ 36%" ]
-    [ "${lines[3]}" = "a4=Architecture Opus 5   · max   · ▶ 84% ⚠ · 7m31" ]
+    [ "${lines[0]}" = "a1=Explore      Sonnet 5 · high  · ▶ ctx 24% · 1m42" ]
+    [ "${lines[1]}" = "a2=UI-review    Opus 5   · xhigh · ▶ ctx 71% · 4m18" ]
+    [ "${lines[2]}" = "a3=Tests        Sonnet 5 · high  · ✓ ctx 36%" ]
+    [ "${lines[3]}" = "a4=Architecture Opus 5   · max   · ▶ ctx 84% ! · 7m31" ]
 }
 
 @test "every output line is valid {id, content} JSON" {
@@ -69,8 +69,8 @@ FOUR_AGENTS() {
         '{columns: 120, tasks: [$a, $b]}')
     run rows "$input"
     [ "$status" -eq 0 ]
-    [ "${lines[0]}" = "f=Fable Fable 5.1 · high · ▶ 0% · 5s" ]
-    [ "${lines[1]}" = "h=Haiku Haiku 4.5 · low  · ✗ 1%" ]
+    [ "${lines[0]}" = "f=Fable Fable 5.1 · high · ▶ ctx 0% · 5s" ]
+    [ "${lines[1]}" = "h=Haiku Haiku 4.5 · low  · ✗ ctx 1%" ]
 }
 
 @test "inherited effort, unresolved model, and hours-long runtime" {
@@ -85,7 +85,7 @@ FOUR_AGENTS() {
         '{columns: 120, tasks: [$a | .effort = 32000]}')
     run rows "$input"
     [ "$status" -eq 0 ]
-    [ "$output" = "k=Budget Sonnet 5 · 32k · ■ 10%" ]
+    [ "$output" = "k=Budget Sonnet 5 · 32k · ■ ctx 10%" ]
 }
 
 @test "falls back to label, then description, when name is missing" {
@@ -95,8 +95,8 @@ FOUR_AGENTS() {
         '{columns: 120, tasks: [$a, $b]}')
     run rows "$input"
     [ "$status" -eq 0 ]
-    [ "${lines[0]}" = "l=Lint Sonnet 5 · high · ▶ 0% · 1s" ]
-    [ "${lines[1]}" = "d=desc Sonnet 5 · high · ▶ 0% · 1s" ]
+    [ "${lines[0]}" = "l=Lint Sonnet 5 · high · ▶ ctx 0% · 1s" ]
+    [ "${lines[1]}" = "d=desc Sonnet 5 · high · ▶ ctx 0% · 1s" ]
 }
 
 @test "long names are truncated to keep rows aligned" {
@@ -104,30 +104,30 @@ FOUR_AGENTS() {
         '{columns: 120, tasks: [$a]}')
     run rows "$input"
     [ "$status" -eq 0 ]
-    [ "$output" = "t=a-very-long-ag… Sonnet 5 · high · ▶ 0% · 1s" ]
+    [ "$output" = "t=a-very-long-ag… Sonnet 5 · high · ▶ ctx 0% · 1s" ]
 }
 
 @test "narrow panel keeps name, compact model tag with effort initial, status, and context %" {
     run rows "$(FOUR_AGENTS | jq '.columns = 50')"
     [ "$status" -eq 0 ]
-    [ "${lines[3]}" = "a4=Architecture Opus 5:M ▶ 84% ⚠" ]
-    [ "${lines[2]}" = "a3=Tests        Son 5:h  ✓ 36%" ]
-    [ "${lines[0]}" = "a1=Explore      Son 5:h  ▶ 24%" ]
-    [ "${lines[1]}" = "a2=UI-review    Opus 5:x ▶ 71%" ]
+    [ "${lines[3]}" = "a4=Architecture Opus 5:M ▶ ctx 84% !" ]
+    [ "${lines[2]}" = "a3=Tests        Son 5:h  ✓ ctx 36%" ]
+    [ "${lines[0]}" = "a1=Explore      Son 5:h  ▶ ctx 24%" ]
+    [ "${lines[1]}" = "a2=UI-review    Opus 5:x ▶ ctx 71%" ]
 }
 
 @test "narrow panel: compact tags for Sonnet 4.6, Haiku 4.5, and no effort initial when inherited" {
     run rows "$(jq -n --argjson a "$(task s Son claude-sonnet-4-6 '' running 1000 200000 5)" '{columns: 50, tasks: [$a]}')"
     [ "$status" -eq 0 ]
-    [ "$output" = "s=Son Son 4.6 ▶ 1%" ]
+    [ "$output" = "s=Son Son 4.6 ▶ ctx 1%" ]
     run rows "$(jq -n --argjson a "$(task h Haiku claude-haiku-4-5-20251001 low failed 1000 200000 5)" '{columns: 50, tasks: [$a]}')"
-    [ "$output" = "h=Haiku Haiku 4.5:l ✗ 1%" ]
+    [ "$output" = "h=Haiku Haiku 4.5:l ✗ ctx 1%" ]
 }
 
 @test "narrow panel: effort initial is dropped when the row would not fit, the model tag stays" {
     run rows "$(FOUR_AGENTS | jq '.columns = 28')"
     [ "$status" -eq 0 ]
-    [ "${lines[3]}" = "a4=Architecture Opus 5 ▶ 84% ⚠" ]
+    [ "${lines[3]}" = "a4=Architecture Opus 5 ▶ ctx 84% !" ]
 }
 
 @test "narrow panel: effort initials are unambiguous (medium m, max M, xhigh x)" {
@@ -139,26 +139,26 @@ FOUR_AGENTS() {
         --argjson e "$(task e E claude-opus-5 odd running 1000 200000 5)" \
         '{columns: 50, tasks: [$a, $b, $c, $d, $e]}')
     run rows "$input"
-    [ "${lines[0]}" = "a=A Opus 5:m ▶ 1%" ]
-    [ "${lines[1]}" = "b=B Opus 5:M ▶ 1%" ]
-    [ "${lines[2]}" = "c=C Opus 5:x ▶ 1%" ]
-    [ "${lines[3]}" = "d=D Opus 5:l ▶ 1%" ]
-    [ "${lines[4]}" = "e=E Opus 5   ▶ 1%" ]
+    [ "${lines[0]}" = "a=A Opus 5:m ▶ ctx 1%" ]
+    [ "${lines[1]}" = "b=B Opus 5:M ▶ ctx 1%" ]
+    [ "${lines[2]}" = "c=C Opus 5:x ▶ ctx 1%" ]
+    [ "${lines[3]}" = "d=D Opus 5:l ▶ ctx 1%" ]
+    [ "${lines[4]}" = "e=E Opus 5   ▶ ctx 1%" ]
 }
 
 @test "narrow panel: the effort initial is kept or dropped for every row at once" {
     run rows "$(FOUR_AGENTS | jq '.columns = 28')"
     [ "$status" -eq 0 ]
-    [ "${lines[0]}" = "a1=Explore      Son 5  ▶ 24%" ]
-    [ "${lines[1]}" = "a2=UI-review    Opus 5 ▶ 71%" ]
-    [ "${lines[2]}" = "a3=Tests        Son 5  ✓ 36%" ]
-    [ "${lines[3]}" = "a4=Architecture Opus 5 ▶ 84% ⚠" ]
+    [ "${lines[0]}" = "a1=Explore      Son 5  ▶ ctx 24%" ]
+    [ "${lines[1]}" = "a2=UI-review    Opus 5 ▶ ctx 71%" ]
+    [ "${lines[2]}" = "a3=Tests        Son 5  ✓ ctx 36%" ]
+    [ "${lines[3]}" = "a4=Architecture Opus 5 ▶ ctx 84% !" ]
 }
 
 @test "narrow panel: a task without a model shows no tag" {
     input=$(jq -n --argjson a "$(task n Nomodel '' high running 1000 200000 5)" '{columns: 50, tasks: [$a]}')
     run rows "$input"
-    [ "${lines[0]}" = "n=Nomodel ▶ 1%" ]
+    [ "${lines[0]}" = "n=Nomodel ▶ ctx 1%" ]
 }
 
 @test "no tasks prints nothing" {
@@ -183,30 +183,30 @@ real_task() {
         '{columns: 167, agent_type: "orchestrator", tasks: [$a]}')
     run rows "$input"
     [ "$status" -eq 0 ]
-    [ "$output" = "aad0147d1d0ef9f0e=reviewer Sonnet 5.5 · high · ▶ 0% · 1s · Check delegation nesting" ]
+    [ "$output" = "aad0147d1d0ef9f0e=reviewer Sonnet 5.5 · high · ▶ ctx 0% · 1s · Check delegation nesting" ]
 }
 
 @test "real payload: narrow panel drops the task label but keeps type and model" {
     input=$(jq -n --argjson a "$(real_task reviewer 'Check delegation nesting')" \
         '{columns: 50, tasks: [$a]}')
     run rows "$input"
-    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5:h ▶ 0%" ]
+    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5:h ▶ ctx 0%" ]
 }
 
 @test "colour: a known agent type and its model family are coloured, unknown types are grey" {
     input=$(jq -n --argjson a "$(real_task reviewer x)" --argjson b "$(real_task mystery x)" \
         '{columns: 167, tasks: [$a, $b]}')
     run bash -c "bash '$SCRIPT' <<<'$input' | jq -r .content"
-    [ "${lines[0]}" = "$(printf '\033[0;33mreviewer\033[0m \033[0;36mSonnet 5.5\033[0m · high · \033[0;34m▶\033[0m \033[0;32m0%%\033[0m · 1s · x')" ]
+    [ "${lines[0]}" = "$(printf '\033[0;33mreviewer\033[0m \033[0;36mSonnet 5.5\033[0m · high · \033[0;34m▶\033[0m \033[0;32mctx 0%%\033[0m · 1s · x')" ]
     [[ "${lines[1]}" == $'\033[0;90mmystery \033[0m'* ]]
 }
 
-@test "colour: narrow fit is decided on visible width: 23 columns keeps the effort initial, 22 drops it" {
-    input=$(jq -n --argjson a "$(real_task reviewer x)" '{columns: 23, tasks: [$a]}')
+@test "colour: narrow fit is decided on visible width: 27 columns keeps the effort initial, 26 drops it (exact fit incl. "ctx")" {
+    input=$(jq -n --argjson a "$(real_task reviewer x)" '{columns: 27, tasks: [$a]}')
     run rows "$input"
-    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5:h ▶ 0%" ]
-    run rows "$(jq '.columns = 22' <<<"$input")"
-    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5 ▶ 0%" ]
+    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5:h ▶ ctx 0%" ]
+    run rows "$(jq '.columns = 26' <<<"$input")"
+    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5 ▶ ctx 0%" ]
 }
 
 # visible_widths <input-json>: display width of each row's content, ANSI stripped.
@@ -253,4 +253,14 @@ visible_widths() {
         [ -n "$sub" ]
         [ "$sub" = "$main" ] || { echo "$t: subagent=$sub main=$main"; false; }
     done
+}
+
+@test "context is labelled ctx, with a trailing ! from 80 percent" {
+    input=$(jq -n --argjson a "$(task a A claude-opus-5 high running 20000 200000 5)" \
+        --argjson b "$(task b B claude-opus-5 high running 160000 200000 5)" \
+        --argjson c "$(task c C claude-opus-5 high running 158000 200000 5)" '{columns: 120, tasks: [$a, $b, $c]}')
+    run rows "$input"
+    [ "${lines[0]}" = "a=A Opus 5 · high · ▶ ctx 10% · 5s" ]
+    [ "${lines[1]}" = "b=B Opus 5 · high · ▶ ctx 80% ! · 5s" ]
+    [ "${lines[2]}" = "c=C Opus 5 · high · ▶ ctx 79% · 5s" ]
 }

@@ -16,7 +16,8 @@ setup() {
     [ -f "$SCRIPT" ]
 
     export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
-    export STATUSLINE_NOW=$NOW TZ=UTC COLUMNS=200
+    export STATUSLINE_NOW=$NOW TZ=UTC COLUMNS=200 LC_ALL=C.UTF-8
+    unset NO_COLOR
     # No git-result caching by default (tests edit the tree between runs); the
     # cache tests turn it on. The cache dir stays inside the test sandbox.
     export STATUSLINE_GIT_TTL=0 XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR/run"
@@ -88,12 +89,12 @@ session_file() {
 
 # --- Main line ----------------------------------------------------------------
 
-@test "wide: dirty branch, diff, effort, real context %, LONG, 5h and 7d quota" {
+@test "wide: dirty branch, diff, effort, real context %, bars, 5h and 7d quota" {
     edit_tracked
     run statusline "$FULL"
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 1 ]
-    [ "$output" = "advanced-gym ⎇ main* +3/-2 | Opus 5 · effort:high | Ctx 55% · 548k/1M · LONG | 5h 72% ↻1h24m · 7d 41% ↻Tue" ]
+    [ "$output" = "advanced-gym ⎇ main* +3/-2 | Opus 5 · effort:high | Ctx ██████░░░░ 55% · 548k/1M | 5h 72% ↻1h24m · 7d ████░░░░░░ 41% ↻Tue" ]
 }
 
 @test "clean tree has no dirty marker and no diff segment when nothing changed" {
@@ -141,7 +142,7 @@ session_file() {
     [[ "$output" == "plain-dir +428/-91 | Opus 5 | "* ]]
 }
 
-@test "below 200k: no LONG, 200k window, optional fields absent" {
+@test "200k window, optional fields absent" {
     run statusline '{
         "model": {"display_name": "Sonnet 5"},
         "context_window": {"total_input_tokens": 16000, "context_window_size": 200000,
@@ -149,13 +150,13 @@ session_file() {
         "exceeds_200k_tokens": false
     }'
     [ "$status" -eq 0 ]
-    [ "$output" = "advanced-gym ⎇ main | Sonnet 5 | Ctx 8% · 16k/200k" ]
+    [ "$output" = "advanced-gym ⎇ main | Sonnet 5 | Ctx █░░░░░░░░░ 8% · 16k/200k" ]
 }
 
 @test "null used_percentage is computed from tokens / window" {
     run statusline '{"context_window": {"used_percentage": null}}'
     [ "$status" -eq 0 ]
-    [[ "$output" == *"| Ctx 55% · 548k/1M · LONG" ]]
+    [[ "$output" == *"| Ctx ██████░░░░ 55% · 548k/1M" ]]
 }
 
 @test "resets under an hour and a 7d reset within a day show countdowns" {
@@ -164,13 +165,13 @@ session_file() {
         "seven_day": {"used_percentage": 99, "resets_at": 1738438600}
     }}'
     [ "$status" -eq 0 ]
-    [[ "$output" == *"| 5h 90% ↻42m · 7d 99% ↻5h10m" ]]
+    [[ "$output" == *"| 5h 90% ↻42m · 7d ██████████ 99% ↻5h10m" ]]
 }
 
 @test "only one quota window present shows only that window" {
     run statusline '{"rate_limits": {"seven_day": {"used_percentage": 12, "resets_at": 1738679200}}}'
     [ "$status" -eq 0 ]
-    [[ "$output" == *"· LONG | 7d 12% ↻Tue" ]]
+    [[ "$output" == *"548k/1M | 7d █░░░░░░░░░ 12% ↻Tue" ]]
 }
 
 @test "wide: worktree and PR go on a second line" {
@@ -230,7 +231,8 @@ session_file() {
 @test "falls back to cwd when workspace and context_window are absent" {
     run bash -c "jq -n --arg c '$REPO' '{cwd: \$c, model: {display_name: \"Sonnet\"}}' | bash '$SCRIPT' | sed 's/\x1b\[[0-9;]*m//g'"
     [ "$status" -eq 0 ]
-    [ "$output" = "advanced-gym ⎇ main | Sonnet | Ctx 0% · 0/200k" ]
+    # Was "Ctx 0% · 0/200k": a missing context_window must not render as 0%.
+    [ "$output" = "advanced-gym ⎇ main | Sonnet | Ctx —" ]
 }
 
 # --- Remote Control -------------------------------------------------------------
@@ -288,10 +290,10 @@ session_file() {
 
 # --- Remaining context tokens -----------------------------------------------------
 
-@test "wide: remaining tokens come from remaining_percentage and sit before LONG" {
+@test "wide: remaining tokens come from remaining_percentage and sit after the token count" {
     run statusline '{"context_window": {"remaining_percentage": 45.2}}'
     [ "$status" -eq 0 ]
-    [[ "$output" == *"| Ctx 55% · 548k/1M · 452k left · LONG"* ]]
+    [[ "$output" == *"| Ctx ██████░░░░ 55% · 548k/1M · ~452k left"* ]]
 }
 
 @test "remaining tokens are hidden when remaining_percentage is absent or null" {
@@ -435,15 +437,18 @@ width() {
 
 FULLER='{"context_window": {"remaining_percentage": 45.2}}'
 
-@test "wide: drops remaining tokens first, then reset times, then 7d" {
+@test "wide: drops bars first, then remaining tokens, then reset times, then 7d" {
     git -C "$REPO" checkout -q -b feature/statusline-upgrade-with-a-rather-long-name
     edit_tracked
     full="$(jq -n --argjson a "$FULL" --argjson b "$FULLER" '$a * $b')"
     run statusline "$full"
-    [[ "${lines[0]}" == *"452k left"* ]]
+    [[ "${lines[0]}" == *"~452k left"* && "${lines[0]}" == *"Ctx ██████░░░░"* ]]
     export COLUMNS=$(( $(width "${lines[0]}") - 1 ))
     run statusline "$full"
-    [ "${lines[0]}" = "advanced-gym ⎇ feature/statusline-upgrade-with-a-rather-long-name* +3/-2 | Opus 5 · effort:high | Ctx 55% · 548k/1M · LONG | 5h 72% ↻1h24m · 7d 41% ↻Tue" ]
+    [ "${lines[0]}" = "advanced-gym ⎇ feature/statusline-upgrade-with-a-rather-long-name* +3/-2 | Opus 5 · effort:high | Ctx 55% · 548k/1M · ~452k left | 5h 72% ↻1h24m · 7d 41% ↻Tue" ]
+    export COLUMNS=$(( $(width "${lines[0]}") - 1 ))
+    run statusline "$full"
+    [ "${lines[0]}" = "advanced-gym ⎇ feature/statusline-upgrade-with-a-rather-long-name* +3/-2 | Opus 5 · effort:high | Ctx 55% · 548k/1M | 5h 72% ↻1h24m · 7d 41% ↻Tue" ]
     export COLUMNS=$(( $(width "${lines[0]}") - 1 ))
     run statusline "$full"
     [[ "${lines[0]}" != *left* && "${lines[0]}" != *"↻"* && "${lines[0]}" == *"7d 41%"* ]]
@@ -574,4 +579,118 @@ cache_file() {
     [[ "$output" != *"◆"* ]]
     run statusline '{"agent": {"name": "a\u001b[31mb"}}'
     [[ "${lines[0]}" == "◆ a[31mb | "* ]]
+}
+
+# --- Pressure colours, quota-first fitting, NO_COLOR, bars ----------------------------
+
+@test "no fixed LONG marker: a 1M window past 200k tokens is judged by its own percentage" {
+    run statusline '{"exceeds_200k_tokens": true}'
+    [[ "$output" != *LONG* ]]
+    run statusline '{"context_window": {"total_input_tokens": 250000, "context_window_size": 1000000, "used_percentage": 25}}'
+    [[ "$output" != *LONG* && "$output" == *"Ctx ███░░░░░░░ 25%"* ]]
+}
+
+@test "context bar fills 10 cells by percentage and clamps" {
+    run statusline '{"context_window": {"used_percentage": 92}}'
+    [[ "$output" == *"Ctx █████████░ 92%"* ]]
+    run statusline '{"context_window": {"used_percentage": 100}}'
+    [[ "$output" == *"Ctx ██████████ 100%"* ]]
+    run statusline '{"context_window": {"used_percentage": 130}}'
+    [[ "$output" == *"Ctx ██████████ 130%"* ]]
+}
+
+@test "ASCII fallback: bars use # and - when the locale is not UTF-8" {
+    export LC_ALL=C
+    run statusline '{"context_window": {"used_percentage": 92}, "rate_limits": {"seven_day": {"used_percentage": 41}}}'
+    [[ "$output" == *"Ctx #########- 92%"* ]]
+    [[ "$output" == *"7d ####------ 41%"* ]]
+    [[ "$output" != *█* && "$output" != *░* ]]
+}
+
+@test "bars appear only on wide layouts" {
+    export COLUMNS=100
+    run statusline '{"rate_limits": {"seven_day": {"used_percentage": 41}}}'
+    [[ "$output" != *█* && "$output" != *░* ]]
+}
+
+@test "NO_COLOR: no escape codes at all, same layout" {
+    edit_tracked
+    colored=$(payload "$FULL" | bash "$SCRIPT")
+    plain=$(payload "$FULL" | NO_COLOR=1 bash "$SCRIPT")
+    [[ "$colored" == *$'\033'* ]]
+    [[ "$plain" != *$'\033'* ]]
+    [ "$plain" = "$(sed 's/\x1b\[[0-9;]*m//g' <<<"$colored")" ]
+}
+
+@test "NO_COLOR: also applies to the agent tag, RC and narrow layouts" {
+    export COLUMNS=80
+    session_file 222 sess-1 session_01Abc
+    out=$(payload '{"session_id": "sess-1", "agent": {"name": "reviewer"}}' | NO_COLOR=1 bash "$SCRIPT")
+    [[ "$out" != *$'\033'* ]]
+    [[ "$out" == "RC | ◆ reviewer | advanced-gym ⎇ main | Opus 5 | Ctx 55%" ]]
+}
+
+@test "NO_COLOR set but empty does not disable colour" {
+    out=$(payload | NO_COLOR= bash "$SCRIPT")
+    [[ "$out" == *$'\033'* ]]
+}
+
+@test "missing context fields show an em dash, never 0%" {
+    run bash -c "jq -n --arg c '$REPO' '{cwd: \$c, context_window: {}}' | bash '$SCRIPT' | sed 's/\x1b\[[0-9;]*m//g'"
+    [[ "$output" == *"Ctx —"* && "$output" != *"0%"* ]]
+    export COLUMNS=80
+    run bash -c "jq -n --arg c '$REPO' '{cwd: \$c}' | bash '$SCRIPT' | sed 's/\x1b\[[0-9;]*m//g'"
+    [[ "$output" == *"Ctx —"* && "$output" != *"0%"* ]]
+}
+
+@test "missing quota fields are omitted, not shown as 0%" {
+    run statusline '{"rate_limits": {"five_hour": {"resets_at": 1738425040}, "seven_day": {"used_percentage": null}}}'
+    [[ "$output" != *"5h"* && "$output" != *"7d"* ]]
+    export COLUMNS=80
+    run statusline '{"rate_limits": {"five_hour": {}}}'
+    [[ "$output" != *"5h"* && "$output" != *"7d"* ]]
+}
+
+# Narrow (below 120) quota priority: the higher-utilisation quota survives.
+@test "narrow: the quota with the higher utilisation is kept, 7d or 5h" {
+    export COLUMNS=50
+    run statusline '{"rate_limits": {"five_hour": {"used_percentage": 20}, "seven_day": {"used_percentage": 70}}}'
+    [ "$output" = "advanced-gym ⎇ main | Opus 5 | Ctx 55% | 7d 70%" ]
+    run statusline '{"rate_limits": {"five_hour": {"used_percentage": 70}, "seven_day": {"used_percentage": 20}}}'
+    [ "$output" = "advanced-gym ⎇ main | Opus 5 | Ctx 55% | 5h 70%" ]
+    # tie: 7d goes first, as before
+    run statusline '{"rate_limits": {"five_hour": {"used_percentage": 50}, "seven_day": {"used_percentage": 50}}}'
+    [ "$output" = "advanced-gym ⎇ main | Opus 5 | Ctx 55% | 5h 50%" ]
+}
+
+@test "a quota at 85 percent or more is never dropped, at any width" {
+    edit_tracked
+    full="$(jq -n --argjson a "$FULL" --argjson b "$FULLER" --argjson c "$EXTRAS" \
+        '$a * $b * $c * {rate_limits: {five_hour: {used_percentage: 30}, seven_day: {used_percentage: 96}}}')"
+    for cols in 200 160 120 100 80 60; do
+        COLUMNS=$cols run statusline "$full"
+        [[ "${lines[0]}" == *"7d "*"96%"* ]] || { echo "cols=$cols: ${lines[0]}"; false; }
+    done
+    full="$(jq '.rate_limits = {five_hour: {used_percentage: 91}, seven_day: {used_percentage: 96}}' <<<"$full")"
+    for cols in 100 60; do
+        COLUMNS=$cols run statusline "$full"
+        [[ "${lines[0]}" == *"5h 91%"* && "${lines[0]}" == *"7d 96%"* ]] || { echo "cols=$cols: ${lines[0]}"; false; }
+    done
+}
+
+@test "width: no line exceeds the terminal at 60, 80, 100, 120 and 160 columns" {
+    edit_tracked
+    full="$(jq -n --argjson a "$FULL" --argjson b "$FULLER" --argjson c "$EXTRAS" \
+        '$a * $b * $c * {agent: {name: "release-auditor"}, cost: {total_cost_usd: 12.34, total_duration_ms: 3720000},
+          prompt_cache: {caching_observed: true, warm: false, hit_ratio: 0.42},
+          rate_limits: {five_hour: {used_percentage: 90, resets_at: 1738425040}, seven_day: {used_percentage: 97, resets_at: 1738679200}}}')"
+    for cols in 60 80 100 120 160; do
+        for loc in C.UTF-8 C; do
+            LC_ALL=$loc COLUMNS=$cols run statusline "$full"
+            [ "$status" -eq 0 ]
+            for l in "${lines[@]}"; do
+                [ "$(width "$l")" -le "$cols" ] || { echo "cols=$cols loc=$loc width=$(width "$l"): $l"; false; }
+            done
+        done
+    done
 }

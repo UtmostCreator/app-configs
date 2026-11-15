@@ -3,19 +3,25 @@
 # (see `subagentStatusLine` in settings.json). Contract:
 # https://code.claude.com/docs/en/statusline#subagent-status-lines
 #
+# NOTE (2026-11): Claude Code 2.1.323 removed the `subagentStatusLine` setting
+# (CHANGELOG 2.1.323; anthropics/claude-code#109446, #109494) and 2.1.325 still
+# ignores it, so the agent panel shows its default rows. A maintainer said a
+# grace period is planned for the next release and the feature is moving to
+# mods. This renderer and its tests are kept until that lands.
+#
 # stdin:  {columns, tasks: [{id, agentType, label, description, status, startTime (epoch ms),
 #          model, effort, contextWindowSize, tokenCount, ...}]}
 #         Claude Code 2.1.325 sends no `name`: the agent type is `agentType` and the
 #         task text is `label`. `name` is still honoured when present.
 # stdout: one {"id", "content"} JSON line per row.
 #
-# Row:     reviewer Opus 5 · max · ▶ 84% ⚠ · 7m31 · Check delegation nesting
-# Narrow:  reviewer Opus 5:M ▶ 84% ⚠                (columns < 60, no task text)
+# Row:     reviewer Opus 5 · max · ▶ ctx 84% ! · 7m31 · Check delegation nesting
+# Narrow:  reviewer Opus 5:M ▶ ctx 84% !                (columns < 60, no task text)
 # The trailing task text is cut to the columns left (dropped under 8), so a row
 # never exceeds `columns`. Names are coloured by agent type, models by family.
 #
 # Status: ▶ running  ◷ pending  ✓ completed  ✗ failed  ■ killed. Elapsed time is
-# shown only while running/pending (tasks carry no end time). ⚠ at >= 80% context.
+# shown only while running/pending (tasks carry no end time). "!" after the context % at >= 80%.
 # Narrow keeps a compact model tag (Sonnet -> Son) plus the effort initial when
 # the row still fits; without a model there is no tag.
 # STATUSLINE_NOW (epoch seconds) pins the clock for tests.
@@ -86,14 +92,14 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
     | ([$rows[] | (.model | sub("^Sonnet"; "Son")) + (if .model != "" and (.effort | eff_i) != "" then ":x" else "" end) | length] | max // 0) as $full_w
     # Widest state ("▶ 84% ⚠"), so keeping or dropping the effort initial is one decision for all rows.
     | ([$rows[] | 2 + (if .pct == null then (.tokens | length) + 4
-                       else (.pct | tostring | length) + 1 + (if .pct >= 80 then 2 else 0 end) end)] | max // 0) as $state_w
+                       else 4 + (.pct | tostring | length) + 1 + (if .pct >= 80 then 2 else 0 end) end)] | max // 0) as $state_w
     | ([$rows[].model | sub("^Sonnet"; "Son") | length] | max // 0) as $tag_w
     | $rows[]
     | ((.status // "") | icon) as [$glyph, $glyph_color]
     | .pct as $p
     | (if $p == null then "\(.tokens) tok"
-       else ("\($p)%" | color($p | level_color))
-            + (if $p >= 80 then " " + ("⚠" | color("0;31")) else "" end)
+       else ("ctx \($p)%" | color($p | level_color))
+            + (if $p >= 80 then " " + ("!" | color("0;31")) else "" end)
        end) as $ctx
     | (($glyph | color($glyph_color)) + " " + $ctx) as $state
     | (if (.status == "running" or .status == "pending") and .since != null

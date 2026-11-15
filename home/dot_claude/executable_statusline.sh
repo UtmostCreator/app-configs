@@ -4,23 +4,29 @@
 # https://code.claude.com/docs/en/statusline#available-data
 #
 # +A/-R is the live `git diff HEAD` line count (session edit counters outside git).
-# Wide:    [◆ agent |] project ⎇ branch* +A/-R | Model · effort:high | Ctx 55% · 548k/1M · LONG | 5h 72% ↻1h24m · 7d 41% ↻Tue
+# Wide:    [◆ agent |] project ⎇ branch* +A/-R | Model · effort:high | Ctx ██████░░░░ 55% · 548k/1M | 5h 72% ↻1h24m · 7d ███░░░░░░░ 41% ↻Tue
 #          WT name | PR #184 approved | $1.23 · 1h02m · Cache 91%   (only what exists)
 # Narrow:  [◆ agent |] project ⎇ branch* | Model:high | Ctx 55% | 5h 72% | 7d 41%    (COLUMNS < 120)
 #          +A/-R · WT name · PR #184 approved · $1.23 · 1h02m · Cache 91%
 #
-# Ctx % is real context-window usage; LONG marks crossing the fixed 200k
-# threshold. RC leads line 1 while the session is connected to Remote Control.
+# Ctx % is real context-window usage of the actual window (no fixed 200k
+# marker): colour by pressure, normal <75, watch 75-84, high 85-94, critical
+# >=95. A field the payload lacks shows "Ctx —" (never a fake 0%). RC leads line 1 while the session is connected to Remote Control.
 #
 # Optional segments appear only when their payload field exists (never a fake 0):
-#   "452k left"      context_window.remaining_percentage (wide, after the token count)
+#   "~452k left"     context_window.remaining_percentage (wide, after the token count)
 #   Ctx colour       green <75%, yellow <85%, orange <95%, bold red above
+#   bars             wide only: "Ctx ██████░░░░ 55%" and "7d ███░░░░░░░ 41%" (10 cells;
+#                    "#"/"-" when the locale is not UTF-8); dropped first when tight
+#   NO_COLOR         when set and non-empty: no escape codes, same layout
 #   ●S ✚U …N ↑A↓B   staged/unstaged/untracked paths (only when 2+ paths changed,
 #                    since the * marker already covers one) and ahead/behind the
 #                    upstream as last fetched; this script never fetches
 #   $1.23 · 1h02m    cost.total_cost_usd, cost.total_duration_ms
 #   Cache 91% cold   prompt_cache.hit_ratio; "cold" when prompt_cache.warm is false
 # Lines are fitted to $COLUMNS by dropping the lowest-priority segments first.
+# The quota with the lower utilisation (7d on a tie) goes before the higher one,
+# and a quota at 85% or more is never dropped, at any width.
 # The auto/permission mode is left to Claude Code's own footer.
 #
 # STATUSLINE_NOW (epoch seconds) pins the clock for tests. Git results are
@@ -37,7 +43,13 @@ BLUE=$'\033[0;34m'
 MAGENTA=$'\033[0;35m'
 ORANGE=$'\033[38;5;208m'
 BOLD_RED=$'\033[1;31m'
+CYAN=$'\033[0;36m'
+GREY=$'\033[0;90m'
+BOLD=$'\033[1m'
 NC=$'\033[0m'
+if [[ -n "${NO_COLOR:-}" ]]; then
+    RED="" YELLOW="" GREEN="" BLUE="" MAGENTA="" ORANGE="" BOLD_RED="" CYAN="" GREY="" BOLD="" NC=""
+fi
 NARROW_BELOW=120
 
 # level_color <percent>: green below 70, yellow below 90, red otherwise.
@@ -62,15 +74,32 @@ pressure_color() {
 # subagent-statusline.sh); unknown types are grey.
 agent_color() {
     case "${1,,}" in
-        researcher)                  printf %s $'\033[0;36m' ;;
+        researcher)                  printf %s "$CYAN" ;;
         architect)                   printf %s "$MAGENTA" ;;
         implementer|super-implementer) printf %s "$GREEN" ;;
         reviewer)                    printf %s "$YELLOW" ;;
         orchestrator)                printf %s "$BLUE" ;;
-        plan-writer)                 printf %s $'\033[1m' ;;
+        plan-writer)                 printf %s "$BOLD" ;;
         release-auditor)             printf %s "$RED" ;;
-        *)                           printf %s $'\033[0;90m' ;;
+        *)                           printf %s "$GREY" ;;
     esac
+}
+
+# bar <percent>: ten cells, filled = round(percent / 10), clamped. UTF-8 blocks,
+# or "#" and "-" when the locale is not UTF-8.
+bar() {
+    local pct=$1 filled i out="" on=█ off=░
+    case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
+        *[Uu][Tt][Ff]-8*|*[Uu][Tt][Ff]8*) ;;
+        *) on='#' off='-' ;;
+    esac
+    filled=$(( (pct + 5) / 10 ))
+    (( filled > 10 )) && filled=10
+    (( filled < 0 )) && filled=0
+    for (( i = 0; i < 10; i++ )); do
+        if (( i < filled )); then out+="$on"; else out+="$off"; fi
+    done
+    printf %s "$out"
 }
 
 # width <text>: display columns, ignoring colour codes. Byte length minus UTF-8
@@ -125,8 +154,10 @@ eval "$(jq -r --argjson now "$NOW" '
     def whole(f): f | if type == "number" then round | tostring else "" end;
 
     (.context_window // {}) as $cw
-    | ($cw.context_window_size // 200000) as $size
-    | ($cw.total_input_tokens // 0) as $used
+    | (($cw.total_input_tokens | type) == "number") as $has_used
+    | (if ($cw.context_window_size | type) == "number" and $cw.context_window_size > 0
+       then $cw.context_window_size else 200000 end) as $size
+    | (if $has_used then $cw.total_input_tokens else 0 end) as $used
     | quota("five_hour") as $q5
     | quota("seven_day") as $q7
     | @sh "project_dir=\(.workspace.project_dir // .cwd // "")",
@@ -135,9 +166,10 @@ eval "$(jq -r --argjson now "$NOW" '
       @sh "model_name=\(.model.display_name // "unknown" | sub(" \\([^)]*context\\)$"; ""))",
       @sh "agent_name=\(.agent | if type == "string" then . elif type == "object" then (.name? // "") else "" end | tostring | gsub("[[:cntrl:]]"; "") | if length > 20 then .[0:19] + "…" else . end)",
       @sh "effort=\(.effort.level // "")",
-      @sh "ctx_pct=\($cw.used_percentage // (if $size > 0 then $used * 100 / $size else 0 end) | round)",
-      @sh "ctx_used=\($used | tokens)",
-      @sh "ctx_size=\($size | tokens)",
+      @sh "ctx_pct=\(if ($cw.used_percentage | type) == "number" then $cw.used_percentage | round
+                      elif $has_used then $used * 100 / $size | round else "" end)",
+      @sh "ctx_used=\(if $has_used then $used | tokens else "" end)",
+      @sh "ctx_size=\(if $has_used then $size | tokens else "" end)",
       @sh "ctx_left=\(if ($cw.remaining_percentage | type) == "number"
                       then ($size * $cw.remaining_percentage / 100 | round | tokens) else "" end)",
       @sh "cost_cents=\(whole(.cost.total_cost_usd | if type == "number" then . * 100 else . end))",
@@ -145,7 +177,6 @@ eval "$(jq -r --argjson now "$NOW" '
       @sh "cache_observed=\(.prompt_cache.caching_observed == true)",
       @sh "cache_warm=\(.prompt_cache.warm == true)",
       @sh "cache_hit=\(whole(.prompt_cache.hit_ratio | if type == "number" then . * 100 else . end))",
-      @sh "long=\(if has("exceeds_200k_tokens") then .exceeds_200k_tokens else $used > 200000 end)",
       @sh "added=\(.cost.total_lines_added // 0)",
       @sh "removed=\(.cost.total_lines_removed // 0)",
       @sh "q5_pct=\($q5[0])", @sh "q5_reset=\($q5[1])",
@@ -287,7 +318,13 @@ if [[ -n "$agent_name" ]]; then
     agent_tag="$(agent_color "$agent_name")◆ ${agent_name}${NC}"
 fi
 
-ctx_short="$(pressure_color "$ctx_pct")Ctx ${ctx_pct}%${NC}"
+# Context: pressure colour on the whole segment. A missing field is "—", never 0%.
+if [[ -n "$ctx_pct" ]]; then
+    ctx_short="$(pressure_color "$ctx_pct")Ctx ${ctx_pct}%${NC}"
+    ctx_bar="$(pressure_color "$ctx_pct")Ctx $(bar "$ctx_pct") ${ctx_pct}%${NC}"
+else
+    ctx_short="Ctx —" ctx_bar="Ctx —"
+fi
 
 wt_seg="${worktree:+WT $worktree}"
 pr_seg=""
@@ -327,25 +364,45 @@ if [[ "$cache_observed" == true ]]; then
 fi
 
 # Lowest-priority segments go first when the terminal is too narrow; each
-# drop_* flag is switched on by fit level below.
-drop_left=0 drop_resets=0 drop_q7=0 drop_q5=0 drop_tokens=0 drop_effort=0 drop_counts=0
-drop_cache=0 drop_session=0 drop_agent=0
+# drop_* flag is switched on by fit level below. Of the two quotas, "weak" is
+# the one with the lower utilisation (7d on a tie; a lone quota is weak) and
+# "strong" the other; a quota at QUOTA_KEEP percent or more is never dropped.
+QUOTA_KEEP=85
+weak=q7 strong=q5
+if [[ -n "$q5_pct" && ( -z "$q7_pct" || "$q5_pct" -lt "$q7_pct" ) ]]; then
+    weak=q5 strong=q7
+fi
+drop_bars=0 drop_left=0 drop_resets=0 drop_weak=0 drop_strong=0 drop_tokens=0 drop_effort=0
+drop_counts=0 drop_cache=0 drop_session=0 drop_agent=0
 
 render() {
-    local q5="" q7="" q5_long="" q7_long="" ctx_long
+    local q5="" q7="" q5_long="" q7_long="" ctx_long q7_label="7d"
+    if [[ -n "$q7_pct" ]] && (( ! narrow && ! drop_bars )); then
+        q7_label="7d $(bar "$q7_pct")"
+    fi
     if [[ -n "$q5_pct" ]]; then
         q5="$(level_color "$q5_pct")5h ${q5_pct}%${NC}"
         q5_long="${q5}${q5_reset:+ ↻$q5_reset}"
-        (( drop_q5 )) && q5=""
         (( drop_resets )) && q5_long="$q5"
     fi
     if [[ -n "$q7_pct" ]]; then
         q7="$(level_color "$q7_pct")7d ${q7_pct}%${NC}"
-        q7_long="${q7}${q7_reset:+ ↻$q7_reset}"
-        (( drop_resets )) && q7_long="$q7"
+        q7_long="$(level_color "$q7_pct")${q7_label} ${q7_pct}%${NC}${q7_reset:+ ↻$q7_reset}"
+        (( drop_resets )) && q7_long="$(level_color "$q7_pct")${q7_label} ${q7_pct}%${NC}"
     fi
-    (( drop_q7 )) && { q7="" q7_long=""; }
-    (( drop_q5 )) && q5_long=""
+    # Drop the weak quota, then the strong one, unless it is nearly exhausted.
+    local name pct
+    for name in q5 q7; do
+        pct=${name}_pct
+        pct=${!pct}
+        [[ -z "$pct" ]] && continue
+        (( pct >= QUOTA_KEEP )) && continue
+        if { [[ "$name" == "$weak" ]] && (( drop_weak )); } \
+            || { [[ "$name" == "$strong" ]] && (( drop_strong )); }; then
+            printf -v "$name" %s ""
+            printf -v "${name}_long" %s ""
+        fi
+    done
 
     local repo_seg=$repo diff_seg=$diff
     if (( ! drop_counts )); then
@@ -360,17 +417,19 @@ render() {
     extras=$(join " · " "$session_part" "$cache_part")
 
     if (( narrow )); then
-        line1=$(join " | " "$remote_control" "$agent_part" "$repo_seg" "${BLUE}${model_name}${NC}${effort:+:$effort}" \
+        local model_seg="${BLUE}${model_name}${NC}"
+        (( drop_effort )) || model_seg+="${effort:+:$effort}"
+        line1=$(join " | " "$remote_control" "$agent_part" "$repo_seg" "$model_seg" \
             "$ctx_short" "$q5" "$q7")
         line2=$(join " · " "$diff_seg" "$wt_seg" "$pr_seg" "$extras")
     else
-        ctx_long="${ctx_short}"
-        (( drop_tokens )) || ctx_long+=" · ${ctx_used}/${ctx_size}"
-        if [[ -n "$ctx_left" ]] && (( ! drop_left )); then
-            ctx_long+=" · ${ctx_left} left"
+        ctx_long=$ctx_bar
+        (( drop_bars )) && ctx_long=$ctx_short
+        if [[ -n "$ctx_used" ]] && (( ! drop_tokens )); then
+            ctx_long+=" · ${ctx_used}/${ctx_size}"
         fi
-        if [[ "$long" == true ]]; then
-            ctx_long+=" · ${YELLOW}LONG${NC}"
+        if [[ -n "$ctx_left" ]] && (( ! drop_left )); then
+            ctx_long+=" · ~${ctx_left} left"
         fi
         local effort_seg=""
         (( drop_effort )) || effort_seg="${effort:+ · effort:$effort}"
@@ -387,16 +446,17 @@ narrow=0
 (( cols < NARROW_BELOW )) && narrow=1
 
 # Line 1: raise the fit level until it fits (or nothing is left to drop).
-for level in 0 1 2 3 4 5 6 7; do
+for level in 0 1 2 3 4 5 6 7 8; do
     if (( narrow )); then
-        # 7d, then 5h, then the git counts, and the agent tag last.
-        drop_q7=$(( level >= 1 )) drop_q5=$(( level >= 2 )) drop_counts=$(( level >= 3 ))
-        drop_agent=$(( level >= 7 ))
+        # Weak quota, strong quota, git counts, effort, and the agent tag last.
+        drop_weak=$(( level >= 1 )) drop_strong=$(( level >= 2 )) drop_counts=$(( level >= 3 ))
+        drop_effort=$(( level >= 4 )) drop_agent=$(( level >= 5 ))
     else
-        # Remaining tokens, reset times, 7d, token counts, effort, git counts, agent tag.
-        drop_left=$(( level >= 1 )) drop_resets=$(( level >= 2 )) drop_q7=$(( level >= 3 ))
-        drop_tokens=$(( level >= 4 )) drop_effort=$(( level >= 5 )) drop_counts=$(( level >= 6 ))
-        drop_agent=$(( level >= 7 ))
+        # Bars, remaining tokens, reset times, weak quota, token counts, effort,
+        # git counts, agent tag.
+        drop_bars=$(( level >= 1 )) drop_left=$(( level >= 2 )) drop_resets=$(( level >= 3 ))
+        drop_weak=$(( level >= 4 )) drop_tokens=$(( level >= 5 )) drop_effort=$(( level >= 6 ))
+        drop_counts=$(( level >= 7 )) drop_agent=$(( level >= 8 ))
     fi
     render
     (( $(width "$line1") <= cols )) && break

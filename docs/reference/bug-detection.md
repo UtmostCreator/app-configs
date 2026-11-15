@@ -53,6 +53,16 @@ Each contract test carries a commented allowlist (the exceptions that are
 justified, and findings not yet fixed), proves it catches a bug seeded into a
 copy of the repo, and fails when an allowlist entry stops being needed.
 
+#### Naming a test
+
+Name each new or touched test `<component>: <condition> -> <observable result>`,
+for example `update-all: --help -> prints exactly the header comment block`.
+Put ticket ids in a comment above the test, not in the name. Existing names are
+not renamed in bulk; nothing enforces this.
+
+The Windows PowerShell suite (`tests/windows/bootstrap.tests.ps1`) runs in the
+`windows` job of `.github/workflows/ci.yml`.
+
 ### Automated, local (restsift `res`, `mise run audit:deep`)
 
 | Method | Catches | Types | Where |

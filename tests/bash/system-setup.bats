@@ -310,9 +310,18 @@ echo "$*" >> "$REBUILD_LOG"
 if [ "$1" = dry-build ] && [ -n "${STUB_LOCK_FILE:-}" ]; then echo '{"locked":true}' > "$STUB_LOCK_FILE"; fi
 if [ "$1" = dry-build ] && [ -n "${STUB_FAIL_DRY:-}" ]; then echo 'stub: dry-build failed' >&2; exit 1; fi
 if [ "$1" != dry-build ] && [ -n "${STUB_FAIL_REAL:-}" ]; then echo 'stub: rebuild failed' >&2; exit 1; fi
+# switch-to-configuration exit 4: activated, but some units failed.
+if [ "$1" != dry-build ] && [ -n "${STUB_REAL_RC:-}" ]; then echo 'warning: the following units failed: wsl-mnt-guard.service' >&2; exit "$STUB_REAL_RC"; fi
 exit 0
 STUB
-  chmod +x "$BATS_TEST_TMPDIR/stubs/nixos-rebuild"
+  cat > "$BATS_TEST_TMPDIR/stubs/systemctl" <<'STUB'
+#!/bin/sh
+case "$1" in
+  --failed) [ -z "${STUB_FAILED_UNITS:-}" ] || printf '%s\n' "$STUB_FAILED_UNITS" ;;
+  *) exit 3 ;;
+esac
+STUB
+  chmod +x "$BATS_TEST_TMPDIR/stubs/nixos-rebuild" "$BATS_TEST_TMPDIR/stubs/systemctl"
   export REBUILD_LOG
 }
 
@@ -597,4 +606,79 @@ prepare_existing() {
   run env -u SYSTEM_TIMEZONE HOST_PROFILE=wsl SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" USER_NAME=alice \
     bash "$REPO_ROOT/ops/system-setup.sh"
   [[ "$output" == *'time.timeZone = lib.mkForce "Europe/London";'* ]]
+}
+
+# -- activation happened but a unit failed (switch-to-configuration exit 4) ------
+
+@test "exit 4 on switch keeps the new files, lists the failed units and still fails the run" {
+  apply_setup
+  prepare_existing with-docker
+  local failed='wsl-mnt-guard.service loaded failed failed Mount guard'
+  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)" STUB_REAL_RC=4 STUB_FAILED_UNITS="$failed"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"activated the new generation"* ]]
+  [[ "$output" == *"wsl-mnt-guard.service"* ]]
+  [[ "$output" == *"sudo nixos-rebuild switch --rollback"* ]]
+  [[ "$output" != *"restored every touched file"* ]]
+  # The files match the running generation, so they stay.
+  grep -qF 'environment.systemPackages = with pkgs; [ git curl ];' "$FIX/app-configs-extra.nix"
+  cmp "$FIX/app-configs-wsl.nix" "$REPO_ROOT/nix/modules/nixos/wsl.nix"
+  grep -qF './app-configs-extra.nix' "$FIX/flake.nix"
+}
+
+@test "exit 4 on the desktop keeps the files too (every host)" {
+  apply_setup
+  printf '{ imports = [ ]; }\n' > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice STUB_REAL_RC=4 STUB_FAILED_UNITS='foo.service loaded failed failed Foo'
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"foo.service"* ]]
+  [ -f "$FIX/app-configs-extra.nix" ]
+  [ -f "$FIX/app-configs-docker.nix" ]
+  grep -qF 'app-configs-extra.nix' "$FIX/configuration.nix"
+}
+
+@test "any other switch failure (exit 1, 2, 3) restores exactly, as before" {
+  local rc
+  for rc in 1 2 3; do
+    apply_setup
+    prepare_existing with-docker
+    before="$(state "$FIX")"
+    run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)" STUB_REAL_RC=$rc
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"restored every touched file"* ]] || { echo "rc $rc: $output"; return 1; }
+    [ "$(state "$FIX")" = "$before" ] || { echo "rc $rc: state differs"; return 1; }
+    rm -rf "$FIX".app-configs-backup-* "$BATS_TEST_TMPDIR/repo"
+    find "$FIX" -mindepth 1 -delete
+  done
+}
+
+@test "exit 4 on boot is not an activation: it restores" {
+  apply_setup
+  prepare_existing no-docker
+  before="$(state "$FIX")"
+  run_apply HOST_PROFILE=wsl USER_NAME=no-such-user-for-bats STUB_REAL_RC=4
+  [ "$status" -ne 0 ]
+  [ "$(state "$FIX")" = "$before" ]
+}
+
+@test "convergence: old files on disk and a failed unit on a running new generation end in a clean run" {
+  apply_setup
+  printf '%s\n' "$WSL_STOCK" > "$FIX/configuration.nix"
+  # First run: activation with a failed unit, files kept.
+  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)" STUB_REAL_RC=4 STUB_FAILED_UNITS='wsl-mnt-guard.service loaded failed failed x'
+  [ "$status" -ne 0 ]
+  # The user's machine: files restored to the old ones (no git line) by the old script.
+  grep -vE 'systemPackages|experimental-features|# A bare NixOS-WSL|# sys-update need|# Flakes' "$FIX/app-configs-extra.nix" > "$BATS_TEST_TMPDIR/old-extra.nix"
+  cp "$BATS_TEST_TMPDIR/old-extra.nix" "$FIX/app-configs-extra.nix"
+  # Re-run with the fixed unit: regenerates, dry-builds, switches, exits 0, keeps the files.
+  : > "$REBUILD_LOG"
+  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [[ "$output" == *"Would add"* ]]
+  [ "$(sed -n 1p "$REBUILD_LOG")" = dry-build ]
+  [[ "$(sed -n 2p "$REBUILD_LOG")" == switch* ]]
+  grep -qF 'environment.systemPackages = with pkgs; [ git curl ];' "$FIX/app-configs-extra.nix"
+  # And an up-to-date machine is a no-op again.
+  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  [[ "$output" == *"All recommended system settings already present."* ]]
 }

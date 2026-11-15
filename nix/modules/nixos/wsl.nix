@@ -17,7 +17,16 @@
 # ops/system-setup.sh emits `programs.nix-ld.enable = true;` in its generated
 # module for a wsl host, like programs.fish.enable.
 
-{ lib, ... }:
+# wsl-mnt-guard.service: WSL itself generates it (/run/systemd/generator) with
+# ExecStart=/bin/true, and NixOS-WSL 2605.7.2 does not create /bin/true, so the
+# unit failed with 203/EXEC and `nixos-rebuild switch` exited 4. NixOS-WSL master
+# fixed it by adding true to wsl.extraBin; this does the same here, so the
+# generated unit runs unchanged (its ConditionPathIsMountPoint=/mnt/wsl still
+# skips it where /mnt/wsl is not a mount point). Newer releases that already add
+# true make this a duplicate entry for the same symlink, which is harmless.
+
+{ lib, pkgs, ... }:
 {
   wsl.defaultUser = lib.mkForce "utmostcreator";
+  wsl.extraBin = [ { src = "${pkgs.coreutils}/bin/true"; } ];
 }

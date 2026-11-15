@@ -264,3 +264,50 @@ visible_widths() {
     [ "${lines[1]}" = "b=B Opus 5 · high · ▶ ctx 80% ! · 5s" ]
     [ "${lines[2]}" = "c=C Opus 5 · high · ▶ ctx 79% · 5s" ]
 }
+
+# age_code <age-seconds> [NO_COLOR value]: the SGR code wrapped around the elapsed
+# time of a running row ("" when the elapsed time carries no colour).
+age_code() {
+    local raw
+    raw=$(NO_COLOR="${2:-}" bash "$SCRIPT" <<<"$(jq -n --argjson a "$(task a A claude-opus-5 high running 1000 200000 "$1")" \
+        '{columns: 120, tasks: [$a]}')" | jq -r .content)
+    if [[ "$raw" =~ \;\ ?$'\033'\[([0-9;]+)m[0-9hms]+$'\033'\[0m$ || "$raw" =~ $'\033'\[([0-9;]+)m[0-9hms]+$'\033'\[0m$ ]]; then
+        printf %s "${BASH_REMATCH[1]}"
+    fi
+}
+
+@test "elapsed tint: under 5m is uncoloured, then faint yellow, yellow, orange, bold red" {
+    [ -z "$(age_code 0)" ]
+    [ -z "$(age_code 299)" ]
+    [ "$(age_code 300)" = "2;33" ]
+    [ "$(age_code 599)" = "2;33" ]
+    [ "$(age_code 600)" = "0;33" ]
+    [ "$(age_code 1199)" = "0;33" ]
+    [ "$(age_code 1200)" = "38;5;208" ]
+    [ "$(age_code 1799)" = "38;5;208" ]
+    [ "$(age_code 1800)" = "1;31" ]
+    [ "$(age_code 7200)" = "1;31" ]
+}
+
+@test "elapsed tint: pending rows are tinted, finished rows show no elapsed time" {
+    input=$(jq -n --argjson a "$(task p P claude-opus-5 high pending 1000 200000 700)" \
+        --argjson b "$(task c C claude-opus-5 high completed 1000 200000 700)" '{columns: 120, tasks: [$a, $b]}')
+    run bash -c "bash '$SCRIPT' <<<'$input' | jq -r .content"
+    [[ "${lines[0]}" == *$'\033[0;33m11m40\033[0m' ]]
+    [[ "${lines[1]}" != *"11m40"* ]]
+}
+
+@test "elapsed tint: the visible text and width are unchanged by the colour" {
+    input=$(jq -n --argjson a "$(task a Alpha claude-opus-5 high running 1000 200000 2000)" '{columns: 120, tasks: [$a]}')
+    run rows "$input"
+    [ "$output" = "a=Alpha Opus 5 · high · ▶ ctx 1% · 33m20" ]
+}
+
+@test "NO_COLOR: no escape codes anywhere in a subagent row, text unchanged" {
+    input=$(jq -n --argjson a "$(task a Alpha claude-opus-5 high running 150000 200000 2000)" '{columns: 120, tasks: [$a]}')
+    out=$(NO_COLOR=1 bash "$SCRIPT" <<<"$input" | jq -r .content)
+    [[ "$out" != *$'\033'* ]]
+    [ "$out" = "Alpha Opus 5 · high · ▶ ctx 75% · 33m20" ]
+    [ -z "$(age_code 2000 1)" ]
+    [ "$(age_code 2000)" = "1;31" ]
+}

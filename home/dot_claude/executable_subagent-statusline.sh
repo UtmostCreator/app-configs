@@ -21,14 +21,17 @@
 # never exceeds `columns`. Names are coloured by agent type, models by family.
 #
 # Status: ▶ running  ◷ pending  ✓ completed  ✗ failed  ■ killed. Elapsed time is
-# shown only while running/pending (tasks carry no end time). "!" after the context % at >= 80%.
+# shown only while running/pending (tasks carry no end time), tinted by duration:
+# 5m faint yellow, 10m yellow, 20m orange, 30m bold red. NO_COLOR drops all codes. "!" after the context % at >= 80%.
 # Narrow keeps a compact model tag (Sonnet -> Son) plus the effort initial when
 # the row still fits; without a model there is no tag.
 # STATUSLINE_NOW (epoch seconds) pins the clock for tests.
 set -euo pipefail
 
-jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
-    def color($code): "[\($code)m\(.)[0m";
+jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" \
+    --argjson nocolor "$([[ -n "${NO_COLOR:-}" ]] && echo true || echo false)" '
+    # NO_COLOR (set, non-empty) turns every escape code off; the layout is unchanged.
+    def color($code): if $nocolor then . else "[\($code)m\(.)[0m" end;
     def level_color: if . < 70 then "0;32" elif . < 90 then "0;33" else "0;31" end;
     def tokens:
         if . >= 1000000 then "\((. / 100000 | floor) / 10)M"
@@ -58,6 +61,12 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
         elif startswith("Haiku") then "0;32" else "0" end;
     # Narrow-row effort initial; unknown levels get none.
     def eff_i: ({low: "l", medium: "m", high: "h", xhigh: "x", max: "M"})[.] // "";
+    # Elapsed-time tint for a running/pending row, by seconds running:
+    # <5m none, 5-10m faint yellow, 10-20m yellow, 20-30m orange, >=30m bold red.
+    # (Read as bands: the "15m" in the request is taken as the 10-20m band.)
+    def age_code:
+        if . >= 1800 then "1;31" elif . >= 1200 then "38;5;208"
+        elif . >= 600 then "0;33" elif . >= 300 then "2;33" else "" end;
     def elapsed:
         ($now - (. / 1000 | floor)) as $s
         | if $s < 60 then "\([$s, 0] | max)s"
@@ -103,7 +112,10 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
        end) as $ctx
     | (($glyph | color($glyph_color)) + " " + $ctx) as $state
     | (if (.status == "running" or .status == "pending") and .since != null
-       then .since | elapsed else "" end) as $age
+       then (.since | elapsed) as $e
+            | ($now - (.since / 1000 | floor) | age_code) as $c
+            | if $c == "" then $e else $e | color($c) end
+       else "" end) as $age
     | (.kind | type_color) as $kind_c
     | (.model | sub("^Sonnet"; "Son") | family_color) as $model_c
     | (.name | rpad($name_w) | color($kind_c)) as $name

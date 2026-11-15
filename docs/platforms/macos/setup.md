@@ -194,7 +194,7 @@ Expect to click through these; none can be scripted. *(All unverified.)*
 | Area | macOS | Linux / WSL2 |
 | --- | --- | --- |
 | Clipboard (tmux copy) | `pbcopy` | `clipcopy` (`home/dot_local/bin/executable_clipcopy`): `wl-copy`, `xclip` or `xsel` on Linux, `clip.exe` on WSL2 |
-| SSH key passphrase | Keychain via `home/dot_config/app-configs/ssh-agent.sh` (`UseKeychain`) | `keychain` (Nix), once per boot |
+| SSH key passphrase | Keychain via `home/dot_config/app-configs/ssh-agent.sh` (`UseKeychain`) | `keychain` (Nix), about once per 8 hours (`APP_CONFIGS_SSH_KEY_LIFETIME`; does not apply on macOS, where the Keychain keeps the passphrase) |
 | GUI apps | Homebrew casks from `nix/modules/darwin/homebrew.nix`, `cleanup = "none"` (removing a cask from the list never uninstalls it) | Nix packages (`gui.nix`) on linux-desktop; none on WSL2 |
 | Login shell | zsh (macOS default). Fish is installed but never the login shell: there is no `chsh`, no `/etc/shells` entry and no `users.users.<name>.shell`, and zsh does not exec fish | fish on NixOS via `sys-setup`; bash `exec`s into fish |
 | Docker daemon | Colima VM. `nix/modules/darwin/homebrew.nix:92-97` says `docker compose` needs a manual `~/.docker/config.json` `cliPluginsExtraDirs`; that is probably wrong or unnecessary *(unverified)*: the darwin Home Manager `docker` appears to wrap the CLI with `DOCKER_CLI_PLUGIN_DIRS` including docker-compose's cli-plugins (derivation read, not run), and brew installs no docker CLI. Check `docker compose version` | Docker Engine |

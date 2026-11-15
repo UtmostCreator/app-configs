@@ -11,9 +11,10 @@ holds passphrase-protected keys with minimal re-prompting:
 - **macOS**: prompt for the passphrase exactly **once ever**. The
   passphrase is stored in the user's login Keychain. Survives reboots,
   upgrades, and account re-logins until the user revokes it.
-- **Linux / WSL**: prompt for the passphrase exactly **once per boot**.
-  Survives across every shell, tmux pane, VS Code terminal, and SSH'd
-  sub-session for the lifetime of the agent process.
+- **Linux / WSL**: prompt for the passphrase about **once per N hours**
+  (default 8, see `APP_CONFIGS_SSH_KEY_LIFETIME`). Survives across every
+  shell, tmux pane, VS Code terminal, and SSH'd sub-session until the
+  agent forgets the key or dies.
 
 Non-interactive invocations (scripts, `scp`, `rsync`, CI runners that
 inherit the user shell) must never block on a passphrase prompt.
@@ -50,9 +51,10 @@ docs/reference/ssh-agent-snippets.md      # short reference from the original RE
      legacy `-K` on older macOS) for each not-yet-loaded key. The agent
      is already running under launchd; we just attach keys to it and
      point the Keychain at them.
-   - `Linux` (or other Unix) → prefer `keychain` if available, else fall
+   - `Linux` (or other Unix) → prefer `keychain` if available (with
+     `--timeout <minutes>` from the key lifetime), else fall
      back to a single shared `ssh-agent` whose env vars are persisted in
-     `~/.ssh/agent.env`.
+     `~/.ssh/agent.env` (keys added with `ssh-add -t <seconds>`).
 4. **Skip keys already loaded** by comparing fingerprints from
    `ssh-keygen -lf <key>` against `ssh-add -l`. Cheap and idempotent.
 
@@ -60,7 +62,9 @@ docs/reference/ssh-agent-snippets.md      # short reference from the original RE
 
 `keychain` (from Funtoo) is a small wrapper around `ssh-agent` that:
 
-- Starts one agent per user per boot.
+- Starts one agent per user per boot; keys are forgotten after the key
+  lifetime (`--timeout`, default 8 h), after which the next shell prompts
+  once more.
 - Caches the agent's `SSH_AUTH_SOCK` / `SSH_AGENT_PID` under
   `~/.keychain/<host>-sh` (POSIX) or `<host>-fish` (fish).
 - Auto-loads named keys, prompting only when the key isn't already in
@@ -133,22 +137,30 @@ Install `keychain` whenever possible — it's < 100 KB.
 | Variable                  | Default            | Effect                                                                  |
 | ------------------------- | ------------------ | ----------------------------------------------------------------------- |
 | `APP_CONFIGS_SSH_KEYS`    | `id_ed25519`       | Space-separated list of keys to auto-load. Bare names → `~/.ssh/<name>`. Absolute paths used as-is. |
+| `APP_CONFIGS_SSH_KEY_LIFETIME` | `8`          | Hours the agent remembers the passphrase (Linux / WSL). `0` or empty: until the agent dies. Anything that is not a non-negative integer (`abc`, `-1`) is ignored and the default kept. Not used on macOS, where the Keychain stores the passphrase and the loader re-adds the key at login. |
 
 Set it in three places, in order of precedence:
 
 1. Before sourcing the snippet in `~/.bashrc` / `~/.zshrc`:
    ```bash
    export APP_CONFIGS_SSH_KEYS="<github-key> <work-key>"
+   export APP_CONFIGS_SSH_KEY_LIFETIME=24   # optional, hours
    ```
 2. As a fish universal variable:
    ```fish
    set -Ux APP_CONFIGS_SSH_KEYS <github-key> <work-key>
+   set -Ux APP_CONFIGS_SSH_KEY_LIFETIME 24   # optional, hours
    ```
 3. Via the installer's environment, which writes (1) for you:
    ```bash
    APP_CONFIGS_SSH_KEYS="<github-key> work" \
        bash ops/unix/ssh-agent-setup.sh
    ```
+
+A new lifetime applies to keys loaded after the change. Keys already in the
+running agent, or added through `AddKeysToAgent yes` (the macOS `Host *`
+block), keep their old lifetime until the agent restarts (`keychain --clear`,
+or log out and back in).
 
 ### Choosing the shell to wire
 

@@ -1,8 +1,8 @@
 # Linux / macOS / WSL SSH Agent — QUICKSTART
 
 Copy-paste runbook to make `git@github.com:...` (and any other SSH host)
-work from any shell with the passphrase prompted **at most once per boot**
-on Linux/WSL, and **at most once ever** on macOS (stored in Keychain).
+work from any shell with the passphrase prompted **about once per 8 hours**
+on Linux/WSL (`APP_CONFIGS_SSH_KEY_LIFETIME`, default 8), and **at most once ever** on macOS (stored in Keychain).
 
 Works on:
 
@@ -41,7 +41,7 @@ bash ops/unix/ssh-agent-setup.sh --remove
 | Component             | macOS                                | Linux / WSL                              |
 | --------------------- | ------------------------------------ | ---------------------------------------- |
 | Agent                 | launchd-managed `ssh-agent`           | `keychain` (preferred) or persistent shared `ssh-agent` |
-| Passphrase storage    | macOS Keychain (asked once ever)      | In-memory, asked once per boot           |
+| Passphrase storage    | macOS Keychain (asked once ever)      | In-memory, asked about once per 8 h      |
 | `~/.ssh/config` edits | Adds `UseKeychain yes` / `AddKeysToAgent yes` for `Host *` | none                                     |
 | Shell wiring          | Sources snippet from `~/.bashrc`, `~/.zshrc`, or fish `conf.d` | same |
 
@@ -155,6 +155,7 @@ ssh-add -l
 
 | Symptom                                                          | Cause                                          | Fix                                                                                            |
 | ---------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Passphrase prompt again after some hours on Linux                | Key lifetime expired (default 8 h)             | Expected; raise `APP_CONFIGS_SSH_KEY_LIFETIME` (hours, `0` = until the agent dies)             |
 | Passphrase prompt every new shell on Linux                       | `keychain` not installed; fallback agent died  | `which keychain`; install it, then open a new shell                                            |
 | `ssh-add -l` says "Could not open a connection to your authentication agent" | Agent socket stale (after WSL/PC reboot)       | Open a new shell — the snippet will start a fresh agent and re-prompt once                     |
 | macOS prompts every reboot                                       | `UseKeychain yes` missing from `~/.ssh/config`  | Re-run the installer; check the `Host *` block exists                                          |

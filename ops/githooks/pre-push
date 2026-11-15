@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# pre-push dispatcher (T-0051): refuse the bypasses in _lefthook.sh, then run
+# lefthook. exec keeps stdin: pre-push receives the pushed refs on it.
+dir="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
+# shellcheck source=ops/githooks/_lefthook.sh
+. "$dir/_lefthook.sh" || exit 1
+exec lefthook run pre-push --no-auto-install "$@"

@@ -217,6 +217,13 @@ EOF
     [ "$before" = "$after" ]
 }
 
+@test "sha256: an empty hash is a failure whatever pipefail says" {
+    printf '#!/bin/sh\ncat >/dev/null\nexit 0\n' >"$BATS_TEST_TMPDIR/sha256sum"; chmod +x "$BATS_TEST_TMPDIR/sha256sum"
+    : >"$BATS_TEST_TMPDIR/f"
+    run env PATH="$BATS_TEST_TMPDIR:$PATH" bash +o pipefail -c 'source "$1/ops/lib/install-record.sh"; install_record_sha256 "$2"; echo "rc=$?"' _ "$REPO_ROOT" "$BATS_TEST_TMPDIR/f"
+    [[ "$output" == *"rc=1"* ]]
+}
+
 # ── portability and guards ──────────────────────────────────────────────────
 
 @test "install-record.sh uses no bash 4 features, reads no input and sources cleanly with mapfile disabled" {

@@ -8,6 +8,8 @@
 # 0 in sync, 1 execution failure, 2 usage, 10 changes pending, 11 manual action
 # required; precedence 1 > 11 > 10 > 0.
 
+bats_require_minimum_version 1.5.0
+
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     FIXD="$BATS_TEST_DIRNAME/fixtures/selection"
@@ -573,6 +575,19 @@ last_run() { # last_run <meta text>
     [ "$status" -eq 1 ]
     [ -z "$output" ]
     [[ "$stderr" == *"internal error"* ]]
+}
+
+@test "an unknown source forces 11 by itself, and a failed unknown-entry append is a failure, never a quiet 0" {
+    run bash -c '
+        source "$1/ops/lib/selection.sh"; source "$1/ops/lib/selection-facts.sh"; source "$1/ops/lib/selection-diff.sh"
+        w="$2/w"; mkdir -p "$w"; : >"$w/entries.sorted.tsv"
+        SELECTION_WORK="$w"; SD_RUN_BAD=0; SD_RECORD_STATE=ok
+        SD_SRC_PACKAGES=ok; SD_SRC_FILES=ok; SD_SRC_CHEZMOI=unknown; SD_SRC_CASKS="n/a"
+        selection_diff_outcome; echo "outcome=$SD_OUTCOME exit=$SD_EXIT"
+        mkdir "$w/entries.tsv"
+        _sd_unknown_entry chezmoi x 2>/dev/null; echo "append=$?"' _ "$REPO_ROOT" "$BATS_TEST_TMPDIR"
+    [[ "$output" == *"outcome=action-required exit=11"* ]]
+    [[ "$output" == *"append=1"* ]]
 }
 
 @test "a tab in a path never breaks the JSON: it is shown as \\t and by_apply stays true" {

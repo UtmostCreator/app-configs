@@ -26,3 +26,20 @@ is the intended honest answer, and it is why the exit code is 11 and not 0.
 Not verified: macOS (casks, the darwin-system record kind, `brew list --cask`)
 beyond stubs; a real bash 3.2 run of the install path; a real apply or install
 that writes the record.
+
+## Round 2 (HEAD 2e5e73f, after the review fixes)
+
+Run from the worktree with a short private TMPDIR.
+
+| Check | Result |
+| --- | --- |
+| `bash ops/run-bats.sh` (full suite) | 1395 of 1395 passed |
+| `bash ops/lint-shell.sh` | passed (30 files) |
+| `bash ops/validate-config.sh` | passed |
+| `nix flake check ./nix` | passed |
+| `bash ops/ci-local.sh` | all six steps PASS |
+| `bash ops/update-all.sh --selection-diff` and `--selection-diff --json` | 26.3 s and 25.6 s, both exit 11 (chezmoi unknown in a worktree), JSON parses |
+
+The before and after snapshots of the state the diff must not touch (chezmoi
+state, flake.lock, the sys-update state, the Home Manager profile) were
+byte-identical; nix/flake.lock is unchanged.

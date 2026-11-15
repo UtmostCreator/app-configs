@@ -85,7 +85,11 @@ Deviations from the design, and why
   file makes `selection_changed` `unknown`.
 - A tab in a path is shown as a literal `\t` in entries, so a path can never break
   the row format or the JSON; `by_apply` is printed as true only when exactly true.
-- Every classification step fails closed (exit 1 on a failed write or awk).
+- The steps that build the entries (classifiers, unknown-source and unsupported-group
+  appends, the last-run entries, the sort) fail closed: a failed write or awk is exit
+  1. Independently, any source that is unknown forces exit 11, even if its entry
+  could not be recorded. The rendering, the repo facts and the record read are not
+  separately guarded; they only print or fall back to unknown.
 
 ## Owned files (write boundary)
 - ops/lib/selection-facts.sh (new), ops/lib/selection-diff.sh (new), ops/lib/install-record.sh (new)

@@ -202,7 +202,7 @@ _sd_note() { SD_NOTES+=("$1"); }
 
 # _sd_unknown_entry KIND REASON: one entry for a source that could not be read.
 _sd_unknown_entry() {
-  printf '%s\t(all)\tunknown\t%s\t\t\t\tfalse\n' "$1" "$2" >>"$SELECTION_WORK/entries.tsv"
+  printf '%s\t(all)\tunknown\t%s\t\t\t\tfalse\n' "$1" "$2" >>"$SELECTION_WORK/entries.tsv" || return 1
 }
 
 # Repo facts for the output; --no-optional-locks keeps git from refreshing the index.
@@ -236,16 +236,16 @@ _sd_run_state() {
   if [[ -z "$exitc" ]]; then
     SD_RUN_BAD=1
     printf 'run\t%s\tmanual\t%s\t\t\t\tfalse\n' "$rid" \
-      "last run has no exit code (status ${status:-none}): it is still running or it was killed; check sys-update-log before applying" >>"$SELECTION_WORK/entries.tsv"
+      "last run has no exit code (status ${status:-none}): it is still running or it was killed; check sys-update-log before applying" >>"$SELECTION_WORK/entries.tsv" || return 1
   elif [[ "$exitc" != 0 || "$status" == failed:* ]]; then
     SD_RUN_BAD=1
     case "$status" in
       failed:activate)
         printf 'run\t%s\tmanual\t%s\t\t\t\tfalse\n' "$rid" \
-          "last run failed:activate (exit $exitc): the profile may have moved; roll back with: sys-update rollback" >>"$SELECTION_WORK/entries.tsv" ;;
+          "last run failed:activate (exit $exitc): the profile may have moved; roll back with: sys-update rollback" >>"$SELECTION_WORK/entries.tsv" || return 1 ;;
       *)
         printf 'run\t%s\tmanual\t%s\t\t\t\tfalse\n' "$rid" \
-          "last run failed (status ${status:-none}, exit $exitc); see sys-update-log before applying" >>"$SELECTION_WORK/entries.tsv" ;;
+          "last run failed (status ${status:-none}, exit $exitc); see sys-update-log before applying" >>"$SELECTION_WORK/entries.tsv" || return 1 ;;
     esac
   fi
 }
@@ -299,11 +299,11 @@ selection_diff_collect() {
   # a group key the host does not have (macInput on Linux)
   for g in $keys; do
     if ! awk -F '\t' -v g="$g" '$1 == g { f = 1 } END { exit !f }' "$w/groups.tsv"; then
-      printf 'group\t%s\tunsupported\tignored on %s: this host has no such group\t\t\t\tfalse\n' "$g" "$HOST_PROFILE" >>"$w/entries.tsv"
+      printf 'group\t%s\tunsupported\tignored on %s: this host has no such group\t\t\t\tfalse\n' "$g" "$HOST_PROFILE" >>"$w/entries.tsv" || { _sd_err "internal error: recording an unsupported group failed"; return 1; }
     fi
   done
   if [[ "$SD_PROFILE" == personal && -z "$(_sel_members_of @personal)" ]]; then
-    printf 'group\t@personal\tunsupported\tthe profile is personal but declares no personal-only packages\t\t\t\tfalse\n' >>"$w/entries.tsv"
+    printf 'group\t@personal\tunsupported\tthe profile is personal but declares no personal-only packages\t\t\t\tfalse\n' >>"$w/entries.tsv" || { _sd_err "internal error: recording an unsupported group failed"; return 1; }
   fi
 
   # group of each package, for the entries
@@ -320,8 +320,8 @@ selection_diff_collect() {
     unknown)
       SD_SRC_PACKAGES=unknown
       SD_SRC_FILES=unknown
-      _sd_unknown_entry packages "the installed Home Manager generation could not be read"
-      _sd_unknown_entry hm_files "the installed Home Manager generation could not be read"
+      _sd_unknown_entry packages "the installed Home Manager generation could not be read" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
+      _sd_unknown_entry hm_files "the installed Home Manager generation could not be read" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
       ;;
     *)
       local pk="$w/pkg-delta.tsv" n_same
@@ -351,7 +351,7 @@ selection_diff_collect() {
     SD_KEEP=$((SD_KEEP + row))
   else
     SD_SRC_CHEZMOI=unknown
-    _sd_unknown_entry chezmoi "chezmoi status failed: $SEL_CHEZMOI_WHY"
+    _sd_unknown_entry chezmoi "chezmoi status failed: $SEL_CHEZMOI_WHY" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
   fi
 
   # casks (macOS)
@@ -368,11 +368,11 @@ selection_diff_collect() {
       if ((row > 0)); then _sd_note "unmanaged installed casks: $row (not declared and not gated by a group; left alone)"; fi
     else
       SD_SRC_CASKS=unknown
-      _sd_unknown_entry casks "cask state unknown: brew is missing or failed"
+      _sd_unknown_entry casks "cask state unknown: brew is missing or failed" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
     fi
   fi
 
-  _sd_run_state
+  _sd_run_state || { _sd_err "internal error: recording the last run failed"; return 1; }
   _sd_repo_facts
   _sd_record_state
 
@@ -430,7 +430,10 @@ selection_diff_outcome() {
   if [[ "$SD_RECORD_STATE" != ok ]]; then
     SD_LIMITS+=("The applied-state record is $SD_RECORD_STATE, so the causes of the changes are unknown.")
   fi
-  if ((conflict > 0 || unknown > 0)) || [[ "$SD_RUN_BAD" == 1 ]]; then
+  # A source that is unknown forces 11 by itself, even if its entry could not be
+  # recorded: unknown is never "in sync".
+  if ((conflict > 0 || unknown > 0)) || [[ "$SD_RUN_BAD" == 1 ]] \
+    || [[ "$SD_SRC_PACKAGES" == unknown || "$SD_SRC_FILES" == unknown || "$SD_SRC_CHEZMOI" == unknown || "$SD_SRC_CASKS" == unknown ]]; then
     SD_EXIT=11; SD_OUTCOME=action-required
   elif ((add + remove + change > 0)); then
     SD_EXIT=10; SD_OUTCOME=changes-pending

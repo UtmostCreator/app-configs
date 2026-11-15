@@ -56,9 +56,13 @@ install_record_path() {
 # stdin: given as an argument, sha256sum prefixes a backslash to the hash when
 # the name holds one.
 install_record_sha256() {
-  if command -v sha256sum >/dev/null 2>&1; then sha256sum <"$1" | cut -d' ' -f1
-  elif command -v shasum >/dev/null 2>&1; then shasum -a 256 <"$1" | cut -d' ' -f1
+  local h
+  if command -v sha256sum >/dev/null 2>&1; then h="$(sha256sum <"$1" | cut -d' ' -f1)"
+  elif command -v shasum >/dev/null 2>&1; then h="$(shasum -a 256 <"$1" | cut -d' ' -f1)"
   else return 1; fi
+  # An empty hash is a failure whatever the caller's pipefail setting is.
+  [[ -n "$h" ]] || return 1
+  printf '%s\n' "$h"
 }
 
 # install_record_repo_facts REPO_ROOT: prints "<rev> <dirty>" (unknown when git

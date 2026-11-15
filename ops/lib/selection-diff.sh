@@ -283,8 +283,11 @@ _sd_finalize_checks() {
     n="$(_sd_pending "$kinds")" || return 1
     if ((n > 0)); then printf -v "SD_ST_$c" pending; else printf -v "SD_ST_$c" in_sync; fi
   done
-  if [[ "$(_sd_get ST chezmoi)" == pending && "$(_sd_count_op chezmoi conflict)" -gt 0 ]]; then
-    printf -v SD_RS_chezmoi '%s' conflicts_present
+  # A conflict is a difference an apply would stop on: chezmoi is pending even
+  # when conflicts are all there is (they are not add, remove or change).
+  if [[ "$(_sd_get ST chezmoi)" != unknown && "$(_sd_get ST chezmoi)" != error ]]; then
+    n="$(_sd_count_op chezmoi conflict)" || return 1
+    if ((n > 0)); then _sd_check chezmoi pending conflicts_present; fi
   fi
 }
 _sd_count_op() { awk -F '\t' -v k="$1" -v op="$2" '$1 == k && $3 == op { n++ } END { print n + 0 }' "$SELECTION_WORK/entries.tsv"; }
@@ -400,6 +403,10 @@ selection_diff_collect() {
 
   SD_KEEP=0
   for row in packages hm_files chezmoi casks; do _sd_check "$row" ""; done
+  # No Home Manager profile directory at all cannot say "no generation yet": it
+  # is unknown (the layout is unreadable here). "none" stays for a profile
+  # directory without a generation link.
+  if [[ "$SEL_I_STATE" == none ]] && ! selection_hm_profile >/dev/null 2>&1; then SEL_I_STATE=unknown; fi
   case "$SEL_I_STATE" in
     unknown)
       _sd_check packages unknown generation_unreadable
@@ -465,9 +472,16 @@ selection_diff_collect() {
       row="$(awk '{ print $2 + 0 }' "$w/casks.counts")"
       if ((row > 0)); then _sd_note "unmanaged installed casks: $row (not declared and not gated by a group; left alone)"; fi
     else
-      if command -v brew >/dev/null 2>&1; then row=brew_failed; else row=brew_missing; fi
-      _sd_check casks unknown "$row"
-      _sd_unknown_entry casks "$(_sd_reason_text "$row")" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
+      # brew missing is missing information (unknown); brew present but failing
+      # is a comparison that failed unexpectedly (error), like chezmoi_failed.
+      if command -v brew >/dev/null 2>&1; then
+        _sd_check casks error brew_failed
+        _sd_unknown_entry casks "$(_sd_reason_text brew_failed)" error ||
+          { _sd_err "internal error: recording an unknown source failed"; return 1; }
+      else
+        _sd_check casks unknown brew_missing
+        _sd_unknown_entry casks "$(_sd_reason_text brew_missing)" || { _sd_err "internal error: recording an unknown source failed"; return 1; }
+      fi
     fi
   fi
 

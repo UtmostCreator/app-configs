@@ -189,6 +189,9 @@ refute_log() {
     [[ "$output" == *"CONFLICT (1)"* ]]
     [[ "$output" == *".zshrc"* ]]
     [[ "$output" == *"RESULT: ACTION REQUIRED"* ]]
+    sd --selection-diff --json
+    [ "$status" -eq 11 ]
+    [[ "$output" == *'"chezmoi": {"status": "pending", "reason": "conflicts_present"}'* ]]
 }
 
 @test "a conflict together with an add is still 11" {
@@ -241,7 +244,7 @@ refute_log() {
     export STUB_BREW_FAIL=1
     sd --selection-diff
     [ "$status" -eq 11 ]
-    [[ "$output" == *"UNKNOWN (1)"* && "$output" == *"cask"* ]]
+    [[ "$output" == *"ERROR (1)"* && "$output" == *"cask"* ]]
 }
 
 @test "macOS: a deselected cask that stays installed is MANUAL and does not count towards the exit code" {
@@ -680,11 +683,17 @@ last_run() { # last_run <meta text>
     local f="$REPO_ROOT/ops/lib/selection-diff.sh" body
     body="$(awk '/^_sd_machine_data_state\(\) \{/ { f = 1 } f { print } f && /^}/ { exit }' "$f")"
     [ -n "$body" ]
-    # every use of the path variable in the function is inside a [[ -e / -L / -f / -r ]] test
-    run bash -c 'printf "%s\n" "$1" | grep -n "\$f" | grep -v "\[\[" ' _ "$body"
-    [ "$status" -ne 0 ]
+    # strip the allowed tests, [[ ]] made only of -e/-L/-f/-r "$f", !, || and &&: nothing may
+    # remain that uses the path variable or redirects input
+    local rest
+    rest="$(printf '%s\n' "$body" | sed -E 's/\[\[( (!|\|\||&&|-[eLfr] "\$f"))+ \]\]//g')"
+    [[ "$rest" != *'$f'* ]] || { echo "unexpected use of the path: $rest"; return 1; }
+    [[ "$rest" != *'<'* ]] || { echo "unexpected redirection: $rest"; return 1; }
     # nothing else in the library names the file, except the one assignment of its path
     run bash -c 'grep -vE "^[[:space:]]*#" "$1" | grep "personal\.yaml" | grep -vc "SD_MACHINE_DATA_REL="' _ "$f"
+    [ "$output" = 0 ]
+    # selection-facts.sh never names it either
+    run bash -c 'grep -vE "^[[:space:]]*#" "$1" | grep -c "personal\.yaml"' _ "$REPO_ROOT/ops/lib/selection-facts.sh"
     [ "$output" = 0 ]
     # and no command that reads content is given the path
     run grep -nE '(cat|source|head|tail|sed|awk|grep|sha256sum|shasum|od|xxd)[[:space:]]+[^#|;]*(SD_MACHINE_DATA_REL|personal\.yaml)' "$f"
@@ -708,11 +717,19 @@ last_run() { # last_run <meta text>
     refute_log '^chezmoi '
 }
 
-@test "first install: a missing generation is pending with reason no_generation, not unknown" {
+@test "first install: a profile directory without a generation is pending with reason no_generation, not unknown" {
+    mkdir -p "$XDG_STATE_HOME/nix/profiles"
     sd --selection-diff --json
     [ "$status" -eq 10 ]
     [[ "$output" == *'"packages": {"status": "pending", "reason": "no_generation"}'* ]]
     [[ "$output" == *'"complete": true'* ]]
+}
+
+@test "no Home Manager profile directory at all: unknown with generation_unreadable, not pending" {
+    sd --selection-diff --json
+    [ "$status" -eq 11 ]
+    [[ "$output" == *'"packages": {"status": "unknown", "reason": "generation_unreadable"}'* ]]
+    [[ "$output" == *'"installed": {"state": "unknown"'* ]]
 }
 
 @test "macOS without brew: casks unknown with reason brew_missing" {
@@ -723,13 +740,13 @@ last_run() { # last_run <meta text>
     [[ "$output" == *'"casks": {"status": "unknown", "reason": "brew_missing"}'* ]]
 }
 
-@test "macOS brew failing: casks unknown with reason brew_failed; other components stay verified" {
+@test "macOS brew failing: casks error with reason brew_failed; other components stay verified" {
     HP=macos; with_brew
     install_gen mac-committed
     export STUB_BREW_FAIL=1
     sd --selection-diff --json
     [ "$status" -eq 11 ]
-    [[ "$output" == *'"casks": {"status": "unknown", "reason": "brew_failed"}'* ]]
+    [[ "$output" == *'"casks": {"status": "error", "reason": "brew_failed"}'* ]]
     [[ "$output" == *'"packages": {"status": "in_sync"}'* ]]
 }
 

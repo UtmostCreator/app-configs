@@ -320,8 +320,12 @@ object per component (`packages`, `hm_files`, `chezmoi`, `casks`, `run`,
   `machine_data_unreadable`, `chezmoi_missing`, `generation_unreadable`,
   `brew_missing`, `run_unfinished`, `record_absent`, `record_invalid`,
   `record_stale`).
+- A Home Manager profile directory without a generation link is `pending` with
+  reason `no_generation` (a first install); no profile directory at all is `unknown`
+  with `generation_unreadable`. Conflicts make chezmoi `pending` with reason
+  `conflicts_present`.
 - `error`: the comparison failed unexpectedly (`chezmoi_failed` with a class such as
-  `state_locked` or `template_error`, `last_run_failed`).
+  `state_locked` or `template_error`, `brew_failed`, `last_run_failed`).
 - `not_applicable`: casks off macOS.
 
 Unknown is never reported as pending, in sync or an empty list, and one unknown

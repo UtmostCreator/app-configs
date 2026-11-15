@@ -408,7 +408,8 @@ refute_log() {
         if ! flock -n "$STATE/lock" true 2>/dev/null; then break; fi
         sleep 0.1
     done
-    ! flock -n "$STATE/lock" true
+    run flock -n "$STATE/lock" true
+    [ "$status" -ne 0 ]
     sd --selection-diff
     [ "$status" -eq 0 ]
     [[ "$output" == *"RESULT: IN SYNC"* ]]

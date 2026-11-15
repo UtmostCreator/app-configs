@@ -265,10 +265,24 @@ stub_required_tools() {
   [[ "$output" == *"host detection"* ]]
 }
 
-@test "--help stays inside the header comment" {
-  run bash "$FAKE/ops/update-all.sh" --help
-  [[ "$output" != *"set -uo pipefail"* ]]
-  [[ "$output" != *"REPO_ROOT="* ]]
+@test "update-all: --help -> prints exactly the header comment block" {
+  local script="$FAKE/ops/update-all.sh" line
+  local -a header=()
+  # the header: the comment lines after the shebang, up to the first non-comment
+  while IFS= read -r line; do
+    [[ "$line" == "#"* ]] || break
+    line="${line#\#}"
+    header+=("${line# }")
+  done < <(tail -n +2 "$script")
+  [ "${#header[@]}" -gt 20 ]
+  run bash "$script" --help
+  [ "$status" -eq 0 ]
+  # bats' $lines collapses blank lines; split the output ourselves
+  mapfile -t lines <<<"$output"
+  [ "${#lines[@]}" -eq "${#header[@]}" ] || { echo "help has ${#lines[@]} lines, header ${#header[@]}"; return 1; }
+  [ "${lines[0]}" = "${header[0]}" ]
+  [ "${lines[-1]}" = "${header[-1]}" ]
+  [ "$output" = "$(printf '%s\n' "${header[@]}")" ]
 }
 
 # -- remembered linux host (T-0044) ------------------------------------------------

@@ -67,7 +67,7 @@ if [[ "$user_jobs" == 0 && "$jobs" =~ ^[0-9]+$ && "$jobs" -gt 1 ]] \
     # Same roots, with tests/bash expanded: the slowest files first, then the
     # rest in the order bats would use. A name that no longer exists fails
     # loudly, so the list cannot rot unnoticed.
-    SLOW_FIRST=(selection update-all-apply install-selection)
+    SLOW_FIRST=(selection selection-diff update-all-apply install-selection)
     files=()
     for root in "${roots[@]}"; do
         if [[ "$root" != tests/bash ]]; then

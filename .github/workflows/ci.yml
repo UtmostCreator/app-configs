@@ -35,3 +35,33 @@ jobs:
             experimental-features = nix-command flakes
       - name: Run CI checks (clean env, pinned tools)
         run: bash ops/ci-local.sh
+
+  # ops\windows\bootstrap.ps1 is only ever exercised here: the Linux job cannot
+  # run PowerShell 5.1. Nothing is installed: every native call is stubbed and
+  # the real-process tests use the Git for Windows bash and git on the runner.
+  # The suite exits 1 on any FAIL. A SKIP (Git Bash missing) does not fail the
+  # job, but it is surfaced as a warning annotation and in the job summary.
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Run the PowerShell bootstrap tests
+        shell: powershell
+        run: |
+          # GitHub prepends $ErrorActionPreference = 'stop'. In Windows PowerShell
+          # 5.1, native stderr via 2>&1 becomes error records and would abort the
+          # step before $LASTEXITCODE is read.
+          $ErrorActionPreference = 'Continue'
+          $out = Join-Path $env:RUNNER_TEMP 'bootstrap-tests.log'
+          powershell -NoProfile -ExecutionPolicy Bypass -File tests\windows\bootstrap.tests.ps1 2>&1 | Tee-Object -FilePath $out
+          $code = $LASTEXITCODE
+          $skips = @(Get-Content -LiteralPath $out | Where-Object { $_ -match '^SKIP ' })
+          if ($skips.Count -gt 0) {
+              Write-Host "::warning title=bootstrap tests skipped::$($skips.Count) test(s) skipped, see the job summary"
+              $md = @('### Skipped PowerShell bootstrap tests') + ($skips | ForEach-Object { "- $_" })
+              $md | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
+          }
+          exit $code

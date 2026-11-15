@@ -52,6 +52,12 @@ clipboard-trim-trailing-spaces = true
 # the app, not Ghostty.
 copy-on-select = clipboard
 confirm-close-surface = true
+# ---------- Scrollback ----------
+# Scrollback: about 100k lines per terminal. Since Ghostty 1.4 the line limit is
+# its own option; the byte cap is a memory safety net (the first limit reached wins).
+# Ghostty older than 1.4 rejects scrollback-limit-lines: update it first.
+scrollback-limit-lines = 100000
+scrollback-limit-bytes = 400000000
 # ---------- Search / notifications ----------
 scrollbar = system
 notify-on-command-finish = unfocused

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# post-merge dispatcher (T-0051): refuse the bypasses in _lefthook.sh, then run
+# lefthook.
+dir="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
+# shellcheck source=ops/githooks/_lefthook.sh
+. "$dir/_lefthook.sh" || exit 1
+exec lefthook run post-merge --no-auto-install "$@"

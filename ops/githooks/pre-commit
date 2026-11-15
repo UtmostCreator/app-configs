@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+# pre-commit dispatcher (T-0051): a read-only guard in front of lefthook.
+#
+# lefthook MAY stash the unstaged part of a partially staged file (some
+# versions, or jobs with `stage_fixed`), and `git stash` is shared by every
+# worktree (AGENTS.md forbids it). So refuse the commit while nothing has been
+# touched, and only hand over to lefthook when no staged path also has
+# unstaged changes.
+#
+# bash 3.2 safe (macOS): no mapfile, no associative arrays; no `set -u`
+# (empty arrays are unbound there).
+dir="$(cd "${BASH_SOURCE[0]%/*}" && pwd)"
+# shellcheck source=ops/githooks/_lefthook.sh
+. "$dir/_lefthook.sh" || exit 1
+
+tmp="$(mktemp "${TMPDIR:-/tmp}/app-configs-staged.XXXXXX")" || exit 1
+trap 'rm -f "$tmp"' EXIT
+
+# NUL-separated, deletions excluded (a deleted path has no worktree side).
+git diff --cached --name-only -z --diff-filter=d >"$tmp" || exit 1
+
+# --no-optional-locks: never write the index. GIT_LITERAL_PATHSPECS=1 makes
+# every path literal (spaces, brackets, globs, ":(magic)" prefixes), whatever
+# the caller's `git --literal-pathspecs`/--glob-pathspecs settings are; git
+# refuses conflicting modes, so the others are unset for this call.
+partial() {
+  env -u GIT_GLOB_PATHSPECS -u GIT_NOGLOB_PATHSPECS -u GIT_ICASE_PATHSPECS \
+    GIT_LITERAL_PATHSPECS=1 git --no-optional-locks diff --quiet -- "$@"
+}
+
+offenders=()
+batch=()
+plain=()
+bytes=0
+cap=8000 # about 8 KB of pathspec text per git call (Windows command lines are short)
+
+flush_batch() {
+  [ "${#batch[@]}" -gt 0 ] || return 0
+  partial "${batch[@]}"
+  rc=$?
+  case "$rc" in
+    0) ;;
+    1)
+      # Something in this batch differs: find which paths.
+      for p in "${plain[@]}"; do
+        partial "$p"
+        prc=$?
+        case "$prc" in
+          0) ;;
+          1) offenders+=("$p") ;;
+          *) echo "[pre-commit] refused: could not compare $p (git diff exited $prc)." >&2; exit 1 ;;
+        esac
+      done
+      ;;
+    *)
+      echo "[pre-commit] refused: could not compare staged and unstaged changes (git diff exited $rc)." >&2
+      exit 1
+      ;;
+  esac
+  batch=()
+  plain=()
+  bytes=0
+}
+
+while IFS= read -r -d '' p; do
+  if [ "${#batch[@]}" -gt 0 ] && [ $((bytes + ${#p} + 1)) -gt "$cap" ]; then
+    flush_batch
+  fi
+  batch+=("$p")
+  plain+=("$p")
+  bytes=$((bytes + ${#p} + 1))
+done <"$tmp"
+flush_batch
+
+if [ "${#offenders[@]}" -gt 0 ]; then
+  echo "[pre-commit] refused: these paths have both staged and unstaged changes:" >&2
+  printf '%s\n' "${offenders[@]}" >&2
+  echo 'Lefthook may stash the unstaged part, and git stash is shared by every worktree (AGENTS.md forbids it). Nothing was changed. Stage the whole file, or follow "Partial commits" in docs/getting-started/install.md.' >&2
+  exit 1
+fi
+
+# exec skips the EXIT trap.
+rm -f "$tmp"
+exec lefthook run pre-commit --no-stage-fixed --no-auto-install "$@"

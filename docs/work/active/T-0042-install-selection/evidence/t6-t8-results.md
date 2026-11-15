@@ -62,6 +62,8 @@ Not run: any real switch, `chezmoi apply`, `sys-update --apply`; a real macOS, b
 - S8: the template prints `# known profiles: ...`; two new parity tests (darwin Home Manager user's profile, and the list equals the files in nix/profiles).
 - D5: the ticket Status line (only that line) and the index row list the four pending human checks.
 
+Checks after these follow-ups: selection.bats and chezmoiignore-selection.bats 58 tests pass; the S1 and S6 tests failed before their fixes and S2 was confirmed failing on the previous tree (the wrong-type macInput build succeeded there); full `bash ops/run-bats.sh` 1307 ok, 0 failures; lint:shell, validate-config (text and --eval), both flake checks and `bash ops/ci-local.sh` (6 stages) pass; the 5 default drvPaths equal t1-baseline.md; lock sha256 44847d34cfeb9d8e119e22934bcf8a12d97bc3b3187cd4c09088c4c15a61ceee; a real `install.sh --dry-run --profile work </dev/null` with a scratch APP_CONFIGS_SELECTION_DIR passes (rc 0, no macInput on Linux, nothing written).
+
 ## Human checks
 
 1. AC14, real Mac with Determinate Nix. THIS SWITCHES THE LIVE MAC. Rollback: re-run the switch without `--override-input`, or run `sudo darwin-rebuild --rollback`. In a clean checkout of feat/install-selection:

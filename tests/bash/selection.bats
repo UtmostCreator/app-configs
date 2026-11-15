@@ -292,21 +292,21 @@ validate_fixture() {
     source "$REPO_ROOT/ops/lib/selection-preview.sh"
     mkdir -p "$BATS_TEST_TMPDIR/w"
     SELECTION_REPO_ROOT="$REPO_ROOT"
-    local host
+    local host ngroups
     for host in linux-cli macos; do
         SELECTION_HOST="$host"
-        groups=3
-        if [ "$host" = macos ]; then groups=4; fi
+        ngroups=3
+        if [ "$host" = macos ]; then ngroups=4; fi
         SELECTION_ARGS=()
         _sel_eval "$BATS_TEST_TMPDIR/w/state-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_state)" "$(_sel_expr_state)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
         _sel_eval "$BATS_TEST_TMPDIR/w/members-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_members)" "$(_sel_expr_members)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
         _sel_eval "$BATS_TEST_TMPDIR/w/check-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_check)" "$(_sel_expr_check)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
         grep -q "^P"$'\t' "$BATS_TEST_TMPDIR/w/state-$host"
         # macInput exists on every host but only macOS offers it (it gates casks).
-        [ "$(grep -c "^G"$'\t' "$BATS_TEST_TMPDIR/w/state-$host")" -eq "$groups" ]
+        [ "$(grep -c "^G"$'\t' "$BATS_TEST_TMPDIR/w/state-$host")" -eq "$ngroups" ]
         [ "$(grep -c "^K"$'\t' "$BATS_TEST_TMPDIR/w/state-$host")" -gt 50 ]
         grep -q "^H"$'\t' "$BATS_TEST_TMPDIR/w/members-$host"
-        [ "$(grep -c "^N"$'\t' "$BATS_TEST_TMPDIR/w/members-$host")" -eq "$groups" ]
+        [ "$(grep -c "^N"$'\t' "$BATS_TEST_TMPDIR/w/members-$host")" -eq "$ngroups" ]
         if [ "$host" = macos ]; then
             grep -q "^N"$'\t'"macInput" "$BATS_TEST_TMPDIR/w/members-$host"
         else

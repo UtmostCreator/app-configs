@@ -7,16 +7,7 @@
 
 bats_require_minimum_version 1.5.0
 
-# bg_limited <max> <command...>: start the command in the background, first
-# waiting for a slot when <max> of this shell's background jobs already run.
-# The caller waits for the rest with `wait`. Nix evaluations are CPU- and
-# memory-heavy, so the number in flight is bounded.
-bg_limited() {
-    local max="$1"
-    shift
-    while [ "$(jobs -rp | wc -l)" -ge "$max" ]; do wait -n || true; done
-    "$@" &
-}
+load ../lib/throttle
 
 # record <out> <err> <command...>: run an eval with its stdout in
 # $BATS_FILE_TMPDIR/<out>, its stderr in <err> and its exit status in
@@ -26,6 +17,21 @@ record() {
     shift 2
     "$@" >"$out" 2>"$err" || rc=$?
     echo "$rc" >"$out.rc"
+}
+
+# record_bg <out> <err> <command...>: record in the background. The parent
+# writes the sentinel "missing" into <out>.rc first, so a job that dies before
+# it reports leaves a visible failure instead of no file at all.
+record_bg() {
+    echo missing >"$BATS_FILE_TMPDIR/$1.rc"
+    bg_limited "$SEL_EVAL_JOBS" record "$@"
+}
+
+# preview_bg <host> <kind>: preview_eval in the background, with the same
+# "missing" sentinel in $BATS_FILE_TMPDIR/preview/<kind>-<host>.rc.
+preview_bg() {
+    echo missing >"$BATS_FILE_TMPDIR/preview/$2-$1.rc"
+    bg_limited "$SEL_EVAL_JOBS" preview_eval "$@"
 }
 
 # preview_eval <host> <kind>: the preview's state, members or check expression
@@ -50,35 +56,40 @@ setup_file() {
     command -v nix >/dev/null || return 0
     # One drvPath per (selection, host) pair, evaluated once per file; the
     # tests compare the recorded values. The evaluations are independent, so
-    # they run concurrently (at most SELECTION_EVAL_JOBS at once).
-    local n="${SELECTION_EVAL_JOBS:-8}" h k f
+    # they run concurrently: at most min(8, nproc) at once, or
+    # SELECTION_EVAL_JOBS when set.
+    local h k f
+    SEL_EVAL_JOBS="$(bg_cap 8 "${SELECTION_EVAL_JOBS:-}")"
     for h in linux-cli linux-desktop; do
-        bg_limited "$n" record "drv-default-$h" "err-drv-default-$h" drv "$h" default
+        record_bg "drv-default-$h" "err-drv-default-$h" drv "$h" default
     done
-    bg_limited "$n" record drv-empty-linux-cli err-drv-empty-linux-cli drv linux-cli empty
-    bg_limited "$n" record drv-all-on-work-linux-cli err-drv-all-on-work-linux-cli drv linux-cli all-on-work
-    bg_limited "$n" record drv-all-on-personal-linux-desktop err-drv-all-on-personal-linux-desktop drv linux-desktop all-on-personal
+    record_bg drv-empty-linux-cli err-drv-empty-linux-cli drv linux-cli empty
+    record_bg drv-all-on-work-linux-cli err-drv-all-on-work-linux-cli drv linux-cli all-on-work
+    record_bg drv-all-on-personal-linux-desktop err-drv-all-on-personal-linux-desktop drv linux-desktop all-on-personal
     # macOS: the same identities for the standalone Home Manager output and for the
     # nix-darwin system (aarch64-darwin evaluates from Linux; nothing is built).
     for k in default empty all-on-work; do
-        bg_limited "$n" record "drv-$k-macos" "err-drv-$k-macos" drv macos "$k"
-        bg_limited "$n" record "drv-$k-darwin" "err-drv-$k-darwin" drvd "$k"
+        record_bg "drv-$k-macos" "err-drv-$k-macos" drv macos "$k"
+        record_bg "drv-$k-darwin" "err-drv-$k-darwin" drvd "$k"
     done
     # linux-desktop: empty vs default, the host with the personal profile.
-    bg_limited "$n" record drv-empty-linux-desktop err-drv-empty-linux-desktop drv linux-desktop empty
+    record_bg drv-empty-linux-desktop err-drv-empty-linux-desktop drv linux-desktop empty
     for f in default media-go-off all-false; do
-        bg_limited "$n" record "pkgs-$f.json" "err-pkgs-$f" pkgs linux-cli "$f"
+        record_bg "pkgs-$f.json" "err-pkgs-$f" pkgs linux-cli "$f"
     done
     # The preview's expressions (read by one test) join the same pool.
     mkdir -p "$BATS_FILE_TMPDIR/preview"
     for h in linux-cli macos; do
         for k in state members check; do
-            bg_limited "$n" preview_eval "$h" "$k"
+            preview_bg "$h" "$k"
         done
     done
     wait
-    # Every one of these evaluations is expected to succeed: name each that
-    # did not, with its stderr, instead of leaving it to a downstream test.
+    # The evals above that write $BATS_FILE_TMPDIR/*.rc (the drvPaths and the
+    # package lists) are all expected to succeed: name each that did not (a
+    # non-zero status, or the "missing" sentinel of a job that never reported)
+    # with its stderr, instead of leaving it to a downstream test. The preview
+    # evals write to preview/ and are checked by the preview test itself.
     local failed="" rc e
     for e in "$BATS_FILE_TMPDIR"/*.rc; do
         rc="$(cat "$e")"
@@ -86,7 +97,7 @@ setup_file() {
         k="${e##*/}"
         k="${k%.rc}"
         failed+="eval $k failed (exit $rc):"$'\n'
-        failed+="$(cat "$BATS_FILE_TMPDIR/err-${k%.json}" 2>/dev/null)"$'\n'
+        failed+="$(cat "$BATS_FILE_TMPDIR/err-${k%.json}" 2>/dev/null || true)"$'\n'
     done
     if [ -n "$failed" ]; then
         printf '%s' "$failed" >&2
@@ -351,7 +362,7 @@ validate_fixture() {
     local host ngroups kind
     for host in linux-cli macos; do
         for kind in state members check; do
-            [ "$(cat "$BATS_FILE_TMPDIR/preview/$kind-$host.rc")" -eq 0 ] || { echo "eval $kind-$host failed:"; cat "$BATS_FILE_TMPDIR/preview/err-$kind-$host"; return 1; }
+            [ "$(cat "$BATS_FILE_TMPDIR/preview/$kind-$host.rc" 2>/dev/null)" = 0 ] || { echo "eval $kind-$host failed (exit $(cat "$BATS_FILE_TMPDIR/preview/$kind-$host.rc" 2>/dev/null || echo unknown)):"; cat "$BATS_FILE_TMPDIR/preview/err-$kind-$host" 2>/dev/null || true; return 1; }
         done
     done
     for host in linux-cli macos; do

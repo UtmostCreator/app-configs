@@ -4,10 +4,11 @@
 # Behavior:
 # - macOS: relies on the launchd-started agent + Keychain (`UseKeychain yes`
 #   in ~/.ssh/config). The passphrase is asked at most once ever; macOS
-#   stores it in the user keychain. We just `ssh-add --apple-use-keychain`
+#   stores it in the user keychain, so the key lifetime below does not apply. We just `ssh-add --apple-use-keychain`
 #   the configured keys if they are not already loaded.
-# - Linux: if `keychain` is installed, use it (passphrase asked once per
-#   boot, reused across every shell). Otherwise fall back to a single
+# - Linux: if `keychain` is installed, use it (passphrase asked about once
+#   per APP_CONFIGS_SSH_KEY_LIFETIME hours, default 8, reused across every
+#   shell). Otherwise fall back to a single
 #   long-lived ssh-agent whose socket path is cached in
 #   ~/.ssh/agent.env so all shells share it.
 #
@@ -16,6 +17,12 @@
 #   sourcing, e.g. in ~/.zshrc *before* this file:
 #     export APP_CONFIGS_SSH_KEYS="<github-key> <work-key>"
 #   Paths are resolved against $HOME/.ssh/.
+#
+#   Keys are forgotten by the agent after APP_CONFIGS_SSH_KEY_LIFETIME hours
+#   (default 8). Export it the same way; 0 or empty keeps keys until the agent
+#   dies; anything that is not a non-negative integer is ignored (default
+#   kept). Not used on macOS. Keys already in a running agent keep their old
+#   lifetime until it restarts (`keychain --clear`, or log out).
 #
 # Source this file from ~/.bashrc or ~/.zshrc:
 #   [ -f "$HOME/.config/app-configs/ssh-agent.sh" ] && . "$HOME/.config/app-configs/ssh-agent.sh"
@@ -32,6 +39,25 @@ esac
 : "${APP_CONFIGS_SSH_KEYS:=id_ed25519}"
 
 _app_configs_ssh_uname="$(uname -s 2>/dev/null || echo unknown)"
+
+_app_configs_ssh_lifetime_hours() {
+    # Echo the key lifetime in whole hours, or nothing for "no limit".
+    # Unset -> 8. Empty or 0 -> no limit. Not a non-negative integer of at
+    # most 6 digits -> 8, silently. Leading zeros are read as decimal.
+    local v
+    if [ "${APP_CONFIGS_SSH_KEY_LIFETIME+set}" != set ]; then
+        echo 8
+        return 0
+    fi
+    v="$APP_CONFIGS_SSH_KEY_LIFETIME"
+    case "$v" in
+        '') return 0 ;;
+        *[!0-9]*) echo 8; return 0 ;;
+    esac
+    [ "${#v}" -le 6 ] || { echo 8; return 0; }
+    v=$((10#$v))
+    [ "$v" -eq 0 ] || echo "$v"
+}
 
 _app_configs_ssh_key_names() {
     # One configured key per line. zsh does not word-split an unquoted
@@ -71,11 +97,13 @@ _app_configs_ssh_macos() {
 }
 
 _app_configs_ssh_linux_keychain() {
-    # keychain caches the agent across shells; passphrase asked once per boot.
+    # keychain caches the agent across shells; passphrase asked about once per
+    # key lifetime (default 8 h).
     # Pass key basenames (no path) — keychain resolves them under ~/.ssh.
     # Build argv in the positional parameters: one entry per key in bash and
     # zsh, with no reliance on unquoted word splitting (zsh does not split).
-    local k
+    local k hours
+    hours="$(_app_configs_ssh_lifetime_hours)"
     set --
     while IFS= read -r k; do
         case "$k" in
@@ -85,6 +113,10 @@ _app_configs_ssh_linux_keychain() {
     done < <(_app_configs_ssh_key_names)
     # No --agents: keychain 3 deprecates it (warning on every shell). Without
     # it, ssh key names mean ssh-only in both keychain 2.8+ (default) and 3.x.
+    # --timeout is in minutes (keychain 2.8+ and 3.x) and goes before the keys.
+    if [ -n "$hours" ]; then
+        set -- --timeout "$((hours * 60))" "$@"
+    fi
     eval "$(keychain --eval --quiet "$@")"
 }
 
@@ -110,7 +142,8 @@ _app_configs_ssh_linux_plain() {
         . "$env_file" >/dev/null
     fi
     # Load any configured keys that aren't loaded yet.
-    local loaded fp key_file
+    local loaded fp key_file hours
+    hours="$(_app_configs_ssh_lifetime_hours)"
     loaded="$(ssh-add -l 2>/dev/null || true)"
     while IFS= read -r key_file; do
         [ -z "$key_file" ] && continue
@@ -118,7 +151,12 @@ _app_configs_ssh_linux_plain() {
         if [ -n "$fp" ] && printf '%s' "$loaded" | grep -q "$fp"; then
             continue
         fi
-        ssh-add "$key_file"
+        # ssh-add -t is in seconds.
+        if [ -n "$hours" ]; then
+            ssh-add -t "$((hours * 3600))" "$key_file"
+        else
+            ssh-add "$key_file"
+        fi
     done < <(_app_configs_ssh_key_paths)
 }
 
@@ -140,5 +178,5 @@ case "$_app_configs_ssh_uname" in
 esac
 
 unset _app_configs_ssh_uname
-unset -f _app_configs_ssh_key_names _app_configs_ssh_key_paths _app_configs_ssh_macos \
+unset -f _app_configs_ssh_lifetime_hours _app_configs_ssh_key_names _app_configs_ssh_key_paths _app_configs_ssh_macos \
     _app_configs_ssh_linux_keychain _app_configs_ssh_linux_plain 2>/dev/null || true

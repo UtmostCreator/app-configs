@@ -1,8 +1,8 @@
 # ssh-agent shell snippets (Linux + macOS)
 
 Drop-in shell config that makes ssh-agent persistent and prompts for the
-passphrase at most once per boot (Linux) or at most once ever (macOS, via
-Keychain).
+passphrase about once per `APP_CONFIGS_SSH_KEY_LIFETIME` hours (Linux/WSL,
+default 8) or at most once ever (macOS, via Keychain).
 
 | File                | Target shell  | Deploy path                                |
 | ------------------- | ------------- | ------------------------------------------ |
@@ -27,6 +27,24 @@ export APP_CONFIGS_SSH_KEYS="<github-key> <work-key>"
 # fish — universal var, set once, persists forever
 set -Ux APP_CONFIGS_SSH_KEYS <github-key> <work-key>
 ```
+
+## Key lifetime
+
+Linux/WSL keys are forgotten after 8 hours by default (`keychain --timeout`,
+or `ssh-add -t` in the plain-agent fallback). Change it, in hours:
+
+```bash
+export APP_CONFIGS_SSH_KEY_LIFETIME=24   # bash / zsh, above the source line
+```
+
+```fish
+set -Ux APP_CONFIGS_SSH_KEY_LIFETIME 24  # fish
+```
+
+`0` or empty keeps keys until the agent dies; an invalid value (`abc`, `-1`)
+is ignored and the default kept. Not used on macOS (the Keychain stores the
+passphrase). Keys already loaded, or added via `AddKeysToAgent yes`, keep
+their old lifetime until the agent restarts (`keychain --clear`, or log out).
 
 Bare names are resolved under `~/.ssh/`. Absolute paths are used as-is.
 Missing keys are silently skipped — safe to list keys that only exist on

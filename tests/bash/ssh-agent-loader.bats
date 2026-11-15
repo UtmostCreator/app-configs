@@ -141,7 +141,8 @@ load_agent_fish() {
     touch "$HOME/.ssh/present"
     APP_CONFIGS_SSH_KEYS="present missing" run load_agent
     [ "$status" -eq 0 ]
-    [ "$(cat "$HOME/keychain-args")" = "--eval --quiet present" ]
+    # default key lifetime is 8 h, so --timeout 480 (minutes) precedes the keys
+    [ "$(cat "$HOME/keychain-args")" = "--eval --quiet --timeout 480 present" ]
 }
 
 @test "fish: keychain is passed only configured keys that exist" {
@@ -152,7 +153,7 @@ load_agent_fish() {
     for tool in fish bash cat awk touch chmod; do ln -sf "$(command -v "$tool")" "$STUBS/$tool"; done
     run env PATH="$STUBS" HOME="$HOME" XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" \
         "$STUBS/fish" --no-config -i -c 'set -g APP_CONFIGS_SSH_KEYS present missing; source $argv[1]' "$fish_script"
-    [ "$(cat "$HOME/keychain-args")" = "--eval --quiet present" ]
+    [ "$(cat "$HOME/keychain-args")" = "--eval --quiet --timeout 480 present" ]
 }
 
 # --- multi-key splitting (zsh does not word-split unquoted expansions) ------
@@ -196,7 +197,7 @@ keychain_argv_setup() {
     stub keychain 'for a in "$@"; do printf "arg=%s\n" "$a"; done >>"$HOME/kc.log"'
 }
 
-KEYCHAIN_WANT=$'arg=--eval\narg=--quiet\narg=k1\narg=k2'
+KEYCHAIN_WANT=$'arg=--eval\narg=--quiet\narg=--timeout\narg=480\narg=k1\narg=k2'
 
 @test "zsh: keychain receives one argv entry per key" {
     command -v zsh >/dev/null || skip "zsh not installed (run with zsh on PATH to exercise this)"
@@ -238,4 +239,160 @@ KEYCHAIN_WANT=$'arg=--eval\narg=--quiet\narg=k1\narg=k2'
     grep -q -- '--eval' "$HOME/keychain-args"
     grep -q 'present' "$HOME/keychain-args"
     [[ "$output" == *"kc=yes"* ]]
+}
+
+# --- key lifetime (APP_CONFIGS_SSH_KEY_LIFETIME, hours; default 8) ----------
+#
+# keychain --timeout takes minutes; ssh-add -t takes seconds. 0 or empty means
+# "until the agent dies"; anything that is not a non-negative integer is
+# ignored (default kept) without printing an error.
+
+lifetime_keychain_stub() {
+    touch "$HOME/.ssh/present"
+    stub keychain 'printf "%s\n" "$*" >"$HOME/keychain-args"'
+}
+
+# bash_keychain_args VALUE...: env assignments for the run, e.g. APP_CONFIGS_SSH_KEY_LIFETIME=24
+bash_keychain_args() {
+    env "$@" APP_CONFIGS_SSH_KEYS=present PATH="$(isolate_path)" \
+        bash --norc --noprofile -i -c '. "$1"' _ "$SCRIPT" 2>"$HOME/stderr"
+    cat "$HOME/keychain-args"
+}
+
+fish_keychain_args() {
+    local fish_script="$REPO_ROOT/home/dot_config/fish/conf.d/ssh-agent.fish" tool
+    for tool in fish bash cat awk touch chmod; do ln -sf "$(command -v "$tool")" "$STUBS/$tool"; done
+    env PATH="$STUBS" HOME="$HOME" XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" \
+        "$STUBS/fish" --no-config -i -c "set -g APP_CONFIGS_SSH_KEYS present; $1; source \$argv[1]" "$fish_script" 2>"$HOME/stderr"
+    cat "$HOME/keychain-args"
+}
+
+# An interactive bash prints job-control notes on stderr; only a complaint
+# about the lifetime value counts as noise.
+no_lifetime_noise() {
+    if grep -qiE 'lifetime|expression|integer|syntax|math|error|invalid' "$HOME/stderr"; then
+        cat "$HOME/stderr" >&2
+        return 1
+    fi
+}
+
+@test "bash: default lifetime gives keychain --timeout 480 before the keys" {
+    lifetime_keychain_stub
+    run bash_keychain_args
+    [ "$output" = "--eval --quiet --timeout 480 present" ]
+}
+
+@test "bash: APP_CONFIGS_SSH_KEY_LIFETIME=24 gives --timeout 1440" {
+    lifetime_keychain_stub
+    run bash_keychain_args APP_CONFIGS_SSH_KEY_LIFETIME=24
+    [ "$output" = "--eval --quiet --timeout 1440 present" ]
+}
+
+@test "bash: lifetime 0 or empty passes no --timeout" {
+    lifetime_keychain_stub
+    run bash_keychain_args APP_CONFIGS_SSH_KEY_LIFETIME=0
+    [ "$output" = "--eval --quiet present" ]
+    run bash_keychain_args APP_CONFIGS_SSH_KEY_LIFETIME=
+    [ "$output" = "--eval --quiet present" ]
+}
+
+@test "bash: invalid lifetime (abc, -1, 1.5) keeps the default, silently" {
+    lifetime_keychain_stub
+    local v
+    for v in abc -1 1.5; do
+        run bash_keychain_args APP_CONFIGS_SSH_KEY_LIFETIME="$v"
+        [ "$output" = "--eval --quiet --timeout 480 present" ]
+        no_lifetime_noise
+    done
+}
+
+@test "fish: default lifetime gives keychain --timeout 480 before the keys" {
+    command -v fish >/dev/null || skip "fish not installed"
+    lifetime_keychain_stub
+    run fish_keychain_args true
+    [ "$output" = "--eval --quiet --timeout 480 present" ]
+}
+
+@test "fish: APP_CONFIGS_SSH_KEY_LIFETIME=24 gives --timeout 1440" {
+    command -v fish >/dev/null || skip "fish not installed"
+    lifetime_keychain_stub
+    run fish_keychain_args 'set -g APP_CONFIGS_SSH_KEY_LIFETIME 24'
+    [ "$output" = "--eval --quiet --timeout 1440 present" ]
+}
+
+@test "fish: lifetime 0 or empty passes no --timeout" {
+    command -v fish >/dev/null || skip "fish not installed"
+    lifetime_keychain_stub
+    run fish_keychain_args 'set -g APP_CONFIGS_SSH_KEY_LIFETIME 0'
+    [ "$output" = "--eval --quiet present" ]
+    run fish_keychain_args 'set -g APP_CONFIGS_SSH_KEY_LIFETIME ""'
+    [ "$output" = "--eval --quiet present" ]
+    run fish_keychain_args 'set -g APP_CONFIGS_SSH_KEY_LIFETIME'
+    [ "$output" = "--eval --quiet present" ]
+}
+
+@test "fish: invalid lifetime (abc, -1) keeps the default, silently" {
+    command -v fish >/dev/null || skip "fish not installed"
+    lifetime_keychain_stub
+    local v
+    for v in abc -1; do
+        run fish_keychain_args "set -g APP_CONFIGS_SSH_KEY_LIFETIME $v"
+        [ "$output" = "--eval --quiet --timeout 480 present" ]
+        no_lifetime_noise
+    done
+}
+
+plain_lifetime_setup() {
+    : >"$HOME/.ssh/present"
+    stub ssh-add '[ "$1" = -l ] && exit "${SSH_ADD_L_STATUS:-0}"; echo "$*" >>"$HOME/added.log"; exit 0'
+    printf 'SSH_AUTH_SOCK=/tmp/live.sock; export SSH_AUTH_SOCK;\n' >"$HOME/.ssh/agent.env"
+}
+
+@test "bash plain agent: default adds the key with ssh-add -t 28800" {
+    plain_lifetime_setup
+    APP_CONFIGS_SSH_KEYS=present SSH_ADD_L_STATUS=1 PATH="$(isolate_path)" \
+        bash --norc --noprofile -i -c '. "$1"' _ "$SCRIPT" 2>/dev/null
+    [ "$(cat "$HOME/added.log")" = "-t 28800 $HOME/.ssh/present" ]
+}
+
+@test "bash plain agent: lifetime 0 adds the key without -t" {
+    plain_lifetime_setup
+    APP_CONFIGS_SSH_KEY_LIFETIME=0 APP_CONFIGS_SSH_KEYS=present SSH_ADD_L_STATUS=1 PATH="$(isolate_path)" \
+        bash --norc --noprofile -i -c '. "$1"' _ "$SCRIPT" 2>/dev/null
+    [ "$(cat "$HOME/added.log")" = "$HOME/.ssh/present" ]
+}
+
+@test "fish plain agent: default -t 28800, lifetime 0 no -t" {
+    command -v fish >/dev/null || skip "fish not installed"
+    plain_lifetime_setup
+    local fish_script="$REPO_ROOT/home/dot_config/fish/conf.d/ssh-agent.fish" tool
+    for tool in fish bash cat awk touch chmod; do ln -sf "$(command -v "$tool")" "$STUBS/$tool"; done
+    SSH_ADD_L_STATUS=1 env PATH="$STUBS" HOME="$HOME" XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" \
+        "$STUBS/fish" --no-config -i -c 'set -g APP_CONFIGS_SSH_KEYS present; source $argv[1]' "$fish_script" 2>/dev/null
+    [ "$(cat "$HOME/added.log")" = "-t 28800 $HOME/.ssh/present" ]
+    rm "$HOME/added.log"
+    SSH_ADD_L_STATUS=1 env PATH="$STUBS" HOME="$HOME" XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" \
+        "$STUBS/fish" --no-config -i -c 'set -g APP_CONFIGS_SSH_KEYS present; set -g APP_CONFIGS_SSH_KEY_LIFETIME 0; source $argv[1]' "$fish_script" 2>/dev/null
+    [ "$(cat "$HOME/added.log")" = "$HOME/.ssh/present" ]
+}
+
+@test "macOS: the lifetime never reaches ssh-add -t or keychain --timeout" {
+    plain_lifetime_setup
+    stub uname 'echo Darwin'
+    stub keychain 'echo called >"$HOME/kc-called"'
+    APP_CONFIGS_SSH_KEY_LIFETIME=24 APP_CONFIGS_SSH_KEYS=present SSH_ADD_L_STATUS=1 PATH="$(isolate_path)" \
+        bash --norc --noprofile -i -c '. "$1"' _ "$SCRIPT" 2>/dev/null
+    [ "$(cat "$HOME/added.log")" = "--apple-use-keychain $HOME/.ssh/present" ]
+    [ ! -f "$HOME/kc-called" ]
+}
+
+@test "fish macOS: the lifetime never reaches ssh-add -t" {
+    command -v fish >/dev/null || skip "fish not installed"
+    plain_lifetime_setup
+    stub uname 'echo Darwin'
+    local fish_script="$REPO_ROOT/home/dot_config/fish/conf.d/ssh-agent.fish" tool
+    for tool in fish bash cat awk touch chmod; do ln -sf "$(command -v "$tool")" "$STUBS/$tool"; done
+    SSH_ADD_L_STATUS=1 env PATH="$STUBS" HOME="$HOME" XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" \
+        "$STUBS/fish" --no-config -i -c 'set -g APP_CONFIGS_SSH_KEYS present; set -g APP_CONFIGS_SSH_KEY_LIFETIME 24; source $argv[1]' "$fish_script" 2>/dev/null
+    [ "$(cat "$HOME/added.log")" = "--apple-use-keychain $HOME/.ssh/present" ]
 }

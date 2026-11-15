@@ -377,6 +377,11 @@
 
 [push]
 	autoSetupRemote = true
+	# Optional, off by default: also push annotated tags that point at the
+	# commits being pushed. To enable, uncomment, or run
+	# `git config --global push.followTags true` (a `git push` then publishes
+	# release tags without `--tags`).
+	# followTags = true
 
 [init]
 	defaultBranch = main

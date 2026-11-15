@@ -16,6 +16,8 @@
 #   2. nix          (skipped on NixOS; Determinate installer only on non-NixOS)
 #   3. base tools   (chezmoi, mise, home-manager, lefthook via nix profile)
 #   4. nix flake check ./nix
+#   4b. install selection: a local selection file, --profile, or (on a TTY with
+#       no file) the profile and group prompts; always before chezmoi or a switch
 #   5. chezmoi init + snapshot $HOME + chezmoi apply --force
 #   6. home-manager switch  OR  darwin-rebuild switch  (per host)
 #   7. mise trust + mise install   (runtimes come from Nix on NixOS; near no-op)
@@ -29,6 +31,17 @@
 #   bash ops/install.sh --dry-run       # show what would happen, mutate nothing
 #   DRY_RUN=1 bash ops/install.sh       # same as --dry-run (DRY_RUN must be 0 or 1)
 #   HOST_PROFILE=linux-cli bash ops/install.sh
+#   bash ops/install.sh --profile work  # write profile = work (group overrides are
+#                                       # dropped), preview, continue; never asks
+#   bash ops/install.sh --reconfigure   # ask again (needs a TTY; exit 1 without one)
+#
+# Install selection (ops/lib/selection.sh, nix/profiles/*.toml): with a local file
+# selection.toml (default ~/.config/app-configs/selection/) the install uses it
+# and prints one line, never asking. With no file on a TTY it asks for the profile
+# and each group, shows a read-only preview and writes only the differences from
+# the profile defaults. With no file and no TTY it writes nothing and uses the
+# committed default. q or end of input at a prompt stops the install (exit 1)
+# before chezmoi and any switch. --dry-run asks and previews but writes nothing.
 #
 # Exit codes:
 #   0  success, or finished with degraded steps (listed instead of
@@ -36,7 +49,7 @@
 #      system rebuild)
 #   1  a required-step failure ([install:error]); an external command that
 #      fails exits with its own code
-#   2  bad argument, or DRY_RUN is not 0 or 1
+#   2  bad argument (including an unknown --profile), or DRY_RUN is not 0 or 1
 #   3  refused: a bats test tried a real install against the real HOME
 #
 # macOS apply needs sudo (nix-darwin switch); it is checked before anything
@@ -46,6 +59,8 @@
 set -euo pipefail
 
 DRY_RUN="${DRY_RUN:-0}"
+OPT_PROFILE=""
+OPT_RECONFIGURE=0
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Arguments. sys-install passes "$@" through; before this parser existed,
@@ -53,6 +68,16 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 while (($#)); do
   case "$1" in
     -n | --dry-run) DRY_RUN=1 ;;
+    --profile)
+      if (($# < 2)); then
+        printf '[install:error] --profile needs a profile name (try --help)\n' >&2
+        exit 2
+      fi
+      OPT_PROFILE="$2"
+      shift
+      ;;
+    --profile=*) OPT_PROFILE="${1#--profile=}" ;;
+    --reconfigure) OPT_RECONFIGURE=1 ;;
     -h | --help)
       sed -n '2,/^$/{/^$/!p;}' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
@@ -101,6 +126,21 @@ run()  {
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
 # shellcheck source=ops/lib/selection.sh
 source "$REPO_ROOT/ops/lib/selection.sh"
+SELECTION_REPO_ROOT="$REPO_ROOT"
+SELECTION_HOST=""   # set from HOST_PROFILE once it is known (Preflight)
+
+# Prompts read stdin and write stderr: both must be a terminal.
+have_tty() { [[ -t 0 && -t 2 ]]; }
+
+# The selection flags are checked before the first step, so a bad one changes
+# nothing: an unknown profile is a usage error, --reconfigure needs someone to ask.
+if [[ -n "$OPT_PROFILE" ]] && ! selection_valid_profile "$OPT_PROFILE"; then
+  printf '[install:error] unknown profile %s (known: %s)\n' "'$OPT_PROFILE'" "$(selection_profiles | paste -sd, - | sed 's/,/, /g')" >&2
+  exit 2
+fi
+if ((OPT_RECONFIGURE)) && ! have_tty; then
+  fail "--reconfigure needs a terminal to ask on (stdin and stderr); nothing was changed"
+fi
 
 # INSTALL_NIXOS_MARKER / INSTALL_OS_RELEASE are test seams (same idea as the
 # DETECT_HOST_* overrides in ops/detect-host.sh).
@@ -210,6 +250,107 @@ fi
 # ── 4. flake check ──────────────────────────────────────────────────────────
 step "Validate flake"
 run nix flake check "$REPO_ROOT/nix"
+
+# ── 4b. install selection ───────────────────────────────────────────────────
+# Which groups and profile this host installs (nix/profiles/*.toml, the local
+# selection.toml, ops/lib/selection.sh). Everything here comes before chezmoi or
+# any switch, and a selection that does not evaluate stops the install here.
+step "Selection"
+SELECTION_HOST="$HOST_PROFILE"
+SELECTION_WORK="$(mktemp -d)" || fail "cannot create a temp dir"
+CLEANUP+=("$SELECTION_WORK")
+selection_args
+sel_file="$SELECTION_DIR/selection.toml"
+
+# Quit and end of input stop the install. What did not happen depends on the mode:
+# a dry run changed nothing at all; a real run already installed Nix and the base
+# tools in the steps above, and says so.
+selection_cancel() {
+  if [[ "$DRY_RUN" == 1 ]]; then
+    printf '[install] cancelled at the selection step (dry run): nothing was changed\n' >&2
+  else
+    printf '[install] cancelled at the selection step: no selection saved, no dotfiles applied, no switch run; Nix and base tools installed by earlier steps remain\n' >&2
+  fi
+  exit 1
+}
+
+# selection_commit PROFILE [group=value ...]: write the selection, or say so.
+selection_commit() {
+  if [[ "$DRY_RUN" == 1 ]]; then
+    log "dry run: would write $sel_file"
+    return 0
+  fi
+  selection_write "$SELECTION_DIR" "$@" || fail "cannot write $sel_file"
+  selection_args
+  log "Selection: wrote $sel_file (profile $1)"
+}
+
+# selection_facts_or_stop [lenient]: evaluate before printing anything. 2 (no
+# nix, no helper) is only acceptable in a dry run; the message is already out.
+facts_rc=0
+selection_facts_or_stop() {
+  facts_rc=0
+  selection_facts "$@" || facts_rc=$?
+  case "$facts_rc" in
+    0 | 2) ;;
+    *) fail "the install selection cannot be evaluated (see the error above); nothing was written" ;;
+  esac
+  if ((facts_rc == 2)) && [[ "$DRY_RUN" != 1 ]]; then fail "cannot preview the selection (see above); nothing was written"; fi
+  return 0
+}
+
+selection_mode=default
+if [[ -n "$OPT_PROFILE" ]]; then
+  selection_mode=profile
+elif ((OPT_RECONFIGURE)); then
+  selection_mode=prompt
+elif [[ -f "$sel_file" ]]; then
+  selection_mode=existing
+elif have_tty; then
+  selection_mode=prompt
+fi
+
+case "$selection_mode" in
+  profile)
+    # No question, even on a TTY: the flag is the answer. It replaces the group
+    # overrides, and the preview says so.
+    SEL_REPLACE=1
+    selection_facts_or_stop lenient
+    if ((facts_rc == 0)); then
+      selection_propose "$OPT_PROFILE" || fail "the proposed selection cannot be evaluated; nothing was written"
+      selection_preview proposal
+    fi
+    selection_commit "$OPT_PROFILE"
+    ;;
+  existing)
+    log "Selection: $sel_file (profile $(selection_profile_of "$sel_file"))"
+    if [[ "$DRY_RUN" == 1 ]]; then
+      selection_facts_or_stop
+      if ((facts_rc == 0)); then selection_preview; fi
+    else
+      # Only the evaluation, no comparison: an unknown key, group or profile
+      # stops the install here, before chezmoi and the switch.
+      selection_validate || fail "the local selection $sel_file is invalid (see the error above); nothing was applied"
+    fi
+    ;;
+  prompt)
+    selection_facts_or_stop lenient
+    prompt_rc=0
+    selection_prompt_loop || prompt_rc=$?
+    case "$prompt_rc" in
+      0) selection_commit "$SEL_ANS_PROFILE" ${SEL_ANS_GROUPS[@]+"${SEL_ANS_GROUPS[@]}"} ;;
+      3) selection_cancel ;;
+      *) fail "the proposed selection cannot be evaluated; nothing was written" ;;
+    esac
+    ;;
+  *)
+    log "Selection: no local selection; using the committed default (nothing written)"
+    if [[ "$DRY_RUN" == 1 ]]; then
+      selection_facts_or_stop
+      if ((facts_rc == 0)); then selection_preview; fi
+    fi
+    ;;
+esac
 
 # ── 5. chezmoi ──────────────────────────────────────────────────────────────
 step "chezmoi (init + snapshot + apply)"

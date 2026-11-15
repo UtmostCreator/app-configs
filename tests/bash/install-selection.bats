@@ -293,7 +293,7 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
 @test "AC7f: an empty answer at the a/c/q prompt asks again" {
     inst_tty 'work\n\n\n\n\na\n'
     [ "$status" -eq 0 ]
-    [ "$(printf '%s\n' "$output" | grep -c '\[a\]pply  \[c\]hange selection  \[q\]uit')" -ge 2 ]
+    [ "$(printf '%s\n' "$output" | grep -o '\[a\]pply  \[c\]hange selection  \[q\]uit' | wc -l)" -eq 2 ]
     [ "$(sel_text)" = 'profile = "work"' ]
 }
 
@@ -393,9 +393,9 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
 
 @test "AC7e: on a first install the table shows 0/m and annotates what is on PATH, not from Home Manager" {
     printf '#!/bin/sh\nexit 0\n' >"$STUBS/ffmpeg"; chmod +x "$STUBS/ffmpeg"
-    inst_tty 'q\n'
+    inst_tty 'work\n\n\n\nq\n'
+    [[ "$output" == *"No Home Manager generation yet (first install)"* ]]
     local before="${output%%Profile (*}"
-    [[ "$before" == *"No Home Manager generation yet (first install)"* ]]
     [[ "$before" == *"media"*"installed 0/4"* ]]
     [[ "$before" == *"ffmpeg: on PATH, not from Home Manager: $STUBS/ffmpeg"* ]]
     [[ "$before" != *"imagemagick: on PATH"* ]]

@@ -307,7 +307,8 @@ validate_fixture() {
         if [ "$host" = macos ]; then
             grep -q "^N"$'\t'"macInput" "$BATS_TEST_TMPDIR/w/members-$host"
         else
-            ! grep -q macInput "$BATS_TEST_TMPDIR/w/members-$host" "$BATS_TEST_TMPDIR/w/state-$host"
+            run grep -q macInput "$BATS_TEST_TMPDIR/w/members-$host" "$BATS_TEST_TMPDIR/w/state-$host"
+            [ "$status" -eq 1 ]
         fi
         grep -q "^G"$'\t'"media"$'\t' "$BATS_TEST_TMPDIR/w/members-$host"
     done

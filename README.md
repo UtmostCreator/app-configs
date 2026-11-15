@@ -37,6 +37,8 @@ Neovim, VS Code, Git and SSH.
 
 ## Quick start
 
+**Setup: start here** → [`docs/platforms/index.md`](docs/platforms/index.md) (base requirements, then your platform).
+
 Requires Git, Bash and internet access. `sudo` is needed only for the NixOS
 system layer. The installer bootstraps or verifies everything else.
 

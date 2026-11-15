@@ -41,6 +41,7 @@ projects.yaml.example
   is not valid TOML fails the render on darwin; install.sh and the Nix build
   reject such a file first.
 */ -}}
+{{- $profiles := list "work" "personal" -}}
 {{- $hostDefault := "work" -}}
 {{- if eq $hostProfile "linux-desktop" -}}{{- $hostDefault = "personal" -}}{{- end -}}
 {{- $macInput := false -}}
@@ -56,7 +57,7 @@ projects.yaml.example
 {{-   $selFile := printf "%s/selection.toml" $selDir -}}
 {{-   if stat $selFile -}}{{- $local = include $selFile | fromToml -}}{{- end -}}
 {{-   $profile := $hostDefault -}}
-{{-   if has (get $local "profile") (list "work" "personal") -}}{{- $profile = get $local "profile" -}}{{- end -}}
+{{-   if has (get $local "profile") $profiles -}}{{- $profile = get $local "profile" -}}{{- end -}}
 {{-   $profileFile := printf "%s/../nix/profiles/%s.toml" .chezmoi.sourceDir $profile -}}
 {{-   if stat $profileFile -}}
 {{-     $fromProfile := dig "groups" "macInput" "unset" (include $profileFile | fromToml) -}}
@@ -66,6 +67,7 @@ projects.yaml.example
 {{-   if kindIs "bool" $fromLocal -}}{{- $macInput = $fromLocal -}}{{- end -}}
 {{- end }}
 # host default profile: {{ $hostDefault }}
+# known profiles: {{ join " " $profiles }}
 
 {{- /*
   .chezmoiignore patterns match against TARGET (destination) paths

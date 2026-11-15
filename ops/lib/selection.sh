@@ -36,11 +36,21 @@
 # Test override: APP_CONFIGS_SELECTION_DIR (taken as given). Otherwise the
 # directory is built from XDG_CONFIG_HOME or $HOME, so on WSL2 it is under the
 # Linux $HOME. An XDG_CONFIG_HOME on a Windows drive (/mnt/<letter>) is ignored
-# with a note on stderr and $HOME/.config is used instead.
+# and $HOME/.config is used instead; selection_args says so once on stderr.
 
 SELECTION_ARGS=()
 SELECTION_OVERRIDE=()
 SELECTION_DIR=""
+
+# _sel_xdg_on_drive: true when XDG_CONFIG_HOME is a Windows drive mount (WSL2:
+# /mnt/<letter> or below). Such a directory is slow, has no Unix permissions and
+# is shared with Windows tools, so it is not a home for the selection.
+_sel_xdg_on_drive() {
+  case "${XDG_CONFIG_HOME:-}" in
+    /mnt/[a-zA-Z] | /mnt/[a-zA-Z]/*) return 0 ;;
+  esac
+  return 1
+}
 
 selection_dir() {
   local base
@@ -48,17 +58,13 @@ selection_dir() {
     printf '%s\n' "$APP_CONFIGS_SELECTION_DIR"
     return 0
   fi
-  base="${XDG_CONFIG_HOME:-$HOME/.config}"
-  case "$base" in
-    /mnt/[a-zA-Z] | /mnt/[a-zA-Z]/*)
-      # WSL2: a Windows drive mount is not where a Linux selection lives (slow,
-      # no Unix permissions, shared with Windows tools). Use the Linux $HOME.
-      printf 'selection: ignoring XDG_CONFIG_HOME=%s (a Windows drive under /mnt); using %s/.config\n' "$base" "$HOME" >&2
-      base="$HOME/.config"
-      ;;
-  esac
+  if _sel_xdg_on_drive; then base="$HOME/.config"; else base="${XDG_CONFIG_HOME:-$HOME/.config}"; fi
   printf '%s\n' "$base/app-configs/selection"
 }
+
+# The note about an ignored drive is printed by selection_args (never from the
+# $(selection_dir) subshell) and only once per process.
+_SEL_DRIVE_NOTED=0
 
 # selection_url_path PATH: PATH with the characters that break a Nix `path:` URL
 # percent-encoded. `%` first, so the others are not encoded twice.
@@ -90,6 +96,10 @@ selection_override_text() {
 
 selection_args() {
   SELECTION_ARGS=()
+  if [[ -z "${APP_CONFIGS_SELECTION_DIR:-}" && "$_SEL_DRIVE_NOTED" == 0 ]] && _sel_xdg_on_drive; then
+    _SEL_DRIVE_NOTED=1
+    printf 'selection: ignoring XDG_CONFIG_HOME=%s (a Windows drive under /mnt); using %s/.config\n' "$XDG_CONFIG_HOME" "$HOME" >&2
+  fi
   SELECTION_DIR="$(selection_dir)"
   selection_override_args "$SELECTION_DIR"
   if ((${#SELECTION_OVERRIDE[@]})); then SELECTION_ARGS=("${SELECTION_OVERRIDE[@]}"); fi
@@ -243,7 +253,9 @@ selection_hm_profile() {
 #   state    P<TAB>profile / G<TAB>group<TAB>true|false / K<TAB>package outPath /
 #            F<TAB>home.file target<TAB>source / C<TAB>homebrew cask
 #   members  H<TAB>host profile / N<TAB>group / G<TAB>group<TAB>outPath /
-#            A<TAB>outPath of the personal-only packages
+#            A<TAB>outPath of the personal-only packages /
+#            X<TAB>group<TAB>cask a group gates (macOS only: casks with the
+#            group on minus casks with it off)
 # Neither builds anything: outPath is computed, not realised.
 # shellcheck disable=SC2016  # Nix source: ${g} and \t are for Nix, not the shell
 _SEL_STATE_BODY='h: mac: casks: builtins.concatStringsSep "\n" ([ ("P\t" + h.myConfig.profile) ] ++ map (g: "G\t" + g + "\t" + (if h.myConfig.groups.${g} then "true" else "false")) (builtins.filter (g: mac || g != "macInput") (builtins.attrNames h.myConfig.groups)) ++ map (p: "K\t" + toString p) h.home.packages ++ map (f: "F\t" + f.target + "\t" + toString f.source) (builtins.filter (f: f.enable) (builtins.attrValues h.home.file)) ++ map (n: "C\t" + n) casks) + "\n"'
@@ -260,9 +272,9 @@ _SEL_STATE_DARWIN="let body = $_SEL_STATE_BODY; in c: let u = builtins.head (bui
 # extends the host configuration with the groups and the profile forced, so a
 # local selection cannot change the answer.
 # shellcheck disable=SC2016  # Nix source
-_SEL_MEMBERS_BODY='mac: cfgOf: mkMod: base: let force = v: { _type = "override"; priority = 10; content = v; }; names = builtins.filter (g: mac || g != "macInput") (builtins.attrNames (cfgOf base).myConfig.groups); ext = profile: groups: base.extendModules { modules = [ (mkMod { myConfig.profile = force profile; myConfig.groups = builtins.mapAttrs (_: v: force v) groups; }) ]; }; allOn = builtins.listToAttrs (map (g: { name = g; value = true; }) names); pk = e: map toString (cfgOf e).home.packages; on = pk (ext "work" allOn); minus = a: b: builtins.filter (p: !(builtins.elem p b)) a; members = g: minus on (pk (ext "work" (allOn // { ${g} = false; }))); in builtins.concatStringsSep "\n" ([ ("H\t" + (cfgOf base).myConfig.profile) ] ++ map (g: "N\t" + g) names ++ builtins.concatMap (g: map (p: "G\t" + g + "\t" + p) (members g)) names ++ map (p: "A\t" + p) (minus (pk (ext "personal" allOn)) on)) + "\n"'
-_SEL_MEMBERS_HM="let gen = $_SEL_MEMBERS_BODY; in d: gen false (e: e.config) (m: m) d"
-_SEL_MEMBERS_DARWIN="let gen = $_SEL_MEMBERS_BODY; in d: let u = builtins.head (builtins.attrNames d.config.home-manager.users); in gen true (e: e.config.home-manager.users.\${u}) (m: { home-manager.users.\${u} = m; }) d"
+_SEL_MEMBERS_BODY='mac: ck: cfgOf: mkMod: base: let force = v: { _type = "override"; priority = 10; content = v; }; names = builtins.filter (g: mac || g != "macInput") (builtins.attrNames (cfgOf base).myConfig.groups); ext = profile: groups: base.extendModules { modules = [ (mkMod { myConfig.profile = force profile; myConfig.groups = builtins.mapAttrs (_: v: force v) groups; }) ]; }; allOn = builtins.listToAttrs (map (g: { name = g; value = true; }) names); pk = e: map toString (cfgOf e).home.packages; on = pk (ext "work" allOn); minus = a: b: builtins.filter (p: !(builtins.elem p b)) a; members = g: minus on (pk (ext "work" (allOn // { ${g} = false; }))); in builtins.concatStringsSep "\n" ([ ("H\t" + (cfgOf base).myConfig.profile) ] ++ map (g: "N\t" + g) names ++ builtins.concatMap (g: map (p: "G\t" + g + "\t" + p) (members g)) names ++ map (p: "A\t" + p) (minus (pk (ext "personal" allOn)) on) ++ builtins.concatMap (g: map (c: "X\t" + g + "\t" + c) (minus (ck (ext "work" allOn)) (ck (ext "work" (allOn // { ${g} = false; }))))) names) + "\n"'
+_SEL_MEMBERS_HM="let gen = $_SEL_MEMBERS_BODY; in d: gen false (_: [ ]) (e: e.config) (m: m) d"
+_SEL_MEMBERS_DARWIN="let gen = $_SEL_MEMBERS_BODY; in d: let u = builtins.head (builtins.attrNames d.config.home-manager.users); in gen true (e: map (x: x.name) e.config.homebrew.casks) (e: e.config.home-manager.users.\${u}) (m: { home-manager.users.\${u} = m; }) d"
 
 # The cheapest evaluation that forces the whole selection: the profile option's
 # condition reads the thunk with every validation throw, and deepSeq on the
@@ -452,11 +464,28 @@ _sel_join() { local IFS=' '; printf '%s' "$*"; }
 # _sel_pnames FILE: the package names of a "pname<TAB>version" file.
 _sel_pnames() { cut -f1 "$1" | LC_ALL=C sort -u; }
 
+# _sel_cask_members_of GROUP: the casks the group gates (macOS), one per line.
+_sel_cask_members_of() {
+  awk -F '\t' -v g="$1" '$1 == "X" && $2 == g { print $3 }' "$SELECTION_WORK/m.tsv" | LC_ALL=C sort -u
+}
+
+# _sel_brew_casks: loads the installed casks into casks-installed.txt once and
+# sets SEL_BREW to ok, or to unknown when brew is missing or fails.
+SEL_BREW=""
+_sel_brew_casks() {
+  if [[ -n "$SEL_BREW" ]]; then return 0; fi
+  if command -v brew >/dev/null 2>&1 && brew list --cask -1 2>/dev/null | LC_ALL=C sort -u >"$SELECTION_WORK/casks-installed.txt"; then
+    SEL_BREW=ok
+  else
+    SEL_BREW=unknown
+  fi
+}
+
 # selection_present_state: installed n/m per group, against the installed
 # generation. Only a first install (no generation) uses `command -v`, and then
 # only as an annotation, never as a count.
 selection_present_state() {
-  local label g n m inst names found path members=() sets=()
+  local label g n m inst names found path members=() sets=() casks=() cask_note
   ((SEL_HAVE_FACTS)) || return 0
   SEL_PRESENT_SHOWN=1
   _sel_pnames "$SELECTION_WORK/i-pkgs.tsv" >"$SELECTION_WORK/i-names.txt"
@@ -478,10 +507,30 @@ selection_present_state() {
     for n in "${members[@]+"${members[@]}"}"; do
       if _sel_in_file "$n" "$SELECTION_WORK/i-names.txt"; then inst=$((inst + 1)); names+=("$n"); fi
     done
+    # macOS: the casks a group gates count against `brew list --cask`.
+    cask_note=""
+    if [[ "$SELECTION_HOST" == macos ]]; then
+      _sel_split casks "$(_sel_cask_members_of "$g")"
+      if ((${#casks[@]})); then
+        _sel_brew_casks
+        if [[ "$SEL_BREW" == ok ]]; then
+          m=$((m + ${#casks[@]}))
+          for n in "${casks[@]}"; do
+            if _sel_in_file "$n" "$SELECTION_WORK/casks-installed.txt"; then inst=$((inst + 1)); names+=("$n"); fi
+          done
+        else
+          cask_note="casks $(_sel_join "${casks[@]}") (cask state unknown)"
+        fi
+      fi
+    fi
+    if [[ -n "$cask_note" && "$m" -eq 0 ]]; then
+      printf '  %-14s %s\n' "$label" "$cask_note"
+      continue
+    fi
     if ((${#names[@]})); then
-      printf '  %-14s installed %s/%s %s\n' "$label" "$inst" "$m" "$(_sel_join "${names[@]}")"
+      printf '  %-14s installed %s/%s %s%s\n' "$label" "$inst" "$m" "$(_sel_join "${names[@]}")" "${cask_note:+; $cask_note}"
     else
-      printf '  %-14s installed %s/%s\n' "$label" "$inst" "$m"
+      printf '  %-14s installed %s/%s%s\n' "$label" "$inst" "$m" "${cask_note:+; $cask_note}"
     fi
     if [[ "$SEL_I_STATE" == none ]]; then
       for n in "${members[@]+"${members[@]}"}"; do
@@ -609,7 +658,8 @@ _sel_chezmoi_section() {
 _sel_casks_section() {
   local installed="$SELECTION_WORK/casks-installed.txt" c unmanaged=0 have_c have_p casks=()
   printf 'macOS casks\n'
-  if ! command -v brew >/dev/null 2>&1 || ! brew list --cask -1 2>/dev/null | LC_ALL=C sort -u >"$installed"; then
+  _sel_brew_casks
+  if [[ "$SEL_BREW" != ok ]]; then
     printf '    cask state unknown (brew not available)\n'
     return 0
   fi
@@ -645,7 +695,7 @@ _sel_casks_section() {
 # _sel_outcome_section: keep / add / remove / stays off per group, from the
 # installed generation (I) and the proposed state (P).
 _sel_outcome_section() {
-  local g label n keep off parts sets=() adds rems names=()
+  local g label n keep off parts sets=() adds rems names=() casks=() stays cask_note c in_i in_p
   printf 'Outcome by group (installed -> proposed)\n'
   if [[ "$SEL_I_STATE" == unknown ]]; then
     printf '    unknown: the installed generation could not be read, so keep, add and remove cannot be told\n'
@@ -671,11 +721,35 @@ _sel_outcome_section() {
       elif ((in_i)); then rems+=("$n")
       else off=$((off + 1)); fi
     done
+    # macOS: the casks the group gates. A cask that leaves the list stays installed.
+    stays=(); cask_note=""
+    if [[ "$SELECTION_HOST" == macos ]]; then
+      _sel_split casks "$(_sel_cask_members_of "$g")"
+      if ((${#casks[@]})); then
+        _sel_brew_casks
+        if [[ "$SEL_BREW" == ok ]]; then
+          awk -F '\t' '$1 == "C" { print $2 }' "$SELECTION_WORK/p.tsv" | LC_ALL=C sort -u >"$SELECTION_WORK/casks-p.txt"
+          for c in "${casks[@]}"; do
+            in_i=0; in_p=0
+            if _sel_in_file "$c" "$SELECTION_WORK/casks-installed.txt"; then in_i=1; fi
+            if _sel_in_file "$c" "$SELECTION_WORK/casks-p.txt"; then in_p=1; fi
+            if ((in_i && in_p)); then keep=$((keep + 1))
+            elif ((in_p)); then adds+=("$c")
+            elif ((in_i)); then stays+=("$c")
+            else off=$((off + 1)); fi
+          done
+        else
+          cask_note="casks $(_sel_join "${casks[@]}") (cask state unknown)"
+        fi
+      fi
+    fi
     parts=""
     if ((keep)); then parts+="keep $keep"; fi
     if ((${#adds[@]})); then parts+="${parts:+; }add ${#adds[@]}: $(_sel_join "${adds[@]}")"; fi
     if ((${#rems[@]})); then parts+="${parts:+; }remove ${#rems[@]}: $(_sel_join "${rems[@]}")"; fi
+    if ((${#stays[@]})); then parts+="${parts:+; }stays installed ${#stays[@]}: $(_sel_join "${stays[@]}")"; fi
     if ((off)); then parts+="${parts:+; }stays off $off"; fi
+    if [[ -n "$cask_note" ]]; then parts+="${parts:+; }$cask_note"; fi
     printf '  %-14s %s\n' "$label" "${parts:-no members}"
   done
 }
@@ -794,6 +868,11 @@ _sel_group_label() { # group -> "group (names)" with a few members
   local names=() n out
   if ((SEL_HAVE_FACTS)); then
     _sel_split names "$(_sel_members_of "$1")"
+    if [[ "$SELECTION_HOST" == macos ]]; then
+      local casks=() c
+      _sel_split casks "$(_sel_cask_members_of "$1")"
+      for c in "${casks[@]+"${casks[@]}"}"; do names+=("$c"); done
+    fi
   fi
   if ((${#names[@]} == 0)); then printf '%s' "$1"; return 0; fi
   if ((${#names[@]} > 6)); then

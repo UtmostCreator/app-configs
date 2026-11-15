@@ -86,5 +86,15 @@ in
     }
   ) groupDescriptions;
 
+  # Force every group value, so a wrong-typed group in the selection fails the
+  # evaluation of every host, not only the hosts whose modules read that group
+  # (macInput is read only on macOS). The type error names the option.
+  config.assertions = [
+    {
+      assertion = builtins.deepSeq config.myConfig.groups true;
+      message = "myConfig.groups must hold booleans only";
+    }
+  ];
+
   config.myConfig.profile = lib.mkIf (selection ? profile) (lib.mkForce selection.profile);
 }

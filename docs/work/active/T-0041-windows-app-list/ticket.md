@@ -4,6 +4,7 @@ Source: local
 
 Status: open (approved by user 2026-11-14: documentation only)
 (`docs/plans/migration/implementation.md` Appendix A excludes Windows package managers).
+Update 2026-11-15: TrafficMonitor Lite added (user decision); System Informer kept discarded; launcher question added.
 Depends on: user approval. No WSL2 ticket depends on this one.
 Sequencing: edits implementation.md; do not run in parallel with T-0039.
 
@@ -44,6 +45,21 @@ wsl.exe or PowerShell.
 | Flameshot | gui.nix; chezmoi flameshot.ini (macOS) | Flameshot.Flameshot |
 | Telegram | gui.nix telegram-desktop | Telegram.TelegramDesktop |
 | Double Commander | gui.nix doublecmd | alexx2000.DoubleCommander |
+| TrafficMonitor Lite | user decision 2026-11-15 (taskbar CPU/RAM/network meter; not declared on macOS or Linux) | zhongyang219.TrafficMonitor.Lite (verified 2026-11-15 against winget-pkgs: version 1.86, 2026-03-29) |
+
+TrafficMonitor Lite notes (user decision 2026-11-15):
+- The id was verified on 2026-11-15 against winget-pkgs; still confirm locally with
+  `winget show --id zhongyang219.TrafficMonitor.Lite --exact` before installing.
+- Portable zip, so it installs per user and needs no admin rights; it depends on
+  the VC++ redistributable. Lite has no hardware-monitor driver (the Full edition
+  uses LibreHardwareMonitor and needs admin; not chosen).
+- Purpose: a taskbar CPU/RAM/network up-down meter. The taskbar window is opt-in
+  ("Show taskbar window" from the tray icon). By default only network speed
+  shows; enable CPU and RAM in its display settings.
+- Known risk, unverified: Windows 11 users report the taskbar window not showing
+  (community reports, March to April 2026; unconfirmed). Version 1.85.1 added a
+  taskbar-overlap option.
+- Licence: "Anti 996", which is not OSI-approved.
 
 How to use: in PowerShell on Windows (never from WSL), one
 `winget install --id <id> --exact` at a time. Take the `winget list` before/after
@@ -56,7 +72,7 @@ Discarded:
 - AutoHotkey, Kanata: hotkey and remap scripts to maintain; karabiner and keyd configs do not port.
 - Raycast (Windows), Vicinae (Windows), PowerToys Run: duplicate launchers; Windows search is enough.
 - HeidiSQL: Windows-only.
-- System Informer: Windows-only and loads a kernel driver.
+- System Informer: Windows-only and loads a kernel driver. Kept discarded on 2026-11-15 (user confirmed it is not for the default install): a powerful diagnostics tool, but unnecessary as a permanent toolbar monitor (winget `WinsiderSS.SystemInformer`, machine scope, needs admin, loads the KSystemInformer kernel driver).
 - Twinkle Tray: Windows-only and monitor-specific.
 - WezTerm: a second terminal; Windows Terminal is built in, and Ghostty has no Windows build.
 - A `windows/` layer (`setup.ps1`, `doctor.ps1`, DSC): repo-run PowerShell and an open-ended maintenance burden.
@@ -72,6 +88,18 @@ Deferred:
 - Docker Desktop vs Docker Engine: a licence and integration choice; setup.md "pick one" stands.
 - A winget configure (DSC) file: only if the plain list proves insufficient.
 - Windows Terminal fragment, `.wslconfig` example, clipboard paste helper.
+
+## Open questions
+- Adopt PowerToys (for Command Palette) as the Windows launcher, with Flow Launcher
+  as the alternative? Context (user recommendation 2026-11-15): one launcher per
+  OS, not several running permanently; Raycast is the macOS launcher (already a
+  cask) and Vicinae the Linux one. Per Microsoft Learn, Command Palette offers a
+  dock, performance monitoring, clipboard history, window switching and file
+  search. Flow Launcher is actively maintained (September 2026 releases).
+  PowerToys stays under "Deferred" until the user answers; nothing moves silently.
+- Candidate ids, UNVERIFIED: Microsoft.PowerToys and Flow-Launcher.Flow-Launcher.
+  Check each with `winget show --id <id> --exact`. PowerToys installs per machine
+  and may need admin (unverified).
 
 ## Acceptance criteria
 - AC1: the user's approval is recorded in this ticket before any edit.

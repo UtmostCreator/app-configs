@@ -201,7 +201,7 @@ real_task() {
     [[ "${lines[1]}" == $'\033[0;90mmystery \033[0m'* ]]
 }
 
-@test "colour: narrow fit is decided on visible width: 27 columns keeps the effort initial, 26 drops it (exact fit incl. "ctx")" {
+@test "colour: narrow fit is decided on visible width: 27 columns keeps the effort initial, 26 drops it (exact fit incl. ctx)" {
     input=$(jq -n --argjson a "$(real_task reviewer x)" '{columns: 27, tasks: [$a]}')
     run rows "$input"
     [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5:h ▶ ctx 0%" ]

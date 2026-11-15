@@ -146,17 +146,19 @@ eval "$(jq -r --argjson now "$NOW" '
           elif $s >= 3600 then "\($s / 3600 | floor)h\(($s % 3600) / 60 | floor | pad2)m"
           else "\([($s / 60 | floor), 0] | max)m" end;
     def quota($w):
-        .rate_limits[$w]
-        | if .used_percentage == null then ["", ""]
+        ((.rate_limits | objects | .[$w] | objects) // {})
+        | if (.used_percentage | type) != "number" then ["", ""]
           else [(.used_percentage | round | tostring),
-                (if .resets_at == null then "" else .resets_at | reset_in end)] end;
+                (if (.resets_at | type) == "number" then .resets_at | reset_in else "" end)] end;
     # A number as a rounded integer string, otherwise "" (field absent or odd).
     def whole(f): f | if type == "number" then round | tostring else "" end;
 
-    (.context_window // {}) as $cw
+    ((.context_window | objects) // {}) as $cw
+    | ((.cost | objects) // {}) as $cost
     | (($cw.total_input_tokens | type) == "number") as $has_used
-    | (if ($cw.context_window_size | type) == "number" and $cw.context_window_size > 0
-       then $cw.context_window_size else 200000 end) as $size
+    # No window size in the payload means no size: never assume 200k.
+    | (($cw.context_window_size | type) == "number" and $cw.context_window_size > 0) as $has_size
+    | (if $has_size then $cw.context_window_size else 0 end) as $size
     | (if $has_used then $cw.total_input_tokens else 0 end) as $used
     | quota("five_hour") as $q5
     | quota("seven_day") as $q7
@@ -167,18 +169,18 @@ eval "$(jq -r --argjson now "$NOW" '
       @sh "agent_name=\(.agent | if type == "string" then . elif type == "object" then (.name? // "") else "" end | tostring | gsub("[[:cntrl:]]"; "") | if length > 20 then .[0:19] + "…" else . end)",
       @sh "effort=\(.effort.level // "")",
       @sh "ctx_pct=\(if ($cw.used_percentage | type) == "number" then $cw.used_percentage | round
-                      elif $has_used then $used * 100 / $size | round else "" end)",
+                      elif $has_used and $has_size then $used * 100 / $size | round else "" end)",
       @sh "ctx_used=\(if $has_used then $used | tokens else "" end)",
-      @sh "ctx_size=\(if $has_used then $size | tokens else "" end)",
-      @sh "ctx_left=\(if ($cw.remaining_percentage | type) == "number"
+      @sh "ctx_size=\(if $has_size then $size | tokens else "" end)",
+      @sh "ctx_left=\(if ($cw.remaining_percentage | type) == "number" and $has_size
                       then ($size * $cw.remaining_percentage / 100 | round | tokens) else "" end)",
-      @sh "cost_cents=\(whole(.cost.total_cost_usd | if type == "number" then . * 100 else . end))",
-      @sh "duration_s=\(whole(.cost.total_duration_ms | if type == "number" then . / 1000 | floor else . end))",
+      @sh "cost_cents=\(whole($cost.total_cost_usd | if type == "number" then . * 100 else . end))",
+      @sh "duration_s=\(whole($cost.total_duration_ms | if type == "number" then . / 1000 | floor else . end))",
       @sh "cache_observed=\(.prompt_cache.caching_observed == true)",
       @sh "cache_warm=\(.prompt_cache.warm == true)",
       @sh "cache_hit=\(whole(.prompt_cache.hit_ratio | if type == "number" then . * 100 else . end))",
-      @sh "added=\(.cost.total_lines_added // 0)",
-      @sh "removed=\(.cost.total_lines_removed // 0)",
+      @sh "added=\(whole($cost.total_lines_added) | if . == "" then "0" else . end)",
+      @sh "removed=\(whole($cost.total_lines_removed) | if . == "" then "0" else . end)",
       @sh "q5_pct=\($q5[0])", @sh "q5_reset=\($q5[1])",
       @sh "q7_pct=\($q7[0])", @sh "q7_reset=\($q7[1])",
       @sh "worktree=\(.worktree.name // .workspace.git_worktree // "")",
@@ -425,7 +427,7 @@ render() {
     else
         ctx_long=$ctx_bar
         (( drop_bars )) && ctx_long=$ctx_short
-        if [[ -n "$ctx_used" ]] && (( ! drop_tokens )); then
+        if [[ -n "$ctx_used" && -n "$ctx_size" ]] && (( ! drop_tokens )); then
             ctx_long+=" · ${ctx_used}/${ctx_size}"
         fi
         if [[ -n "$ctx_left" ]] && (( ! drop_left )); then

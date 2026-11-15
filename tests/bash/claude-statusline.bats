@@ -694,3 +694,24 @@ cache_file() {
         done
     done
 }
+
+@test "unknown window size is never assumed to be 200k (no 275% or /200k)" {
+    run statusline '{"context_window": {"total_input_tokens": 550000, "context_window_size": null, "used_percentage": null, "remaining_percentage": 40}}'
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Ctx —"* ]]
+    [[ "$output" != *275* && "$output" != *"/200k"* && "$output" != *left* ]]
+    run statusline '{"context_window": {"total_input_tokens": 550000, "context_window_size": 0, "used_percentage": 55}}'
+    [[ "$output" == *"Ctx ██████░░░░ 55%" ]]
+}
+
+@test "odd payload types do not blank the line" {
+    run statusline '{"rate_limits": {"five_hour": {"used_percentage": "high", "resets_at": "soon"}, "seven_day": {"used_percentage": 30, "resets_at": "x"}}}'
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"7d ███░░░░░░░ 30%" && "$output" != *5h* ]]
+    run statusline '{"rate_limits": "none", "context_window": "big", "cost": {"total_lines_added": "many", "total_lines_removed": 1.5}}'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main | Opus 5 | Ctx —" ]]
+    run statusline '{"cost": "free"}'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main | "* ]]
+}

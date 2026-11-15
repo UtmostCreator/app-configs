@@ -99,7 +99,7 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" \
     | ([$rows[].model | length] | max // 0) as $model_w
     | ([$rows[].effort | length] | max // 0) as $effort_w
     | ([$rows[] | (.model | sub("^Sonnet"; "Son")) + (if .model != "" and (.effort | eff_i) != "" then ":x" else "" end) | length] | max // 0) as $full_w
-    # Widest state ("▶ 84% ⚠"), so keeping or dropping the effort initial is one decision for all rows.
+    # Widest state ("▶ ctx 84% !"), so keeping or dropping the effort initial is one decision for all rows.
     | ([$rows[] | 2 + (if .pct == null then (.tokens | length) + 4
                        else 4 + (.pct | tostring | length) + 1 + (if .pct >= 80 then 2 else 0 end) end)] | max // 0) as $state_w
     | ([$rows[].model | sub("^Sonnet"; "Son") | length] | max // 0) as $tag_w

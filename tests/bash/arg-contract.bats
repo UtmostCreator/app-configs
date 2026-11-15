@@ -177,18 +177,40 @@ violations() {
     [ -z "$output" ] || { echo "$output"; return 1; }
 }
 
-@test "waivers are still needed: a waived check that now passes must lose its waiver" {
-    sandbox_init "$BATS_TEST_TMPDIR/sb"
-    local copy="$BATS_TEST_TMPDIR/repo"; repo_copy "$copy"
-    local s stale=""
+# stale_probe KIND SCRIPT COPY DIR N: one waived check, in its own sandbox and
+# its own copy of the repository (probes run concurrently, so nothing is shared
+# between them). Writes DIR/N.stale (the label) when the check now passes.
+stale_probe() {
+    local kind="$1" script="$2" copy="$3" dir="$4" n="$5"
+    sandbox_init "$dir/sb.$n"
+    cp -a "$copy" "$dir/repo.$n"
     export PROBE_TIMEOUT=3
+    if "check_$kind" "$dir/repo.$n" "$script" >/dev/null; then
+        printf '%s:%s\n' "$kind" "$script" >"$dir/$n.stale"
+    fi
+    rm -rf "$dir/repo.$n"
+}
+
+@test "waivers are still needed: a waived check that now passes must lose its waiver" {
+    local copy="$BATS_TEST_TMPDIR/repo"; repo_copy "$copy"
+    local s stale="" n=0 f dir="$BATS_TEST_TMPDIR/stale"
+    mkdir -p "$dir"
+    # Each waived script is probed in the background, at most 8 at a time. The
+    # per-script judgement and the 3 s timeout are the same as when serial.
     for s in "${!WAIVE_HELP[@]}"; do
-        check_help "$copy" "$s" >/dev/null || continue
-        stale+=" help:$s"
+        n=$((n + 1))
+        while [ "$(jobs -rp | wc -l)" -ge 8 ]; do wait -n || true; done
+        stale_probe help "$s" "$copy" "$dir" "$n" &
     done
     for s in "${!WAIVE_FLAG[@]}"; do
-        check_flag "$copy" "$s" >/dev/null || continue
-        stale+=" flag:$s"
+        n=$((n + 1))
+        while [ "$(jobs -rp | wc -l)" -ge 8 ]; do wait -n || true; done
+        stale_probe flag "$s" "$copy" "$dir" "$n" &
+    done
+    wait
+    for f in "$dir"/*.stale; do
+        [ -e "$f" ] || continue
+        stale+=" $(cat "$f")"
     done
     [ -z "$stale" ] || { echo "fixed, remove from the allowlist:$stale"; return 1; }
 }

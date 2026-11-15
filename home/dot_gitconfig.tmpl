@@ -46,7 +46,9 @@
 	ahead = log --oneline --decorate --graph @{u}..HEAD
 	behind= log --oneline --decorate --graph HEAD..@{u}
 	# --- Safer sync (party coordination) ---
-	fp    = fetch --prune --prune-tags
+	fp    = fetch --prune
+	# Also drops local tags that are absent on the remote: deletes local-only tags.
+	fptags = fetch --prune --prune-tags
 	# git up [args]: pull --rebase, but only on a clean tree (untracked files
 	# count). No autostash: refs/stash is shared by every worktree, so a failed
 	# re-apply would leave an entry there for the wrong session to pop.
@@ -195,17 +197,20 @@
 	rld  = reflog --date=local
 	# git undohard -> jump HEAD back to a reflog entry: git undohard 'HEAD@{3}'
 	undohard = "!f(){ git status --short; printf 'Discard ALL uncommitted changes above (reset --hard %s)? [y/N] ' \"${1:-HEAD}\"; read -r a; [ \"$a\" = y ] || { echo aborted; return 1; }; git reset --hard \"$@\"; }; f"
-	# git lostcommits -> dangling commits left after reset/rebase (recover work)
-	lostcommits = "!git fsck --no-reflogs --lost-found 2>/dev/null | awk '/commit/{print $3}' | xargs -r -n1 git --no-pager log -1 --oneline"
+	# git lostcommits -> unreachable commits left after reset/rebase (recover work).
+	# Read-only: no --lost-found, which would write .git/lost-found.
+	lostcommits = "!git fsck --no-reflogs --unreachable --no-progress 2>/dev/null | awk '/commit/ {print $3}' | xargs -r git --no-pager log --no-walk --oneline"
 
 	# --- Compare two versions of history (range-diff) ---
 	# git rdiff <base>..<old> <base>..<new> -> diff two patch series (post-rebase)
 	rdiff = range-diff
 
 	# --- Cleanup (working tree) ---
-	# Preview what clean would delete (untracked + ignored), then act
-	cleann = clean -dxn
-	cleanf = "!f(){ git clean -dxn; printf 'Delete ALL of the above, including ignored files (.env, vendor, node_modules)? [y/N] '; read -r a; [ \"$a\" = y ] || { echo aborted; return 1; }; git clean -dxf; }; f"
+	# Preview what clean would delete (untracked, NOT ignored), then act. Ignored
+	# files (.env, vendor, node_modules, local state) are never touched; there is
+	# deliberately no -x variant.
+	cleann = clean -dn
+	cleanf = "!f(){ git clean -dn; printf 'Delete ALL of the above untracked files (ignored files are kept)? [y/N] '; read -r a; [ \"$a\" = y ] || { echo aborted; return 1; }; git clean -df; }; f"
 
 	# --- Bug-history reports (where bugs cluster) ---
 	# git deleted <pathspec> -> find the commit that DELETED a path
@@ -257,7 +262,8 @@
 	secretstaged = "!f(){ command -v gitleaks >/dev/null 2>&1 || { echo 'missing: gitleaks'; return 1; }; gitleaks protect --staged --verbose \"$@\"; }; f"
 
 	# --- fzf: interactive pickers over git objects ---
-	# git fco -> fuzzy-pick a branch and check it out
+	# git fco -> fuzzy-pick a branch and check it out (overlaps the gsw / gswr
+	# pickers, kept as is; prefer gsw (local) or gswr (remote))
 	fco = "!f(){ command -v fzf >/dev/null 2>&1 || { echo 'missing: fzf'; return 1; }; b=$(git branch --all --color=never | sed 's/^[* ] //;s#^remotes/[^/]*/##' | grep -v '^HEAD' | sort -u | fzf) && git switch \"$(echo \"$b\" | sed 's/^ *//')\"; }; f"
 	# git fco-log -> fuzzy-browse commits, preview each with delta/diff
 	flog = "!f(){ command -v fzf >/dev/null 2>&1 || { echo 'missing: fzf'; return 1; }; git log --oneline --color=always \"$@\" | fzf --ansi --no-sort --preview 'git show --color=always {1}'; }; f"
@@ -277,8 +283,9 @@
 	# Files changed vs HEAD: modified, staged, untracked; NUL-separated,
 	# repo-root relative. Feeds `rgc` (~/.local/bin).
 	changed = "!{ git diff --name-only -z --diff-filter=ACMR; git diff --cached --name-only -z --diff-filter=ACMR; git ls-files --others --exclude-standard -z; } | sort -zu"
-	# Preview a commit including new files: intent-to-add, then stat
-	dnew = "!git add -N . && git diff --stat"
+	# Preview a commit including new files, read-only (the index is untouched):
+	# tracked diff stat, then the untracked files
+	dnew = "!f(){ git diff --stat; echo 'untracked:'; git ls-files --others --exclude-standard | sed 's/^/  /'; }; f"
 	# Default-branch workflows (origin/HEAD, else main):
 	# git sync [branch] -> update the default branch without leaving yours
 	sync = "!f(){ b=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##');  b=${1:-$b}; b=${b:-main}; if [ \"$(git branch --show-current)\" = \"$b\" ]; then git pull; else git fetch origin \"$b:$b\"; fi; }; f"
@@ -286,6 +293,7 @@
 	rbd = "!f(){ b=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##'); b=${b:-main}; git fetch origin \"$b\" && git rebase \"origin/$b\"; }; f"
 	# git nb <name> -> new branch from the fresh default branch
 	nb = "!f(){ [ -n \"${1:-}\" ] || { echo 'usage: git nb <branch>'; return 1; }; b=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##'); b=${b:-main}; git fetch origin \"$b\" && git switch --no-track -c \"$1\" \"origin/$b\"; }; f"
+	# ppr and acp: human-only convenience; agents never use these (AGENTS.md).
 	# git ppr [gh pr create args] -> push (hooks run), then open a PR filled from commits
 	ppr = "!f(){ command -v gh >/dev/null 2>&1 || { echo 'missing: gh'; return 1; }; git push && gh pr create --fill \"$@\"; }; f"
 	# git acp "msg" -> add tracked changes, commit (hooks run), push. Never `add .`:

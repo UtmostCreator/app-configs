@@ -156,6 +156,7 @@ ssh-add -l
 | Symptom                                                          | Cause                                          | Fix                                                                                            |
 | ---------------------------------------------------------------- | ---------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | Passphrase prompt again after some hours on Linux                | Key lifetime expired (default 8 h)             | Expected; raise `APP_CONFIGS_SSH_KEY_LIFETIME` (hours, `0` = until the agent dies)             |
+| ssh asks for the passphrase on every use in a shell or tmux pane opened before expiry | The key expired; that shell has no key | Open a new shell, or run `keychain <key>` to load it once again |
 | Passphrase prompt every new shell on Linux                       | `keychain` not installed; fallback agent died  | `which keychain`; install it, then open a new shell                                            |
 | `ssh-add -l` says "Could not open a connection to your authentication agent" | Agent socket stale (after WSL/PC reboot)       | Open a new shell — the snippet will start a fresh agent and re-prompt once                     |
 | macOS prompts every reboot                                       | `UseKeychain yes` missing from `~/.ssh/config`  | Re-run the installer; check the `Host *` block exists                                          |

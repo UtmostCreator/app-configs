@@ -172,8 +172,10 @@ multi_key_setup() {
 @test "zsh: every key in a multi-key APP_CONFIGS_SSH_KEYS is loaded" {
     command -v zsh >/dev/null || skip "zsh not installed (run with zsh on PATH to exercise this)"
     multi_key_setup
-    APP_CONFIGS_SSH_KEYS="k1 k2" SSH_ADD_L_STATUS=1 PATH="$(isolate_path)" \
-        "$(command -v zsh)" -f -i -c '. "$1"' _ "$SCRIPT" 2>/dev/null
+    # PATH is set inside the script: /etc/zshenv (run even with -f) can reset it
+    # and would otherwise reach the real keychain / ssh-add / ssh-agent.
+    APP_CONFIGS_SSH_KEYS="k1 k2" SSH_ADD_L_STATUS=1 STUBPATH="$(isolate_path)" HOME="$HOME" \
+        "$(command -v zsh)" -f -i -c 'PATH=$STUBPATH; export HOME; . "$1"' _ "$SCRIPT" 2>/dev/null
     grep -qF "$HOME/.ssh/k1" "$HOME/added.log"
     grep -qF "$HOME/.ssh/k2" "$HOME/added.log"
 }
@@ -202,8 +204,8 @@ KEYCHAIN_WANT=$'arg=--eval\narg=--quiet\narg=--timeout\narg=480\narg=k1\narg=k2'
 @test "zsh: keychain receives one argv entry per key" {
     command -v zsh >/dev/null || skip "zsh not installed (run with zsh on PATH to exercise this)"
     keychain_argv_setup
-    APP_CONFIGS_SSH_KEYS="k1 k2" PATH="$(isolate_path)" \
-        "$(command -v zsh)" -f -i -c '. "$1"' _ "$SCRIPT" 2>/dev/null
+    APP_CONFIGS_SSH_KEYS="k1 k2" STUBPATH="$(isolate_path)" HOME="$HOME" \
+        "$(command -v zsh)" -f -i -c 'PATH=$STUBPATH; export HOME; . "$1"' _ "$SCRIPT" 2>/dev/null
     [ "$(cat "$HOME/kc.log")" = "$KEYCHAIN_WANT" ]
 }
 
@@ -304,6 +306,23 @@ no_lifetime_noise() {
         [ "$output" = "--eval --quiet --timeout 480 present" ]
         no_lifetime_noise
     done
+}
+
+@test "bash: leading zero (08) is decimal, silently; 7 digits is over the cap" {
+    lifetime_keychain_stub
+    run bash_keychain_args APP_CONFIGS_SSH_KEY_LIFETIME=08
+    [ "$output" = "--eval --quiet --timeout 480 present" ]
+    no_lifetime_noise
+    run bash_keychain_args APP_CONFIGS_SSH_KEY_LIFETIME=1234567
+    [ "$output" = "--eval --quiet --timeout 480 present" ]
+    no_lifetime_noise
+}
+
+@test "fish: leading zero (08) gives --timeout 480" {
+    command -v fish >/dev/null || skip "fish not installed"
+    lifetime_keychain_stub
+    run fish_keychain_args 'set -g APP_CONFIGS_SSH_KEY_LIFETIME 08'
+    [ "$output" = "--eval --quiet --timeout 480 present" ]
 }
 
 @test "fish: default lifetime gives keychain --timeout 480 before the keys" {

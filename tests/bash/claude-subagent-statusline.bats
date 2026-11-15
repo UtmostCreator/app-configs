@@ -166,3 +166,43 @@ FOUR_AGENTS() {
     [ "$status" -eq 0 ]
     [ -z "$output" ]
 }
+
+# Shape captured from Claude Code 2.1.325 (sanitised): no `name`; the agent type
+# is `agentType`, the task text is `label`; the session's own agent is the
+# top-level `agent_type`. Inherited-model agents still carry `model`.
+real_task() {
+    jq -n --arg type "$1" --arg label "$2" --argjson start "$(( (NOW - 1) * 1000 ))" '{
+        id: "aad0147d1d0ef9f0e", type: "local_agent", status: "running",
+        agentType: $type, label: $label, description: "desc",
+        model: "claude-sonnet-5-5", effort: "high", contextWindowSize: 1000000,
+        tokenCount: 1200, startTime: $start, tokenSamples: [], cwd: "/tmp"}'
+}
+
+@test "real payload: agent type is the name, the model shows, the task label trails" {
+    input=$(jq -n --argjson a "$(real_task reviewer 'Check delegation nesting')" \
+        '{columns: 167, agent_type: "orchestrator", tasks: [$a]}')
+    run rows "$input"
+    [ "$status" -eq 0 ]
+    [ "$output" = "aad0147d1d0ef9f0e=reviewer Sonnet 5.5 · high · ▶ 0% · 1s · Check delegation nesting" ]
+}
+
+@test "real payload: narrow panel drops the task label but keeps type and model" {
+    input=$(jq -n --argjson a "$(real_task reviewer 'Check delegation nesting')" \
+        '{columns: 50, tasks: [$a]}')
+    run rows "$input"
+    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5:h ▶ 0%" ]
+}
+
+@test "colour: a known agent type and its model family are coloured, unknown types are grey" {
+    input=$(jq -n --argjson a "$(real_task reviewer x)" --argjson b "$(real_task mystery x)" \
+        '{columns: 167, tasks: [$a, $b]}')
+    run bash -c "bash '$SCRIPT' <<<'$input' | jq -r .content"
+    [ "${lines[0]}" = "$(printf '\033[0;33mreviewer\033[0m \033[0;36mSonnet 5.5\033[0m · high · \033[0;34m▶\033[0m \033[0;32m0%%\033[0m · 1s · x')" ]
+    [[ "${lines[1]}" == $'\033[0;90mmystery \033[0m'* ]]
+}
+
+@test "colour: narrow layout width ignores escape codes" {
+    input=$(jq -n --argjson a "$(real_task reviewer x)" '{columns: 20, tasks: [$a]}')
+    run rows "$input"
+    [ "$output" = "aad0147d1d0ef9f0e=reviewer Son 5.5 ▶ 0%" ]
+}

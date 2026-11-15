@@ -530,3 +530,29 @@ cache_file() {
     [ -n "$(find "$WORK/victim" -maxdepth 0 -perm 755)" ]
     [ -z "$(find "$WORK/victim" -type f)" ]
 }
+
+# --- Session agent (`claude --agent`) -------------------------------------------
+# Payload field per the statusline docs: agent.name (only when an agent is active).
+
+@test "agent: a --agent session shows a coloured tag at the start of line 1" {
+    run statusline '{"agent": {"name": "orchestrator"}}'
+    [ "$status" -eq 0 ]
+    [[ "${lines[0]}" == "◆ orchestrator | advanced-gym ⎇ main | Opus 5 | "* ]]
+    raw=$(payload '{"agent": {"name": "orchestrator"}}' | bash "$SCRIPT" | head -1)
+    [[ "$raw" == $'\033[0;34m◆ orchestrator\033[0m | '* ]]
+}
+
+@test "agent: unknown type is grey, and the tag follows RC and survives narrow widths" {
+    export COLUMNS=80
+    session_file 222 sess-1 session_01Abc
+    run statusline '{"session_id": "sess-1", "agent": {"name": "mystery"}}'
+    [ "$output" = "RC | ◆ mystery | advanced-gym ⎇ main | Opus 5 | Ctx 55%" ]
+    raw=$(payload '{"agent": {"name": "mystery"}}' | bash "$SCRIPT" | head -1)
+    [[ "$raw" == $'\033[0;90m◆ mystery\033[0m | '* ]]
+}
+
+@test "agent: no tag when the payload has no agent" {
+    run statusline '{}'
+    [[ "${lines[0]}" == "advanced-gym ⎇ main | "* ]]
+    [[ "$output" != *"◆"* ]]
+}

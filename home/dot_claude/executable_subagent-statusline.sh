@@ -34,6 +34,16 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
         | [(.[0][0:1] | ascii_upcase) + .[0][1:]] + (if length > 1 then [.[1:] | join(".")] else [] end)
         | join(" ");
     # Narrow-row effort initial; unknown levels get none.
+    # Stable colour per agent type (name column) and per model family. Basic SGR
+    # codes only, so they follow the terminal palette; unknown types are grey.
+    def type_color:
+        ({researcher: "0;36", architect: "0;35", implementer: "0;32",
+          "super-implementer": "0;32", reviewer: "0;33", orchestrator: "0;34",
+          "plan-writer": "1", "release-auditor": "0;31"})[ascii_downcase] // "0;90";
+    def tint($code): if length > 0 then color($code) else . end;
+    def family_color:
+        if startswith("Opus") then "0;35" elif startswith("Son") then "0;36"
+        elif startswith("Haiku") then "0;32" else "0" end;
     def eff_i: ({low: "l", medium: "m", high: "h", xhigh: "x", max: "M"})[.] // "";
     def elapsed:
         ($now - (. / 1000 | floor)) as $s
@@ -49,7 +59,10 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
     | [(.tasks // [])[] | {
         id,
         status,
-        name: ((.name // .label // .description // "agent") | truncate(15)),
+        name: ((.name // .agentType // .label // .description // "agent") | truncate(15)),
+        kind: (.agentType // .name // ""),
+        # Task text trails the row, only when the name column is not already it.
+        task: (if (.name // .agentType) != null then (.label // "") else "" end),
         model: (if .model then .model | model_name else "" end),
         effort: (if .effort == null then "inherit"
                  elif (.effort | type) == "number" then .effort | tokens
@@ -78,7 +91,10 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
     | (($glyph | color($glyph_color)) + " " + $ctx) as $state
     | (if (.status == "running" or .status == "pending") and .since != null
        then .since | elapsed else "" end) as $age
-    | (.name | rpad($name_w)) as $name
+    | (.kind | type_color) as $kind_c
+    | (.model | sub("^Sonnet"; "Son") | family_color) as $model_c
+    | (.name | rpad($name_w) | color($kind_c)) as $name
+    | (.task | truncate(40)) as $task
     | {id, content:
         (if $cols < 60 then
             ((.model | sub("^Sonnet"; "Son")) as $tag
@@ -86,8 +102,8 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" '
                 then $tag + ":" + (.effort | eff_i) else $tag end) as $full
              | (if $name_w + 1 + $full_w + 1 + $state_w <= $cols
                 then $full | rpad($full_w) else $tag | rpad($tag_w) end) as $mark
-             | ([$name, $mark, $state] | map(select(length > 0)) | join(" ")))
-         else $name + " " + ([(.model | rpad($model_w)), (.effort | rpad($effort_w)), $state, $age]
+             | ([$name, ($mark | tint($model_c)), $state] | map(select(length > 0)) | join(" ")))
+         else $name + " " + ([(.model | rpad($model_w) | tint($model_c)), (.effort | rpad($effort_w)), $state, $age, $task]
                             | map(select(length > 0)) | join(" · "))
          end)}
 '

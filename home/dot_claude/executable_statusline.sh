@@ -58,6 +58,21 @@ pressure_color() {
     fi
 }
 
+# agent_color <type>: stable colour per agent type (same table as
+# subagent-statusline.sh); unknown types are grey.
+agent_color() {
+    case "${1,,}" in
+        researcher)                  printf %s $'\033[0;36m' ;;
+        architect)                   printf %s "$MAGENTA" ;;
+        implementer|super-implementer) printf %s "$GREEN" ;;
+        reviewer)                    printf %s "$YELLOW" ;;
+        orchestrator)                printf %s "$BLUE" ;;
+        plan-writer)                 printf %s $'\033[1m' ;;
+        release-auditor)             printf %s "$RED" ;;
+        *)                           printf %s $'\033[0;90m' ;;
+    esac
+}
+
 # width <text>: display columns, ignoring colour codes. Byte length minus UTF-8
 # continuation bytes, so it does not depend on the caller's locale.
 width() {
@@ -118,6 +133,7 @@ eval "$(jq -r --argjson now "$NOW" '
       @sh "session_id=\(.session_id // "")",
       @sh "current_dir=\(.workspace.current_dir // .cwd // "")",
       @sh "model_name=\(.model.display_name // "unknown" | sub(" \\([^)]*context\\)$"; ""))",
+      @sh "agent_name=\(.agent.name // "" | if type == "string" then gsub("[[:cntrl:]]"; "") else "" end)",
       @sh "effort=\(.effort.level // "")",
       @sh "ctx_pct=\($cw.used_percentage // (if $size > 0 then $used * 100 / $size else 0 end) | round)",
       @sh "ctx_used=\($used | tokens)",
@@ -266,6 +282,11 @@ if (( added + removed > 0 )); then
     diff="${GREEN}+${added}${NC}/${RED}-${removed}${NC}"
 fi
 
+agent_tag=""
+if [[ -n "$agent_name" ]]; then
+    agent_tag="$(agent_color "$agent_name")◆ ${agent_name}${NC}"
+fi
+
 ctx_short="$(pressure_color "$ctx_pct")Ctx ${ctx_pct}%${NC}"
 
 wt_seg="${worktree:+WT $worktree}"
@@ -337,7 +358,7 @@ render() {
     extras=$(join " · " "$session_part" "$cache_part")
 
     if (( narrow )); then
-        line1=$(join " | " "$remote_control" "$repo_seg" "${BLUE}${model_name}${NC}${effort:+:$effort}" \
+        line1=$(join " | " "$remote_control" "$agent_tag" "$repo_seg" "${BLUE}${model_name}${NC}${effort:+:$effort}" \
             "$ctx_short" "$q5" "$q7")
         line2=$(join " · " "$diff_seg" "$wt_seg" "$pr_seg" "$extras")
     else
@@ -351,7 +372,7 @@ render() {
         fi
         local effort_seg=""
         (( drop_effort )) || effort_seg="${effort:+ · effort:$effort}"
-        line1=$(join " | " "$remote_control" "$(join " " "$repo_seg" "$diff_seg")" \
+        line1=$(join " | " "$remote_control" "$agent_tag" "$(join " " "$repo_seg" "$diff_seg")" \
             "${BLUE}${model_name}${NC}${effort_seg}" \
             "$ctx_long" "$(join " · " "$q5_long" "$q7_long")")
         line2=$(join " | " "$wt_seg" "$pr_seg" "$extras")

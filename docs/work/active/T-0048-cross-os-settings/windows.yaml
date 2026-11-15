@@ -1,0 +1,135 @@
+# Windows settings inventory (T-0048 phase 1). Read-only capture.
+# Re-capture (PowerShell, non-elevated; nothing below changes a setting):
+#   powercfg /getactivescheme
+#   powercfg /query SCHEME_CURRENT SUB_VIDEO VIDEOIDLE
+#   powercfg /query SCHEME_CURRENT SUB_SLEEP STANDBYIDLE
+#   powercfg /query SCHEME_CURRENT SUB_SLEEP HIBERNATEIDLE
+#   powercfg /qh SCHEME_CURRENT SUB_BUTTONS LIDACTION
+#   powercfg /qh SCHEME_CURRENT SUB_BUTTONS PBUTTONACTION
+#   powercfg /qh SCHEME_CURRENT SUB_BUTTONS SBUTTONACTION
+#   powercfg /qh SCHEME_CURRENT SUB_NONE CONSOLELOCK
+#   powercfg /a
+#   Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power' -Name HiberbootEnabled
+#   Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'
+#   Get-ItemProperty 'HKCU:\Control Panel\Keyboard'
+#   Get-WinUserLanguageList; Get-TimeZone; Get-Culture; Get-WinSystemLocale
+#   Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice'
+#   Get-ItemProperty 'HKCU:\Software\Microsoft\Windows\CurrentVersion\PrecisionTouchPad'
+# /query hides the button and CONSOLELOCK settings; /qh (query hidden) reads them, non-elevated.
+# source: fields (read-only):
+#   (Get-CimInstance Win32_OperatingSystem).Caption   -> os (source of the "Windows 11 Home" string)
+#   Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'   -> EditionID, DisplayVersion, CurrentBuild
+#     (its ProductName says "Windows 10 Home" even on 11, so it is not used for os)
+#   (Get-CimInstance Win32_SystemEnclosure).ChassisTypes; Get-CimInstance Win32_Battery   -> form_factor
+#   Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending'   -> reboot_pending
+# powercfg hex "Current AC/DC Power Setting Index" is converted to decimal seconds.
+# Keys under settings: are sorted alphabetically (source: is not). Values are as read; none are guessed.
+system: windows
+captured: 2026-11-15
+source:
+  os: Microsoft Windows 11 Home
+  edition_id: Core
+  display_version: 26H2
+  build: 26300
+  form_factor: "laptop (chassis type 10, battery present)"
+  power_scheme: {name: Balanced, guid: 381b4222-f694-41f0-9685-ff5bb260df2e}
+  reboot_pending: true
+  note: "mid-upgrade Home to Pro; edition shown as reported before the reboot"
+settings:
+  default_browser:
+    value: BraveHTML
+    unit: enum
+    raw: 'HKCU:\Software\Microsoft\Windows\Shell\Associations\UrlAssociations\http\UserChoice ProgId'
+    how: Get-ItemProperty on the raw key
+  display_off:
+    ac: 300
+    dc: 180
+    unit: s
+    raw: SUB_VIDEO VIDEOIDLE
+    how: powercfg /query SCHEME_CURRENT SUB_VIDEO VIDEOIDLE
+  fast_startup:
+    value: true
+    unit: bool
+    raw: 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power HiberbootEnabled (1)'
+    how: Get-ItemProperty on the raw key
+  hibernate_after:
+    ac: 10800
+    dc: 10800
+    unit: s
+    raw: SUB_SLEEP HIBERNATEIDLE
+    how: powercfg /query SCHEME_CURRENT SUB_SLEEP HIBERNATEIDLE
+  hibernation_enabled:
+    value: true
+    unit: bool
+    raw: powercfg /a lists Hibernate as available
+    how: powercfg /a
+  key_repeat_delay:
+    value: 1
+    unit: enum
+    raw: 'HKCU:\Control Panel\Keyboard KeyboardDelay (0=250ms, 1=500ms, 2=750ms, 3=1000ms)'
+    how: Get-ItemProperty on the raw key
+  key_repeat_speed:
+    value: 31
+    unit: enum
+    raw: 'HKCU:\Control Panel\Keyboard KeyboardSpeed (0 slowest, 31 fastest)'
+    how: Get-ItemProperty on the raw key
+  keyboard_layout:
+    value: ["en-US 0409:00000409"]
+    unit: enum
+    raw: InputMethodTips per language
+    how: Get-WinUserLanguageList
+  lid_close:
+    ac: sleep
+    dc: sleep
+    unit: enum
+    raw: SUB_BUTTONS LIDACTION (1 = sleep; 0 nothing, 2 hibernate, 3 shut down, 4 display off where offered)
+    how: powercfg /qh SCHEME_CURRENT SUB_BUTTONS LIDACTION
+  locale:
+    value: {culture: en-US, system_locale: en-US}
+    unit: enum
+    raw: Get-Culture, Get-WinSystemLocale
+    how: Get-Culture; Get-WinSystemLocale
+  lock_on_wake:
+    ac: true
+    dc: true
+    unit: bool
+    raw: SUB_NONE CONSOLELOCK (1 = require sign-in on wake)
+    how: powercfg /qh SCHEME_CURRENT SUB_NONE CONSOLELOCK
+  night_light:
+    value: manual
+    unit: manual
+    raw: opaque registry blob, not decoded
+    how: Settings > System > Display > Night light
+  power_button:
+    ac: sleep
+    dc: sleep
+    unit: enum
+    raw: SUB_BUTTONS PBUTTONACTION (1 = sleep; 0 nothing, 2 hibernate, 3 shut down, 4 display off where offered)
+    how: powercfg /qh SCHEME_CURRENT SUB_BUTTONS PBUTTONACTION
+  sleep:
+    ac: 900
+    dc: 600
+    unit: s
+    raw: SUB_SLEEP STANDBYIDLE
+    how: powercfg /query SCHEME_CURRENT SUB_SLEEP STANDBYIDLE
+  sleep_button:
+    ac: sleep
+    dc: sleep
+    unit: enum
+    raw: SUB_BUTTONS SBUTTONACTION (1 = sleep; 0 nothing, 2 hibernate, 3 shut down, 4 display off where offered)
+    how: powercfg /qh SCHEME_CURRENT SUB_BUTTONS SBUTTONACTION
+  theme:
+    value: {apps: light, system: light}
+    unit: enum
+    raw: 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize AppsUseLightTheme (1), SystemUsesLightTheme (1)'
+    how: Get-ItemProperty on the raw key
+  timezone:
+    value: Pacific Standard Time
+    unit: enum
+    raw: Get-TimeZone Id
+    how: (Get-TimeZone).Id
+  touchpad_scroll:
+    value: 0
+    unit: enum
+    raw: 'HKCU:\Software\Microsoft\Windows\CurrentVersion\PrecisionTouchPad ScrollDirection (raw DWORD 0; meaning not machine-verified)'
+    how: Get-ItemProperty on the raw key

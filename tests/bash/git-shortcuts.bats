@@ -269,3 +269,24 @@ no_stash() {
     done
     grep -qiE '^[[:space:]]*#.*humans? only.*(agents?|AGENTS\.md)' "$BATS_FILE_TMPDIR/gitconfig"
 }
+
+# --- rerere, histogram diffs, worktree remote guessing, autosquash
+
+@test "rerere, histogram diff, worktree.guessRemote and rebase.autoSquash are enabled" {
+    [ "$(git config --global --get rerere.enabled)" = "true" ]
+    [ "$(git config --global --get diff.algorithm)" = "histogram" ]
+    [ "$(git config --global --get worktree.guessRemote)" = "true" ]
+    [ "$(git config --global --get rebase.autoSquash)" = "true" ]
+    [ "$(git config --global --get rebase.updateRefs)" = "true" ]
+}
+
+@test "ri autosquashes a fixup! commit without an editor" {
+    new_repo
+    echo a >a; git add a; git commit -qm "add a"
+    echo b >b; git add b; git commit -qm "add b"
+    echo a2 >>a; git commit -qam "fixup! add a"
+    GIT_SEQUENCE_EDITOR=true run git ri 3
+    [ "$status" -eq 0 ]
+    [ "$(git log --format=%s | head -n 2 | tr '\n' ,)" = "add b,add a," ]
+    [ "$(git rev-list --count HEAD)" -eq 3 ]
+}

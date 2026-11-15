@@ -29,3 +29,12 @@ Shell-bundled launcher and clipboard (Vicinae is the launcher).
 - Both shells' units default to graphical-session.target and would start under GNOME unless bound to the niri session.
 - Revisit after the real trial; nothing here is a selection.
 - The audit's fifth review (2026-11-14) says "no Noctalia"; the newer niri plan (2026-11-15) makes it the second trial candidate.
+
+## Evidence update 2026-11-15
+
+Two user-supplied assessments (Dux vs Noctalia: feature comparison and an upstream issue audit) are recorded in
+[docs/research/niri-shell-dux-vs-noctalia.md](../../research/niri-shell-dux-vs-noctalia.md). The issue states are
+unverified. The decision is unchanged: Dux first, Noctalia second, no permanent shell selected, Vicinae stays
+the launcher, one owner each for notifications, clipboard, lock/idle and polkit. The open upstream risks (Dux #4259;
+Noctalia #5349, #4714, #4565) become trial gates in T-0032. A mandatory pre-migration backup gate applies before any
+live change (docs/plans/niri-migration.md, "Mandatory backup before any live change").

@@ -66,6 +66,12 @@ selection_override_args() {
   SELECTION_OVERRIDE=(--override-input selection "path:$(selection_url_path "$abs")")
 }
 
+# selection_override_text DIR: the flag as it would be passed once DIR holds a
+# selection (for a dry run that writes nothing); DIR is used as given.
+selection_override_text() {
+  printf -- '--override-input selection path:%s' "$(selection_url_path "$1")"
+}
+
 selection_args() {
   SELECTION_ARGS=()
   SELECTION_DIR="$(selection_dir)"

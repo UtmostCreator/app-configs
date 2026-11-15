@@ -297,7 +297,7 @@ selection_cancel() {
 selection_commit() {
   if [[ "$DRY_RUN" == 1 ]]; then
     log "dry run: would write $sel_file"
-    log "dry run: the real run then passes --override-input selection path:$(selection_url_path "$SELECTION_DIR") to the switch"
+    log "dry run: the real run then passes $(selection_override_text "$SELECTION_DIR") to the switch"
     return 0
   fi
   selection_write "$SELECTION_DIR" "$@" || fail "cannot write $sel_file"

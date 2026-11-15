@@ -201,7 +201,7 @@ refute_log() {
     sd --selection-diff --json
     [ "$status" -eq 10 ]
     [[ "$output" == *'"counts": {"add": 1, "remove": 1, "change": 2,'* ]]
-    [[ "$output" == *'"name": "keepme"'* ]] && return 1
+    [[ "$output" != *'"name": "keepme"'* ]]
     [[ "$output" == *'"keep": '* ]]
 }
 
@@ -230,7 +230,7 @@ refute_log() {
 }
 
 @test "macOS: brew fails: exit 11, the cask source is unknown" {
-    HP=macos with_brew
+    HP=macos; with_brew
     install_gen mac-committed
     export STUB_BREW_FAIL=1
     sd --selection-diff
@@ -239,7 +239,7 @@ refute_log() {
 }
 
 @test "macOS: a deselected cask that stays installed is MANUAL and does not count towards the exit code" {
-    HP=macos with_brew
+    HP=macos; with_brew
     install_gen mac-committed
     printf 'rectangle\nkarabiner-elements\nlinearmouse\nraycast\n' >"$BATS_TEST_TMPDIR/casks"
     export STUB_BREW_CASKS="$BATS_TEST_TMPDIR/casks"
@@ -253,7 +253,7 @@ refute_log() {
 }
 
 @test "macOS: a missing cask is an add (exit 10) next to the manual ones" {
-    HP=macos with_brew
+    HP=macos; with_brew
     install_gen mac-committed
     printf 'rectangle\nkarabiner-elements\nlinearmouse\n' >"$BATS_TEST_TMPDIR/casks"
     export STUB_BREW_CASKS="$BATS_TEST_TMPDIR/casks"
@@ -310,7 +310,7 @@ refute_log() {
     [[ "$output" == *"RESULT: IN SYNC"* ]]
     [ ! -e "$STATE" ]
     [ ! -e "$RECDIR" ]
-    refute_log '^(home-manager|darwin-rebuild|chezmoi .*apply)'
+    refute_log '^(home-manager|darwin-rebuild)|^chezmoi( --source=[^ ]+)? apply( |$)'
 }
 
 @test "--yes, --no-pull and --verbose are accepted and ignored" {
@@ -380,7 +380,7 @@ refute_log() {
 
 @test "the stub log shows evaluation and status only: no build, switch, apply, commit, pull or install" {
     real_git
-    HP=macos with_brew
+    HP=macos; with_brew
     install_gen mac-committed
     printf 'rectangle\nkarabiner-elements\nlinearmouse\n' >"$BATS_TEST_TMPDIR/casks"
     export STUB_BREW_CASKS="$BATS_TEST_TMPDIR/casks"
@@ -391,8 +391,8 @@ refute_log() {
     refute_log '^nix (build|run|profile|store|flake update|copy)'
     refute_log '^nix-store .*(--realise|-r )'
     refute_log '^(home-manager|darwin-rebuild|mise|lefthook)'
-    refute_log '^chezmoi .*(apply|init|update|add|forget)'
-    refute_log '^git .*(commit|pull|fetch|push|merge|checkout|reset|add|stash)'
+    refute_log '^chezmoi( --source=[^ ]+)? (apply|init|update|add|forget)( |$)'
+    refute_log '^git( --no-optional-locks)?( -C [^ ]+)? (commit|pull|fetch|push|merge|checkout|reset|add|stash)( |$)'
     refute_log '^brew (install|uninstall|upgrade|update|cleanup)'
     # the lock file is never written, so every eval carries the flag
     ! grep '^nix eval ' "$STUB_LOG" | grep -vq -- '--no-write-lock-file'
@@ -519,6 +519,16 @@ last_run() { # last_run <meta text>
     printf '%s' "$output" | python3 -I -c 'import json,sys; d=json.load(sys.stdin); assert d["exit_code"]==10 and d["outcome"]=="changes-pending" and d["applied"] is False and d["check"] is True'
 }
 
+@test "--json: a control character in a name is escaped and the envelope still parses" {
+    command -v python3 >/dev/null || skip "python3 not installed"
+    install_gen committed
+    chz ' A a\x01b\x1fc"d\\e\n'
+    sd --selection-diff --json
+    [ "$status" -eq 10 ]
+    [[ "$output" == *'a\u0001b\u001fc\"d\\e'* ]]
+    printf '%s' "$output" | python3 -I -c 'import json,sys; d=json.load(sys.stdin); assert d["entries"][0]["name"] == "a\x01b\x1fc\"d\\e", d["entries"][0]["name"]'
+}
+
 @test "--json: key order is stable and entries are sorted" {
     install_gen work
     write_sel 'profile = "work"\n\n[groups]\nmedia = false\n'
@@ -571,7 +581,7 @@ render() { # render <template> <out>
     [[ "$output" == *"read-only: nothing is built, written or applied"* ]]
     [[ "$output" == *"RESULT: IN SYNC"* ]]
     [ ! -e "$STATE" ]
-    refute_log '^(home-manager|darwin-rebuild|chezmoi .*apply)'
+    refute_log '^(home-manager|darwin-rebuild)|^chezmoi( --source=[^ ]+)? apply( |$)'
 }
 
 @test "wrapper: the fish sys-update always adds --apply, and sys-update --selection-diff still runs the diff, not an apply" {
@@ -589,5 +599,5 @@ render() { # render <template> <out>
     [[ "$output" == *"read-only: nothing is built, written or applied"* ]]
     [[ "$output" == *"RESULT: IN SYNC"* ]]
     [ ! -e "$STATE" ]
-    refute_log '^(home-manager|darwin-rebuild|chezmoi .*apply)'
+    refute_log '^(home-manager|darwin-rebuild)|^chezmoi( --source=[^ ]+)? apply( |$)'
 }

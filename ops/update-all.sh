@@ -33,6 +33,8 @@
 #   bash ops/update-all.sh --apply         # update, with one confirmation
 #   bash ops/update-all.sh --apply --yes   # unattended
 #   bash ops/update-all.sh rollback        # undo the last update
+#   bash ops/update-all.sh --selection-diff          # what the next --apply would change
+#   bash ops/update-all.sh --selection-diff --json   # the same, as one JSON envelope
 #
 # Flags:
 #   --apply           actually update (default is report-only)
@@ -46,14 +48,31 @@
 #   --skip-verify     skip the VERIFY gate and the CHECKS (the profile target
 #                     check still runs)
 #   --verbose, -v     mirror command output to the terminal
+#   --selection-diff  read-only comparison of the declared state (the committed
+#                     profile and your local selection) with what is installed:
+#                     what the next --apply would add, remove or change. It
+#                     builds, writes and applies nothing, takes no lock, runs
+#                     no pull, install or cleanup, and always overrides --apply
+#                     (so `sys-update --selection-diff` is a diff, although the
+#                     wrapper adds --apply). --yes, --no-pull and --verbose are
+#                     accepted and ignored; rollback, --force, --gc,
+#                     --allow-dirty, --skip-verify, --full-check and
+#                     --no-cleanup are usage errors with it.
+#   --json            with --selection-diff only: one JSON envelope on stdout
+#                     (changed items only, unchanged ones as counts); the
+#                     diagnostics stay on stderr
 #
 # Exit codes:
-#   0    success (warnings allowed)
-#   1    a failed precondition or step, or an incomplete rollback
-#   2    usage error (unknown argument)
+#   0    success (warnings allowed); with --selection-diff: in sync
+#   1    a failed precondition or step, or an incomplete rollback; with
+#        --selection-diff: nix missing or the declared state does not evaluate
+#   2    usage error (unknown argument, or a flag that does not fit)
 #   3    refused: bats test running against the real HOME or repository
 #   4    host detection failed (set HOST_PROFILE)
 #   5    another sys-update holds the lock
+#   10   changes pending (--selection-diff only): any add, remove or change
+#   11   manual action required (--selection-diff only): any conflict, any
+#        unknown source, an unfinished or failed last run
 #   129  hung up (SIGHUP)
 #   130  interrupted (SIGINT)
 #   131  quit (SIGQUIT)
@@ -110,6 +129,9 @@ DO_GC=0
 DO_CLEANUP=1
 DO_VERIFY=1
 VERBOSE=0
+SELECTION_DIFF=0
+JSON_OUT=0
+DIFF_INCOMPATIBLE=()   # the flags given that --selection-diff refuses
 [[ "${NO_CLEANUP:-0}" == 1 ]] && DO_CLEANUP=0
 
 STATE_DIR="${SYS_UPDATE_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/sys-update}"
@@ -380,22 +402,40 @@ trap 'exit 141' PIPE
 
 for arg in "$@"; do
   case "$arg" in
-    rollback)      SUBCOMMAND="rollback" ;;
+    rollback)      SUBCOMMAND="rollback"; DIFF_INCOMPATIBLE+=("$arg") ;;
     --apply)       MODE="apply" ;;
     --yes|-y)      ASSUME_YES=1 ;;
-    --allow-dirty) ALLOW_DIRTY=1 ;;
+    --allow-dirty) ALLOW_DIRTY=1; DIFF_INCOMPATIBLE+=("$arg") ;;
     --no-pull)     DO_PULL=0 ;;
-    --full-check)  FULL_CHECK=1 ;;
-    --force)       CHEZMOI_FORCE=1 ;;
-    --gc)          DO_GC=1 ;;
-    --no-cleanup)  DO_CLEANUP=0 ;;
-    --skip-verify) DO_VERIFY=0 ;;
+    --full-check)  FULL_CHECK=1; DIFF_INCOMPATIBLE+=("$arg") ;;
+    --force)       CHEZMOI_FORCE=1; DIFF_INCOMPATIBLE+=("$arg") ;;
+    --gc)          DO_GC=1; DIFF_INCOMPATIBLE+=("$arg") ;;
+    --no-cleanup)  DO_CLEANUP=0; DIFF_INCOMPATIBLE+=("$arg") ;;
+    --skip-verify) DO_VERIFY=0; DIFF_INCOMPATIBLE+=("$arg") ;;
     --verbose|-v)  VERBOSE=1 ;;
+    --selection-diff) SELECTION_DIFF=1 ;;
+    --json)        JSON_OUT=1 ;;
     --last)        : ;;  # accepted for `rollback --last` symmetry
     -h|--help)     awk 'NR > 1 { if (!/^#/) exit; sub(/^# ?/, ""); print }' "$0"; exit 0 ;;
     *) printf 'sys-update: unknown argument: %s (try --help)\n' "$arg" >&2; exit 2 ;;
   esac
 done
+
+# --json belongs to --selection-diff, and --selection-diff is read-only: it
+# refuses what mutates or what only an apply or a rollback means. Then it
+# overrides --apply whatever the argument order, as rollback already does,
+# because both wrappers (sys-update, the fish function) prepend --apply.
+if [[ "$JSON_OUT" == 1 && "$SELECTION_DIFF" != 1 ]]; then
+  printf 'sys-update: --json is only valid with --selection-diff (try --help)\n' >&2
+  exit 2
+fi
+if [[ "$SELECTION_DIFF" == 1 ]]; then
+  if ((${#DIFF_INCOMPATIBLE[@]})); then
+    printf 'sys-update: %s cannot be combined with --selection-diff, which is read-only (try --help)\n' "${DIFF_INCOMPATIBLE[0]}" >&2
+    exit 2
+  fi
+  MODE="selection-diff"
+fi
 
 # A re-exec'd child never pulls: the parent already did.
 [[ "$REEXEC_CHILD" == 1 ]] && DO_PULL=0
@@ -420,6 +460,19 @@ if [[ "$SUBCOMMAND" != rollback && "$HOST_PROFILE" == wsl ]] \
   && [[ "$(bash "$REPO_ROOT/ops/detect-host.sh" --wsl-version 2>/dev/null)" == 1 ]]; then
   printf 'sys-update: WSL1 is not supported (no systemd, no real Linux kernel for Nix). Convert from PowerShell: wsl --set-version <distro> 2   (list distros: wsl --list --verbose)\n' >&2
   exit 4
+fi
+
+# --selection-diff is read-only and lock-free: it never takes, waits for or
+# probes the lock (lock_is_held would briefly take it), never recovers an
+# interrupted run, and never reaches ui_init, the state directory or the
+# re-exec. It runs in a subshell with its own EXIT trap for its work dir.
+if [[ "$MODE" == "selection-diff" ]]; then
+  # shellcheck source=ops/lib/selection-facts.sh
+  source "$REPO_ROOT/ops/lib/selection-facts.sh"
+  # shellcheck source=ops/lib/selection-diff.sh
+  source "$REPO_ROOT/ops/lib/selection-diff.sh"
+  ( selection_diff_run )
+  exit $?
 fi
 
 [[ "$MODE" == apply || "$SUBCOMMAND" == rollback ]] && acquire_lock

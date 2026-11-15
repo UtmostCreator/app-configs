@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
-# shellcheck disable=SC2034  # the SEL_* results are read by the files that source this one
+# shellcheck disable=SC2034  # the SEL_* results are used by the files that source this one
 # The facts of the install selection (T-0042, T-0043): the profile and group
 # lookups, the evaluation of the current state and of the group members, the
 # installed generation, and the helpers that compare them. Split from

@@ -915,6 +915,39 @@ facts_sourcers() {
     [[ "$output" != *"ops/update-all.sh"* ]]
 }
 
+# diff_sourcers <root>: every file that sources selection-diff.sh, except
+# update-all.sh, the only script that runs --selection-diff.
+diff_sourcers() {
+    (cd "$1" && grep -rEl '^[^#]*(source|\.)[[:space:]]+[^#]*selection-diff\.sh' ops scripts home nix mise.toml 2>/dev/null \
+        | grep -vE '^ops/update-all\.sh$' || true)
+}
+
+@test "T-0043: only update-all.sh sources selection-diff.sh; install.sh never does" {
+    run diff_sourcers "$REPO_ROOT"
+    [ -z "$output" ] || { echo "$output"; return 1; }
+    grep -Eq '^ *source "\$REPO_ROOT/ops/lib/selection-diff\.sh"' "$REPO_ROOT/ops/update-all.sh"
+    run grep -n 'selection-diff' "$REPO_ROOT/ops/install.sh"
+    [ "$status" -ne 0 ]
+}
+
+@test "T-0043: seeded: sourcing selection-diff.sh from install.sh or a library is caught, update-all.sh and a comment are not" {
+    local copy="$BATS_TEST_TMPDIR/seed"
+    mkdir -p "$copy/ops/lib"
+    cp "$REPO_ROOT/ops/install.sh" "$REPO_ROOT/ops/update-all.sh" "$copy/ops/"
+    cp "$REPO_ROOT/ops/lib/selection.sh" "$REPO_ROOT/ops/lib/hm-switch.sh" "$copy/ops/lib/"
+    run diff_sourcers "$copy"
+    [ -z "$output" ]
+    printf '# source ops/lib/selection-diff.sh is not allowed here\n' >>"$copy/ops/install.sh"
+    run diff_sourcers "$copy"
+    [ -z "$output" ]
+    printf '\nsource "$REPO_ROOT/ops/lib/selection-diff.sh"\n' >>"$copy/ops/install.sh"
+    printf '\n. "${BASH_SOURCE[0]%%/*}/selection-diff.sh"\n' >>"$copy/ops/lib/hm-switch.sh"
+    run diff_sourcers "$copy"
+    [[ "$output" == *"ops/install.sh"* ]]
+    [[ "$output" == *"ops/lib/hm-switch.sh"* ]]
+    [[ "$output" != *"ops/update-all.sh"* ]]
+}
+
 @test "AC7g: sourcing selection.sh or hm-switch.sh does not load the preview code" {
     run env -i PATH="$TPATH" bash -c 'source "$1/ops/lib/selection.sh"; declare -F package_delta render_package_delta nix_toplevel_packages selection_preview selection_write selection_facts selection_prompt_loop selection_validate selection_propose' _ "$REPO_ROOT"
     [ "$status" -ne 0 ]

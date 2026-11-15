@@ -909,7 +909,8 @@ if [[ "$PRECHECK_FAILED" == 1 ]]; then
     (( ${#_changed[@]} > 10 )) && printf '    … and %d more\n' "$(( ${#_changed[@]} - 10 ))"
     printf '  Resolve:   git -C %s status\n' "$REPO_ROOT"
     printf '             git -C %s commit -am "chore(config): local changes"\n' "$REPO_ROOT"
-    printf '             git -C %s stash push -u -m "before sys-update"\n' "$REPO_ROOT"
+    printf '             git -C %s diff --binary HEAD > <private dir>/wip.patch && git -C %s restore --staged --worktree -- .\n' "$REPO_ROOT" "$REPO_ROOT"
+    printf '             (never git stash: it is shared by every worktree; untracked files must be moved aside or committed by hand)\n'
     printf '  Override:  sys-update --allow-dirty\n\n'
   fi
   if [[ "${#CHEZMOI_CONFLICTS[@]}" -gt 0 && "$CHEZMOI_FORCE" != 1 ]]; then

@@ -47,7 +47,10 @@ dirty_it() {
 @test "the abort names both the fix and the override" {
   dirty_it
   run bash "$FAKE/ops/update-all.sh" --apply --yes
-  [[ "$output" == *"stash push -u"* ]]
+  [[ "$output" == *"diff --binary HEAD > <private dir>/wip.patch"* ]]
+  [[ "$output" == *"restore --staged --worktree -- ."* ]]
+  [[ "$output" == *"untracked files must be moved aside or committed by hand"* ]]
+  [[ "$output" != *"stash push"* ]]
   [[ "$output" == *"status"* ]]
   [[ "$output" == *"--allow-dirty"* ]]
 }

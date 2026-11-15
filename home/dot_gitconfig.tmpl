@@ -41,6 +41,12 @@
 	lg    = log --graph --oneline --abbrev-commit --decorate --all
 	lga   = log --graph --oneline --abbrev-commit --decorate --all --author  ; (example style)
 	last  = log -1 --stat
+	# mainline history: first parents only (merge commits, not the branch commits)
+	mainline = log --first-parent --oneline --decorate -30
+	# git cfgwhere rebase.autoStash -> value, scope and file it comes from
+	cfgwhere = config --show-origin --show-scope --get
+	# git filelog <file> -> patch history of one file across renames
+	filelog = log --follow -p --
 	who   = shortlog -sn --no-merges
 	brv   = branch -vv
 	ahead = log --oneline --decorate --graph @{u}..HEAD

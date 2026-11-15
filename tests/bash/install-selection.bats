@@ -665,6 +665,53 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     [[ "$output" == *"dry run: would write"* ]]
 }
 
+@test "S1: the macOS present-state row counts the input casks against brew" {
+    with_brew
+    printf 'rectangle\nkarabiner-elements\n' >"$BATS_TEST_TMPDIR/casks"
+    export STUB_BREW_CASKS="$BATS_TEST_TMPDIR/casks"
+    HP=macos inst --dry-run --profile work
+    [ "$status" -eq 0 ]
+    local row
+    row="$(section 'Present state' | grep '^  macInput')"
+    [[ "$row" == *"installed 1/2 karabiner-elements"* ]] || { echo "$row"; return 1; }
+}
+
+@test "S1: without brew the macOS present-state row names the casks and says the state is unknown" {
+    HP=macos inst --dry-run --profile work
+    [ "$status" -eq 0 ]
+    local row
+    row="$(section 'Present state' | grep '^  macInput')"
+    [[ "$row" == *"karabiner-elements linearmouse"* ]] || { echo "$row"; return 1; }
+    [[ "$row" == *"cask state unknown"* ]]
+    [[ "$row" != *"0/0"* ]]
+}
+
+@test "S1: the macOS prompt label for macInput names the casks" {
+    with_brew
+    HP=macos inst_tty 'work\n\n\n\n\nq\n' --dry-run
+    [[ "$output" == *"Install group macInput (karabiner-elements linearmouse)?"* ]] || { echo "$output"; return 1; }
+}
+
+@test "S1: the outcome row says deselected input casks stay installed" {
+    with_brew
+    printf 'rectangle\nkarabiner-elements\nlinearmouse\n' >"$BATS_TEST_TMPDIR/casks"
+    export STUB_BREW_CASKS="$BATS_TEST_TMPDIR/casks"
+    HP=macos inst_tty 'work\n\nn\n\n\na\n' --dry-run
+    [ "$status" -eq 0 ]
+    local row
+    row="$(section 'Outcome by group' | grep '^  macInput')"
+    [[ "$row" == *"stays installed 2: karabiner-elements linearmouse"* ]] || { echo "$row"; return 1; }
+    [[ "$row" != *"no members"* ]]
+}
+
+@test "S1: the outcome row without brew names the casks and says the state is unknown" {
+    HP=macos inst_tty 'work\n\nn\n\n\na\n' --dry-run
+    local row
+    row="$(section 'Outcome by group' | grep '^  macInput')"
+    [[ "$row" == *"karabiner-elements linearmouse"* ]] || { echo "$row"; return 1; }
+    [[ "$row" == *"cask state unknown"* ]]
+}
+
 @test "AC13: on Linux the prompt never offers macInput" {
     inst_tty 'work\n\n\n\na\n' --dry-run
     [ "$status" -eq 0 ]

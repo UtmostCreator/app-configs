@@ -313,6 +313,12 @@ validate_fixture() {
         grep -q "^G"$'\t'"media"$'\t' "$BATS_TEST_TMPDIR/w/members-$host"
     done
     grep -q "^C"$'\t' "$BATS_TEST_TMPDIR/w/state-macos"
+    # S1: the casks a group gates, from the darwin system.
+    [ "$(grep -c "^X"$'\t' "$BATS_TEST_TMPDIR/w/members-macos")" -eq 2 ]
+    grep -q "^X"$'\t'"macInput"$'\t'"karabiner-elements$" "$BATS_TEST_TMPDIR/w/members-macos"
+    grep -q "^X"$'\t'"macInput"$'\t'"linearmouse$" "$BATS_TEST_TMPDIR/w/members-macos"
+    run grep -c "^X" "$BATS_TEST_TMPDIR/w/members-linux-cli"
+    [ "$output" = 0 ]
 }
 
 # ── Phase 2: macInput and the darwin outputs (AC11) ──
@@ -395,12 +401,26 @@ wsl_dir() {
     [ "$output" = /home/x/cfg/app-configs/selection ]
 }
 
-@test "AC15: an XDG_CONFIG_HOME under /mnt/c is ignored, with a note on stderr" {
+@test "AC15: an XDG_CONFIG_HOME under /mnt/c is ignored in favour of HOME/.config" {
     run --separate-stderr wsl_dir HOME=/home/x XDG_CONFIG_HOME=/mnt/c/Users/x/AppData
     [ "$status" -eq 0 ]
     [ "$output" = /home/x/.config/app-configs/selection ]
-    [[ "$stderr" == *"/mnt/c"* ]]
+}
+
+@test "S6: the /mnt note is printed once per process, not on every call" {
+    run --separate-stderr env -u APP_CONFIGS_SELECTION_DIR HOME=/home/x XDG_CONFIG_HOME=/mnt/c/Users/x/AppData \
+        bash -c 'source "$1/ops/lib/selection.sh"; selection_args; selection_args; selection_args; selection_dir >/dev/null' _ "$REPO_ROOT"
+    [ "$status" -eq 0 ]
     [[ "$stderr" == *"XDG_CONFIG_HOME"* ]]
+    [[ "$stderr" == *"/mnt/c"* ]]
+    [ "$(grep -c 'XDG_CONFIG_HOME' <<<"$stderr")" -eq 1 ]
+}
+
+@test "S6: no note when XDG_CONFIG_HOME is not on a drive" {
+    run --separate-stderr env -u APP_CONFIGS_SELECTION_DIR HOME=/home/x XDG_CONFIG_HOME=/home/x/cfg \
+        bash -c 'source "$1/ops/lib/selection.sh"; selection_args' _ "$REPO_ROOT"
+    [ "$status" -eq 0 ]
+    [ -z "$stderr" ]
 }
 
 @test "AC15: any drive letter and the bare mount point are treated as Windows paths" {
@@ -413,4 +433,21 @@ wsl_dir() {
 @test "AC15: APP_CONFIGS_SELECTION_DIR stays an explicit override" {
     run --separate-stderr env HOME=/home/x APP_CONFIGS_SELECTION_DIR=/mnt/c/scratch bash -c 'source "$1/ops/lib/selection.sh"; selection_dir' _ "$REPO_ROOT"
     [ "$output" = /mnt/c/scratch ]
+}
+
+# ── S2: a wrong-typed group fails every host build, not only install.sh ──
+
+@test "S2: a wrong-type macInput fails the linux-cli build and names the option" {
+    run drv linux-cli wrong-type-macinput
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"myConfig.groups.macInput"* ]]
+}
+
+@test "S2: a wrong-type macInput fails the macos and darwin builds too" {
+    run drv macos wrong-type-macinput
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"myConfig.groups.macInput"* ]]
+    run drvd wrong-type-macinput
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"myConfig.groups.macInput"* ]]
 }

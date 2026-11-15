@@ -249,6 +249,26 @@ write_profile() { printf '%b' "$2" >"$T/repo/nix/profiles/$1.toml"; }
     done
 }
 
+@test "AC12 parity: the darwin Home Manager user has the profile the template assumes for macos" {
+    command -v nix >/dev/null || skip "nix not installed"
+    local out got want
+    out="$(render darwin macos true)"
+    got="$(sed -n 's/^# host default profile: //p' <<<"$out")"
+    want="$(timeout 600 nix eval --raw "path:$REPO_ROOT/nix#darwinConfigurations.macos.config.home-manager.users" \
+        --apply 'us: (builtins.head (builtins.attrValues us)).myConfig.profile')"
+    [ -n "$got" ]
+    [ "$got" = "$want" ] || { echo "template says '$got', darwin user says '$want'"; return 1; }
+}
+
+@test "the template's profile list equals the files in nix/profiles" {
+    local out listed files
+    out="$(render darwin macos true)"
+    listed="$(sed -n 's/^# known profiles: //p' <<<"$out" | tr ' ' '\n' | LC_ALL=C sort | tr '\n' ' ')"
+    files="$(cd "$REPO_ROOT/nix/profiles" && for f in *.toml; do printf '%s\n' "${f%.toml}"; done | LC_ALL=C sort | tr '\n' ' ')"
+    [ -n "$listed" ]
+    [ "$listed" = "$files" ] || { echo "template: '$listed' files: '$files'"; return 1; }
+}
+
 @test "the committed profile files keep macInput on, so the default deploys the configs" {
     grep -qx 'macInput = true' "$REPO_ROOT/nix/profiles/work.toml"
     grep -qx 'macInput = true' "$REPO_ROOT/nix/profiles/personal.toml"

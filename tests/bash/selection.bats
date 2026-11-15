@@ -28,12 +28,20 @@ record() {
     echo "$rc" >"$out.rc"
 }
 
-# record_in <dir> <name> <attr> <apply>: _sel_eval into <dir>/<name>, its
-# stderr into <dir>/err-<name> and its exit status into <dir>/<name>.rc.
-record_in() {
-    local rc=0
-    _sel_eval "$1/$2" "$1/err-$2" "$3" "$4" || rc=$?
-    echo "$rc" >"$1/$2.rc"
+# preview_eval <host> <kind>: the preview's state, members or check expression
+# for one host, evaluated against the real flake as the preview does. Output,
+# stderr and exit status go to $BATS_FILE_TMPDIR/preview/<kind>-<host>,
+# err-<kind>-<host> and <kind>-<host>.rc. Runs in a background subshell, so
+# sourcing the libraries here leaves the file's shell alone.
+preview_eval() {
+    local host="$1" kind="$2" w="$BATS_FILE_TMPDIR/preview" rc=0
+    source "$REPO_ROOT/ops/lib/selection.sh"
+    source "$REPO_ROOT/ops/lib/selection-preview.sh"
+    SELECTION_REPO_ROOT="$REPO_ROOT"
+    SELECTION_HOST="$host"
+    SELECTION_ARGS=()
+    _sel_eval "$w/$kind-$host" "$w/err-$kind-$host" "$(_sel_attr_$kind)" "$(_sel_expr_$kind)" || rc=$?
+    echo "$rc" >"$w/$kind-$host.rc"
 }
 
 setup_file() {
@@ -60,6 +68,13 @@ setup_file() {
     bg_limited "$n" record drv-empty-linux-desktop err-drv-empty-linux-desktop drv linux-desktop empty
     for f in default media-go-off all-false; do
         bg_limited "$n" record "pkgs-$f.json" "err-pkgs-$f" pkgs linux-cli "$f"
+    done
+    # The preview's expressions (read by one test) join the same pool.
+    mkdir -p "$BATS_FILE_TMPDIR/preview"
+    for h in linux-cli macos; do
+        for k in state members check; do
+            bg_limited "$n" preview_eval "$h" "$k"
+        done
     done
     wait
     # Every one of these evaluations is expected to succeed: name each that
@@ -332,49 +347,36 @@ validate_fixture() {
 }
 
 @test "the preview's state, members and check expressions evaluate against the real flake (linux-cli and macos)" {
-    source "$REPO_ROOT/ops/lib/selection.sh"
-    source "$REPO_ROOT/ops/lib/selection-preview.sh"
-    mkdir -p "$BATS_TEST_TMPDIR/w"
-    SELECTION_REPO_ROOT="$REPO_ROOT"
+    # The six evaluations ran in setup_file (preview_eval); check each first.
     local host ngroups kind
-    # The six evaluations are independent: run them concurrently, each with its
-    # own output, stderr and exit status file, then check them in turn.
-    for host in linux-cli macos; do
-        SELECTION_HOST="$host"
-        SELECTION_ARGS=()
-        for kind in state members check; do
-            bg_limited 6 record_in "$BATS_TEST_TMPDIR/w" "$kind-$host" "$(_sel_attr_$kind)" "$(_sel_expr_$kind)"
-        done
-    done
-    wait
     for host in linux-cli macos; do
         for kind in state members check; do
-            [ "$(cat "$BATS_TEST_TMPDIR/w/$kind-$host.rc")" -eq 0 ] || { echo "eval $kind-$host failed:"; cat "$BATS_TEST_TMPDIR/w/err-$kind-$host"; return 1; }
+            [ "$(cat "$BATS_FILE_TMPDIR/preview/$kind-$host.rc")" -eq 0 ] || { echo "eval $kind-$host failed:"; cat "$BATS_FILE_TMPDIR/preview/err-$kind-$host"; return 1; }
         done
     done
     for host in linux-cli macos; do
         ngroups=3
         if [ "$host" = macos ]; then ngroups=4; fi
-        grep -q "^P"$'\t' "$BATS_TEST_TMPDIR/w/state-$host"
+        grep -q "^P"$'\t' "$BATS_FILE_TMPDIR/preview/state-$host"
         # macInput exists on every host but only macOS offers it (it gates casks).
-        [ "$(grep -c "^G"$'\t' "$BATS_TEST_TMPDIR/w/state-$host")" -eq "$ngroups" ]
-        [ "$(grep -c "^K"$'\t' "$BATS_TEST_TMPDIR/w/state-$host")" -gt 50 ]
-        grep -q "^H"$'\t' "$BATS_TEST_TMPDIR/w/members-$host"
-        [ "$(grep -c "^N"$'\t' "$BATS_TEST_TMPDIR/w/members-$host")" -eq "$ngroups" ]
+        [ "$(grep -c "^G"$'\t' "$BATS_FILE_TMPDIR/preview/state-$host")" -eq "$ngroups" ]
+        [ "$(grep -c "^K"$'\t' "$BATS_FILE_TMPDIR/preview/state-$host")" -gt 50 ]
+        grep -q "^H"$'\t' "$BATS_FILE_TMPDIR/preview/members-$host"
+        [ "$(grep -c "^N"$'\t' "$BATS_FILE_TMPDIR/preview/members-$host")" -eq "$ngroups" ]
         if [ "$host" = macos ]; then
-            grep -q "^N"$'\t'"macInput" "$BATS_TEST_TMPDIR/w/members-$host"
+            grep -q "^N"$'\t'"macInput" "$BATS_FILE_TMPDIR/preview/members-$host"
         else
-            run grep -q macInput "$BATS_TEST_TMPDIR/w/members-$host" "$BATS_TEST_TMPDIR/w/state-$host"
+            run grep -q macInput "$BATS_FILE_TMPDIR/preview/members-$host" "$BATS_FILE_TMPDIR/preview/state-$host"
             [ "$status" -eq 1 ]
         fi
-        grep -q "^G"$'\t'"media"$'\t' "$BATS_TEST_TMPDIR/w/members-$host"
+        grep -q "^G"$'\t'"media"$'\t' "$BATS_FILE_TMPDIR/preview/members-$host"
     done
-    grep -q "^C"$'\t' "$BATS_TEST_TMPDIR/w/state-macos"
+    grep -q "^C"$'\t' "$BATS_FILE_TMPDIR/preview/state-macos"
     # S1: the casks a group gates, from the darwin system.
-    [ "$(grep -c "^X"$'\t' "$BATS_TEST_TMPDIR/w/members-macos")" -eq 2 ]
-    grep -q "^X"$'\t'"macInput"$'\t'"karabiner-elements$" "$BATS_TEST_TMPDIR/w/members-macos"
-    grep -q "^X"$'\t'"macInput"$'\t'"linearmouse$" "$BATS_TEST_TMPDIR/w/members-macos"
-    run grep -c "^X" "$BATS_TEST_TMPDIR/w/members-linux-cli"
+    [ "$(grep -c "^X"$'\t' "$BATS_FILE_TMPDIR/preview/members-macos")" -eq 2 ]
+    grep -q "^X"$'\t'"macInput"$'\t'"karabiner-elements$" "$BATS_FILE_TMPDIR/preview/members-macos"
+    grep -q "^X"$'\t'"macInput"$'\t'"linearmouse$" "$BATS_FILE_TMPDIR/preview/members-macos"
+    run grep -c "^X" "$BATS_FILE_TMPDIR/preview/members-linux-cli"
     [ "$output" = 0 ]
 }
 

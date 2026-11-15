@@ -11,6 +11,11 @@
 # Files and tests run in parallel (bats --jobs) when GNU parallel is
 # available. RUN_BATS_JOBS=<n> picks the job count; RUN_BATS_JOBS=1 runs
 # sequentially. Passing -j/--jobs yourself overrides both.
+#
+# In parallel mode the slowest files start first (SLOW_FIRST below): files
+# otherwise start in alphabetical order, and a slow file that starts last
+# decides the wall time. Refresh the list from `bats --report-formatter junit`
+# or a timed run of the file alone when a file's cost changes.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -57,7 +62,22 @@ done
 if [[ "$user_jobs" == 0 && "$jobs" =~ ^[0-9]+$ && "$jobs" -gt 1 ]] \
     && command -v parallel >/dev/null 2>&1 \
     && [[ "$(parallel --version 2>/dev/null </dev/null)" == *"GNU parallel"* ]]; then
-    args=(--jobs "$jobs" "${args[@]}")
+    # Slowest files first, then the rest in the order bats would use. A name
+    # that no longer exists fails loudly, so the list cannot rot unnoticed.
+    SLOW_FIRST=(selection update-all-apply install-selection)
+    files=()
+    for name in "${SLOW_FIRST[@]}"; do
+        if [[ ! -f "tests/bash/$name.bats" ]]; then
+            echo "[test:bash] SLOW_FIRST names a missing file: tests/bash/$name.bats" >&2
+            exit 1
+        fi
+        files+=("tests/bash/$name.bats")
+    done
+    for file in tests/bash/*.bats; do
+        name="${file##*/}"
+        [[ " ${SLOW_FIRST[*]} " == *" ${name%.bats} "* ]] || files+=("$file")
+    done
+    args=(--jobs "$jobs" "${files[@]}" ops/projects/logging/test)
 fi
 
 status=0

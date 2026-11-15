@@ -97,7 +97,13 @@ grep -q "email = bats@example.invalid" "$HOME/.gitconfig" || exit 8'
     stub nproc 'echo 6'
     run env PATH="$STUB" bash "$SCRIPT"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"bats-stub --jobs 6 tests/bash ops/projects/logging/test"* ]]
+    # the slowest files first, then every other file once, then the log-workspace suite
+    [[ "$output" == "bats-stub --jobs 6 tests/bash/selection.bats tests/bash/update-all-apply.bats tests/bash/install-selection.bats "* ]]
+    [[ "$output" == *" ops/projects/logging/test" ]]
+    local want got
+    want="$(cd "$BATS_TEST_DIRNAME/../.." && printf '%s\n' tests/bash/*.bats | sort)"
+    got="$(tr ' ' '\n' <<<"$output" | grep '^tests/bash/.*\.bats$' | sort)"
+    [ "$got" = "$want" ] || { echo "file set differs"; diff <(echo "$want") <(echo "$got"); return 1; }
 
     run env PATH="$STUB" RUN_BATS_JOBS=3 bash "$SCRIPT"
     [[ "$output" == *"bats-stub --jobs 3 tests/bash"* ]]

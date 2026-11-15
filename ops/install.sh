@@ -34,6 +34,20 @@
 #   bash ops/install.sh --profile work  # write profile = work (group overrides are
 #                                       # dropped), preview, continue; never asks
 #   bash ops/install.sh --reconfigure   # ask again (needs a TTY; exit 1 without one)
+#   bash ops/install.sh --host linux-cli  # remember linux-cli (or linux-desktop) for this
+#                                       # machine; never asks (plain Linux only)
+#
+# Remembered host (T-0044): on plain Linux the host is linux-desktop or
+# linux-cli, remembered in the host file (path: bash ops/detect-host.sh
+# --host-file; format and precedence: the header of ops/detect-host.sh). Only
+# this script writes it. With no file on a TTY it asks once (default from a
+# graphical-session check, or a valid HOST_PROFILE_DEFAULT when no host file
+# exists yet), then writes it; --reconfigure asks again, before the
+# selection questions; --host writes without asking. With no file and no TTY it
+# writes nothing, never blocks and prints a hint. HOST_PROFILE, WSL2 and macOS
+# never read or write the file, and --host is refused there (exit 2). q or end of
+# input at the question stops the install (exit 1) before anything is changed.
+# --dry-run asks but writes nothing: "dry run: would write <file> (<value>)".
 #
 # Install selection (ops/lib/selection.sh, nix/profiles/*.toml): with a local file
 # selection.toml (default ~/.config/app-configs/selection/) the install uses it
@@ -62,6 +76,8 @@ DRY_RUN="${DRY_RUN:-0}"
 OPT_PROFILE=""
 OPT_PROFILE_SET=0
 OPT_RECONFIGURE=0
+OPT_HOST=""
+OPT_HOST_SET=0
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # Arguments. sys-install passes "$@" through; before this parser existed,
@@ -80,6 +96,16 @@ while (($#)); do
       ;;
     --profile=*) OPT_PROFILE="${1#--profile=}"; OPT_PROFILE_SET=1 ;;
     --reconfigure) OPT_RECONFIGURE=1 ;;
+    --host)
+      if (($# < 2)); then
+        printf '[install:error] --host needs linux-desktop or linux-cli (try --help)\n' >&2
+        exit 2
+      fi
+      OPT_HOST="$2"
+      OPT_HOST_SET=1
+      shift
+      ;;
+    --host=*) OPT_HOST="${1#--host=}"; OPT_HOST_SET=1 ;;
     -h | --help)
       sed -n '2,/^$/{/^$/!p;}' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
@@ -168,6 +194,100 @@ if ((OPT_RECONFIGURE)) && ! have_tty; then
   fail "--reconfigure needs a terminal to ask on (stdin and stderr); nothing was changed"
 fi
 
+# --host is checked here too, so a bad one is a usage error (exit 2) that
+# changes nothing: an unknown value, a conflicting HOST_PROFILE, or a host that
+# is detected as macOS or WSL2 (the host file is never used there). The probe
+# points the file at a path that cannot exist, so an invalid file (the one
+# --host exists to repair) does not stop it.
+if ((OPT_HOST_SET)); then
+  case "$OPT_HOST" in
+    linux-desktop | linux-cli) ;;
+    *)
+      printf '[install:error] --host needs linux-desktop or linux-cli, got %s (try --help)\n' "'$OPT_HOST'" >&2
+      exit 2
+      ;;
+  esac
+  if [[ -n "${HOST_PROFILE:-}" && "$HOST_PROFILE" != "$OPT_HOST" ]]; then
+    printf '[install:error] --host %s conflicts with HOST_PROFILE=%s; unset one of them\n' "$OPT_HOST" "$HOST_PROFILE" >&2
+    exit 2
+  fi
+  # Always probe, also with HOST_PROFILE set (equal to --host): the probe clears
+  # it, so a macOS or WSL2 host is refused either way.
+  host_probe="$(HOST_PROFILE='' APP_CONFIGS_HOST_FILE=/dev/null/none bash "$REPO_ROOT/ops/detect-host.sh" --source)" \
+    || fail "ops/detect-host.sh failed; set HOST_PROFILE explicitly"
+  if [[ "$host_probe" == detected ]]; then
+    printf '[install:error] --host is for plain Linux only; this host is detected as macOS or WSL2 and has no host file. Nothing was changed\n' >&2
+    exit 2
+  fi
+fi
+
+# host_guess: the default answer for the host question. A graphical session
+# (the same test as ops/update-all.sh uses for the browser check) means
+# linux-desktop; `systemctl get-default` printing graphical.target is one more
+# signal, not the only one; otherwise linux-cli.
+host_guess() {
+  case "${XDG_SESSION_TYPE:-}" in
+    x11 | wayland | mir) echo linux-desktop; return 0 ;;
+  esac
+  if [[ -n "${WAYLAND_DISPLAY:-}" || -n "${DISPLAY:-}" ]]; then echo linux-desktop; return 0; fi
+  if [[ "$(systemctl get-default 2>/dev/null || true)" == graphical.target ]]; then echo linux-desktop; return 0; fi
+  echo linux-cli
+}
+
+# host_choice_write FILE VALUE: the only writer of the host file. The temp file
+# is in the same directory, so mv -f is an atomic replace and nothing is left
+# behind on failure. Under bats the path must be inside the test's scratch
+# directory (preflight_bats_path_guard).
+host_choice_write() {
+  local file="$1" value="$2" dir tmp
+  preflight_bats_path_guard install "the host file" "$file"
+  # -d follows symlinks. mv -f would otherwise move the temp file INTO the
+  # directory and report success (mv -T is GNU-only, not on macOS).
+  if [[ -d "$file" ]]; then
+    printf '[install:error] %s is a directory; remove it\n' "$file" >&2
+    return 1
+  fi
+  dir="$(dirname "$file")"
+  mkdir -p "$dir" || return 1
+  tmp="$(mktemp "$dir/.host.XXXXXX")" || return 1
+  CLEANUP+=("$tmp")
+  if printf '%s\n' "$value" >"$tmp" && mv -f "$tmp" "$file"; then return 0; fi
+  rm -f "$tmp"
+  return 1
+}
+
+# host_choice_commit FILE VALUE: write it, or say so in a dry run.
+host_choice_commit() {
+  if [[ "$DRY_RUN" == 1 ]]; then
+    log "dry run: would write $1 ($2)"
+    return 0
+  fi
+  host_choice_write "$1" "$2" || fail "cannot write the host file $1"
+  log "Host file: wrote $1 ($2)"
+}
+
+# host_choice_ask VAR DEFAULT: ask which host this is, through selection_read.
+# Empty takes DEFAULT, an unknown answer is asked again, q or end of input
+# stops the install before anything changed.
+host_choice_ask() {
+  local __hc_var="$1" __hc_default="$2" __hc_ans
+  while :; do
+    selection_read __hc_ans "Host type (linux-desktop|linux-cli; q quits) [$__hc_default]: " || __hc_ans=q
+    __hc_ans="${__hc_ans#"${__hc_ans%%[![:space:]]*}"}"
+    __hc_ans="${__hc_ans%"${__hc_ans##*[![:space:]]}"}"
+    case "$__hc_ans" in
+      '') __hc_ans="$__hc_default"; break ;;
+      linux-desktop | linux-cli) break ;;
+      q | Q | quit)
+        printf '[install] cancelled at the host question: nothing was changed, no host file written\n' >&2
+        exit 1
+        ;;
+      *) printf 'please answer linux-desktop, linux-cli or q\n' >&2 ;;
+    esac
+  done
+  printf -v "$__hc_var" '%s' "$__hc_ans"
+}
+
 # INSTALL_NIXOS_MARKER / INSTALL_OS_RELEASE are test seams (same idea as the
 # DETECT_HOST_* overrides in ops/detect-host.sh).
 is_nixos() {
@@ -192,9 +312,42 @@ step "Preflight"
 for cmd in git bash; do
   have "$cmd" || fail "missing required command: $cmd"
 done
-if [[ -z "${HOST_PROFILE:-}" ]]; then
+HOST_SOURCE=env
+if [[ -n "$OPT_HOST" ]]; then
+  HOST_PROFILE="$OPT_HOST"
+  HOST_SOURCE=flag
+  host_choice_commit "$(bash "$REPO_ROOT/ops/detect-host.sh" --host-file)" "$HOST_PROFILE"
+elif [[ -z "${HOST_PROFILE:-}" ]]; then
   HOST_PROFILE="$(bash "$REPO_ROOT/ops/detect-host.sh")" \
     || fail "ops/detect-host.sh failed; set HOST_PROFILE explicitly"
+  HOST_SOURCE="$(bash "$REPO_ROOT/ops/detect-host.sh" --source)" \
+    || fail "ops/detect-host.sh --source failed; set HOST_PROFILE explicitly"
+  # Ask once: no remembered host on a TTY, or --reconfigure with a remembered
+  # host or none. Never on macOS, WSL2 or with HOST_PROFILE (source detected/env).
+  host_ask_reason=""
+  if ((OPT_RECONFIGURE)) && [[ "$HOST_SOURCE" == file || "$HOST_SOURCE" == default ]]; then
+    host_ask_reason="--reconfigure: asking which host this is again (the selection questions follow)"
+  elif [[ "$HOST_SOURCE" == default ]] && have_tty; then
+    host_ask_reason="no remembered host: asking once which host this is"
+  elif [[ "$HOST_SOURCE" == default ]]; then
+    log "no remembered host; using $HOST_PROFILE. Run: sys-install --host linux-cli (or linux-desktop) to remember it; nothing was written"
+  fi
+  if [[ -n "$host_ask_reason" ]]; then
+    host_file="$(bash "$REPO_ROOT/ops/detect-host.sh" --host-file)"
+    log "$host_ask_reason (file: $host_file)"
+    if [[ "$HOST_SOURCE" == file ]]; then
+      host_default="$HOST_PROFILE"
+    elif [[ "${HOST_PROFILE_DEFAULT:-}" == linux-desktop || "${HOST_PROFILE_DEFAULT:-}" == linux-cli ]]; then
+      # A valid HOST_PROFILE_DEFAULT is the user's stated fallback; it wins over the guess.
+      host_default="$HOST_PROFILE_DEFAULT"
+      log "default from HOST_PROFILE_DEFAULT ($HOST_PROFILE_DEFAULT)"
+    else
+      host_default="$(host_guess)"
+    fi
+    host_choice_ask HOST_PROFILE "$host_default"
+    HOST_SOURCE=prompt
+    host_choice_commit "$host_file" "$HOST_PROFILE"
+  fi
 fi
 case "$HOST_PROFILE" in
   macos|linux-desktop|linux-cli|wsl) ;;
@@ -221,6 +374,7 @@ fi
 preflight_host_checks "$REPO_ROOT" "$HOST_PROFILE" warn
 log "Repo:  $REPO_ROOT"
 log "Host:  $HOST_PROFILE"
+log "Source: $HOST_SOURCE"
 log "NixOS: $(is_nixos && echo yes || echo no)"
 log "Mode:  $([[ "$DRY_RUN" == 1 ]] && echo dry-run || echo APPLY)"
 

@@ -7,6 +7,7 @@
 # warn "<message>" before calling the functions that report through them.
 #
 #   preflight_bats_guard TAG WHAT REPO_ROOT   refuse to mutate from a bats test
+#   preflight_bats_path_guard TAG WHAT PATH   refuse a write outside the test scratch dir
 #   preflight_ensure_nix_features             enable nix-command/flakes for this run
 #                                             when this Nix lacks them (once)
 #   preflight_check_login_user REPO_ROOT      login user == `nix eval` username
@@ -47,6 +48,19 @@ preflight_bats_guard() {
   fi
   printf '[%s] refusing %s from a bats test (HOME=%s, repo=%s); use a dry run, or a scratch HOME and a repo copy under $BATS_TEST_TMPDIR\n' \
     "$tag" "$what" "$HOME" "$repo_root" >&2
+  exit 3
+}
+
+# Under bats a file this run would write must be inside the test's scratch
+# directory (a pinned path such as APP_CONFIGS_HOST_FILE), never the
+# developer's real one. Exit status 3, like preflight_bats_guard.
+preflight_bats_path_guard() {
+  local tag="$1" what="$2" path="$3"
+  [[ -n "${BATS_TEST_TMPDIR:-}" ]] || return 0
+  if [[ "$path" != */../* && "$path" != */.. ]] && _preflight_under "$path" "$BATS_TEST_TMPDIR"; then
+    return 0
+  fi
+  printf '[%s] refusing to write %s %s from a bats test; pin its path under $BATS_TEST_TMPDIR\n' "$tag" "$what" "$path" >&2
   exit 3
 }
 

@@ -751,7 +751,7 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
         if ($2 == "eval" && ($0 ~ /--option allow-import-from-derivation false/ || $0 ~ / -f /)) next
         print; next }
       $1 == "nix-store" { if ($2 == "-q" && $3 == "--references") next; print; next }
-      $1 == "chezmoi" { if ($2 ~ /^--source=/ && $3 == "status" && $4 == "--no-tty") next; print; next }
+      $1 == "chezmoi" { if ($2 == "source-path" && NF == 2) next; if ($2 ~ /^--source=/ && $3 == "status" && $4 == "--no-tty") next; print; next }
       $1 == "brew" { if ($2 == "list" && $3 == "--cask" && $4 == "-1") next; print; next }
       { print }' "$STUB_LOG")"
     [ -z "$bad" ] || { echo "unexpected calls:"; echo "$bad"; return 1; }

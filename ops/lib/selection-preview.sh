@@ -162,8 +162,7 @@ _sel_files_section() { # _sel_files_section HEADER MODE A B
 }
 
 _sel_chezmoi_section() {
-  local repo out line col n=0 added=0 modified=0 removed=0 scripts=0 total=0 label lines=()
-  repo="$(_sel_repo)"
+  local out line col n=0 added=0 modified=0 removed=0 scripts=0 total=0 label lines=()
   label="chezmoi files: pending repo changes"
   if [[ "$SELECTION_HOST" != macos ]]; then label+=" (the selection does not change chezmoi on Linux)"; fi
   printf '%s\n' "$label"
@@ -195,7 +194,7 @@ _sel_chezmoi_section() {
     done
     if ((total > 20)); then printf '      and %s more\n' "$((total - 20))"; fi
   fi
-  printf '    full diff: chezmoi --source=%s diff\n' "$repo"
+  printf '    full diff: chezmoi %sdiff\n' "${SEL_CHEZMOI_SOURCE_ARG:+$SEL_CHEZMOI_SOURCE_ARG }"
 }
 
 _sel_casks_section() {

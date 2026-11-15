@@ -401,16 +401,36 @@ _sel_state_files() { awk -F '\t' '$1 == "F" { print $2 "\t" $3 }' "$1" | LC_ALL=
 # Read-only: status never writes chezmoi's state (T-0043 spike).
 SEL_CHEZMOI=""
 SEL_CHEZMOI_WHY=""
+SEL_CHEZMOI_SOURCE_ARG=""
+# _sel_chezmoi_is_configured_source: true when the repo being diffed is the
+# source directory chezmoi itself is configured with (`chezmoi source-path`,
+# compared by resolved path against <repo>/<.chezmoiroot>). Templates render
+# .chezmoi.sourceDir, so only the configured spelling matches what apply wrote.
+_sel_chezmoi_is_configured_source() {
+  local repo root="" configured want
+  repo="$(_sel_repo)"
+  if [[ -f "$repo/.chezmoiroot" ]]; then root="$(head -n1 "$repo/.chezmoiroot")"; fi
+  configured="$(chezmoi source-path </dev/null 2>/dev/null | head -n1)" || return 1
+  [[ -n "$configured" ]] || return 1
+  configured="$(readlink -f "$configured" 2>/dev/null)" || return 1
+  want="$(readlink -f "$repo${root:+/$root}" 2>/dev/null)" || return 1
+  [[ "$configured" == "$want" ]]
+}
 _sel_chezmoi_status() {
   local err="$SELECTION_WORK/chezmoi.err" first
+  local -a src=()
   SEL_CHEZMOI=ok
   SEL_CHEZMOI_WHY=""
+  SEL_CHEZMOI_SOURCE_ARG="--source=$(_sel_repo)"
   if ! command -v chezmoi >/dev/null 2>&1; then
     SEL_CHEZMOI=unavailable
     SEL_CHEZMOI_WHY="chezmoi not installed"
     return 0
   fi
-  if ! chezmoi --source="$(_sel_repo)" status --no-tty </dev/null >"$SELECTION_WORK/chezmoi.out" 2>"$err"; then
+  # The configured checkout is diffed the way `chezmoi apply` sees it (no
+  # --source); any other tree (a worktree, a test repo) is diffed by path.
+  if _sel_chezmoi_is_configured_source; then SEL_CHEZMOI_SOURCE_ARG=""; else src=("$SEL_CHEZMOI_SOURCE_ARG"); fi
+  if ! chezmoi ${src[@]+"${src[@]}"} status --no-tty </dev/null >"$SELECTION_WORK/chezmoi.out" 2>"$err"; then
     first="$(head -n1 "$err")"
     SEL_CHEZMOI=unavailable
     SEL_CHEZMOI_WHY="${first:-chezmoi status failed}"

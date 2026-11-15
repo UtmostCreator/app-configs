@@ -238,6 +238,24 @@ refute_log() {
     [[ "$output" == *"persistent state lock"* ]]
 }
 
+@test "chezmoi: the configured source dir reached through a symlink is diffed without --source" {
+    install_gen committed
+    ln -s "$FAKE" "$BATS_TEST_TMPDIR/link"
+    export STUB_CHEZMOI_SOURCE_PATH="$BATS_TEST_TMPDIR/link/home"
+    sd --selection-diff
+    [ "$status" -eq 0 ]
+    grep -Eq '^chezmoi status( |$)' "$STUB_LOG"
+    refute_log '^chezmoi .*--source'
+}
+
+@test "chezmoi: a repo that is not the configured source is still diffed with --source" {
+    install_gen committed
+    mkdir -p "$BATS_TEST_TMPDIR/other/home"
+    export STUB_CHEZMOI_SOURCE_PATH="$BATS_TEST_TMPDIR/other/home"
+    sd --selection-diff
+    grep -q "^chezmoi --source=$FAKE status" "$STUB_LOG"
+}
+
 @test "macOS: brew fails: exit 11, the cask source is unknown" {
     HP=macos; with_brew
     install_gen mac-committed

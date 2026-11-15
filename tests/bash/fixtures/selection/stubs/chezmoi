@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Stub chezmoi: logs the call. `status` prints $STUB_CHEZMOI_STATUS, or fails
-# with one stderr line when STUB_CHEZMOI_STATUS_FAIL is set.
+# with one stderr line when STUB_CHEZMOI_STATUS_FAIL is set. `source-path`
+# prints $STUB_CHEZMOI_SOURCE_PATH (the configured source dir), or nothing.
 printf 'chezmoi %s\n' "$*" >>"$STUB_LOG"
 case " $* " in
+  *" source-path "*) [ -z "${STUB_CHEZMOI_SOURCE_PATH:-}" ] || printf '%s\n' "$STUB_CHEZMOI_SOURCE_PATH" ;;
   *" status "*)
     if [ -n "${STUB_CHEZMOI_STATUS_FAIL:-}" ]; then
       printf 'chezmoi: %s\nsecond line\n' "$STUB_CHEZMOI_STATUS_FAIL" >&2

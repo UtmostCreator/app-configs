@@ -2,14 +2,7 @@ pre-commit:
   parallel: false
   commands:
     no-personal-yaml:
-      run: |
-        staged="$(git diff --cached --name-only | grep -E '^home/\.chezmoidata/(personal|personal\.local|projects)\.yaml$' || true)"
-        if [ -n "$staged" ]; then
-          echo "ERROR: private per-host data is staged: $staged"
-          echo "It contains real identity, hosts or paths and must never be committed."
-          echo "Run: git restore --staged $staged"
-          exit 1
-        fi
+      run: bash ops/hooks/no-personal-yaml.sh
     shared-precommit:
       run: bash ops/hooks/pre-commit.sh
 

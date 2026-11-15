@@ -23,7 +23,8 @@ setup() {
 }
 
 @test "the pre-commit guard refuses staged private data files" {
-    grep -q 'projects' .lefthook.yml || { echo ".lefthook.yml does not guard projects.yaml"; return 1; }
+    grep -q 'bash ops/hooks/no-personal-yaml.sh' .lefthook.yml || { echo ".lefthook.yml does not run the guard script"; return 1; }
+    grep -q 'projects' ops/hooks/no-personal-yaml.sh || { echo "guard script does not cover projects.yaml"; return 1; }
 }
 
 @test "the repo carries no PHP code (log-errors lives in restsift)" {

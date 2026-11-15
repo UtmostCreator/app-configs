@@ -92,6 +92,7 @@ for file in \
     .lefthook.yml \
     ops/hooks/pre-commit.sh \
     ops/hooks/commit-msg.sh \
+    ops/hooks/no-personal-yaml.sh \
     ops/syncthing-obsidian-stignore.sh \
     reference/syncthing/obsidian.stignore; do
     check_file "$file"

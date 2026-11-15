@@ -26,7 +26,7 @@ Hooks:
 
 | Hook | Runs |
 |------|------|
-| pre-commit | inline `no-personal-yaml` check, then `ops/hooks/pre-commit.sh` |
+| pre-commit | `ops/hooks/no-personal-yaml.sh`, then `ops/hooks/pre-commit.sh` |
 | commit-msg | `ops/hooks/commit-msg.sh` |
 | pre-push | `ops/validate-config.sh`, then `ops/hooks/pre-push.sh` |
 | post-merge | `ops/hooks/post-merge.sh` (drift hints) |

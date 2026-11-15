@@ -16,7 +16,7 @@ setup() {
     UNAME=utmostcreator
     HOME_T="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME_T"
     export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/sel"
-    unset XDG_CONFIG_HOME WSL_DISTRO_NAME NIX_CONFIG STUB_NIX_FAIL_OVERRIDE STUB_NIX_STORE_FAIL \
+    unset XDG_CONFIG_HOME WSL_DISTRO_NAME NIX_CONFIG STUB_NIX_FAIL_OVERRIDE STUB_NIX_EVAL_FAIL STUB_NIX_STORE_FAIL \
         STUB_CHEZMOI_STATUS STUB_CHEZMOI_STATUS_FAIL STUB_BREW_CASKS STUB_REFS_FILE
     export XDG_STATE_HOME="$HOME_T/.local/state"
     export DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-wsl-run" DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-wsl-interop"
@@ -189,7 +189,9 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     v="$(grep -n "^nix eval .*--override-input selection" "$STUB_LOG" | head -n1 | cut -d: -f1)"
     c="$(grep -n '^chezmoi' "$STUB_LOG" | head -n1 | cut -d: -f1)"
     h="$(grep -n '^home-manager' "$STUB_LOG" | head -n1 | cut -d: -f1)"
-    [ -n "$v" ] && [ -n "$c" ] && [ -n "$h" ]
+    [ -n "$v" ]
+    [ -n "$c" ]
+    [ -n "$h" ]
     [ "$v" -lt "$c" ]
     [ "$v" -lt "$h" ]
 }
@@ -607,6 +609,15 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     [ "$status" -eq 0 ]
     [[ "$output" == *"preview unavailable: nix not installed"* ]]
     [ ! -e "$APP_CONFIGS_SELECTION_DIR" ]
+}
+
+@test "a dry-run with no local selection survives a preview that cannot be evaluated" {
+    export STUB_NIX_EVAL_FAIL=1
+    inst --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"stub: evaluation failure"* ]]
+    [[ "$output" == *"preview unavailable: the committed default could not be evaluated"* ]]
+    [[ "$output" == *"home-manager switch -b hm-bak --flake $FAKE/nix#linux-desktop"* ]]
 }
 
 @test "a dry-run with no change shows only the present-state and pending blocks" {

@@ -346,8 +346,16 @@ case "$selection_mode" in
   *)
     log "Selection: no local selection; using the committed default (nothing written)"
     if [[ "$DRY_RUN" == 1 ]]; then
-      selection_facts_or_stop
-      if ((facts_rc == 0)); then selection_preview; fi
+      # Informational only: there is no local file to validate, and the committed
+      # default was checked by the flake check above. A failed evaluation here
+      # must not turn a dry run into an error.
+      facts_rc=0
+      selection_facts || facts_rc=$?
+      case "$facts_rc" in
+        0) selection_preview ;;
+        2) ;;
+        *) printf 'preview unavailable: the committed default could not be evaluated (see the error above)\n' ;;
+      esac
     fi
     ;;
 esac

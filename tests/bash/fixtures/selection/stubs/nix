@@ -6,7 +6,7 @@
 # The selection a call evaluates is the one named by --override-input; no
 # override means the committed default. STUB_NIX_FAIL_OVERRIDE=1 fails every
 # eval that carries an override of a directory other than $APP_CONFIGS_SELECTION_DIR
-# (the proposed selection).
+# (the proposed selection). STUB_NIX_EVAL_FAIL=1 fails every state or members eval.
 printf 'nix %s\n' "$*" >>"$STUB_LOG"
 FIX="${STUB_STATE_DIR:?}"
 case "${1:-}" in
@@ -30,6 +30,10 @@ done
 if [ -n "$file" ]; then
   sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\1/p' "$file"
   exit 0
+fi
+if [ -n "${STUB_NIX_EVAL_FAIL:-}" ]; then
+  echo "error: stub: evaluation failure" >&2
+  exit 1
 fi
 dir=""
 if [ -n "$override" ]; then

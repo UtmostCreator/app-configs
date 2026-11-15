@@ -59,7 +59,8 @@ selection_write() {
 selection_validate() {
   command -v nix >/dev/null 2>&1 || return 2
   selection_args
-  _sel_eval /dev/null "$SELECTION_WORK/validate.err" "$(_sel_attr_check)" "$(_sel_expr_check)" \
+  wait_run "checking the local selection (read-only evaluation)" "10-120 seconds" \
+    _sel_eval /dev/null "$SELECTION_WORK/validate.err" "$(_sel_attr_check)" "$(_sel_expr_check)" \
     || { _sel_show_err "$SELECTION_WORK/validate.err"; return 1; }
 }
 
@@ -132,7 +133,8 @@ selection_propose() {
   rm -rf "$dir"
   selection_write "$dir" "$@" || return 1
   selection_override_args "$dir"
-  _sel_eval_for proposed "$SELECTION_WORK/p.tsv" "$SELECTION_WORK/p.err" "$(_sel_attr_state)" "$(_sel_expr_state)" \
+  wait_run "evaluating the proposed selection (read-only)" "10-120 seconds" \
+    _sel_eval_for proposed "$SELECTION_WORK/p.tsv" "$SELECTION_WORK/p.err" "$(_sel_attr_state)" "$(_sel_expr_state)" \
     || { _sel_show_err "$SELECTION_WORK/p.err"; return 1; }
   _sel_state_packages "$SELECTION_WORK/p.tsv" >"$SELECTION_WORK/p-pkgs.tsv"
 }
@@ -503,6 +505,9 @@ selection_prompt_loop() {
       printf 'preview unavailable: nix not installed\n'
     fi
     while true; do
+      # The preview above can be 200 lines; a rule and the profile make the
+      # question easy to find at the bottom of it.
+      printf '\n---- Decision needed: profile "%s". Nothing is installed until you answer. ----\n' "$SEL_ANS_PROFILE" >&2
       selection_read ans '[a]pply  [c]hange selection  [q]uit: ' || return 3
       case "$ans" in
         a | A | apply) return 0 ;;

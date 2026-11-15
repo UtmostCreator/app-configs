@@ -9,6 +9,8 @@
 # /etc/profile.d, NixOS markers) redirected to scratch, so nothing real is
 # installed and the host cannot change a result.
 
+bats_require_minimum_version 1.5.0
+
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     # Never let install.sh see the real HOME, even if DRY_RUN were lost.
@@ -146,6 +148,8 @@ case \"\$1\" in
   profile)
     # \`nix profile install\` makes every <tool>.pending stub appear as <tool>.
     for f in \"\$STUBS\"/*.pending; do [ ! -e \"\$f\" ] || mv \"\$f\" \"\${f%.pending}\"; done ;;
+  flake) [ -z \"\${NIX_STUB_SLEEP:-}\" ] || sleep \"\$NIX_STUB_SLEEP\"
+    [ -z \"\${NIX_STUB_FLAKE_FAIL:-}\" ] || exit \"\$NIX_STUB_FLAKE_FAIL\" ;;
   --version) echo 'nix (stub) 0' ;;
 esac
 [ -z \"\${STUB_FAIL_NIX:-}\" ] || exit \"\$STUB_FAIL_NIX\"
@@ -335,7 +339,7 @@ make_repo() {
 restricted_path() {
     local bin="$BATS_TEST_TMPDIR/basebin" c
     mkdir -p "$bin"
-    for c in bash sh git sed grep cat cut head tr mktemp rm mkdir dirname id uname env date cp mv touch wc sort tail basename readlink chmod; do
+    for c in bash sh git sed grep cat cut head tr mktemp rm mkdir dirname id uname env date cp mv touch wc sort tail basename readlink chmod sleep; do
         ln -sf "$(command -v "$c")" "$bin/$c"
     done
     RPATH="$STUBS:$bin"
@@ -735,4 +739,32 @@ helpers_present() {
     [[ "$output" == *"2 "*"bad argument"* ]]
     [[ "$output" == *"3 "*"bats"* ]]
     [[ "$output" == *"sudo"* ]]
+}
+
+@test "a slow step announces itself, heartbeats on stderr, and leaves plain output and no ticker (non-TTY)" {
+    make_repo repo
+    stub "$STUBS/lefthook" 'exit 0'
+    restricted_path
+    run --separate-stderr env USER=utmostcreator PATH="$RPATH" HOST_PROFILE=linux-cli WAIT_HEARTBEAT_SECS=1 \
+        NIX_STUB_SLEEP=3 WAIT_TICKER_PIDFILE="$BATS_TEST_TMPDIR/tick.pid" bash "$FAKE/ops/install.sh" </dev/null
+    [ "$status" -eq 0 ]
+    [[ "$stderr" == *"[wait] nix flake check"*"starting, expected"* ]]
+    [[ "$stderr" == *"[wait] nix flake check"*"still running"* ]]
+    [[ "$stderr" == *"[wait] nix flake check"*"done in"*"(exit 0)"* ]]
+    # stdout keeps the install log; heartbeats are not on it
+    [[ "$output" != *"still running"* ]]
+    [[ "$output" != *$'\r'* && "$stderr" != *$'\r'* && "$stderr" != *$'\033'* ]]
+    if kill -0 "$(cat "$BATS_TEST_TMPDIR/tick.pid")" 2>/dev/null; then return 1; fi
+}
+
+@test "a failing slow step still ends with the install error line and no ticker" {
+    make_repo repo
+    stub "$STUBS/lefthook" 'exit 0'
+    restricted_path
+    run --separate-stderr env USER=utmostcreator PATH="$RPATH" HOST_PROFILE=linux-cli WAIT_HEARTBEAT_SECS=1 \
+        NIX_STUB_SLEEP=2 NIX_STUB_FLAKE_FAIL=3 WAIT_TICKER_PIDFILE="$BATS_TEST_TMPDIR/tick.pid" bash "$FAKE/ops/install.sh" </dev/null
+    [ "$status" -eq 3 ]
+    [[ "$stderr" == *"(exit 3)"* ]]
+    [[ "$stderr" == *"[install:error] command failed (exit 3): nix flake check"* ]]
+    if kill -0 "$(cat "$BATS_TEST_TMPDIR/tick.pid")" 2>/dev/null; then return 1; fi
 }

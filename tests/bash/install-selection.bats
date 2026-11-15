@@ -274,6 +274,8 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     [ "$status" -eq 0 ]
     [ "$(sel_text)" = "$(printf 'profile = "work"\n\n[groups]\nmedia = false')" ]
     [[ "$output" == *"[a]pply  [c]hange selection  [q]uit"* ]]
+    # a rule just above the question, so it is not lost under a long preview
+    [[ "$output" == *"Decision needed: profile "*"Nothing is installed until you answer."*"[a]pply  [c]hange selection  [q]uit"* ]]
     grep -q "^home-manager switch .*--override-input selection path:$APP_CONFIGS_SELECTION_DIR\$" "$STUB_LOG"
 }
 

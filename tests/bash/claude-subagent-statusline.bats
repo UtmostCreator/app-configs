@@ -54,9 +54,9 @@ FOUR_AGENTS() {
     run rows "$(FOUR_AGENTS)"
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 4 ]
-    [ "${lines[0]}" = "a1=▶ Explore      1m42 · ctx 24% │ Sonnet 5:H" ]
-    [ "${lines[1]}" = "a2=▶ UI-review    4m18 · ctx 71% │ Opus 5:X" ]
-    [ "${lines[2]}" = "a3=✓ Tests             · ctx 36% │ Sonnet 5:H" ]
+    [ "${lines[0]}" = "a1=▶ Explore      1m42 · ctx 24%   │ Sonnet 5:H" ]
+    [ "${lines[1]}" = "a2=▶ UI-review    4m18 · ctx 71%   │ Opus 5:X" ]
+    [ "${lines[2]}" = "a3=✓ Tests             · ctx 36%   │ Sonnet 5:H" ]
     [ "${lines[3]}" = "a4=▶ Architecture 7m31 · ctx 84% ! │ Opus 5:max" ]
 }
 
@@ -139,9 +139,9 @@ FOUR_AGENTS() {
 @test "narrow panel (below 60 columns): glyph, name, compact model tag with effort initial, context" {
     run rows "$(FOUR_AGENTS | jq '.columns = 50')"
     [ "$status" -eq 0 ]
-    [ "${lines[0]}" = "a1=▶ Explore      Son 5:H  ctx 24%" ]
-    [ "${lines[1]}" = "a2=▶ UI-review    Opus 5:X ctx 71%" ]
-    [ "${lines[2]}" = "a3=✓ Tests        Son 5:H  ctx 36%" ]
+    [ "${lines[0]}" = "a1=▶ Explore      Son 5:H    ctx 24%" ]
+    [ "${lines[1]}" = "a2=▶ UI-review    Opus 5:X   ctx 71%" ]
+    [ "${lines[2]}" = "a3=✓ Tests        Son 5:H    ctx 36%" ]
     [ "${lines[3]}" = "a4=▶ Architecture Opus 5:max ctx 84% !" ]
 }
 
@@ -305,9 +305,9 @@ ctx_code() {
         --argjson b "$(task b B claude-opus-5 high completed 160000 200000 5)" \
         --argjson c "$(task c C claude-opus-5 high completed 158000 200000 5)" '{columns: 120, tasks: [$a, $b, $c]}')
     run rows "$input"
-    [ "${lines[0]}" = "a=✓ A ctx 10% │ Opus 5:H" ]
+    [ "${lines[0]}" = "a=✓ A ctx 10%   │ Opus 5:H" ]
     [ "${lines[1]}" = "b=✓ B ctx 80% ! │ Opus 5:H" ]
-    [ "${lines[2]}" = "c=✓ C ctx 79% │ Opus 5:H" ]
+    [ "${lines[2]}" = "c=✓ C ctx 79%   │ Opus 5:H" ]
 }
 
 @test "runtime tint: pending rows are tinted, finished rows show no runtime" {
@@ -346,4 +346,69 @@ ctx_code() {
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 2 ]
     [ "${lines[0]}" = "a=· A ctx 1% │ Opus 5:H" ]
+}
+
+# model_col <content>: the display column where the first group separator after the name starts.
+model_cols() {
+    bash "$SCRIPT" <<<"$1" | jq -r .content | sed 's/\x1b\[[0-9;]*m//g' | while IFS= read -r l; do
+        head=${l%%│*}
+        printf '%s\n' "${#head}"
+    done
+}
+
+@test "mixed context widths, a missing context and tok rows keep the model column aligned" {
+    input=$(jq -n \
+        --argjson a "$(task a A claude-opus-5 high running 18000 200000 70)" \
+        --argjson b "$(task b B claude-opus-5 high running 170000 200000 70)" \
+        --argjson c "$(task c C claude-opus-5 high running 298000 0 70)" \
+        --argjson d "$(task d D claude-opus-5 high running 0 200000 70 | jq 'del(.tokenCount)')" \
+        '{columns: 120, tasks: [$a, $b, $c, $d]}')
+    run rows "$input"
+    [ "${lines[0]}" = "a=▶ A 1m10 · ctx 9%    │ Opus 5:H" ]
+    [ "${lines[1]}" = "b=▶ B 1m10 · ctx 85% ! │ Opus 5:H" ]
+    [ "${lines[2]}" = "c=▶ C 1m10 · tok 298k  │ Opus 5:H" ]
+    [ "${lines[3]}" = "d=▶ D 1m10 ·           │ Opus 5:H" ]
+    run model_cols "$input"
+    [ "$(printf '%s\n' "${lines[@]}" | sort -u | wc -l)" -eq 1 ]
+}
+
+@test "label is added only when the room left after the model padding is at least 8" {
+    # Row a has a very long model name, so row b is padded by about 37 columns;
+    # its label must not be added when the room left is smaller than that padding.
+    input=$(jq -n \
+        --argjson a "$(real_task reviewer 'x' | jq '.model = "claude-aaaaaaaaaaaa-bbbbbbbbbbbbbbb-ccccccccc"')" \
+        --argjson b "$(real_task researcher 'Check delegation nesting' | jq '.id = "b" | .model = "x"')" \
+        '{columns: 60, tasks: [$a, $b]}')
+    for cols in $(seq 60 100); do
+        w=$(bash "$SCRIPT" <<<"$(jq --argjson c $cols '.columns = $c' <<<"$input")" | jq -r 'select(.id == "b") | .content' | sed 's/\x1b\[[0-9;]*m//g')
+        [ "${#w}" -le "$cols" ] || { echo "cols=$cols width=${#w}: $w"; false; }
+    done
+    # With room to spare the label is there, after the padded model column.
+    run rows "$(jq '.columns = 120' <<<"$input")"
+    [[ "${lines[1]}" == "b=▶ researcher"*"│ Check delegation nesting" ]]
+}
+
+@test "narrow panel: every effort initial, and exact fit with max" {
+    input=$(jq -n \
+        --argjson a "$(task a A claude-opus-5 low running 1000 200000 5)" \
+        --argjson b "$(task b B claude-opus-5 medium running 1000 200000 5)" \
+        --argjson c "$(task c C claude-opus-5 high running 1000 200000 5)" \
+        --argjson d "$(task d D claude-opus-5 xhigh running 1000 200000 5)" \
+        --argjson e "$(task e E claude-opus-5 max running 1000 200000 5)" \
+        --argjson f "$(task f F claude-opus-5 odd running 1000 200000 5)" \
+        '{columns: 50, tasks: [$a, $b, $c, $d, $e, $f]}')
+    run rows "$input"
+    [ "${lines[0]}" = "a=▶ A Opus 5:L   ctx 1%" ]
+    [ "${lines[1]}" = "b=▶ B Opus 5:M   ctx 1%" ]
+    [ "${lines[2]}" = "c=▶ C Opus 5:H   ctx 1%" ]
+    [ "${lines[3]}" = "d=▶ D Opus 5:X   ctx 1%" ]
+    [ "${lines[4]}" = "e=▶ E Opus 5:max ctx 1%" ]
+    [ "${lines[5]}" = "f=▶ F Opus 5     ctx 1%" ]
+    # one row with max: 2 + name 1 + 1 + "Opus 5:max" 10 + 1 + "ctx 1%" 6 = 21 columns exactly
+    one=$(jq -n --argjson e "$(task e E claude-opus-5 max running 1000 200000 5)" '{columns: 21, tasks: [$e]}')
+    run rows "$one"
+    [ "$output" = "e=▶ E Opus 5:max ctx 1%" ]
+    run rows "$(jq '.columns = 20' <<<"$one")"
+    [ "$output" = "e=▶ E Opus 5 ctx 1%" ]
+    [ "${#output}" -le 22 ]
 }

@@ -4,8 +4,9 @@
 # https://code.claude.com/docs/en/statusline#subagent-status-lines
 #
 # NOTE (2026-11): Claude Code 2.1.323 removed the `subagentStatusLine` setting
-# (CHANGELOG 2.1.323; anthropics/claude-code#109446, #109494) and 2.1.325 still
-# ignores it, so the agent panel shows its default rows. A maintainer said a
+# (CHANGELOG 2.1.323; anthropics/claude-code#109446, #109494). As of the 2.1.325
+# changelog (checked 2026-11-15) it is not restored and the issue is open, so the
+# agent panel shows its default rows; a build newer than 2.1.325 may differ. A maintainer said a
 # grace period is planned for the next release and the feature is moving to
 # mods. This renderer and its tests are kept until that lands.
 #
@@ -15,16 +16,21 @@
 #         task text is `label`. `name` is still honoured when present.
 # stdout: one {"id", "content"} JSON line per row.
 #
-# Row:     reviewer Opus 5 · max · ▶ ctx 84% ! · 7m31 · Check delegation nesting
-# Narrow:  reviewer Opus 5:M ▶ ctx 84% !                (columns < 60, no task text)
-# The trailing task text is cut to the columns left (dropped under 8), so a row
-# never exceeds `columns`. Names are coloured by agent type, models by family.
+# Row:     ▶ reviewer #1  7m31 · ctx 84% ! │ Opus 5.5:max │ Check delegation nesting
+# Narrow:  ▶ reviewer #1 Opus 5.5:max ctx 84% !         (columns < 60, no task text)
+# Agents sharing a type are numbered #1, #2 (start time, then id). Runtime and
+# context are padded to the widest row so the model and task columns line up.
+# The trailing task text is cut to the columns left and dropped when fewer than
+# 8 remain, so a row never exceeds `columns`. Names are coloured by agent type,
+# models by family. Without a window size the context shows "tok 298k" (no %).
 #
 # Status: ▶ running  ◷ pending  ✓ completed  ✗ failed  ■ killed. Elapsed time is
-# shown only while running/pending (tasks carry no end time), tinted by duration:
-# 5m faint yellow, 10m yellow, 20m orange, 30m bold red. NO_COLOR drops all codes. "!" after the context % at >= 80%.
-# Narrow keeps a compact model tag (Sonnet -> Son) plus the effort initial when
-# the row still fits; without a model there is no tag.
+# shown only while running/pending (tasks carry no end time). Runtime colour:
+# under 5m neutral, 5m yellow, 15m orange, 30m muted red (38;5;167). Context colour:
+# under 70 green, 70 yellow, 85 orange, 95 red; "!" after the % at >= 80%.
+# NO_COLOR drops all codes. Narrow keeps a compact model tag (Sonnet -> Son) plus
+# the effort tag (H, M, L, X, max) when the row still fits; without a model there
+# is no tag.
 # STATUSLINE_NOW (epoch seconds) pins the clock for tests.
 set -euo pipefail
 
@@ -117,7 +123,7 @@ jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date 
                    elif .tokens != null then 4 + (.tokens | length) else 0 end)] | max // 0) as $ctx_w
     | ([$rows[] | select((.status == "running" or .status == "pending") and .since != null)
         | (.since | elapsed | length)] | max // 0) as $age_w
-    | ([$rows[] | (.model | sub("^Sonnet"; "Son")) + (if .model != "" and .effort != "" then ":x" else "" end) | length] | max // 0) as $full_w
+    | ([$rows[] | (.model | sub("^Sonnet"; "Son")) + (if .model != "" and .effort != "" and (.effort | test("^[A-Za-z]")) then ":" + .effort else "" end) | length] | max // 0) as $full_w
     | ([$rows[].model | sub("^Sonnet"; "Son") | length] | max // 0) as $tag_w
     | $rows[]
     | ((.status) | icon) as [$glyph, $glyph_color]
@@ -147,16 +153,19 @@ jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date 
              | ([$g, $name, ($mark | tint($model_c)), $ctx] | map(select(length > 0)) | join(" ")))
          else
             # Time group: runtime then context, padded so context aligns across rows.
-            (if $age_w > 0
-             then (if $age_plain_w > 0 then $age + (" " * ($age_w - $age_plain_w)) else " " * $age_w end)
-                  + (if $ctx != "" then " \($dot) " + $ctx else "" end)
-             else $ctx end) as $time
+            # A missing context leaves a blank slot of the same width.
+            (if $ctx_w > 0 then $ctx + (" " * ($ctx_w - $ctx_plain_w)) else "" end) as $ctx_slot
+            | (if $age_w > 0
+               then (if $age_plain_w > 0 then $age + (" " * ($age_w - $age_plain_w)) else " " * $age_w end)
+                    + (if $ctx_w > 0 then " \($dot) " + $ctx_slot else "" end)
+               else $ctx_slot end) as $time
             | ($model_plain | length) as $mw
             | (([$g, $name, $time] | map(select(length > 0)) | join(" "))
                + " \($sep) " + ($model_plain | tint($model_c))) as $base
             | ($cols - ($base | plain | length) - 3) as $room
-            | if .task != "" and $room >= 8
-              then ($base | sub("\\s+$"; "")) + (" " * ([$model_w - $mw, 0] | max)) + " \($sep) " + (.task | truncate([$room - ([$model_w - $mw, 0] | max), 40] | min))
+            | ([$model_w - $mw, 0] | max) as $pad
+            | if .task != "" and $room - $pad >= 8
+              then $base + (" " * $pad) + " \($sep) " + (.task | truncate([$room - $pad, 40] | min))
               else $base end
          end)}
 '

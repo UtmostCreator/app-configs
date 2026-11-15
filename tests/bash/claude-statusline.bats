@@ -465,7 +465,8 @@ FULLER='{"context_window": {"remaining_percentage": 45.2}}'
 @test "layouts step down with the width: full, compact, minimal" {
     full="$(jq -n --argjson a "$FULL" --argjson b "$FULLER" '$a * $b')"
     COLUMNS=120 run statusline "$full"
-    [ "${#lines[@]}" -eq 2 ] && [[ "${lines[1]}" == "Ctx █"* ]]
+    [ "${#lines[@]}" -eq 2 ]
+    [[ "${lines[1]}" == "Ctx █"* ]]
     COLUMNS=119 run statusline "$full"
     [ "${lines[0]}" = "advanced-gym main │ Opus 5:H │ Ctx 55% · 452k left │ 5h 72% · 7d 41%" ]
     COLUMNS=79 run statusline "$full"
@@ -484,13 +485,16 @@ FULLER='{"context_window": {"remaining_percentage": 45.2}}'
     done
 }
 
-@test "minimal layout drops the lower quota, then the other, as the terminal shrinks" {
-    export COLUMNS=44
-    run statusline "$FULL"
-    [ "$output" = "advanced-gym main │ Opus:H │ Ctx 55%" ]
+@test "minimal layout gives up effort first, then the lower quota, then the other" {
     export COLUMNS=53
     run statusline "$FULL"
-    [ "$output" = "advanced-gym main │ Opus:H │ Ctx 55% │ 5h 72%" ]
+    [ "$output" = "advanced-gym main │ Opus │ Ctx 55% │ 5h 72% · 7d 41%" ]
+    export COLUMNS=44
+    run statusline "$FULL"
+    [ "$output" = "advanced-gym main │ Opus │ Ctx 55% │ 5h 72%" ]
+    export COLUMNS=42
+    run statusline "$FULL"
+    [ "$output" = "advanced-gym main │ Opus │ Ctx 55%" ]
 }
 
 @test "the statusline does not print the permission/auto mode (native footer owns it)" {
@@ -563,12 +567,15 @@ cache_file() {
 }
 
 @test "agent: unknown type is grey, and the tag follows RC and survives narrow widths" {
-    export COLUMNS=80
+    export COLUMNS=70
     session_file 222 sess-1 session_01Abc
     run statusline '{"session_id": "sess-1", "agent": {"name": "mystery"}}'
-    [ "$output" = "RC │ ◆ mystery │ advanced-gym main │ Opus 5 │ Ctx 55%" ]
+    [ "$output" = "RC │ ◆ mystery │ advanced-gym main │ Opus │ Ctx 55%" ]
     raw=$(payload '{"agent": {"name": "mystery"}}' | bash "$SCRIPT" | head -1)
     [[ "$raw" == $'\033[0;90m◆ mystery\033[0m │ '* ]]
+    # The compact layout (80-119 columns) keeps the tag too.
+    COLUMNS=100 run statusline '{"agent": {"name": "mystery"}}'
+    [[ "${lines[0]}" == "◆ mystery │ advanced-gym main │ Opus 5:H"* || "${lines[0]}" == "◆ mystery │ advanced-gym main │ Opus 5"* ]]
 }
 
 @test "agent: no tag when the payload has no agent" {
@@ -638,11 +645,11 @@ cache_file() {
 }
 
 @test "NO_COLOR: also applies to the agent tag, RC and narrow layouts" {
-    export COLUMNS=80
+    export COLUMNS=70
     session_file 222 sess-1 session_01Abc
     out=$(payload '{"session_id": "sess-1", "agent": {"name": "reviewer"}}' | NO_COLOR=1 bash "$SCRIPT")
     [[ "$out" != *$'\033'* ]]
-    [[ "$out" == "RC │ ◆ reviewer │ advanced-gym main │ Opus 5 │ Ctx 55%" ]]
+    [[ "$out" == "RC │ ◆ reviewer │ advanced-gym main │ Opus │ Ctx 55%" ]]
 }
 
 @test "NO_COLOR set but empty does not disable colour" {
@@ -725,7 +732,8 @@ cache_file() {
     [[ "$output" == *"7d ███░░░░░░░ 30%" && "$output" != *5h* ]]
     run statusline '{"rate_limits": "none", "context_window": "big", "cost": {"total_lines_added": "many", "total_lines_removed": 1.5}}'
     [ "$status" -eq 0 ]
-    [ "${lines[0]}" = "advanced-gym ⎇ main │ Opus 5" ] && [ "${lines[1]}" = "Ctx —" ]
+    [ "${lines[0]}" = "advanced-gym ⎇ main │ Opus 5" ]
+    [ "${lines[1]}" = "Ctx —" ]
     run statusline '{"cost": "free"}'
     [ "$status" -eq 0 ]
     [[ "$output" == "advanced-gym ⎇ main │ "* ]]
@@ -785,7 +793,7 @@ rich() {
     [ "${lines[2]}" = 'Git ●1 ✚1 …2 +2/-0 │ $294.30 · 139h31m · Cache 97%' ]
 }
 
-@test "compact layout (100 columns): rows 1 and 2 merge, shorter labels, effort initial" {
+@test "compact layout (100 columns): rows 1 and 2 merge, shorter labels, effort initial, agent tag kept" {
     out=$(rich | COLUMNS=100 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
     [ "$(wc -l <<<"$out")" -eq 2 ]
     [ "$(sed -n 1p <<<"$out")" = "RC │ ◆ orchestrator │ rich main* │ Opus 5.5:H │ Ctx 14% · 860k left │ 7d 92%" ]
@@ -795,9 +803,9 @@ rich() {
 @test "minimal layout (59 columns): no Git group, model without version, whole dollars" {
     out=$(rich | COLUMNS=59 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
     [ "$(wc -l <<<"$out")" -eq 2 ]
-    # 60 columns with the agent tag: it is the first whole metric to go on row 1,
-    # and row 3 keeps everything.
-    [ "$(sed -n 1p <<<"$out")" = "RC │ rich main* │ Opus:H │ Ctx 14% │ 7d 92%" ]
+    # One column short of fitting RC and the agent tag: RC is the first whole
+    # metric to go on row 1, and row 3 keeps everything.
+    [ "$(sed -n 1p <<<"$out")" = "◆ orchestrator │ rich main* │ Opus:H │ Ctx 14% │ 7d 92%" ]
     [ "$(sed -n 2p <<<"$out")" = '$294 · 139h31m │ Cache 97%' ]
     out=$(rich | COLUMNS=60 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
     [ "$(sed -n 1p <<<"$out")" = "RC │ ◆ orchestrator │ rich main* │ Opus:H │ Ctx 14% │ 7d 92%" ]
@@ -858,4 +866,29 @@ rich() {
     plain=$(payload "$FULL" | NO_COLOR=1 bash "$SCRIPT")
     [[ "$plain" != *$'\033'* ]]
     [ "$plain" = "$(sed 's/\x1b\[[0-9;]*m//g' <<<"$colored")" ]
+}
+
+@test "minimal layout drops RC, then effort, then quotas below 85%; the agent tag is shortened, then dropped last" {
+    out=$(rich | COLUMNS=55 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
+    [ "$(sed -n 1p <<<"$out")" = "◆ orchestrator │ rich main* │ Opus:H │ Ctx 14% │ 7d 92%" ]
+    out=$(rich | COLUMNS=54 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
+    [ "$(sed -n 1p <<<"$out")" = "◆ orchestrator │ rich main* │ Opus │ Ctx 14% │ 7d 92%" ]
+    out=$(rich | COLUMNS=48 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
+    [ "$(sed -n 1p <<<"$out")" = "◆ orch │ rich main* │ Opus │ Ctx 14% │ 7d 92%" ]
+    out=$(rich | COLUMNS=40 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
+    [ "$(sed -n 1p <<<"$out")" = "rich main* │ Opus │ Ctx 14% │ 7d 92%" ]
+    # A weaker quota goes before the agent tag does.
+    export COLUMNS=60
+    run statusline '{"agent": {"name": "orchestrator"}, "rate_limits": {"five_hour": {"used_percentage": 20}, "seven_day": {"used_percentage": 30}}}'
+    [[ "${lines[0]}" == *"◆ orchestrator"* ]]
+}
+
+@test "quota colour: green below 70, yellow below 85, orange from 85, red from 95" {
+    q7() { payload "{\"rate_limits\": {\"seven_day\": {\"used_percentage\": $1}}}" | bash "$SCRIPT" | grep -o $'\033\\[[0-9;]*m7d' | sed -E 's/^\x1b\[([0-9;]*)m7d$/\1/'; }
+    [ "$(q7 69)" = "0;32" ]
+    [ "$(q7 70)" = "0;33" ]
+    [ "$(q7 84)" = "0;33" ]
+    [ "$(q7 85)" = "38;5;208" ]
+    [ "$(q7 94)" = "38;5;208" ]
+    [ "$(q7 95)" = "0;31" ]
 }

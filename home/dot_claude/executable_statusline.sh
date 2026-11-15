@@ -60,10 +60,12 @@ fi
 FULL_MIN=120    # columns for the full layout
 COMPACT_MIN=80  # columns for the compact layout; below it, minimal
 
-# level_color <percent>: green below 70, yellow below 90, red otherwise.
+# level_color <percent> (quotas): green below 70, yellow below 85, orange below
+# 95 (the QUOTA_KEEP warning band starts at 85), red otherwise.
 level_color() {
     if   (( $1 < 70 )); then printf %s "$GREEN"
-    elif (( $1 < 90 )); then printf %s "$YELLOW"
+    elif (( $1 < 85 )); then printf %s "$YELLOW"
+    elif (( $1 < 95 )); then printf %s "$ORANGE"
     else                     printf %s "$RED"
     fi
 }
@@ -339,9 +341,10 @@ if (( added + removed > 0 )); then
     diff="${GREEN}+${added}${NC}/${RED}-${removed}${NC}"
 fi
 
-agent_tag=""
+agent_tag="" agent_tag_short=""
 if [[ -n "$agent_name" ]]; then
     agent_tag="$(agent_color "$agent_name")◆ ${agent_name}${NC}"
+    agent_tag_short="$(agent_color "$agent_name")◆ ${agent_name:0:4}${NC}"
 fi
 
 # Context: pressure colour on the whole segment. A missing field is "—", never 0%.
@@ -476,8 +479,11 @@ render() {
         else model_seg+=":$(effort_initial "$effort")"; fi
     fi
 
+    # The agent tag stays while agent.name exists; in minimal it is shortened to
+    # "◆ orch" (first 4 characters) before it is dropped, last of all.
     local rc_part=$remote_control agent_part=$agent_tag
     (( drop_rc )) && rc_part=""
+    (( drop_agent_short )) && agent_part=$agent_tag_short
     (( drop_agent )) && agent_part=""
     if [[ "$layout" == full ]]; then
         row1=$(join " $SEP " "$rc_part" "$agent_part" "$repo" "$model_seg")
@@ -510,7 +516,7 @@ render() {
 set_flags() {
     local layout=$1 level=$2
     drop_bars=0 drop_resets=0 drop_left=0 drop_weak=0 drop_strong=0 drop_effort=0
-    drop_agent=0 drop_rc=0 drop_cache=0 drop_session=0 drop_extras=0
+    drop_agent=0 drop_agent_short=0 drop_rc=0 drop_cache=0 drop_session=0 drop_extras=0
     case "$layout" in
         full)    drop_bars=$(( level >= 1 )) drop_resets=$(( level >= 2 )) ;;
         compact) drop_left=$(( level >= 1 )) ;;
@@ -518,13 +524,15 @@ set_flags() {
 }
 
 # set_min_flags <row1-level> <row3-level>: minimal gives up whole metrics, row by
-# row so that a crowded row 1 never costs row 3 anything. Row 1 loses the lower
-# quota, the higher one (below QUOTA_KEEP), the agent tag, the effort and RC;
+# row so that a crowded row 1 never costs row 3 anything. Row 1 loses RC, the
+# effort, the lower quota, the higher one (below QUOTA_KEEP), then the agent tag
+# is shortened to "◆ orch" and finally dropped, in that order;
 # row 3 loses WT/PR, the cache, then cost and time.
 set_min_flags() {
     drop_bars=0 drop_resets=0 drop_left=0
-    drop_weak=$(( $1 >= 1 )) drop_strong=$(( $1 >= 2 )) drop_agent=$(( $1 >= 3 ))
-    drop_effort=$(( $1 >= 4 )) drop_rc=$(( $1 >= 5 ))
+    drop_rc=$(( $1 >= 1 )) drop_effort=$(( $1 >= 2 ))
+    drop_weak=$(( $1 >= 3 )) drop_strong=$(( $1 >= 4 ))
+    drop_agent_short=$(( $1 >= 5 )) drop_agent=$(( $1 >= 6 ))
     drop_extras=$(( $2 >= 1 )) drop_cache=$(( $2 >= 2 )) drop_session=$(( $2 >= 3 ))
 }
 
@@ -556,7 +564,7 @@ row1="" row2="" row3=""
 done=0
 for (( li = start; li <= 2 && ! done; li++ )); do
     if (( li == 2 )); then
-        for (( a = 0; a <= 5; a++ )); do
+        for (( a = 0; a <= 6; a++ )); do
             set_min_flags "$a" 0
             render minimal
             (( $(width "$row1") <= cols && $(width "$row2") <= cols )) && break

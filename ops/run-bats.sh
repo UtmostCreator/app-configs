@@ -48,8 +48,10 @@ printf '[user]\n\tname = bats\n\temail = bats@example.invalid\n[init]\n\tdefault
     >"$HOME/.gitconfig"
 
 # The log-workspace suite lives next to its scripts; run
-# them too, or they silently stop being exercised.
-args=(tests/bash ops/projects/logging/test)
+# them too, or they silently stop being exercised. This is the one list of test
+# roots: parallel mode below expands tests/bash from it.
+roots=(tests/bash ops/projects/logging/test)
+args=("${roots[@]}")
 
 jobs="${RUN_BATS_JOBS:-}"
 if [[ -z "$jobs" ]]; then
@@ -62,22 +64,29 @@ done
 if [[ "$user_jobs" == 0 && "$jobs" =~ ^[0-9]+$ && "$jobs" -gt 1 ]] \
     && command -v parallel >/dev/null 2>&1 \
     && [[ "$(parallel --version 2>/dev/null </dev/null)" == *"GNU parallel"* ]]; then
-    # Slowest files first, then the rest in the order bats would use. A name
-    # that no longer exists fails loudly, so the list cannot rot unnoticed.
+    # Same roots, with tests/bash expanded: the slowest files first, then the
+    # rest in the order bats would use. A name that no longer exists fails
+    # loudly, so the list cannot rot unnoticed.
     SLOW_FIRST=(selection update-all-apply install-selection)
     files=()
-    for name in "${SLOW_FIRST[@]}"; do
-        if [[ ! -f "tests/bash/$name.bats" ]]; then
-            echo "[test:bash] SLOW_FIRST names a missing file: tests/bash/$name.bats" >&2
-            exit 1
+    for root in "${roots[@]}"; do
+        if [[ "$root" != tests/bash ]]; then
+            files+=("$root")
+            continue
         fi
-        files+=("tests/bash/$name.bats")
+        for name in "${SLOW_FIRST[@]}"; do
+            if [[ ! -f "tests/bash/$name.bats" ]]; then
+                echo "[test:bash] SLOW_FIRST names a missing file: tests/bash/$name.bats" >&2
+                exit 1
+            fi
+            files+=("tests/bash/$name.bats")
+        done
+        for file in tests/bash/*.bats; do
+            name="${file##*/}"
+            [[ " ${SLOW_FIRST[*]} " == *" ${name%.bats} "* ]] || files+=("$file")
+        done
     done
-    for file in tests/bash/*.bats; do
-        name="${file##*/}"
-        [[ " ${SLOW_FIRST[*]} " == *" ${name%.bats} "* ]] || files+=("$file")
-    done
-    args=(--jobs "$jobs" "${files[@]}" ops/projects/logging/test)
+    args=(--jobs "$jobs" "${files[@]}")
 fi
 
 status=0

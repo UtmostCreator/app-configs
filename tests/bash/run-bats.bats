@@ -97,16 +97,31 @@ grep -q "email = bats@example.invalid" "$HOME/.gitconfig" || exit 8'
     stub nproc 'echo 6'
     run env PATH="$STUB" bash "$SCRIPT"
     [ "$status" -eq 0 ]
-    # the slowest files first, then every other file once, then the log-workspace suite
-    [[ "$output" == "bats-stub --jobs 6 tests/bash/selection.bats tests/bash/update-all-apply.bats tests/bash/install-selection.bats "* ]]
-    [[ "$output" == *" ops/projects/logging/test" ]]
-    local want got
-    want="$(cd "$BATS_TEST_DIRNAME/../.." && printf '%s\n' tests/bash/*.bats | sort)"
-    got="$(tr ' ' '\n' <<<"$output" | grep '^tests/bash/.*\.bats$' | sort)"
-    [ "$got" = "$want" ] || { echo "file set differs"; diff <(echo "$want") <(echo "$got"); return 1; }
+    # the exact argument list: the slow files, the other tests/bash files in
+    # glob order, then the log-workspace suite
+    local expected rest
+    rest="$(cd "$REPO_ROOT" && printf '%s\n' tests/bash/*.bats |
+        grep -vxE 'tests/bash/(selection|update-all-apply|install-selection)\.bats' | tr '\n' ' ')"
+    expected="bats-stub --jobs 6 tests/bash/selection.bats tests/bash/update-all-apply.bats tests/bash/install-selection.bats ${rest}ops/projects/logging/test"
+    [ "$output" = "$expected" ] || { echo "got:      $output"; echo "expected: $expected"; return 1; }
 
     run env PATH="$STUB" RUN_BATS_JOBS=3 bash "$SCRIPT"
-    [[ "$output" == *"bats-stub --jobs 3 tests/bash"* ]]
+    [ "$output" = "${expected/--jobs 6/--jobs 3}" ]
+}
+
+@test "run-bats fails when a SLOW_FIRST file is missing, instead of silently dropping it" {
+    stub bats 'echo "bats-stub $*"'
+    stub parallel 'echo "GNU parallel 20260822"'
+    stub nproc 'echo 6'
+    # a copy of the script over a tests/bash without selection.bats
+    local root="$BATS_TEST_TMPDIR/root"
+    mkdir -p "$root/ops" "$root/tests/bash"
+    cp "$SCRIPT" "$root/ops/run-bats.sh"
+    touch "$root/tests/bash/update-all-apply.bats" "$root/tests/bash/install-selection.bats" "$root/tests/bash/other.bats"
+    run env PATH="$STUB" bash "$root/ops/run-bats.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"SLOW_FIRST names a missing file: tests/bash/selection.bats"* ]]
+    [[ "$output" != *"bats-stub"* ]]
 }
 
 @test "run-bats stays sequential without GNU parallel, with RUN_BATS_JOBS=1, or when -j is given" {

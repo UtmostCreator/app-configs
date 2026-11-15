@@ -1,5 +1,7 @@
 # WSL2 setup
 
+Choices (edition, where to run Claude, Docker, reboots, restore points) (planned; the Ubuntu runbook below is replaced by T-0047): [`windows-and-wsl.md`](windows-and-wsl.md).
+
 WSL2 uses the `wsl` host profile: the same shared CLI and dev modules as macOS
 and Linux (`nix/modules/common`, `nix/modules/home`), with no GUI module and
 no Windows-side management. macOS and WSL share one `flake.lock`, so both get

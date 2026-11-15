@@ -5,20 +5,34 @@
 # unreadable kernel info, WSL1, ambiguous WSL kernel, bad input) prints a
 # diagnostic on stderr, prints nothing on stdout and exits non-zero.
 #
-# Override the linux fallback with HOST_PROFILE_DEFAULT (linux-desktop or
-# linux-cli; default linux-desktop). Override the whole answer with
-# HOST_PROFILE.
+# Precedence: HOST_PROFILE > macOS/WSL2 detection (always; the host file is
+# never read there) > the host file (plain Linux only) > HOST_PROFILE_DEFAULT
+# (linux-desktop or linux-cli) > linux-desktop.
+#
+# The host file remembers linux-desktop versus linux-cli per machine. Its path
+# is ${XDG_CONFIG_HOME:-$HOME/.config}/app-configs/host (an XDG_CONFIG_HOME on
+# a Windows drive, /mnt/<letter>, is ignored like ops/lib/selection.sh does), or
+# APP_CONFIGS_HOST_FILE as given. It holds one line, exactly linux-desktop or
+# linux-cli (trailing whitespace and the newline are trimmed); anything else on
+# plain Linux is an error (exit 1, nothing on stdout). Only ops/install.sh
+# writes it. This script owns the path and reads it; it sources no library
+# because tests copy it alone into fixtures.
 #
 # Usage:
 #   bash ops/detect-host.sh
 #   bash ops/detect-host.sh --wsl-version     # prints 2, 1 or none
+#   bash ops/detect-host.sh --host-file       # prints the resolved host file path
+#   bash ops/detect-host.sh --source          # prints env, detected, file or default
 #   HOST_PROFILE_DEFAULT=linux-cli bash ops/detect-host.sh
 #   HOST_PROFILE=wsl bash ops/detect-host.sh
 #
 # Test overrides: DETECT_HOST_PROC_VERSION (default /proc/version) and
 # DETECT_HOST_OSRELEASE (default /proc/sys/kernel/osrelease),
 # DETECT_HOST_WSL_INTEROP (default /proc/sys/fs/binfmt_misc/WSLInterop) and
-# DETECT_HOST_WSL_RUN (default /run/WSL).
+# DETECT_HOST_WSL_RUN (default /run/WSL), APP_CONFIGS_HOST_FILE (the host file).
+# Under bats the DEFAULT host file path is read only when it is inside
+# $BATS_TEST_TMPDIR (like preflight_bats_guard), so a test never reads the
+# developer's real file; APP_CONFIGS_HOST_FILE is always honoured.
 
 set -euo pipefail
 
@@ -34,14 +48,18 @@ die() {
 
 mode=profile
 if [[ $# -eq 1 && ( "$1" == -h || "$1" == --help ) ]]; then
-  echo "Usage: bash ops/detect-host.sh [--wsl-version | -h | --help]"
+  echo "Usage: bash ops/detect-host.sh [--wsl-version | --host-file | --source | -h | --help]"
   echo "Prints macos | linux-desktop | linux-cli | wsl. See the header for overrides."
   exit 0
 elif [[ $# -eq 1 && "$1" == --wsl-version ]]; then
   mode=wslver
+elif [[ $# -eq 1 && "$1" == --host-file ]]; then
+  mode=hostfile
+elif [[ $# -eq 1 && "$1" == --source ]]; then
+  mode=source
 elif [[ $# -gt 0 ]]; then
   echo "detect-host: unknown argument: $*" >&2
-  echo "usage: detect-host.sh [--wsl-version]" >&2
+  echo "usage: detect-host.sh [--wsl-version | --host-file | --source]" >&2
   exit 2
 fi
 
@@ -122,35 +140,106 @@ if [[ "$mode" == wslver ]]; then
   exit 0
 fi
 
+# The host file path. A Windows-drive XDG_CONFIG_HOME (WSL2) is ignored, the
+# same rule as ops/lib/selection.sh; a parity test keeps the two directories
+# equal (tests/bash/detect-host.bats).
+host_file_path() {
+  local base
+  if [[ -n "${APP_CONFIGS_HOST_FILE:-}" ]]; then
+    printf '%s\n' "$APP_CONFIGS_HOST_FILE"
+    return 0
+  fi
+  case "${XDG_CONFIG_HOME:-}" in
+    /mnt/[a-zA-Z] | /mnt/[a-zA-Z]/*) base="${HOME:-}/.config" ;;
+    *) base="${XDG_CONFIG_HOME:-${HOME:-}/.config}" ;;
+  esac
+  printf '%s\n' "$base/app-configs/host"
+}
+
+if [[ "$mode" == hostfile ]]; then
+  host_file_path
+  exit 0
+fi
+
+# Under bats the default path counts only inside the test's scratch directory.
+# A ".." segment could climb out of it, so it is refused too.
+host_file_readable_here() {
+  local f="$1"
+  [[ -n "${APP_CONFIGS_HOST_FILE:-}" || -z "${BATS_TEST_TMPDIR:-}" ]] && return 0
+  [[ "$f" != */../* && "$f" != */.. ]] && [[ "$f" == "$BATS_TEST_TMPDIR" || "$f" == "$BATS_TEST_TMPDIR"/* ]]
+}
+
+# Sets HOST_FILE_VALUE from the host file when it exists and counts here;
+# leaves it empty when there is no file. An invalid file is fatal.
+HOST_FILE_VALUE=""
+read_host_file() {
+  local f content
+  f="$(host_file_path)"
+  host_file_readable_here "$f" || return 0
+  [[ -e "$f" || -L "$f" ]] || return 0
+  if [[ -f "$f" && -r "$f" ]] && content="$(cat "$f" 2>/dev/null)"; then
+    # Strict: exactly one line. Only trailing whitespace (blanks, tabs, CRs,
+    # and the blank lines $(cat) already dropped) is trimmed; a leading blank
+    # line, tab or space, or a second line, is invalid.
+    content="${content%"${content##*[![:space:]]}"}"
+    case "$content" in
+      linux-desktop | linux-cli)
+        HOST_FILE_VALUE="$content"
+        return 0
+        ;;
+    esac
+  fi
+  die "invalid host file $f: it must hold exactly one line, linux-desktop or linux-cli (fix or delete it, run sys-install --host <p>, or set HOST_PROFILE)"
+}
+
+PROFILE=""
+SOURCE=""
 if [[ -n "${HOST_PROFILE:-}" ]]; then
   case "$HOST_PROFILE" in
     macos|linux-desktop|linux-cli|wsl)
-      echo "$HOST_PROFILE"
-      exit 0
+      PROFILE="$HOST_PROFILE"
+      SOURCE=env
       ;;
     *) die "unsupported HOST_PROFILE: $HOST_PROFILE" ;;
   esac
+else
+  case "$(uname -s)" in
+    Darwin)
+      PROFILE=macos
+      SOURCE=detected
+      ;;
+    Linux)
+      wsl="$(detect_wsl_version)" || exit 1
+      case "$wsl" in
+        2)
+          PROFILE=wsl
+          SOURCE=detected
+          ;;
+        1) die "WSL1 is not supported (no systemd, no real Linux kernel for Nix); convert with: wsl --set-version <distro> 2" ;;
+        *)
+          read_host_file
+          if [[ -n "$HOST_FILE_VALUE" ]]; then
+            PROFILE="$HOST_FILE_VALUE"
+            SOURCE=file
+          else
+            default="${HOST_PROFILE_DEFAULT:-linux-desktop}"
+            case "$default" in
+              linux-desktop|linux-cli) PROFILE="$default" ;;
+              *) die "unsupported HOST_PROFILE_DEFAULT: $default (use linux-desktop or linux-cli)" ;;
+            esac
+            SOURCE=default
+          fi
+          ;;
+      esac
+      ;;
+    *)
+      die "unsupported OS: $(uname -s)"
+      ;;
+  esac
 fi
 
-case "$(uname -s)" in
-  Darwin)
-    echo macos
-    ;;
-  Linux)
-    wsl="$(detect_wsl_version)" || exit 1
-    case "$wsl" in
-      2) echo wsl ;;
-      1) die "WSL1 is not supported (no systemd, no real Linux kernel for Nix); convert with: wsl --set-version <distro> 2" ;;
-      *)
-        default="${HOST_PROFILE_DEFAULT:-linux-desktop}"
-        case "$default" in
-          linux-desktop|linux-cli) echo "$default" ;;
-          *) die "unsupported HOST_PROFILE_DEFAULT: $default (use linux-desktop or linux-cli)" ;;
-        esac
-        ;;
-    esac
-    ;;
-  *)
-    die "unsupported OS: $(uname -s)"
-    ;;
-esac
+if [[ "$mode" == source ]]; then
+  echo "$SOURCE"
+else
+  echo "$PROFILE"
+fi

@@ -200,3 +200,210 @@ kernel() { # kernel <release>
     HOST_PROFILE=windows detect
     [ "$status" -ne 0 ]
 }
+
+# -- remembered linux host (T-0044) ------------------------------------------
+# ${XDG_CONFIG_HOME:-$HOME/.config}/app-configs/host holds linux-desktop or
+# linux-cli. Precedence: HOST_PROFILE > macOS/WSL2 detection (the file is never
+# read there) > the file (plain Linux) > HOST_PROFILE_DEFAULT > linux-desktop.
+
+hostfile() { # hostfile <content...>: write $HF with printf %b
+    mkdir -p "$(dirname "$HF")"
+    printf "$@" >"$HF"
+}
+
+hf_setup() {
+    HF="$BATS_TEST_TMPDIR/cfg/app-configs/host"
+    export APP_CONFIGS_HOST_FILE="$HF"
+}
+
+@test "host file: linux-cli on plain Linux, source file" {
+    hf_setup; kernel 6.18.33
+    hostfile 'linux-cli\n'
+    detect
+    [ "$status" -eq 0 ]
+    [ "$output" = linux-cli ]
+    detect --source
+    [ "$output" = file ]
+}
+
+@test "host file: linux-desktop, trailing whitespace and CRLF are trimmed" {
+    hf_setup; kernel 6.18.33
+    HOST_PROFILE_DEFAULT=linux-cli
+    export HOST_PROFILE_DEFAULT
+    hostfile 'linux-desktop  \r\n'
+    detect
+    [ "$status" -eq 0 ]
+    [ "$output" = linux-desktop ]
+    hostfile 'linux-desktop'
+    detect
+    [ "$output" = linux-desktop ]
+}
+
+@test "host file beats HOST_PROFILE_DEFAULT; HOST_PROFILE beats the file" {
+    hf_setup; kernel 6.18.33
+    hostfile 'linux-cli\n'
+    HOST_PROFILE_DEFAULT=linux-desktop detect
+    [ "$output" = linux-cli ]
+    HOST_PROFILE=linux-desktop detect
+    [ "$output" = linux-desktop ]
+    HOST_PROFILE=linux-desktop detect --source
+    [ "$output" = env ]
+}
+
+@test "host file is never read on WSL2 or macOS, even when invalid" {
+    hf_setup
+    hostfile 'junk\n'
+    kernel 6.6.87.2-microsoft-standard-WSL2
+    detect
+    [ "$status" -eq 0 ]
+    [ "$output" = wsl ]
+    detect --source
+    [ "$output" = detected ]
+    printf '#!/bin/sh\necho Darwin\n' >"$STUBS/uname"
+    rm -f "$PROC" "$OSREL"
+    hostfile 'linux-cli\n'
+    detect
+    [ "$output" = macos ]
+    detect --source
+    [ "$output" = detected ]
+}
+
+@test "invalid host file on plain Linux fails with exit 1, nothing on stdout, names file, values and fixes" {
+    hf_setup; kernel 6.18.33
+    local bad
+    for bad in '' '\n' 'wsl\n' 'macos\n' 'junk\n' 'linux-cli\nlinux-desktop\n' '# note\nlinux-cli\n' 'linux-cli # x\n' '\nlinux-cli\n' '\tlinux-cli\n' ' linux-cli\n'; do
+        hostfile "$bad"
+        detect
+        [ "$status" -eq 1 ] || { echo "content [$bad]: status $status"; return 1; }
+        [ -z "$output" ]
+        [[ "$stderr" == *"$HF"* ]]
+        [[ "$stderr" == *linux-desktop* && "$stderr" == *linux-cli* ]]
+        [[ "$stderr" == *"fix or delete it"* ]]
+        [[ "$stderr" == *"sys-install --host"* ]]
+        [[ "$stderr" == *"set HOST_PROFILE"* ]]
+        detect --source
+        [ "$status" -eq 1 ]
+        [ -z "$output" ]
+    done
+}
+
+@test "host file: trailing blank lines are trimmed like trailing whitespace" {
+    hf_setup; kernel 6.18.33
+    hostfile 'linux-cli\n\n  \n'
+    detect
+    [ "$status" -eq 0 ]
+    [ "$output" = linux-cli ]
+}
+
+@test "host file that is a directory or unreadable is invalid" {
+    hf_setup; kernel 6.18.33
+    mkdir -p "$HF"
+    detect
+    [ "$status" -eq 1 ]
+    [ -z "$output" ]
+    [[ "$stderr" == *"$HF"* ]]
+    rmdir "$HF"
+    hostfile 'linux-cli\n'
+    chmod 000 "$HF"
+    if [ -r "$HF" ]; then skip "running as a user that ignores file modes"; fi
+    detect
+    [ "$status" -eq 1 ]
+    [ -z "$output" ]
+    chmod 600 "$HF"
+}
+
+@test "an invalid host file does not stop HOST_PROFILE" {
+    hf_setup; kernel 6.18.33
+    hostfile 'junk\n'
+    HOST_PROFILE=linux-cli detect
+    [ "$status" -eq 0 ]
+    [ "$output" = linux-cli ]
+}
+
+@test "--source: default when there is no file (with or without HOST_PROFILE_DEFAULT)" {
+    hf_setup; kernel 6.18.33
+    detect --source
+    [ "$status" -eq 0 ]
+    [ "$output" = default ]
+    HOST_PROFILE_DEFAULT=linux-cli detect --source
+    [ "$output" = default ]
+    detect
+    [ "$output" = linux-desktop ]
+}
+
+@test "--source rejects an invalid HOST_PROFILE_DEFAULT like profile mode" {
+    hf_setup; kernel 6.18.33
+    HOST_PROFILE_DEFAULT=bogus detect --source
+    [ "$status" -ne 0 ]
+    [ -z "$output" ]
+}
+
+@test "--host-file prints APP_CONFIGS_HOST_FILE as given" {
+    hf_setup
+    detect --host-file
+    [ "$status" -eq 0 ]
+    [ "$output" = "$HF" ]
+}
+
+@test "--host-file default is under XDG_CONFIG_HOME, else \$HOME/.config" {
+    unset APP_CONFIGS_HOST_FILE
+    HOME=/h XDG_CONFIG_HOME= detect --host-file
+    [ "$output" = /h/.config/app-configs/host ]
+    HOME=/h XDG_CONFIG_HOME=/x/cfg detect --host-file
+    [ "$output" = /x/cfg/app-configs/host ]
+}
+
+@test "--host-file ignores an XDG_CONFIG_HOME on a Windows drive" {
+    unset APP_CONFIGS_HOST_FILE
+    local x
+    for x in /mnt/c /mnt/D/Users/me/.config; do
+        HOME=/h XDG_CONFIG_HOME=$x detect --host-file
+        [ "$output" = /h/.config/app-configs/host ]
+    done
+    HOME=/h XDG_CONFIG_HOME=/mnt/cx/cfg detect --host-file
+    [ "$output" = /mnt/cx/cfg/app-configs/host ]
+}
+
+@test "--host-file directory equals the parent of selection_dir (unset, normal, /mnt/c)" {
+    unset APP_CONFIGS_HOST_FILE APP_CONFIGS_SELECTION_DIR
+    local x sel
+    for x in "" /x/cfg /mnt/c /mnt/c/u/.config; do
+        detect_out="$(HOME=/h XDG_CONFIG_HOME=$x bash "$REPO_ROOT/ops/detect-host.sh" --host-file)"
+        sel="$(HOME=/h XDG_CONFIG_HOME=$x bash -c 'source "$1/ops/lib/selection.sh"; selection_dir' _ "$REPO_ROOT")"
+        [ "$(dirname "$detect_out")" = "$(dirname "$sel")" ] || { echo "XDG=[$x] host=$detect_out selection=$sel"; return 1; }
+        [ "$(basename "$detect_out")" = host ]
+    done
+}
+
+@test "under bats the default path is read only inside BATS_TEST_TMPDIR" {
+    unset APP_CONFIGS_HOST_FILE
+    kernel 6.18.33
+    local inside="$BATS_TEST_TMPDIR/home" outside="$BATS_RUN_TMPDIR/outside-home-$BATS_TEST_NUMBER"
+    mkdir -p "$inside/.config/app-configs" "$outside/.config/app-configs"
+    echo linux-cli >"$inside/.config/app-configs/host"
+    echo linux-cli >"$outside/.config/app-configs/host"
+    HOME=$inside XDG_CONFIG_HOME= detect
+    [ "$output" = linux-cli ]
+    HOME=$outside XDG_CONFIG_HOME= detect
+    [ "$status" -eq 0 ]
+    [ "$output" = linux-desktop ]
+    HOME=$outside XDG_CONFIG_HOME= detect --source
+    [ "$output" = default ]
+    rm -rf "$outside"
+}
+
+@test "an explicit APP_CONFIGS_HOST_FILE outside the tmpdir is still honoured" {
+    kernel 6.18.33
+    local outside="$BATS_RUN_TMPDIR/outside-file-$BATS_TEST_NUMBER"
+    echo linux-cli >"$outside"
+    APP_CONFIGS_HOST_FILE="$outside" detect
+    [ "$output" = linux-cli ]
+    rm -f "$outside"
+}
+
+@test "--host-file and --source take no extra argument" {
+    detect --host-file extra
+    [ "$status" -eq 2 ]
+    detect --source extra
+    [ "$status" -eq 2 ]
+}

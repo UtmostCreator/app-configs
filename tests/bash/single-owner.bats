@@ -283,3 +283,31 @@ unguarded_apply_scripts() {
     grep -q 'each ws command runs the same script in fish and zsh' "$REPO_ROOT/tests/bash/ws-shell-parity.bats"
     grep -q 'zsh offers the same shortcuts as fish' "$REPO_ROOT/tests/bash/cli-abbr.bats"
 }
+
+# -- 6. remembered linux host (T-0044) ----------------------------------------
+
+# Files outside ops/detect-host.sh that spell the host file's path
+# (`app-configs/host`, not `app-configs/host-snapshots`). Same file set as rule 1.
+host_file_path_users() {
+    local root="$1" f
+    while IFS= read -r -d '' f; do
+        [ "$f" = ops/detect-host.sh ] && continue
+        grep -qE 'app-configs/host($|[^-[:alnum:]_])' "$root/$f" && printf '%s\n' "$f"
+    done < <(cd "$root" && find ops scripts home nix mise.toml -type f \
+        \( -name '*.sh' -o -name '*.tmpl' -o -name '*.fish' -o -name '*.nix' -o -name '*.bats' -o -name mise.toml -o -name 'executable_*' \) \
+        -print0 2>/dev/null)
+    return 0
+}
+
+@test "only ops/detect-host.sh spells the host file path" {
+    run host_file_path_users "$REPO_ROOT"
+    [ -z "$output" ] || { printf 'host file path outside ops/detect-host.sh:\n%s\n' "$output"; return 1; }
+    grep -qE 'app-configs/host($|[^-[:alnum:]_])' "$REPO_ROOT/ops/detect-host.sh"
+}
+
+@test "seeded: a second spelling of the host file path is caught" {
+    local copy="$BATS_TEST_TMPDIR/repo"; repo_copy "$copy"
+    printf '\nf="$HOME/.config/app-configs/host"\n' >>"$copy/ops/cleanup.sh"
+    run host_file_path_users "$copy"
+    [ "$output" = ops/cleanup.sh ]
+}

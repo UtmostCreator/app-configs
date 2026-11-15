@@ -65,3 +65,14 @@ SCRIPTS=(readiness doctor ci detect-host)
     run env -u USER PATH="$STUBS:$PATH" bash "$COPY/ops/readiness.sh"
     [[ "$output" != *"unbound variable"* ]]
 }
+
+@test "detect-host --host-file and --source run in a copied fixture (self-contained, no lib)" {
+    run env APP_CONFIGS_HOST_FILE="$BATS_TEST_TMPDIR/hf" bash "$COPY/ops/detect-host.sh" --host-file
+    [ "$status" -eq 0 ]
+    [ "$output" = "$BATS_TEST_TMPDIR/hf" ]
+    run env HOST_PROFILE=linux-cli bash "$COPY/ops/detect-host.sh" --source
+    [ "$status" -eq 0 ]
+    [ "$output" = env ]
+    run bash "$COPY/ops/detect-host.sh" --host-file extra
+    [ "$status" -eq 2 ]
+}

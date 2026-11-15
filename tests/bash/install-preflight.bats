@@ -157,7 +157,7 @@ make_repo() {
     FAKE="$BATS_TEST_TMPDIR/$1"
     LOG="$BATS_TEST_TMPDIR/lefthook.log"
     mkdir -p "$FAKE/ops" "$FAKE/nix/vars" "$FAKE/home/.chezmoidata" "$FAKE/.git" "$STUBS"
-    cp "$REPO_ROOT/ops/install.sh" "$FAKE/ops/install.sh"
+    cp "$REPO_ROOT/ops/install.sh" "$REPO_ROOT/ops/detect-host.sh" "$FAKE/ops/"
     cp -R "$REPO_ROOT/ops/lib" "$FAKE/ops/lib"
     printf '{\n  username = "%s";\n}\n' "${2:-utmostcreator}" >"$FAKE/nix/vars/default.nix"
     : >"$FAKE/home/.chezmoidata/personal.yaml"

@@ -86,15 +86,23 @@ SH
 @test "hms switches Home Manager for this host from the dotfiles flake" {
     stubs="$BATS_TEST_TMPDIR/bin"; mkdir -p "$stubs" "$BATS_TEST_TMPDIR/dots/ops"
     printf '#!/bin/sh\necho "home-manager $*"\n' >"$stubs/home-manager"; chmod +x "$stubs/home-manager"
-    printf '#!/bin/sh\necho wsl\n' >"$BATS_TEST_TMPDIR/dots/ops/detect-host.sh"
+    printf '#!/bin/sh\ncase "$1" in --hm-attr) echo "${STUB_HM_ATTR:-wsl}" ;; *) echo wsl ;; esac\n' >"$BATS_TEST_TMPDIR/dots/ops/detect-host.sh"
     run env PATH="$stubs:$PATH" DOTFILES_DIR="$BATS_TEST_TMPDIR/dots" fish --no-config -c "source $FISH_FILE; hms --show-trace"
     [ "$output" = "home-manager switch -b hm-bak --flake $BATS_TEST_TMPDIR/dots/nix#wsl --show-trace" ]
+}
+
+@test "hms uses the Home Manager output from detect-host --hm-attr (wsl-nixos on NixOS-WSL)" {
+    stubs="$BATS_TEST_TMPDIR/bin"; mkdir -p "$stubs" "$BATS_TEST_TMPDIR/dots/ops"
+    printf '#!/bin/sh\necho "home-manager $*"\n' >"$stubs/home-manager"; chmod +x "$stubs/home-manager"
+    printf '#!/bin/sh\ncase "$1" in --hm-attr) echo wsl-nixos ;; *) echo wsl ;; esac\n' >"$BATS_TEST_TMPDIR/dots/ops/detect-host.sh"
+    run env PATH="$stubs:$PATH" DOTFILES_DIR="$BATS_TEST_TMPDIR/dots" fish --no-config -c "source $FISH_FILE; hms --show-trace"
+    [ "$output" = "home-manager switch -b hm-bak --flake $BATS_TEST_TMPDIR/dots/nix#wsl-nixos --show-trace" ]
 }
 
 @test "hms passes the local install selection through, before the caller's own arguments" {
     stubs="$BATS_TEST_TMPDIR/bin"; mkdir -p "$stubs" "$BATS_TEST_TMPDIR/dots/ops/lib"
     printf '#!/bin/sh\necho "home-manager $*"\n' >"$stubs/home-manager"; chmod +x "$stubs/home-manager"
-    printf '#!/bin/sh\necho wsl\n' >"$BATS_TEST_TMPDIR/dots/ops/detect-host.sh"
+    printf '#!/bin/sh\ncase "$1" in --hm-attr) echo "${STUB_HM_ATTR:-wsl}" ;; *) echo wsl ;; esac\n' >"$BATS_TEST_TMPDIR/dots/ops/detect-host.sh"
     cp "$REPO_ROOT/ops/lib/selection.sh" "$BATS_TEST_TMPDIR/dots/ops/lib/selection.sh"
     sel="$BATS_TEST_TMPDIR/sel"; mkdir -p "$sel"; printf 'profile = "work"\n' >"$sel/selection.toml"
     run env PATH="$stubs:$PATH" DOTFILES_DIR="$BATS_TEST_TMPDIR/dots" APP_CONFIGS_SELECTION_DIR="$sel" fish --no-config -c "source $FISH_FILE; hms --show-trace"
@@ -104,7 +112,7 @@ SH
 @test "hms without a local selection runs the same command line as before" {
     stubs="$BATS_TEST_TMPDIR/bin"; mkdir -p "$stubs" "$BATS_TEST_TMPDIR/dots/ops/lib"
     printf '#!/bin/sh\necho "home-manager $*"\n' >"$stubs/home-manager"; chmod +x "$stubs/home-manager"
-    printf '#!/bin/sh\necho wsl\n' >"$BATS_TEST_TMPDIR/dots/ops/detect-host.sh"
+    printf '#!/bin/sh\ncase "$1" in --hm-attr) echo "${STUB_HM_ATTR:-wsl}" ;; *) echo wsl ;; esac\n' >"$BATS_TEST_TMPDIR/dots/ops/detect-host.sh"
     cp "$REPO_ROOT/ops/lib/selection.sh" "$BATS_TEST_TMPDIR/dots/ops/lib/selection.sh"
     run env PATH="$stubs:$PATH" DOTFILES_DIR="$BATS_TEST_TMPDIR/dots" APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/none" fish --no-config -c "source $FISH_FILE; hms --show-trace"
     [ "$output" = "home-manager switch -b hm-bak --flake $BATS_TEST_TMPDIR/dots/nix#wsl --show-trace" ]

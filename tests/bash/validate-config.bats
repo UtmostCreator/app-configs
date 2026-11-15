@@ -407,7 +407,7 @@ eval_with() {
     eval_with "$GOOD_EVAL"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
     [[ "$output" == *"evaluated Home Manager config follows the policy"* ]]
-    [ "$(wc -l <"$BATS_TEST_TMPDIR/nix.log")" -eq 4 ]
+    [ "$(wc -l <"$BATS_TEST_TMPDIR/nix.log")" -eq 5 ]  # linux-desktop linux-cli wsl wsl-nixos macos
 }
 
 @test "--eval: violations in the evaluated config fail" {

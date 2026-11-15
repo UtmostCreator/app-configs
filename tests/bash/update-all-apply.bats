@@ -16,6 +16,8 @@ setup() {
   export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/no-selection"
   export SYS_UPDATE_STATE_DIR="$HOME/.local/state/sys-update"
   export HOST_PROFILE=linux-desktop
+  # The host is not NixOS unless a test says so (wsl maps to wsl-nixos there).
+  export DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/no-NIXOS" DETECT_HOST_OS_RELEASE="$BATS_TEST_TMPDIR/no-os-release"
   # Never let the developer's real state directories leak into a run.
   export XDG_STATE_HOME="$HOME/.local/state"
   export NIX_STATE_DIR="$BATS_TEST_TMPDIR/nix-state"
@@ -1877,4 +1879,39 @@ mk_selection() {
   [ "$status" -ne 0 ]
   [[ "$output" == *"verification failed"* ]]
   [ ! -e "$APP_CONFIGS_STATE_DIR/installed.meta" ]
+}
+
+# -- wsl: one host profile, two Home Manager outputs (wsl, wsl-nixos on NixOS) --
+
+@test "T5: on NixOS-WSL the host build and the switch both use wsl-nixos" {
+  : > "$BATS_TEST_TMPDIR/NIXOS"
+  export HOST_PROFILE=wsl DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/NIXOS"
+  run_update
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  grep -q 'nix build --no-link .*#homeConfigurations.wsl-nixos.activationPackage' "$STUB_LOG"
+  grep -q '^home-manager switch .*--flake .*#wsl-nixos' "$STUB_LOG"
+  if grep -E 'homeConfigurations\.wsl\.|--flake [^ ]*#wsl( |$)' "$STUB_LOG"; then echo 'wsl attribute used on NixOS-WSL' >&2; return 1; fi
+}
+
+@test "T5: on Ubuntu-on-WSL the host build and the switch both use wsl" {
+  export HOST_PROFILE=wsl
+  run_update
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  grep -q 'nix build --no-link .*#homeConfigurations.wsl.activationPackage' "$STUB_LOG"
+  grep -q '^home-manager switch .*--flake .*#wsl\( \|$\)' "$STUB_LOG"
+  if grep -q 'wsl-nixos' "$STUB_LOG"; then echo 'wsl-nixos used on Ubuntu' >&2; return 1; fi
+}
+
+@test "F14: a failing Home Manager target resolver stops the apply before anything is mutated, for every profile" {
+  local p
+  for p in wsl linux-cli linux-desktop; do
+    : > "$STUB_LOG"
+    export HOST_PROFILE="$p"
+    # A detect-host that answers the profile but cannot map it.
+    printf '#!/bin/sh\ncase "$1" in --hm-attr) exit 1 ;; --wsl-version) echo 2 ;; *) echo %s ;; esac\n' "$p" > "$FAKE/ops/detect-host.sh"
+    run_update
+    [ "$status" -eq 4 ] || { echo "$p: status $status: $output"; return 1; }
+    [[ "$output" == *"cannot choose the Home Manager output for host $p"* ]]
+    if grep -q 'nix flake update\|nix build\|home-manager switch\|chezmoi apply' "$STUB_LOG"; then cat "$STUB_LOG" >&2; return 1; fi
+  done
 }

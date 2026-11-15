@@ -23,12 +23,20 @@
 #   bash ops/detect-host.sh --wsl-version     # prints 2, 1 or none
 #   bash ops/detect-host.sh --host-file       # prints the resolved host file path
 #   bash ops/detect-host.sh --source          # prints env, detected, file or default
+#   bash ops/detect-host.sh --hm-attr         # prints the Home Manager output (see below)
 #   HOST_PROFILE_DEFAULT=linux-cli bash ops/detect-host.sh
 #   HOST_PROFILE=wsl bash ops/detect-host.sh
 #
+# --hm-attr prints the Home Manager flake output for this host: the profile,
+# except `wsl` on a NixOS host (NixOS-WSL), which is `wsl-nixos`. The host
+# profile itself stays wsl for Ubuntu-on-WSL and NixOS-WSL alike. NixOS is
+# DETECT_HOST_NIXOS_MARKER (default /etc/NIXOS) existing, or ID=nixos in
+# DETECT_HOST_OS_RELEASE (default /etc/os-release). HOST_PROFILE still applies.
+#
 # Test overrides: DETECT_HOST_PROC_VERSION (default /proc/version) and
 # DETECT_HOST_OSRELEASE (default /proc/sys/kernel/osrelease),
-# DETECT_HOST_WSL_INTEROP (default /proc/sys/fs/binfmt_misc/WSLInterop) and
+# DETECT_HOST_WSL_INTEROP (default /proc/sys/fs/binfmt_misc/WSLInterop),
+# DETECT_HOST_NIXOS_MARKER and DETECT_HOST_OS_RELEASE (--hm-attr only) and
 # DETECT_HOST_WSL_RUN (default /run/WSL), APP_CONFIGS_HOST_FILE (the host file).
 # Under bats the DEFAULT host file path is read only when it is inside
 # $BATS_TEST_TMPDIR (like preflight_bats_guard), so a test never reads the
@@ -48,7 +56,7 @@ die() {
 
 mode=profile
 if [[ $# -eq 1 && ( "$1" == -h || "$1" == --help ) ]]; then
-  echo "Usage: bash ops/detect-host.sh [--wsl-version | --host-file | --source | -h | --help]"
+  echo "Usage: bash ops/detect-host.sh [--wsl-version | --host-file | --source | --hm-attr | -h | --help]"
   echo "Prints macos | linux-desktop | linux-cli | wsl. See the header for overrides."
   exit 0
 elif [[ $# -eq 1 && "$1" == --wsl-version ]]; then
@@ -57,9 +65,11 @@ elif [[ $# -eq 1 && "$1" == --host-file ]]; then
   mode=hostfile
 elif [[ $# -eq 1 && "$1" == --source ]]; then
   mode=source
+elif [[ $# -eq 1 && "$1" == --hm-attr ]]; then
+  mode=hmattr
 elif [[ $# -gt 0 ]]; then
   echo "detect-host: unknown argument: $*" >&2
-  echo "usage: detect-host.sh [--wsl-version | --host-file | --source]" >&2
+  echo "usage: detect-host.sh [--wsl-version | --host-file | --source | --hm-attr]" >&2
   exit 2
 fi
 
@@ -238,8 +248,19 @@ else
   esac
 fi
 
+is_nixos() {
+  [[ -f "${DETECT_HOST_NIXOS_MARKER:-/etc/NIXOS}" ]] ||
+    grep -qi '^ID=nixos' "${DETECT_HOST_OS_RELEASE:-/etc/os-release}" 2>/dev/null
+}
+
 if [[ "$mode" == source ]]; then
   echo "$SOURCE"
+elif [[ "$mode" == hmattr ]]; then
+  if [[ "$PROFILE" == wsl ]] && is_nixos; then
+    echo wsl-nixos
+  else
+    echo "$PROFILE"
+  fi
 else
   echo "$PROFILE"
 fi

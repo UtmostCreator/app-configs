@@ -8,7 +8,12 @@
 #   hm_check_conflicts FLAKE_DIR PROFILE   0 clean, 1 conflicts, 2 cannot check
 #   hm_switch_raw FLAKE_DIR PROFILE        the switch itself (-b hm-bak)
 #   hm_switch FLAKE_DIR PROFILE            check, then switch
+#   hm_attr PROFILE                        the flake output for a host profile
 #   hm_switch_describe FLAKE_DIR PROFILE   the command line, for dry-run output
+#
+# PROFILE is the host profile; hm_switch and hm_switch_describe map it to the
+# flake output with hm_attr (wsl on NixOS is wsl-nixos). hm_check_conflicts and
+# hm_switch_raw take the attribute as given.
 #
 # FLAKE_DIR is the directory holding flake.nix (a "path:" prefix is fine).
 #
@@ -25,9 +30,34 @@ HM_CHECK_FIX=""
 HM_CONFLICTS=()
 HM_BACKUP_EXT="hm-bak"
 
+# The flake output for a host profile: the ONE fail-closed resolver every build,
+# check and switch site uses (update-all, bootstrap, hm_switch, the selection
+# facts, audit; the fish `hms` function asks detect-host.sh --hm-attr directly).
+# ops/detect-host.sh owns the mapping (--hm-attr; HOST_PROFILE=<profile> pins the
+# profile, and wsl on NixOS is wsl-nixos). Prints the attribute and returns 0.
+# If detect-host cannot answer, for ANY profile, it prints a message on stderr and
+# returns 1: there is no fallback to the plain profile name. Callers that change
+# something stop; read-only callers report "unknown".
+hm_attr() {
+  local profile="$1" attr
+  if attr="$(HOST_PROFILE="$profile" bash "${BASH_SOURCE[0]%/*}/../detect-host.sh" --hm-attr 2>/dev/null)" && [[ -n "$attr" ]]; then
+    printf '%s\n' "$attr"
+    return 0
+  fi
+  printf >&2 '%s\n' "cannot choose the Home Manager output for host profile '$profile': ops/detect-host.sh --hm-attr failed or gave no answer"
+  return 1
+}
+
 hm_switch_describe() {
   selection_args
-  printf 'home-manager switch -b %s --flake %s#%s%s\n' "$HM_BACKUP_EXT" "$1" "$2" "$(selection_args_text)"
+  local attr
+  # Display only: with no answer it names no attribute (#<unknown>) and fails;
+  # hm_switch itself stops before any build or switch.
+  attr="$(hm_attr "$2")" || {
+    printf 'home-manager switch -b %s --flake %s#<unknown>%s\n' "$HM_BACKUP_EXT" "$1" "$(selection_args_text)"
+    return 1
+  }
+  printf 'home-manager switch -b %s --flake %s#%s%s\n' "$HM_BACKUP_EXT" "$1" "$attr" "$(selection_args_text)"
 }
 
 # A missing manifest (or no way to run jq) is an error here, not "no conflicts": the plain
@@ -97,11 +127,12 @@ hm_switch_raw() {
 }
 
 hm_switch() {
-  local status=0
-  hm_check_conflicts "$1" "$2" || status=$?
+  local status=0 attr
+  attr="$(hm_attr "$2")" || return 1
+  hm_check_conflicts "$1" "$attr" || status=$?
   if ((status)); then
     printf >&2 '%s\n  Fix: %s\n' "$HM_CHECK_MSG" "$HM_CHECK_FIX"
     return 1
   fi
-  hm_switch_raw "$1" "$2"
+  hm_switch_raw "$1" "$attr"
 }

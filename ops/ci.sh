@@ -14,7 +14,7 @@
 # the CHECK LEVELS comment in nix/flake.nix); 5 only evaluates, and covers
 # every home-* and darwin-macos check, so no separate per-host eval step; 6 is
 # the one real closure build. CI_BUILD_PROFILES (space-separated, default
-# "linux-cli wsl") leaves out linux-desktop: its closure (android-studio,
+# "linux-cli wsl wsl-nixos") leaves out linux-desktop: its closure (android-studio,
 # browsers, the OpenClaw pin) would take hours on a CI runner, and sys-update
 # builds it. The variable only takes effect when running this script directly
 # (`mise run ci`); ops/ci-local.sh clears the environment, so CI always uses
@@ -48,7 +48,7 @@ step() { # step <name> <command...>
 build_homes() {
   local h ok=0
   # shellcheck disable=SC2086 # word-splitting the profile list is intended
-  for h in ${CI_BUILD_PROFILES-linux-cli wsl}; do
+  for h in ${CI_BUILD_PROFILES-linux-cli wsl wsl-nixos}; do
     nix build --no-link "path:$ROOT/nix#homeConfigurations.$h.activationPackage" || { echo "build failed: $h"; ok=1; }
   done
   return "$ok"
@@ -61,7 +61,7 @@ step "nix flake check" nix flake check "path:$ROOT/nix"
 step "nix flake check --all-systems --no-build" nix flake check "path:$ROOT/nix" --all-systems --no-build
 if [[ "$(uname -s)" != Linux ]]; then
   results+=("SKIP  linux activation build (not Linux)")
-elif [[ -z "${CI_BUILD_PROFILES-linux-cli wsl}" ]]; then
+elif [[ -z "${CI_BUILD_PROFILES-linux-cli wsl wsl-nixos}" ]]; then
   results+=("SKIP  linux activation build (CI_BUILD_PROFILES is empty)")
 else
   step "linux activation build" build_homes

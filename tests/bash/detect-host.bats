@@ -407,3 +407,72 @@ hf_setup() {
     detect --source extra
     [ "$status" -eq 2 ]
 }
+
+# -- --hm-attr: the Home Manager output for this host ------------------------
+# wsl is one host profile for Ubuntu-on-WSL and NixOS-WSL; NixOS-WSL builds the
+# wsl-nixos output (nix/hosts/wsl-nixos/home.nix). NixOS is detected from
+# DETECT_HOST_NIXOS_MARKER (default /etc/NIXOS) or ID=nixos in
+# DETECT_HOST_OS_RELEASE (default /etc/os-release).
+
+nixos_yes() { : >"$BATS_TEST_TMPDIR/NIXOS"; export DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/NIXOS"; }
+nixos_no() { export DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/no-NIXOS" DETECT_HOST_OS_RELEASE="$BATS_TEST_TMPDIR/no-os-release"; }
+
+@test "--hm-attr: WSL2 on NixOS is wsl-nixos" {
+    kernel 6.6.87.2-microsoft-standard-WSL2
+    nixos_yes
+    detect --hm-attr
+    [ "$status" -eq 0 ]
+    [ "$output" = wsl-nixos ]
+}
+
+@test "--hm-attr: WSL2 on NixOS via ID=nixos in os-release" {
+    kernel 6.6.87.2-microsoft-standard-WSL2
+    nixos_no
+    printf 'NAME=NixOS\nID=nixos\n' >"$BATS_TEST_TMPDIR/os-release"
+    DETECT_HOST_OS_RELEASE="$BATS_TEST_TMPDIR/os-release" detect --hm-attr
+    [ "$output" = wsl-nixos ]
+}
+
+@test "--hm-attr: WSL2 without NixOS (Ubuntu-on-WSL) stays wsl" {
+    kernel 6.6.87.2-microsoft-standard-WSL2
+    nixos_no
+    printf 'NAME=Ubuntu\nID=ubuntu\n' >"$BATS_TEST_TMPDIR/os-release"
+    DETECT_HOST_OS_RELEASE="$BATS_TEST_TMPDIR/os-release" detect --hm-attr
+    [ "$status" -eq 0 ]
+    [ "$output" = wsl ]
+}
+
+@test "--hm-attr: HOST_PROFILE=wsl on NixOS is wsl-nixos; without NixOS it is wsl" {
+    kernel 6.18.33
+    nixos_yes
+    HOST_PROFILE=wsl detect --hm-attr
+    [ "$output" = wsl-nixos ]
+    nixos_no
+    HOST_PROFILE=wsl detect --hm-attr
+    [ "$output" = wsl ]
+}
+
+@test "--hm-attr: linux-desktop, linux-cli and macos are unchanged, even on NixOS" {
+    kernel 6.18.33
+    nixos_yes
+    detect --hm-attr
+    [ "$output" = linux-desktop ]
+    HOST_PROFILE=linux-cli detect --hm-attr
+    [ "$output" = linux-cli ]
+    HOST_PROFILE=macos detect --hm-attr
+    [ "$output" = macos ]
+}
+
+@test "--hm-attr: a failed detection prints nothing on stdout and exits non-zero" {
+    kernel 6.18.33
+    HOST_PROFILE=bogus detect --hm-attr
+    [ "$status" -ne 0 ]
+    [ -z "$output" ]
+}
+
+@test "plain output stays wsl on NixOS-WSL (only --hm-attr maps)" {
+    kernel 6.6.87.2-microsoft-standard-WSL2
+    nixos_yes
+    detect
+    [ "$output" = wsl ]
+}

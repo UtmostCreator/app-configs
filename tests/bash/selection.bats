@@ -524,3 +524,21 @@ wsl_dir() {
     [ "$status" -ne 0 ]
     [[ "$output" == *"myConfig.groups.macInput"* ]]
 }
+
+# -- wsl: the evaluated output follows the host (wsl-nixos on NixOS) ----------
+
+@test "T6: the selection facts evaluate homeConfigurations.wsl-nixos on NixOS-WSL and .wsl otherwise" {
+    source "$REPO_ROOT/ops/lib/selection.sh"
+    source "$REPO_ROOT/ops/lib/selection-facts.sh"
+    SELECTION_REPO_ROOT="$REPO_ROOT" SELECTION_HOST=wsl
+    export DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/no-NIXOS" DETECT_HOST_OS_RELEASE="$BATS_TEST_TMPDIR/no-os-release"
+    [ "$(_sel_attr_state)" = homeConfigurations.wsl.config ]
+    [ "$(_sel_attr_members)" = homeConfigurations.wsl ]
+    [ "$(_sel_attr_check)" = homeConfigurations.wsl.config.myConfig ]
+    : >"$BATS_TEST_TMPDIR/NIXOS"; export DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/NIXOS"
+    [ "$(_sel_attr_state)" = homeConfigurations.wsl-nixos.config ]
+    [ "$(_sel_attr_members)" = homeConfigurations.wsl-nixos ]
+    [ "$(_sel_attr_check)" = homeConfigurations.wsl-nixos.config.myConfig ]
+    SELECTION_HOST=linux-cli
+    [ "$(_sel_attr_state)" = homeConfigurations.linux-cli.config ]
+}

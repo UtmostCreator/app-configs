@@ -188,9 +188,18 @@ _sel_eval_for() {
   return "$rc"
 }
 
-_sel_attr_state() { if [[ "$SELECTION_HOST" == macos ]]; then echo darwinConfigurations.macos.config; else echo "homeConfigurations.$SELECTION_HOST.config"; fi; }
-_sel_attr_members() { if [[ "$SELECTION_HOST" == macos ]]; then echo darwinConfigurations.macos; else echo "homeConfigurations.$SELECTION_HOST"; fi; }
-_sel_attr_check() { if [[ "$SELECTION_HOST" == macos ]]; then echo darwinConfigurations.macos.config.home-manager.users; else echo "homeConfigurations.$SELECTION_HOST.config.myConfig"; fi; }
+# The Home Manager flake output for SELECTION_HOST (wsl on NixOS is wsl-nixos):
+# hm_attr in ops/lib/hm-switch.sh is the one implementation. It prints nothing
+# and fails for wsl when the NixOS probe cannot answer, so the evaluation that
+# uses this attribute fails instead of looking at the wrong output.
+_sel_hm_attr() {
+  # shellcheck source=ops/lib/hm-switch.sh
+  declare -F hm_attr >/dev/null 2>&1 || source "$_SEL_LIB_DIR/hm-switch.sh"
+  hm_attr "$SELECTION_HOST"
+}
+_sel_attr_state() { if [[ "$SELECTION_HOST" == macos ]]; then echo darwinConfigurations.macos.config; else echo "homeConfigurations.$(_sel_hm_attr).config"; fi; }
+_sel_attr_members() { if [[ "$SELECTION_HOST" == macos ]]; then echo darwinConfigurations.macos; else echo "homeConfigurations.$(_sel_hm_attr)"; fi; }
+_sel_attr_check() { if [[ "$SELECTION_HOST" == macos ]]; then echo darwinConfigurations.macos.config.home-manager.users; else echo "homeConfigurations.$(_sel_hm_attr).config.myConfig"; fi; }
 _sel_expr_state() { if [[ "$SELECTION_HOST" == macos ]]; then printf '%s' "$_SEL_STATE_DARWIN"; else printf '%s' "$_SEL_STATE_HM"; fi; }
 _sel_expr_members() { if [[ "$SELECTION_HOST" == macos ]]; then printf '%s' "$_SEL_MEMBERS_DARWIN"; else printf '%s' "$_SEL_MEMBERS_HM"; fi; }
 _sel_expr_check() { if [[ "$SELECTION_HOST" == macos ]]; then printf '%s' "$_SEL_CHECK_DARWIN"; else printf '%s' "$_SEL_CHECK_HM"; fi; }

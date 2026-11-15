@@ -13,6 +13,8 @@ setup() {
     # Isolate from the host: no inherited WSL env or WSL filesystem markers.
     unset WSL_DISTRO_NAME
     export DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-wsl-run" DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-wsl-interop"
+    # The host is not NixOS unless a test says so (wsl maps to wsl-nixos there).
+    export DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/no-NIXOS" DETECT_HOST_OS_RELEASE="$BATS_TEST_TMPDIR/no-os-release"
 }
 
 fake_uname() {
@@ -137,6 +139,14 @@ first_install() { # first_install <host>
     [[ "$output" == *"home-manager switch -b hm-bak --flake $FRESH/nix#wsl"* ]]
     [[ "$output" != *"darwin-rebuild"* ]]
     [ ! -e "$FRESH/home/.chezmoidata/personal.yaml" ]
+}
+
+@test "first install on NixOS-WSL: the switch is planned for wsl-nixos" {
+    : >"$BATS_TEST_TMPDIR/NIXOS"; export DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/NIXOS"
+    first_install wsl
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"home-manager switch -b hm-bak --flake $FRESH/nix#wsl-nixos"* ]]
+    [[ "$output" != *"nix#wsl "* && "$output" != *"nix#wsl"$'\n'* ]]
 }
 
 # ── ops/bootstrap.sh safety contract (T-0008) ───────────────────────────────
@@ -543,4 +553,17 @@ bs_nohost() { # like bs, but HOST_PROFILE stays unset
     printf 'hostProfile: "linux-desktop"\ngui: true\n' >"$FX/home/.chezmoidata/personal.yaml"
     bs --dry-run
     [[ "$output" != *"detected host"* ]]
+}
+
+@test "bootstrap dry-run on wsl: the preview and the switch name the same output (wsl without NixOS, wsl-nixos with it)" {
+    bs_fixture
+    BS_HOST=wsl bs --dry-run
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"home-manager switch -b hm-bak --flake $FX/nix#wsl "* || "$output" == *"home-manager switch -b hm-bak --flake $FX/nix#wsl"$'\n'* ]]
+    [[ "$output" != *"wsl-nixos"* ]]
+    : >"$BATS_TEST_TMPDIR/NIXOS"; export DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/NIXOS"
+    BS_HOST=wsl bs --dry-run
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"--flake $FX/nix#wsl-nixos"* ]]
+    [[ "$output" == *"--dry-run"* ]]
 }

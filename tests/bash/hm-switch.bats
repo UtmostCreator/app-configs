@@ -21,6 +21,8 @@ setup() {
     printf '#!/usr/bin/env bash\nprintf "home-manager %%s\\n" "$*" >> "$CALLS"\nexit "${FAIL_SWITCH:-0}"\n' >"$STUBS/home-manager"
     chmod +x "$STUBS/nix" "$STUBS/home-manager"
     PATH="$STUBS:$PATH"
+    # The host is not NixOS unless a test says so (it maps wsl to wsl-nixos).
+    export DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/no-NIXOS" DETECT_HOST_OS_RELEASE="$BATS_TEST_TMPDIR/no-os-release"
     printf '{"elements":{}}\n' >"$HOME/.nix-profile/manifest.json"
     # shellcheck source=/dev/null
     source "$REPO_ROOT/ops/lib/hm-switch.sh"
@@ -169,9 +171,9 @@ mk_selection() {
 
 @test "selection: empty SELECTION_ARGS is safe under set -u on this and older bash" {
     export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/none"
-    run "$BASH" -u -c "source '$REPO_ROOT/ops/lib/hm-switch.sh'; hm_switch_describe /repo/nix p"
+    run "$BASH" -u -c "source '$REPO_ROOT/ops/lib/hm-switch.sh'; hm_switch_describe /repo/nix linux-cli"
     [ "$status" -eq 0 ]
-    [ "$output" = 'home-manager switch -b hm-bak --flake /repo/nix#p' ]
+    [ "$output" = 'home-manager switch -b hm-bak --flake /repo/nix#linux-cli' ]
 }
 
 @test "selection: no prompt can run in hm-switch.sh, selection.sh, selection-facts.sh, selection-diff.sh, install-record.sh or selection-preview.sh" {
@@ -193,4 +195,52 @@ mk_selection() {
     [[ "${SELECTION_ARGS[2]}" == *"%2520x" ]]
     # the printed form has no raw space either, so it can be pasted into a shell
     [[ "$(selection_args_text)" != *"we ird"* ]]
+}
+
+# -- the wsl profile builds the wsl-nixos output on NixOS-WSL -----------------
+
+@test "wsl on NixOS: the check build and the switch use #wsl-nixos" {
+    : >"$BATS_TEST_TMPDIR/NIXOS"; export DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/NIXOS"
+    run hm_switch /repo/nix wsl
+    [ "$status" -eq 0 ]
+    grep -qx 'nix build --no-link --print-out-paths /repo/nix#homeConfigurations.wsl-nixos.activationPackage' "$CALLS"
+    grep -qx 'home-manager switch -b hm-bak --flake /repo/nix#wsl-nixos' "$CALLS"
+    [ "$(hm_switch_describe /repo/nix wsl)" = 'home-manager switch -b hm-bak --flake /repo/nix#wsl-nixos' ]
+}
+
+@test "wsl without NixOS (Ubuntu-on-WSL) still builds and switches #wsl" {
+    run hm_switch /repo/nix wsl
+    [ "$status" -eq 0 ]
+    grep -qx 'nix build --no-link --print-out-paths /repo/nix#homeConfigurations.wsl.activationPackage' "$CALLS"
+    grep -qx 'home-manager switch -b hm-bak --flake /repo/nix#wsl' "$CALLS"
+}
+
+@test "NixOS does not change another profile's attribute" {
+    : >"$BATS_TEST_TMPDIR/NIXOS"; export DETECT_HOST_NIXOS_MARKER="$BATS_TEST_TMPDIR/NIXOS"
+    run hm_switch /repo/nix linux-cli
+    grep -qx 'home-manager switch -b hm-bak --flake /repo/nix#linux-cli' "$CALLS"
+}
+
+# -- one fail-closed resolver: no silent fallback to the plain profile name ----
+
+@test "hm_attr: an unresolvable profile stops with a message, for every profile" {
+    run hm_attr no-such-profile
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"cannot choose the Home Manager output for host profile 'no-such-profile'"* ]]
+    run hm_attr wsl
+    [ "$status" -eq 0 ]
+    [ "$output" = wsl ]
+}
+
+@test "hm_switch with a failing resolver stops before any build or switch" {
+    run hm_switch /repo/nix no-such-profile
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"cannot choose the Home Manager output"* ]]
+    [ ! -s "$CALLS" ]
+}
+
+@test "hm_switch_describe with a failing resolver names no attribute and fails" {
+    run hm_switch_describe /repo/nix no-such-profile
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"#<unknown>"* ]]
 }

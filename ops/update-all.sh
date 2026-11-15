@@ -465,6 +465,19 @@ if [[ "$SUBCOMMAND" != rollback && "$HOST_PROFILE" == wsl ]] \
   exit 4
 fi
 
+# The Home Manager flake output for this host, computed ONCE and used by the
+# host build and the switch (wsl on NixOS is wsl-nixos). hm_attr fails closed for
+# every profile: no answer stops the run (exit 4) before anything is changed.
+# --selection-diff is read-only and reports through the selection facts instead
+# (they use the same hm_attr and evaluate nothing without an answer); rollback
+# does not detect a host.
+HM_ATTR="${HOST_PROFILE:-}"
+if [[ "$SUBCOMMAND" != rollback && "$MODE" != selection-diff && "$HOST_PROFILE" != macos ]] \
+  && ! HM_ATTR="$(hm_attr "$HOST_PROFILE")"; then
+  printf 'sys-update: cannot choose the Home Manager output for host %s\n' "$HOST_PROFILE" >&2
+  exit 4
+fi
+
 # --selection-diff is read-only and lock-free: it never takes, waits for or
 # probes the lock (lock_is_held would briefly take it), never recovers an
 # interrupted run, and never reaches ui_init, the state directory or the
@@ -1205,7 +1218,7 @@ if [[ "$STEP_FAILED" == 0 ]]; then
   if [[ "$HOST_PROFILE" == macos ]]; then
     BUILD_TARGET="darwinConfigurations.macos.system"
   else
-    BUILD_TARGET="homeConfigurations.$HOST_PROFILE.activationPackage"
+    BUILD_TARGET="homeConfigurations.$HM_ATTR.activationPackage"
   fi
   # The local selection (ops/lib/selection.sh) applies here and at the switch
   # below; the flake check above and CI keep evaluating the committed default.
@@ -1293,7 +1306,7 @@ if [[ "$STEP_FAILED" == 0 ]]; then
   else
     # hm_switch_raw is the shared `home-manager switch -b hm-bak`
     # (ops/lib/hm-switch.sh); the conflict check already ran above.
-    if run_step "home-manager" hm_switch_raw "$REPO_ROOT/nix" "$HOST_PROFILE"; then
+    if run_step "home-manager" hm_switch_raw "$REPO_ROOT/nix" "$HM_ATTR"; then
       ui_scan_warnings
       if [[ "$MODE" == "apply" ]] && check_activated_target; then
         ui_ok "home-manager" "generation $(hm_generation || echo '?')"

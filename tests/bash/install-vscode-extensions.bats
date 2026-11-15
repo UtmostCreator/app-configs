@@ -24,7 +24,7 @@ setup() {
     mkdir -p "$FAKE/ops" "$FAKE/nix/vars" "$FAKE/home/.chezmoidata" \
         "$FAKE/.git" "$STUBS" "$HOME" "$MARKS"
 
-    cp "$REPO_ROOT/ops/install.sh" "$FAKE/ops/install.sh"
+    cp "$REPO_ROOT/ops/install.sh" "$REPO_ROOT/ops/detect-host.sh" "$FAKE/ops/"
     cp -a "$REPO_ROOT/ops/lib" "$FAKE/ops/lib"
     cp "$REPO_ROOT/nix/vars/default.nix" "$FAKE/nix/vars/default.nix"
     : >"$FAKE/home/.chezmoidata/personal.yaml"

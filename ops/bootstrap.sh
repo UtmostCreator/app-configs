@@ -260,7 +260,9 @@ if [[ "$HOST_PROFILE" == "macos" ]]; then
   DRY_CMD=(nix build --no-link "$REPO_ROOT/nix#darwinConfigurations.macos.system" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"})
   switch_bin=nix
 else
-  SWITCH_CMD=(home-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HOST_PROFILE" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"})
+  # The flake output (wsl on NixOS is wsl-nixos), the same one hm_switch uses below.
+  HM_ATTR="$(hm_attr "$HOST_PROFILE")" || fail "cannot choose the Home Manager output for host $HOST_PROFILE"
+  SWITCH_CMD=(home-manager switch -b hm-bak --flake "$REPO_ROOT/nix#$HM_ATTR" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"})
   DRY_CMD=("${SWITCH_CMD[@]}" --dry-run)
   switch_bin=home-manager
 fi

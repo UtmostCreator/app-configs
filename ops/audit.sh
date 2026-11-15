@@ -57,6 +57,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || exit 1
 # shellcheck source=ops/lib/profile-conflicts.sh
 source "$ROOT/ops/lib/profile-conflicts.sh"
+# shellcheck source=ops/lib/hm-switch.sh
+source "$ROOT/ops/lib/hm-switch.sh"
 # shellcheck source=ops/lib/selection.sh
 source "$ROOT/ops/lib/selection.sh"
 # shellcheck source=ops/lib/state-lock.sh
@@ -324,7 +326,7 @@ live_systemd() {
 host_profile() { printf '%s\n' "${HOST_PROFILE:-$(bash "$ROOT/ops/detect-host.sh" 2>/dev/null)}"; }
 
 live_nix_profile() {
-  local host manifest out conflicts
+  local host attr manifest out conflicts
   host="$(host_profile)"
   case "$host" in
     linux-desktop | linux-cli | wsl) ;;
@@ -332,17 +334,19 @@ live_nix_profile() {
     *) warn "nix-profile: unknown host profile '$host'; conflicts not checked"; return ;;
   esac
   manifest="${HM_PROFILE_MANIFEST:-$HOME/.nix-profile/manifest.json}"
+  # The flake output for this host (wsl on NixOS is wsl-nixos).
+  attr="$(hm_attr "$host")" || { warn "nix-profile: cannot choose the Home Manager output for host $host; conflicts not checked"; return; }
   if ! have jq || ! have nix; then warn "nix-profile: needs jq and nix; conflicts not checked"; return; fi
   if [[ ! -f "$manifest" ]]; then pass "nix-profile: no profile manifest, nothing hand-installed"; return; fi
   # Evaluate, do not build: when the activation package is already in the
   # store (sys-update built it) the check is free, otherwise skip it.
   selection_args
-  if ! out="$(nix eval --raw "path:$ROOT/nix#homeConfigurations.$host.activationPackage.outPath" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} 2>/dev/null)" || [[ -z "$out" ]]; then
+  if ! out="$(nix eval --raw "path:$ROOT/nix#homeConfigurations.$attr.activationPackage.outPath" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} 2>/dev/null)" || [[ -z "$out" ]]; then
     warn "nix-profile: could not evaluate the $host activation package; conflicts not checked"
     return
   fi
   if [[ ! -d "$out/home-path" ]]; then
-    warn "nix-profile: the $host activation package is not built yet; run: nix build --no-link \"path:$ROOT/nix#homeConfigurations.$host.activationPackage\"$(selection_args_text) then re-run"
+    warn "nix-profile: the $host activation package is not built yet; run: nix build --no-link \"path:$ROOT/nix#homeConfigurations.$attr.activationPackage\"$(selection_args_text) then re-run"
     return
   fi
   conflicts="$(profile_hm_conflicts "$manifest" "$out/home-path")"

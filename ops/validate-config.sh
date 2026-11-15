@@ -796,7 +796,7 @@ fi
 # services.vicinae (renamed alias of programs.vicinae); xdg keys Home Manager
 # generates itself (dconf/.keep, environment.d/10-home-manager.conf,
 # nix/nix.conf).
-EVAL_PROFILES="${VALIDATE_EVAL_PROFILES:-linux-desktop linux-cli wsl macos}"
+EVAL_PROFILES="${VALIDATE_EVAL_PROFILES:-linux-desktop linux-cli wsl wsl-nixos macos}"
 # shellcheck disable=SC2016 # Nix source, not shell: no expansion wanted
 EVAL_QUERY='cfg: let
   inherit (builtins) attrNames attrValues filter map isAttrs tryEval;

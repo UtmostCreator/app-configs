@@ -83,6 +83,14 @@ precheck_args() {
       done
       ;;
     watch)
+      if [[ $# -eq 2 ]]; then
+        case "$2" in
+          help|-h|--help)
+            usage
+            exit 0
+            ;;
+        esac
+      fi
       [[ $# -eq 1 ]] || fail "watch does not accept options"
       ;;
     rollback|status)

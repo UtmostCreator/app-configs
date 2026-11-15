@@ -111,3 +111,30 @@ run_script() { run env PATH="$STUBS:$PATH" bash "$SCRIPT" "$@"; }
             || { echo "$c: calls: $(cat "$CALLS")"; return 1; }
     done
 }
+
+@test "watch --help, -h and help print usage and reach neither mise nor the workflow" {
+    printf '#!/bin/sh\necho "npm $*" >>"%s"\nexit 1\n' "$CALLS" >"$STUBS/npm"
+    chmod +x "$STUBS/npm"
+    local a major
+    for major in 24 22; do
+      printf '#!/bin/sh\necho %s\n' "$major" >"$STUBS/node"
+      for a in --help -h help; do
+          : >"$CALLS"
+          run_script watch "$a"
+          [ "$status" -eq 0 ] || { echo "watch $a: status $status: $output"; return 1; }
+          [[ "$output" == *"Usage:"* ]] || { echo "watch $a: no usage"; return 1; }
+          [ ! -s "$CALLS" ] || { echo "watch $a called: $(cat "$CALLS")"; return 1; }
+      done
+    done
+}
+
+@test "watch with any other option is still rejected without calling mise" {
+    local args
+    for args in "watch --foo" "watch -x" "watch --help extra" "watch extra"; do
+        : >"$CALLS"
+        run_script $args
+        [ "$status" -ne 0 ] || { echo "$args: exited 0"; return 1; }
+        [[ "$output" == *"watch does not accept options"* ]] || { echo "$args: $output"; return 1; }
+        [ ! -s "$CALLS" ] || { echo "$args called: $(cat "$CALLS")"; return 1; }
+    done
+}

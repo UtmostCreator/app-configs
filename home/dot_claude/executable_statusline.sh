@@ -153,8 +153,19 @@ eval "$(jq -r --argjson now "$NOW" '
     # A number as a rounded integer string, otherwise "" (field absent or odd).
     def whole(f): f | if type == "number" then round | tostring else "" end;
 
-    ((.context_window | objects) // {}) as $cw
-    | ((.cost | objects) // {}) as $cost
+    # An object field, or {} when the payload holds anything else (string, null...).
+    def obj(f): (f | objects) // {};
+    # A string field, or "" for any other type.
+    def str(f): f | if type == "string" then . else "" end;
+
+    obj(.context_window) as $cw
+    | obj(.workspace) as $ws
+    | obj(.model) as $model
+    | obj(.effort) as $eff
+    | obj(.worktree) as $wt
+    | obj(.pr) as $pr
+    | obj(.prompt_cache) as $pc
+    | obj(.cost) as $cost
     | (($cw.total_input_tokens | type) == "number") as $has_used
     # No window size in the payload means no size: never assume 200k.
     | (($cw.context_window_size | type) == "number" and $cw.context_window_size > 0) as $has_size
@@ -162,12 +173,12 @@ eval "$(jq -r --argjson now "$NOW" '
     | (if $has_used then $cw.total_input_tokens else 0 end) as $used
     | quota("five_hour") as $q5
     | quota("seven_day") as $q7
-    | @sh "project_dir=\(.workspace.project_dir // .cwd // "")",
-      @sh "session_id=\(.session_id // "")",
-      @sh "current_dir=\(.workspace.current_dir // .cwd // "")",
-      @sh "model_name=\(.model.display_name // "unknown" | sub(" \\([^)]*context\\)$"; ""))",
+    | @sh "project_dir=\((str($ws.project_dir) | select(. != "")) // str(.cwd))",
+      @sh "session_id=\(str(.session_id))",
+      @sh "current_dir=\((str($ws.current_dir) | select(. != "")) // str(.cwd))",
+      @sh "model_name=\(str($model.display_name) | select(. != "") // "unknown" | sub(" \\([^)]*context\\)$"; ""))",
       @sh "agent_name=\(.agent | if type == "string" then . elif type == "object" then (.name? // "") else "" end | tostring | gsub("[[:cntrl:]]"; "") | if length > 20 then .[0:19] + "…" else . end)",
-      @sh "effort=\(.effort.level // "")",
+      @sh "effort=\(str($eff.level))",
       @sh "ctx_pct=\(if ($cw.used_percentage | type) == "number" then $cw.used_percentage | round
                       elif $has_used and $has_size then $used * 100 / $size | round else "" end)",
       @sh "ctx_used=\(if $has_used then $used | tokens else "" end)",
@@ -176,16 +187,16 @@ eval "$(jq -r --argjson now "$NOW" '
                       then ($size * $cw.remaining_percentage / 100 | round | tokens) else "" end)",
       @sh "cost_cents=\(whole($cost.total_cost_usd | if type == "number" then . * 100 else . end))",
       @sh "duration_s=\(whole($cost.total_duration_ms | if type == "number" then . / 1000 | floor else . end))",
-      @sh "cache_observed=\(.prompt_cache.caching_observed == true)",
-      @sh "cache_warm=\(.prompt_cache.warm == true)",
-      @sh "cache_hit=\(whole(.prompt_cache.hit_ratio | if type == "number" then . * 100 else . end))",
+      @sh "cache_observed=\($pc.caching_observed == true)",
+      @sh "cache_warm=\($pc.warm == true)",
+      @sh "cache_hit=\(whole($pc.hit_ratio | if type == "number" then . * 100 else . end))",
       @sh "added=\(whole($cost.total_lines_added) | if . == "" then "0" else . end)",
       @sh "removed=\(whole($cost.total_lines_removed) | if . == "" then "0" else . end)",
       @sh "q5_pct=\($q5[0])", @sh "q5_reset=\($q5[1])",
       @sh "q7_pct=\($q7[0])", @sh "q7_reset=\($q7[1])",
-      @sh "worktree=\(.worktree.name // .workspace.git_worktree // "")",
-      @sh "pr_number=\(.pr.number // "" | tostring)",
-      @sh "pr_state=\(.pr.review_state // "")"
+      @sh "worktree=\(str($wt.name) | select(. != "") // str($ws.git_worktree))",
+      @sh "pr_number=\(whole($pr.number))",
+      @sh "pr_state=\(str($pr.review_state))"
 ')"
 
 # Remote Control is not in the statusLine payload. Claude Code keeps a state

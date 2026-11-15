@@ -104,7 +104,7 @@ jq -c --argjson now "${STATUSLINE_NOW:-$(date +%s)}" \
                        else 4 + (.pct | tostring | length) + 1 + (if .pct >= 80 then 2 else 0 end) end)] | max // 0) as $state_w
     | ([$rows[].model | sub("^Sonnet"; "Son") | length] | max // 0) as $tag_w
     | $rows[]
-    | ((.status // "") | icon) as [$glyph, $glyph_color]
+    | ((.status // "" | tostring) | icon) as [$glyph, $glyph_color]
     | .pct as $p
     | (if $p == null then "\(.tokens) tok"
        else ("ctx \($p)%" | color($p | level_color))

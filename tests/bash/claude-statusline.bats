@@ -715,3 +715,26 @@ cache_file() {
     [ "$status" -eq 0 ]
     [[ "$output" == "advanced-gym ⎇ main | "* ]]
 }
+
+@test "odd line counts outside git: a string count is 0 and 1.5 rounds to 2" {
+    mkdir -p "$WORK/plain-dir"
+    run statusline "$(jq -n --arg d "$WORK/plain-dir" '{workspace: {project_dir: $d, current_dir: $d},
+        cost: {total_lines_added: "many", total_lines_removed: 1.5}}')"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "plain-dir +0/-2 | Opus 5 | "* ]]
+}
+
+@test "string-valued effort, model, workspace, worktree, pr and prompt_cache do not blank the line" {
+    run statusline '{"effort": "high", "model": "opus", "workspace": "here", "worktree": "wt",
+        "pr": "184", "prompt_cache": "warm"}'
+    [ "$status" -eq 0 ]
+    [[ "$output" == "advanced-gym ⎇ main | unknown | Ctx ██████░░░░ 55% · 548k/1M" ]]
+}
+
+@test "a PR number that is not a number is omitted instead of printed" {
+    run statusline '{"pr": {"number": {"id": 1}, "review_state": {"x": 1}}}'
+    [ "$status" -eq 0 ]
+    [[ "$output" != *PR* ]]
+    run statusline '{"pr": {"number": 184.0, "review_state": "approved"}}'
+    [[ "$output" == *"PR #184 approved" ]]
+}

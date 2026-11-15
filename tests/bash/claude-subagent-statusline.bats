@@ -311,3 +311,12 @@ age_code() {
     [ -z "$(age_code 2000 1)" ]
     [ "$(age_code 2000)" = "1;31" ]
 }
+
+@test "a numeric or missing task status does not blank the panel" {
+    input=$(jq -n --argjson a "$(task a A claude-opus-5 high running 1000 200000 5 | jq '.status = 3')" \
+        --argjson b "$(task b B claude-opus-5 high running 1000 200000 5 | jq 'del(.status)')" '{columns: 120, tasks: [$a, $b]}')
+    run rows "$input"
+    [ "$status" -eq 0 ]
+    [ "${#lines[@]}" -eq 2 ]
+    [ "${lines[0]}" = "a=A Opus 5 · high · · ctx 1%" ]
+}

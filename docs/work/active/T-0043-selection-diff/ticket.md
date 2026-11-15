@@ -103,8 +103,9 @@ Per-check states (user decision after review)
   failing chezmoi is `error` with a fixed class, never the raw message. No placeholder
   data, no fallback to another checkout, no private values in output.
 - Isolated tests generate dummy machine data in the fake repo; the real checkout
-  can return exit 0 (to be proven after merge, on main). A first install (no
-  generation) is pending with reason no_generation, since the comparison is complete.
+  can return exit 0 (to be proven after merge, on main). A profile directory without a
+  generation link is pending with reason no_generation (exit 10); no profile directory at
+  all makes packages and hm_files unknown with reason generation_unreadable (exit 11).
 
 ## Owned files (write boundary)
 - ops/lib/selection-facts.sh (new), ops/lib/selection-diff.sh (new), ops/lib/install-record.sh (new)

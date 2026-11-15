@@ -21,7 +21,7 @@ Install these by hand. The repo does not (yet) check for them.
 xcode-select --install                 # provides git, needed to clone
 # Homebrew: follow https://brew.sh (hard prerequisite, see below)
 brew --prefix                          # expect /opt/homebrew
-brew info --cask aerospace             # see "Known gaps": the token may be wrong
+brew info --cask nikitabobko/tap/aerospace   # the plain `aerospace` is expected to fail
 git clone https://github.com/UtmostCreator/app-configs.git ~/app-configs
 cd ~/app-configs
 /bin/bash --version                    # expect 3.2.x
@@ -29,6 +29,8 @@ cd ~/app-configs
 
 - Log in as the `username` from `nix/vars/default.nix`. `ops/install.sh`
   stops early if the login user differs (`ops/lib/preflight.sh:76-91`).
+- Brew may auto-tap a qualified name such as `nikitabobko/tap/aerospace`,
+  which is a small change to your Homebrew install (unverified).
 - Homebrew is a hard prerequisite. nix-darwin's Homebrew module does not
   install brew. Without it activation prints "Homebrew is not installed,
   skipping..." and continues, no cask is installed, and the default-browser
@@ -88,19 +90,29 @@ surprise and record it in the ticket.
    1. Restore the `$HOME` snapshot. `ops/snapshot-home.sh` copies the files
       chezmoi is about to overwrite to
       `~/.local/state/dotfiles-snapshots/<UTC timestamp>/` (override with
-      `DOTFILES_SNAPSHOT_ROOT`), with a `MANIFEST.txt` there.
+      `DOTFILES_SNAPSHOT_ROOT`), with a `MANIFEST.txt` there. Home Manager's
+      symlinks in `$HOME` and `~/.nix-profile` dangle once Nix is gone; the
+      restore covers the dotfiles, and `find ~ -maxdepth 3 -type l ! -exec
+      test -e {} \; -print` lists leftovers to remove by hand.
    2. Run nix-darwin's uninstaller at the locked revision, for example
-      `sudo nix run github:nix-darwin/nix-darwin/<locked rev>#darwin-uninstaller`
+      `sudo nix run github:LnL7/nix-darwin/<locked rev>#darwin-uninstaller`
       (the package is `pkgs/darwin-uninstaller`; read the rev from
-      `nix/flake.lock`; the exact command form is unverified).
+      `nix/flake.lock`, whose owner is LnL7, rather than relying on the
+      rename redirect; the exact command form is unverified).
    3. Only then remove Nix with the Determinate uninstaller,
       `sudo /nix/nix-installer uninstall`.
+   Homebrew casks stay installed through all of this; remove them by hand
+   (`brew uninstall --cask <name>`) if wanted.
 
    *(unverified: the Determinate install, `sudo nix run` on a user-owned repo,
    the closure build, and the /etc conflicts below.)* If the switch fails on
-   git's `safe.directory` check for the user-owned repo (the root user does
-   not trust it), one possible workaround is
-   `sudo git config --global --add safe.directory ~/app-configs`; unverified.
+   git's `safe.directory` check for the user-owned repo, one possible
+   workaround is to re-run the switch with a `path:` flake ref, for example
+   `sudo darwin-rebuild switch --flake "path:$PWD/nix#macos" ...` (or the
+   `sudo nix run` form with `path:`); unverified. Do not use
+   `git config --global` for this: macOS `sudo` keeps HOME, so root would write
+   to the chezmoi-managed `~/.gitconfig`, and `sys-update` then refuses to run
+   over a hand-edited managed file.
 
 5. **AC14: a switch with a selection override (LIVE).** Use the recipe in
    `docs/work/active/T-0042-install-selection/evidence/t6-t8-results.md`
@@ -148,7 +160,13 @@ surprise and record it in the ticket.
     forward with
     `sudo darwin-rebuild switch --flake "$PWD/nix#macos"`, adding
     `--override-input selection path:<dir>` after the flake when a local
-    selection exists (`ops/lib/selection.sh` prints the arguments), or
+    selection exists. The default selection directory is
+    `~/.config/app-configs/selection` (a selection exists only when
+    `selection.toml` is in it), so the literal flag is
+    `--override-input selection path:$HOME/.config/app-configs/selection`; or
+    print it with
+    `bash -c '. ops/lib/selection.sh; selection_args; selection_args_text'`
+    (prints nothing when there is no selection), or
     `mise run sync:apply` once fix 1 has landed. Casks stay installed because Homebrew `cleanup` is `"none"`
     (`nix/modules/darwin/homebrew.nix:35`).
 

@@ -11,7 +11,7 @@ successful run)
 
 ## Summary
 Nobody has run this repo on a Mac. A static review at main ed39171 (nothing was
-run on a Mac) found two certain blockers and one probable blocker on the way
+run on a Mac) found two certain blockers and one inferred blocker on the way
 to a first install, plus smaller gaps. This ticket orders the fixes, with
 acceptance criteria, and holds the step-by-step real-Mac verification order.
 The user-facing procedure is the macOS setup doc, docs/platforms/macos/setup.md.
@@ -21,8 +21,8 @@ This ticket changes no code; the fixes below are separate work.
 Verified by reading the files unless marked.
 - BLOCKER: newer nix-darwin refuses `darwin-rebuild switch|check` unless run as
   root ("system activation must now be run as root"; locked nix-darwin source,
-  pkgs/nix-tools/darwin-rebuild.sh around lines 149-152, read by the
-  researcher, not re-read here). `ops/update-all.sh:1218` and `mise.toml:115`
+  pkgs/nix-tools/darwin-rebuild.sh around lines 149-152; read by the
+  researcher and re-read by the round-1 review). `ops/update-all.sh:1218` and `mise.toml:115`
   (check) and `mise.toml:186` (switch) run it without sudo. `ops/install.sh:424,426`
   and `ops/bootstrap.sh:248,250` use sudo, and bats pins that (`mise.toml:115`
   is the `sync:dry-run` preview, so adding sudo there makes a preview need
@@ -42,7 +42,7 @@ Verified by reading the files unless marked.
   Casks/aerospace.rb, so the qualified token is `nikitabobko/tap/aerospace`. The
   module sets no `homebrew.taps` (it defaults to an empty list). Activation runs
   under `set -e`, so a failing `brew bundle` probably aborts it (inferred). The other 23 cask tokens were current, none deprecated or
-  disabled, none Intel-only. Confirm with `brew info --cask aerospace` on the Mac.
+  disabled, none Intel-only. Confirm with `brew info --cask nikitabobko/tap/aerospace` on the Mac.
 - `ops/update-all.sh` is not bash 3.2 safe: `mapfile` at lines 720, 770, 824,
   1006, 1021, 1165 and 1167, with no version guard. The ones at about 1165 and
   1167 are in the `!= macos` branch and are never reached on darwin. sys-update
@@ -126,7 +126,7 @@ Fix 1 gates `sys-update --apply` (step 9). Fix 4 gates a clean step 8.
    - AC: bats tests with a stubbed PATH: brew missing fails with that message;
      brew present passes; a dry run still never fails on it (decide and pin).
    - AC: install and bootstrap bats suites pass.
-3. The `aerospace` cask (PROBABLE BLOCKER).
+3. The `aerospace` cask (inferred blocker).
    - Use the qualified token `nikitabobko/tap/aerospace` (and `homebrew.taps`
      if the module needs the tap declared), or remove the cask. Needs the
      answer to the first open question. Confirm on the Mac with
@@ -165,8 +165,7 @@ clean checkout of feat/install-selection (that branch is gone; use main), and a
 pinned lock hash 44847d... (main's lock has changed; compare the hash before
 and after the switch instead). That file is not edited here.
 
-Smaller follow-ups, same ticket, any order: correct the gui.nix header; use
-`shasum -a 256` in the T-0042 evidence recipe; correct or caveat
+Smaller follow-ups, same ticket, any order: correct the gui.nix header; correct or caveat
 docs/guides/shell-setup.md for macOS; make the readiness macOS GUI sample able
 to report a failure (or document that it cannot); decide on the fish login shell.
 
@@ -177,13 +176,15 @@ rollback. This is also the setup doc's procedure.
 Steps 4, 5, 9 and 10 change the live Mac (LIVE).
 
 1. Prerequisites: `xcode-select --install`; Homebrew from brew.sh;
-   `brew info --cask aerospace`; `brew --prefix` (expect /opt/homebrew); clone
+   `brew info --cask nikitabobko/tap/aerospace` (the plain `aerospace` is
+   expected to fail; brew may auto-tap a qualified name, a small change to
+   Homebrew, unverified); `brew --prefix` (expect /opt/homebrew); clone
    as the login user named in nix/vars/default.nix; `/bin/bash --version`
    shows 3.2. Rollback: none needed.
 2. Dry run under bash 3.2, no TTY:
    `APP_CONFIGS_SELECTION_DIR=$(mktemp -d) /bin/bash ops/install.sh --dry-run --profile work </dev/null`.
-   Expect no "unbound variable", mapfile or "bad substitution", ending with
-   a `dry run: would write ...` line, and ending with "Dry run finished;
+   Expect no "unbound variable", mapfile or "bad substitution", a
+   `dry run: would write ...` line, and the run ending with "Dry run finished;
    nothing was changed." Before step 4 this is partial: Nix is missing, so the
    run warns "nix is not installed (dry-run)" (ops/install.sh:254) and the
    selection preview prints "preview unavailable: nix not installed"
@@ -191,20 +192,30 @@ Steps 4, 5, 9 and 10 change the live Mac (LIVE).
    close T-0042 human check 2.
 3. TTY dry run: `/bin/bash ops/install.sh --dry-run` with an empty
    APP_CONFIGS_SELECTION_DIR; Enter five times (profile, go, macInput, media,
-   security), then `a`; expect "dry run: would write". Closes check 2. Check 3
-   needs the casks installed first.
+   security), then `a`; expect a `dry run: would write ...` line and the final
+   "Dry run finished; nothing was changed." Partial before Nix exists, as in
+   step 2; repeat it after step 4 to close check 2. Check 3 needs the casks
+   installed first.
 4. Real install (LIVE): `bash ops/install.sh --profile work`, only after fixes
    1 to 3. Then repeat steps 2 and 3. Rollback for a first install (one
    generation only, so `darwin-rebuild --rollback` has nothing to go back to:
    it runs `nix-env --rollback`; removing Nix first would leave /etc symlinks
    into /etc/static dangling), in this order, all unverified: (a) restore the
    $HOME snapshot from ~/.local/state/dotfiles-snapshots/<UTC timestamp>/
-   (ops/snapshot-home.sh; override with DOTFILES_SNAPSHOT_ROOT); (b) nix-darwin's
-   uninstaller at the locked rev, for example `sudo nix run
-   github:nix-darwin/nix-darwin/<locked rev>#darwin-uninstaller`; (c) only then
-   `sudo /nix/nix-installer uninstall`. If the switch fails on git
-   `safe.directory`, one possible workaround is `sudo git config --global --add
-   safe.directory ~/app-configs` (unverified).
+   (ops/snapshot-home.sh; override with DOTFILES_SNAPSHOT_ROOT; Home Manager's
+   symlinks in $HOME and ~/.nix-profile dangle once Nix is gone, so also list
+   leftovers with `find ~ -maxdepth 3 -type l ! -exec test -e {} \; -print`);
+   (b) nix-darwin's uninstaller at the locked rev, for example `sudo nix run
+   github:LnL7/nix-darwin/<locked rev>#darwin-uninstaller` (LnL7 matches the
+   flake.lock owner; do not rely on the rename redirect); (c) only then
+   `sudo /nix/nix-installer uninstall`. Homebrew casks stay installed. If the
+   switch fails on git `safe.directory`, one possible workaround is to re-run
+   it with a `path:` flake ref, `sudo darwin-rebuild switch --flake
+   "path:$PWD/nix#macos" ...` (or the `sudo nix run` form with `path:`);
+   unverified. Do not use
+   `git config --global` for this: macOS `sudo` keeps HOME, so root would write
+   to the chezmoi-managed `~/.gitconfig`, and `sys-update` then refuses to run
+   over a hand-edited managed file.
 5. AC14 (LIVE): a switch with a selection override per the T-0042 evidence
    recipe, with `shasum -a 256`, from a clean checkout of main, comparing the
    lock hash before and after (not against the pinned value). Expect success, a clean git status, an unchanged lock,
@@ -224,8 +235,9 @@ Steps 4, 5, 9 and 10 change the live Mac (LIVE).
    system>/activate` to run by hand; or `sudo darwin-rebuild --rollback`.
 10. Rollback drill (LIVE): `sudo darwin-rebuild --rollback`, then switch
     forward with `sudo darwin-rebuild switch --flake "$PWD/nix#macos"` (add
-    `--override-input selection path:<dir>` when a local selection exists), or
-    `mise run sync:apply` after fix 1. Casks stay installed (cleanup = none).
+    `--override-input selection path:$HOME/.config/app-configs/selection` when
+    `selection.toml` exists there; or get the arguments with
+    `bash -c '. ops/lib/selection.sh; selection_args; selection_args_text'`, or `mise run sync:apply` after fix 1. Casks stay installed (cleanup = none).
 
 Checks to run for the fixes themselves: `bats tests/bash` in full for fixes 1
 and 4 (they change ops/update-all.sh), the install and bootstrap suites for fix

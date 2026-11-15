@@ -46,6 +46,29 @@ set -gx GPG_TTY (tty)
 # fzf owns Ctrl-T/Alt-C below; vi mode coexists with those widget bindings.
 fish_vi_key_bindings
 
+# >>> ctrl-c cancel
+# Ctrl+C at the prompt: keep the typed line on screen with ^C and draw a fresh
+# prompt below it, like bash/zsh. fish 4 binds Ctrl+C to clear-commandline in
+# vi insert/default mode, which wipes the line in place without a newline, so
+# the prompt never re-renders and its git status (changed files, +/- lines)
+# goes stale. cancel-commandline restores the classic behaviour. Only the
+# prompt is affected: a running command still gets SIGINT from the terminal.
+# Visual mode keeps its preset (Ctrl+C ends the selection, discards no line).
+# Default mode goes through a function, not a `-m insert` bind: emacs bindings
+# also call their mode `default` (user binds survive a runtime switch to them),
+# so the switch to insert happens only while vi bindings are active, which
+# keeps the preset's "Ctrl+C in normal mode returns to insert".
+function __app_configs_ctrl_c --description 'Ctrl+C: cancel the line, fresh prompt; back to insert in vi mode'
+    commandline -f cancel-commandline
+    if test "$fish_key_bindings" = fish_vi_key_bindings
+        set fish_bind_mode insert
+        commandline -f repaint-mode
+    end
+end
+bind -M insert ctrl-c cancel-commandline
+bind -M default ctrl-c __app_configs_ctrl_c
+# <<< ctrl-c cancel
+
 # Emacs-style line jumps on top of vi mode. fish_vi_key_bindings does NOT bind
 # Ctrl-A / Ctrl-E (those are Emacs-mode defaults), so in vi mode Ctrl-A did
 # nothing — unlike Emacs-style line editors (e.g. opencode) where Ctrl-A jumps

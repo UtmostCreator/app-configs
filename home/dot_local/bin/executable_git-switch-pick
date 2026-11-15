@@ -1,0 +1,183 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# git-switch-pick: fzf branch picker behind the gsw and gswr shortcuts.
+#
+#   git-switch-pick [args]            local branches (gsw)
+#   git-switch-pick --remote [name]   remote branches (gswr)
+#
+# Rows are newest commit first. fzf keeps its default layout, so the newest
+# row sits next to the prompt, and --no-sort keeps that order while you
+# type (fzf then filters without re-ranking by match score). Git stores no branch creation date, so the date column is the last
+# commit; the preview adds the first commit off the default branch and, for
+# local branches, the oldest reflog entry.
+#
+# Nothing is fetched; run `git fetch --prune` first for fresh remote branches.
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  git-switch-pick [git switch args]   pick a local branch with fzf (gsw)
+  git-switch-pick --remote [name]     pick a remote branch with fzf (gswr)
+
+With arguments, fzf is skipped: gsw runs `git switch ARGS`, and gswr switches
+to the local branch NAME, or creates it tracking the remote branch (an
+optional leading remote name is stripped). Rows show the last commit date
+(git has no branch creation date), hash, author, branch and subject.
+USAGE
+}
+
+die() { printf '%s\n' "$*" >&2; exit 1; }
+
+# Resolve the default branch for the preview: origin/HEAD, else main, master.
+default_base() {
+  local b
+  b="$(git symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+  if [[ -n "$b" ]] && git rev-parse -q --verify "$b" >/dev/null; then printf '%s\n' "$b"; return; fi
+  for b in refs/remotes/origin/main refs/heads/main refs/remotes/origin/master refs/heads/master; do
+    if git show-ref --verify --quiet "$b"; then printf '%s\n' "${b#refs/}"; return; fi
+  done
+}
+
+# preview REFNAME: shown by fzf for the highlighted row.
+preview() {
+  local ref="${1:-}" base first oldest
+  case "$ref" in
+    refs/heads/?*|refs/remotes/?*/?*) ;;
+    *) die "preview: not a branch ref: $ref" ;;
+  esac
+  printf '\033[1m%s\033[0m\n' "${ref#refs/}"
+  base="$(default_base)"
+  if [[ -z "$base" ]]; then
+    printf 'First commit off default branch: unknown (no origin/HEAD, main or master)\n'
+  else
+    first="$(git log "$base..$ref" --reverse --format='%cs %h %an' 2>/dev/null | sed -n 1p)"
+    printf 'First commit off %s: %s\n' "$base" "${first:-none (nothing beyond it)}"
+  fi
+  case "$ref" in
+    refs/heads/*)
+      oldest="$(git reflog show --date=short --format='%gd %gs' "$ref" 2>/dev/null | tail -n 1)"
+      printf 'Reflog (oldest entry): %s\n' "${oldest:-none}"
+      ;;
+    *) printf 'Reflog: n/a for remote branches\n' ;;
+  esac
+  printf '\n'
+  git log --oneline --graph --color=always -20 "$ref" --
+}
+
+# rows MODE: key<TAB>coloured, aligned columns; newest commit first.
+rows() {
+  local mode="$1" scope current locals="" remotes="" wt=""
+  if [[ "$mode" == remote ]]; then
+    scope=refs/remotes
+    locals="$(git for-each-ref --format='%(refname:strip=2)' refs/heads)"
+  else
+    scope=refs/heads
+  fi
+  current="$(git symbolic-ref -q --short HEAD 2>/dev/null || true)"
+  remotes="$(git remote)"
+  wt="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+  git for-each-ref --sort=-committerdate \
+      --format='%(refname)%09%(symref)%09%(worktreepath)%09%(committerdate:relative)%09%(objectname:short)%09%(authorname)%09%(contents:subject)' \
+      "$scope" |
+    GSP_MODE="$mode" GSP_LOCALS="$locals" GSP_CURRENT="$current" GSP_REMOTES="$remotes" GSP_WT="$wt" awk -F'\t' '
+      BEGIN {
+        mode = ENVIRON["GSP_MODE"]; cur = ENVIRON["GSP_CURRENT"]; wt = ENVIRON["GSP_WT"]
+        n = split(ENVIRON["GSP_LOCALS"], l, "\n")
+        for (i = 1; i <= n; i++) if (l[i] != "") have[l[i]] = 1
+        nr = split(ENVIRON["GSP_REMOTES"], rem, "\n")
+      }
+      {
+        ref = $1
+        if ($2 != "") next                       # symbolic ref, e.g. origin/HEAD
+        mark = "       "
+        if (mode == "local") {
+          name = substr(ref, 12); show = name
+          if (name == cur) next
+          if ($3 != "" && $3 != wt) mark = "⊕ wt   "   # checked out in another worktree
+        } else {
+          show = substr(ref, 14)
+          best = ""                               # longest remote name that prefixes it
+          for (i = 1; i <= nr; i++)
+            if (rem[i] != "" && index(show, rem[i] "/") == 1 && length(rem[i]) > length(best)) best = rem[i]
+          if (best == "") next
+          name = substr(show, length(best) + 2)
+          if (name == "") next
+          if (name in have) mark = "✓ local"
+        }
+        c++; key[c] = ref; d[c] = $4; h[c] = $5; a[c] = $6; b[c] = show; s[c] = $7; m[c] = mark
+        if (length($4) > wd) wd = length($4)
+        if (length($6) > wa) wa = length($6)
+        if (length(show) > wb) wb = length(show)
+      }
+      END {
+        for (i = 1; i <= c; i++)
+          printf "%s\t\033[32m%-*s\033[0m  \033[33m%s\033[0m  \033[34m%-*s\033[0m  \033[1m%-*s\033[0m  \033[36m%s\033[0m  \033[2m%s\033[0m\n",
+            key[i], wd, d[i], h[i], wa, a[i], wb, b[i], m[i], s[i]
+      }'
+}
+
+# switch_remote NAME: switch to the local branch, or create it tracking the
+# remote one. An optional leading remote name is stripped; a bare name on
+# several remotes is ambiguous and is refused.
+switch_remote() {
+  local arg="$1" remote="" name="" r cands=() candr=()
+  for r in $(git remote); do   # longest matching remote name wins (remotes may contain "/")
+    if [[ "$arg" == "$r"/?* && ${#r} -gt ${#remote} ]] && git show-ref --verify --quiet "refs/remotes/$arg"; then
+      remote="$r"; name="${arg#"$r"/}"
+    fi
+  done
+  if [[ -z "$remote" ]]; then
+    name="$arg"
+    if git show-ref --verify --quiet "refs/heads/$name"; then exec git switch "$name"; fi
+    for r in $(git remote); do
+      [[ "$name" != HEAD ]] && git show-ref --verify --quiet "refs/remotes/$r/$name" && { cands+=("$r/$name"); candr+=("$r"); }
+    done
+    case "${#cands[@]}" in
+      0) die "no remote branch named '$name' (try: git fetch --prune)" ;;
+      1) remote="${candr[0]}" ;;
+      *) die "ambiguous: '$name' exists on several remotes (${cands[*]}); name one, e.g. gswr ${cands[0]}" ;;
+    esac
+  fi
+  if git show-ref --verify --quiet "refs/heads/$name"; then
+    exec git switch "$name"
+  fi
+  exec git switch -c "$name" --track "$remote/$name"
+}
+
+mode=local
+if [[ "${1:-}" == --remote ]]; then mode=remote; shift; fi
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+  --preview) shift; preview "${1:-}"; exit ;;
+esac
+
+git rev-parse --git-dir >/dev/null 2>&1 || die "not inside a Git repository"
+
+if [[ $# -gt 0 ]]; then
+  if [[ "$mode" == local ]]; then exec git switch "$@"; fi
+  case "$1" in -*) usage >&2; exit 64 ;; esac
+  [[ $# -eq 1 ]] || { usage >&2; exit 64; }
+  switch_remote "$1"
+fi
+
+command -v fzf >/dev/null 2>&1 || { echo 'missing: fzf'; exit 1; }
+
+list="$(rows "$mode")"
+[[ -n "$list" ]] || { echo 'no branches'; exit 1; }
+
+self="$(cd -- "$(dirname -- "$0")" >/dev/null && pwd)/$(basename -- "$0")"
+if [[ "$mode" == remote ]]; then prompt='switch (remote)> '; else prompt='switch> '; fi
+
+status=0
+sel="$(printf '%s\n' "$list" | fzf --ansi --height 50% --border --prompt "$prompt" \
+  --delimiter=$'\t' --with-nth=2.. --no-sort \
+  --header 'last commit  hash  author  branch  subject' \
+  --preview "$(printf '%q' "$self") --preview {1}")" || status=$?
+[[ $status -eq 0 && -n "$sel" ]] || exit "${status:-1}"
+
+ref="${sel%%$'\t'*}"
+if [[ "$mode" == local ]]; then
+  exec git switch "${ref#refs/heads/}"
+fi
+switch_remote "${ref#refs/remotes/}"

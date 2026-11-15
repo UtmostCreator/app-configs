@@ -23,6 +23,7 @@ fish abbreviations expand in place, so history keeps the full command.
 | --- | --- |
 | `gst` `gco` `gl` `gp` `gd` | `git st`, `git co`, `git pull`, `git push`, `git diff` |
 | `gau` `gaa` `gai` `gcmsg` | `git add -u`, `git add .`, `git add -i`, `git commit -m` |
+| `gsw`, `gswr` | `git-switch-pick`, `git-switch-pick --remote` (fzf branch pickers, see below) |
 | `gti`, `it` | `git` (typo catchers) |
 | `pa` `pat` | `php artisan`, `php artisan test` |
 | `punit` `pint` | `./vendor/bin/phpunit`, `./vendor/bin/pint` |
@@ -80,7 +81,32 @@ command.
 | `gh-stars-export [--format clean\|full\|both] [--out-dir DIR]` | back up your GitHub stars as JSON (gh + jq) |
 | `xh` | readable HTTP client for manual API calls (`xh DELETE <url>`); keep curl in scripts |
 | `hyperfine 'a' 'b'` | benchmark two commands with warmups before claiming a speedup |
+| `git-switch-pick [--remote] [name]` | fzf branch picker behind `gsw` (local) and `gswr` (remote); also runs as `git switch-pick` |
 | `rgc [rg args]` | ripgrep only changed files; `LZ=1 rgc` runs lizard on them |
+
+### Branch pickers: `gsw` and `gswr`
+
+`gsw` lists local branches, `gswr` remote branches, newest commit first with
+the newest row next to the prompt (`--no-sort`: typing filters but never
+re-ranks, so matches stay newest first).
+Each row shows the last commit's age, short hash, author, branch and subject.
+Git stores no branch creation date, so the date is the last commit, not the
+branch creation. The preview pane adds, for the highlighted branch, the first
+commit off the default branch (`origin/HEAD`, else `main` or `master`), the
+oldest reflog entry (local branches only) and the last 20 commits as a graph.
+
+- `gsw` leaves out the current branch, marks branches checked out in another
+  worktree with `⊕ wt` (still listed), and runs `git switch <branch>`.
+- `gswr` leaves out symbolic refs such as `*/HEAD`, marks branches that already have a local branch
+  with `✓ local` (still selectable), and keeps slashed names whole (only the
+  remote name is stripped; remote names containing `/` work). It switches to the existing local branch, else
+  runs `git switch --track <remote>/<name>`; a name on several remotes
+  follows the remote you picked.
+- With arguments fzf is skipped: `gsw <args>` is `git switch <args>`;
+  `gswr <name>` or `gswr <remote>/<name>` applies the same switch-or-track
+  rule, and a bare name on several remotes is refused as ambiguous.
+- Nothing is fetched; run `git fetch --prune` first to see new or deleted
+  remote branches.
 
 ## Measure before and after
 

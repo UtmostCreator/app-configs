@@ -29,7 +29,8 @@ zsh_aliases() { # same format, from the CLI block in the rendered .zshrc
     [ "$status" -eq 0 ]
     for want in $'gst\tgit st' $'gco\tgit co' $'gl\tgit pull' $'gp\tgit push' \
         $'gd\tgit diff' $'gau\tgit add -u' $'gaa\tgit add .' $'gai\tgit add -i' \
-        $'gcmsg\tgit commit -m' $'pa\tphp artisan' $'pat\tphp artisan test' \
+        $'gcmsg\tgit commit -m' \
+        $'gsw\tgit-switch-pick' $'gswr\tgit-switch-pick --remote' $'pa\tphp artisan' $'pat\tphp artisan test' \
         $'nr\tnpm run' $'ni\tnpm install' $'ll\teza -lah --git' $'reload\texec fish' $'lg\tlazygit'; do
         grep -qxF "$want" <<<"$output" || { echo "missing: $want"; return 1; }
     done

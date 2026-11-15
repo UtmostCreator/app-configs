@@ -16,6 +16,9 @@ abbr -a gau 'git add -u'
 abbr -a gaa 'git add .'
 abbr -a gai 'git add -i'
 abbr -a gcmsg 'git commit -m'
+# fzf branch pickers (~/.local/bin/git-switch-pick): newest commit nearest the prompt
+abbr -a gsw git-switch-pick
+abbr -a gswr 'git-switch-pick --remote'
 # typo catchers seen in history (exit 127)
 abbr -a gti git
 abbr -a it git

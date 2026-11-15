@@ -33,15 +33,31 @@
 # Validators, CI and `nix flake check` do not source this file: they evaluate
 # the committed default selection.
 #
-# Test override: APP_CONFIGS_SELECTION_DIR. On WSL this resolves under the
-# Linux $HOME like everywhere else, because it is built from $HOME.
+# Test override: APP_CONFIGS_SELECTION_DIR (taken as given). Otherwise the
+# directory is built from XDG_CONFIG_HOME or $HOME, so on WSL2 it is under the
+# Linux $HOME. An XDG_CONFIG_HOME on a Windows drive (/mnt/<letter>) is ignored
+# with a note on stderr and $HOME/.config is used instead.
 
 SELECTION_ARGS=()
 SELECTION_OVERRIDE=()
 SELECTION_DIR=""
 
 selection_dir() {
-  printf '%s\n' "${APP_CONFIGS_SELECTION_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/app-configs/selection}"
+  local base
+  if [[ -n "${APP_CONFIGS_SELECTION_DIR:-}" ]]; then
+    printf '%s\n' "$APP_CONFIGS_SELECTION_DIR"
+    return 0
+  fi
+  base="${XDG_CONFIG_HOME:-$HOME/.config}"
+  case "$base" in
+    /mnt/[a-zA-Z] | /mnt/[a-zA-Z]/*)
+      # WSL2: a Windows drive mount is not where a Linux selection lives (slow,
+      # no Unix permissions, shared with Windows tools). Use the Linux $HOME.
+      printf 'selection: ignoring XDG_CONFIG_HOME=%s (a Windows drive under /mnt); using %s/.config\n' "$base" "$HOME" >&2
+      base="$HOME/.config"
+      ;;
+  esac
+  printf '%s\n' "$base/app-configs/selection"
 }
 
 # selection_url_path PATH: PATH with the characters that break a Nix `path:` URL

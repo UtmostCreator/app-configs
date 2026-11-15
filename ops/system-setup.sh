@@ -147,8 +147,17 @@ log "System config: $SYS"
 # `boot` instead of `switch` on NixOS-WSL while the target user does not exist
 # yet: activating a system whose wsl.defaultUser is missing would fail or hang
 # mid-switch, so the new generation only becomes the next boot's.
+# SYSTEM_SETUP_USER_EXISTS=0|1 is a test seam, honoured only under bats: it pins
+# the answer so a test does not depend on the host's users or on getent.
+user_exists() {
+  if [[ -n "${BATS_TEST_TMPDIR:-}" && -n "${SYSTEM_SETUP_USER_EXISTS:-}" ]]; then
+    [[ "$SYSTEM_SETUP_USER_EXISTS" == 1 ]]
+    return
+  fi
+  getent passwd "$USER_NAME" >/dev/null 2>&1
+}
 REBUILD_VERB=switch
-if (( IS_WSL == 1 )) && ! getent passwd "$USER_NAME" >/dev/null 2>&1; then
+if (( IS_WSL == 1 )) && ! user_exists; then
   REBUILD_VERB=boot
 fi
 log "Rebuild cmd: nixos-rebuild $REBUILD_VERB ${FLAKE_ARG:-(non-flake)} (validated first with nixos-rebuild dry-build)"

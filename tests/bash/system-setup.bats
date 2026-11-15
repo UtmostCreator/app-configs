@@ -182,7 +182,7 @@ WSL_STOCK='{ config, lib, pkgs, ... }:
 run_wsl() {
   printf '%s\n' "${WSL_CFG:-$WSL_STOCK}" > "$FIX/configuration.nix"
   run env HOST_PROFILE=wsl SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
-    USER_NAME=alice SYSTEM_TIMEZONE=Europe/London \
+    USER_NAME=alice SYSTEM_TIMEZONE=Europe/London SYSTEM_SETUP_USER_EXISTS=0 \
     SYSTEM_SETUP_DOCKER_DESKTOP_DIR="$BATS_TEST_TMPDIR/no-docker-desktop" "$@" \
     bash "$REPO_ROOT/ops/system-setup.sh"
 }
@@ -329,6 +329,7 @@ STUB
 run_apply() {
   run env HOME="$BATS_TEST_TMPDIR/home" PATH="$BATS_TEST_TMPDIR/stubs:$PATH" REBUILD_LOG="$REBUILD_LOG" \
     SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" SYSTEM_TIMEZONE=Europe/London \
+    SYSTEM_SETUP_USER_EXISTS=0 \
     SYSTEM_SETUP_DOCKER_DESKTOP_DIR="$BATS_TEST_TMPDIR/no-docker-desktop" "$@" \
     bash "$R/ops/system-setup.sh" --apply
 }
@@ -342,9 +343,11 @@ state() {
 @test "apply seam: refused when the stub nixos-rebuild is not the one on PATH" {
   apply_setup
   printf '%s\n' "$WSL_STOCK" > "$FIX/configuration.nix"
+  # PATH without the stub dir: no nixos-rebuild at all (CI), or a real one outside
+  # the bats temp dir (a NixOS host). Either way the stub check refuses.
   run env HOME="$BATS_TEST_TMPDIR/home" SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
-    HOST_PROFILE=wsl USER_NAME=alice PATH="/nonexistent-bin:$(dirname "$(command -v bash)"):$(dirname "$(command -v mktemp)")" \
-    "$(command -v bash)" "$R/ops/system-setup.sh" --apply
+    HOST_PROFILE=wsl USER_NAME=alice SYSTEM_SETUP_USER_EXISTS=0 \
+    bash "$R/ops/system-setup.sh" --apply
   [ "$status" -ne 0 ]
   [[ "$output" == *"stub nixos-rebuild"* ]]
   [ ! -e "$FIX/app-configs-extra.nix" ]
@@ -372,7 +375,7 @@ state() {
 @test "wsl apply: an existing user runs dry-build then switch" {
   apply_setup
   printf '%s\n' "$WSL_STOCK" > "$FIX/configuration.nix"
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1
   [ "$status" -eq 0 ] || { echo "$output"; return 1; }
   [ "$(sed -n 1p "$REBUILD_LOG")" = "dry-build" ]
   [ "$(sed -n 2p "$REBUILD_LOG")" = "switch" ]
@@ -381,7 +384,7 @@ state() {
 @test "wsl apply: ENABLE_DOCKER=1 writes both copies and one combined imports list" {
   apply_setup
   printf '%s\n' "$WSL_STOCK" > "$FIX/configuration.nix"
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)" ENABLE_DOCKER=1
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1 ENABLE_DOCKER=1
   [ "$status" -eq 0 ] || { echo "$output"; return 1; }
   cmp "$FIX/app-configs-docker.nix" "$REPO_ROOT/nix/modules/nixos/docker.nix"
   cmp "$FIX/app-configs-wsl.nix" "$REPO_ROOT/nix/modules/nixos/wsl.nix"
@@ -462,7 +465,7 @@ prepare_existing() {
   apply_setup
   prepare_existing with-docker
   before="$(state "$FIX")"
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)" STUB_FAIL_REAL=1
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1 STUB_FAIL_REAL=1
   [ "$status" -ne 0 ]
   [[ "$output" == *"sudo nixos-rebuild switch --rollback"* ]]
   [ "$(state "$FIX")" = "$before" ]
@@ -562,11 +565,11 @@ prepare_existing() {
 @test "wsl apply: the tools are written, and a second run finds everything already present" {
   apply_setup
   printf '%s\n' "$WSL_STOCK" > "$FIX/configuration.nix"
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1
   [ "$status" -eq 0 ] || { echo "$output"; return 1; }
   grep -qF 'environment.systemPackages = with pkgs; [ git curl ];' "$FIX/app-configs-extra.nix"
   : > "$REBUILD_LOG"
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1
   [ "$status" -eq 0 ] || { echo "$output"; return 1; }
   [[ "$output" == *"All recommended system settings already present."* ]] || { echo "$output"; return 1; }
   [[ "$output" != *"Would add"* ]]
@@ -575,12 +578,12 @@ prepare_existing() {
 @test "wsl apply: a module written before the tools were added is rewritten" {
   apply_setup
   printf '%s\n' "$WSL_STOCK" > "$FIX/configuration.nix"
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1
   [ "$status" -eq 0 ] || { echo "$output"; return 1; }
   # What the previous version wrote: same module, no tools.
   grep -vE 'systemPackages|experimental-features|# git and curl|# Flakes' "$FIX/app-configs-extra.nix" > "$BATS_TEST_TMPDIR/old-extra.nix"
   cp "$BATS_TEST_TMPDIR/old-extra.nix" "$FIX/app-configs-extra.nix"
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1
   [ "$status" -eq 0 ] || { echo "$output"; return 1; }
   [[ "$output" == *"Would add"* ]]
   grep -qF 'environment.systemPackages = with pkgs; [ git curl ];' "$FIX/app-configs-extra.nix"
@@ -614,7 +617,7 @@ prepare_existing() {
   apply_setup
   prepare_existing with-docker
   local failed='wsl-mnt-guard.service loaded failed failed Mount guard'
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)" STUB_REAL_RC=4 STUB_FAILED_UNITS="$failed"
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1 STUB_REAL_RC=4 STUB_FAILED_UNITS="$failed"
   [ "$status" -eq 4 ]
   [[ "$output" == *"activated the new generation"* ]]
   # N20: the way back, for anyone who rolls the generation back.
@@ -642,7 +645,7 @@ prepare_existing() {
 @test "exit 2 on switch (the activate script failed, after the profile moved) also keeps the files and exits 2" {
   apply_setup
   prepare_existing with-docker
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)" STUB_REAL_RC=2 STUB_FAILED_UNITS='bar.service loaded failed failed Bar'
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1 STUB_REAL_RC=2 STUB_FAILED_UNITS='bar.service loaded failed failed Bar'
   [ "$status" -eq 2 ]
   [[ "$output" == *"activated the new generation"* ]]
   [[ "$output" == *"bar.service"* ]]
@@ -657,7 +660,7 @@ prepare_existing() {
     apply_setup
     prepare_existing with-docker
     before="$(state "$FIX")"
-    run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)" STUB_REAL_RC=$rc
+    run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1 STUB_REAL_RC=$rc
     [ "$status" -ne 0 ]
     [[ "$output" == *"restored every touched file"* ]] || { echo "rc $rc: $output"; return 1; }
     [ "$(state "$FIX")" = "$before" ] || { echo "rc $rc: state differs"; return 1; }
@@ -679,20 +682,20 @@ prepare_existing() {
   apply_setup
   printf '%s\n' "$WSL_STOCK" > "$FIX/configuration.nix"
   # First run: activation with a failed unit, files kept.
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)" STUB_REAL_RC=4 STUB_FAILED_UNITS='wsl-mnt-guard.service loaded failed failed x'
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1 STUB_REAL_RC=4 STUB_FAILED_UNITS='wsl-mnt-guard.service loaded failed failed x'
   [ "$status" -ne 0 ]
   # The user's machine: files restored to the old ones (no git line) by the old script.
   grep -vE 'systemPackages|experimental-features|# A bare NixOS-WSL|# sys-update need|# Flakes' "$FIX/app-configs-extra.nix" > "$BATS_TEST_TMPDIR/old-extra.nix"
   cp "$BATS_TEST_TMPDIR/old-extra.nix" "$FIX/app-configs-extra.nix"
   # Re-run with the fixed unit: regenerates, dry-builds, switches, exits 0, keeps the files.
   : > "$REBUILD_LOG"
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1
   [ "$status" -eq 0 ] || { echo "$output"; return 1; }
   [[ "$output" == *"Would add"* ]]
   [ "$(sed -n 1p "$REBUILD_LOG")" = dry-build ]
   [[ "$(sed -n 2p "$REBUILD_LOG")" == switch* ]]
   grep -qF 'environment.systemPackages = with pkgs; [ git curl ];' "$FIX/app-configs-extra.nix"
   # And an up-to-date machine is a no-op again.
-  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1
   [[ "$output" == *"All recommended system settings already present."* ]]
 }

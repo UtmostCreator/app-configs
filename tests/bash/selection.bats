@@ -7,32 +7,76 @@
 
 bats_require_minimum_version 1.5.0
 
+# bg_limited <max> <command...>: start the command in the background, first
+# waiting for a slot when <max> of this shell's background jobs already run.
+# The caller waits for the rest with `wait`. Nix evaluations are CPU- and
+# memory-heavy, so the number in flight is bounded.
+bg_limited() {
+    local max="$1"
+    shift
+    while [ "$(jobs -rp | wc -l)" -ge "$max" ]; do wait -n || true; done
+    "$@" &
+}
+
+# record <out> <err> <command...>: run an eval with its stdout in
+# $BATS_FILE_TMPDIR/<out>, its stderr in <err> and its exit status in
+# <out>.rc, each in its own file, whatever the status.
+record() {
+    local out="$BATS_FILE_TMPDIR/$1" err="$BATS_FILE_TMPDIR/$2" rc=0
+    shift 2
+    "$@" >"$out" 2>"$err" || rc=$?
+    echo "$rc" >"$out.rc"
+}
+
+# record_in <dir> <name> <attr> <apply>: _sel_eval into <dir>/<name>, its
+# stderr into <dir>/err-<name> and its exit status into <dir>/<name>.rc.
+record_in() {
+    local rc=0
+    _sel_eval "$1/$2" "$1/err-$2" "$3" "$4" || rc=$?
+    echo "$rc" >"$1/$2.rc"
+}
+
 setup_file() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     export REPO_ROOT
     command -v nix >/dev/null || return 0
     # One drvPath per (selection, host) pair, evaluated once per file; the
-    # tests compare the recorded values.
-    local h
+    # tests compare the recorded values. The evaluations are independent, so
+    # they run concurrently (at most SELECTION_EVAL_JOBS at once).
+    local n="${SELECTION_EVAL_JOBS:-8}" h k f
     for h in linux-cli linux-desktop; do
-        drv "$h" default >"$BATS_FILE_TMPDIR/drv-default-$h" 2>"$BATS_FILE_TMPDIR/err-drv-default-$h" || true
+        bg_limited "$n" record "drv-default-$h" "err-drv-default-$h" drv "$h" default
     done
-    drv linux-cli empty >"$BATS_FILE_TMPDIR/drv-empty-linux-cli" 2>"$BATS_FILE_TMPDIR/err-drv-empty-linux-cli" || true
-    drv linux-cli all-on-work >"$BATS_FILE_TMPDIR/drv-all-on-work-linux-cli" 2>"$BATS_FILE_TMPDIR/err-drv-all-on-work-linux-cli" || true
-    drv linux-desktop all-on-personal >"$BATS_FILE_TMPDIR/drv-all-on-personal-linux-desktop" 2>"$BATS_FILE_TMPDIR/err-drv-all-on-personal-linux-desktop" || true
+    bg_limited "$n" record drv-empty-linux-cli err-drv-empty-linux-cli drv linux-cli empty
+    bg_limited "$n" record drv-all-on-work-linux-cli err-drv-all-on-work-linux-cli drv linux-cli all-on-work
+    bg_limited "$n" record drv-all-on-personal-linux-desktop err-drv-all-on-personal-linux-desktop drv linux-desktop all-on-personal
     # macOS: the same identities for the standalone Home Manager output and for the
     # nix-darwin system (aarch64-darwin evaluates from Linux; nothing is built).
-    local k
     for k in default empty all-on-work; do
-        drv macos "$k" >"$BATS_FILE_TMPDIR/drv-$k-macos" 2>"$BATS_FILE_TMPDIR/err-drv-$k-macos" || true
-        drvd "$k" >"$BATS_FILE_TMPDIR/drv-$k-darwin" 2>"$BATS_FILE_TMPDIR/err-drv-$k-darwin" || true
+        bg_limited "$n" record "drv-$k-macos" "err-drv-$k-macos" drv macos "$k"
+        bg_limited "$n" record "drv-$k-darwin" "err-drv-$k-darwin" drvd "$k"
     done
     # linux-desktop: empty vs default, the host with the personal profile.
-    drv linux-desktop empty >"$BATS_FILE_TMPDIR/drv-empty-linux-desktop" 2>"$BATS_FILE_TMPDIR/err-drv-empty-linux-desktop" || true
-    local f
+    bg_limited "$n" record drv-empty-linux-desktop err-drv-empty-linux-desktop drv linux-desktop empty
     for f in default media-go-off all-false; do
-        pkgs linux-cli "$f" >"$BATS_FILE_TMPDIR/pkgs-$f.json" 2>"$BATS_FILE_TMPDIR/err-pkgs-$f" || true
+        bg_limited "$n" record "pkgs-$f.json" "err-pkgs-$f" pkgs linux-cli "$f"
     done
+    wait
+    # Every one of these evaluations is expected to succeed: name each that
+    # did not, with its stderr, instead of leaving it to a downstream test.
+    local failed="" rc e
+    for e in "$BATS_FILE_TMPDIR"/*.rc; do
+        rc="$(cat "$e")"
+        [ "$rc" = 0 ] && continue
+        k="${e##*/}"
+        k="${k%.rc}"
+        failed+="eval $k failed (exit $rc):"$'\n'
+        failed+="$(cat "$BATS_FILE_TMPDIR/err-${k%.json}" 2>/dev/null)"$'\n'
+    done
+    if [ -n "$failed" ]; then
+        printf '%s' "$failed" >&2
+        return 1
+    fi
 }
 
 setup() {
@@ -292,15 +336,25 @@ validate_fixture() {
     source "$REPO_ROOT/ops/lib/selection-preview.sh"
     mkdir -p "$BATS_TEST_TMPDIR/w"
     SELECTION_REPO_ROOT="$REPO_ROOT"
-    local host ngroups
+    local host ngroups kind
+    # The six evaluations are independent: run them concurrently, each with its
+    # own output, stderr and exit status file, then check them in turn.
     for host in linux-cli macos; do
         SELECTION_HOST="$host"
+        SELECTION_ARGS=()
+        for kind in state members check; do
+            bg_limited 6 record_in "$BATS_TEST_TMPDIR/w" "$kind-$host" "$(_sel_attr_$kind)" "$(_sel_expr_$kind)"
+        done
+    done
+    wait
+    for host in linux-cli macos; do
+        for kind in state members check; do
+            [ "$(cat "$BATS_TEST_TMPDIR/w/$kind-$host.rc")" -eq 0 ] || { echo "eval $kind-$host failed:"; cat "$BATS_TEST_TMPDIR/w/err-$kind-$host"; return 1; }
+        done
+    done
+    for host in linux-cli macos; do
         ngroups=3
         if [ "$host" = macos ]; then ngroups=4; fi
-        SELECTION_ARGS=()
-        _sel_eval "$BATS_TEST_TMPDIR/w/state-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_state)" "$(_sel_expr_state)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
-        _sel_eval "$BATS_TEST_TMPDIR/w/members-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_members)" "$(_sel_expr_members)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
-        _sel_eval "$BATS_TEST_TMPDIR/w/check-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_check)" "$(_sel_expr_check)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
         grep -q "^P"$'\t' "$BATS_TEST_TMPDIR/w/state-$host"
         # macInput exists on every host but only macOS offers it (it gates casks).
         [ "$(grep -c "^G"$'\t' "$BATS_TEST_TMPDIR/w/state-$host")" -eq "$ngroups" ]

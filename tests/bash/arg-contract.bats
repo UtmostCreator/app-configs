@@ -16,6 +16,7 @@
 # are discovered.
 
 load ../lib/contract
+load ../lib/throttle
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
@@ -179,35 +180,45 @@ violations() {
 
 # stale_probe KIND SCRIPT COPY DIR N: one waived check, in its own sandbox and
 # its own copy of the repository (probes run concurrently, so nothing is shared
-# between them). Writes DIR/N.stale (the label) when the check now passes.
+# between them). Writes DIR/N.stale (the label) when the check now passes, and
+# DIR/N.done once it has run; DIR/N.err says why a probe could not be set up.
 stale_probe() {
     local kind="$1" script="$2" copy="$3" dir="$4" n="$5"
-    sandbox_init "$dir/sb.$n"
-    cp -a "$copy" "$dir/repo.$n"
+    if ! { sandbox_init "$dir/sb.$n" && cp -a "$copy" "$dir/repo.$n"; }; then
+        echo "sandbox or repository copy failed" >"$dir/$n.err"
+        return 0
+    fi
     export PROBE_TIMEOUT=3
     if "check_$kind" "$dir/repo.$n" "$script" >/dev/null; then
         printf '%s:%s\n' "$kind" "$script" >"$dir/$n.stale"
     fi
     rm -rf "$dir/repo.$n"
+    : >"$dir/$n.done"
 }
 
 @test "waivers are still needed: a waived check that now passes must lose its waiver" {
     local copy="$BATS_TEST_TMPDIR/repo"; repo_copy "$copy"
-    local s stale="" n=0 f dir="$BATS_TEST_TMPDIR/stale"
+    local s stale="" n=0 f i dir="$BATS_TEST_TMPDIR/stale" cap
     mkdir -p "$dir"
-    # Each waived script is probed in the background, at most 8 at a time. The
-    # per-script judgement and the 3 s timeout are the same as when serial.
+    cap="$(bg_cap 8)"
+    # Each waived script is probed in the background, at most min(8, nproc) at
+    # a time. The per-script judgement and the 3 s timeout are the same as when
+    # serial.
     for s in "${!WAIVE_HELP[@]}"; do
         n=$((n + 1))
-        while [ "$(jobs -rp | wc -l)" -ge 8 ]; do wait -n || true; done
-        stale_probe help "$s" "$copy" "$dir" "$n" &
+        echo "help:$s" >"$dir/$n.label"
+        bg_limited "$cap" stale_probe help "$s" "$copy" "$dir" "$n"
     done
     for s in "${!WAIVE_FLAG[@]}"; do
         n=$((n + 1))
-        while [ "$(jobs -rp | wc -l)" -ge 8 ]; do wait -n || true; done
-        stale_probe flag "$s" "$copy" "$dir" "$n" &
+        echo "flag:$s" >"$dir/$n.label"
+        bg_limited "$cap" stale_probe flag "$s" "$copy" "$dir" "$n"
     done
     wait
+    # A probe that could not be set up, or died, must not pass as "not stale".
+    for ((i = 1; i <= n; i++)); do
+        [ -e "$dir/$i.done" ] || { echo "probe did not run: $(cat "$dir/$i.label") ($(cat "$dir/$i.err" 2>/dev/null || echo "no result"))"; return 1; }
+    done
     for f in "$dir"/*.stale; do
         [ -e "$f" ] || continue
         stale+=" $(cat "$f")"

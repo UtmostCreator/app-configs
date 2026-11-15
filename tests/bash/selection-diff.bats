@@ -560,6 +560,43 @@ last_run() { # last_run <meta text>
     [[ "$output" == *'"unknown": 2'* ]]
 }
 
+# ── fail closed, tab-safe, failed envelope ──────────────────────────────────
+
+@test "fail closed: a classifier that fails is exit 1, never a quiet in sync" {
+    install_gen committed
+    local real_awk
+    real_awk="$(command -v awk)"
+    rm -f "$STUBS/awk" "$SYSBIN/awk"
+    printf '#!/bin/sh\ncase "$*" in *"chezmoi apply creates it"*) echo "awk: forced failure" >&2; exit 2 ;; esac\nexec %s "$@"\n' "$real_awk" >"$SYSBIN/awk"
+    chmod +x "$SYSBIN/awk"
+    sd --selection-diff
+    [ "$status" -eq 1 ]
+    [ -z "$output" ]
+    [[ "$stderr" == *"internal error"* ]]
+}
+
+@test "a tab in a path never breaks the JSON: it is shown as \\t and by_apply stays true" {
+    command -v python3 >/dev/null || skip "python3 not installed"
+    install_gen committed
+    chz ' A a\tb\n'
+    sd --selection-diff --json
+    [ "$status" -eq 10 ]
+    printf '%s' "$output" | python3 -I -c 'import json,sys; d=json.load(sys.stdin); e=d["entries"][0]; assert e["name"] == "a\\tb" and e["by_apply"] is True and e["operation"] == "add", e'
+}
+
+@test "--json: an early failure prints a minimal failed envelope, and the human output stays empty" {
+    command -v python3 >/dev/null || skip "python3 not installed"
+    install_gen committed
+    export STUB_NIX_EVAL_FAIL=1
+    sd --selection-diff --json
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"stub: evaluation failure"* ]]
+    printf '%s' "$output" | python3 -I -c 'import json,sys; d=json.load(sys.stdin); assert d == {"schema_version": 1, "command": "selection-diff", "check": True, "applied": False, "outcome": "failed", "exit_code": 1, "error": d["error"]} and d["error"], d'
+    sd --selection-diff
+    [ "$status" -eq 1 ]
+    [ -z "$output" ]
+}
+
 # ── the applied-state record ────────────────────────────────────────────────
 
 # write_record: the record of the current generation, as install.sh writes it.
@@ -597,6 +634,42 @@ rec_env() { export APP_CONFIGS_STATE_DIR="$RECDIR"; }
     printf 'more\n' >>"$FAKE/nix/vars/default.nix"
     sd --selection-diff --json
     [[ "$output" == *'"repo_changed": "yes"'* ]]
+}
+
+@test "record: repo_changed is no only when both sides are clean at the same rev; clean vs dirty is yes; dirty on both is unknown" {
+    real_git
+    rec_env
+    install_gen committed
+    # both clean
+    write_record
+    sd --selection-diff --json
+    [[ "$output" == *'"repo_changed": "no"'* ]]
+    # record clean, tree dirty now
+    printf 'edit\n' >>"$FAKE/nix/vars/default.nix"
+    sd --selection-diff --json
+    [[ "$output" == *'"repo_changed": "yes"'* ]]
+    # dirty on both: the uncommitted content may differ
+    write_record
+    grep -qx 'repo_dirty=yes' "$RECDIR/installed.meta"
+    sd --selection-diff --json
+    [[ "$output" == *'"repo_changed": "unknown"'* ]]
+    # record dirty, tree clean now
+    "$REAL_GIT" -C "$FAKE" checkout -q -- nix/vars/default.nix
+    sd --selection-diff --json
+    [[ "$output" == *'"repo_changed": "yes"'* ]]
+    [[ "$output" == *'"repo": {"rev": "'*'", "dirty": "no"}'* ]]
+}
+
+@test "record: a selection file that cannot be hashed makes selection_changed unknown, not yes" {
+    rec_env
+    install_gen committed
+    write_sel 'profile = "personal"\n'
+    write_record
+    printf '#!/bin/sh\nexit 1\n' >"$STUBS/sha256sum"; chmod +x "$STUBS/sha256sum"
+    sd --selection-diff --json
+    [[ "$output" == *'"record": {"state": "ok"}'* ]]
+    [[ "$output" == *'"selection_changed": "unknown"'* ]]
+    [[ "$output" == *'"applied_selection": null'* ]]
 }
 
 @test "record stale: the profile moved since, so every cause is unknown and the diff still works" {

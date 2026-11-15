@@ -13,8 +13,9 @@ committed profile and this machine's local selection? It compares the declared
 state with the installed one, lists the result by operation (REMOVE first), and
 exits with a code a script can act on. A second deliverable makes the answer
 explain itself: an applied-state record, written after a successful apply, that
-lets the diff say why something is pending (the selection changed, the repo
-changed, or the generation moved outside sys-update).
+lets the diff say why something is pending (the selection changed or the repo
+changed). The `generation_changed_outside` cause is `no` when the record is ok and
+`unknown` otherwise; it exists to keep the envelope shape stable.
 
 ## Decision
 Design by the architect, with the user's decisions on the open points; where they
@@ -69,18 +70,22 @@ Architect design (as built)
   a sha256, never as content. The reader answers ok, absent, invalid or stale.
 
 Deviations from the design, and why
-- A failure before the facts exist (nix missing, an evaluation error) prints
-  nothing on stdout in either mode; the reason and the Nix error go to stderr. The
-  design's `RESULT: FAILED (exit N)` line is therefore not printed.
+- A failure before the facts exist (nix missing, an evaluation error, an internal
+  step failing) prints nothing on stdout in text mode; the reason and the Nix error
+  go to stderr, so the design's `RESULT: FAILED (exit N)` line is not printed. With
+  `--json` a minimal envelope (outcome `failed`, exit_code 1, error) is printed.
 - Unknown sources are entries (kind packages, hm_files, chezmoi or casks, name
   `(all)`), so the UNKNOWN section and `counts.unknown` count them one by one.
 - The unfinished or failed last run is an entry of kind run (operation manual) and
   also forces exit 11; the manual casks do not.
-- In the JSON, `repo.dirty` is `yes`, `no` or `unknown` (a string, so unknown
-  stays first class); the record stores it as 1, 0 or unknown.
-- A tab or newline in a path would break the TSV between the classifier and the
-  renderers; none occurs in practice (store paths, chezmoi targets), and it is
-  not guarded.
+- `repo.dirty` is `yes`, `no` or `unknown` in both the JSON and the record (the
+  record schema had not shipped, so it was aligned rather than translated).
+- `repo_changed` is `no` only for a clean tree at the same revision on both sides;
+  dirty on both is `unknown`; clean against dirty is `yes`. An unhashable selection
+  file makes `selection_changed` `unknown`.
+- A tab in a path is shown as a literal `\t` in entries, so a path can never break
+  the row format or the JSON; `by_apply` is printed as true only when exactly true.
+- Every classification step fails closed (exit 1 on a failed write or awk).
 
 ## Owned files (write boundary)
 - ops/lib/selection-facts.sh (new), ops/lib/selection-diff.sh (new), ops/lib/install-record.sh (new)
@@ -177,5 +182,8 @@ See evidence/verification.md for the commands, their scope and results.
   section. The user decides.
 - macOS is unverified: the cask logic, the darwin-system record kind and the
   `brew list --cask` source are covered by stubs only.
+- Future option for the eval time: expose group membership as a cheap Nix
+  attribute so one evaluation is enough (the members evaluation is the 19 s part).
+  Accepted as is for now.
 - Whether `sys-update` (the apply) should print the diff summary before it
   confirms is out of scope here.

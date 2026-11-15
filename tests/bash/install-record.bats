@@ -41,7 +41,7 @@ host=linux-desktop
 generation_kind=home-manager
 generation=$GEN_REAL
 repo_rev=$REV
-repo_dirty=0
+repo_dirty=no
 selection_file=absent
 selection_sha256=none
 EOF
@@ -55,7 +55,7 @@ EOF
     [ -z "$output" ]
     grep -Eq '^written_at=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$' "$REC"
     sed 's/^written_at=.*/written_at=@NOW@/' "$REC" >"$BATS_TEST_TMPDIR/got"
-    printf 'schema_version=1\nwritten_by=sys-update\nwritten_at=@NOW@\nrun_id=20261115T100000Z-42\nhost=linux-desktop\ngeneration_kind=home-manager\ngeneration=%s\nrepo_rev=%s\nrepo_dirty=0\nselection_file=absent\nselection_sha256=none\n' \
+    printf 'schema_version=1\nwritten_by=sys-update\nwritten_at=@NOW@\nrun_id=20261115T100000Z-42\nhost=linux-desktop\ngeneration_kind=home-manager\ngeneration=%s\nrepo_rev=%s\nrepo_dirty=no\nselection_file=absent\nselection_sha256=none\n' \
         "$GEN_REAL" "$REV" >"$BATS_TEST_TMPDIR/want"
     cmp "$BATS_TEST_TMPDIR/want" "$BATS_TEST_TMPDIR/got"
     run grep -c $'\r' "$REC"
@@ -85,14 +85,14 @@ EOF
     [ "$output" = 0 ]
 }
 
-@test "write: a dirty tree under nix or home is repo_dirty=1, a clean one 0, no git is unknown" {
+@test "write: a dirty tree under nix or home is repo_dirty=yes, a clean one no, no git is unknown" {
     printf 'changed\n' >>"$REPO/nix/a.nix"
     rec install_record_write sys-update linux-desktop home-manager "$BATS_TEST_TMPDIR/profiles/home-manager" "$REPO"
-    grep -qx 'repo_dirty=1' "$REC"
+    grep -qx 'repo_dirty=yes' "$REC"
     git -C "$REPO" checkout -q -- nix/a.nix
     printf 'untracked\n' >"$REPO/notes.txt"
     rec install_record_write sys-update linux-desktop home-manager "$BATS_TEST_TMPDIR/profiles/home-manager" "$REPO"
-    grep -qx 'repo_dirty=0' "$REC"
+    grep -qx 'repo_dirty=no' "$REC"
     mkdir -p "$BATS_TEST_TMPDIR/nogit"
     rec install_record_write sys-update linux-desktop home-manager "$BATS_TEST_TMPDIR/profiles/home-manager" "$BATS_TEST_TMPDIR/nogit"
     grep -qx 'repo_rev=unknown' "$REC"
@@ -170,7 +170,7 @@ EOF
 @test "read: the fields are available to the caller after an ok read" {
     good_record
     run bash -c 'source "$1/ops/lib/selection.sh"; source "$1/ops/lib/install-record.sh"; install_record_read "$2" >/dev/null; echo "$IR_WRITTEN_BY $IR_REPO_REV $IR_SELECTION_SHA256 $IR_REPO_DIRTY"' _ "$REPO_ROOT" "$GEN_REAL"
-    [ "$output" = "sys-update $REV none 0" ]
+    [ "$output" = "sys-update $REV none no" ]
 }
 
 @test "read: each way a record can be invalid" {
@@ -178,7 +178,7 @@ EOF
     for mutate in \
         's/^schema_version=1/schema_version=2/' \
         's/^repo_rev=.*/repo_rev=abc123/' \
-        's/^repo_dirty=0/repo_dirty=maybe/' \
+        's/^repo_dirty=no/repo_dirty=maybe/' \
         's/^written_by=.*/written_by=somebody/' \
         's/^written_at=.*/written_at=yesterday/' \
         's/^selection_sha256=none/selection_sha256=nothex/' \

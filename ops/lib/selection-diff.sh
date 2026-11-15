@@ -31,7 +31,8 @@
 # Exit codes (precedence 1 > 11 > 10 > 0):
 #   0   in sync
 #   1   execution failure: nix missing, the declared state does not evaluate,
-#       an internal error (the reason is on stderr, stdout stays empty)
+#       an internal error (the reason is on stderr; stdout stays empty, or with
+#       --json holds a minimal envelope with outcome "failed" and an error)
 #   10  changes pending: any add, remove or change
 #   11  manual action required: any conflict, any unknown source, an unfinished
 #       or failed last run
@@ -67,7 +68,9 @@ SD_EXIT=0
 SD_NOTES=()
 SD_LIMITS=()
 
-_sd_err() { printf 'selection-diff: %s\n' "$*" >&2; }
+# _sd_err MESSAGE: to stderr, and kept in SD_ERROR for the --json failure envelope.
+SD_ERROR=""
+_sd_err() { SD_ERROR="$*"; printf 'selection-diff: %s\n' "$*" >&2; }
 
 # _sd_js TEXT: TEXT as a JSON string (quotes included). Escapes \ and " and
 # every control character; no jq.
@@ -133,6 +136,7 @@ _sd_classify_files() {
     [[ -n "$row" ]] || continue
     kind="${row%%"$_SEL_TAB"*}"
     target="${row#*"$_SEL_TAB"}"
+    target="${target//"$_SEL_TAB"/\\t}"
     k='file'
     [[ -n "$(_sel_unit_note "$target")" ]] && k=unit
     case "$kind" in
@@ -156,6 +160,7 @@ _sd_classify_chezmoi() {
     length($0) < 4 { next }
     {
       x = substr($0, 1, 1); y = substr($0, 2, 1); p = substr($0, 4)
+      gsub(/\t/, "\\t", p)
       if (x == " ") {
         if (y == "A") print "chezmoi", p, "add", "chezmoi apply creates it", "", "", "", "true"
         else if (y == "M") print "chezmoi", p, "change", "chezmoi apply updates it", "", "", "", "true"
@@ -320,13 +325,15 @@ selection_diff_collect() {
       ;;
     *)
       local pk="$w/pkg-delta.tsv" n_same
-      package_delta "$(cat "$w/i-pkgs.tsv")" "$(cat "$w/c-pkgs.tsv")" >"$pk"
-      _sd_classify_packages "$w/pkg-group.tsv" <"$pk" >>"$w/entries.tsv"
-      n_same="$(awk -F '\t' '$1 == "summary" { print $5 }' "$pk")"
+      # Fail closed: this runs without -e, so every step is checked; a failed
+      # write or awk is exit 1, never a quiet "in sync".
+      package_delta "$(cat "$w/i-pkgs.tsv")" "$(cat "$w/c-pkgs.tsv")" >"$pk" || { _sd_err "internal error: the package comparison failed"; return 1; }
+      _sd_classify_packages "$w/pkg-group.tsv" <"$pk" >>"$w/entries.tsv" || { _sd_err "internal error: classifying packages failed"; return 1; }
+      n_same="$(awk -F '\t' '$1 == "summary" { print $5 }' "$pk")" || { _sd_err "internal error: reading the package summary failed"; return 1; }
       SD_KEEP=$((SD_KEEP + ${n_same:-0}))
-      _sel_state_files "$w/c.tsv" >"$w/c-files.tsv"
-      _sel_files_delta tree "$w/i-files.tsv" "$w/c-files.tsv" >"$w/files-delta.tsv"
-      _sd_classify_files "$w/files-delta.tsv" >>"$w/entries.tsv"
+      _sel_state_files "$w/c.tsv" >"$w/c-files.tsv" || { _sd_err "internal error: reading the declared files failed"; return 1; }
+      _sel_files_delta tree "$w/i-files.tsv" "$w/c-files.tsv" >"$w/files-delta.tsv" || { _sd_err "internal error: the file comparison failed"; return 1; }
+      _sd_classify_files "$w/files-delta.tsv" >>"$w/entries.tsv" || { _sd_err "internal error: classifying files failed"; return 1; }
       local nf nd
       nf="$(grep -c . "$w/c-files.tsv" || true)"
       nd="$(grep -cE '^(added|changed)' "$w/files-delta.tsv" || true)"
@@ -338,8 +345,10 @@ selection_diff_collect() {
   SD_SRC_CHEZMOI=ok
   _sel_chezmoi_status
   if [[ "$SEL_CHEZMOI" == ok ]]; then
-    _sd_classify_chezmoi <"$w/chezmoi.out" >>"$w/entries.tsv" 2>"$w/chezmoi.keep"
-    SD_KEEP=$((SD_KEEP + $(tail -n 1 "$w/chezmoi.keep")))
+    _sd_classify_chezmoi <"$w/chezmoi.out" >>"$w/entries.tsv" 2>"$w/chezmoi.keep" || { _sd_err "internal error: classifying chezmoi status failed"; return 1; }
+    row="$(tail -n 1 "$w/chezmoi.keep")"
+    [[ "$row" =~ ^[0-9]+$ ]] || { _sd_err "internal error: the chezmoi classifier gave no count"; return 1; }
+    SD_KEEP=$((SD_KEEP + row))
   else
     SD_SRC_CHEZMOI=unknown
     _sd_unknown_entry chezmoi "chezmoi status failed: $SEL_CHEZMOI_WHY"
@@ -351,9 +360,9 @@ selection_diff_collect() {
     _sel_brew_casks
     if [[ "$SEL_BREW" == ok ]]; then
       SD_SRC_CASKS=ok
-      awk -F '\t' '$1 == "C" { print $2 }' "$w/c.tsv" | LC_ALL=C sort -u >"$w/casks-c.txt"
-      awk -F '\t' '$1 == "X" { print $2 "\t" $3 }' "$w/m.tsv" >"$w/casks-gated.tsv"
-      _sd_classify_casks "$w/casks-c.txt" "$w/casks-installed.txt" "$w/casks-gated.tsv" >>"$w/entries.tsv" 2>"$w/casks.counts"
+      { awk -F '\t' '$1 == "C" { print $2 }' "$w/c.tsv" | LC_ALL=C sort -u >"$w/casks-c.txt"; } || { _sd_err "internal error: reading the declared casks failed"; return 1; }
+      awk -F '\t' '$1 == "X" { print $2 "\t" $3 }' "$w/m.tsv" >"$w/casks-gated.tsv" || { _sd_err "internal error: reading the gated casks failed"; return 1; }
+      _sd_classify_casks "$w/casks-c.txt" "$w/casks-installed.txt" "$w/casks-gated.tsv" >>"$w/entries.tsv" 2>"$w/casks.counts" || { _sd_err "internal error: classifying casks failed"; return 1; }
       SD_KEEP=$((SD_KEEP + $(awk '{ print $1 + 0 }' "$w/casks.counts")))
       row="$(awk '{ print $2 + 0 }' "$w/casks.counts")"
       if ((row > 0)); then _sd_note "unmanaged installed casks: $row (not declared and not gated by a group; left alone)"; fi
@@ -367,7 +376,7 @@ selection_diff_collect() {
   _sd_repo_facts
   _sd_record_state
 
-  LC_ALL=C sort -t "$_SEL_TAB" -k1,1 -k2,2 -k3,3 "$w/entries.tsv" >"$w/entries.sorted.tsv"
+  LC_ALL=C sort -t "$_SEL_TAB" -k1,1 -k2,2 -k3,3 "$w/entries.tsv" >"$w/entries.sorted.tsv" || { _sd_err "internal error: sorting the entries failed"; return 1; }
 }
 
 # The applied-state record (ops/lib/install-record.sh): when it is ok (valid and
@@ -385,19 +394,24 @@ _sd_record_state() {
   SD_RECORD_STATE="$IR_STATE"
   [[ "$SD_RECORD_STATE" == ok ]] || return 0
   SD_CAUSE_GENERATION=no
-  if [[ "$IR_SELECTION_SHA256" != "$SD_SEL_SHA" ]]; then
+  # An unhashable selection file (SD_SEL_SHA=unknown) cannot be compared.
+  if [[ "$IR_SELECTION_SHA256" == unknown || "$SD_SEL_SHA" == unknown ]]; then
+    SD_CAUSE_SELECTION=unknown
+  elif [[ "$IR_SELECTION_SHA256" != "$SD_SEL_SHA" ]]; then
     SD_CAUSE_SELECTION=yes
     SD_APPLIED_SEL="$IR_SELECTION_FILE $IR_SELECTION_SHA256"
   else
     SD_CAUSE_SELECTION=no
   fi
+  # "no" only when both sides are clean at the same revision: a tree that is
+  # dirty on both sides may hold different uncommitted content, so that is
+  # unknown; clean on one side and dirty on the other is a change.
   if [[ "$IR_REPO_REV" == unknown || "$SD_REPO_REV" == unknown ]]; then SD_CAUSE_REPO=unknown
   elif [[ "$IR_REPO_REV" != "$SD_REPO_REV" ]]; then SD_CAUSE_REPO=yes
-  elif [[ "$IR_REPO_DIRTY" != unknown && "$SD_REPO_DIRTY" != unknown ]]; then
-    # the tree is "dirty" in the record as 1/0 and here as yes/no
-    if [[ "$IR_REPO_DIRTY" == 1 && "$SD_REPO_DIRTY" == yes ]] || [[ "$IR_REPO_DIRTY" == 0 && "$SD_REPO_DIRTY" == no ]]; then SD_CAUSE_REPO=no; else SD_CAUSE_REPO=yes; fi
-  else
-    SD_CAUSE_REPO=unknown
+  elif [[ "$IR_REPO_DIRTY" == unknown || "$SD_REPO_DIRTY" == unknown ]]; then SD_CAUSE_REPO=unknown
+  elif [[ "$IR_REPO_DIRTY" == no && "$SD_REPO_DIRTY" == no ]]; then SD_CAUSE_REPO=no
+  elif [[ "$IR_REPO_DIRTY" == yes && "$SD_REPO_DIRTY" == yes ]]; then SD_CAUSE_REPO=unknown
+  else SD_CAUSE_REPO=yes
   fi
 }
 
@@ -645,7 +659,7 @@ selection_diff_render_json() {
     if ((first)); then printf '\n'; first=0; else printf ',\n'; fi
     printf '    {"kind": %s, "name": %s, "operation": %s, "action": %s, "from": %s, "to": %s, "group": %s, "by_apply": %s}' \
       "$(_sd_js "${SD_F[0]}")" "$(_sd_js "${SD_F[1]}")" "$(_sd_js "${SD_F[2]}")" "$(_sd_js "${SD_F[3]}")" \
-      "$(_sd_js "${SD_F[4]}")" "$(_sd_js "${SD_F[5]}")" "$(_sd_js "${SD_F[6]}")" "${SD_F[7]}"
+      "$(_sd_js "${SD_F[4]}")" "$(_sd_js "${SD_F[5]}")" "$(_sd_js "${SD_F[6]}")" "$([[ "${SD_F[7]}" == true ]] && echo true || echo false)"
   done
   if ((first)); then printf '],\n'; else printf '\n  ],\n'; fi
   printf '  "limitations": ['
@@ -667,11 +681,28 @@ selection_diff_render_json() {
   printf '}\n'
 }
 
+# selection_diff_render_failed: the minimal envelope for an early failure (exit
+# 1) under --json. Usage errors (exit 2) never get here and print nothing.
+selection_diff_render_failed() {
+  printf '{\n'
+  printf '  "schema_version": 1,\n'
+  printf '  "command": "selection-diff",\n'
+  printf '  "check": true,\n'
+  printf '  "applied": false,\n'
+  printf '  "outcome": "failed",\n'
+  printf '  "exit_code": 1,\n'
+  printf '  "error": %s\n' "$(_sd_js "${SD_ERROR:-the selection diff failed}")"
+  printf '}\n'
+}
+
 # ── entry points ────────────────────────────────────────────────────────────
 
 # selection_diff_main: collect, classify, render. Returns the exit code.
 selection_diff_main() {
-  selection_diff_collect || return 1
+  if ! selection_diff_collect; then
+    [[ "${JSON_OUT:-0}" == 1 ]] && selection_diff_render_failed
+    return 1
+  fi
   selection_diff_outcome
   if [[ "${JSON_OUT:-0}" == 1 ]]; then selection_diff_render_json; else selection_diff_render_text; fi
   return "$SD_EXIT"

@@ -903,11 +903,12 @@ preview_sourcers() {
 
 # facts_callers <root>: every file under ops, scripts, home, nix and mise.toml
 # that names a facts function of ops/lib/selection-facts.sh, except the scripts
-# and libraries allowed to use it: install.sh, update-all.sh (--selection-diff)
-# and the three selection libraries.
+# and libraries allowed to use it: install.sh and the three selection libraries.
+# update-all.sh only sources the facts (inside its --selection-diff branch); the
+# diff library calls them.
 facts_callers() {
     (cd "$1" && grep -rEl 'selection_(facts|group_defaults|valid_profile|profile_of|hm_profile|profiles)([^[:alnum:]_]|$)|_sel_(eval|facts|chezmoi_status|files_delta)' ops scripts home nix mise.toml 2>/dev/null \
-        | grep -vE '^ops/(install\.sh|update-all\.sh|lib/selection-(facts|preview|diff)\.sh)$' || true)
+        | grep -vE '^ops/(install\.sh|lib/selection-(facts|preview|diff)\.sh)$' || true)
 }
 
 # facts_sourcers <root>: every file that sources selection-facts.sh (a comment
@@ -917,10 +918,22 @@ facts_sourcers() {
         | grep -vE '^ops/(install|update-all)\.sh$' || true)
 }
 
-@test "T-0043: nothing but install.sh, update-all.sh and the selection libraries calls the facts functions" {
+@test "T-0043: nothing but install.sh and the selection libraries calls the facts functions" {
     run facts_callers "$REPO_ROOT"
     [ -z "$output" ] || { echo "$output"; return 1; }
     grep -q 'selection_facts' "$REPO_ROOT/ops/install.sh"
+}
+
+@test "T-0043: update-all.sh sources the facts and the diff only inside its --selection-diff branch" {
+    local f="$REPO_ROOT/ops/update-all.sh" start end n
+    start="$(grep -n '^if \[\[ "\$MODE" == "selection-diff" \]\]; then' "$f" | head -n1 | cut -d: -f1)"
+    [ -n "$start" ]
+    end="$(awk -v s="$start" 'NR > s && /^fi$/ { print NR; exit }' "$f")"
+    [ -n "$end" ]
+    for n in $(grep -nE '^[[:space:]]*source .*(selection-facts|selection-diff)\.sh' "$f" | cut -d: -f1); do
+        [ "$n" -gt "$start" ] && [ "$n" -lt "$end" ] || { echo "line $n is outside the branch ($start-$end)"; return 1; }
+    done
+    [ "$(grep -cE '^[[:space:]]*source .*(selection-facts|selection-diff)\.sh' "$f")" -eq 2 ]
 }
 
 @test "T-0043: only install.sh and update-all.sh source selection-facts.sh; bootstrap, hm-switch and audit never do" {
@@ -934,7 +947,7 @@ facts_sourcers() {
     done
 }
 
-@test "T-0043: seeded: a facts call from hm-switch.sh or bootstrap.sh is caught, install.sh and update-all.sh are not" {
+@test "T-0043: seeded: a facts call from hm-switch.sh, bootstrap.sh or update-all.sh is caught, install.sh is not" {
     local copy="$BATS_TEST_TMPDIR/seed"
     mkdir -p "$copy/ops/lib"
     cp "$REPO_ROOT/ops/install.sh" "$REPO_ROOT/ops/update-all.sh" "$REPO_ROOT/ops/bootstrap.sh" "$copy/ops/"
@@ -949,7 +962,8 @@ facts_sourcers() {
     [[ "$output" == *"ops/lib/hm-switch.sh"* ]]
     [[ "$output" == *"ops/bootstrap.sh"* ]]
     [[ "$output" == *"ops/lib/selection.sh"* ]]
-    [[ "$output" != *"ops/update-all.sh"* ]]
+    [[ "$output" == *"ops/update-all.sh"* ]]
+    [[ "$output" != *"ops/install.sh"* ]]
 }
 
 @test "T-0043: seeded: sourcing selection-facts.sh from another script is caught, a comment is not" {

@@ -1869,3 +1869,12 @@ mk_selection() {
   [ "$status" -eq 0 ]
   [[ "$output" == *"applied-state record"* ]]
 }
+
+@test "T-0043: a failing verify gate writes no record" {
+  export APP_CONFIGS_STATE_DIR="$BATS_TEST_TMPDIR/app-state"
+  export FAIL_BRAVE=1
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"verification failed"* ]]
+  [ ! -e "$APP_CONFIGS_STATE_DIR/installed.meta" ]
+}

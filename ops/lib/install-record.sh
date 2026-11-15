@@ -23,7 +23,7 @@
 #   generation_kind=home-manager|darwin-system
 #   generation=<readlink -f of the profile after the switch>
 #   repo_rev=<40 hex>|unknown
-#   repo_dirty=0|1|unknown      (git status --porcelain -- nix home)
+#   repo_dirty=yes|no|unknown   (git status --porcelain -- nix home)
 #   selection_file=present|absent
 #   selection_sha256=<64 hex>|none   (the hash of the file bytes, never the content)
 #
@@ -71,7 +71,7 @@ install_record_repo_facts() {
   esac
   if [[ "${#rev}" -ne 40 ]]; then rev=unknown; fi
   if porcelain="$(git --no-optional-locks -C "$1" status --porcelain -- nix home 2>/dev/null)"; then
-    if [[ -n "$porcelain" ]]; then dirty=1; else dirty=0; fi
+    if [[ -n "$porcelain" ]]; then dirty=yes; else dirty=no; fi
   fi
   printf '%s %s' "$rev" "$dirty"
 }
@@ -149,7 +149,7 @@ _ir_valid() {
       else if (key == "generation_kind" && val != "home-manager" && val != "darwin-system") bad = 1
       else if (key == "generation" && (val !~ /^\// || val ~ /[[:cntrl:]]/)) bad = 1
       else if (key == "repo_rev" && val != "unknown" && (length(val) != 40 || val ~ /[^0-9a-f]/)) bad = 1
-      else if (key == "repo_dirty" && val != "0" && val != "1" && val != "unknown") bad = 1
+      else if (key == "repo_dirty" && val != "yes" && val != "no" && val != "unknown") bad = 1
       else if (key == "selection_file" && val != "present" && val != "absent") bad = 1
       else if (key == "selection_sha256" && val != "none" && (length(val) != 64 || val ~ /[^0-9a-f]/)) bad = 1
     }

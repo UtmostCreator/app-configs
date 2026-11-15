@@ -308,7 +308,26 @@ unchanged items appear as counts:
   conflict, manual, unsupported, unknown}, "entries": [...], "limitations": [...], "notes": [...] }
 ```
 
-Each source is `ok`, `unknown` or `n/a`. The evaluations take about half a
+`repo.dirty` is `yes`, `no` or `unknown` (the same encoding as the record).
+Each source is `ok`, `unknown` or `n/a`. `causes` has two real answers and one
+placeholder: `selection_changed` and `repo_changed` are `yes`, `no` or `unknown`
+(`unknown` whenever the record is not ok, a hash or revision is unknown, or the
+tree is dirty on both sides, since the uncommitted content may differ;
+`repo_changed` is `no` only for a clean tree at the same revision on both sides).
+`generation_changed_outside` is `no` whenever the record is ok (an ok record is
+by definition for the current generation) and `unknown` otherwise; it is kept so
+the shape does not change when a better answer exists.
+
+On an early failure (exit 1) `--json` prints a minimal envelope instead of the
+full one: `schema_version`, `command`, `check`, `applied` (false), `outcome`
+(`failed`), `exit_code` (1) and `error`. Usage errors (exit 2) print nothing on
+stdout.
+
+Consumers should key on each entry's `operation`, and on `exit_code` and
+`outcome`, not on entry names or on the counts alone: `counts.manual` mixes the
+casks a deselected group leaves behind (not counted in the exit code) with an
+unfinished or failed last run (which is), and an unknown source is an entry named
+`(all)`. The evaluations take about half a
 minute on a desktop host (measured at roughly 27 s: 19 s for the group members,
 8 s for the current state).
 
@@ -318,7 +337,7 @@ switch (never on a dry run), the machine writes
 `${XDG_STATE_HOME:-~/.local/state}/app-configs/installed.meta` (override the
 directory with `APP_CONFIGS_STATE_DIR`): eleven `key=value` lines holding the
 writer, the time, the run id, the host, the generation, the repo revision and
-whether `nix` and `home` were dirty, and the **sha256** of the selection file
+whether `nix` and `home` were dirty (`yes`, `no` or `unknown`), and the **sha256** of the selection file
 (never its content). It is machine-local state and is never committed; the write
 is atomic and a failed write only warns. `--selection-diff` reads it to say
 *why* something is pending (the selection changed, the repo changed). When the

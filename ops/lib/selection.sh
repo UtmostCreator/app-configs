@@ -116,28 +116,25 @@ selection_profiles() {
 }
 
 selection_valid_profile() {
-  local p
-  while IFS= read -r p; do
-    [[ "$p" == "$1" ]] && return 0
-  done < <(selection_profiles)
+  local profiles=() p
+  mapfile -t profiles < <(selection_profiles)
+  for p in "${profiles[@]+"${profiles[@]}"}"; do
+    if [[ "$p" == "$1" ]]; then return 0; fi
+  done
   return 1
 }
 
 # selection_group_defaults PROFILE: "group<TAB>true|false" for each [groups] line.
 selection_group_defaults() {
-  local file line in_groups=0
+  local file
   file="$(_sel_repo)/nix/profiles/$1.toml"
   [[ -f "$file" ]] || return 1
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    line="${line%%#*}"
-    if [[ "$line" =~ ^[[:space:]]*\[([A-Za-z0-9_.-]+)\][[:space:]]*$ ]]; then
-      if [[ "${BASH_REMATCH[1]}" == groups ]]; then in_groups=1; else in_groups=0; fi
-      continue
-    fi
-    if ((in_groups)) && [[ "$line" =~ ^[[:space:]]*([A-Za-z0-9_]+)[[:space:]]*=[[:space:]]*(true|false)[[:space:]]*$ ]]; then
-      printf '%s\t%s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}"
-    fi
-  done <"$file"
+  awk '
+    { sub(/#.*/, "") }
+    /^[[:space:]]*\[[A-Za-z0-9_.-]+\][[:space:]]*$/ { gsub(/\[|\]|[[:space:]]/, ""); in_groups = ($0 == "groups"); next }
+    in_groups && /^[[:space:]]*[A-Za-z0-9_]+[[:space:]]*=[[:space:]]*(true|false)[[:space:]]*$/ {
+      gsub(/[[:space:]]/, ""); split($0, kv, "="); print kv[1] "\t" kv[2]
+    }' "$file"
 }
 
 # selection_write DIR PROFILE [group=true|false ...]
@@ -147,7 +144,7 @@ selection_group_defaults() {
 # default adds nothing, and a group or profile that is not declared is refused
 # (return 1, nothing written, an existing file untouched).
 selection_write() {
-  local dir="$1" profile="$2" pair g v d known lines="" tmp defaults
+  local dir="$1" profile="$2" pair g v d lines="" tmp defaults
   shift 2
   selection_valid_profile "$profile" || { printf 'selection: unknown profile %s\n' "'$profile'" >&2; return 1; }
   defaults="$(selection_group_defaults "$profile")" || return 1
@@ -156,12 +153,8 @@ selection_write() {
     g="${pair%%=*}"
     v="${pair#*=}"
     [[ "$v" == true || "$v" == false ]] || { printf 'selection: group %s must be true or false, got %s\n' "'$g'" "'$v'" >&2; return 1; }
-    known=0
-    while IFS=$'\t' read -r d _; do
-      if [[ "$d" == "$g" ]]; then known=1; fi
-    done <<<"$defaults"
-    ((known)) || { printf 'selection: unknown group %s\n' "'$g'" >&2; return 1; }
     d="$(printf '%s\n' "$defaults" | awk -F'\t' -v g="$g" '$1 == g { print $2 }')"
+    [[ -n "$d" ]] || { printf 'selection: unknown group %s\n' "'$g'" >&2; return 1; }
     if [[ "$v" != "$d" ]]; then lines+="$g = $v"$'\n'; fi
   done
   mkdir -p "$dir" || return 1
@@ -194,15 +187,10 @@ selection_hm_profile() {
 }
 
 # ── input ───────────────────────────────────────────────────────────────────
-
-# selection_read VAR PROMPT: prompt on stderr, one line from stdin into VAR.
-# Returns 1 at end of input (a closed terminal, ^D).
-selection_read() {
-  local __sel_ans
-  printf '%s' "$2" >&2
-  IFS= read -r __sel_ans || { printf '\n' >&2; return 1; }
-  printf -v "$1" '%s' "$__sel_ans"
-}
+#
+# This file never reads the terminal. The prompts below call selection_read VAR
+# PROMPT, which ops/install.sh (the one script that asks) defines: prompt on
+# stderr, one line from stdin into VAR, return 1 at end of input.
 
 # ── evaluation ──────────────────────────────────────────────────────────────
 
@@ -233,11 +221,27 @@ _SEL_CHECK_DARWIN='us: (builtins.head (builtins.attrValues us)).myConfig.profile
 
 _sel_flake() { printf '%s/nix' "$(_sel_repo)"; }
 
-# _sel_eval OUT ERR ATTR APPLY [selection args ...]
+# _sel_eval OUT ERR ATTR APPLY: evaluates with the selection in SELECTION_ARGS,
+# like every other host evaluation (the committed default when it is empty).
 _sel_eval() {
-  local out="$1" err="$2" attr="$3" apply="$4"
-  shift 4
-  nix eval --option allow-import-from-derivation false --raw "$(_sel_flake)#$attr" "$@" --apply "$apply" >"$out" 2>"$err"
+  nix eval --option allow-import-from-derivation false --raw "$(_sel_flake)#$3" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} --apply "$4" >"$1" 2>"$2"
+}
+
+# _sel_eval_for KIND OUT ERR ATTR APPLY: _sel_eval with another selection in
+# SELECTION_ARGS for the one call. KIND committed: none (the group members must
+# not depend on the local file). KIND proposed: the proposal in SELECTION_OVERRIDE.
+_sel_eval_for() {
+  local kind="$1" keep=() i rc=0
+  shift
+  for i in "${!SELECTION_ARGS[@]}"; do keep+=("${SELECTION_ARGS[$i]}"); done
+  SELECTION_ARGS=()
+  if [[ "$kind" == proposed ]]; then
+    for i in "${!SELECTION_OVERRIDE[@]}"; do SELECTION_ARGS+=("${SELECTION_OVERRIDE[$i]}"); done
+  fi
+  _sel_eval "$@" || rc=$?
+  SELECTION_ARGS=()
+  for i in "${!keep[@]}"; do SELECTION_ARGS+=("${keep[$i]}"); done
+  return "$rc"
 }
 
 _sel_attr_state() { if [[ "$SELECTION_HOST" == macos ]]; then echo darwinConfigurations.macos.config; else echo "homeConfigurations.$SELECTION_HOST.config"; fi; }
@@ -259,7 +263,7 @@ selection_validate() {
   command -v nix >/dev/null 2>&1 || return 2
   selection_args
   _sel_eval /dev/null "$SELECTION_WORK/validate.err" "$(_sel_attr_check)" "$(_sel_expr_check)" \
-    ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} || { _sel_show_err "$SELECTION_WORK/validate.err"; return 1; }
+    || { _sel_show_err "$SELECTION_WORK/validate.err"; return 1; }
 }
 
 # ── facts: the installed generation (I), the current selection (C), members ──
@@ -290,22 +294,22 @@ _sel_state_groups() { awk -F '\t' '$1 == "G" { print $2 "\t" $3 }' "$1"; }
 # _sel_overrides FILE: "media=off go=off" - the groups whose value in the state
 # differs from the committed default of the state's profile.
 _sel_overrides() {
-  local prof g v d out=""
+  local prof
   prof="$(_sel_state_profile "$1")"
   [[ -n "$prof" ]] || return 0
-  while IFS=$'\t' read -r g v; do
-    d="$(selection_group_defaults "$prof" | awk -F '\t' -v g="$g" '$1 == g { print $2 }')"
-    if [[ -n "$d" && "$v" != "$d" ]]; then out+="${out:+ }$g=$([[ "$v" == true ]] && echo on || echo off)"; fi
-  done < <(_sel_state_groups "$1")
-  printf '%s' "$out"
+  awk -F '\t' '
+    NR == FNR { d[$1] = $2; next }
+    ($1 in d) && $2 != d[$1] { printf "%s%s=%s", sep, $1, ($2 == "true" ? "on" : "off"); sep = " " }
+  ' <(selection_group_defaults "$prof") <(_sel_state_groups "$1")
 }
 
 # The files the installed generation links into $HOME: "target<TAB>source".
 _sel_installed_files() {
-  local root="$1/home-files" p
+  local root="$1/home-files" links=() p
   [[ -d "$root" ]] || return 1
   root="$(cd "$root" && pwd -P)" || return 1
-  find "$root" -type l | LC_ALL=C sort | while IFS= read -r p; do
+  mapfile -t links < <(find "$root" -type l | LC_ALL=C sort)
+  for p in "${links[@]+"${links[@]}"}"; do
     printf '%s\t%s\n' "${p#"$root"/}" "$(readlink "$p")"
   done
 }
@@ -355,16 +359,15 @@ selection_facts() {
   source "$repo/ops/update-version-report.sh"
   selection_args
   printf '[install] evaluating the install state (read-only, nothing is built)...\n' >&2
-  _sel_eval "$SELECTION_WORK/m.tsv" "$SELECTION_WORK/m.err" "$(_sel_attr_members)" "$(_sel_expr_members)" \
+  _sel_eval_for committed "$SELECTION_WORK/m.tsv" "$SELECTION_WORK/m.err" "$(_sel_attr_members)" "$(_sel_expr_members)" \
     || { _sel_show_err "$SELECTION_WORK/m.err"; return 1; }
   SEL_C_INVALID=0
-  if ! _sel_eval "$SELECTION_WORK/c.tsv" "$SELECTION_WORK/c.err" "$(_sel_attr_state)" "$(_sel_expr_state)" \
-      ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}; then
+  if ! _sel_eval "$SELECTION_WORK/c.tsv" "$SELECTION_WORK/c.err" "$(_sel_attr_state)" "$(_sel_expr_state)"; then
     if [[ "$lenient" == lenient && ${#SELECTION_ARGS[@]} -gt 0 ]]; then
       printf 'The current selection is invalid; comparing with the committed default instead:\n' >&2
       _sel_show_err "$SELECTION_WORK/c.err"
       SEL_C_INVALID=1
-      _sel_eval "$SELECTION_WORK/c.tsv" "$SELECTION_WORK/c.err" "$(_sel_attr_state)" "$(_sel_expr_state)" \
+      _sel_eval_for committed "$SELECTION_WORK/c.tsv" "$SELECTION_WORK/c.err" "$(_sel_attr_state)" "$(_sel_expr_state)" \
         || { _sel_show_err "$SELECTION_WORK/c.err"; return 1; }
     else
       _sel_show_err "$SELECTION_WORK/c.err"
@@ -374,8 +377,7 @@ selection_facts() {
   SEL_HOST_PROFILE="$(awk -F '\t' '$1 == "H" { print $2; exit }' "$SELECTION_WORK/m.tsv")"
   SEL_HOST_PROFILE="${SEL_HOST_PROFILE:-work}"
   SEL_GROUPS=()
-  local g
-  while IFS= read -r g; do SEL_GROUPS+=("$g"); done < <(awk -F '\t' '$1 == "N" { print $2 }' "$SELECTION_WORK/m.tsv")
+  mapfile -t SEL_GROUPS < <(awk -F '\t' '$1 == "N" { print $2 }' "$SELECTION_WORK/m.tsv")
   _sel_state_packages "$SELECTION_WORK/c.tsv" >"$SELECTION_WORK/c-pkgs.tsv"
   _sel_read_installed
   SEL_HAVE_FACTS=1
@@ -411,8 +413,7 @@ selection_present_state() {
   for g in "${sets[@]}"; do
     label="$g"
     if [[ "$g" == @personal ]]; then label="personal apps"; fi
-    members=()
-    while IFS= read -r n; do [[ -z "$n" ]] || members+=("$n"); done < <(_sel_members_of "$g")
+    mapfile -t members < <(_sel_members_of "$g")
     m=${#members[@]}
     if [[ "$SEL_I_STATE" == unknown ]]; then
       printf '  %-14s installed unknown/%s (the installed generation could not be read)\n' "$label" "$m"
@@ -449,8 +450,7 @@ selection_propose() {
   rm -rf "$dir"
   selection_write "$dir" "$@" || return 1
   selection_override_args "$dir"
-  _sel_eval "$SELECTION_WORK/p.tsv" "$SELECTION_WORK/p.err" "$(_sel_attr_state)" "$(_sel_expr_state)" \
-    ${SELECTION_OVERRIDE[@]+"${SELECTION_OVERRIDE[@]}"} \
+  _sel_eval_for proposed "$SELECTION_WORK/p.tsv" "$SELECTION_WORK/p.err" "$(_sel_attr_state)" "$(_sel_expr_state)" \
     || { _sel_show_err "$SELECTION_WORK/p.err"; return 1; }
   _sel_state_packages "$SELECTION_WORK/p.tsv" >"$SELECTION_WORK/p-pkgs.tsv"
 }
@@ -494,21 +494,24 @@ _sel_files_delta() {
 }
 
 _sel_files_section() { # _sel_files_section HEADER MODE A B
-  local kind target n=0 total
+  local row kind target n=0 total rows=()
   printf '%s\n' "$1"
   total="$(_sel_files_delta "$2" "$3" "$4" | grep -c . || true)"
   if ((total == 0)); then printf '    no changes\n'; return 0; fi
-  while IFS=$'\t' read -r kind target; do
+  mapfile -t rows < <(_sel_files_delta "$2" "$3" "$4")
+  for row in "${rows[@]}"; do
+    kind="${row%%$'\t'*}"
+    target="${row#*$'\t'}"
     if ((n < SELECTION_LIST_MAX)); then printf '    %-8s %s%s\n' "$kind" "$target" "$(_sel_unit_note "$target")"; fi
     n=$((n + 1))
-  done < <(_sel_files_delta "$2" "$3" "$4")
+  done
   if ((total > SELECTION_LIST_MAX)); then printf '    and %s more\n' "$((total - SELECTION_LIST_MAX))"; fi
 }
 
 _sel_state_files() { awk -F '\t' '$1 == "F" { print $2 "\t" $3 }' "$1" | LC_ALL=C sort -u; }
 
 _sel_chezmoi_section() {
-  local repo out err first line col n=0 added=0 modified=0 removed=0 scripts=0 total=0 label
+  local repo out err first line col n=0 added=0 modified=0 removed=0 scripts=0 total=0 label lines=()
   repo="$(_sel_repo)"
   label="chezmoi files: pending repo changes"
   if [[ "$SELECTION_HOST" != macos ]]; then label+=" (the selection does not change chezmoi on Linux)"; fi
@@ -524,7 +527,8 @@ _sel_chezmoi_section() {
     printf '    unavailable (%s); after install: chezmoi diff\n' "${first:-chezmoi status failed}"
     return 0
   fi
-  while IFS= read -r line; do
+  mapfile -t lines <"$out"
+  for line in "${lines[@]+"${lines[@]}"}"; do
     col="${line:1:1}"
     case "$col" in
       A) added=$((added + 1)) ;;
@@ -534,22 +538,22 @@ _sel_chezmoi_section() {
       *) continue ;;
     esac
     total=$((total + 1))
-  done <"$out"
+  done
   if ((total == 0)); then printf '    no changes\n'; else
     printf '    added %s, modified %s, removed %s, scripts %s (%s paths)\n' "$added" "$modified" "$removed" "$scripts" "$total"
-    while IFS= read -r line; do
+    for line in "${lines[@]}"; do
       col="${line:1:1}"
       case "$col" in A | M | D | R) ;; *) continue ;; esac
       if ((n < 20)); then printf '      %s %s\n' "$col" "${line:3}"; fi
       n=$((n + 1))
-    done <"$out"
+    done
     if ((total > 20)); then printf '      and %s more\n' "$((total - 20))"; fi
   fi
   printf '    full diff: chezmoi --source=%s diff\n' "$repo"
 }
 
 _sel_casks_section() {
-  local installed="$SELECTION_WORK/casks-installed.txt" c unmanaged=0 have_c have_p
+  local installed="$SELECTION_WORK/casks-installed.txt" c unmanaged=0 have_c have_p casks=()
   printf 'macOS casks\n'
   if ! command -v brew >/dev/null 2>&1 || ! brew list --cask -1 2>/dev/null | LC_ALL=C sort -u >"$installed"; then
     printf '    cask state unknown (brew not available)\n'
@@ -561,30 +565,33 @@ _sel_casks_section() {
   else
     cp "$SELECTION_WORK/casks-c.txt" "$SELECTION_WORK/casks-p.txt"
   fi
-  while IFS= read -r c; do
+  mapfile -t casks <"$SELECTION_WORK/casks-p.txt"
+  for c in "${casks[@]+"${casks[@]}"}"; do
     [[ -n "$c" ]] || continue
     if ! _sel_in_file "$c" "$installed"; then printf '    %s: add (installed at the next switch)\n' "$c"; fi
-  done <"$SELECTION_WORK/casks-p.txt"
-  while IFS= read -r c; do
+  done
+  mapfile -t casks <"$SELECTION_WORK/casks-c.txt"
+  for c in "${casks[@]+"${casks[@]}"}"; do
     [[ -n "$c" ]] || continue
     if ! _sel_in_file "$c" "$SELECTION_WORK/casks-p.txt" && _sel_in_file "$c" "$installed"; then
       printf '    %s: stays installed (Homebrew cleanup = none); remove by hand: brew uninstall --cask %s\n' "$c" "$c"
     fi
-  done <"$SELECTION_WORK/casks-c.txt"
-  while IFS= read -r c; do
+  done
+  mapfile -t casks <"$installed"
+  for c in "${casks[@]+"${casks[@]}"}"; do
     [[ -n "$c" ]] || continue
     have_c=0; have_p=0
     if _sel_in_file "$c" "$SELECTION_WORK/casks-c.txt"; then have_c=1; fi
     if _sel_in_file "$c" "$SELECTION_WORK/casks-p.txt"; then have_p=1; fi
     if ((have_c == 0 && have_p == 0)); then unmanaged=$((unmanaged + 1)); fi
-  done <"$installed"
+  done
   printf '    unmanaged installed casks: %s\n' "$unmanaged"
 }
 
 # _sel_outcome_section: keep / add / remove / stays off per group, from the
 # installed generation (I) and the proposed state (P).
 _sel_outcome_section() {
-  local g label n keep off parts sets=() adds rems
+  local g label n keep off parts sets=() adds rems names=()
   printf 'Outcome by group (installed -> proposed)\n'
   if [[ "$SEL_I_STATE" == unknown ]]; then
     printf '    unknown: the installed generation could not be read, so keep, add and remove cannot be told\n'
@@ -598,7 +605,8 @@ _sel_outcome_section() {
     label="$g"
     if [[ "$g" == @personal ]]; then label="personal apps"; fi
     keep=0; off=0; adds=(); rems=()
-    while IFS= read -r n; do
+    mapfile -t names < <(_sel_members_of "$g")
+    for n in "${names[@]+"${names[@]}"}"; do
       [[ -n "$n" ]] || continue
       local in_i=0 in_p=0
       if _sel_in_file "$n" "$SELECTION_WORK/i-names.txt"; then in_i=1; fi
@@ -607,7 +615,7 @@ _sel_outcome_section() {
       elif ((in_p)); then adds+=("$n")
       elif ((in_i)); then rems+=("$n")
       else off=$((off + 1)); fi
-    done < <(_sel_members_of "$g")
+    done
     parts=""
     if ((keep)); then parts+="keep $keep"; fi
     if ((${#adds[@]})); then parts+="${parts:+; }add ${#adds[@]}: $(_sel_join "${adds[@]}")"; fi
@@ -710,11 +718,12 @@ _sel_cur_value() { # group -> true|false the prompt starts from, or nothing
 # selection (or with a valid one) that is the current effective selection; when
 # the local file is invalid it is the host's default profile.
 selection_prompt_init() {
-  local g v
+  local row rows=()
   SEL_CUR_NAMES=(); SEL_CUR_VALUES=()
   if ((SEL_HAVE_FACTS)); then
     SEL_CUR_PROFILE="$(_sel_state_profile "$SELECTION_WORK/c.tsv")"
-    while IFS=$'\t' read -r g v; do SEL_CUR_NAMES+=("$g"); SEL_CUR_VALUES+=("$v"); done < <(_sel_state_groups "$SELECTION_WORK/c.tsv")
+    mapfile -t rows < <(_sel_state_groups "$SELECTION_WORK/c.tsv")
+    for row in "${rows[@]+"${rows[@]}"}"; do SEL_CUR_NAMES+=("${row%%$'\t'*}"); SEL_CUR_VALUES+=("${row#*$'\t'}"); done
   else
     SEL_CUR_PROFILE="$SEL_HOST_PROFILE"
   fi
@@ -723,7 +732,7 @@ selection_prompt_init() {
 _sel_group_label() { # group -> "group (names)" with a few members
   local names=() n out
   if ((SEL_HAVE_FACTS)); then
-    while IFS= read -r n; do [[ -z "$n" ]] || names+=("$n"); done < <(_sel_members_of "$1")
+    mapfile -t names < <(_sel_members_of "$1")
   fi
   if ((${#names[@]} == 0)); then printf '%s' "$1"; return 0; fi
   if ((${#names[@]} > 6)); then
@@ -736,8 +745,9 @@ _sel_group_label() { # group -> "group (names)" with a few members
 
 # _sel_ask_profile: sets SEL_ANS_PROFILE. Returns 1 on quit or end of input.
 _sel_ask_profile() {
-  local list="" p ans
-  while IFS= read -r p; do list+="${list:+, }$p"; done < <(selection_profiles)
+  local list="" p ans profiles=()
+  mapfile -t profiles < <(selection_profiles)
+  for p in "${profiles[@]+"${profiles[@]}"}"; do list+="${list:+, }$p"; done
   while true; do
     selection_read ans "Profile ($list; q quits) [$SEL_CUR_PROFILE]: " || return 1
     case "$ans" in
@@ -753,10 +763,11 @@ _sel_ask_profile() {
 # from the current value when the profile is the current one, else from the
 # profile's committed default.
 _sel_ask_groups() {
-  local groups=() g d def ans hint v
+  local groups=() g def ans hint v row rows=()
   SEL_ANS_GROUPS=()
   if ((${#SEL_GROUPS[@]})); then groups=("${SEL_GROUPS[@]}"); else
-    while IFS=$'\t' read -r g _; do groups+=("$g"); done < <(selection_group_defaults "$SEL_ANS_PROFILE")
+    mapfile -t rows < <(selection_group_defaults "$SEL_ANS_PROFILE")
+    for row in "${rows[@]+"${rows[@]}"}"; do groups+=("${row%%$'\t'*}"); done
   fi
   for g in "${groups[@]+"${groups[@]}"}"; do
     def="$(selection_group_defaults "$SEL_ANS_PROFILE" | awk -F '\t' -v g="$g" '$1 == g { print $2 }')"

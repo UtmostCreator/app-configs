@@ -132,6 +132,17 @@ SELECTION_HOST=""   # set from HOST_PROFILE once it is known (Preflight)
 # Prompts read stdin and write stderr: both must be a terminal.
 have_tty() { [[ -t 0 && -t 2 ]]; }
 
+# selection_read VAR PROMPT: the one place anything is read from the terminal.
+# ops/lib/selection.sh never reads (a test in hm-switch.bats keeps it so); its
+# prompts call this function, which only install.sh defines. Prompt on stderr,
+# one line from stdin into VAR; returns 1 at end of input (a closed terminal, ^D).
+selection_read() {
+  local __sel_ans
+  printf '%s' "$2" >&2
+  IFS= read -r __sel_ans || { printf '\n' >&2; return 1; }
+  printf -v "$1" '%s' "$__sel_ans"
+}
+
 # The selection flags are checked before the first step, so a bad one changes
 # nothing: an unknown profile is a usage error, --reconfigure needs someone to ask.
 if [[ -n "$OPT_PROFILE" ]] && ! selection_valid_profile "$OPT_PROFILE"; then

@@ -32,7 +32,7 @@ setup() {
     local t p
     for t in bash env git curl sed awk cat dirname head tail find xargs stat sort grep \
         uname mkdir tee tr rm cp mv chmod ls readlink basename sleep date wc cut id comm \
-        mktemp ln script timeout sh touch diff sha256sum tty stty; do
+        mktemp ln script timeout sh touch diff sha256sum tty stty seq; do
         p="$(command -v "$t" 2>/dev/null)" || continue
         if [ -x "$p" ]; then ln -sf "$p" "$SYSBIN/$t"; fi
     done
@@ -304,7 +304,7 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     [ "$status" -ne 0 ]
     no_sel_file
     no_mutation
-    [[ "$output" == *"cancelled at the selection step: no selection saved, no dotfiles applied, no switch run; Nix and base tools installed by earlier steps remain"* ]]
+    [[ "$output" == *"cancelled at the selection step: no selection saved, no dotfiles applied, no switch run; what earlier steps did (Nix, base tools, preflight seeding of personal.yaml) remains"* ]]
     [[ "$output" != *"nothing changed"* ]]
 }
 
@@ -342,7 +342,7 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     inst_tty 'q\n' --dry-run
     [ "$status" -ne 0 ]
     [[ "$output" == *"cancelled at the selection step"* ]]
-    [[ "$output" != *"installed by earlier steps remain"* ]]
+    [[ "$output" != *"earlier steps"* ]]
 }
 
 @test "AC7: a second run with the file present asks nothing" {
@@ -455,7 +455,7 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     [[ "$s" != *"ADDED"* ]]
 }
 
-@test "AC7a: package rows compare installed with proposed, split into your selection and pending repo changes" {
+@test "AC7a: package rows compare installed with proposed, split into your selection and pending changes" {
     install_gen committed
     # the installed ripgrep is older than the repo's: a pending change, not the selection's
     sed -i 's/ripgrep-14.1.0/ripgrep-13.0.0/' "$STUB_REFS_FILE"
@@ -463,22 +463,22 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     [ "$status" -eq 0 ]
     local mine pending
     mine="$(section 'Packages, from your selection')"
-    pending="$(section 'Packages, pending repo changes')"
+    pending="$(section 'Packages, pending changes')"
     [[ "$mine" == *"vesktop"* ]]
     [[ "$mine" != *"ripgrep"* ]]
     [[ "$pending" == *"UPGRADED"* ]]
     [[ "$pending" == *"ripgrep"*"13.0.0"*"14.1.0"* ]]
     [[ "$pending" != *"vesktop"* ]]
-    [[ "$output" == *"pending repo changes (would apply even with no selection change)"* ]]
+    [[ "$output" == *"pending changes (repo, or a selection not yet applied)"* ]]
 }
 
-@test "AC7k: a version change of a kept package shows as upgraded under pending repo changes" {
+@test "AC7k: a version change of a kept package shows as upgraded under pending changes" {
     install_gen committed
     sed -i 's/ffmpeg-7.0.1/ffmpeg-6.1.0/' "$STUB_REFS_FILE"
     inst --dry-run
     [ "$status" -eq 0 ]
     local pending
-    pending="$(section 'Packages, pending repo changes')"
+    pending="$(section 'Packages, pending changes')"
     [[ "$pending" == *"1 upgraded"* ]]
     [[ "$pending" == *"ffmpeg"*"6.1.0"*"7.0.1"* ]]
 }
@@ -489,7 +489,7 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     [ "$status" -eq 0 ]
     local mine pending
     mine="$(section 'Packages, from your selection')"
-    pending="$(section 'Packages, pending repo changes')"
+    pending="$(section 'Packages, pending changes')"
     [[ "$mine" == *"no package changes (19 unchanged)"* ]]
     [[ "$pending" == *"no package changes (19 unchanged)"* ]]
     [[ "$output" != *"dummy-xdg-mime-dirs"* ]]
@@ -520,14 +520,14 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     [[ "$s" == *"changed"*".config/fish/config.fish"* ]]
 }
 
-@test "AC7b: pending repo changes in files are reported separately from the selection's" {
+@test "AC7b: pending changes in files are reported separately from the selection's" {
     install_gen committed
     local gen="$XDG_STATE_HOME/nix/profiles/home-manager-1-link/home-files"
     rm "$gen/.config/mimeapps.list"
     ln -sfn /nix/store/00000000000000000000000000000000-old-nix-gc.timer "$gen/.config/systemd/user/nix-gc.timer"
     inst --profile work --dry-run
     local pending mine
-    pending="$(section 'Home Manager files and services, pending repo changes')"
+    pending="$(section 'Home Manager files and services, pending changes')"
     mine="$(section 'Home Manager files and services, from your selection')"
     [[ "$pending" == *"added"*".config/mimeapps.list"* ]]
     [[ "$pending" == *"changed"*".config/systemd/user/nix-gc.timer (user unit)"* ]]
@@ -567,7 +567,7 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     [ "$status" -eq 0 ]
     [[ "$output" == *"No Home Manager generation yet (first install)"* ]]
     local s
-    s="$(section 'Packages, pending repo changes')"
+    s="$(section 'Packages, pending changes')"
     [[ "$s" == *"19 added"* || "$s" == *"+ 19 added"* ]]
 }
 
@@ -576,7 +576,7 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     export STUB_NIX_STORE_FAIL=1
     inst --profile work --dry-run
     [ "$status" -eq 0 ]
-    [[ "$(section 'Packages, pending repo changes')" == *"unknown"* ]]
+    [[ "$(section 'Packages, pending changes')" == *"unknown"* ]]
     [[ "$(section 'Outcome by group')" == *"unknown"* ]]
     [[ "$(section 'Packages, from your selection')" == *"vesktop"* ]]
 }
@@ -625,8 +625,8 @@ no_mutation() { # no chezmoi apply/init, no switch, no mise, no lefthook
     inst --dry-run
     [ "$status" -eq 0 ]
     [[ "$output" == *"Present state"* ]]
-    [[ "$output" == *"Packages, pending repo changes"* ]]
-    [[ "$output" == *"Home Manager files and services, pending repo changes"* ]]
+    [[ "$output" == *"Packages, pending changes"* ]]
+    [[ "$output" == *"Home Manager files and services, pending changes"* ]]
     [[ "$output" == *"chezmoi files"* ]]
     [[ "$output" != *"Preview (nothing applied)"* ]]
     [[ "$output" != *"Outcome by group"* ]]
@@ -806,4 +806,93 @@ prompt_callers() {
     [ "$status" -eq 0 ]
     [[ "$output" == *"--profile"* ]]
     [[ "$output" == *"--reconfigure"* ]]
+}
+
+# ── review round 1 ──────────────────────────────────────────────────────────
+
+@test "the Nix error shown for an invalid selection is the end of a long error, with the key (plain run, dry run, --profile)" {
+    write_sel 'bogus = 1\n'
+    inst
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"unknown key 'bogus'"* ]]
+    inst --dry-run
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"unknown key 'bogus'"* ]]
+    export STUB_NIX_FAIL_OVERRIDE=1
+    inst --profile work
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"stub: evaluating the proposed selection failed"* ]]
+}
+
+@test "N1: an empty --profile value is a usage error" {
+    inst --profile ""
+    [ "$status" -eq 2 ]
+    [ ! -s "$STUB_LOG" ]
+    inst --profile=
+    [ "$status" -eq 2 ]
+    [ ! -s "$STUB_LOG" ]
+    no_sel_file
+}
+
+@test "N2: after a in a dry run the output says the real run passes the override" {
+    inst_tty 'work\n\n\n\na\n' --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"the real run passes --override-input selection path:$APP_CONFIGS_SELECTION_DIR"* ]]
+}
+
+@test "N4: on a first install the selection comparison lists no removals of what was never installed" {
+    inst --profile work --dry-run
+    [ "$status" -eq 0 ]
+    local s
+    s="$(section 'Packages, from your selection')"
+    [[ "$s" == *"nothing is installed yet"* ]]
+    [[ "$s" != *"REMOVED"* ]]
+    [[ "$s" != *"removed"* ]]
+}
+
+@test "N6: the Selection line shows the profile of single-quoted and empty files" {
+    write_sel "profile = 'work'\n"
+    inst
+    [[ "$output" == *"Selection: $APP_CONFIGS_SELECTION_DIR/selection.toml (profile work)"* ]]
+    write_sel ''
+    inst
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"selection.toml (profile default)"* ]]
+    [[ "$output" != *"(profile )"* ]]
+}
+
+# The install-time selection code runs under /bin/bash 3.2 on a fresh Mac: the
+# same flows with mapfile and readarray switched off (BASH_ENV runs in every
+# bash child). HOST_PROFILE=macos for the prompt path, as on that machine.
+no_mapfile() {
+    printf 'enable -n mapfile readarray\n' >"$BATS_TEST_TMPDIR/no-mapfile.sh"
+    export BASH_ENV="$BATS_TEST_TMPDIR/no-mapfile.sh"
+}
+
+@test "F2: --profile works with mapfile and readarray disabled (bash 3.2 simulation)" {
+    no_mapfile
+    install_gen committed
+    inst --profile work --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"Preview (nothing applied): profile personal -> work"* ]]
+    [[ "$output" == *"personal apps"*"remove 7"* ]]
+}
+
+@test "F2: the prompt path works with mapfile and readarray disabled, on macOS" {
+    no_mapfile
+    with_brew
+    printf 'rectangle\n' >"$BATS_TEST_TMPDIR/casks"; export STUB_BREW_CASKS="$BATS_TEST_TMPDIR/casks"
+    HP=macos inst_tty 'work\n\nn\n\na\n' --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"dry run: would write"* ]]
+    [[ "$output" == *"macOS casks"* ]]
+}
+
+@test "F2: an invalid-file reconfigure and a plain apply work with mapfile disabled" {
+    no_mapfile
+    write_sel 'profile = "work"\n'
+    inst
+    [ "$status" -eq 0 ]
+    inst_tty '\n\n\n\na\n' --reconfigure
+    [ "$status" -eq 0 ]
 }

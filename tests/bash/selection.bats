@@ -217,3 +217,67 @@ pk() { cat "$BATS_FILE_TMPDIR/pkgs-$1.json"; }
     run jq -e '. == {go: false, media: false, security: true}' <<<"$output"
     [ "$status" -eq 0 ]
 }
+
+# ── selection_validate and the preview's expressions, against the real flake ──
+# (review round 1: the stubbed install tests cannot see what real Nix prints or
+# whether the Nix expression strings still evaluate.)
+
+# validate_fixture <fixture> [host]: selection_validate on a copy of the fixture.
+validate_fixture() {
+    local dir="$BATS_TEST_TMPDIR/sel-$1"
+    mkdir -p "$dir" "$BATS_TEST_TMPDIR/work"
+    cp "$BATS_TEST_DIRNAME/fixtures/selection/$1/selection.toml" "$dir/"
+    export APP_CONFIGS_SELECTION_DIR="$dir"
+    # shellcheck source=ops/lib/selection.sh
+    source "$REPO_ROOT/ops/lib/selection.sh"
+    SELECTION_REPO_ROOT="$REPO_ROOT" SELECTION_HOST="${2:-linux-cli}" SELECTION_WORK="$BATS_TEST_TMPDIR/work"
+    run --separate-stderr selection_validate
+}
+
+@test "selection_validate rejects each invalid fixture and shows the line that names the key" {
+    local case_ fixture expect
+    for case_ in "unknown-group|unknown group 'bogus'" "unknown-profile|unknown profile" \
+        "groups-without-profile|'profile' is missing" "typo-profile-key|unknown key 'profle'" \
+        "bare-group-key|unknown key 'media'"; do
+        fixture="${case_%%|*}"
+        expect="${case_#*|}"
+        validate_fixture "$fixture"
+        [ "$status" -eq 1 ] || { echo "$fixture: status $status"; return 1; }
+        [[ "$stderr" == *"$expect"* ]] || { echo "$fixture: missing '$expect' in:"; echo "$stderr"; return 1; }
+    done
+}
+
+@test "selection_validate rejects a group of the wrong type and names the option" {
+    validate_fixture wrong-type-group
+    [ "$status" -eq 1 ]
+    [[ "$stderr" == *"myConfig.groups.media"* ]]
+}
+
+@test "selection_validate accepts the valid fixtures" {
+    local f
+    for f in media-go-off all-false profile-only-personal; do
+        validate_fixture "$f"
+        [ "$status" -eq 0 ] || { echo "$f: $stderr"; return 1; }
+    done
+}
+
+@test "the preview's state, members and check expressions evaluate against the real flake (linux-cli and macos)" {
+    source "$REPO_ROOT/ops/lib/selection.sh"
+    mkdir -p "$BATS_TEST_TMPDIR/w"
+    SELECTION_REPO_ROOT="$REPO_ROOT"
+    local host
+    for host in linux-cli macos; do
+        SELECTION_HOST="$host"
+        SELECTION_ARGS=()
+        _sel_eval "$BATS_TEST_TMPDIR/w/state-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_state)" "$(_sel_expr_state)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
+        _sel_eval "$BATS_TEST_TMPDIR/w/members-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_members)" "$(_sel_expr_members)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
+        _sel_eval "$BATS_TEST_TMPDIR/w/check-$host" "$BATS_TEST_TMPDIR/w/err" "$(_sel_attr_check)" "$(_sel_expr_check)" || { cat "$BATS_TEST_TMPDIR/w/err"; return 1; }
+        grep -q "^P"$'\t' "$BATS_TEST_TMPDIR/w/state-$host"
+        [ "$(grep -c "^G"$'\t' "$BATS_TEST_TMPDIR/w/state-$host")" -eq 3 ]
+        [ "$(grep -c "^K"$'\t' "$BATS_TEST_TMPDIR/w/state-$host")" -gt 50 ]
+        grep -q "^H"$'\t' "$BATS_TEST_TMPDIR/w/members-$host"
+        [ "$(grep -c "^N"$'\t' "$BATS_TEST_TMPDIR/w/members-$host")" -eq 3 ]
+        grep -q "^G"$'\t'"media"$'\t' "$BATS_TEST_TMPDIR/w/members-$host"
+    done
+    grep -q "^C"$'\t' "$BATS_TEST_TMPDIR/w/state-macos"
+}

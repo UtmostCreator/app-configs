@@ -8,6 +8,16 @@
 # eval that carries an override of a directory other than $APP_CONFIGS_SELECTION_DIR
 # (the proposed selection). STUB_NIX_EVAL_FAIL=1 fails every state or members eval.
 printf 'nix %s\n' "$*" >>"$STUB_LOG"
+# A real Nix error: warnings first, then trace frames, the message itself last.
+nix_error() {
+  echo "warning: Git tree '/repo' is dirty" >&2
+  echo "warning: Updated input 'selection'" >&2
+  echo "error:" >&2
+  local i
+  for i in $(seq 1 45); do echo "       at /nix/store/stub-source/nix/modules/home/profile.nix:$i:1: while evaluating frame $i" >&2; done
+  echo "       error: $1" >&2
+  exit 1
+}
 FIX="${STUB_STATE_DIR:?}"
 case "${1:-}" in
   --version) echo 'nix (stub) 0'; exit 0 ;;
@@ -32,20 +42,17 @@ if [ -n "$file" ]; then
   exit 0
 fi
 if [ -n "${STUB_NIX_EVAL_FAIL:-}" ]; then
-  echo "error: stub: evaluation failure" >&2
-  exit 1
+  nix_error "stub: evaluation failure"
 fi
 dir=""
 if [ -n "$override" ]; then
   dir="${override#path:}"
   dir="${dir//%20/ }"; dir="${dir//%23/#}"; dir="${dir//%3F/?}"; dir="${dir//%25/%}"
   if [ -n "${STUB_NIX_FAIL_OVERRIDE:-}" ] && [ "$dir" != "${APP_CONFIGS_SELECTION_DIR:-}" ]; then
-    echo "error: stub: evaluating the proposed selection failed" >&2
-    exit 1
+    nix_error "stub: evaluating the proposed selection failed"
   fi
   if grep -q bogus "$dir/selection.toml" 2>/dev/null; then
-    echo "error: selection.toml: unknown key 'bogus'; known keys: profile, groups" >&2
-    exit 1
+    nix_error "selection.toml: unknown key 'bogus'; known keys: profile, groups"
   fi
 fi
 key=committed

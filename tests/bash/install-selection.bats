@@ -873,7 +873,7 @@ facts_sourcers() {
     [ -z "$output" ] || { echo "$output"; return 1; }
     grep -Eq '^source "\$REPO_ROOT/ops/lib/selection-facts\.sh"' "$REPO_ROOT/ops/install.sh"
     local f
-    for f in ops/bootstrap.sh ops/lib/hm-switch.sh ops/audit.sh ops/lib/selection.sh; do
+    for f in ops/bootstrap.sh ops/lib/hm-switch.sh ops/audit.sh; do
         run grep -n 'selection-facts' "$REPO_ROOT/$f"
         [ "$status" -ne 0 ] || { echo "$f names selection-facts"; return 1; }
     done

@@ -14,7 +14,7 @@
 # Tools handled, in order:
 #   1. preflight: required commands present
 #   2. nix          (skipped on NixOS; Determinate installer only on non-NixOS)
-#   3. base tools   (chezmoi, mise, home-manager, lefthook via nix profile)
+#   3. base tools   (chezmoi, mise, lefthook via nix profile; home-manager comes with the switch)
 #   4. nix flake check ./nix
 #   4b. install selection: a local selection file, --profile, or (on a TTY with
 #       no file) the profile and group prompts; always before chezmoi or a switch
@@ -427,11 +427,15 @@ fi
 preflight_ensure_nix_features   # no-op when the preflight already did it
 
 # ── 3. base tools ───────────────────────────────────────────────────────────
-step "Base tools (chezmoi, mise, home-manager, lefthook)"
+step "Base tools (chezmoi, mise, lefthook)"
 # Install only what is missing: re-installing a tool that is already in the
 # profile (or provided another way) makes `nix profile install` conflict.
+# home-manager is NOT installed here: Home Manager ships it itself
+# (programs.home-manager.enable), so a profile copy collides with the first
+# switch (ops/lib/hm-switch.sh). The switch runs it through `nix run` when it is
+# not on PATH, and removes a copy an earlier install left behind.
 missing_base=()
-for t in chezmoi mise home-manager lefthook; do have "$t" || missing_base+=("nixpkgs#$t"); done
+for t in chezmoi mise lefthook; do have "$t" || missing_base+=("nixpkgs#$t"); done
 if (( ${#missing_base[@]} )); then
   run nix profile install "${missing_base[@]}"
 else

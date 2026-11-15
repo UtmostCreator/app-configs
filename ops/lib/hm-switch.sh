@@ -17,8 +17,18 @@
 #
 # FLAKE_DIR is the directory holding flake.nix (a "path:" prefix is fine).
 #
-# After a failed check, HM_CHECK_MSG holds a one-line reason and HM_CHECK_FIX
-# the command that resolves it. HM_CONFLICTS holds "<element>\t<file>" lines.
+# After a failed check, HM_CHECK_MSG holds the reason (a header line, then one
+# line per colliding package with its file count) and HM_CHECK_FIX the command
+# that resolves it. HM_CONFLICTS holds "<element>\t<file>" lines.
+#
+# The one exemption: a profile element named exactly "home-manager". Home Manager
+# ships bin/home-manager itself (programs.home-manager.enable in
+# nix/lib/mkhome.nix, for every profile), and the install docs and older ops/install.sh runs put it
+# into the nix profile as a bootstrap tool, so it always collides on the first
+# switch. hm_switch removes that element (after resolving the binary it still
+# needs) and any other collision still stops, fail closed. install.sh no longer
+# installs it; with no home-manager on PATH the switch runs it through
+# `nix run nixpkgs#home-manager`.
 
 # shellcheck source=ops/lib/profile-conflicts.sh
 source "${BASH_SOURCE[0]%/*}/profile-conflicts.sh"
@@ -103,7 +113,9 @@ hm_check_conflicts() {
   if ((${#HM_CONFLICTS[@]})); then
     local pkgs
     pkgs="$(printf '%s\n' "${HM_CONFLICTS[@]}" | cut -f1 | sort -u | paste -sd' ' -)"
-    HM_CHECK_MSG="hand-installed nix-profile package(s) collide with Home Manager: ${HM_CONFLICTS[*]//$'\t'/ ships }"
+    # One line per package: "  <package>: <n> file(s), first <file>".
+    HM_CHECK_MSG="hand-installed nix-profile package(s) collide with Home Manager:"$'\n'"$(printf '%s\n' "${HM_CONFLICTS[@]}" \
+      | awk -F'\t' '{ n[$1]++; if (!($1 in first)) { first[$1] = $2; order[++k] = $1 } } END { for (i = 1; i <= k; i++) printf "  %s: %d file(s), first %s\n", order[i], n[order[i]], first[order[i]] }')"
     HM_CHECK_FIX="nix profile remove $pkgs   (Home Manager now provides it), then re-run"
     return 1
   fi
@@ -114,9 +126,18 @@ hm_check_conflicts() {
 # failing the switch. Home Manager aborts when that backup already exists, so
 # the failure message names the way out.
 hm_switch_raw() {
-  local flake_dir="$1" profile="$2" rc=0
+  local flake_dir="$1" profile="$2" rc=0 hm
   selection_args
-  home-manager switch -b "$HM_BACKUP_EXT" --flake "$flake_dir#$profile" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} || rc=$?
+  # HM_BIN: a binary hm_switch resolved before removing the profile element that
+  # provided it. No home-manager at all (a fresh machine): run it from nixpkgs.
+  if [[ -n "${HM_BIN:-}" ]]; then
+    hm=("$HM_BIN")
+  elif command -v home-manager >/dev/null 2>&1; then
+    hm=(home-manager)
+  else
+    hm=(nix run nixpkgs#home-manager --)
+  fi
+  "${hm[@]}" switch -b "$HM_BACKUP_EXT" --flake "$flake_dir#$profile" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} || rc=$?
   if ((rc == 0)); then
     return 0
   fi
@@ -126,10 +147,36 @@ hm_switch_raw() {
   return "$rc"
 }
 
+# True when every colliding element is the bootstrap "home-manager" (see the
+# header). HM_CONFLICTS must be non-empty.
+_hm_only_bootstrap_conflicts() {
+  local c
+  for c in "${HM_CONFLICTS[@]}"; do
+    [[ "${c%%$'\t'*}" == home-manager ]] || return 1
+  done
+  return 0
+}
+
 hm_switch() {
   local status=0 attr
   attr="$(hm_attr "$2")" || return 1
   hm_check_conflicts "$1" "$attr" || status=$?
+  if ((status == 1)) && _hm_only_bootstrap_conflicts; then
+    # Only the bootstrap home-manager collides: Home Manager provides it from now
+    # on. Keep the binary (its store path stays valid) for this switch, then drop
+    # the element so the switch can install home-manager-path.
+    local hm_path
+    hm_path="$(command -v home-manager 2>/dev/null || true)"
+    if [[ -n "$hm_path" ]] && hm_path="$(readlink -f "$hm_path")" && [[ -x "$hm_path" ]]; then
+      HM_BIN="$hm_path"
+    fi
+    printf >&2 '%s\n' "[hm-switch] the profile's home-manager collides with the one Home Manager now provides; removing it first (nix profile remove home-manager)"
+    nix profile remove home-manager || {
+      printf >&2 '%s\n  Fix: nix profile remove home-manager, then re-run\n' "could not remove the bootstrap home-manager from the nix profile"
+      return 1
+    }
+    status=0
+  fi
   if ((status)); then
     printf >&2 '%s\n  Fix: %s\n' "$HM_CHECK_MSG" "$HM_CHECK_FIX"
     return 1

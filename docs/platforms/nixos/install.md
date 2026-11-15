@@ -23,8 +23,13 @@ two adaptations (node and `vars/default.nix`, both noted below).
 - Install the base tools into your user profile (once):
 
   ```bash
-  nix profile install nixpkgs#chezmoi nixpkgs#mise nixpkgs#home-manager nixpkgs#lefthook
+  nix profile install nixpkgs#chezmoi nixpkgs#mise nixpkgs#lefthook
   ```
+
+  Do not install `home-manager` here: Home Manager ships it itself, so a
+  profile copy collides with the first switch. `ops/install.sh` runs the first
+  switch through `nix run nixpkgs#home-manager` and removes a copy an earlier
+  run left behind.
 
 - Fill in `nix/vars/default.nix`: replace every `REPLACE_ME` with your real
   username and home directory (`/home/<you>`). Home Manager cannot build

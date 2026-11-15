@@ -143,6 +143,10 @@ fi
 log "Rebuild cmd: nixos-rebuild $REBUILD_VERB ${FLAKE_ARG:-(non-flake)} (validated first with nixos-rebuild dry-build)"
 
 SYSTEM_TIMEZONE="${SYSTEM_TIMEZONE:-Europe/London}"
+# The zone is written into Nix text, so it must look like Area/City (or UTC):
+# letters, digits, _ + - in slash-separated parts, no empty part.
+[[ "$SYSTEM_TIMEZONE" =~ ^[A-Za-z0-9_+-]+(/[A-Za-z0-9_+-]+)*$ ]] \
+  || fail "invalid SYSTEM_TIMEZONE '$SYSTEM_TIMEZONE' (expected Area/City, for example Europe/London or America/Los_Angeles)"
 cur_timezone="$(bash "$SCRIPT_DIR/detect-timezone.sh")"
 
 # Docker daemon (system service). A NixOS flake in /etc/nixos evaluates in PURE
@@ -260,9 +264,14 @@ note_disabled nix.gc "$gc_disabled_re"
 need_fish=1; need_trusted=1; need_gc=1; need_timezone=1
 # nix-ld (NixOS-WSL only): user-owned when configuration.nix assigns it at all.
 need_nixld=0
+need_flakes=0
 if (( IS_WSL == 1 )); then
   need_nixld=1
   in_sys "$(opt_set programs.nix-ld.enable)" && need_nixld=0
+  # Flakes for ops/install.sh and sys-update; a list option, so a user-owned
+  # setting is left alone rather than merged.
+  need_flakes=1
+  in_sys 'nix\.settings\.experimental-features|experimental-features\s*=' && need_flakes=0
 fi
 in_sys "$(opt_set programs.fish.enable)" && need_fish=0
 in_sys "$(trusted_re)" && need_trusted=0
@@ -313,7 +322,9 @@ fi
 if (( IS_WSL == 1 )); then
   have_wsl=0
   { in_module "${WSL_MODULE_NAME//./\\.}" && [[ -f "$WSL_MODULE_DST" ]] \
-    && cmp -s "$WSL_MODULE_SRC" "$WSL_MODULE_DST"; } && have_wsl=1
+    && cmp -s "$WSL_MODULE_SRC" "$WSL_MODULE_DST" \
+    && in_module 'environment\.systemPackages[^[]*\[[^]]*\bgit\b[^]]*\bcurl\b' \
+    && { (( need_flakes == 0 )) || in_module 'experimental-features'; }; } && have_wsl=1
 fi
 
 # Apply-mode environment. A real run needs root. The bats fixture run (APPLY_SEAM)
@@ -400,6 +411,15 @@ SNIPPET="$(mktemp)"
     echo "  # Lets prebuilt binaries (the claude and codex CLIs) run on NixOS-WSL."
     echo "  programs.nix-ld.enable = true;"
   }
+  (( IS_WSL == 1 )) && {
+    echo "  # A bare NixOS-WSL has no git or curl, which ops/install.sh, ops/doctor.sh and"
+    echo "  # sys-update need before Home Manager exists."
+    echo "  environment.systemPackages = with pkgs; [ git curl ];"
+  }
+  (( need_flakes == 1 )) && {
+    echo "  # Flakes for ops/install.sh and sys-update."
+    echo "  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" ];"
+  }
   (( need_fish == 1 ))    && {
     echo "  programs.fish.enable = true;"
     echo "  users.users.\"${USER_NAME}\".shell = pkgs.fish;"
@@ -476,6 +496,8 @@ snapshot_state() {
 # and import it from configuration.nix if not already imported. ($MODULE is
 # defined near the top alongside the detection logic.)
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+# Two runs in the same second must not share a backup dir or .bak names.
+while [[ -e "${NIXOS_DIR%/}.app-configs-backup-${STAMP}" || -e "${SYS}.bak-${STAMP}" ]]; do STAMP="${STAMP}x"; done
 snapshot_state
 cp -a "$SYS" "${SYS}.bak-${STAMP}" || fail "backup failed"
 CREATED_FILES+=("${SYS}.bak-${STAMP}")

@@ -521,3 +521,80 @@ prepare_existing() {
   [[ "$output" != *"switch --rollback"* ]]
   [ "$(sed -n 2p "$REBUILD_LOG")" = "boot --flake $FIX#nixos" ]
 }
+
+# -- bare NixOS-WSL needs system tools before Home Manager exists ---------------
+# ops/install.sh:312 (git, fatal), ops/doctor.sh:73 (bash git curl, run by install
+# and the pre-commit hook), ops/update-all.sh:817 (git nix chezmoi). A stock
+# NixOS-WSL has no git; the desktop gets it from its own /etc/nixos.
+
+@test "wsl report: git and curl are system packages, and flakes are enabled" {
+  run_wsl
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"environment.systemPackages = with pkgs; [ git curl ];"* ]]
+  [[ "$output" == *'nix.settings.experimental-features = [ "nix-command" "flakes" ];'* ]]
+}
+
+@test "wsl report: an experimental-features setting in configuration.nix is user-owned" {
+  WSL_CFG="${WSL_STOCK%\}}  nix.settings.experimental-features = [ \"nix-command\" \"flakes\" \"ca-derivations\" ];
+}" run_wsl
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"experimental-features"* ]]
+  [[ "$output" == *"environment.systemPackages = with pkgs; [ git curl ];"* ]]
+}
+
+@test "desktop report: no git or curl package and no experimental-features line" {
+  printf '{ }\n' > "$FIX/configuration.nix"
+  run env HOST_PROFILE=linux-desktop SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
+    USER_NAME=alice SYSTEM_TIMEZONE=Europe/London bash "$REPO_ROOT/ops/system-setup.sh"
+  [[ "$output" != *"systemPackages"* ]]
+  [[ "$output" != *"experimental-features"* ]]
+}
+
+@test "wsl apply: the tools are written, and a second run finds everything already present" {
+  apply_setup
+  printf '%s\n' "$WSL_STOCK" > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  grep -qF 'environment.systemPackages = with pkgs; [ git curl ];' "$FIX/app-configs-extra.nix"
+  : > "$REBUILD_LOG"
+  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [[ "$output" == *"All recommended system settings already present."* ]] || { echo "$output"; return 1; }
+  [[ "$output" != *"Would add"* ]]
+}
+
+@test "wsl apply: a module written before the tools were added is rewritten" {
+  apply_setup
+  printf '%s\n' "$WSL_STOCK" > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  # What the previous version wrote: same module, no tools.
+  grep -vE 'systemPackages|experimental-features|# git and curl|# Flakes' "$FIX/app-configs-extra.nix" > "$BATS_TEST_TMPDIR/old-extra.nix"
+  cp "$BATS_TEST_TMPDIR/old-extra.nix" "$FIX/app-configs-extra.nix"
+  run_apply HOST_PROFILE=wsl USER_NAME="$(id -un)"
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [[ "$output" == *"Would add"* ]]
+  grep -qF 'environment.systemPackages = with pkgs; [ git curl ];' "$FIX/app-configs-extra.nix"
+}
+
+@test "SYSTEM_TIMEZONE overrides the Europe/London default and is validated" {
+  run_wsl SYSTEM_TIMEZONE=America/Los_Angeles
+  [ "$status" -eq 0 ]
+  [[ "$output" == *'time.timeZone = lib.mkForce "America/Los_Angeles";'* ]]
+  run_wsl SYSTEM_TIMEZONE=UTC
+  [[ "$output" == *'time.timeZone = lib.mkForce "UTC";'* ]]
+  local bad
+  for bad in 'Europe/London"; boot.x = 1; "' 'a b' '../etc' '/Europe/London' 'Europe//London'; do
+    run_wsl SYSTEM_TIMEZONE="$bad"
+    [ "$status" -ne 0 ] || { echo "accepted: '$bad'"; return 1; }
+    [[ "$output" == *"invalid SYSTEM_TIMEZONE"* ]] || { echo "no message for '$bad': $output"; return 1; }
+    [[ "$output" != *"Would add"* ]]
+  done
+}
+
+@test "SYSTEM_TIMEZONE default stays Europe/London when unset" {
+  printf '%s\n' "$WSL_STOCK" > "$FIX/configuration.nix"
+  run env -u SYSTEM_TIMEZONE HOST_PROFILE=wsl SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" USER_NAME=alice \
+    bash "$REPO_ROOT/ops/system-setup.sh"
+  [[ "$output" == *'time.timeZone = lib.mkForce "Europe/London";'* ]]
+}

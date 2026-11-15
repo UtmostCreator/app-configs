@@ -169,3 +169,103 @@ new_repo() {
     [ "$status" -eq 1 ]
     grep -Eq '^[[:space:]]*#[[:space:]]*followTags[[:space:]]*=[[:space:]]*true' "$BATS_FILE_TMPDIR/gitconfig"
 }
+
+# --- git up: no autostash, refuses a dirty tree (stash is shared by every worktree)
+
+# up_fixture: bare remote, a work clone (cwd) and a second clone that can push.
+up_fixture() {
+    git init -q --bare -b main "$BATS_TEST_TMPDIR/remote.git"
+    git clone -q "$BATS_TEST_TMPDIR/remote.git" "$BATS_TEST_TMPDIR/work" 2>/dev/null
+    git clone -q "$BATS_TEST_TMPDIR/remote.git" "$BATS_TEST_TMPDIR/other" 2>/dev/null
+    cd "$BATS_TEST_TMPDIR/work"
+    git checkout -q -b main 2>/dev/null || true
+    printf 'base\n' >f.txt; git add f.txt; git commit -qm base
+    git push -q -u origin main 2>/dev/null
+    git -C "$BATS_TEST_TMPDIR/other" pull -q origin main 2>/dev/null
+}
+
+# remote_commit FILE CONTENT MSG: commit and push from the second clone.
+remote_commit() {
+    printf '%s\n' "$2" >"$BATS_TEST_TMPDIR/other/$1"
+    git -C "$BATS_TEST_TMPDIR/other" add "$1"
+    git -C "$BATS_TEST_TMPDIR/other" commit -qm "$3"
+    git -C "$BATS_TEST_TMPDIR/other" push -q origin HEAD:main 2>/dev/null
+}
+
+no_stash() {
+    [ -z "$(git stash list)" ]
+    ! git rev-parse --verify -q refs/stash >/dev/null
+}
+
+@test "up on a clean tree pulls and rebases" {
+    up_fixture
+    printf 'mine\n' >mine.txt; git add mine.txt; git commit -qm mine
+    remote_commit theirs.txt theirs "their change"
+    run git up
+    [ "$status" -eq 0 ]
+    [ -f theirs.txt ]
+    [ "$(git log -1 --format=%s)" = "mine" ]
+    no_stash
+}
+
+@test "up refuses a dirty tree (modified, staged or untracked), changing nothing" {
+    up_fixture
+    remote_commit theirs.txt theirs "their change"
+    local kind
+    for kind in modified staged untracked; do
+        git reset -q --hard; git clean -fdq
+        case "$kind" in
+            modified)  echo more >>f.txt ;;
+            staged)    echo more >>f.txt; git add f.txt ;;
+            untracked) echo new >new.txt ;;
+        esac
+        before="$(git status --porcelain)"; head_before="$(git rev-parse HEAD)"
+        run git up
+        [ "$status" -ne 0 ]
+        [[ "$output" == *"working tree not clean"* ]]
+        [ "$(git status --porcelain)" = "$before" ]
+        [ "$(git rev-parse HEAD)" = "$head_before" ]
+        [ ! -f theirs.txt ]
+        no_stash
+    done
+}
+
+@test "a conflicting up stops in the rebase and leaves the stash list empty" {
+    up_fixture
+    printf 'mine\n' >f.txt; git commit -qam "mine edits f"
+    remote_commit f.txt theirs "their edit of f"
+    run git up
+    [ "$status" -ne 0 ]
+    [ -d "$(git rev-parse --git-path rebase-merge)" ] || [ -d "$(git rev-parse --git-path rebase-apply)" ]
+    no_stash
+}
+
+@test "aborting an interrupted up rebase restores the tree and keeps the stash list unchanged" {
+    up_fixture
+    printf 'mine\n' >f.txt; git commit -qam "mine edits f"
+    head_before="$(git rev-parse HEAD)"
+    remote_commit f.txt theirs "their edit of f"
+    run git up
+    [ "$status" -ne 0 ]
+    run git rebase --abort
+    [ "$status" -eq 0 ]
+    [ -z "$(git status --porcelain)" ]
+    [ "$(git rev-parse HEAD)" = "$head_before" ]
+    no_stash
+}
+
+@test "autostash is off: rebase.autoStash=false, merge.autoStash unset, no --autostash in an alias" {
+    [ "$(git config --global --get rebase.autoStash)" = "false" ]
+    run git config --global --get merge.autoStash
+    [ "$status" -eq 1 ]
+    run git config --global --get-regexp '^alias\.' 
+    [[ "$output" != *"--autostash"* ]]
+}
+
+@test "stash aliases stay for humans, with a comment saying agents must not stash" {
+    local a
+    for a in sl ss sst sp sa stashp stashk stashs stashb fstash; do
+        git config --global --get "alias.$a" >/dev/null
+    done
+    grep -qiE '^[[:space:]]*#.*humans? only.*(agents?|AGENTS\.md)' "$BATS_FILE_TMPDIR/gitconfig"
+}

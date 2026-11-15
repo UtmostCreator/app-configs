@@ -29,7 +29,7 @@ Evidence labels: VERIFIED (checked in the repo or by nix eval), WEB (fetched
 ## 2. What changed since the docs were written (last commit 2026-10-22)
 
 VERIFIED with nix eval on the root nixpkgs input (lock node nixpkgs_2, e126e9e7,
-lastModified 2026-11-15). Lock node 674a202 is a different, non-root node.
+lastModified 2026-11-13; 2026-11-15 is the HM node a1293da7). Lock node 674a202 is a different, non-root node.
 
 Package versions in the pinned nixpkgs:
 
@@ -66,7 +66,7 @@ T-0033 owns these fixes; this file does not edit them.
 
 | Where | Stale claim |
 |---|---|
-| `docs/plans/migration/overview.md` (lines 79 and 127) | Treats the greeter as a pre-decision. The audit and T-0032 (niri trial session, not yet committed) defer it and keep GDM. |
+| `docs/plans/migration/overview.md` (lines 46-53, the "Decisions required before implementation" list; line 48 is "Display manager: Ly or greetd/tuigreet"; lines 79 and 127 follow from it) | Treats the greeter as a pre-decision. The audit and T-0032 (niri trial session, not yet committed) defer it and keep GDM. |
 | `docs/plans/migration/overview.md` (line 71) | "Narrow rule 6" omits rule 11 (xdg allowlist, `ops/validate-config.sh` lines 583-617) and rule 13 (--eval, starts at line 782). |
 | `docs/research/niri-vs-hyprland.md` (lines 46, 69-70) and `docs/plans/hyprland-migration.md` (line 339) | Reference niri-flake `programs.niri.settings`, now outdated. |
 | `docs/plans/hyprland-migration.md` | Rule 9 and 10 line refs are stale: rule 9 now starts at line 536, rule 10 at 563 in `ops/validate-config.sh`. |
@@ -93,44 +93,52 @@ T-0033 owns these fixes; this file does not edit them.
   launcher, lock, idle, OSD, wallpaper, clipboard history, tray) into 1-2
   (ESTIMATE).
 - Night light and the polkit agent were not found built in (unverified).
-- Overlap with Vicinae (launcher and clipboard): DECIDED, keep Vicinae as the
-  owner and disable the selected shell's own launcher and clipboard bindings.
-  Rofi 2.x (official Wayland support merged, WEB) is the lightweight or
-  programmable fallback launcher.
-- Noctalia's GUI can rewrite its config.toml at runtime, which needs an ownership
-  decision.
-- Its unit targets graphical-session.target, so it would also start under GNOME
-  unless bound to the niri session.
+- Launcher and clipboard overlap: DECIDED, Vicinae stays the launcher, and the
+  selected shell's own launcher and clipboard bindings are disabled rather than
+  removing Vicinae. Rofi 2.x (official Wayland support merged, WEB) is the
+  lightweight or programmable fallback. Which component owns clipboard history is
+  NOT decided (one owner is required; see Ownership). Recommended: Vicinae.
+- Noctalia's GUI can rewrite its config.toml at runtime (WEB, not re-checked),
+  which needs an ownership decision.
+- Unit targets: both Noctalia's and Dux's systemd units default to
+  graphical-session.target, so each would also start under GNOME unless bound to
+  the niri session (Noctalia: INFERRED from the module defaults; Dux: pinned
+  nixpkgs module default).
 - Trial order (DECIDED): test the already-pinned Dux Modular Shell first (dux-shell
-  2.1.2, formerly DankMaterialShell, renamed upstream on 2026-10-20 to
-  duxlabs-dev/dux-shell), then Noctalia second. Compare them in a real NixOS
+  2.1.2, formerly DankMaterialShell, renamed upstream to duxlabs-dev/dux-shell with
+  v2.0.0 on 2026-10-20, WEB), then Noctalia second. Compare them in a real NixOS
   integration trial before choosing the permanent shell; the scores are too close
   to decide on paper. Waybar 0.16 with SwayNC, swaylock and swayidle (all HM
   modules) is the modular fallback.
 - Dux's reproducibility advantage: a declarative Nix integration and a plugin
   lockfile that pins plugin git commits (WEB, not re-checked in this repo). A
-  lockfile is not the same as keeping plugins inside the Nix closure; whether the
-  plugins are fetched at runtime is unverified.
-- Caveat: in nixpkgs, dux-shell has a NixOS module only (no upstream HM module
-  found), so HM ownership of the shell would need an unverified integration.
+  lockfile is not the same as keeping plugins inside the Nix closure. The pinned
+  nixpkgs `programs.dux-shell.plugins.<name>.src` option installs plugins from Nix
+  sources rather than fetching at runtime, which is the closure-friendly path
+  (option name from the researcher's eval; it is not re-checked here).
+- Conflict with the user's ownership guidance: see Ownership and decision 8.
 
-### Ownership (DECIDED)
+### Ownership
 
-- NixOS owns nixosConfigurations and the compositor and session config.
-- Home Manager owns the selected shell, Vicinae and the user config.
-- Exactly ONE owner each for notifications, clipboard history, lock/idle and
-  polkit authentication. The trial must disable the duplicates the selected
-  shell brings.
+- User guidance (user, 2026-11-15): "Keep nixosConfigurations and the
+  compositor/session configuration under the NixOS system layer. Use Home Manager
+  to own the selected shell, Vicinae and user configuration."
+- DECIDED by the user: exactly ONE owner each for notifications, clipboard history,
+  lock/idle and polkit authentication. The trial must disable the duplicates the
+  selected shell brings. Which component is the one owner is open per item.
+- OPEN conflict: dux-shell has only a NixOS module in the pinned nixpkgs (its HM
+  module is upstream-only), so "Home Manager owns the shell" does not fit Dux-first
+  as packaged today (decision 8).
 
 ### (c) Components
 
 | GNOME piece | niri replacement | Owner |
 |---|---|---|
 | gnome-keybindings dconf (16 bindings, Cyrillic twins) | niri binds in KDL | T-0031, T-0032 |
-| vicinae-toggle-app, focus-tracker, resize and vscode-recent-projects D-Bus helpers | niri IPC; no minimise or scratchpad in niri 26.04 | T-0031 |
+| vicinae-toggle-app, focus-tracker, resize and vscode-recent-projects D-Bus helpers | niri IPC; no minimise or scratchpad in niri 26.04 (T-0031 classes it as PARTLY) | T-0031 |
 | vicinae GNOME extension | Dropped (Vicinae uses niri IPC) | T-0031 |
 | appindicator | The shell tray | shell choice |
-| flameshot | Portal Screenshot API; the multi-monitor fix is not in 26.04, so reproduce first. Alternatives: niri's screenshot action, or grim+slurp+satty | T-0032 |
+| flameshot | Portal Screenshot API; the multi-monitor fix is not in 26.04 (T-0032, PARTLY), so reproduce first. Alternatives: niri's screenshot action, or grim+slurp+satty | T-0032 |
 | wl-clipboard | Unchanged | |
 | default-apps, mimeapps | Unchanged | |
 | gnome-files dconf | Keep | |
@@ -143,8 +151,9 @@ T-0033 owns these fixes; this file does not edit them.
 
 ### (d) Validator (T-0030)
 
-- Rule 6 also checks programs.* in NixOS modules, so `programs.niri` and
-  `programs.noctalia` fail today. HM `programs.noctalia` needs the allowlist too.
+- Rule 6 also checks programs.* in NixOS modules, so `programs.niri`,
+  `programs.noctalia` and `programs.dux-shell` fail today (its name regex accepts
+  hyphens, so dux-shell is matched; INFERRED from reading rule 6, not run). HM `programs.noctalia` needs the allowlist too.
 - Rule 11 needs the niri config.kdl and noctalia config.toml targets, plus rule 13.
 - One owner each for the niri package, units, xwayland-satellite and portals.
 
@@ -168,11 +177,16 @@ Recommendation: no selection group for the trial.
 
 ## 5. Complexity reassessment (2026-11-15)
 
-Verdict: ROUGHLY THE SAME, BUT SHIFTED. It did not drop.
+Answer: in the shell layer, complexity dropped. Overall, the estimated effort rose
+modestly (about +50% in total), mostly because work that the earlier estimate did
+not count is now counted (validator, window actions, selection plumbing). On the
+rows both estimates share, effort is about the same (2-3 + 3-6 + 2-4 = 7-13 vs
+6-12). The complexity has shifted from assembling a desktop to owning the system
+layer and the window helpers.
 
 Dropped:
 
-- One shell replaces 5-7 hand-assembled pieces.
+- One shell replaces about 7-8 pieces (see 4b) with 1-2 (ESTIMATE).
 - Upstream NixOS and HM modules exist, with build-time config validation.
 - No niri-flake is needed; waybar has niri modules as a fallback.
 - The Hyprland churn is out of the decision.
@@ -182,30 +196,43 @@ Rose:
 - The NixOS layer is still outside the flake, now with the GNOME 51 jump.
 - A real validator rescope (rules 6, 11 and 13).
 - T-0042's selection and preview are HM-only.
-- The window-action rewrite (no minimise or scratchpad).
-- Noctalia's youth: v5 stable is about 10 weeks old, and its modules are
-  maintained by different people.
+- The window-action rewrite (no minimise or scratchpad in niri 26.04; T-0031 PARTLY).
+- Shell youth: Noctalia v5 stable is about 10 weeks old (WEB: 5.0.1 around
+  2026-09-03), and its modules are maintained by different people (WEB, not
+  re-checked).
 - New one-owner conflicts: Vicinae, and the runtime rewriting of config.toml.
-- The flameshot gap on niri 26.04.
+- The flameshot gap on niri 26.04 (T-0032 PARTLY).
 
 Effort (ESTIMATE, days; "before" is the audit's estimates):
 
-| Workstream | Before | After |
-|---|---|---|
-| NixOS ownership (T-0029) | 1-2 | 2-3 |
-| Validator (T-0030) | not estimated | 0.5-1 |
-| niri minimal session (T-0032) | 3-8 | 3-6 |
-| Window actions (T-0031) | not estimated | 2-4 (+2-4 for hide emulation) |
-| Shell | hand-built, 5-7 pieces | +2-4 with Noctalia, or about +4-6 with Waybar+SwayNC |
-| Selection plumbing (T-0042) | none | 1-2, only if selectable |
-| Total | about 6-12 | about 9-17 |
+| Workstream | Before | After | In shared rows |
+|---|---|---|---|
+| NixOS ownership (T-0029) | 1-2 | 2-3 | yes |
+| niri minimal session (T-0032) | 3-8 | 3-6 | yes |
+| Window actions (T-0031) | not estimated | 2-4 | yes |
+| Validator (T-0030) | not estimated | 0.5-1 | no |
+| Shell, Noctalia path | hand-built, 7-8 pieces | +2-4 | no |
+| Shell, Waybar+SwayNC path (instead of Noctalia) | hand-built, 7-8 pieces | about +4-6 | no |
+| Shell, Dux path | not estimated | not estimated | no |
+| Two-shell comparison in the trial (Dux and Noctalia) | none | +1-2 for the second shell | no |
+| Hide emulation (optional) | none | +2-4 | no |
+| Selection plumbing (T-0042, optional) | none | 1-2 | no |
 
-Reading: shell and compositor config got cheaper; ownership, validator,
-selection and window-action work got more explicit. The effort is about the same,
-shifted from "assemble a desktop" to "own the system layer and the window
-helpers".
+Totals:
 
-## 6. Phases with gates
+- Before: about 6-12 (the audit's total; its per-row figures are the ones in the
+  table).
+- Same-rows comparison: after 2-3 (T-0029) + 3-6 (T-0032) + 2-4 (T-0031) = 7-13,
+  against the audit's 6-12. This is the comparison used in the answer above.
+- After, core: 2-3 + 0.5-1 + 3-6 + 2-4 + 2-4 (Noctalia shell) = 9.5-18. This
+  excludes the Dux row (not estimated), the shell comparison, hide emulation and
+  selection plumbing.
+- After, with the optional rows (comparison 1-2, hide emulation 2-4, selection
+  1-2): 13.5-26.
+- Earlier "about 9-17" was a rounded figure for the core; use 9.5-18.
+- Core midpoint 13.75 against 9 is about +50%.
+
+## 6. Phases## 6. Phases with gates
 
 | Phase | Work | Gate |
 |---|---|---|
@@ -214,6 +241,7 @@ helpers".
 | P2 | T-0031 | The spec, plus the GNOME helper refactor, with GNOME behaviour unchanged. |
 | P3 | T-0032 | The niri session is built, defaultSession pinned to GNOME, drvPath baseline recorded. |
 | P4 | Shell choice | Decision gate, from the Dux-first, Noctalia-second integration comparison. |
+| P4b | Activation gate | Activate the flake-owned NixOS config (and the GNOME 50.1 to 51.0 jump) on the live host. Needs its own user approval and a rollback check (boot the previous generation) first. P0-P3 are build only. |
 | P5 | Daily use | 2-4 weeks, with T-0032's checklist plus the trial checklist below. |
 | P6 | Cutover | A separate decision. |
 
@@ -226,29 +254,48 @@ sleep/resume.
 - The GNOME 51 jump.
 - The flameshot portal gap.
 - The hybrid GPU on nouveau.
-- Shell youth: Noctalia v5 stable is about 10 weeks old with its runtime config rewriting; Dux was renamed on 2026-10-20.
+- Shell youth: Noctalia v5 stable is about 10 weeks old (WEB) with runtime config rewriting; Dux was renamed with v2.0.0 on 2026-10-20 (WEB).
+- Both shell units default to graphical-session.target and would also start under GNOME unless bound to the niri session.
+- Validator rule 6 rejects `programs.niri`, `programs.noctalia` and `programs.dux-shell` until rescoped.
+- Dux plugin supply: a lockfile pins commits but is not the Nix closure; use `programs.dux-shell.plugins.<name>.src` to keep them in it.
+- Activation: the live host moves to the flake-owned NixOS config and GNOME 51.0 at P4b, not at the build-only gates.
 - The Vicinae overlap.
 - The T-0042 plumbing.
 - Validator duplicates.
 
 ## 8. Decisions
 
-Decided by the user:
+DECIDED by the user:
 
-1. Keep Vicinae as the launcher and clipboard owner; Rofi 2.x is the fallback.
-2. The T-0032 trial tests Dux first, Noctalia second, then chooses the
-   permanent shell from the comparison. Waybar+SwayNC is the fallback.
-3. Proposed amendment for T-0032 (owned by another session, not edited here):
-   extend it with the shell comparison, and open a separate implementation
-   ticket only after a shell is chosen. That session decides whether to adopt it.
+1. Vicinae stays the launcher; Rofi 2.x is the fallback. The selected shell's
+   redundant launcher bindings are disabled rather than removing Vicinae.
+2. Shell trial: Dux first, then Noctalia, compared in a real NixOS integration
+   trial before choosing. Waybar+SwayNC is the fallback.
+3. Exactly one owner each for notifications, clipboard history, lock/idle and
+   polkit authentication.
+4. T-0032 is extended with the shell comparison, with a separate implementation
+   ticket only after a shell is chosen. This is a proposed amendment for the
+   session that owns T-0032 to adopt; it is not edited here.
+5. This plan lives at docs/plans/niri-migration.md.
 
-Still open (recommendation first):
+User guidance, not a closed decision (user, 2026-11-15): NixOS owns
+nixosConfigurations and the compositor and session config; Home Manager owns the
+selected shell, Vicinae and user config.
 
-4. niri config owner: a plain xdg.configFile plus `niri validate` (recommended),
+Open (recommendation first):
+
+6. niri config owner: a plain xdg.configFile plus `niri validate` (recommended),
    or the HM module with its package, portal and xwayland-satellite options nulled.
-5. Screenshot path: reproduce flameshot first.
-6. Window hide on niri: the portable contract only, or an emulation (+2-4 d).
-7. Land T-0029 first, accepting the GNOME 50.1 to 51.0 bump (recommended: yes).
+7. Screenshot path: reproduce flameshot first.
+8. Dux ownership conflict with the guidance above. Options: use the NixOS module
+   for the Dux trial (recommended for the trial, since it is what is packaged);
+   use the upstream HM module (a new flake input); or HM-manage only its config
+   files.
+9. Window hide on niri: the portable contract only, or an emulation (+2-4 d).
+10. Land T-0029 first, accepting the GNOME 50.1 to 51.0 bump (recommended: yes),
+    and approve the P4b activation separately.
+11. Which component owns each of the four single-owner items. Recommended for
+    clipboard history: Vicinae.
 
 Recommended, not yet confirmed: Hyprland parked and retired after the trial; no
 T-0042 selection group for the trial; keep GDM.
@@ -258,8 +305,8 @@ T-0042 selection group for the trial; keep GDM.
 - Runtime niri on this GPU and on DP-3.
 - Ctrl+Space and the ru-layout bindings under niri.
 - The Vicinae extension at runtime on GNOME 51 (metadata supports it; not run).
+- niri's default config spawning waybar: WEB-verified (niri v26.04 default-config.kdl has an active spawn-at-startup "waybar"), so a trial must account for it.
 - Noctalia's night light, polkit agent and niri page.
-- That niri's default config spawns waybar.
 - dux-shell's details and its upstream HM module.
 - The rule 13 line numbers beyond its start (line 782 re-checked in this worktree).
 - The researcher ran no flake check or bats.

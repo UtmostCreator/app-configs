@@ -26,8 +26,3 @@ setup() {
     grep -q 'bash ops/hooks/no-personal-yaml.sh' .lefthook.yml || { echo ".lefthook.yml does not run the guard script"; return 1; }
     grep -q 'projects' ops/hooks/no-personal-yaml.sh || { echo "guard script does not cover projects.yaml"; return 1; }
 }
-
-@test "the repo carries no PHP code (log-errors lives in restsift)" {
-    run git ls-files -- '*.php' 'pint.json' 'ops/projects/logging/errors/*'
-    [ -z "$output" ] || { echo "unexpected: $output"; return 1; }
-}

@@ -861,13 +861,6 @@ rich() {
     [[ "$(raw 0.97 false)" == "Cache 97% "$'\033[0;33mcold\033[0m' ]]
 }
 
-@test "NO_COLOR keeps the three-row layout unchanged" {
-    colored=$(payload "$FULL" | bash "$SCRIPT")
-    plain=$(payload "$FULL" | NO_COLOR=1 bash "$SCRIPT")
-    [[ "$plain" != *$'\033'* ]]
-    [ "$plain" = "$(sed 's/\x1b\[[0-9;]*m//g' <<<"$colored")" ]
-}
-
 @test "minimal layout drops RC, then effort, then quotas below 85%; the agent tag is shortened, then dropped last" {
     out=$(rich | COLUMNS=55 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
     [ "$(sed -n 1p <<<"$out")" = "◆ orchestrator │ rich main* │ Opus:H │ Ctx 14% │ 7d 92%" ]

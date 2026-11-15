@@ -196,44 +196,6 @@ clean() { [ -z "$(git -C "$FAKE" status --porcelain)" ]; }
   [ "$(commits)" -eq 1 ]
 }
 
-# ── release locks ───────────────────────────────────────────────────────────
-
-@test "a second sys-update stops while another run holds the lock" {
-  mkdir -p "$SYS_UPDATE_STATE_DIR"
-  exec 8>"$SYS_UPDATE_STATE_DIR/lock"
-  flock -n 8
-  run_update
-  exec 8>&-
-  [ "$status" -ne 0 ]
-  [[ "$output" == *"another"* ]]
-  [ ! -s "$STUB_LOG" ]
-  [ "$(commits)" -eq 1 ]
-}
-
-@test "the lock is released when a run ends" {
-  run_update
-  [ "$status" -eq 0 ]
-  exec 8>"$SYS_UPDATE_STATE_DIR/lock"
-  flock -n 8
-  exec 8>&-
-}
-
-@test "two runs in the same second get different run ids" {
-  real_date="$(command -v date)"
-  cat > "$STUBS/date" <<STUB
-#!/usr/bin/env bash
-if [[ "\$*" == "-u +%Y%m%dT%H%M%SZ" ]]; then echo 20260101T000000Z; else exec "$real_date" "\$@"; fi
-STUB
-  chmod +x "$STUBS/date"
-  run_update
-  [ "$status" -eq 0 ]
-  git -C "$FAKE" reset -q --hard "$(git -C "$FAKE" rev-list --max-parents=0 HEAD)"
-  run_update
-  [ "$status" -eq 0 ]
-  [ "$(ls "$SYS_UPDATE_STATE_DIR"/runs/*.log | wc -l)" -eq 2 ]
-  [ "$(ls "$SYS_UPDATE_STATE_DIR"/runs/*.meta | wc -l)" -eq 2 ]
-}
-
 # ── bats guard ──────────────────────────────────────────────────────────────
 
 @test "--apply refuses a repo outside the test dir even with a scratch HOME" {

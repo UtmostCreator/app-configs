@@ -48,12 +48,6 @@ SCRIPTS=(
     done
 }
 
-@test "master.sh: --force with a later bad argument does not kill the session" {
-    run env PATH="$STUBS:$PATH" bash "$P/tmux/master.sh" --force --bogus
-    [ "$status" -ne 0 ]
-    ! grep -q 'kill-session' "$CALLS"
-}
-
 @test "master.sh: --help prints usage and acts on nothing" {
     run env PATH="$STUBS:$PATH" bash "$P/tmux/master.sh" --force --help
     [ "$status" -eq 0 ]

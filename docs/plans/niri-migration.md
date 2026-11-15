@@ -82,7 +82,7 @@ T-0033 owns these fixes; this file does not edit them.
   darwinConfigurations only on the Apple side). T-0029 is a hard prerequisite.
   Moving the host to the flake also bumps the GNOME fallback from 50.1 to 51.0,
   which itself needs re-checking.
-- The polkit agent is not provided by `programs.niri`. Noctalia: unverified.
+- The polkit agent is not provided by `programs.niri`. Noctalia: unverified (the user-supplied audit says Noctalia v5 has an opt-in polkit agent and night light; unverified, see `docs/research/niri-shell-dux-vs-noctalia.md`).
 - GDM: pin defaultSession to GNOME and check the sessionNames.
 - Hybrid GPU: the AMD iGPU drives the screens, the NVIDIA dGPU runs nouveau.
   niri behaviour on it is unverified.
@@ -92,7 +92,7 @@ T-0033 owns these fixes; this file does not edit them.
 - Noctalia v5 collapses about 7-8 pieces (bar, notifications with history,
   launcher, lock, idle, OSD, wallpaper, clipboard history, tray) into 1-2
   (ESTIMATE).
-- Night light and the polkit agent were not found built in (unverified).
+- Night light and the polkit agent were not found built in (unverified; the user-supplied audit says Noctalia v5 has an opt-in polkit agent and night light; unverified, see `docs/research/niri-shell-dux-vs-noctalia.md`).
 - Launcher and clipboard overlap: DECIDED, Vicinae stays the launcher, and the
   selected shell's own launcher and clipboard bindings are disabled rather than
   removing Vicinae. Rofi 2.x (official Wayland support merged, WEB) is the
@@ -116,6 +116,18 @@ T-0033 owns these fixes; this file does not edit them.
   nixpkgs `programs.dux-shell.plugins.<name>.src` option installs plugins from Nix
   sources rather than fetching at runtime, which is the closure-friendly path
   (VERIFIED in the pinned nixpkgs source).
+- Dux-vs-Noctalia comparison and issue audit (user-supplied, unverified):
+  `docs/research/niri-shell-dux-vs-noctalia.md`. It changes no decision.
+- Known open upstream risks (user-supplied audit, unverified; they become trial
+  gates in T-0032):
+  - Dux #4259: the lock screen leaks memory on monitor reconnect while locked,
+    ending in an OOM that kills niri (unfixed in 2.1.2).
+  - Noctalia #5349: a fatal wl_registry error on resume after unplugging an
+    output leaves the session locked (seen on 5.4.1).
+  - Noctalia #4714: invisible UI with egl-wayland 1.1.23 on NVIDIA PRIME hybrids
+    (this host runs nouveau on the dGPU, so INFERRED not applicable today).
+  - Noctalia #4565: no warning when no polkit agent runs; `polkit_agent`
+    defaults to false.
 - Conflict with the user's ownership guidance: see Ownership and decision 8.
 
 ### Ownership
@@ -241,7 +253,7 @@ Totals:
 | P1 | T-0030 | Validator rescope, with bats. |
 | P2 | T-0031 | The spec, plus the GNOME helper refactor, with GNOME behaviour unchanged. |
 | P3 | T-0032 | The niri session is built, defaultSession pinned to GNOME, drvPath baseline recorded. |
-| P4a | Activation gate | Activate the flake-owned NixOS config (and the GNOME 50.1 to 51.0 jump) on the live host. Needs its own user approval and a rollback check (boot the previous generation) first. P0-P3 are build only. |
+| P4a | Activation gate | Activate the flake-owned NixOS config (and the GNOME 50.1 to 51.0 jump) on the live host. Needs its own user approval, the mandatory backup gate ("Mandatory backup before any live change" below) and a rollback check (boot the previous generation) first. P0-P3 are build only. |
 | P4 | Shell comparison and choice | Real NixOS integration trial on the activated host, Dux first and Noctalia second, then a decision gate. Requires P4a. |
 | P5 | Daily use | 2-4 weeks, with T-0032's checklist plus the trial checklist below. |
 | P6 | Cutover | A separate decision. |
@@ -249,6 +261,86 @@ Totals:
 Trial checklist before any cutover (GNOME stays a selectable login throughout):
 restart, logout, multi-monitor, screen sharing, file dialogs, clipboard, and
 sleep/resume.
+
+### Mandatory backup before any live change
+
+Nothing that changes the live system for this migration may start until this
+gate is met and recorded as evidence: the T-0029 nixosConfigurations takeover of
+`/etc/nixos`, the T-0032 niri session, and any Dux or Noctalia shell trial
+(P4a and P4). Build-only work (P0 to P3) does not need it.
+
+Facts read on this desktop on 2026-11-15 (user-supplied to this plan, read-only
+checks by the coordinating session):
+
+- `nixos-rebuild list-generations` shows only generation 17 (2026-09-06,
+  current), so `nixos-rebuild switch --rollback` has no target right now.
+- `/etc/nixos` is root-owned and hand-maintained (directory mode 0755, files
+  0644 except `app-configs-extra.nix` and its `.bak`, which are 0600). It holds
+  22 entries, 12 of them `.bak-*` files. Named files: `configuration.nix`,
+  `configuration.nix.save`, `flake.nix` with its own `flake.lock`,
+  `hardware-configuration.nix` (must never be lost), `keyd-f1-remap.nix`,
+  `app-configs-extra.nix`, `app-configs-docker.nix`, `app-configs-tailscale*.nix`.
+- The system is built with `--flake /etc/nixos#nixos`.
+
+Required items (bash):
+
+a) `/etc/nixos` snapshot. The evidence is the EMPTY-DIFF line with the path.
+
+```bash
+B=/root/etc-nixos-backup-$(date -u +%Y%m%dT%H%M%SZ); sudo cp -a /etc/nixos "$B" && sudo diff -r /etc/nixos "$B" && echo "EMPTY-DIFF $B"
+```
+
+b) Rollback target. Record `nixos-rebuild list-generations`. If only one
+   generation exists, the first change must be applied with `nixos-rebuild boot`
+   or `nixos-rebuild test` first, or the backup in (a) must be proven
+   restorable. "Proven restorable" means the restore sequence below was done or
+   rehearsed, with the RESTORED-EMPTY-DIFF line recorded. Do not restore with
+   `cp -a "$B"/. /etc/nixos/`: it only overlays (newer files stay), and GNU cp
+   writes through destination symlinks, which can overwrite repo files after the
+   T-0029 takeover. Restore by replacing the directory:
+
+   ```bash
+   B=<path recorded in the gate evidence (e)>
+   sudo test -d "$B" && { [ ! -e /etc/nixos ] && [ ! -L /etc/nixos ] || sudo mv /etc/nixos /etc/nixos.failed-$(date -u +%Y%m%dT%H%M%SZ); } && sudo cp -a "$B" /etc/nixos && sudo diff -r "$B" /etc/nixos && echo RESTORED-EMPTY-DIFF
+   ```
+
+   The `test -d` guard stops the sequence when `$B` is empty or wrong, so
+   `/etc/nixos` is never removed without a verified copy to put back; it also
+   covers the case where `/etc/nixos` is missing. `/etc/nixos.failed-*` is kept
+   for inspection. Then choose ONE of these, never both in sequence:
+
+   - EITHER, after the restore above: `sudo nixos-rebuild switch --flake /etc/nixos#nixos`
+   - OR, when two or more generations exist and `/etc/nixos` is not needed:
+     `sudo nixos-rebuild switch --rollback` (or pick the previous generation in
+     the boot menu).
+
+   Do not garbage-collect (`nix-collect-garbage`, `nix-env --delete-generations`)
+   until the rollback check passes: generation 17 is the only rollback target.
+   `nix-gc.timer` runs weekly with `nix-collect-garbage --delete-older-than 14d`,
+   so do the rollback check within 14 days of the first new generation.
+
+   GNOME stays the selectable fallback session.
+
+c) User-level state the migration can touch. Keep these OUTSIDE the repo, in a
+   private, user-only location; never commit them, they may contain private
+   data. Create it with `P=<private dir>; install -d -m 0700 "$P"`. Refresh this
+   item before each shell trial (Dux, then Noctalia).
+   - `dconf dump / > <private dir>/dconf-<stamp>.ini` (GNOME settings,
+     keybindings, extensions).
+   - The Home Manager generation id: `home-manager generations | head -3`.
+   - `chezmoi status` must be clean, or the managed state committed first.
+   - A copy of `~/.config/niri`, `~/.config/noctalia` and
+     `~/.config/DankMaterialShell`, and the Dux config directory (path to be
+     confirmed when the module is chosen), for each that exists.
+
+d) Data backup. NixOS generations are not data backups (see T-0032).
+   - [ ] User confirms a home-data backup of `$HOME`, especially `~/Projects`
+     and the KeePassXC database, before P4a (any live change). No tool is prescribed.
+
+e) Gate record: an evidence file at
+   `docs/work/active/<ticket>/evidence/backup-<UTC>.md` holding the commands
+   run, the paths, the EMPTY-DIFF line and the generation list. No secrets and
+   no file contents.
 
 ## 7. Risks
 
@@ -275,8 +367,8 @@ DECIDED by the user:
 3. Exactly one owner each for notifications, clipboard history, lock/idle and
    polkit authentication.
 4. T-0032 is extended with the shell comparison, with a separate implementation
-   ticket only after a shell is chosen. This is a proposed amendment for the
-   session that owns T-0032 to adopt; it is not edited here.
+   ticket only after a shell is chosen. Adopted in T-0032 (user confirmed
+   2026-11-15).
 5. This plan lives at docs/plans/niri-migration.md.
 
 User guidance, not a closed decision (user, 2026-11-15): NixOS owns

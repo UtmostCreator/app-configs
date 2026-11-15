@@ -6,6 +6,7 @@ Status: proposed, not started. No migration authorised (`docs/plans/migration/ov
 Depends on: none
 Blocks: T-0032
 Evidence: `docs/research/desktop-migration-claim-audit.md`
+Live gate: the first live `/etc/nixos` takeover needs the pre-migration backup gate met and its evidence recorded (section "Mandatory backup before any live change" in docs/plans/niri-migration.md).
 
 ## Summary
 Add `nixosConfigurations.linux-desktop` so the flake owns the running system.

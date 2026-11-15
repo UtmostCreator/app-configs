@@ -4,8 +4,9 @@ Source: local
 
 Status: proposed, not started. No migration authorised.
 Depends on: T-0029, T-0030
+The shell comparison trial also requires P4a (activation gate, its own user approval; plan `docs/plans/niri-migration.md` section 6)
 Parity sign-off also needs: T-0031 niri backend (not a prerequisite for creating the session)
-Evidence: `docs/research/desktop-migration-claim-audit.md`
+Evidence: `docs/research/desktop-migration-claim-audit.md`; shell trial gates: `docs/research/niri-shell-dux-vs-noctalia.md` (user-supplied, unverified)
 
 ## Summary
 Add niri as a selectable session next to GNOME. GNOME stays the default.
@@ -19,12 +20,15 @@ Add niri as a selectable session next to GNOME. GNOME stays the default.
 - niri config is HM-owned and validated with `niri validate` (pre-commit or a build check via HM `checkConfig`).
 - Vicinae starts via the existing systemd unit only; no `spawn-at-startup`.
 - With `defaultSession` set, the GDM preStart runs set-session and ignores session history (pinned nixpkgs `nixos/modules/services/display-managers/gdm.nix:249-251`). Choosing niri at the greeter will therefore not persist across GDM restarts; this is expected during the trial.
-- Not in this ticket: Noctalia, DMS, waybar, greeter change.
+- In this ticket (plan decision 4, user confirmed 2026-11-15): the shell comparison trial within the niri trial, Dux first, then Noctalia, gated by "Shell trial gates" below.
+- Not in this ticket: the permanent shell implementation (a separate implementation ticket only after selection), the waybar fallback, greeter change.
 - Essential bindings first.
+- Shell comparison trial (Dux first, then Noctalia) inside this niri trial, using the "Shell trial gates" below; see plan decision 4.
 
 ## Owned files
 - nix/modules/nixos/** (niri), nix/hosts/linux-desktop/system.nix
 - niri HM module and config (owner per T-0030)
+- Trial shell config: the Dux NixOS module settings and the Noctalia HM config (exact paths not decided; the module-versus-HM split is open plan decision 8)
 
 ## Known blockers and risks
 - HIGH: pinned niri 26.04 lacks the multi-monitor portal screenshot fix (commit ee8a04b, niri issue #117, 18 Sep 2026; no later tag). PARTLY: reproduce before declaring Flameshot unusable. Flameshot 15.0.0 captures through the xdg-desktop-portal Screenshot API. niri's portal had no multi-monitor screenshot support until commit ee8a04b (issue #117, 18 Sep 2026), which postdates v26.04 (the latest tag), so the portal path very likely errors on two outputs. A grim/wlr-screencopy path is an untested alternative: niri implements wlr-screencopy (niri #33, closed 2024), and the Flameshot grim adapter is documented only for Hyprland (flameshot.org/docs/guide/wayland-help/).
@@ -50,6 +54,7 @@ These do not replace the GUI tests below.
 System gate (build only): `sudo nixos-rebuild build --flake ./nix#linux-desktop`, equivalent to the NixOS toplevel build listed in the checklist.
 
 ## Acceptance criteria (regression checklist; run on the target session and mark only what ran)
+- [ ] Pre-migration backup gate met (section "Mandatory backup before any live change" in docs/plans/niri-migration.md), evidence recorded. Nothing live starts, and none of the shell trial gates run, before this
 - [ ] Vicinae Ctrl+Space and Alt+V
 - [ ] All application toggles launch or focus the most-recent window. Hide and restore are required only for backends that explicitly implement those capabilities. GNOME must retain its existing behaviour. (niri part requires T-0031 niri backend)
 - [ ] Two VS Code windows keep MRU (requires T-0031 niri backend)
@@ -75,6 +80,20 @@ System gate (build only): `sudo nixos-rebuild build --flake ./nix#linux-desktop`
 - [ ] Nix and repo checks pass: `nix flake check ./nix`; activationPackage build for `homeConfigurations.linux-desktop`; `bats tests/bash`; `chezmoi diff`; `bash ops/validate-config.sh` and `--eval`; NixOS toplevel build
 - [ ] GNOME still selectable and default
 - [ ] Rollback and a separate data backup verified
+
+## Shell trial gates (run on whichever shell is under trial: Dux first, Noctalia second)
+Depends on the pre-migration backup gate in the acceptance list above. Source: `docs/research/niri-shell-dux-vs-noctalia.md` (user-supplied audit, upstream issue states unverified). These apply during the shell comparison trial (in scope per plan decision 4, user confirmed 2026-11-15), not to creating the niri session itself. The existing "External monitor, suspend/resume, lock" and "Flameshot" items above are extended by these, not replaced. Use the repo's KDL binds only, with exactly one owner each for notifications, clipboard, lock/idle and polkit.
+- [ ] G1: Lock, then disconnect and reconnect an external monitor N = 10 times while locked; record shell RSS before and after; fail if RSS grows more than 200 MiB in total or keeps growing (Dux #4259)
+- [ ] G2: Lock, suspend, unplug an output, resume: the session unlocks without re-login (Noctalia #5349)
+- [ ] G3: Notification flood while locked, then unlock: no crash (Noctalia #2836 regression)
+- [ ] G4: Polkit: exactly one agent is running and an auth prompt appears (Noctalia `polkit_agent` defaults to false; #4565)
+- [ ] G5: The shell UI renders on this GPU setup (Noctalia #4714); N/A if not hybrid NVIDIA with the proprietary driver (host currently AMD iGPU + NVIDIA dGPU on nouveau)
+- [ ] G6: Flameshot capture and pin both work under the shell (Noctalia #1325)
+- [ ] G7: The shell's IPC works on NixOS/niri (Dux #1153): the shell's documented IPC command responds (for example `dms ipc ...` or `noctalia msg ...`; exact command not confirmed here)
+- [ ] G8: U2F unlock works, only if a security key is used (Dux #2789)
+- [ ] G9: Notifications have one owner: exactly one `org.freedesktop.Notifications` owner (for example `busctl --user status org.freedesktop.Notifications`)
+- [ ] G10: Clipboard history has one owner: the shell's clipboard history is disabled and Vicinae's is active
+- [ ] G11: Lock/idle has one owner: exactly one idle or lock daemon runs (swayidle, swaylock and the shell's own must not overlap)
 
 NixOS generations are not data backups; back up mutable `$HOME` data and secrets separately.
 

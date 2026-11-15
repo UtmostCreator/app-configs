@@ -343,15 +343,24 @@ restricted_path() {
 
 @test "only the missing base tools are installed" {
     make_repo repo
-    stub_tool mise
+    stub "$STUBS/lefthook" 'exit 0'
+    mv "$STUBS/mise" "$STUBS/mise.pending"
+    restricted_path
+    run env USER=utmostcreator PATH="$RPATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    echo "$output"
+    [ "$status" -eq 0 ]
+    grep -q 'args=profile install nixpkgs#mise$' "$STUB_LOG"
+    [ "$(grep -c 'nixpkgs#chezmoi\|nixpkgs#lefthook\|nixpkgs#home-manager' "$STUB_LOG")" -eq 0 ]
+}
+
+@test "home-manager is never profile-installed (Home Manager ships it; a copy collides with the first switch)" {
+    make_repo repo
     stub "$STUBS/lefthook" 'exit 0'
     mv "$STUBS/home-manager" "$STUBS/home-manager.pending"
     restricted_path
     run env USER=utmostcreator PATH="$RPATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
     echo "$output"
-    [ "$status" -eq 0 ]
-    grep -q 'args=profile install nixpkgs#home-manager$' "$STUB_LOG"
-    [ "$(grep -c 'nixpkgs#chezmoi\|nixpkgs#mise\|nixpkgs#lefthook' "$STUB_LOG")" -eq 0 ]
+    if grep -q 'profile install.*home-manager' "$STUB_LOG"; then return 1; fi
 }
 
 @test "an existing Nix without nix-command and flakes gets them for this run only" {

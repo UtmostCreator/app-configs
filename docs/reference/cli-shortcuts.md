@@ -53,7 +53,7 @@ reruns one artisan test on every PHP change (watchexec).
 | `git prreview`, `git prfiles [N]` | PRs waiting for my review; files in a PR |
 | `git merged-prs <base> [head]` | PR branches merged in a range (release notes) |
 | `git changed` | modified, staged and untracked files (NUL-separated) |
-| `git dnew` | read-only: diff stat of tracked changes plus the list of untracked files (the index is not touched) |
+| `git dnew` | read-only: diff stat of staged and unstaged tracked changes against HEAD plus the list of untracked files (index entries are not changed) |
 | `git wtn <branch>` | new worktree `../<repo>-<branch>` on a new branch from fresh `origin/main` (no stash, no switch) |
 | `git wta` `wtl` `wtp` | `worktree add`, `list`, `prune` |
 | `git linelog START,END:path` | history of a line range (`git log -L`), e.g. `git linelog 10,20:src/app.php`; `git linelog :func:path` follows one function |
@@ -75,7 +75,9 @@ conflict resolutions, `diff.algorithm = histogram` gives steadier hunks (line
 counts in `--numstat` can differ slightly from myers), `worktree.guessRemote`
 lets `git worktree add <path> <branch>` track the same-named remote branch, and
 `rebase.autoSquash` makes `git ri` squash `fixup!` commits like `git ria`
-(kept as the explicit form). `rebase.updateRefs` stays on. `push.followTags`
+(kept as the explicit form). `rebase.updateRefs` stays on. rerere can replay a recorded resolution where it
+is wrong: review replayed files before `git add`, drop a bad resolution with
+`git rerere forget <path>`, and recreate the conflict with `git checkout -m <path>`. `push.followTags`
 stays off (commented out).
 
 `help.autocorrect = prompt` offers the fix for typos such as `commi`, `stas`
@@ -104,14 +106,14 @@ native command.
 | History of a line range or function | `git linelog 10,20:path`, `git linelog :func:path` |
 | Who last touched each line, ignoring whitespace and moves | `git praise <file>` (`blame -w -C -C`) |
 | Word-level diff | `git dw`, `git dcw` (staged) |
-| History of merges only | `git mainline` (`log --first-parent`, last 30) |
+| First-parent history of this branch (merges and direct commits, not the merged branches' commits) | `git mainline` (`log --first-parent`, last 30) |
 | Commit with author and committer dates, no patch | `git show --format=fuller --no-patch <rev>` (native) |
 | Short status with branch | `git s` (`status -sb`) |
 | Where a setting comes from | `git cfgwhere rebase.autoStash` (value, scope and file) |
 | History of one file across renames | `git filelog <file>` (`log --follow -p --`) |
 | Worktrees and branch tracking | `git wtl` (`worktree list`), `git brv` (`branch -vv`) |
 
-`git fp` fetches and prunes branches only; `git fptags` also deletes local tags
+`git fp` prunes stale remote-tracking branches and keeps tags; `git fptags` also deletes local tags
 that are absent on the remote. `git cleanf` never deletes ignored files.
 
 Provisioned helper tools that pair with these (Nix, `dev.nix` and `cli.nix`):

@@ -1,4 +1,5 @@
 #!/usr/bin/env bats
+bats_require_minimum_version 1.5.0
 # Safety and hygiene contract for the git aliases in home/dot_gitconfig.tmpl.
 
 # Render the template once per file; each test gets its own copy.
@@ -232,6 +233,28 @@ no_stash() {
     done
 }
 
+@test "up ignores ignored files: it pulls instead of refusing" {
+    up_fixture
+    echo '*.log' >.gitignore; git add .gitignore; git commit -qm ignore; git push -q origin main 2>/dev/null
+    git -C "$BATS_TEST_TMPDIR/other" pull -q origin main 2>/dev/null
+    echo noise >debug.log
+    remote_commit theirs.txt theirs "their change"
+    run git up
+    [ "$status" -eq 0 ]
+    [ -f theirs.txt ]
+    [ -f debug.log ]
+    no_stash
+}
+
+@test "up writes the refusal to stderr only" {
+    up_fixture
+    echo new >new.txt
+    run --separate-stderr git up
+    [ "$status" -ne 0 ]
+    [ -z "$output" ]
+    [[ "$stderr" == *"working tree not clean"* ]]
+}
+
 @test "a conflicting up stops in the rebase and leaves the stash list empty" {
     up_fixture
     printf 'mine\n' >f.txt; git commit -qam "mine edits f"
@@ -260,7 +283,7 @@ no_stash() {
     [ "$(git config --global --get rebase.autoStash)" = "false" ]
     run git config --global --get merge.autoStash
     [ "$status" -eq 1 ]
-    run git config --global --get-regexp '^alias\.' 
+    run git config --global --get-regexp '^alias\.'
     [[ "$output" != *"--autostash"* ]]
 }
 

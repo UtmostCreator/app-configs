@@ -41,7 +41,8 @@
 	lg    = log --graph --oneline --abbrev-commit --decorate --all
 	lga   = log --graph --oneline --abbrev-commit --decorate --all --author  ; (example style)
 	last  = log -1 --stat
-	# mainline history: first parents only (merge commits, not the branch commits)
+	# first-parent history of this branch (merges and direct commits, not the
+	# merged branches' commits)
 	mainline = log --first-parent --oneline --decorate -30
 	# git cfgwhere rebase.autoStash -> value, scope and file it comes from
 	cfgwhere = config --show-origin --show-scope --get
@@ -54,6 +55,7 @@
 	# --- Safer sync (party coordination) ---
 	fp    = fetch --prune
 	# Also drops local tags that are absent on the remote: deletes local-only tags.
+	# (plain `fp` prunes stale remote-tracking branches; tags are kept)
 	fptags = fetch --prune --prune-tags
 	# git up [args]: pull --rebase, but only on a clean tree (untracked files
 	# count). No autostash: refs/stash is shared by every worktree, so a failed
@@ -289,9 +291,10 @@
 	# Files changed vs HEAD: modified, staged, untracked; NUL-separated,
 	# repo-root relative. Feeds `rgc` (~/.local/bin).
 	changed = "!{ git diff --name-only -z --diff-filter=ACMR; git diff --cached --name-only -z --diff-filter=ACMR; git ls-files --others --exclude-standard -z; } | sort -zu"
-	# Preview a commit including new files, read-only (the index is untouched):
-	# tracked diff stat, then the untracked files
-	dnew = "!f(){ git diff --stat; echo 'untracked:'; git ls-files --others --exclude-standard | sed 's/^/  /'; }; f"
+	# Preview a commit including new files, read-only (index entries are not
+	# changed): stat of staged and unstaged tracked changes vs HEAD, then the
+	# untracked files
+	dnew = "!f(){ git diff HEAD --stat; echo 'untracked:'; git ls-files --others --exclude-standard | sed 's/^/  /'; }; f"
 	# Default-branch workflows (origin/HEAD, else main):
 	# git sync [branch] -> update the default branch without leaving yours
 	sync = "!f(){ b=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##');  b=${1:-$b}; b=${b:-main}; if [ \"$(git branch --show-current)\" = \"$b\" ]; then git pull; else git fetch origin \"$b:$b\"; fi; }; f"
@@ -391,6 +394,9 @@
 	rebase = true
 
 # Remember conflict resolutions and replay them on the next identical conflict.
+# A replayed resolution can be wrong for the new context: review replayed files
+# before `git add`. `git rerere forget <path>` drops a bad resolution and
+# `git checkout -m <path>` recreates the conflict.
 [rerere]
 	enabled = true
 

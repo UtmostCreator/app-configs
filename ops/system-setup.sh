@@ -10,7 +10,12 @@
 #     mode, owner, symlink, or absent) in <nixos dir>.app-configs-backup-<stamp>/
 #     and copies configuration.nix to a timestamped .bak
 #   - validated: `nixos-rebuild dry-build` runs before the real rebuild; on a
-#     dry-build or rebuild failure every file is restored exactly as recorded
+#     dry-build or rebuild failure every file is restored exactly as recorded.
+#     Exception, on every host: a `switch` that exits 4 (switch-to-configuration:
+#     the new generation IS activated, but some units failed) keeps the new files,
+#     because they match the running system and restoring them would leave
+#     /etc/nixos and the running generation disagreeing. The failed units are
+#     listed, the rollback command is printed and the run still exits non-zero.
 #   - report-first: default prints the plan; pass --apply to mutate
 #
 # NixOS-WSL (HOST_PROFILE=wsl, or detect-host says wsl): the same, plus the
@@ -352,8 +357,22 @@ rebuild_system() {
   log "Running nixos-rebuild $REBUILD_VERB…"
   [[ "$REBUILD_VERB" == switch ]] && SWITCH_STARTED=1
   [[ "$REBUILD_VERB" == boot ]] && BOOT_STARTED=1
+  local rc=0
   # shellcheck disable=SC2086
-  nixos-rebuild "$REBUILD_VERB" $FLAKE_ARG || fail "nixos-rebuild $REBUILD_VERB failed (check the error above)"
+  nixos-rebuild "$REBUILD_VERB" $FLAKE_ARG || rc=$?
+  if (( rc == 4 )) && [[ "$REBUILD_VERB" == switch ]]; then
+    # Activated, with failed units. Keep the files (BACKUP_DIR cleared so fail()
+    # does not restore) and still fail the run; exit 4 is never ignored.
+    local kept="$BACKUP_DIR"
+    BACKUP_DIR=""; SWITCH_STARTED=0
+    printf '[system-setup:error] nixos-rebuild switch activated the new generation, but some units failed (exit 4). The new files in %s stay: they match the running system.\n' "$NIXOS_DIR" >&2
+    [[ -z "$kept" ]] || printf '[system-setup:error] the originals are kept in %s\n' "$kept" >&2
+    printf '[system-setup:error] failed units (systemctl --failed):\n' >&2
+    systemctl --failed --no-legend 2>&1 | sed 's/^/[system-setup:error]   /' >&2
+    printf '[system-setup:error] to return to the previous generation run: sudo nixos-rebuild switch --rollback\n' >&2
+    exit 4
+  fi
+  (( rc == 0 )) || fail "nixos-rebuild $REBUILD_VERB failed (exit $rc; check the error above)"
   SWITCH_STARTED=0; BOOT_STARTED=0
 }
 

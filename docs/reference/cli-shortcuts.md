@@ -70,6 +70,14 @@ The manual stash aliases (`sl`, `ss`, `sst`, `sp`, `sa`, `stashp`, `stashk`,
 `stashs`, `stashb`, `fstash`) stay for humans only; agents never stash
 (AGENTS.md). Run `git stash list` before popping.
 
+Other settings in `dot_gitconfig.tmpl`: `rerere.enabled` replays recorded
+conflict resolutions, `diff.algorithm = histogram` gives steadier hunks (line
+counts in `--numstat` can differ slightly from myers), `worktree.guessRemote`
+lets `git worktree add <path> <branch>` track the same-named remote branch, and
+`rebase.autoSquash` makes `git ri` squash `fixup!` commits like `git ria`
+(kept as the explicit form). `rebase.updateRefs` stays on. `push.followTags`
+stays off (commented out).
+
 `help.autocorrect = prompt` offers the fix for typos such as `commi`, `stas`
 or `pul`. `commit.template` shows the conventional-commit format when you
 commit without `-m`.

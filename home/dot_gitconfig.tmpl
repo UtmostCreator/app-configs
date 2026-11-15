@@ -376,7 +376,21 @@
 [pull]
 	rebase = true
 
+# Remember conflict resolutions and replay them on the next identical conflict.
+[rerere]
+	enabled = true
+
+# histogram gives steadier hunks than the default myers.
+[diff]
+	algorithm = histogram
+
+# `git worktree add <path> <branch>` tracks a branch of the same name on the only remote.
+[worktree]
+	guessRemote = true
+
 [rebase]
+	# autoSquash makes `ri` do what `ria` does; `ria` stays as the explicit form.
+	autoSquash = true
 	# No autostash (see the `up` alias); merge.autoStash is deliberately unset.
 	autoStash = false
 	updateRefs = true

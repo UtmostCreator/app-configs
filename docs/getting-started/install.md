@@ -223,8 +223,10 @@ An unknown key, profile or group, `[groups]` without `profile`, or a group that
 is not `true`/`false` fails Nix evaluation on every host (a module assertion
 forces every group, so `macInput = "no"` fails on Linux too), and therefore
 **before any change**: `install.sh` validates before `chezmoi apply` and the
-switch, and `sys-update`, `hms` and the sync tasks fail at their build, before
-anything is activated. The Nix error names the key, for example
+switch, and `sys-update`, `hms` and `mise run sync:dry-run` fail at their build,
+before anything is activated. `mise run sync:apply` runs its snapshot and
+`chezmoi apply` first, so with an invalid selection it applies the dotfiles and
+then fails at the build, before the switch. The Nix error names the key, for example
 `unknown group 'bogus'`. Fix the file, or run `bash ops/install.sh --profile
 work` to replace it. On macOS the chezmoi ignore rules also read the file, so
 a file with broken TOML syntax makes `chezmoi` fail (the error names

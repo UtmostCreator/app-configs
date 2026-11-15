@@ -34,6 +34,8 @@
 source "${BASH_SOURCE[0]%/*}/profile-conflicts.sh"
 # shellcheck source=ops/lib/selection.sh
 source "${BASH_SOURCE[0]%/*}/selection.sh"
+# shellcheck source=ops/lib/wait-feedback.sh
+source "${BASH_SOURCE[0]%/*}/wait-feedback.sh"
 
 HM_CHECK_MSG=""
 HM_CHECK_FIX=""
@@ -160,7 +162,9 @@ _hm_only_bootstrap_conflicts() {
 hm_switch() {
   local status=0 attr
   attr="$(hm_attr "$2")" || return 1
-  hm_check_conflicts "$1" "$attr" || status=$?
+  # The check builds the whole activation package: minutes on a first run.
+  wait_run "checking nix-profile conflicts (builds the Home Manager configuration)" \
+    "1-10 minutes on a first install, seconds when cached" hm_check_conflicts "$1" "$attr" || status=$?
   if ((status == 1)) && _hm_only_bootstrap_conflicts; then
     # Only the bootstrap home-manager collides: Home Manager provides it from now
     # on. Keep the binary (its store path stays valid) for this switch, then drop
@@ -181,5 +185,6 @@ hm_switch() {
     printf >&2 '%s\n  Fix: %s\n' "$HM_CHECK_MSG" "$HM_CHECK_FIX"
     return 1
   fi
-  hm_switch_raw "$1" "$attr"
+  wait_run "Home Manager switch (builds and activates; its progress is shown below)" \
+    "2-15 minutes on a first install, under a minute when nothing changed" hm_switch_raw "$1" "$attr"
 }

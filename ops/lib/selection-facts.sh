@@ -34,6 +34,8 @@ SELECTION_PKG_NOISE=(dummy-xdg-mime-dirs)
 SELECTION_LIST_MAX=30
 
 _SEL_LIB_DIR="${BASH_SOURCE[0]%/*}"
+# shellcheck source=ops/lib/wait-feedback.sh
+source "$_SEL_LIB_DIR/wait-feedback.sh"
 
 # This code runs under /bin/bash 3.2 on a fresh Mac (install.sh): no bash 4 array
 # builtins, associative arrays or case-modifying expansions; empty arrays are
@@ -277,6 +279,26 @@ _sel_read_installed() {
   SEL_I_STATE=ok
 }
 
+# _sel_eval_facts: the evaluations of selection_facts (the slow part), run under
+# wait_run so the wait is announced and has a heartbeat. Needs $lenient from the caller.
+_sel_eval_facts() {
+  _sel_eval_for committed "$SELECTION_WORK/m.tsv" "$SELECTION_WORK/m.err" "$(_sel_attr_members)" "$(_sel_expr_members)" \
+    || { _sel_show_err "$SELECTION_WORK/m.err"; return 1; }
+  SEL_C_INVALID=0
+  if ! _sel_eval "$SELECTION_WORK/c.tsv" "$SELECTION_WORK/c.err" "$(_sel_attr_state)" "$(_sel_expr_state)"; then
+    if [[ "$lenient" == lenient && ${#SELECTION_ARGS[@]} -gt 0 ]]; then
+      printf 'The current selection is invalid; comparing with the committed default instead:\n' >&2
+      _sel_show_err "$SELECTION_WORK/c.err"
+      SEL_C_INVALID=1
+      _sel_eval_for committed "$SELECTION_WORK/c.tsv" "$SELECTION_WORK/c.err" "$(_sel_attr_state)" "$(_sel_expr_state)" \
+        || { _sel_show_err "$SELECTION_WORK/c.err"; return 1; }
+    else
+      _sel_show_err "$SELECTION_WORK/c.err"
+      return 1
+    fi
+  fi
+}
+
 # selection_facts [lenient]
 #
 # Evaluates, into files under SELECTION_WORK and before anything is printed:
@@ -301,22 +323,8 @@ selection_facts() {
   # shellcheck source=ops/update-version-report.sh
   source "$repo/ops/update-version-report.sh"
   selection_args
-  printf '[%s] evaluating the install state (read-only, nothing is built)...\n' "$SEL_FACTS_TAG" >&2
-  _sel_eval_for committed "$SELECTION_WORK/m.tsv" "$SELECTION_WORK/m.err" "$(_sel_attr_members)" "$(_sel_expr_members)" \
-    || { _sel_show_err "$SELECTION_WORK/m.err"; return 1; }
-  SEL_C_INVALID=0
-  if ! _sel_eval "$SELECTION_WORK/c.tsv" "$SELECTION_WORK/c.err" "$(_sel_attr_state)" "$(_sel_expr_state)"; then
-    if [[ "$lenient" == lenient && ${#SELECTION_ARGS[@]} -gt 0 ]]; then
-      printf 'The current selection is invalid; comparing with the committed default instead:\n' >&2
-      _sel_show_err "$SELECTION_WORK/c.err"
-      SEL_C_INVALID=1
-      _sel_eval_for committed "$SELECTION_WORK/c.tsv" "$SELECTION_WORK/c.err" "$(_sel_attr_state)" "$(_sel_expr_state)" \
-        || { _sel_show_err "$SELECTION_WORK/c.err"; return 1; }
-    else
-      _sel_show_err "$SELECTION_WORK/c.err"
-      return 1
-    fi
-  fi
+  wait_run "$SEL_FACTS_TAG: evaluating the install state (read-only, nothing is built)" \
+    "10-120 seconds (the first evaluation of a fresh checkout is the slow one)" _sel_eval_facts || return 1
   SEL_HOST_PROFILE="$(awk -F '\t' '$1 == "H" { print $2; exit }' "$SELECTION_WORK/m.tsv")"
   SEL_HOST_PROFILE="${SEL_HOST_PROFILE:-work}"
   SEL_GROUPS=()

@@ -22,7 +22,7 @@ setup() {
 # /bin/bash 3.2 (the review of T5 found mapfile there).
 @test "install.sh, install-record.sh, selection.sh, selection-facts.sh and selection-preview.sh use no bash 4 features" {
     local f
-    for f in ops/install.sh ops/lib/install-record.sh ops/lib/selection.sh ops/lib/selection-facts.sh ops/lib/selection-preview.sh; do
+    for f in ops/install.sh ops/lib/install-record.sh ops/lib/selection.sh ops/lib/selection-facts.sh ops/lib/selection-preview.sh ops/lib/wait-feedback.sh; do
         if grep -nE '\$\{[A-Za-z_]+(,,|\^\^)' "$REPO_ROOT/$f"; then echo "$f: case-modifying expansion"; return 1; fi
         if grep -nE '(declare|local|typeset) +-[A-Za-z]*[An]|(^|[^[:alnum:]_])(mapfile|readarray)([^[:alnum:]_]|$)' "$REPO_ROOT/$f"; then echo "$f: bash 4 builtin"; return 1; fi
         if grep -nE '&>>|\|&' "$REPO_ROOT/$f"; then echo "$f: bash 4 redirection"; return 1; fi

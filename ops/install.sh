@@ -151,12 +151,22 @@ run()  {
   else
     log "+ $*"
     local rc=0
-    "$@" || rc=$?
+    # RUN_EXPECT="<duration>" run ...: a long step. Say so first and keep a
+    # heartbeat going (ops/lib/wait-feedback.sh, T-0050).
+    if [[ -n "${RUN_EXPECT:-}" ]]; then
+      local what="$*"
+      ((${#what} <= 70)) || what="${what:0:67}..."
+      wait_run "$what" "$RUN_EXPECT" "$@" || rc=$?
+    else
+      "$@" || rc=$?
+    fi
     # An external failure must end in the same [install:error] line as our own.
     ((rc == 0)) || { printf '[install:error] command failed (exit %s): %s\n' "$rc" "$*" >&2; exit "$rc"; }
   fi
 }
 
+# shellcheck source=ops/lib/wait-feedback.sh
+source "$REPO_ROOT/ops/lib/wait-feedback.sh"
 # shellcheck source=ops/lib/hm-switch.sh
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
 # shellcheck source=ops/lib/selection.sh
@@ -437,14 +447,14 @@ step "Base tools (chezmoi, mise, lefthook)"
 missing_base=()
 for t in chezmoi mise lefthook; do have "$t" || missing_base+=("nixpkgs#$t"); done
 if (( ${#missing_base[@]} )); then
-  run nix profile install "${missing_base[@]}"
+  RUN_EXPECT="1-5 minutes (downloads)" run nix profile install "${missing_base[@]}"
 else
   log "base tools already present"
 fi
 
 # ── 4. flake check ──────────────────────────────────────────────────────────
 step "Validate flake"
-run nix flake check "$REPO_ROOT/nix"
+RUN_EXPECT="1-10 minutes on a first install (evaluates every profile)" run nix flake check "$REPO_ROOT/nix"
 
 # ── 4b. install selection ───────────────────────────────────────────────────
 # Which groups and profile this host installs (nix/profiles/*.toml, the local
@@ -594,9 +604,9 @@ if [[ "$HOST_PROFILE" == "macos" ]]; then
   # (ops/lib/selection.sh); the override goes after `--` for darwin-rebuild.
   selection_args
   if have darwin-rebuild; then
-    run sudo darwin-rebuild switch --flake "$REPO_ROOT/nix#macos" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}
+    RUN_EXPECT="2-15 minutes on a first install" run sudo darwin-rebuild switch --flake "$REPO_ROOT/nix#macos" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}
   else
-    run sudo nix --extra-experimental-features 'nix-command flakes' run "$REPO_ROOT/nix#darwin-rebuild" -- switch --flake "$REPO_ROOT/nix#macos" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}
+    RUN_EXPECT="5-30 minutes on a first install (builds darwin-rebuild, then the system)" run sudo nix --extra-experimental-features 'nix-command flakes' run "$REPO_ROOT/nix#darwin-rebuild" -- switch --flake "$REPO_ROOT/nix#macos" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}
   fi
 else
   if [[ "$DRY_RUN" == 1 ]]; then

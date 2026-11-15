@@ -382,21 +382,32 @@ _sel_brew_casks() {
   fi
 }
 
+# _sel_sets: fills SEL_SETS with the groups, then @personal, the order the
+# present-state table and the outcome list use. _sel_set_label SET: the name
+# printed for it ("personal apps" for @personal).
+SEL_SETS=()
+_sel_sets() {
+  local g
+  SEL_SETS=()
+  for g in "${SEL_GROUPS[@]+"${SEL_GROUPS[@]}"}"; do SEL_SETS+=("$g"); done
+  SEL_SETS+=("@personal")
+}
+_sel_set_label() {
+  if [[ "$1" == @personal ]]; then printf 'personal apps'; else printf '%s' "$1"; fi
+}
+
 # selection_present_state: installed n/m per group, against the installed
 # generation. Only a first install (no generation) uses `command -v`, and then
 # only as an annotation, never as a count.
 selection_present_state() {
-  local label g n m inst names found path members=() sets=() casks=() cask_note
+  local label g n m inst names found path members=() casks=() cask_note
   ((SEL_HAVE_FACTS)) || return 0
   SEL_PRESENT_SHOWN=1
   _sel_pnames "$SELECTION_WORK/i-pkgs.tsv" >"$SELECTION_WORK/i-names.txt"
   printf 'Present state (installed packages by group)\n'
-  sets=()
-  for g in "${SEL_GROUPS[@]+"${SEL_GROUPS[@]}"}"; do sets+=("$g"); done
-  sets+=("@personal")
-  for g in "${sets[@]+"${sets[@]}"}"; do
-    label="$g"
-    if [[ "$g" == @personal ]]; then label="personal apps"; fi
+  _sel_sets
+  for g in "${SEL_SETS[@]+"${SEL_SETS[@]}"}"; do
+    label="$(_sel_set_label "$g")"
     _sel_split members "$(_sel_members_of "$g")"
     m=${#members[@]}
     if [[ "$SEL_I_STATE" == unknown ]]; then
@@ -596,7 +607,7 @@ _sel_casks_section() {
 # _sel_outcome_section: keep / add / remove / stays off per group, from the
 # installed generation (I) and the proposed state (P).
 _sel_outcome_section() {
-  local g label n keep off parts sets=() adds rems names=() casks=() stays cask_note c in_i in_p
+  local g label n keep off parts adds rems names=() casks=() stays cask_note c in_i in_p
   printf 'Outcome by group (installed -> proposed)\n'
   if [[ "$SEL_I_STATE" == unknown ]]; then
     printf '    unknown: the installed generation could not be read, so keep, add and remove cannot be told\n'
@@ -604,12 +615,9 @@ _sel_outcome_section() {
   fi
   _sel_pnames "$SELECTION_WORK/i-pkgs.tsv" >"$SELECTION_WORK/i-names.txt"
   _sel_pnames "$SELECTION_WORK/p-pkgs.tsv" >"$SELECTION_WORK/p-names.txt"
-  sets=()
-  for g in "${SEL_GROUPS[@]+"${SEL_GROUPS[@]}"}"; do sets+=("$g"); done
-  sets+=("@personal")
-  for g in "${sets[@]+"${sets[@]}"}"; do
-    label="$g"
-    if [[ "$g" == @personal ]]; then label="personal apps"; fi
+  _sel_sets
+  for g in "${SEL_SETS[@]+"${SEL_SETS[@]}"}"; do
+    label="$(_sel_set_label "$g")"
     keep=0; off=0; adds=(); rems=()
     _sel_split names "$(_sel_members_of "$g")"
     for n in "${names[@]+"${names[@]}"}"; do
@@ -655,6 +663,51 @@ _sel_outcome_section() {
   done
 }
 
+# _sel_current_section CUR_PROF CUR_OVER: the installed generation and the
+# current selection, one line each.
+_sel_current_section() {
+  local npk sel_file
+  sel_file="$(selection_dir)/selection.toml"
+  npk="$(grep -c . "$SELECTION_WORK/i-pkgs.tsv" || true)"
+  printf '\n'
+  case "$SEL_I_STATE" in
+    ok) printf 'Installed generation: %s (%s packages); ' "$SEL_I_GEN" "$npk" ;;
+    none) printf 'No Home Manager generation yet (first install); ' ;;
+    *) printf 'Installed generation: unknown (it could not be read); ' ;;
+  esac
+  if [[ -f "$sel_file" && "$SEL_C_INVALID" == 0 ]]; then
+    printf 'current selection: %s (profile %s%s)\n' "$sel_file" "$1" "${2:+, overrides: $2}"
+  elif [[ "$SEL_C_INVALID" == 1 ]]; then
+    printf 'current selection: %s is invalid, using the committed default (profile %s)\n' "$sel_file" "$1"
+  else
+    printf 'current selection: none (committed default, profile %s)\n' "$1"
+  fi
+  printf '\n'
+}
+
+# _sel_proposal_section CUR_PROF CUR_OVER: the proposed profile and overrides,
+# the outcome by group and the package comparison, from your selection.
+_sel_proposal_section() {
+  local new_prof new_over
+  new_prof="$(_sel_state_profile "$SELECTION_WORK/p.tsv")"
+  new_over="$(_sel_overrides "$SELECTION_WORK/p.tsv")"
+  printf 'Preview (nothing applied): profile %s -> %s; overrides: %s\n' "$1" "$new_prof" "${new_over:-none}"
+  if ((SEL_REPLACE)) && [[ -n "$2" ]]; then
+    printf '  This replaces your existing group overrides (%s); they are dropped.\n' "$2"
+  fi
+  printf '\n'
+  _sel_outcome_section
+  printf '\n'
+  if [[ "$SEL_I_STATE" == none ]]; then
+    # Nothing is installed, so the selection removes nothing; what gets
+    # installed is the pending-changes block below and the outcome above.
+    printf 'Packages, from your selection\n    nothing is installed yet, so the selection removes nothing (see Outcome by group)\n'
+  else
+    _sel_pkg_section 'Packages, from your selection' "$SELECTION_WORK/c-pkgs.tsv" "$SELECTION_WORK/p-pkgs.tsv"
+  fi
+  printf '\n'
+}
+
 # selection_preview [proposal]
 #
 # Prints the whole preview to stdout; "proposal" (after selection_propose) adds
@@ -666,48 +719,15 @@ _sel_outcome_section() {
 SEL_WITH_PROPOSAL=0
 SEL_REPLACE=0
 selection_preview() {
-  local cur_prof new_prof cur_over new_over npk sel_file
+  local cur_prof cur_over
   SEL_WITH_PROPOSAL=0
   [[ "${1:-}" == proposal ]] && SEL_WITH_PROPOSAL=1
   ((SEL_HAVE_FACTS)) || return 1
-  sel_file="$(selection_dir)/selection.toml"
   cur_prof="$(_sel_state_profile "$SELECTION_WORK/c.tsv")"
   cur_over="$(_sel_overrides "$SELECTION_WORK/c.tsv")"
-  npk="$(grep -c . "$SELECTION_WORK/i-pkgs.tsv" || true)"
-  printf '\n'
-  case "$SEL_I_STATE" in
-    ok) printf 'Installed generation: %s (%s packages); ' "$SEL_I_GEN" "$npk" ;;
-    none) printf 'No Home Manager generation yet (first install); ' ;;
-    *) printf 'Installed generation: unknown (it could not be read); ' ;;
-  esac
-  if [[ -f "$sel_file" && "$SEL_C_INVALID" == 0 ]]; then
-    printf 'current selection: %s (profile %s%s)\n' "$sel_file" "$cur_prof" "${cur_over:+, overrides: $cur_over}"
-  elif [[ "$SEL_C_INVALID" == 1 ]]; then
-    printf 'current selection: %s is invalid, using the committed default (profile %s)\n' "$sel_file" "$cur_prof"
-  else
-    printf 'current selection: none (committed default, profile %s)\n' "$cur_prof"
-  fi
-  printf '\n'
+  _sel_current_section "$cur_prof" "$cur_over"
   if ((SEL_PRESENT_SHOWN == 0)); then selection_present_state; printf '\n'; fi
-  if ((SEL_WITH_PROPOSAL)); then
-    new_prof="$(_sel_state_profile "$SELECTION_WORK/p.tsv")"
-    new_over="$(_sel_overrides "$SELECTION_WORK/p.tsv")"
-    printf 'Preview (nothing applied): profile %s -> %s; overrides: %s\n' "$cur_prof" "$new_prof" "${new_over:-none}"
-    if ((SEL_REPLACE)) && [[ -n "$cur_over" ]]; then
-      printf '  This replaces your existing group overrides (%s); they are dropped.\n' "$cur_over"
-    fi
-    printf '\n'
-    _sel_outcome_section
-    printf '\n'
-    if [[ "$SEL_I_STATE" == none ]]; then
-      # Nothing is installed, so the selection removes nothing; what gets
-      # installed is the pending-changes block below and the outcome above.
-      printf 'Packages, from your selection\n    nothing is installed yet, so the selection removes nothing (see Outcome by group)\n'
-    else
-      _sel_pkg_section 'Packages, from your selection' "$SELECTION_WORK/c-pkgs.tsv" "$SELECTION_WORK/p-pkgs.tsv"
-    fi
-    printf '\n'
-  fi
+  if ((SEL_WITH_PROPOSAL)); then _sel_proposal_section "$cur_prof" "$cur_over"; fi
   if [[ "$SEL_I_STATE" == unknown ]]; then
     printf 'Packages, pending changes (repo, or a selection not yet applied)\n    unknown (the installed generation could not be read)\n'
   else

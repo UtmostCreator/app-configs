@@ -45,6 +45,7 @@ reruns one artisan test on every PHP change (watchexec).
 | Alias | Does |
 | --- | --- |
 | `git s` | `status -sb` |
+| `git up [args]` | `git pull --rebase`, but refuses a dirty tree (staged, unstaged or untracked) and changes nothing; commit, use `git wtn`, or make a WIP commit first |
 | `git sync [branch]` | update the default branch without leaving yours (pulls if you are on it) |
 | `git nb <name>` | new branch from a freshly fetched default branch |
 | `git rbd` | rebase the current branch onto the freshly fetched default branch |
@@ -61,6 +62,13 @@ reruns one artisan test on every PHP change (watchexec).
 `push.followTags` (push annotated tags that point at the pushed commits) is
 not enabled; `dot_gitconfig.tmpl` carries it commented out in `[push]`, and
 `git config --global push.followTags true` turns it on.
+
+Autostash is off (`rebase.autoStash = false`, `merge.autoStash` unset, no
+`--autostash` in any alias). `refs/stash` is shared by every worktree, and an
+autostash that cannot re-apply leaves an entry there for another session to pop.
+The manual stash aliases (`sl`, `ss`, `sst`, `sp`, `sa`, `stashp`, `stashk`,
+`stashs`, `stashb`, `fstash`) stay for humans only; agents never stash
+(AGENTS.md). Run `git stash list` before popping.
 
 `help.autocorrect = prompt` offers the fix for typos such as `commi`, `stas`
 or `pul`. `commit.template` shows the conventional-commit format when you

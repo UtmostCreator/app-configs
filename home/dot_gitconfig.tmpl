@@ -47,7 +47,10 @@
 	behind= log --oneline --decorate --graph HEAD..@{u}
 	# --- Safer sync (party coordination) ---
 	fp    = fetch --prune --prune-tags
-	up    = pull --rebase --autostash
+	# git up [args]: pull --rebase, but only on a clean tree (untracked files
+	# count). No autostash: refs/stash is shared by every worktree, so a failed
+	# re-apply would leave an entry there for the wrong session to pop.
+	up    = "!f() { if [ -n \"$(git status --porcelain --untracked-files=normal)\" ]; then echo 'git up: working tree not clean (staged, unstaged or untracked changes). Commit them, move them aside (git wtn for a new worktree, or a WIP commit), then retry. git stash is not used: it is shared by every worktree.' >&2; exit 1; fi; git pull --rebase \"$@\"; }; f"
 	pf    = push --force-with-lease
 	# --- Undo kit (time turner + rollback saves) ---
 	unstage = restore --staged .
@@ -60,6 +63,8 @@
 	oops    = commit --amend --no-edit
 	uncommit= reset --soft HEAD~1
 	# --- Stash / backpack management ---
+	# For humans only. AGENTS.md forbids agents from stashing: the stash stack is
+	# shared across worktrees, so check `git stash list` before popping.
 	sl    = stash list
 	ss    = stash push -u -m
 	# git sst "message" [-- <path>]: tracked changes only (ss also stashes untracked)
@@ -372,7 +377,8 @@
 	rebase = true
 
 [rebase]
-	autoStash = true
+	# No autostash (see the `up` alias); merge.autoStash is deliberately unset.
+	autoStash = false
 	updateRefs = true
 
 [push]

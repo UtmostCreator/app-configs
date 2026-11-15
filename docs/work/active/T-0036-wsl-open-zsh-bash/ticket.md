@@ -4,8 +4,10 @@ Source: local
 
 Status: open
 Wave: 1
-Depends on: none (coordinate with T-0021: home/dot_bashrc.tmpl:30-32 sources the
-ssh-agent loader; do not touch those lines)
+Depends on: none. The former T-0021 dependency is gone (no T-0021 folder exists in docs/work/active). `home/dot_bashrc.tmpl` lines 30-32 and `home/dot_zshrc.tmpl` lines 419-421 source the ssh-agent loader; do not touch those lines.
+Order: fourth. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. T-0036 must land before T-0040 step 11 (behaviour checks).
+
+Re-verified 2026-11-15 against main ed39171: none of the WSL2 tickets has been executed and every bug described is still present. User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
 
 ## Summary
 fish sets `BROWSER=wsl-open` and an `open` function on WSL2; zsh and the bash
@@ -15,16 +17,15 @@ there.
 ## Owned files (write boundary)
 - home/dot_zshrc.tmpl (one new block)
 - home/dot_bashrc.tmpl (one new block in the fallback section, away from the
-  ssh-agent lines)
-- tests/bash/wsl-open.bats
+  ssh-agent lines; the file has no non-darwin block yet, only a darwin one around line 34, so the `ne .chezmoi.os "darwin"` block must be created)
+- tests/bash/wsl-open.bats (extend: the file already exists with 6 tests; do not create it)
 
 ## Findings (review claims, unverified until reproduced: reproduce first; reject false positives with evidence)
 - VERIFIED: `home/dot_config/fish/config.fish.tmpl:134-144` has the WSL2 block;
   `grep` of `dot_zshrc.tmpl` and `dot_bashrc.tmpl` finds no `BROWSER` or `wsl-open`.
 - INFERRED: on Ubuntu `open` resolves to `openvt` (Debian `kbd`), so zsh
   `open .` does the wrong thing.
-- Interactive bash execs fish (`dot_bashrc.tmpl:16-21`); the bash block only
-  matters with `NO_FISH=1` or when fish is missing. It is added for parity.
+- Interactive bash execs fish on WSL (`dot_bashrc.tmpl:16-21`), so the bash block is cosmetic parity (it matters only with `NO_FISH=1` or when fish is missing); zsh is the real gap.
 
 ## Design
 Inside `{{ if ne .chezmoi.os "darwin" }}`:

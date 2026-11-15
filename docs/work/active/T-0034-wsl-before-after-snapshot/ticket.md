@@ -4,8 +4,11 @@ Source: local
 
 Status: open
 Wave: 1
-Depends on: none
+Depends on: none (it is used by T-0040 steps 6 and 12; its readiness.txt pass condition depends on T-0035, T-0037 and T-0038)
 Blocks: T-0039, T-0040
+Order: Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040.
+
+Re-verified 2026-11-15 against main ed39171: none of the WSL2 tickets has been executed and every bug described is still present. User decisions unchanged: Wave 1 = T-0034..T-0038; Windows-side provisioning stays manual; T-0041 is docs-only.
 
 ## Summary
 Before any real WSL2 test, record the state of the distro and Windows so an
@@ -49,6 +52,8 @@ No repo script runs `wsl.exe`, `winget` or PowerShell.
   | hm-packages.txt | `home-manager packages`, sorted |
   | mise.txt | `mise ls` |
   | user-timers.txt | `systemctl --user list-timers --all --no-pager` |
+  | selection.txt | copy of the local selection file, `~/.config/app-configs/selection/selection.toml` (directory from `selection_dir` in `ops/lib/selection.sh`), or `absent` |
+  | systemd.txt | `cat /proc/1/comm`, `systemctl is-system-running`, `systemctl --user list-units --failed --no-pager` (systemd off is the main WSL failure, and a "no failed units" result is a false green when systemd is off) |
   | readiness.txt | `bash ops/readiness.sh` stdout, then a final `exit: <code>` line |
 - Never reads environment dumps, `~/.ssh`, `home/.chezmoidata/personal.yaml`,
   1Password or shell history.
@@ -68,17 +73,22 @@ No repo script runs `wsl.exe`, `winget` or PowerShell.
    `winget list --accept-source-agreements`, each redirected to
    `$HOME\wsl-test\before-*.txt`.
 3. WSL "before" (after cloning the repo per setup.md):
-   `bash ops/host-snapshot.sh --label before`.
+   `bash ops/host-snapshot.sh --label before`. A plain `bash ops/install.sh --dry-run </dev/null`
+   (the preview step) prints "no local selection" and writes nothing; the same run on a
+   TTY without a selection file prompts, so run the preview with `</dev/null`.
 4. "After": the same Windows commands into `after-*.txt`, then
    `bash ops/host-snapshot.sh --label after`.
 5. Compare: `diff -ru <before> <after>` (WSL);
    `Compare-Object (Get-Content before-winget.txt) (Get-Content after-winget.txt)` (Windows).
-6. Pass condition: `after/readiness.txt` shows `MISSING: 0` and `exit: 0`;
+6. Pass condition: `after/readiness.txt` shows `MISSING: 0` and either `exit: 0` or
+   `exit: 3` with every TODO explained (exit 3 exists once T-0035 lands; until
+   T-0035, T-0037 and T-0038 land, expect TODOs for `code`, Docker and Colima);
+   `systemd.txt` shows `systemd` as PID 1 and no failed user units;
    `hm-packages.txt` is non-empty; `wsl-conf.txt` matches setup.md.
 
 ## Acceptance criteria
 - AC1: With nix, home-manager, mise, dpkg-query and systemctl absent from PATH
-  (fresh-distro simulation) the script exits 0, writes all 9 files and marks the
+  (fresh-distro simulation) the script exits 0, writes all 11 files and marks the
   missing sources `absent`.
 - AC2: With recording stubs, each file contains its stub's output; readiness.txt
   ends with the stub's exit code.
@@ -92,6 +102,7 @@ No repo script runs `wsl.exe`, `winget` or PowerShell.
 - AC7: test-pass.md contains the backup-first order, the export/import commands,
   the "never auto `--unregister`" rule, the tar secret warning, the Windows and
   WSL before/after steps and the compare commands.
+- AC7b: `selection.txt` and `systemd.txt` exist; `selection.txt` is `absent` when no selection file exists; `systemd.txt` records the `absent:` marker when systemctl is missing.
 - AC8: `bats tests/bash/host-snapshot.bats` and `bash ops/lint-shell.sh` pass.
 - Independent review PASS; one conventional commit per logical change; no AI
   attribution trailers.
@@ -102,5 +113,6 @@ No repo script runs `wsl.exe`, `winget` or PowerShell.
 
 ## Out of scope / notes
 - Running anything on Windows; a compare mode; a mise task; uploading snapshots.
-- readiness.txt records the raw exit code; T-0035 adds exit 3 ("READY with TODO").
+- readiness.txt records the raw exit code; exit 3 ("READY with TODO") exists only once T-0035 lands (today readiness exits 0, 1, 2 or 64).
+- The ordered test checklist (which snapshot step runs where) is in T-0040.
 - Only the files listed above. Unrelated findings are reported, not fixed.

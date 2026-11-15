@@ -1,6 +1,8 @@
 {
-  # WSL2 (not WSL1): the shared CLI/dev modules, same as macOS minus GUI.
-  # Never imports the GUI module. Windows-side tooling is out of scope.
+  # WSL2 (not WSL1), Ubuntu or another non-NixOS distro: the shared CLI/dev
+  # modules, same as macOS minus GUI. Never imports the GUI module. Windows-side
+  # tooling is out of scope. NixOS-WSL uses the wsl-nixos output instead
+  # (nix/hosts/wsl-nixos/home.nix), which turns targets.genericLinux off.
   # Setup and checks: docs/platforms/wsl/setup.md, ops/wsl-check.sh.
   imports = [
     ../../modules/common

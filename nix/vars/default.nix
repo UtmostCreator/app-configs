@@ -25,6 +25,13 @@ in
       homeDirectory = "/home/${username}";
       stateVersion = "24.11";
     };
+    # NixOS-WSL: the wsl host profile on NixOS, built by ops/detect-host.sh
+    # --hm-attr. Same values as wsl.
+    wsl-nixos = {
+      system = "x86_64-linux";
+      homeDirectory = "/home/${username}";
+      stateVersion = "24.11";
+    };
     macos = {
       # Per Phase 0 decision: Apple Silicon default.
       # Switch to "x86_64-darwin" for Intel Macs.

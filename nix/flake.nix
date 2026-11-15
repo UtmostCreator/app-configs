@@ -146,7 +146,7 @@
       #      configuration evaluates.
       #   3. REAL BUILD: `nix build --no-link
       #      ./nix#homeConfigurations.<profile>.activationPackage` builds the
-      #      closure. CI does this for linux-cli and wsl; sys-update builds
+      #      closure. CI does this for linux-cli, wsl and wsl-nixos; sys-update builds
       #      the real host. Darwin closures need a darwin builder.
       checks = forAllSystems (
         system:
@@ -182,6 +182,7 @@
         linux-desktop = mkProfile "linux-desktop";
         linux-cli = mkProfile "linux-cli";
         wsl = mkProfile "wsl";
+        wsl-nixos = mkProfile "wsl-nixos";
         # macOS standalone HM still exposed for hosts not running nix-darwin.
         macos = mkProfile "macos";
       };

@@ -268,8 +268,8 @@ cask bridge. Either way it is one apply command per host.
 >
 > Bootstrap installs Nix, then `nix profile install chezmoi mise home-manager
 > lefthook`, validates the flake, runs chezmoi apply, runs `home-manager switch`
-> (or `darwin-rebuild switch` on macOS), then `mise install` and
-> `lefthook install`. Daily updates go through `mise run sync` (preview) and
+> (or `darwin-rebuild switch` on macOS), then `mise install` and the git hooks
+> (`bash ops/install-git-hooks.sh`, never `lefthook install`). Daily updates go through `mise run sync` (preview) and
 > `mise run sync:apply` (mutate). See [`bootstrap.md`](../docs/getting-started/bootstrap.md) and
 > [`migration-package-ownership.md`](migration-package-ownership.md) for the
 > per-tool owner.

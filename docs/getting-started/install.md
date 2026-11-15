@@ -92,8 +92,9 @@ first run on a terminal with no stored selection, which asks what to install
 - Validates the flake, resolves the install selection (below), **snapshots
   `$HOME`**, then `chezmoi apply --force`.
 - Runs `home-manager switch` (or `darwin-rebuild switch` on macOS).
-- Runs `mise install`, `lefthook install`, the ssh-agent helper, and
-  `doctor.sh` (must pass).
+- Runs `mise install`, installs the git hooks with
+  `ops/install-git-hooks.sh` (then `--check`; see "Partial commits" below), the
+  ssh-agent helper, and `doctor.sh` (must pass).
 - Seeds `home/.chezmoidata/personal.yaml` from the example if absent (edit it
   afterwards for real name/email/host profile).
 
@@ -525,15 +526,15 @@ precondition passes**, and each phase reports one line instead of raw output:
 | `PREPARE` | `nix flake update` + `check` · host build; a failure restores `flake.lock` |
 | `ACTIVATE` | `chezmoi apply` · `home-manager switch` / `darwin-rebuild switch`; the profile must then point at the built closure (never skipped) |
 | `VERIFY` | gate: Brave runs and is the default browser (`--skip-verify` skips it) |
-| `COMMIT` | the new `flake.lock` is committed only after a verified activation |
-| `MAINTAIN` | `nix profile upgrade` · `mise upgrade` · `lefthook install` · Syncthing ignores (warnings only) |
+| `COMMIT` | the new `flake.lock` is committed only after a verified activation; just before it, `ops/install-git-hooks.sh` (+ `--check`) installs the git hooks so the commit is guarded |
+| `MAINTAIN` | `nix profile upgrade` · `mise upgrade` · Syncthing ignores (warnings only) |
 | `CHECKS` | advisory: no chezmoi drift, core commands on `PATH`, no failed user units, no missing mise tools |
 | `CLEANUP` | safe, non-destructive (section 3 below) unless `NO_CLEANUP=1` |
 | `SUMMARY` | package delta, warnings worth acting on, rollback handle, log path |
 
 A **dirty worktree aborts the run** before anything changes: updating on top of
 local edits mixes your changes, upstream commits and a new lock into one
-conflict. Commit, stash, or pass `--allow-dirty` to accept that deliberately.
+conflict. Commit, save the change as a patch (never `git stash`), or pass `--allow-dirty` to accept that deliberately.
 Once the update has built, activated and been verified, the new `flake.lock` is
 committed on its own (`chore(nix): update flake inputs`), so the next run starts
 clean. With `--skip-verify` the commit body says it was not runtime-verified.
@@ -707,8 +708,63 @@ bash ops/uninstall.sh             # report only (safe any time)
 bash ops/uninstall.sh --apply     # actually run
 ```
 
+`--apply` unsets `core.hooksPath` (only when it is the installed hooks
+directory), deletes `<git-common-dir>/app-configs-hooks`, and removes
+lefthook-generated hooks. It never runs `lefthook uninstall`.
+
 Never removes Nix itself and never deletes snapshots under
 `~/.local/state/dotfiles-snapshots/`.
+
+## Partial commits and the git hooks
+
+The git hooks are tracked dispatchers (`ops/githooks/`), installed by
+`bash ops/install-git-hooks.sh` into `<git-common-dir>/app-configs-hooks`
+(an absolute `core.hooksPath`, shared by every worktree). They run before
+lefthook and refuse a commit when:
+
+- any `LEFTHOOK*` variable is set (other than `LEFTHOOK_VERBOSE`,
+  `LEFTHOOK_QUIET`, or `LEFTHOOK_CONFIG` already pointing at this checkout's
+  `.lefthook.yml`), or `SKIP_HOOKS` is set;
+- a `lefthook-local.*` or `.lefthook-local.*` file exists at the top or in
+  `.config/`;
+- `.lefthook.yml` is missing or `lefthook` is not on `PATH`;
+- a staged path also has unstaged changes. Lefthook may stash the unstaged
+  part (some versions, or jobs with `stage_fixed`), and `git stash` is shared
+  by every worktree (AGENTS.md forbids it). The refusal changes nothing.
+
+The installer copies the dispatchers from the committed `HEAD`, so an
+uncommitted edit is not installed. Check the install any time with
+`bash ops/install-git-hooks.sh --check`; `ops/doctor.sh` and
+`ops/readiness.sh` run it too. Re-run the installer from the **main
+worktree** after pulling changes to `ops/githooks/`.
+
+**Migration (once per clone):** after this lands, run
+`bash ops/install-git-hooks.sh` in each clone's MAIN worktree (linked
+worktrees are refused; they share the result). Until then `ops/doctor.sh`
+warns and `ops/readiness.sh` shows `[MISS]`. `sys-update` runs the installer
+itself before it commits.
+
+To commit only part of a file without a stash (your own changes only; never
+touch another session's work):
+
+```bash
+d="$(mktemp -d)"                                  # a private directory
+git diff -- <path> > "$d/unstaged.patch"          # 1. save the unstaged part
+git restore --worktree -- <path>                  # 2. worktree = staged version
+git commit                                        # 3. commit what is staged
+git apply "$d/unstaged.patch"                     # 4. bring the rest back
+```
+
+If the commit is refused or fails (step 3), re-apply the patch right away
+(`git apply "$d/unstaged.patch"`) so the unstaged part is not lost.
+
+Rules: never run `lefthook install --force`, never run `lefthook run
+pre-commit` by hand (it may stash), commit with `git commit`. After moving or
+copying a clone, run the installer from its main worktree: a `core.hooksPath`
+that ends in `/app-configs-hooks` but whose directory is gone is treated as
+ours and repaired; a copy that still points at the original clone's live
+directory is refused as foreign, so unset it first
+(`git config --local --unset core.hooksPath`).
 
 ## Short commands (installed to PATH + fish)
 

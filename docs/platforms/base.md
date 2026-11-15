@@ -17,7 +17,7 @@ Before the first commit on any machine.
 
 | Tool | Used by |
 |------|---------|
-| lefthook | Installs the hooks (`.lefthook.yml`) |
+| lefthook | Runs the hooks (`.lefthook.yml`) behind the dispatchers in `ops/githooks/` |
 | gitleaks | Secret scan (`ops/hooks/pre-commit.sh`); blocks if missing |
 | chezmoi | `ops/validate-config.sh` checks |
 | bash | Runs every hook script |
@@ -33,14 +33,14 @@ Hooks:
 
 | Host | Setup |
 |------|-------|
-| Linux / macOS | Automatic: `ops/install.sh` installs chezmoi and lefthook (step 3), gitleaks comes from `nix/modules/home/dev.nix`, step 9 runs `lefthook install` |
+| Linux / macOS | Automatic: `ops/install.sh` installs chezmoi and lefthook (step 3), gitleaks comes from `nix/modules/home/dev.nix`, step 9 runs `ops/install-git-hooks.sh` |
 | Windows | `winget install -e --id twpayne.chezmoi`, `-e --id Gitleaks.Gitleaks`, `-e --id evilmartians.lefthook` (ids verified 2026-11-15; winget installs the latest). Still by hand until T-0047 T2 automates it |
 
 Then, in the clone:
 
 ```bash
 command -v chezmoi gitleaks lefthook
-lefthook install
+bash ops/install-git-hooks.sh   # not `lefthook install`; see "Partial commits" in docs/getting-started/install.md
 ```
 
 ## Rules

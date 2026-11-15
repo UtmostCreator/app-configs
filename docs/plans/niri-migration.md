@@ -1,8 +1,13 @@
-# Niri migration reassessment (2026-11-15)
+# Niri migration plan and reassessment (2026-11-15)
 
-Read-only research at main ed39171, written up as a standalone file because the
-tracked migration docs are being refreshed by another session (T-0033, refresh
-stale migration docs, not yet committed). This file edits none of them.
+Detailed Niri execution plan, based on read-only research at main ed39171. It
+is a standalone file because the tracked migration docs are being refreshed by
+another session (T-0033, refresh stale migration docs, not yet committed); this
+file edits none of them.
+
+Assessment (the user's, recorded): GNOME + Vicinae is the safest current
+desktop; Niri + Dux + Vicinae is the best trial. The shell layer gets simpler;
+the system layer does not.
 
 Evidence labels: VERIFIED (checked in the repo or by nix eval), WEB (fetched
 2026-11-15), INFERRED, ESTIMATE, unverified.
@@ -66,7 +71,7 @@ T-0033 owns these fixes; this file does not edit them.
 | `docs/research/niri-vs-hyprland.md` (lines 46, 69-70) and `docs/plans/hyprland-migration.md` (line 339) | Reference niri-flake `programs.niri.settings`, now outdated. |
 | `docs/plans/hyprland-migration.md` | Rule 9 and 10 line refs are stale: rule 9 now starts at line 536, rule 10 at 563 in `ops/validate-config.sh`. |
 | Migration docs | `nix/modules/nixos` now has 7 files (docker.nix and keyd-f1-remap.nix were added). |
-| `docs/plans/future-upgrades.md` (lines 269, 278) | Vicinae extension "46-50". The audit says 46-51; the store metadata is unverified. |
+| `docs/plans/future-upgrades.md` (lines 269, 278) and the comment in `nix/modules/home/gnome-extensions.nix` (lines 30-41, "GNOME shell 46-50") | Vicinae extension limited to GNOME 46-50. VERIFIED stale: the pinned nixpkgs extension (version 14, version-name 1.8.1) lists shell-version 46-51 in its metadata.json (nix eval of the root nixpkgs input, then read from the store path). Upstream Vicinae GNOME Extension v1.8.0 (2026-10-22, WEB, from the earlier research pass) added GNOME 51 support. The case for leaving GNOME must rest on window-management benefits, not on an assumed extension incompatibility. |
 | Audit | Its pins (2074cc67, HM 82ce401) are outdated. The current lock has HM a1293da7. |
 
 ## 4. Re-evaluation
@@ -88,14 +93,34 @@ T-0033 owns these fixes; this file does not edit them.
   launcher, lock, idle, OSD, wallpaper, clipboard history, tray) into 1-2
   (ESTIMATE).
 - Night light and the polkit agent were not found built in (unverified).
-- Overlap with Vicinae (launcher and clipboard): keep Vicinae as the owner and
-  disable Noctalia's equivalents.
+- Overlap with Vicinae (launcher and clipboard): DECIDED, keep Vicinae as the
+  owner and disable the selected shell's own launcher and clipboard bindings.
+  Rofi 2.x (official Wayland support merged, WEB) is the lightweight or
+  programmable fallback launcher.
 - Noctalia's GUI can rewrite its config.toml at runtime, which needs an ownership
   decision.
 - Its unit targets graphical-session.target, so it would also start under GNOME
   unless bound to the niri session.
-- Fallbacks: dux-shell (NixOS module only in nixpkgs), then Waybar 0.16 with
-  SwayNC, swaylock and swayidle (all HM modules).
+- Trial order (DECIDED): test the already-pinned Dux Modular Shell first (dux-shell
+  2.1.2, formerly DankMaterialShell, renamed upstream on 2026-10-20 to
+  duxlabs-dev/dux-shell), then Noctalia second. Compare them in a real NixOS
+  integration trial before choosing the permanent shell; the scores are too close
+  to decide on paper. Waybar 0.16 with SwayNC, swaylock and swayidle (all HM
+  modules) is the modular fallback.
+- Dux's reproducibility advantage: a declarative Nix integration and a plugin
+  lockfile that pins plugin git commits (WEB, not re-checked in this repo). A
+  lockfile is not the same as keeping plugins inside the Nix closure; whether the
+  plugins are fetched at runtime is unverified.
+- Caveat: in nixpkgs, dux-shell has a NixOS module only (no upstream HM module
+  found), so HM ownership of the shell would need an unverified integration.
+
+### Ownership (DECIDED)
+
+- NixOS owns nixosConfigurations and the compositor and session config.
+- Home Manager owns the selected shell, Vicinae and the user config.
+- Exactly ONE owner each for notifications, clipboard history, lock/idle and
+  polkit authentication. The trial must disable the duplicates the selected
+  shell brings.
 
 ### (c) Components
 
@@ -188,40 +213,51 @@ helpers".
 | P1 | T-0030 | Validator rescope, with bats. |
 | P2 | T-0031 | The spec, plus the GNOME helper refactor, with GNOME behaviour unchanged. |
 | P3 | T-0032 | The niri session is built, defaultSession pinned to GNOME, drvPath baseline recorded. |
-| P4 | Shell choice | Decision gate. |
-| P5 | Daily use | 2-4 weeks, with T-0032's checklist. |
+| P4 | Shell choice | Decision gate, from the Dux-first, Noctalia-second integration comparison. |
+| P5 | Daily use | 2-4 weeks, with T-0032's checklist plus the trial checklist below. |
 | P6 | Cutover | A separate decision. |
+
+Trial checklist before any cutover (GNOME stays a selectable login throughout):
+restart, logout, multi-monitor, screen sharing, file dialogs, clipboard, and
+sleep/resume.
 
 ## 7. Risks
 
 - The GNOME 51 jump.
 - The flameshot portal gap.
 - The hybrid GPU on nouveau.
-- Noctalia's age and its runtime config rewriting.
+- Shell youth: Noctalia v5 stable is about 10 weeks old with its runtime config rewriting; Dux was renamed on 2026-10-20.
 - The Vicinae overlap.
 - The T-0042 plumbing.
 - Validator duplicates.
 
-## 8. Decisions for the user (recommendation first)
+## 8. Decisions
 
-1. Confirm niri as the target, with Hyprland parked and retired after the trial: yes.
-2. Shell for the first trial: none at first (niri defaults plus the minimum), then
-   Noctalia as a separate step. Fallbacks: dux-shell, then Waybar+SwayNC.
-3. Keep Vicinae as the launcher and clipboard owner, and disable Noctalia's
-   equivalents: yes.
+Decided by the user:
+
+1. Keep Vicinae as the launcher and clipboard owner; Rofi 2.x is the fallback.
+2. The T-0032 trial tests Dux first, Noctalia second, then chooses the
+   permanent shell from the comparison. Waybar+SwayNC is the fallback.
+3. Proposed amendment for T-0032 (owned by another session, not edited here):
+   extend it with the shell comparison, and open a separate implementation
+   ticket only after a shell is chosen. That session decides whether to adopt it.
+
+Still open (recommendation first):
+
 4. niri config owner: a plain xdg.configFile plus `niri validate` (recommended),
    or the HM module with its package, portal and xwayland-satellite options nulled.
 5. Screenshot path: reproduce flameshot first.
 6. Window hide on niri: the portable contract only, or an emulation (+2-4 d).
-7. No T-0042 selection group for the trial.
-8. Keep GDM.
-9. Land T-0029 first, accepting the GNOME 50.1 to 51.0 bump.
+7. Land T-0029 first, accepting the GNOME 50.1 to 51.0 bump (recommended: yes).
+
+Recommended, not yet confirmed: Hyprland parked and retired after the trial; no
+T-0042 selection group for the trial; keep GDM.
 
 ## 9. Unverified
 
 - Runtime niri on this GPU and on DP-3.
 - Ctrl+Space and the ru-layout bindings under niri.
-- The Vicinae extension on GNOME 51.
+- The Vicinae extension at runtime on GNOME 51 (metadata supports it; not run).
 - Noctalia's night light, polkit agent and niri page.
 - That niri's default config spawns waybar.
 - dux-shell's details and its upstream HM module.
@@ -230,6 +266,7 @@ helpers".
 
 ## 10. Notes for T-0033's owner
 
-- Add a pointer from `docs/plans/migration/overview.md` to this file.
+- Link `docs/plans/migration/overview.md` to this file, `docs/plans/niri-migration.md` (the detailed Niri execution plan).
+- Fix the stale Vicinae extension GNOME 46-50 claim in `nix/modules/home/gnome-extensions.nix` and `docs/plans/future-upgrades.md` (section 3).
 - The audit's pins are outdated (see section 3).
 - The rule 9 and 10 line numbers in T-0033 are already off (536 and 563).

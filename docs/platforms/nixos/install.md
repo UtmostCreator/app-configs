@@ -60,8 +60,9 @@ home-manager switch -b hm-bak --flake ./nix#linux-desktop
 mise trust "$PWD"
 mise install
 
-# 5. git hooks
-lefthook install
+# 5. git hooks (never `lefthook install`: see "Partial commits" in docs/getting-started/install.md)
+bash ops/install-git-hooks.sh
+bash ops/install-git-hooks.sh --check
 
 # 6. ssh-agent helper (optional; installs a shell snippet)
 bash ops/unix/ssh-agent-setup.sh

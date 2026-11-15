@@ -12,10 +12,16 @@
 #   - validated: `nixos-rebuild dry-build` runs before the real rebuild; on a
 #     dry-build or rebuild failure every file is restored exactly as recorded.
 #     Exception, on every host: a `switch` that exits 4 (switch-to-configuration:
-#     the new generation IS activated, but some units failed) keeps the new files,
+#     the new generation IS activated, but some units failed) or 2 (its activate
+#     script failed, after the profile had already moved) keeps the new files,
 #     because they match the running system and restoring them would leave
 #     /etc/nixos and the running generation disagreeing. The failed units are
-#     listed, the rollback command is printed and the run still exits non-zero.
+#     listed, the rollback command and the later restore step are printed, and
+#     the run exits with that same code (never ignored). Exit 100 (the build or
+#     the profile switch itself failed, nothing activated) and every other
+#     code restore. The classification relies on nixos-rebuild-ng passing
+#     switch-to-configuration's exit code through; the legacy nixos-rebuild
+#     reports an activation failure as exit 1, which restores.
 #   - report-first: default prints the plan; pass --apply to mutate
 #
 # NixOS-WSL (HOST_PROFILE=wsl, or detect-host says wsl): the same, plus the
@@ -360,17 +366,19 @@ rebuild_system() {
   local rc=0
   # shellcheck disable=SC2086
   nixos-rebuild "$REBUILD_VERB" $FLAKE_ARG || rc=$?
-  if (( rc == 4 )) && [[ "$REBUILD_VERB" == switch ]]; then
-    # Activated, with failed units. Keep the files (BACKUP_DIR cleared so fail()
-    # does not restore) and still fail the run; exit 4 is never ignored.
+  if (( rc == 4 || rc == 2 )) && [[ "$REBUILD_VERB" == switch ]]; then
+    # Activated (4: units failed; 2: the activate script failed after the profile
+    # moved). Keep the files (BACKUP_DIR cleared so fail() does not restore) and
+    # still fail the run with the same code; it is never ignored.
     local kept="$BACKUP_DIR"
     BACKUP_DIR=""; SWITCH_STARTED=0
-    printf '[system-setup:error] nixos-rebuild switch activated the new generation, but some units failed (exit 4). The new files in %s stay: they match the running system.\n' "$NIXOS_DIR" >&2
+    printf '[system-setup:error] nixos-rebuild switch activated the new generation, but not cleanly (exit %s: failed units or a failed activate script). The new files in %s stay: they match the running system.\n' "$rc" "$NIXOS_DIR" >&2
     [[ -z "$kept" ]] || printf '[system-setup:error] the originals are kept in %s\n' "$kept" >&2
     printf '[system-setup:error] failed units (systemctl --failed):\n' >&2
     systemctl --failed --no-legend 2>&1 | sed 's/^/[system-setup:error]   /' >&2
     printf '[system-setup:error] to return to the previous generation run: sudo nixos-rebuild switch --rollback\n' >&2
-    exit 4
+    [[ -z "$kept" ]] || printf '[system-setup:error] after that rollback, restore /etc/nixos from %s (manifest.tsv lists every file, its state and its copy under files/)\n' "$kept" >&2
+    exit "$rc"
   fi
   (( rc == 0 )) || fail "nixos-rebuild $REBUILD_VERB failed (exit $rc; check the error above)"
   SWITCH_STARTED=0; BOOT_STARTED=0

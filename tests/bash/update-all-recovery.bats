@@ -32,6 +32,9 @@ setup() {
   FAKE="$BATS_TEST_TMPDIR/repo"
   mkdir -p "$FAKE/nix/packages/brave" "$FAKE/nix/packages/codebase-memory-mcp"
   cp -a "$REPO_ROOT/ops" "$FAKE/ops"
+  # Hook install has its own tests (githooks.bats); here it must not put a
+  # guard on the fixture's own commits.
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$FAKE/ops/install-git-hooks.sh"
   printf '{"nodes":{"nixpkgs":{"locked":{"rev":"old"}}}}\n' > "$FAKE/nix/flake.lock"
   printf '{ outputs = _: { }; }\n' > "$FAKE/nix/flake.nix"
   printf '{"version":"1.0.0"}\n' > "$FAKE/nix/packages/brave/release.json"

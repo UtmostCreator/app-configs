@@ -46,6 +46,7 @@ make_fake() {
     FAKE="$BATS_TEST_TMPDIR/repo"
     mkdir -p "$FAKE/ops" "$FAKE/nix/vars" "$FAKE/nix/profiles" "$FAKE/home/.chezmoidata" "$FAKE/.git"
     cp "$REPO_ROOT/ops/install.sh" "$REPO_ROOT/ops/update-version-report.sh" "$REPO_ROOT/ops/detect-host.sh" "$FAKE/ops/"
+    printf '#!/usr/bin/env bash\nexit 0\n' >"$FAKE/ops/install-git-hooks.sh" # hook install has its own tests (githooks.bats)
     cp -R "$REPO_ROOT/ops/lib" "$FAKE/ops/lib"
     cp "$REPO_ROOT"/nix/profiles/*.toml "$FAKE/nix/profiles/"
     cp "$REPO_ROOT/nix/flake.lock" "$FAKE/nix/flake.lock"

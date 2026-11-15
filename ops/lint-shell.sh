@@ -33,14 +33,14 @@ if ! command -v shellcheck >/dev/null 2>&1; then
   exit 1
 fi
 
-# Committed *.sh files plus extensionless ~/.local/bin helpers with a POSIX
-# shell shebang (python and other interpreters are skipped).
+# Committed *.sh files plus extensionless ~/.local/bin helpers and git hook
+# dispatchers (ops/githooks/) with a POSIX shell shebang (python and other interpreters are skipped).
 files=()
 while IFS= read -r -d '' f; do files+=("$f"); done < <(git ls-files -z -- '*.sh')
 while IFS= read -r -d '' f; do
   [[ "$f" == *.tmpl || "$f" == *.sh ]] && continue
   head -n1 "$f" 2>/dev/null | grep -qE '^#!.*\b(ba)?sh\b' && files+=("$f")
-done < <(git ls-files -z -- 'home/dot_local/bin/executable_*')
+done < <(git ls-files -z -- 'home/dot_local/bin/executable_*' 'ops/githooks/*')
 
 failed=0
 for f in "${files[@]}"; do
@@ -90,6 +90,9 @@ curated=(
   ops/detect-os-disks.sh ops/syncthing-obsidian-stignore.sh ops/bootstrap.sh
   ops/detect-host.sh ops/lint-shell.sh ops/run-bats.sh ops/wsl-check.sh
   ops/seed-personal-yaml.sh ops/unix/ssh-agent-setup.sh ops/audit.sh
+  ops/install-git-hooks.sh ops/uninstall.sh ops/hooks/post-merge.sh
+  ops/githooks/_lefthook.sh ops/githooks/pre-commit ops/githooks/commit-msg
+  ops/githooks/pre-push ops/githooks/post-merge
 )
 present=()
 for f in "${curated[@]}"; do [[ -f "$f" ]] && present+=("$f"); done

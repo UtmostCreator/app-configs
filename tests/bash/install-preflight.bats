@@ -162,7 +162,10 @@ make_repo() {
     printf '{\n  username = "%s";\n}\n' "${2:-utmostcreator}" >"$FAKE/nix/vars/default.nix"
     : >"$FAKE/home/.chezmoidata/personal.yaml"
     for tool in chezmoi home-manager mise; do stub_tool "$tool"; done
-    stub "$STUBS/lefthook" "printf 'argv=%s cwd=%s\n' \"\$*\" \"\$PWD\" >>'$LOG'"
+    # The hook installer is a stub that records how it was called: its own
+    # behaviour is tested in githooks.bats.
+    stub "$STUBS/lefthook" 'exit 0'
+    stub "$FAKE/ops/install-git-hooks.sh" "printf 'argv=%s script=%s\n' \"\$*\" \"\$0\" >>'$LOG'"
     for s in snapshot-home doctor; do stub "$FAKE/ops/$s.sh" 'exit 0'; done
     stub "$FAKE/ops/detect-timezone.sh" 'echo Europe/London'
 }
@@ -176,16 +179,20 @@ make_repo() {
     [[ "$output" != *"utmostcreator"* ]]
 }
 
-@test "lefthook install runs once in a repo path with spaces and an apostrophe" {
+@test "the hook installer then --check run once each in a repo path with spaces and an apostrophe" {
     make_repo "it's a repo"
     run env USER=utmostcreator PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
     echo "$output"
     [ "$status" -eq 0 ]
-    [ "$(wc -l <"$LOG")" -eq 1 ]
-    [ "$(cat "$LOG")" = "argv=install cwd=$FAKE" ]
+    [ "$(wc -l <"$LOG")" -eq 2 ]
+    [ "$(sed -n 1p "$LOG")" = "argv= script=$FAKE/ops/install-git-hooks.sh" ]
+    [ "$(sed -n 2p "$LOG")" = "argv=--check script=$FAKE/ops/install-git-hooks.sh" ]
+    # lefthook install is never used (T-0051).
+    run grep -E '^[^#]*lefthook install' "$REPO_ROOT/ops/install.sh"
+    [ "$status" -eq 1 ]
 }
 
-@test "a crafted repo path cannot inject commands into the lefthook step" {
+@test "a crafted repo path cannot inject commands into the git hooks step" {
     mkdir -p "$BATS_TEST_TMPDIR/work"
     make_repo "x';touch pwned-marker;'"
     cd "$BATS_TEST_TMPDIR/work"
@@ -193,14 +200,24 @@ make_repo() {
     echo "$output"
     [ "$status" -eq 0 ]
     [ ! -e "$BATS_TEST_TMPDIR/work/pwned-marker" ]
-    [ "$(cat "$LOG")" = "argv=install cwd=$FAKE" ]
+    [ "$(wc -l <"$LOG")" -eq 2 ]
+    [ "$(sed -n 1p "$LOG")" = "argv= script=$FAKE/ops/install-git-hooks.sh" ]
+    [ "$(sed -n 2p "$LOG")" = "argv=--check script=$FAKE/ops/install-git-hooks.sh" ]
 }
 
-@test "dry-run does not invoke lefthook" {
+@test "a failing --check fails the install" {
+    make_repo repo
+    stub "$FAKE/ops/install-git-hooks.sh" '[ "${1:-}" = --check ] && exit 1; exit 0'
+    run env USER=utmostcreator PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
+    [ "$status" -ne 0 ]
+}
+
+@test "dry-run does not invoke the hook installer" {
     make_repo repo
     run env USER=utmostcreator DRY_RUN=1 PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
     [ "$status" -eq 0 ]
-    [[ "$output" == *"would run: sh -c"*"lefthook install"* ]]
+    [[ "$output" == *"would run: bash "*"/ops/install-git-hooks.sh"* ]]
+    [[ "$output" == *"would: bash ops/install-git-hooks.sh --check"* ]]
     [ ! -e "$LOG" ]
 }
 
@@ -641,9 +658,11 @@ helpers_present() {
     make_repo repo
     mkdir -p "$BATS_TEST_TMPDIR/profile/bin"
     stub "$BATS_TEST_TMPDIR/profile/bin/lefthook" "echo 'from-profile' >>'$LOG'"
+    # The hook installer resolves lefthook through the PATH install.sh built.
+    stub "$FAKE/ops/install-git-hooks.sh" 'lefthook'
     run env USER=utmostcreator INSTALL_NIX_DEFAULT_PROFILE="$BATS_TEST_TMPDIR/profile" HOST_PROFILE=linux-cli bash "$FAKE/ops/install.sh"
     [ "$status" -eq 0 ]
-    [ "$(cat "$LOG")" = "from-profile" ]
+    grep -qx from-profile "$LOG"
 }
 
 @test "a failing detect-host is an [install:error], not a silent exit" {

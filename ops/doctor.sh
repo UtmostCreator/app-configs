@@ -132,6 +132,20 @@ if [[ "$PREFLIGHT" -eq 0 ]]; then
     fi
 fi
 
+# The installed git hooks are the no-stash guard (T-0051). A warning, never an
+# error: the pre-commit hook runs doctor, and a commit is never blocked on
+# infrastructure that is not present (it is what installs it). The hard gates
+# are readiness ([MISS]), install.sh, bootstrap and mise sync:apply.
+if [[ "$PREFLIGHT" -eq 0 && -e "$ROOT_DIR/.git" && -f "$ROOT_DIR/ops/install-git-hooks.sh" ]]; then
+    echo "-- Git hooks --"
+    if hooks_out="$(bash "$ROOT_DIR/ops/install-git-hooks.sh" --check 2>&1)"; then
+        ok "git hooks installed and intact"
+    else
+        printf '%s\n' "$hooks_out" >&2
+        warn "git hooks not intact (run: bash ops/install-git-hooks.sh from the main worktree)"
+    fi
+fi
+
 if [[ "$ERRORS" -ne 0 ]]; then
     echo "doctor: $ERRORS error(s)" >&2
     exit 1

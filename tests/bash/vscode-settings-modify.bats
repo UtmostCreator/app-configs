@@ -171,3 +171,7 @@ modify() { bash "$SCRIPT"; }
     [ "$status" -eq 0 ]
     [ "$output" = "$(cat "$FULL")" ]
 }
+
+@test "the full settings keep 100000 lines of terminal scrollback" {
+    [ "$(jq -r '."terminal.integrated.scrollback"' <<<"$FULL_JSON")" = 100000 ]
+}

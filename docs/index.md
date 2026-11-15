@@ -15,6 +15,7 @@ the topic you need.
 | 1Password vault secrets: `op` references and the composer wrapper | [`1password-vault-secrets.md`](guides/1password-vault-secrets.md) |
 | Neovim | [`nvim-setup.md`](reference/nvim/setup.md) |
 | Karabiner / keyboard remapping (macOS) | [`keyboard.md`](reference/keyboard.md) |
+| Terminal scrollback: Ghostty, tmux, VS Code, Windows Terminal limits | [`terminal-scrollback.md`](reference/terminal-scrollback.md) |
 | Microsoft Teams not sending or reactions reverting (macOS) | [`teams-troubleshooting.md`](guides/teams-troubleshooting.md) |
 | macOS disk cleanup: what is safe to clear and how to check | [`macos-cleanup.md`](guides/macos-cleanup.md) |
 | OpenClaw Telegram bot: secrets, pairing, service (Linux desktop) | [`openclaw-telegram.md`](guides/openclaw-telegram.md) |

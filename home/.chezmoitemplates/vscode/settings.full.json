@@ -679,7 +679,7 @@
   "terminal.integrated.cursorBlinking": true,
   "terminal.integrated.cursorStyle": "line",
   "terminal.integrated.enableMultiLinePasteWarning": "auto", // Safety for multi-line pastes
-  "terminal.integrated.scrollback": 10000,
+  "terminal.integrated.scrollback": 100000,
   "terminal.integrated.persistentSessionReviveProcess": "onExit",
   "terminal.integrated.tabs.enabled": true,
   "terminal.integrated.defaultProfile.osx": "zsh",

@@ -47,6 +47,14 @@ hm_value() {
     grep -qx 'keybind = ctrl+t=new_tab' <<<"$output"
 }
 
+@test "ghostty: scrollback uses the 1.4 line and byte keys, not the deprecated one" {
+    run render_ghostty
+    [ "$status" -eq 0 ]
+    grep -qx 'scrollback-limit-lines = 100000' <<<"$output"
+    grep -qx 'scrollback-limit-bytes = 400000000' <<<"$output"
+    ! grep -Eq '^scrollback-limit[[:space:]]*=' <<<"$output"
+}
+
 @test "ghostty: rendered config passes ghostty's own validation" {
     command -v ghostty >/dev/null || skip "ghostty not installed"
     render_ghostty >"$BATS_TEST_TMPDIR/config"

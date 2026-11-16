@@ -15,6 +15,8 @@ related: [T-0047]
 # ADR-0003: Docker on WSL is one declarative engine inside NixOS-WSL
 Status: decided (not yet verified; rootless on WSL unverified) · Date: 2026-11-15 · Sources: T-0047 ticket and plan, docs/platforms/wsl/windows-and-wsl.md, `nix/modules/nixos/docker.nix`
 
+Proposed amendment in ADR-0030 (containers: one CLI owner per host, engine per host; this ADR's engine decision is unchanged).
+
 ## Decision
 - NixOS `virtualisation.docker` through the existing docker module, enabled by sys-setup on request (off by default on wsl).
 - Never added to the docker group automatically: the group is root-equivalent. Access is explicit (`DOCKER_GROUP=1`) or rootless (`DOCKER_ROOTLESS=1`, to be measured).

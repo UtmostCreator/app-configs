@@ -15,6 +15,8 @@ related: [T-0047]
 # ADR-0004: Tailscale runs on the Windows host only
 Status: decided (not yet verified) · Date: 2026-11-15 · Sources: T-0047 ticket and plan, docs/platforms/wsl/windows-and-wsl.md
 
+Amended by ADR-0029 (partly-decided: no Tailscale on work hosts, owner 2026-11-16; Tailscale is personal-profile only).
+
 ## Decision
 Tailscale is installed on Windows only. sys-setup runs with `ENABLE_TAILSCALE=0` on wsl, and WSL reaches the tailnet through Windows.
 

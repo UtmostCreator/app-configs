@@ -1,0 +1,47 @@
+---
+adr: 28
+title: "Files: file managers, disk usage, duplicates and archives"
+status: partly-decided
+date: 2026-11-16
+platforms: [cross, windows]
+areas: [file-managers, disk-usage, archives, tool-selection]
+permits: [grandperspective-exception, wiztree-personal-exception]
+forbids: []
+amends: [11]
+supersedes: []
+superseded_by: []
+related: [19, 21, T-0042]
+---
+# ADR-0028: Files: file managers, disk usage, duplicates and archives
+Status: partly-decided (the two disk-usage exceptions are decided-unverified, owner 2026-11-16; the other rows are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 (resolves the T-0042 Q8 7-Zip item) · Sources: tool-selection design round 3
+
+Notation, parity and profiles: [ADR-0021](0021-cross-platform-parity-and-profiles.md). Windows additions are bounded by [ADR-0019](0019-platform-scope-linux-macos-wsl2-first.md).
+
+## Owner decision (2026-11-16, quoted)
+- O2: all native exceptions approved (here: GrandPerspective on macOS, WizTree on Windows personal).
+
+## Decision
+One status per row.
+
+| Job | L / M / Win | Alternatives | P/W | Status | Now |
+|---|---|---|---|---|---|
+| TUI file manager | yazi | lf; broot | P+W | Pr | Record |
+| GUI dual-pane | Double Commander / Nimble Commander (CM: no supported install owner, the Double Commander cask is disabled) / Double Commander | Marta; ForkLift; Commander One | P+W | Pr | Record |
+| Disk usage, Linux | QDirStat and dust | Baobab; ncdu; gdu | P+W | Pr | Record |
+| Disk usage, macOS (Ex) | GrandPerspective and dust | DaisyDisk | P+W | DU | Record. Discard TreeSize |
+| Disk usage, Windows P (Ex) | WizTree | WinDirStat | P | DU | Manual |
+| Disk usage, Windows W | WinDirStat (GPL) | none | W | Pr | Manual |
+| Duplicates | Czkawka / not added (untested, Q9) / on demand | dupeGuru | P | Pr | Record |
+| Archives | p7zip, unconditional (`nix/modules/home/dev.nix:129`) / same / built-in extraction (unverified), NanaZip optional | PeaZip; 7-Zip; WinRAR (discard) | P+W | Pr | Record; Manual |
+
+## R1 tests for the Ex rows
+| Part | GrandPerspective (macOS) | WizTree (Windows, personal only) |
+|---|---|---|
+| (a) licence for that profile | free (GPL) | free for personal use only, so P only |
+| (b) native or built in | native macOS app | native Windows app |
+| (c) named gap against the parity pick | native and maintained; QDirStat's macOS build is a community port. If the only reason were the install owner this would be CM; the owner approved it as an exception, so it stays Ex | MFT scan speed |
+| (d) dated row | 2026-11-16; replaced pick QDirStat; revisit when QDirStat has a maintained macOS build | 2026-11-16; replaced pick WinDirStat (a KDirStat-family tool like QDirStat); revisit if the licence changes or work use is needed |
+| (e) owner approval | 2026-11-16 | 2026-11-16 |
+
+## Consequences
+- Nothing is installed by this ADR. WizTree is not allowed on W (licence).

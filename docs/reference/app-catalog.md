@@ -51,6 +51,25 @@ free/freemium/paid label per OS and the reason it was picked or skipped.
 > from `gui.nix`. Linux equivalents (if wanted) would be a separate slice
 > (e.g. `albert`/`ulauncher` for a launcher, `i3`/`sway`/`hyprland` for tiling).
 
+## Tool-selection decisions (recorded, not built)
+
+Owner decisions of 2026-11-16 are recorded in the ADRs below. **None of these
+changes what this repo installs yet**: the tables above and below still show
+what is built. Each row becomes true only when its follow-up change lands.
+Parity and profile rules: ADR-0021 (`docs/architecture/decisions/0021-cross-platform-parity-and-profiles.md`).
+
+| Decision (status: decided-unverified unless noted) | ADR | Built today? |
+| --- | --- | --- |
+| Brave stable everywhere (replaces the macOS beta cask) | 0022 | no; the table above is still current |
+| KeePassXC primary, Bitwarden allowed, `op` for dev secrets | 0023 | partial (KeePassXC on linux-desktop only) |
+| Beekeeper Studio everywhere, DBeaver on macOS, HeidiSQL on Windows (permanent, exempt); Sequel Ace kept (decided) | 0024 | no |
+| Raycast on Windows (both profiles); PowerToys (native exception) | 0027 | no (Windows apps are a manual list) |
+| GrandPerspective (macOS) and WizTree (Windows personal) as native exceptions | 0028 | GrandPerspective only (cask above) |
+| No Tailscale on work hosts; WinSCP on Windows | 0029 | no |
+| Remove code2prompt and files-to-prompt after the audit gate | 0032 | no, both are still installed |
+| Kopia plus Time Machine for backup | 0033 | no |
+| Flameshot (Windows personal), Preview (macOS PDF), Edge PDF, IINA, Paint.NET | 0036 | no |
+
 ## CLI tools (Nix on every OS)
 
 Terminal/shell: `fish`, `tmux`, `starship`, `atuin`, `zoxide`, `fzf`, `yazi`,

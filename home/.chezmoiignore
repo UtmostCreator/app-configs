@@ -96,8 +96,6 @@ Library/**
 # Library/Application Support/com.mitchellh.ghostty path instead).
 .config/ghostty
 .config/ghostty/**
-# dsh-remote-setup drives systemd --user and ss; Linux/WSL only.
-.local/bin/dsh-remote-setup
 {{- end }}
 
 {{- if not $macInput }}

@@ -214,8 +214,7 @@ DESKTOP_STABILITY_ZRAM="${DESKTOP_STABILITY_ZRAM:-0}"
 
 # Tailscale provides the private transport for loopback-only developer tools.
 # The daemon is enabled here; joining a tailnet and configuring `tailscale
-# serve` remain explicit, one-time user actions handled by dsh-remote-setup
-# (which leaves the DSH service off at login unless run with --autostart).
+# serve` remain explicit, one-time user actions.
 # Off by default on NixOS-WSL (ENABLE_TAILSCALE=1 opts in).
 ENABLE_TAILSCALE="${ENABLE_TAILSCALE:-$(( IS_WSL == 1 ? 0 : 1 ))}"
 

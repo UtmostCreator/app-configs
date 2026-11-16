@@ -118,7 +118,7 @@ added. Remove `tcp:22` and the `ssh` block to block SSH and the tunnel.
 SSH is authorised in two layers, and both must allow: the `tcp:22` grant carries
 the connection, and the `ssh` rule authorises the login. SSH rules can't target
 a `hosts` alias. The `tcp:22` grant to `desktop` limits Tailscale SSH to the
-desktop. If you run `dsh-remote-setup`, add `tcp:443` to the grant.
+desktop.
 
 Run the `tests` and `sshTests` in the admin console before saving; they block a
 bad save. Rollback: keep a private copy of the current policy before saving and paste it
@@ -130,7 +130,6 @@ back; configuration audit logs show past changes.
 |---------|----------|
 | Phoenix (6006, 9090) | Do not share until Phoenix auth is on: `PHOENIX_ENABLE_AUTH=true` with a persistent secret. It is currently off (no login). That change belongs to the separate ai-monitoring project, not this repo. |
 | Codebase Memory UI (9749), Syncthing GUI (8384) | SSH tunnel only (below). |
-| DeepSeek Harness | Login autostart is opt-in (653ccfe). Running `dsh-remote-setup` (with or without `--autostart`) adds a persistent `tailscale serve --bg 3080` rule, which takes https 443, so the examples here use 8443. `tailscale serve reset` also removes it. See [`software-and-cli-tools.md`](../../repo-docs/software-and-cli-tools.md). |
 | Other dev servers | Temporary `tailscale serve` per port; stop it when done. |
 
 ## Share and unshare

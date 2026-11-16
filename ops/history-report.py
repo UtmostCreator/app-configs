@@ -47,7 +47,7 @@ gst gco gl gp gd gau gaa gai gcmsg gti it gi pa pat punit pint nr ni nreset relo
 tree glow mdcat jless fx gum lnav k9s
 scc lizard for if while read newgrp gsettings dconf wpctl pactl nix-instantiate pgrep lsusb repomix
 res restsift pw-play vicinae nautilus android-studio sync-start sync-stop sync-open gh-stars-export
-git-branch-origin reindex-cbm dsh-remote dsh-remote-status clipcopy wsl-open hyperfine xh zc patw lg
+git-branch-origin reindex-cbm clipcopy wsl-open hyperfine xh zc patw lg
 """.split())
 
 GIT_SUB = set("""
@@ -72,7 +72,7 @@ SUBCMD_RE = re.compile(r"^[a-z][a-z0-9:-]{0,24}$")
 INTERACTIVE = [  # (label, regex on raw command) long-lived / interactive
     ("git pager (log/diff/show)", r"^git\s+(log|lg|hist|adog|diff|d|gd|ds|dc|dw|dcw|show|sh|blame|praise|pickp|pickgp)\b(?!.*(--stat|--name-only|--name-status|--no-pager|\s-\d+\b|\s-n\s))"),
     ("systemd pager", r"^(sudo\s+)?(systemctl\b.*\bstatus\b|journalctl\b(?!.*\s-f))"),
-    ("remote shell", r"^(sudo\s+)?(ssh|mosh|dsh-remote)\b(?!-)"),
+    ("remote shell", r"^(sudo\s+)?(ssh|mosh)\b(?!-)"),
     ("editor", r"^(sudo\s+)?(vim?|nvim|nano|code|hx|emacs|subl)\b"),
     ("pager/man", r"^(less|more|man|tldr|glow)\b"),
     ("log tail", r"(\btail\s+-[a-zA-Z]*[fF]|journalctl\b.*\s-f|\bws-logs\b|\blog-workspace\b|\blnav\b)"),

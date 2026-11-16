@@ -50,9 +50,6 @@ Known exceptions to the rule, all follow-ups:
   by `home/.chezmoiignore:41-44`). The flameshot cask is removed on macOS, so
   the macOS copy now configures an app that is not installed. Follow-up:
   delete it or restore the app.
-- `home/dot_config/systemd/user/dsh-remote.service` is a chezmoi-owned
-  systemd user unit. The allowlist says units belong to Home Manager. Follow-up:
-  move it to Home Manager or record it as a chezmoi exception here.
 
 ## Ownership table
 

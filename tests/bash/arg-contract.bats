@@ -42,10 +42,8 @@ declare -gA WAIVE_HELP=(
     [home/dot_local/bin/executable_rgc]="justified: positional pattern only"
     [home/dot_local/bin/executable_clipcopy]="justified: reads stdin, no options"
     [home/dot_local/bin/executable_wsl-open]="justified: positional path/URL only"
-    [home/dot_local/bin/executable_dsh-remote]="justified: forwards every argument to the remote shell"
     [ops/ci-local.sh]="justified: arguments are the command to run inside the clean env"
     # --- finding: no help handling
-    [home/dot_local/bin/executable_dsh-remote-status]="finding: --help runs tailscale"
     [ops/projects/github/sync-main.sh]="finding: --help exits 1"
     [ops/projects/health/dashboard.sh]="finding: --help starts the dashboard loop"
     [ops/projects/health/monitor.sh]="finding: --help starts the monitor loop"
@@ -56,7 +54,6 @@ declare -gA WAIVE_HELP=(
 )
 declare -gA WAIVE_FLAG=(
     [home/dot_local/bin/executable_conns]="justified: positional N only; pipes into the sibling topn helper, which is not on the sandbox PATH"
-    [home/dot_local/bin/executable_dsh-remote-status]="finding: unknown flag runs tailscale"
     [ops/ci-local.sh]="justified: arguments are the command to run inside the clean env"
     [ops/projects/health/dashboard.sh]="finding: unknown flag starts the dashboard loop"
     [ops/projects/health/monitor.sh]="finding: unknown flag starts the monitor loop"

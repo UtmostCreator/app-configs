@@ -6,7 +6,8 @@
 }:
 # Weekly read-only audit of this machine: `ops/audit.sh --live` (chezmoi drift,
 # failed user units, nix-profile collisions, last sys-update run, dirty main
-# checkout, stale codebase-memory projects). The output lands in the journal
+# checkout, stale codebase-memory projects, oversized temp and agent scratch
+# space). The output lands in the journal
 # (`journalctl --user -u repo-audit`); a FAIL also raises a desktop
 # notification, or a Windows toast on WSL2. Logic lives in
 # scripts/repo-audit.sh, tested by tests/bash/repo-audit-timer.bats.

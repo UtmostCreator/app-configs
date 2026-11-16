@@ -15,7 +15,9 @@
 #           unchanged at the end.
 #   --live  this machine, read-only: chezmoi drift, failed user units,
 #           nix-profile vs Home Manager conflicts, last sys-update run, a dirty
-#           main checkout, stale codebase-memory projects.
+#           main checkout, stale codebase-memory projects, oversized temp and
+#           agent scratch space (APP_CONFIGS_AUDIT_TMP_WARN_GB, default 20;
+#           APP_CONFIGS_AUDIT_TMP_FS_WARN_PCT, default 90; warn only, never deletes).
 #   (none)  all three; --deep and --live degrade to WARN when their tools are
 #           missing.
 #
@@ -25,6 +27,10 @@
 # Tunables: AUDIT_CRITICAL_PRIORITY (90), AUDIT_DUPE_WARN_PCT (3),
 # AUDIT_HOTSPOT_FIX_RATIO (0.5), AUDIT_HOTSPOT_MIN_TOUCHES (5),
 # AUDIT_SYSUPDATE_MAX_AGE_DAYS (14).
+# Scratch check (--live): APP_CONFIGS_AUDIT_TMP_WARN_GB (20, a policy default,
+# whole GB), APP_CONFIGS_AUDIT_TMP_WARN_KB (overrides the GB limit; for tests),
+# APP_CONFIGS_AUDIT_TMP_FS_WARN_PCT (90), APP_CONFIGS_AUDIT_AGENT_SCRATCH
+# (default /tmp/claude-<uid>), APP_CONFIGS_AUDIT_TMP_DU_TIMEOUT (30 seconds).
 set -uo pipefail
 
 usage() {
@@ -33,7 +39,8 @@ Usage: bash ops/audit.sh [--ci] [--deep] [--live] [--allow-missing-restsift] [-h
   --ci      run ops/ci.sh (the deterministic gate)
   --deep    restsift arch/refactor/dupes/shell/history checks (needs `res`)
   --live    read-only checks of this machine (chezmoi, systemd, nix profile,
-            last sys-update, main checkout, codebase-memory index)
+            last sys-update, main checkout, codebase-memory index,
+            temp and agent scratch size)
   (none)    all three; --deep/--live degrade to WARN when their tools are missing
   --allow-missing-restsift   with --deep: a missing `res` is a WARN, not a FAIL
 Prints PASS/WARN/FAIL lines and a summary; exits 1 on any FAIL, 2 on a bad argument.
@@ -74,6 +81,7 @@ section() { printf '\n== %s ==\n' "$*"; }
 indent() { sed 's/^/        /'; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
+ORIG_TMPDIR="${TMPDIR:-/tmp}" # the caller's temp dir, for live_scratch (TMPDIR is redirected below)
 AUDIT_TMP="$(mktemp -d "${TMPDIR:-/tmp}/audit.XXXXXX")"
 trap 'rm -rf "$AUDIT_TMP"' EXIT
 # Nothing restsift (or anything else here) writes may land in the repository.
@@ -85,6 +93,11 @@ CRITICAL_PRIORITY="${AUDIT_CRITICAL_PRIORITY:-90}"
 DUPE_WARN_PCT="${AUDIT_DUPE_WARN_PCT:-3}"
 HOTSPOT_FIX_RATIO="${AUDIT_HOTSPOT_FIX_RATIO:-0.5}"
 HOTSPOT_MIN_TOUCHES="${AUDIT_HOTSPOT_MIN_TOUCHES:-5}"
+SCRATCH_WARN_GB="${APP_CONFIGS_AUDIT_TMP_WARN_GB:-20}"
+SCRATCH_WARN_KB="${APP_CONFIGS_AUDIT_TMP_WARN_KB:-}" # test-friendly override of the GB threshold
+SCRATCH_FS_WARN_PCT="${APP_CONFIGS_AUDIT_TMP_FS_WARN_PCT:-90}"
+SCRATCH_AGENT_DIR="${APP_CONFIGS_AUDIT_AGENT_SCRATCH:-/tmp/claude-$(id -u 2>/dev/null || echo 0)}"
+SCRATCH_DU_TIMEOUT="${APP_CONFIGS_AUDIT_TMP_DU_TIMEOUT:-30}"
 SYSUPDATE_MAX_AGE_DAYS="${AUDIT_SYSUPDATE_MAX_AGE_DAYS:-14}"
 
 in_git() { git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; }
@@ -436,6 +449,85 @@ live_cbm_index() {
   fi
 }
 
+# Human size from KiB.
+fmt_kb() {
+  awk -v k="$1" 'BEGIN { if (k >= 1048576) printf "%.1f GB", k / 1048576; else if (k >= 1024) printf "%d MB", k / 1024; else printf "%d KB", k }'
+}
+
+# Detection only: never deletes. One `du -x` (one filesystem) per canonical
+# target under `timeout`; permission errors are ignored, the sizes read still
+# count. On a timeout the partial output is used as a lower bound; a timeout
+# is never a PASS.
+live_scratch() {
+  local limit_kb t u keep skip out rc total partial pct top n note real audit_real
+  local targets=()
+  if ! have du; then warn "scratch: du not found; temp and agent scratch growth not checked"; return; fi
+  if [[ -n "$SCRATCH_WARN_KB" ]]; then
+    [[ "$SCRATCH_WARN_KB" =~ ^(0|[1-9][0-9]*)$ ]] || { warn "scratch: APP_CONFIGS_AUDIT_TMP_WARN_KB is not a whole number; temp growth not checked"; return; }
+    limit_kb="$SCRATCH_WARN_KB"
+  else
+    [[ "$SCRATCH_WARN_GB" =~ ^(0|[1-9][0-9]*)$ ]] || { warn "scratch: APP_CONFIGS_AUDIT_TMP_WARN_GB is not a whole number; temp growth not checked"; return; }
+    limit_kb=$((SCRATCH_WARN_GB * 1024 * 1024))
+  fi
+  [[ "$SCRATCH_FS_WARN_PCT" =~ ^(0|[1-9][0-9]*)$ ]] || SCRATCH_FS_WARN_PCT=90
+  audit_real="$(cd -- "$AUDIT_TMP" 2>/dev/null && pwd -P)"
+  # Targets are canonical (symlinks resolved). One inside another is counted
+  # once, under the outer one, whichever order they come in.
+  for t in "$ORIG_TMPDIR" "$SCRATCH_AGENT_DIR"; do
+    real="$(cd -- "$t" 2>/dev/null && pwd -P)" || continue
+    skip=0 keep=()
+    for u in "${targets[@]}"; do
+      if [[ "$real" == "$u" || "$real" == "${u%/}"/* ]]; then skip=1; keep+=("$u")
+      elif [[ "$u" != "${real%/}"/* ]]; then keep+=("$u")
+      fi
+    done
+    targets=("${keep[@]}")
+    ((skip)) || targets+=("$real")
+  done
+  for t in "${targets[@]}"; do
+    have timeout || { warn "scratch: timeout not found; $t not measured"; continue; }
+    rc=0
+    out="$(timeout "$SCRATCH_DU_TIMEOUT" du -x -k --max-depth=1 -- "$t" 2>/dev/null)" || rc=$?
+    top="$(awk -F'\t' -v t="$t" -v a="$audit_real" '$2 != t && $2 != a && $1 ~ /^[0-9]+$/ { print }' <<<"$out" | sort -rn | head -n 5)"
+    if ((rc == 124)); then
+      partial="$(awk -F'\t' -v t="$t" '$2 != t && $1 ~ /^[0-9]+$/ { s += $1 } END { print s + 0 }' <<<"$out")"
+      if ((partial > limit_kb)); then
+        warn "scratch: $t holds at least $(fmt_kb "$partial") (du timed out after ${SCRATCH_DU_TIMEOUT}s), above $(fmt_kb "$limit_kb") limit; cleanup is a separate, owner-approved step (this audit never deletes)"
+        scratch_top "$t" "$top"
+      else
+        warn "scratch: $t size unknown, at least $(fmt_kb "$partial") measured (du timed out after ${SCRATCH_DU_TIMEOUT}s; limit $(fmt_kb "$limit_kb"))"
+        scratch_top "$t" "$top"
+      fi
+      continue
+    fi
+    total="$(awk -v t="$t" -F'\t' '$2 == t { print $1 }' <<<"$out" | tail -n1)"
+    if [[ ! "$total" =~ ^[0-9]+$ ]]; then warn "scratch: could not measure $t"; continue; fi
+    note=""
+    ((rc != 0)) && note=" (partial: some entries unreadable)"
+    if ((total > limit_kb)); then
+      warn "scratch: $t holds $(fmt_kb "$total")$note, above $(fmt_kb "$limit_kb") limit; cleanup is a separate, owner-approved step (this audit never deletes)"
+      scratch_top "$t" "$top"
+    else
+      pass "scratch: $t holds $(fmt_kb "$total")$note (limit $(fmt_kb "$limit_kb"))"
+    fi
+  done
+  # Free space of the filesystem holding the temp dir (no other disk check exists here).
+  if have df && [[ -d "$ORIG_TMPDIR" ]]; then
+    pct="$(df -P -- "$ORIG_TMPDIR" 2>/dev/null | awk 'NR == 2 { gsub("%", "", $5); print $5 }')"
+    if [[ "$pct" =~ ^(0|[1-9][0-9]*)$ ]] && ((pct >= SCRATCH_FS_WARN_PCT)); then
+      warn "scratch: filesystem holding $ORIG_TMPDIR is ${pct}% used (warn at ${SCRATCH_FS_WARN_PCT}%)"
+    fi
+  fi
+}
+
+scratch_top() { # scratch_top TARGET "KB<TAB>PATH lines"
+  local n u
+  while IFS=$'\t' read -r n u; do
+    [[ -n "$u" ]] && printf '        %10s  %s\n' "$(fmt_kb "$n")" "$u"
+  done <<<"$2"
+  printf '        inspect: du -sh %q/* | sort -h\n' "$1"
+}
+
 audit_live() {
   section "live (this machine, read-only)"
   local before after
@@ -446,6 +538,7 @@ audit_live() {
   live_sysupdate
   live_main_checkout
   live_cbm_index
+  live_scratch
   if in_git; then
     after="$(tree_state)"
     if [[ "$before" == "$after" ]]; then

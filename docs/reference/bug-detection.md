@@ -86,6 +86,7 @@ The Windows PowerShell suite (`tests/windows/bootstrap.tests.ps1`) runs in the
 | Last `sys-update` run (`$SYS_UPDATE_STATE_DIR/last-run`) | A failed, unfinished or very old update | 10 | live, weekly |
 | Main checkout dirty | Uncommitted files that block the next `sys-update` | 10 | live, weekly |
 | codebase-memory index | Projects indexed from `/tmp` or from a deleted directory; prints the `delete_project` command | none (hygiene) | live, weekly |
+| `du -x --max-depth=1` of `$TMPDIR` and `/tmp/claude-$UID` (bounded by `timeout`), `df` of the temp filesystem | Temp and agent scratch growing past `APP_CONFIGS_AUDIT_TMP_WARN_GB` (default 20, a policy default) or the filesystem at 90% used; lists the 5 biggest subdirectories; WARN only, never deletes (a timed-out `du` is a WARN with a lower bound) | none (hygiene) | live, weekly |
 
 ### Manual
 

@@ -499,5 +499,5 @@ description = "Audit: restsift arch, refactor, dupes, shell and git-history chec
 run = "bash ops/audit.sh --deep"
 
 [tasks."audit:live"]
-description = "Audit: read-only checks of this machine (chezmoi, systemd, nix profile, sys-update, cbm index)"
+description = "Audit: read-only checks of this machine (chezmoi, systemd, nix profile, sys-update, cbm index, temp scratch size)"
 run = "bash ops/audit.sh --live"

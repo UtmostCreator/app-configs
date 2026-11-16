@@ -5,8 +5,12 @@
 Primary interactive shell is **fish**; zsh and bash configs are still shipped.
 
 - **fish** — primary interactive shell. Uses fish's **built-in**
-  autosuggestions + syntax highlighting (no extra plugins). Config:
-  `home/dot_config/fish/config.fish.tmpl`.
+  autosuggestions + syntax highlighting, plus the `autopair` plugin. **Tab**
+  opens an fzf fuzzy-searchable list of fish's completions (`cd <Tab>`,
+  `git ch<Tab>`; the same `fzf_complete` as Shift-Tab; a single candidate is
+  inserted directly). Right, End or Ctrl-F accept the grey autosuggestion.
+  Without fzf, Tab falls back to fish's plain completion list.
+  Config: `home/dot_config/fish/config.fish.tmpl`.
 - **Starship** prompt ([starship.rs](https://starship.rs/)) — initialised in
   every shell.
 - **Atuin** — searchable shell history (owns Ctrl-R).

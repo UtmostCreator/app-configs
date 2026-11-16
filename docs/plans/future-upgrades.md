@@ -340,7 +340,8 @@ Move when **any** of these becomes true:
 - **syncthing** (package) under the personal profile (see item 10 to run it).
 - **navi**: interactive cheatsheet launcher in `cli.nix` (complements tldr).
 - **fish niceties**: vi keybindings + `GPG_TTY` + `fishPlugins.autopair` in
-  `config.fish.tmpl`/`cli.nix`. (fzf-fish deliberately skipped — would conflict
+  `config.fish.tmpl`/`cli.nix`; Tab opens fzf's own `fzf_complete` menu.
+  (fzf-fish deliberately skipped — would conflict
   with the existing `fzf --fish` + Atuin Ctrl-T/Ctrl-R bindings.)
 - **browser-policies**: `nix/modules/nixos/browser-policies.nix` — opt-in
   (`myConfig.browserPolicies.enable`) managed Brave/Chromium privacy + Brave

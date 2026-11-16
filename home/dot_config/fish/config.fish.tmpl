@@ -113,6 +113,18 @@ if type -q fzf
     fzf --fish | source
 end
 
+# Tab opens fzf's own completion menu (`fzf_complete`, defined by `fzf --fish`
+# above and also on Shift-Tab): fish's candidates (folders, commands,
+# arguments, descriptions) in a fuzzy-searchable list at fzf's default 40%
+# height; Enter inserts, Escape keeps the line, and a single candidate is
+# inserted without opening the list (--select-1). This bind must come after
+# `fish_vi_key_bindings` and `fzf --fish`. Without fzf, Tab stays plain
+# `complete` (set in the editing block). Vi normal mode keeps its preset.
+if functions -q fzf_complete
+    set -q FZF_COMPLETION_OPTS; or set -gx FZF_COMPLETION_OPTS --select-1
+    bind -M insert tab fzf_complete
+end
+
 # Atuin: searchable shell history (owns Ctrl-R / Up). Fish autosuggestions
 # stay enabled; Atuin replaces the history *search* UI.
 if type -q atuin

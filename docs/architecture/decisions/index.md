@@ -50,7 +50,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0007](0007-safety-net-restore-points-and-pinned-downloads.md) | Restore point, exports, pinned image, three distinct recoveries | decided | 2026-11-15 |
 | [0008](0008-git-editor-per-host-profile.md) | Git editor nvim on wsl and linux-cli, `code --wait` elsewhere | decided-unverified | 2026-11-15 |
 | [0009](0009-two-machines-one-history.md) | Desktop first, sync by push/pull fast-forward only, split file ownership | decided | 2026-11-15 |
-| [0010](0010-cross-os-settings-inventory-first.md) | Cross-OS settings: inventory, compare, baseline; apply nothing yet | decided | 2026-11-15 |
+| [0010](0010-cross-os-settings-inventory-first.md) | Cross-OS settings: inventory, compare, baseline; Windows apply only via ADR-0020/0034/0035 | decided | 2026-11-15 |
 | [0011](0011-windows-edition-and-apps.md) | Windows Home is enough; apps are a manual list; automation open | partly-decided | 2026-11-14 |
 | [0012](0012-desktop-compositor-gnome-niri-hyprland.md) | GNOME live; niri proposed trial; Hyprland parked | partly-decided | 2026-11-15 |
 | [0013](0013-desktop-shell-bar-notifications-trial.md) | Trial Dux first, Noctalia second; no shell selected | trial | 2026-11-15 |
@@ -60,6 +60,11 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0017](0017-interactive-shell-fish-or-zsh.md) | fish primary interactive shell for testing purposes; zsh stays supported | trial | 2026-11-16 |
 | [0018](0018-interactive-config-manager-frontend.md) | Interactive configuration manager: a frontend over the existing selection (compiled wizard, Bash fallback); no installer of its own | proposed | 2026-11-16 |
 | [0019](0019-platform-scope-linux-macos-wsl2-first.md) | Platform scope: Linux, macOS and WSL2 first; Windows stays a bounded bootstrap | decided | 2026-11-16 |
+| [0020](0020-windows-safe-settings-snapshot-first.md) | Windows safe settings: committed settings snapshot first, opt-in step W (HKCU, current-user Appx), profile selector, rollback | decided-unverified | 2026-11-16 |
+| [0034](0034-nvidia-3d-settings-as-code.md) | NVIDIA global 3D settings as code (personal profile, NVIDIA hardware only): captured Profile Inspector profile, snapshot first | decided-unverified | 2026-11-16 |
+| [0035](0035-windows-telemetry-reduction.md) | Telemetry reduction for the personal setup profile; the work profile touches no telemetry | decided-unverified | 2026-11-16 |
+
+ADR numbers 0021 to 0033 are reserved for the Windows tool-selection ADRs written next; gaps are allowed by the contract.
 
 ## Layers
 

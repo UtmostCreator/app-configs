@@ -1,0 +1,194 @@
+# Documentation of the ADR-0020 visual-effects catalogue entries; the executable source will be ops/windows/windows-settings.psd1 (not yet implemented); a parity test will check the id/recommended lines; keep this format: one `- id:` block per option, simple `key: value` lines, no anchors.
+#
+# Scope: Windows 11 Performance Options > Visual Effects dialog (17 options, in dialog order) plus the preset.
+# Goal (owner 2026-11-16): "research what to select in here and create yaml file without ui impact or worsening ui ux on windows".
+# Rule applied: turn off only transitions (animation and fade effects) that add delay but no information. Keep everything that
+# changes how text, previews, windows or selections look or work. DEP and the Advanced tab are untouched (manual-only).
+#
+# Fields: default = Windows default; current = this account on 2026-11-16 (read-only check); recommended = target state;
+# managed = true when the catalogue changes it; apply = when the change shows (sign-out); registry = HKCU location.
+# UserPreferencesMask (UPM) is HKCU\Control Panel\Desktop, REG_BINARY, edited by named bits only (ADR-0020 BinaryBit).
+# Bits marked "unverified" come from public Windows documentation or inference, not from a toggle check on this PC (the five managed bits need the human toggle check first).
+# The non-UPM registry paths come from general Windows documentation and are unverified on this PC.
+# After apply, sign out right away: a SystemParametersInfo write from the dialog before sign-out can overwrite the mask.
+# On this account UPM goes from 9E 1E 07 80 12 00 00 00 to 98 12 07 80 10 00 00 00.
+
+- id: preset
+  label: "Adjust for best appearance / performance preset (VisualFXSetting)"
+  default: absent
+  current: absent
+  recommended: 3
+  managed: true
+  registry: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\VisualEffects, VisualFXSetting, REG_DWORD (3 = Custom)"
+  apply: sign-out
+  reason: "3 marks the dialog as Custom so the per-option choices below show as set; rollback deletes the value (absent today)."
+
+- id: animate-controls
+  label: "Animate controls and elements inside windows"
+  default: on
+  current: on
+  recommended: off
+  managed: true
+  registry: "UPM byte 4, mask 0x02 (unverified; toggle check pending)"
+  apply: sign-out
+  reason: "Transition only; removes small delays on buttons and sliders; no information is lost."
+
+- id: animate-windows
+  label: "Animate windows when minimizing and maximizing"
+  default: on
+  current: on
+  recommended: off
+  managed: true
+  registry: "HKCU\\Control Panel\\Desktop\\WindowMetrics, MinAnimate, REG_SZ ('0')"
+  apply: sign-out
+  reason: "Windows appear and disappear immediately; transition only."
+
+- id: taskbar-animations
+  label: "Animations in the taskbar"
+  default: on
+  current: on
+  recommended: off
+  managed: true
+  registry: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced, TaskbarAnimations, REG_DWORD (0)"
+  apply: sign-out
+  reason: "Transition only; taskbar behaviour is unchanged."
+
+- id: peek
+  label: "Enable Peek"
+  default: on
+  current: on
+  recommended: on
+  managed: false
+  registry: "HKCU\\Software\\Microsoft\\Windows\\DWM, EnableAeroPeek, REG_DWORD"
+  apply: none
+  reason: "Functional (shows a window or the desktop on hover); kept."
+
+- id: fade-slide-menus
+  label: "Fade or slide menus into view"
+  default: on
+  current: on
+  recommended: off
+  managed: true
+  registry: "UPM byte 0, mask 0x02 (unverified: public docs; toggle check pending)"
+  apply: sign-out
+  reason: "Menus open at once; transition only."
+
+- id: fade-slide-tooltips
+  label: "Fade or slide ToolTips into view"
+  default: on
+  current: on
+  recommended: off
+  managed: true
+  registry: "UPM byte 1, mask 0x08 (unverified: public docs; toggle check pending)"
+  apply: sign-out
+  reason: "Tooltips show without the fade; the text is the same."
+
+- id: fade-menu-items
+  label: "Fade out menu items after clicking"
+  default: on
+  current: on
+  recommended: off
+  managed: true
+  registry: "UPM byte 1, mask 0x04 (unverified: public docs; toggle check pending)"
+  apply: sign-out
+  reason: "Menu closes immediately after a click; transition only."
+
+- id: taskbar-thumbnails
+  label: "Save taskbar thumbnail previews"
+  default: on
+  current: on
+  recommended: on
+  managed: false
+  registry: "HKCU\\Software\\Microsoft\\Windows\\DWM, AlwaysHibernateThumbnails, REG_DWORD"
+  apply: none
+  reason: "Functional (preview images); turning it off makes previews slower or blank; kept."
+
+- id: cursor-shadow
+  label: "Show shadows under mouse pointer"
+  default: on
+  current: off
+  recommended: off
+  managed: false
+  registry: "UPM byte 1, mask 0x20 (unverified; consistent with the current mask having no 0x20)"
+  apply: none
+  reason: "Already off on this account (hand-tuned); left as found, not managed."
+
+- id: window-shadows
+  label: "Show shadows under windows"
+  default: on
+  current: on
+  recommended: on
+  managed: false
+  registry: "UPM (bit unverified)"
+  apply: none
+  reason: "Helps tell overlapping windows apart; kept."
+
+- id: show-thumbnails
+  label: "Show thumbnails instead of icons"
+  default: on
+  current: on
+  recommended: on
+  managed: false
+  registry: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced, IconsOnly, REG_DWORD (0 = thumbnails)"
+  apply: none
+  reason: "Functional (file previews); kept."
+
+- id: translucent-selection
+  label: "Show translucent selection rectangle"
+  default: on
+  current: on
+  recommended: on
+  managed: false
+  registry: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced, ListviewAlphaSelect, REG_DWORD"
+  apply: none
+  reason: "Shows what is under the selection; kept."
+
+- id: drag-contents
+  label: "Show window contents while dragging"
+  default: on
+  current: on
+  recommended: on
+  managed: false
+  registry: "HKCU\\Control Panel\\Desktop, DragFullWindows, REG_SZ"
+  apply: none
+  reason: "Functional; turning it off shows only an outline, which worsens UX; kept."
+
+- id: combo-slide
+  label: "Slide open combo boxes"
+  default: on
+  current: on
+  recommended: off
+  managed: true
+  registry: "UPM byte 0, mask 0x04 (unverified: public docs; toggle check pending)"
+  apply: sign-out
+  reason: "Drop-down lists open at once; transition only."
+
+- id: font-smoothing
+  label: "Smooth edges of screen fonts"
+  default: on
+  current: on
+  recommended: on
+  managed: false
+  registry: "HKCU\\Control Panel\\Desktop, FontSmoothing, REG_SZ ('2' = font smoothing on; ClearType itself is FontSmoothingType = 2)"
+  apply: none
+  reason: "Font smoothing (ClearType when FontSmoothingType is 2); turning it off makes text visibly worse; kept."
+
+- id: smooth-scroll
+  label: "Smooth-scroll list boxes"
+  default: on
+  current: on
+  recommended: on
+  managed: false
+  registry: "UPM byte 0, mask 0x08 (unverified)"
+  apply: none
+  reason: "Scrolling feel, not a delay; kept."
+
+- id: icon-label-shadows
+  label: "Use drop shadows for icon labels on the desktop"
+  default: on
+  current: on
+  recommended: on
+  managed: false
+  registry: "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\Advanced, ListviewShadow, REG_DWORD"
+  apply: none
+  reason: "Keeps desktop labels readable on any wallpaper; kept."

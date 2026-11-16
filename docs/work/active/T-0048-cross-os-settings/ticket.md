@@ -81,4 +81,5 @@ settings:                  # keys sorted, cross-OS neutral names
 ## Open questions
 - Where should per-host override data live long-term: chezmoi data, nix vars, or a new config dir?
 - May the apply command change Windows power settings (needs admin)? Later decision.
+- 2026-11-16 note: ADR-0020 amends ADR-0010 for step W's scope only: apply may run before T-0047 completes, replacing the restore point and powercfg requirement with a committed snapshot, undo.json and `-DryRun` (non-elevated scope). The step-W snapshot is not phase 3 (baseline); windows.yaml stays the read-only inventory. See T-0055. ADR-0034 and ADR-0035 also amend ADR-0010: the NVIDIA profile step and `-MachineWide` may apply before T-0047 completes (owner 2026-11-16, "Yes, allow now").
 - Which baseline values to choose?

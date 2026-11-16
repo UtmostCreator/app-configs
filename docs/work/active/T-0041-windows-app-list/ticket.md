@@ -76,7 +76,7 @@ Discarded:
 - GlazeWM, Zebar, komorebi: a tiling WM plus a bar is a keybinding system to design and maintain.
 - AutoHotkey, Kanata: hotkey and remap scripts to maintain; karabiner and keyd configs do not port.
 - Raycast (Windows), Vicinae (Windows), PowerToys Run: duplicate launchers; Windows search is enough.
-- HeidiSQL: Windows-only.
+- HeidiSQL: Windows-only. (Reversed 2026-11-16: now an owner-approved Windows-only exception, see Decision.)
 - System Informer: Windows-only and loads a kernel driver. Kept discarded on 2026-11-15 (user confirmed it is not for the default install): a powerful diagnostics tool, but unnecessary as a permanent taskbar monitor (winget `WinsiderSS.SystemInformer`, machine scope, needs admin, loads the KSystemInformer kernel driver).
 - Twinkle Tray: Windows-only and monitor-specific.
 - WezTerm: a second terminal; Windows Terminal is built in, and Ghostty has no Windows build.
@@ -116,7 +116,7 @@ Deferred:
 - AC1: the user's approval is recorded in this ticket before any edit.
 - AC2: every listed app is declared on macOS or Linux (file cited), is a WSL prerequisite, or is a dated user-approved Windows-only exception listed under Decision.
 - AC3: every id is confirmed by the user's `winget show` output (saved as evidence) or marked unconfirmed.
-- AC4: apps.md states that nothing is automated and contains the full discarded/deferred section.
+- AC4: apps.md states that app installs are not automated; ADR-0020 step W removes a closed list of inbox apps (2026-11-16 rewording; the original wording was "apps.md states that nothing is automated"). It contains the full discarded/deferred section.
 - AC5: Appendix A is amended; the diff is docs only.
 
 ## Verification
@@ -143,3 +143,10 @@ Deferred:
 2026-11-15, user: approved TrafficMonitor Lite as a Windows-only exception to the
 scope rule (a taskbar CPU/RAM/network meter; not declared on macOS or Linux).
 System Informer stays discarded. A launcher question is open (see Open questions).
+
+2026-11-16, user decision (recorded via ADR-0020, T-0055): narrows the no-registry and no-automatic-removal decision
+above. ADR-0020 step W may apply a closed catalogue of HKCU settings and remove a closed list of
+inbox apps for the current user, behind a committed snapshot and with rollback. Installs stay manual.
+AC4 is reworded in the AC list above (the clause "contains the full discarded/deferred section" is kept).
+
+2026-11-16, user: approved HeidiSQL as a Windows-only exception to the scope rule, like TrafficMonitor Lite ("both Beekeeper Studio and hidesql"). It leaves the discarded list (AC2: a dated user-approved Windows-only exception listed under Decision). See ADR-0011.

@@ -39,6 +39,9 @@ Homebrew on Linux/WSL (a second manager next to Nix), a new app-selection menu o
 ## Consequences
 - Contradiction to know: T-0041 discards "a repo-run windows/ layer (setup.ps1, doctor.ps1, DSC)" as an open-ended maintenance burden; the bootstrap partly reverses that. Keep it to WSL and commit tooling.
 - Amended by ADR-0019: app-list automation and `winget configure` are not planned.
+- Amended by ADR-0020: one more opt-in step W (`-WindowsSnapshot`, `-WindowsSettings`, `-WindowsRollback`) is added to the bootstrap surface; non-elevated, HKCU only, never in the default run.
+- Amended by ADR-0034: a further elevated opt-in step `-NvidiaProfile` (personal profile, NVIDIA hardware only; staged, not built).
+- Amended by ADR-0035: an elevated opt-in `-MachineWide` mode (personal telemetry, machine scope) exists beside the single elevated WSL step.
 - Was open: automate the app list (`winget import` of a committed JSON) or keep it manual; `winget configure` (DSC) deferred "if the plain list proves insufficient". See ADR-0011.
 - Commit-tooling step (step C): observed on a real PC 2026-11-15 (expected-results.md row 2); not yet re-run after later script changes (unknown).
 - ADR-0016 amends "only for commit tooling" / "Keep it to WSL and commit tooling" with one opt-in step (Claude status line; jq via winget).

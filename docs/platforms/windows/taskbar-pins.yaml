@@ -1,0 +1,136 @@
+# Taskbar pins, in the owner's order (left to right). Documentation only: nothing reads or applies this file.
+# Pinning is a manual checklist (see taskbar.md). Owner decisions 2026-11-16: "also add yaml and if we can setup this task panel pinned";
+# "keepass and sync thing goes before putty"; HeidiSQL is kept as a permanent Windows exception.
+#
+# status: chosen (decided tool) | system (part of Windows) | pending tool decision (tool-selection ADRs 0021 to 0033, in progress) | unknown
+# aumid: AppUserModelID where known; otherwise a path with {PF} = %ProgramFiles%. Empty when unknown.
+# profiles: personal | work | both (omitted = both). The `personal` assignments are proposed (from tool ADR screening), not decided.
+# aumid values come from Get-StartApps output on this PC (2026-11-16); `{PF}` and `%APPDATA%` entries are executable paths.
+
+pins:
+  - position: 1
+    app: Paint.NET
+    status: pending tool decision
+    aumid: ""
+  - position: 2
+    app: File Explorer
+    status: system
+    aumid: Microsoft.Windows.Explorer
+  - position: 3
+    app: Double Commander
+    status: chosen
+    aumid: '{PF}\Double Commander\doublecmd.exe'
+  - position: 4
+    app: PDF reader
+    status: pending tool decision
+    aumid: ""
+  - position: 5
+    app: Visual Studio Code
+    status: chosen
+    aumid: Microsoft.VisualStudioCode
+  - position: 6
+    app: Windows Terminal
+    status: chosen
+    aumid: Microsoft.WindowsTerminal_8wekyb3d8bbwe!App
+  - position: 7
+    app: Vesktop
+    status: pending tool decision
+    aumid: ""
+    profiles: personal
+  - position: 8
+    app: Git GUI
+    status: pending tool decision
+    aumid: ""
+  - position: 9
+    app: Telegram
+    status: chosen
+    aumid: '%APPDATA%\Telegram Desktop\Telegram.exe'
+    profiles: personal
+  - position: 10
+    app: Control Panel
+    status: system
+    aumid: Microsoft.Windows.ControlPanel
+  - position: 11
+    app: Obsidian
+    status: chosen
+    aumid: md.obsidian
+  - position: 12
+    app: sound tool
+    status: unknown
+    aumid: ""
+  - position: 13
+    app: Brave
+    status: chosen
+    aumid: Brave
+  - position: 14
+    app: Firefox
+    status: chosen
+    aumid: 308046B0AF4A39CB
+  - position: 15
+    app: Notepad++
+    status: pending tool decision
+    aumid: ""
+  - position: 16
+    app: KeePassXC
+    status: chosen
+    aumid: '{PF}\KeePassXC\KeePassXC.exe'
+  - position: 17
+    app: Syncthing tray
+    status: pending tool decision
+    aumid: ""
+    profiles: personal
+  - position: 18
+    app: PuTTY
+    status: pending tool decision
+    aumid: ""
+  - position: 19
+    app: Signal
+    status: pending tool decision
+    aumid: ""
+    profiles: personal
+  - position: 20
+    app: PhpStorm
+    status: pending tool decision
+    aumid: ""
+  - position: 21
+    app: WinSCP
+    status: pending tool decision
+    aumid: ""
+  - position: 22
+    app: HeidiSQL
+    status: chosen
+    aumid: ""
+    note: "owner kept it as a permanent Windows exception"
+  - position: 23
+    app: Bruno
+    status: chosen
+    aumid: com.usebruno.app
+  - position: 24
+    app: ChatGPT
+    status: pending tool decision
+    aumid: ""
+  - position: 25
+    app: Logitech G HUB
+    status: pending tool decision
+    aumid: ""
+    profiles: personal
+  - position: 26
+    app: unknown
+    status: unknown
+    aumid: ""
+  - position: 27
+    app: TreeSize
+    status: pending tool decision
+    aumid: ""
+  - position: 28
+    app: unknown
+    status: unknown
+    aumid: ""
+
+not_pinned:
+  - LocalSend
+  - Flameshot
+  - TrafficMonitor Lite
+  - Tailscale
+  - GitHub CLI
+  - Git

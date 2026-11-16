@@ -2,7 +2,7 @@ Source: local
 
 # T-0053: Git aliases that delete tags or change repository state while looking read-only (bug)
 
-Status: open (fixes implemented on `feat/ssh-key-lifetime`, reviewed, landing with `land/all-reviewed`; close when that lands and AC-1 to AC-5 pass on main)
+Status: closed (2026-11-16): fixed on main by feat/ssh-key-lifetime, landed in 8f6b4eb; AC-1 to AC-5 verified there
 Opened: 2026-11-15
 Note: T-0052 is claimed by the Windows session (status line); T-0049 is reserved.
 Relates to: T-0051 F3 (lefthook's temporary stash, the same shared-stash conflict)
@@ -109,3 +109,24 @@ decisions; this ticket keeps the evidence and the acceptance checks.
 - macOS: the aliases are POSIX shell and Git, but no macOS run was made.
 - Whether anyone relies on `fp` deleting tags, or on `dnew`'s intent-to-add
   side effect (for example to make `git diff` show new files afterwards).
+
+## Closure (2026-11-16)
+
+Verified on `main` at `8f6b4eb`, in a detached worktree:
+
+- `bats tests/bash/git-shortcuts.bats tests/bash/gitconfig-template.bats`:
+  41 of 41 pass. They include "fp keeps local-only tags; fptags is the explicit
+  tag-pruning variant" (AC-1); "up refuses a dirty tree", "a conflicting up
+  stops in the rebase and leaves the stash list empty" and "up on a clean tree
+  pulls and rebases" (AC-2); "lostcommits lists a dropped commit and never
+  writes .git/lost-found" (AC-3); "dnew shows tracked stat and untracked files
+  without touching the index" (AC-4).
+- `bash ops/validate-config.sh`: all invariants pass. `chezmoi diff
+  ~/.gitconfig`: empty, so the live config matches the template (the
+  `__AppConfigs_fixes` session applied it on 2026-11-16) (AC-5).
+- Not run: macOS.
+- T5 was done differently by the landed fix: `docs/reference/cli-shortcuts.md`
+  documents the new `git cfgwhere` and `git mainline` aliases; the ignore-rule
+  check (`git check-ignore -v`) is not documented there.
+- T4 (audit of the 146 aliases) was not part of the landed fix and is not
+  done. It needs its own ticket if the owner wants it.

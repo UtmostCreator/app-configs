@@ -91,6 +91,14 @@ mise run tools:optional:install
   (its npm `latest` tag still points to an older release). Copy the shipped `ptc`
   preset and enable its `tool-subagent-codex` row; enter the DeepSeek key in
   **Settings → Models**, outside the repository.
+  Private Android access: `mise run tools:deepseek-harness:remote-setup`
+  (`dsh-remote-setup`) configures Tailscale Serve and starts `dsh-remote.service`
+  now. Login autostart is **off by default**; opt in with `dsh-remote-setup --autostart`.
+  With user lingering the service keeps running until reboot or
+  `systemctl --user stop dsh-remote.service`; undo autostart with
+  `systemctl --user disable --now dsh-remote.service`. The Tailscale Serve rule is
+  persistent: remove it with `tailscale serve reset` (clears all Serve rules).
+  `dsh-remote-status` shows the autostart and active state.
 - **[repomix](https://github.com/yamadashy/repomix)** - package repository context for LLM prompts
 - **[files-to-prompt](https://github.com/simonw/files-to-prompt)** - concatenate targeted file sets with path headers
 - **[code2prompt](https://github.com/mufeedvh/code2prompt)** - template-driven prompt/context generation

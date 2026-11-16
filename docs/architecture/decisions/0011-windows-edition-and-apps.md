@@ -21,6 +21,26 @@ Amended by ADR-0020 (2026-11-16): registry tweaks stay discarded except the clos
 
 Amended by ADR-0035 (2026-11-16): registry tweaks stay discarded except the listed telemetry policy values, one service and six scheduled tasks (personal profile, elevated `-MachineWide` only).
 
+Amended by ADR-0021 (partly-decided, 2026-11-16): option A and the R1 rule replace the three-OS parity rule (decided); profile rules, host profiles and the no-change gate are decided; the native-exception test and one owner per binary are proposed. App rows change in ADRs 0022 to 0033, 0036 and 0037.
+
+Amended by ADR-0023 (partly-decided: KeePassXC narrowed to the personal profile; Bitwarden allowed; 1Password desktop still deferred).
+
+Amended by ADR-0024 (partly-decided: HeidiSQL changes from discarded to a permanent owner exception on Windows; Beekeeper Studio added; DBeaver added on macOS).
+
+Amended by ADR-0027 (decided: the "Raycast/Vicinae/PowerToys Run" launcher discard is reversed for Windows, Raycast in both profiles and PowerToys). Proposed amendment in ADR-0027: the Ditto and clipboard item.
+
+Amended by ADR-0028 (decided: the disk-usage exceptions GrandPerspective and WizTree). Proposed amendment in ADR-0028: the T-0042 Q8 7-Zip and archives item.
+
+Proposed amendment in ADR-0030 (Docker Desktop changes from deferred to discarded).
+
+Proposed amendment in ADR-0031 (resolves the Git for Windows conflict).
+
+Amended by ADR-0033 (decided: backup, Kopia plus Time Machine). Proposed amendment in ADR-0033: Telegram narrowed to the personal profile; the Syncthing deferral reversed; the T-0042 Q8 items for Vesktop, Slack and Zoom.
+
+Amended by ADR-0036 (partly-decided: the ShareX rejection reason "Flameshot runs everywhere" is no longer true; Flameshot is the Windows personal pick).
+
+Proposed amendment in ADR-0037 (TrafficMonitor Lite narrowed to the personal profile).
+
 ## Decision
 - Edition: Windows 11 Home is enough. WSL2 needs only Virtual Machine Platform; Pro's Hyper-V Manager, Sandbox, BitLocker and Group Policy are not used. (This PC was being upgraded to Pro anyway; nothing here requires it.)
 - Apps: a documented copy-only list, installed by hand with winget, one `winget install --id <id> --exact` at a time. Ids are unverified until `winget show`. Automation is open (Milestone 2).

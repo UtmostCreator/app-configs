@@ -245,3 +245,18 @@ android:
   - name: Tasker
     license: paid
     android: { status: paid-option, note: Try Samsung Modes and Routines first. }
+
+# Tool-selection decisions (owner, 2026-11-16). Documentation only; nothing here
+# is installed by this repo yet. Parity and profile rules: ADR-0021. Status
+# values are the ADR row statuses: D decided, DU decided-unverified.
+tool_selection_decisions:
+  - { adr: 22, item: "Brave stable everywhere", status: DU, built: false }
+  - { adr: 23, item: "KeePassXC primary; Bitwarden allowed; op for dev secrets", status: DU, built: partial }
+  - { adr: 24, item: "Beekeeper Studio (all OS); DBeaver Community (macOS); HeidiSQL (Windows, exempt)", status: DU, built: false }
+  - { adr: 24, item: "Sequel Ace kept on macOS (inferred from the DBeaver answer)", status: D, built: true }
+  - { adr: 27, item: "Raycast on Windows (both profiles); PowerToys (native exception)", status: DU, built: false }
+  - { adr: 28, item: "GrandPerspective (macOS) and WizTree (Windows personal) native exceptions", status: DU, built: partial }
+  - { adr: 29, item: "No Tailscale on work hosts; WinSCP on Windows", status: DU, built: false }
+  - { adr: 32, item: "Remove code2prompt and files-to-prompt after the audit gate", status: DU, built: false }
+  - { adr: 33, item: "Kopia plus Time Machine for backup", status: DU, built: false }
+  - { adr: 36, item: "Flameshot (Windows personal); Preview (macOS PDF); Edge PDF; IINA; Paint.NET", status: DU, built: false }

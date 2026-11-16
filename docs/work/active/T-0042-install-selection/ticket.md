@@ -195,7 +195,7 @@ Negative (must not change)
 
 ## Open questions (answer before implementation)
 1. Keep profile names `work | personal` (recommended) or rename to `work | home`?
-2. What should each profile actually turn off? (Both start all-on, so nothing changes.)
+2. What should each profile actually turn off? (Both start all-on, so nothing changes.) ADR-0021 P5a (decided gate): nothing now; see P5b.
 3. Is a prompt acceptable in `sys-install` on a first run with a TTY and no stored
    selection, or only with `--reconfigure` (and `--profile` for unattended runs)?
 4. Approve the one-time `flake.lock` edit adding the `selection` node?

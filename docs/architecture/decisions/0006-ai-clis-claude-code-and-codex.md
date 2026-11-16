@@ -15,6 +15,8 @@ related: [T-0047]
 # ADR-0006: AI CLIs: keep Claude Code and Codex, install only when missing, run Claude in WSL
 Status: decided-unverified (installer not yet built) · Date: 2026-11-15 · Sources: T-0047 plan (decisions, S3-5, Milestone 2), `nix/modules/home/ai-cli-updates.nix`, docs/platforms/wsl/windows-and-wsl.md
 
+Proposed amendment in ADR-0032 (adds macOS vendor-installer and packer rows; the Claude Code and Codex decisions here are unchanged).
+
 ## Decision
 - Keep both CLIs; the repo already runs update timers for both.
 - A script called from `ops/install.sh` (Linux hosts only) installs a CLI only when it is missing: download to a file, validate, then run. Never reinstall over a working binary.

@@ -61,10 +61,25 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0018](0018-interactive-config-manager-frontend.md) | Interactive configuration manager: a frontend over the existing selection (compiled wizard, Bash fallback); no installer of its own | proposed | 2026-11-16 |
 | [0019](0019-platform-scope-linux-macos-wsl2-first.md) | Platform scope: Linux, macOS and WSL2 first; Windows stays a bounded bootstrap | decided | 2026-11-16 |
 | [0020](0020-windows-safe-settings-snapshot-first.md) | Windows safe settings: committed settings snapshot first, opt-in step W (HKCU, current-user Appx), profile selector, rollback | decided-unverified | 2026-11-16 |
+| [0021](0021-cross-platform-parity-and-profiles.md) | Cross-platform parity (Linux and macOS first, Windows follows winget), the R1 native exception, host profiles, one owner per binary | partly-decided | 2026-11-16 |
+| [0022](0022-browsers.md) | Browsers: Brave stable everywhere, Firefox secondary | partly-decided | 2026-11-16 |
+| [0023](0023-password-managers-and-secrets-cli.md) | Password managers: KeePassXC primary, Bitwarden allowed, op for dev secrets | partly-decided | 2026-11-16 |
+| [0024](0024-database-clients.md) | Database clients: Beekeeper Studio everywhere, DBeaver on macOS, HeidiSQL on Windows | partly-decided | 2026-11-16 |
+| [0025](0025-terminal-environment.md) | Terminal environment: terminal, multiplexer, prompt, font, PowerShell | proposed | 2026-11-16 |
+| [0026](0026-editors-and-ides.md) | Editors and IDEs: VS Code, Neovim, Android Studio on Linux | proposed | 2026-11-16 |
+| [0027](0027-launcher-clipboard-windows-input-macos-ux.md) | Launcher, clipboard, window management, input and macOS UX: Raycast on Windows, PowerToys | partly-decided | 2026-11-16 |
+| [0028](0028-files.md) | Files: file managers, disk usage (GrandPerspective, WizTree exceptions), duplicates, archives | partly-decided | 2026-11-16 |
+| [0029](0029-networking-and-remote-access.md) | Networking: no Tailscale on work hosts, OpenSSH, WinSCP | partly-decided | 2026-11-16 |
+| [0030](0030-containers-and-local-services.md) | Containers: one CLI owner, engine per host, Docker Desktop discarded | proposed | 2026-11-16 |
+| [0031](0031-dev-runtimes-git-clients-api-client.md) | Dev runtimes, Git clients and API client | proposed | 2026-11-16 |
+| [0032](0032-ai-clis-context-tools-and-desktop-apps.md) | AI CLIs, context tools and desktop apps; packers removed after audit | partly-decided | 2026-11-16 |
+| [0033](0033-communication-sync-notes-and-backup.md) | Communication, sync, notes and backup: Kopia plus Time Machine | partly-decided | 2026-11-16 |
 | [0034](0034-nvidia-3d-settings-as-code.md) | NVIDIA global 3D settings as code (personal profile, NVIDIA hardware only): captured Profile Inspector profile, snapshot first | decided-unverified | 2026-11-16 |
 | [0035](0035-windows-telemetry-reduction.md) | Telemetry reduction for the personal setup profile; the work profile touches no telemetry | decided-unverified | 2026-11-16 |
+| [0036](0036-screenshots-media-images-and-pdf.md) | Screenshots, media, images and PDF: Flameshot, Preview, Edge PDF, IINA, Paint.NET | partly-decided | 2026-11-16 |
+| [0037](0037-system-monitoring-diagnostics-device-software.md) | System monitoring, diagnostics and device software | proposed | 2026-11-16 |
 
-ADR numbers 0021 to 0033 are reserved for the Windows tool-selection ADRs written next; gaps are allowed by the contract.
+The tool-selection ADRs 0021 to 0033, 0036 and 0037 are written (ADR-0021 holds parity and profiles); gaps are allowed by the contract.
 
 ## Layers
 

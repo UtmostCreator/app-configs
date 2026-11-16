@@ -204,7 +204,7 @@ real_task() {
     input=$(jq -n --argjson a "$(real_task reviewer x)" --argjson b "$(real_task mystery x)" \
         '{columns: 167, tasks: [$a, $b]}')
     run bash -c "bash '$SCRIPT' <<<'$input' | jq -r .content"
-    [ "${lines[0]}" = "$(printf '\033[0;34m▶\033[0m \033[38;5;180mreviewer\033[0m 1s · \033[0;32mctx 0%%\033[0m │ \033[38;5;75mSonnet 5.5:H\033[0m │ x')" ]
+    [ "${lines[0]}" = "$(printf '\033[0;34m▶\033[0m \033[38;5;179mreviewer\033[0m 1s · \033[0;32mctx 0%%\033[0m │ \033[38;5;67mSonnet 5.5\033[0m:\033[38;5;170mH\033[0m │ x')" ]
     # Unknown types hash to a palette colour: 797 (sum of the character codes) % 8 = 5, 138.
     [[ "${lines[1]}" == *$'\033[38;5;138mmystery \033[0m'* ]]
 }
@@ -253,7 +253,7 @@ visible_widths() {
 @test "parity: both scripts use the same colour for every agent type and the default" {
     MAIN="$REPO_ROOT/home/dot_claude/executable_statusline.sh"
     export GIT_CONFIG_GLOBAL=/dev/null CLAUDE_CONFIG_DIR="$BATS_TEST_TMPDIR/c" XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR" STATUSLINE_GIT_TTL=0 COLUMNS=200
-    for t in researcher architect implementer super-implementer reviewer orchestrator plan-writer release-auditor mystery; do
+    for t in researcher architect implementer super-implementer reviewer orchestrator plan-writer release-auditor agent-factory agent-definition-reviewer configuration-maintainer local-maintainer fleet-assessor phoenix-analyzer mystery; do
         sub=$(bash "$SCRIPT" <<<"$(jq -n --argjson a "$(real_task "$t" x)" '{columns: 167, tasks: [$a]}')" \
             | jq -r .content | sed -E 's/^\x1b\[[0-9;]*m[^\x1b]*\x1b\[0m \x1b\[([0-9;]*)m.*/\1/')
         main=$(jq -n --arg t "$t" '{cwd: "/nonexistent", agent: {name: $t}}' | bash "$MAIN" | head -1 \
@@ -274,19 +274,33 @@ sub_code() {
         | sed -nE "s/.*\x1b\[([0-9;]*)m$2.*/\1/p" | head -1
 }
 
-@test "parity: both scripts colour every model family the same way, and unknown models stay plain" {
+@test "parity: both scripts colour every model family the same way; Fable is the brightest, unknown models stay plain" {
     export GIT_CONFIG_GLOBAL=/dev/null CLAUDE_CONFIG_DIR="$BATS_TEST_TMPDIR/c" XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR" STATUSLINE_GIT_TTL=0
-    for pair in opus:Opus sonnet:Sonnet haiku:Haiku fable:Fable; do
-        id=${pair%%:*}; name=${pair##*:}
+    for pair in opus:Opus:38\;5\;39 sonnet:Sonnet:38\;5\;67 haiku:Haiku:38\;5\;62 fable:Fable:38\;5\;45 mythos:Mythos:38\;5\;45; do
+        IFS=: read -r id name want <<<"$pair"
         sub=$(sub_code "$(real_task reviewer x | jq --arg m "claude-$id-5" '.model = $m')" "$name")
         main=$(main_code "{\"cwd\": \"/nonexistent\", \"model\": {\"display_name\": \"$name 5\"}}" "$name")
-        [ -n "$sub" ]
         [ "$sub" = "$main" ] || { echo "$name: subagent=$sub main=$main"; false; }
-        case "$name" in Opus) [ "$sub" = "38;5;141" ] ;; Sonnet) [ "$sub" = "38;5;75" ] ;;
-            Haiku) [ "$sub" = "38;5;79" ] ;; Fable) [ "$sub" = "38;5;175" ] ;; esac
+        [ "$sub" = "${want//\\/}" ] || { echo "$name: $sub"; false; }
     done
-    # An unknown family carries no model colour code in the main renderer.
+    # An unknown family carries no colour code in either renderer.
     [ -z "$(main_code '{"cwd": "/nonexistent", "model": {"display_name": "Mystery 9"}}' Mystery)" ]
+    [ -z "$(sub_code "$(real_task reviewer x | jq '.model = "claude-mystery-9"')" Mystery)" ]
+}
+
+@test "parity: both scripts colour every effort level the same way, brightness rising low to max" {
+    export GIT_CONFIG_GLOBAL=/dev/null CLAUDE_CONFIG_DIR="$BATS_TEST_TMPDIR/c" XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR" STATUSLINE_GIT_TTL=0
+    for pair in low:L:96 medium:M:133 high:H:170 xhigh:X:207 max:max:213; do
+        IFS=: read -r lvl lab want <<<"$pair"
+        sub=$(sub_code "$(real_task reviewer x | jq --arg e "$lvl" '.effort = $e')" "$lab")
+        main=$(main_code "{\"cwd\": \"/nonexistent\", \"effort\": {\"level\": \"$lvl\"}}" "$lab")
+        [ "$sub" = "38;5;$want" ] || { echo "$lvl sub=$sub"; false; }
+        [ "$main" = "38;5;$want" ] || { echo "$lvl main=$main"; false; }
+    done
+    # narrow panel colours the initial too; an unknown level and a numeric budget stay plain
+    narrow=$(bash "$SCRIPT" <<<"$(jq -n --argjson a "$(real_task reviewer x | jq '.effort = "high"')" '{columns: 50, tasks: [$a]}')" | jq -r .content)
+    [[ "$narrow" == *$'\033[38;5;170mH\033[0m'* ]]
+    [ -z "$(sub_code "$(real_task reviewer x | jq '.effort = "odd"')" odd)" ]
 }
 
 @test "parity: names hitting all eight palette slots and a name over 20 characters get the same colour" {

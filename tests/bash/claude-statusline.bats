@@ -567,7 +567,7 @@ cache_file() {
     [ "$status" -eq 0 ]
     [ "${lines[0]}" = "◆ orchestrator │ advanced-gym ⎇ main │ Opus 5" ]
     raw=$(payload '{"agent": {"name": "orchestrator"}}' | bash "$SCRIPT" | head -1)
-    [[ "$raw" == $'\033[38;5;69m◆ orchestrator\033[0m │ '* ]]
+    [[ "$raw" == $'\033[38;5;140m◆ orchestrator\033[0m │ '* ]]
 }
 
 @test "agent: an unknown type still has a colour, and the tag follows RC and survives narrow widths" {
@@ -1084,37 +1084,179 @@ code_before() {
     if [[ "$raw" =~ $'\033'\[([0-9\;]*)m"$1" ]]; then printf %s "${BASH_REMATCH[1]}"; else printf none; fi
 }
 
-@test "colour: model families have distinct stable colours, unknown models are neutral" {
+# lum <256-colour code>: integer luminance (0-255000) of a colour-cube or grey-ramp code,
+# so tests can assert "brighter" without hard-coding the order of two numbers.
+lum() {
+    local n=$1 r g b lv=(0 95 135 175 215 255)
+    if (( n >= 232 )); then echo $(( (8 + (n - 232) * 10) * 1000 )); return; fi
+    (( n -= 16 )); r=${lv[n / 36]} g=${lv[(n / 6) % 6]} b=${lv[n % 6]}
+    echo $(( 2126 * r + 7152 * g + 722 * b ))
+}
+
+@test "colour: model colour follows price tier, brightest for Fable; unknown families stay neutral" {
     mc() { code_before "$1" "{\"model\": {\"display_name\": \"$2\"}}"; }
-    [ "$(mc Opus 'Opus 5.5')" = "38;5;141" ]
-    [ "$(mc Sonnet 'Sonnet 5')" = "38;5;75" ]
-    [ "$(mc Haiku 'Haiku 4.5')" = "38;5;79" ]
-    [ "$(mc Fable 'Fable 1')" = "38;5;175" ]
+    [ "$(mc Opus 'Opus 5.5')" = "38;5;39" ]
+    [ "$(mc Sonnet 'Sonnet 5')" = "38;5;67" ]
+    [ "$(mc Haiku 'Haiku 4.5')" = "38;5;62" ]
+    # Fable (and Mythos) is the dearest family: brighter than Opus. Unknown: no price guessed.
+    [ "$(mc Fable 'Fable 5.1')" = "38;5;45" ]
+    [ "$(mc Mythos 'Mythos 1')" = "38;5;45" ]
     [ "$(mc Mystery 'Mystery 9')" = "none" ]
     # The version and the 1M-context suffix do not change the family colour.
-    [ "$(mc Opus 'Opus 4 (1M context)')" = "38;5;141" ]
+    [ "$(mc Opus 'Opus 4 (1M context)')" = "38;5;39" ]
+    # Brighter = dearer: Fable > Opus > Sonnet > Haiku, and one colour per tier.
+    f=$(lum 45) o=$(lum 39) s=$(lum 67) h=$(lum 62)
+    (( f > o && o > s && s > h )) || { echo "luminance fable=$f opus=$o sonnet=$s haiku=$h"; false; }
+}
+
+# effort_code <level> <label> [columns|mode]: the SGR parameters before the effort label.
+effort_code() {
+    COLUMNS=${3:-200} code_before "$2" "{\"effort\": {\"level\": \"$1\"}}"
+}
+
+@test "colour: effort brightness rises low to max on one hue ramp, in every layout" {
+    export CLAUDE_STATUSLINE_WIDE_MIN=160
+    [ "$(effort_code high high 140)" = "38;5;170" ]
+    [ "$(effort_code high H 100)" = "38;5;170" ]
+    [ "$(effort_code high H 60)" = "38;5;170" ]
+    [ "$(CLAUDE_STATUSLINE_WIDE_MIN=160 effort_code high H 200)" = "38;5;170" ]
+    declare -A want=([low]=96 [medium]=133 [high]=170 [xhigh]=207 [max]=213)
+    declare -A label=([low]=L [medium]=M [high]=H [xhigh]=X [max]=max)
+    prev=0
+    for lvl in low medium high xhigh max; do
+        c=$(effort_code "$lvl" "${label[$lvl]}" 100)
+        [ "$c" = "38;5;${want[$lvl]}" ] || { echo "$lvl: $c"; false; }
+        l=$(lum "${want[$lvl]}")
+        (( l > prev )) || { echo "$lvl not brighter than the level below"; false; }
+        prev=$l
+    done
+    # full layout colours the word, not the model name
+    [ "$(effort_code max max 140)" = "38;5;213" ]
+    # an unknown level is neutral
+    [ "$(effort_code odd odd 140)" = "none" ]
 }
 
 @test "colour: the same model and agent keep their colour in every layout" {
     export CLAUDE_STATUSLINE_WIDE_MIN=160
     for cols in 200 140 100 60; do
-        [ "$(COLUMNS=$cols code_before Opus '{"agent": {"name": "reviewer"}}')" = "38;5;141" ] || { echo "model cols=$cols"; false; }
-        [ "$(COLUMNS=$cols code_before '◆ ' '{"agent": {"name": "reviewer"}}')" = "38;5;180" ] || { echo "agent cols=$cols"; false; }
+        [ "$(COLUMNS=$cols code_before Opus '{"agent": {"name": "reviewer"}}')" = "38;5;39" ] || { echo "model cols=$cols"; false; }
+        [ "$(COLUMNS=$cols code_before '◆ ' '{"agent": {"name": "reviewer"}}')" = "38;5;179" ] || { echo "agent cols=$cols"; false; }
     done
     for mode in wide full compact minimal; do
-        [ "$(CLAUDE_STATUSLINE_MODE=$mode COLUMNS=200 code_before Opus '{"agent": {"name": "reviewer"}}')" = "38;5;141" ] || { echo "mode=$mode"; false; }
+        [ "$(CLAUDE_STATUSLINE_MODE=$mode COLUMNS=200 code_before Opus '{"agent": {"name": "reviewer"}}')" = "38;5;39" ] || { echo "mode=$mode"; false; }
     done
 }
 
-@test "colour: known agents have fixed distinct colours; others hash (character-code sum mod 8) to a stable palette colour" {
-    declare -A seen
-    for a in orchestrator researcher architect implementer reviewer plan-writer release-auditor; do
-        c=$(code_before '◆ ' "{\"agent\": {\"name\": \"$a\"}}")
-        [[ "$c" =~ ^38\;5\;[0-9]+$ ]]
-        [ -z "${seen[$c]:-}" ] || { echo "$a shares $c with ${seen[$c]}"; false; }
-        seen[$c]=$a
+# agent_def <dir> <name> <frontmatter-colour-line-or-empty>: a fixture agent file.
+agent_def() {
+    mkdir -p "$1/.claude/agents"
+    { echo '---'; echo "name: $2"; echo 'description: fixture'; [ -z "${3:-}" ] || echo "$3"; echo '---'; echo 'body'; echo 'color: red'; } >"$1/.claude/agents/$2.md"
+}
+
+# Claude Code colour names -> the 256-colour code this status line uses.
+# (declared per test: bats sources this file inside a function, so a top-level declare is not global)
+colour_codes() { declare -gA CODE=([red]=131 [blue]=75 [green]=108 [yellow]=179 [purple]=140 [orange]=173 [pink]=175 [cyan]=37); }
+
+@test "colour: an agent takes the colour named by color: in its project definition file" {
+    colour_codes
+    [ "${#CODE[@]}" -eq 8 ]
+    for c in "${!CODE[@]}"; do
+        agent_def "$REPO" "fx-$c" "color: $c"
+        out=$(code_before '◆ ' "{\"agent\": {\"name\": \"fx-$c\"}}")
+        [ "$out" = "38;5;${CODE[$c]}" ] || { echo "$c: $out"; false; }
     done
-    [ "$(code_before '◆ ' '{"agent": {"name": "super-implementer"}}')" = "$(code_before '◆ ' '{"agent": {"name": "implementer"}}')" ]
+    # case, quotes and trailing spaces are tolerated
+    agent_def "$REPO" fx-q 'color: "Cyan"  '
+    [ "$(code_before '◆ ' '{"agent": {"name": "fx-q"}}')" = "38;5;37" ]
+    # the project file wins over a user-level one
+    mkdir -p "$CLAUDE_CONFIG_DIR/agents"
+    printf -- '---\ncolor: pink\n---\n' >"$CLAUDE_CONFIG_DIR/agents/fx-both.md"
+    agent_def "$REPO" fx-both 'color: green'
+    [ "$(code_before '◆ ' '{"agent": {"name": "fx-both"}}')" = "38;5;108" ]
+}
+
+@test "colour: without a project file the user-level definition is used (CLAUDE_CONFIG_DIR or ~/.claude)" {
+    mkdir -p "$CLAUDE_CONFIG_DIR/agents"
+    printf -- '---\nname: fx-user\ncolor: orange\n---\n' >"$CLAUDE_CONFIG_DIR/agents/fx-user.md"
+    [ "$(code_before '◆ ' '{"agent": {"name": "fx-user"}}')" = "38;5;173" ]
+    # without CLAUDE_CONFIG_DIR the lookup is $HOME/.claude/agents
+    mkdir -p "$BATS_TEST_TMPDIR/home/.claude/agents"
+    printf -- '---\nname: fx-home\ncolor: pink\n---\n' >"$BATS_TEST_TMPDIR/home/.claude/agents/fx-home.md"
+    raw=$(payload '{"agent": {"name": "fx-home"}}' | env -u CLAUDE_CONFIG_DIR HOME="$BATS_TEST_TMPDIR/home" bash "$SCRIPT" | head -1)
+    [[ "$raw" == $'\033[38;5;175m◆ fx-home'* ]]
+}
+
+@test "colour: an unknown colour, a missing file, no frontmatter or a body-only color: fall back to the table, then the hash" {
+    agent_def "$REPO" reviewer 'color: chartreuse'
+    [ "$(code_before '◆ ' '{"agent": {"name": "reviewer"}}')" = "38;5;179" ]          # fixed table: yellow
+    [ "$(code_before '◆ ' '{"agent": {"name": "mystery"}}')" = "38;5;138" ]           # hash, no file
+    mkdir -p "$REPO/.claude/agents"
+    printf 'name: nofront\ncolor: red\n' >"$REPO/.claude/agents/nofront.md"           # no --- fence
+    [ "$(code_before '◆ ' '{"agent": {"name": "nofront"}}')" != "38;5;131" ]
+    agent_def "$REPO" bodyonly ''                                                    # color: only after the fence
+    [ "$(code_before '◆ ' '{"agent": {"name": "bodyonly"}}')" != "38;5;131" ]
+}
+
+@test "colour: the first definition file that exists decides, so a project file shadows the user-level one" {
+    mkdir -p "$CLAUDE_CONFIG_DIR/agents"
+    printf -- '---\ncolor: pink\n---\n' >"$CLAUDE_CONFIG_DIR/agents/shadow.md"
+    agent_def "$REPO" shadow 'color: chartreuse'                  # unknown colour: fallback, not pink
+    [ "$(code_before '◆ ' '{"agent": {"name": "shadow"}}')" = "38;5;$(hash_code shadow)" ]
+    printf -- '---\ncolor: red\n---\n' >"$CLAUDE_CONFIG_DIR/agents/shadow2.md"
+    agent_def "$REPO" shadow2 ''                                  # no colour line: fallback, not red
+    [ "$(code_before '◆ ' '{"agent": {"name": "shadow2"}}')" = "38;5;$(hash_code shadow2)" ]
+    # a project file without frontmatter is not a definition: the user-level one is used
+    printf 'no fence\n' >"$REPO/.claude/agents/shadow3.md"
+    printf -- '---\ncolor: cyan\n---\n' >"$CLAUDE_CONFIG_DIR/agents/shadow3.md"
+    [ "$(code_before '◆ ' '{"agent": {"name": "shadow3"}}')" = "38;5;37" ]
+}
+
+# hash_code <name>: the palette colour the name hash gives (the no-file fallback).
+hash_code() {
+    local n=${1,,} sum=0 c i palette=(74 103 109 116 133 138 143 152)
+    for (( i = 0; i < ${#n}; i++ )); do printf -v c %d "'${n:i:1}"; sum=$(( sum + c )); done
+    echo "${palette[sum % 8]}"
+}
+
+@test "colour: a definition file with one huge line is read in bounded time" {
+    mkdir -p "$REPO/.claude/agents"
+    { printf -- '---\n'; head -c 3000000 /dev/zero | tr '\0' 'a'; printf '\ncolor: red\n---\n'; } >"$REPO/.claude/agents/huge.md"
+    start=$SECONDS
+    out=$(payload '{"agent": {"name": "huge"}}' | timeout 10 bash "$SCRIPT" | head -1)
+    [ $(( SECONDS - start )) -lt 5 ]
+    [[ "$out" == *"◆ huge"* ]]
+}
+
+@test "colour: a Windows-style (backslash) workspace path fails safe: no stderr, fallback colour" {
+    for d in 'C:\Users\x\proj' '/c/Users/x/proj' 'C:\Users\x\proj\'; do
+        err=$(payload "$(jq -n --arg d "$d" '{agent: {name: "reviewer"}, workspace: {project_dir: $d, current_dir: $d}}')" \
+            | bash "$SCRIPT" 2>&1 >"$BATS_TEST_TMPDIR/out")
+        [ -z "$err" ] || { echo "stderr for $d: $err"; false; }
+        [[ "$(head -1 "$BATS_TEST_TMPDIR/out")" == $'\033[38;5;179m◆ reviewer'* ]] || { echo "$d"; false; }
+    done
+}
+
+@test "colour: an agent name that is not a plain file name never reads a file" {
+    mkdir -p "$WORK/outside" "$REPO/.claude/agents"
+    printf -- '---\ncolor: red\n---\n' >"$WORK/outside/x.md"
+    printf -- '---\ncolor: red\n---\n' >"$REPO/.claude/agents/.dot.md"
+    for n in '../../../outside/x' '../x' 'a/b' '.dot' '..'; do
+        out=$(code_before '◆ ' "$(jq -n --arg n "$n" '{agent: {name: $n}}')")
+        [[ "$out" =~ ^38\;5\;[0-9]+$ ]] || { echo "$n: $out"; false; }
+        [ "$out" != "38;5;131" ] || { echo "$n read a file outside agents/"; false; }
+    done
+}
+
+@test "colour: known Glyphbrace agents follow the fixed table when no file is present; distinct colours per name" {
+    colour_codes
+    declare -A want=([orchestrator]=purple [architect]=blue [plan-writer]=blue [implementer]=green
+        [super-implementer]=green [configuration-maintainer]=green [local-maintainer]=green
+        [reviewer]=yellow [agent-definition-reviewer]=yellow [researcher]=cyan [fleet-assessor]=cyan
+        [phoenix-analyzer]=cyan [release-auditor]=red [agent-factory]=pink)
+    for a in "${!want[@]}"; do
+        c=$(code_before '◆ ' "{\"agent\": {\"name\": \"$a\"}}")
+        [ "$c" = "38;5;${CODE[${want[$a]}]}" ] || { echo "$a: $c"; false; }
+    done
     # Unknown names: same name, same colour on every run; case does not matter.
     a1=$(code_before '◆ ' '{"agent": {"name": "mystery"}}')
     a2=$(code_before '◆ ' '{"agent": {"name": "mystery"}}')
@@ -1124,8 +1266,20 @@ code_before() {
     [[ "$(code_before '◆ ' '{"agent": {"name": "zebra"}}')" =~ ^38\;5\;[0-9]+$ ]]
 }
 
+@test "colour: the agent lookup adds at most two forks to a render" {
+    command -v strace >/dev/null || skip "strace not available"
+    count() {
+        payload "$1" >"$BATS_TEST_TMPDIR/p.json"
+        strace -f -qq -e trace=clone,clone3,fork,vfork -o "$BATS_TEST_TMPDIR/st" bash "$SCRIPT" <"$BATS_TEST_TMPDIR/p.json" >/dev/null
+        wc -l <"$BATS_TEST_TMPDIR/st"
+    }
+    agent_def "$REPO" fx-fork 'color: cyan'
+    base=$(count '{}'); with=$(count '{"agent": {"name": "fx-fork"}}')
+    (( with - base <= 2 )) || { echo "base=$base with-agent=$with"; false; }
+}
+
 @test "colour: model and agent colours never use the reserved warning codes" {
-    for a in orchestrator researcher architect implementer reviewer plan-writer release-auditor mystery zebra qa-bot; do
+    for a in orchestrator researcher architect implementer reviewer plan-writer release-auditor agent-factory mystery zebra qa-bot; do
         c=$(code_before '◆ ' "{\"agent\": {\"name\": \"$a\"}}")
         case "$c" in 0\;31|0\;33|0\;32|1\;31|38\;5\;208) false ;; esac
     done

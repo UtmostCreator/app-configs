@@ -24,7 +24,8 @@ One status per row.
 |---|---|---|---|---|---|
 | Runtimes | Nix (ADR-0014). Windows host: none. Discard Node, Yarn, Python, Go, JDK 22, NuGet, Composer and MongoDB Shell there (T-0042 AC28) | mise globals | P+W | Pr | Manual |
 | Git for Windows | keep: needed by bootstrap step C, the Windows hooks (T-0051), ADR-0016's Git Bash status line, and `docs/platforms/windows/setup.md` | git in WSL only | P+W | Pr | Manual |
-| Git UI | lazygit, gh, delta, difft and VS Code Source Control. Discard GitHub Desktop and Git Extensions | gitui; Fork; GitKraken | P+W | Pr | Record |
+| Git UI | lazygit, gh and VS Code Source Control. Discard GitHub Desktop and Git Extensions | gitui; Fork; GitKraken | P+W | Pr | Record |
+| Git diff tools | keep both: delta is the git pager, difft is used through aliases (roles, not a single pick) | none | P+W | Pr | Record |
 | API client | Bruno. Discard Postman | Hoppscotch; Insomnia | P+W | Pr | Record |
 
 ## Consequences

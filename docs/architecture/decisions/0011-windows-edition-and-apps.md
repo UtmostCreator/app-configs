@@ -27,15 +27,15 @@ Amended by ADR-0023 (partly-decided: KeePassXC narrowed to the personal profile;
 
 Amended by ADR-0024 (partly-decided: HeidiSQL changes from discarded to a permanent owner exception on Windows; Beekeeper Studio added; DBeaver added on macOS).
 
-Amended by ADR-0027 (decided: the "Raycast/Vicinae/PowerToys Run" launcher discard is reversed for Windows, Raycast in both profiles and PowerToys). Proposed amendment in ADR-0027: the Ditto and clipboard item.
+Amended by ADR-0027 (decided (DU): the "Raycast/Vicinae/PowerToys Run" launcher discard is reversed for Windows, Raycast in both profiles and PowerToys). Proposed amendment in ADR-0027: the Ditto and clipboard item.
 
-Amended by ADR-0028 (decided: the disk-usage exceptions GrandPerspective and WizTree). Proposed amendment in ADR-0028: the T-0042 Q8 7-Zip and archives item.
+Amended by ADR-0028 (decided (DU): the disk-usage exceptions GrandPerspective and WizTree). Proposed amendment in ADR-0028: the T-0042 Q8 7-Zip and archives item.
 
 Proposed amendment in ADR-0030 (Docker Desktop changes from deferred to discarded).
 
 Proposed amendment in ADR-0031 (resolves the Git for Windows conflict).
 
-Amended by ADR-0033 (decided: backup, Kopia plus Time Machine). Proposed amendment in ADR-0033: Telegram narrowed to the personal profile; the Syncthing deferral reversed; the T-0042 Q8 items for Vesktop, Slack and Zoom.
+Amended by ADR-0033 (decided (DU): backup, Kopia plus Time Machine). Proposed amendment in ADR-0033: Telegram narrowed to the personal profile; the Syncthing deferral reversed; the T-0042 Q8 items for Vesktop, Slack and Zoom.
 
 Amended by ADR-0036 (partly-decided: the ShareX rejection reason "Flameshot runs everywhere" is no longer true; Flameshot is the Windows personal pick).
 

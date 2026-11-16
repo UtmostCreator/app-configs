@@ -24,6 +24,7 @@ One status per row.
 |---|---|---|---|---|---|
 | GUI IDE | VS Code | VSCodium; Zed | P+W | Pr | Record |
 | Terminal editor | Neovim | Helix; Vim | P+W | Pr | Record |
+| GNOME Text Editor | GNOME base on Linux, exempt from parity (OS tag); removal via environment.gnome.excludePackages is a T-0029 option | none | P+W | Pr | Record |
 | Android (P) | Android Studio on Linux (`nix/modules/home/gui.nix:28`); macOS and Windows not added | IntelliJ CE; VS Code plus Flutter | P | Pr | Record; Deferred on macOS (mobileDev, Q9) |
 | Android (W) | optional | same | W | Pr | Record |
 | Discard | PhpStorm (paid); Notepad++ (fails R1 test (c)); BBEdit (catalog drift); Godot (P, by hand) | none | none | Pr | Manual |

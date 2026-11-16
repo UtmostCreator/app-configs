@@ -19,7 +19,7 @@ Notation, parity and profiles: [ADR-0021](0021-cross-platform-parity-and-profile
 
 ## Owner decisions (2026-11-16, quoted)
 - Tailscale on work hosts: "no" (work hosts get no Tailscale; the employer VPN applies).
-- "remove deepseek harness for now": recorded as a decided-unverified row in ADR-0032; the NixOS session carries it out.
+- "remove deepseek harness for now": recorded in ADR-0032 (the repo part was removed in 4b15279, T-0056).
 - O2: all native exceptions approved (here: WinSCP).
 
 ## Decision
@@ -28,9 +28,9 @@ One status per row.
 | Job | Pick | Alternatives | P/W | Status | Now |
 |---|---|---|---|---|---|
 | Tailscale on W | none on any work host; W uses the employer VPN | none | W | DU | Deferred (follow-up below) |
-| Tailscale, NixOS desktop | system service, `ENABLE_TAILSCALE` defaults to 1 (`ops/system-setup.sh:220`) | NetBird; ZeroTier; Headscale | P | Pr | Record |
+| Tailscale, NixOS desktop | system service, `ENABLE_TAILSCALE` defaults to 1 (`ops/system-setup.sh:219`) | NetBird; ZeroTier; Headscale | P | Pr | Record |
 | Tailscale, macOS | none (the host is W; a cask would need a T-0042 group) | same | P | Pr | Record |
-| Tailscale, WSL | off (ADR-0004) | same | P | Pr | Record |
+| Tailscale, WSL | off (ADR-0004) | same | W (ADR-0021 P4) | Pr | Record |
 | Tailscale, Windows | manual | same | P | Pr | Manual |
 | SSH | OpenSSH everywhere; discard PuTTY | Termius | P+W | Pr | Record |
 | SFTP GUI (Windows, Ex) | WinSCP | Cyberduck; FileZilla (its installer bundles offers, so it is a suspect) | P+W | DU | Manual |
@@ -45,9 +45,9 @@ One status per row.
 - (e) owner approval 2026-11-16 (O2).
 
 ## Today's behaviour and the follow-up
-- `ops/system-setup.sh:220` defaults `ENABLE_TAILSCALE` to 1 except on WSL, so a NixOS linux-cli work host gets Tailscale today.
+- `ops/system-setup.sh:219` defaults `ENABLE_TAILSCALE` to 1 except on WSL, so a NixOS linux-cli work host gets Tailscale today.
 - `ops/readiness.sh:166-168` reports a pending rebuild if tailscaled is inactive on a non-WSL host.
-- Follow-up (owned by the NixOS session, after this ADR): work hosts default to 0 and readiness stops complaining. A future work NixOS host sets `ENABLE_TAILSCALE=0` until T-0029.
+- Follow-up: a new ticket, to be created (not yet filed). Work-host detection: `ENABLE_TAILSCALE` defaults to 1 only when HOST_PROFILE is linux-desktop (the pattern of ENABLE_DESKTOP_STABILITY, `ops/system-setup.sh:212`); `ops/readiness.sh:166` checks for linux-desktop instead of a non-WSL host; `ops/tailscale-setup.sh` stays a manual opt-in. Files to update: `ops/system-setup.sh`, `ops/readiness.sh`, `ops/tailscale-setup.sh` with `mise.toml:251-252` (the live path /etc/nixos/app-configs-tailscale*.nix), `docs/guides/tailscale-local-services.md`, `tests/bash/readiness.bats:52-60` and `tests/bash/fixtures/system-setup-desktop-snippet.golden:29`. T-0029 owns the NixOS system layer, so the ticket should be coordinated with it.
 
 ## Consequences
 - This ADR changes no file. Unknown: employer policy for any remote-access tool.

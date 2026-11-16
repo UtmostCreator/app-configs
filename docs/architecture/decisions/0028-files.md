@@ -26,7 +26,7 @@ One status per row.
 | Job | L / M / Win | Alternatives | P/W | Status | Now |
 |---|---|---|---|---|---|
 | TUI file manager | yazi | lf; broot | P+W | Pr | Record |
-| GUI dual-pane | Double Commander / Nimble Commander (CM: no supported install owner, the Double Commander cask is disabled) / Double Commander | Marta; ForkLift; Commander One | P+W | Pr | Record |
+| GUI dual-pane | Double Commander / Nimble Commander (CM: nixpkgs has darwin builds, but ADR-0014 rules out Nix GUI apps on macOS and the Double Commander cask is disabled, so there is no install owner) / Double Commander | Marta; ForkLift; Commander One | P+W | Pr | Record |
 | Disk usage, Linux | QDirStat and dust | Baobab; ncdu; gdu | P+W | Pr | Record |
 | Disk usage, macOS (Ex) | GrandPerspective and dust | DaisyDisk | P+W | DU | Record. Discard TreeSize |
 | Disk usage, Windows P (Ex) | WizTree | WinDirStat | P | DU | Manual |

@@ -969,6 +969,39 @@ function Invoke-HooksInstallerFlow {
 
 # ---------------------------------------------------------------- step C
 
+# Real-run winget install of the tools the caller found missing. Each entry is
+# @{ Name; Id; VersionArgs }; $Step is the label in every message ("step $Step: ...").
+# Returns 0 installed and found on PATH, 1 failed or still not found, 3 source agreements
+# needed (a human decision). The caller does the probe and the dry-run lines.
+function Install-WingetTools {
+    param([string]$Step, [object[]]$Tools)
+    foreach ($c in $Tools) {
+        Start-Wait "step ${Step}: installing $($c.Id) with winget (can take several minutes)"
+        $w = Invoke-Winget -Id $c.Id
+        if ($w.Code -ne 0) {
+            $text = "$($w.Out)`n$($w.Err)"
+            if ($text -match '(?i)source agreements?|accept-source-agreements') {
+                Say "step ${Step}: winget needs its source agreements accepted first; that is your decision. To accept them and install, run:"
+                Say "step ${Step}: winget $((Get-WingetInstallArgs $c.Id) -join ' ') --accept-source-agreements"
+                return 3
+            }
+            Say "step ${Step}: winget install $($c.Id) exited $($w.Code): $(Get-FirstLine $text)"
+            if ($w.Code -eq 124) { Say "step ${Step}: child installers may still be running; wait for them to finish before re-running" }
+            return 1
+        }
+    }
+    Update-SessionPath
+    $still = $false
+    foreach ($c in $Tools) {
+        if ($null -eq (Get-ToolVersion -Name $c.Name -VersionArgs $c.VersionArgs)) {
+            Say "step ${Step}: $($c.Name) is still not found after the install; open a new PowerShell and re-run"
+            $still = $true
+        }
+    }
+    if ($still) { return 1 }
+    return 0
+}
+
 # Returns 0 done, 1 failed, 3 human step. Never elevated (the caller checks).
 function Invoke-CommitTooling {
     Update-SessionPath
@@ -981,30 +1014,8 @@ function Invoke-CommitTooling {
         if ($script:Dry) {
             foreach ($c in $missing) { Say "step C: would run: winget $((Get-WingetInstallArgs $c.Id) -join ' ')" }
         } else {
-            foreach ($c in $missing) {
-                Start-Wait "step C: installing $($c.Id) with winget (can take several minutes)"
-                $w = Invoke-Winget -Id $c.Id
-                if ($w.Code -ne 0) {
-                    $text = "$($w.Out)`n$($w.Err)"
-                    if ($text -match '(?i)source agreements?|accept-source-agreements') {
-                        Say 'step C: winget needs its source agreements accepted first; that is your decision. To accept them and install, run:'
-                        Say "step C: winget $((Get-WingetInstallArgs $c.Id) -join ' ') --accept-source-agreements"
-                        return 3
-                    }
-                    Say "step C: winget install $($c.Id) exited $($w.Code): $(Get-FirstLine $text)"
-                    if ($w.Code -eq 124) { Say 'step C: child installers may still be running; wait for them to finish before re-running' }
-                    return 1
-                }
-            }
-            Update-SessionPath
-            $still = $false
-            foreach ($c in $missing) {
-                if ($null -eq (Get-ToolVersion -Name $c.Name -VersionArgs $c.VersionArgs)) {
-                    Say "step C: $($c.Name) is still not found after the install; open a new PowerShell and re-run"
-                    $still = $true
-                }
-            }
-            if ($still) { return 1 }
+            $rc = Install-WingetTools -Step 'C' -Tools $missing
+            if ($rc -ne 0) { return $rc }
         }
     }
     if (-not (Test-RepoGitDir)) {

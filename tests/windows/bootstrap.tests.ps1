@@ -1324,6 +1324,49 @@ Test-Case 'C4 still missing after the install and the PATH reload -> 1' {
     Assert-Eq @(Find-Raw '.').Count 0 'no WSL call'
 }
 
+Test-Case 'C4b Install-WingetTools: the given step label, one tool, return codes 0, 1 and 3' {
+    $jq = @(@{ Name = 'jq'; Id = 'jqlang.jq'; VersionArgs = @('--version') })
+    Initialize-Happy
+    $script:LogLines = New-Object 'System.Collections.Generic.List[string]'
+    $script:Tools['jq'] = $null
+    Stub 'Invoke-Winget' {
+        param([string]$Id)
+        if ($script:WingetResult.Code -eq 0 -and $script:WingetInstalls) { $script:Tools['jq'] = 'jq-1.7.1' }
+        $script:WingetResult
+    }
+    $r = @(Install-WingetTools -Step 'S' -Tools $jq)
+    Assert-True ($r.Count -eq 1 -and $r[0] -is [int]) 'one int returned'
+    Assert-Eq $r[0] 0 'installed and found'
+    Assert-Eq (@(Get-SeamCalls 'Invoke-Winget' | ForEach-Object { $_.Args['Id'] }) -join ',') 'jqlang.jq' 'one winget call, the pinned id'
+    Assert-Eq @(Get-SeamCalls 'Update-SessionPath').Count 1 'PATH merged once after the install'
+    Assert-Log '^\[bootstrap\] step S: installing jqlang\.jq with winget \(can take several minutes\)$'
+    Assert-True (-not ((Get-Log) -match 'step C')) 'no step C label'
+
+    Reset-Stubs; Initialize-Happy
+    $script:LogLines = New-Object 'System.Collections.Generic.List[string]'
+    $script:WingetResult = @{ Code = 1; Out = ''; Err = 'Source agreements were not accepted' }
+    Assert-Eq (Install-WingetTools -Step 'S' -Tools $jq) 3 'source agreements'
+    Assert-Log 'step S: winget needs its source agreements accepted first'
+    Assert-Log 'step S: winget install --id jqlang\.jq --exact --source winget --accept-package-agreements --disable-interactivity --accept-source-agreements'
+    Assert-Eq @(Get-SeamCalls 'Update-SessionPath').Count 0 'no merge after a failed install'
+
+    Reset-Stubs; Initialize-Happy
+    $script:LogLines = New-Object 'System.Collections.Generic.List[string]'
+    $script:WingetResult = @{ Code = 124; Out = ''; Err = 'unavailable: timed out after 1200 s (process killed)' }
+    Assert-Eq (Install-WingetTools -Step 'S' -Tools $jq) 1 'timeout'
+    Assert-Log 'step S: winget install jqlang\.jq exited 124: unavailable: timed out'
+    Assert-Log 'step S: child installers may still be running'
+
+    Reset-Stubs; Initialize-Happy
+    $script:LogLines = New-Object 'System.Collections.Generic.List[string]'
+    $script:Tools['jq'] = $null
+    $script:WingetInstalls = $false
+    Assert-Eq (Install-WingetTools -Step 'S' -Tools $jq) 1 'still missing'
+    Assert-Log 'step S: jq is still not found after the install; open a new PowerShell and re-run'
+    Assert-Eq @(Get-SeamCalls 'Update-SessionPath').Count 1 'merged once, then re-probed'
+    Assert-True (-not ((Get-Log) -match 'step C')) 'no step C label'
+}
+
 Test-Case 'C5 step C runs before the reboot check' {
     Initialize-Missing @('lefthook')
     $script:Reboot = $true

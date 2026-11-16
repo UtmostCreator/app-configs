@@ -95,7 +95,8 @@ rejects it. Full runbook: [`bootstrap.md`](docs/getting-started/bootstrap.md).
 | macOS (Apple Silicon) | `macos` | nix-darwin + Home Manager + Homebrew casks | yes |
 | WSL2 | `wsl` | Home Manager standalone, no Windows-side management | no |
 
-Native Windows is not supported; use WSL2. Override `gui` in `personal.yaml`
+Native Windows: only a bounded WSL bootstrap, see
+`docs/architecture/project-scope.md`. Override `gui` in `personal.yaml`
 when a machine differs from its profile's default.
 
 ## How it fits together

@@ -1,6 +1,6 @@
 # Setup
 
-Start with [`base.md`](base.md), then your platform.
+Start with [`base.md`](base.md), then your platform. Scope: [project scope](../architecture/project-scope.md).
 
 | Platform | Doc | Notes |
 |----------|-----|-------|
@@ -9,7 +9,7 @@ Start with [`base.md`](base.md), then your platform.
 | NixOS desktop | [`nixos/install.md`](nixos/install.md), [`nixos/rebuild.md`](nixos/rebuild.md) | System layer, when to rebuild |
 | macOS | [`macos/setup.md`](macos/setup.md) | nix-darwin, Homebrew |
 | Windows 11 | [`windows/setup.md`](windows/setup.md) | Account, Git, SSH key, Claude Code |
-| WSL2 (NixOS-WSL planned, T-0047) | [`wsl/setup.md`](wsl/setup.md), [`wsl/windows-and-wsl.md`](wsl/windows-and-wsl.md) | Windows vs WSL2 choices |
+| WSL2 (NixOS-WSL default, Ubuntu supported; ADR-0015) | [`wsl/setup.md`](wsl/setup.md), [`wsl/windows-and-wsl.md`](wsl/windows-and-wsl.md) | Windows vs WSL2 choices |
 
 ```mermaid
 flowchart LR

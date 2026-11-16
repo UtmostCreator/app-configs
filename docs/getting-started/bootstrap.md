@@ -17,9 +17,9 @@ See `docs/architecture/tool-ownership.md` for why each tool owns what.
 - macOS (Apple Silicon by default; Intel via `nix/vars/default.nix`)
 - Linux desktop
 - Linux CLI / headless
-- WSL2 (best-effort, Linux-flavoured CLI/dev only)
+- WSL2 (NixOS-WSL default, Ubuntu supported; Linux-flavoured CLI/dev only, ADR-0001 and ADR-0015)
 
-Windows native is explicitly not supported.
+Native Windows: only a bounded WSL bootstrap, see [project scope](../architecture/project-scope.md).
 
 ## Cold start (any target)
 

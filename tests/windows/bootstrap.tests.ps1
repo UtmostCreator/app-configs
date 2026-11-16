@@ -29,6 +29,10 @@ $RealInvokeWslRaw = ${function:Invoke-WslRaw}
 $RealGetWingetList = ${function:Get-WingetList}
 $RealGetForeignHooks = ${function:Get-ForeignHooks}
 $RealInvokeDownload = ${function:Invoke-Download}
+$RealGetSha256 = ${function:Get-Sha256}
+$RealInvokeJq = ${function:Invoke-Jq}
+$RealGetTemplateStatusLine = ${function:Get-TemplateStatusLine}
+$RealInvokeStatusLineRender = ${function:Invoke-StatusLineRender}
 $OrigRepoRoot = $RepoRoot
 
 # Keep the harness output clean: the script logs through Write-Host.
@@ -59,6 +63,11 @@ $Sigs = @{
     'Get-ToolVersion'      = '[string]$Name, [string[]]$VersionArgs'
     'Resolve-Program'      = '[string]$Name'
     'Invoke-Winget'        = '[string]$Id'
+    'Get-EnvScopes'        = '[string]$Name'
+    'Get-GitBashHome'      = '[string]$Bash'
+    'Invoke-Jq'            = '[string[]]$Arguments'
+    'Invoke-StatusLineRender' = '[string]$Bash, [string]$PayloadPath'
+    'Get-TemplateStatusLine' = '[string]$Path'
 }
 
 function Reset-Stubs {
@@ -2977,6 +2986,344 @@ Test-Case 'F6 WSL scripts use mktemp, quoted expansions and a cleanup trap' {
     Assert-True ($sh.StartsWith('PATH=/run/current-system/sw/bin:$PATH;')) 'explicit PATH'
 }
 
+# ---------------------------------------------------------------- step S (-ClaudeStatusLine, ADR-0016)
+
+$SlTemplate = '{"statusLine":{"type":"command","command":"~/.claude/statusline.sh","padding":2,"refreshInterval":5},"model":"opus","hooks":{"x":1}}'
+$SlScriptText = "#!/usr/bin/env bash`necho statusline`n"
+$SlJqFound = [bool](& $RealResolveProgram 'jq')
+# CRLF, an old statusLine with an extra key, a non-ASCII escape, a big integer and 1.0.
+$SlOriginal = "{`r`n  `"theme`": `"dark`",`r`n  `"statusLine`": {`"type`":`"command`",`"command`":`"old.sh`",`"hideX`":true},`r`n  `"name`": `"J\u00f6rg`", `"big`": 12345678901234567890, `"one`": 1.0,`r`n  `"env`": {`"A`":`"1`"}`r`n}`r`n"
+
+function Get-TreeHashes {
+    param([string]$Root)
+    if (-not (Test-Path -LiteralPath $Root)) { return @() }
+    return @(Get-ChildItem -LiteralPath $Root -Recurse -Force -File | Sort-Object FullName | ForEach-Object { "$($_.FullName)|$((Get-FileHash -LiteralPath $_.FullName).Hash)" })
+}
+
+# Suite guard: the real profile's settings.json and statusline.sh, and the real backup root, must
+# be the same after the suite as now.
+$RealUserProfile = $env:USERPROFILE
+# Only the two named files are looked at (never enumerate the real .claude: it holds credentials).
+function Get-FileState {
+    param([string]$Path)
+    try {
+        if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return 'absent' }
+        return (Get-FileHash -LiteralPath $Path).Hash
+    } catch {
+        return 'unreadable'
+    }
+}
+$SlGuardBefore = @((Get-FileState (Join-Path $RealUserProfile '.claude\settings.json')), (Get-FileState (Join-Path $RealUserProfile '.claude\statusline.sh')))
+$SlGuardStateBefore = Test-Path -LiteralPath (Join-Path $OrigLocalAppData 'app-configs\claude')
+
+function Initialize-SL {
+    param($Settings = $SlOriginal)
+    Initialize-Happy
+    $script:SlUP = Join-Path $script:T 'up'
+    $script:SlCD = Join-Path $script:SlUP '.claude'
+    [void](New-Item -ItemType Directory -Force -Path $script:SlCD)
+    $env:USERPROFILE = $script:SlUP
+    $script:SlS = Join-Path $script:SlCD 'settings.json'
+    $script:SlP = Join-Path $script:SlCD 'statusline.sh'
+    $script:SlB = Join-Path (Join-Path $script:State 'claude') "20260101T000000Z-$PID"
+    $script:SlT = Join-Path $script:RepoRoot 'home\.chezmoitemplates\claude\settings.json'
+    $script:SlSrc = Join-Path $script:RepoRoot 'home\dot_claude\executable_statusline.sh'
+    [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $script:SlT))
+    [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $script:SlSrc))
+    [IO.File]::WriteAllText($script:SlT, $SlTemplate)
+    [IO.File]::WriteAllText($script:SlSrc, $SlScriptText)
+    if ($null -ne $Settings) { [IO.File]::WriteAllText($script:SlS, $Settings) }
+    $script:SlCfg = $null
+    $script:SlHome = $script:SlUP
+    $script:SlJqV = 'jq-1.8.2'
+    $script:SlRender = @{ Code = 0; Out = 'row'; Err = '' }
+    $script:SlRenderCalls = New-Object 'System.Collections.Generic.List[object]'
+    $script:SlBackupAtMerge = $null
+    Stub 'Get-EnvScopes' { param([string]$Name) @{ Process = $(if ($Name -eq 'CLAUDE_CONFIG_DIR') { $script:SlCfg } else { $null }); User = $null; Machine = $null } }
+    Stub 'Get-GitBashHome' { param([string]$Bash) $script:SlHome }
+    Stub 'Get-ToolVersion' { param([string]$Name, [string[]]$VersionArgs) $script:SlJqV }
+    Stub 'Get-Sha256' $RealGetSha256
+    Stub 'Resolve-Program' $RealResolveProgram
+    Stub 'Invoke-Native' $RealInvokeNative
+    Stub 'Get-TemplateStatusLine' $RealGetTemplateStatusLine
+    Stub 'Invoke-Jq' {
+        param([string[]]$Arguments)
+        if ($Arguments -contains '--binary' -and $null -eq $script:SlBackupAtMerge) {
+            $script:SlBackupAtMerge = (Test-Path -LiteralPath (Join-Path $script:SlB 'settings.json'))
+        }
+        & $RealInvokeJq @PSBoundParameters
+    }
+    Stub 'Invoke-StatusLineRender' {
+        param([string]$Bash, [string]$PayloadPath)
+        $script:SlRenderCalls.Add(@{ Bash = $Bash; Payload = $PayloadPath })
+        $script:SlRender
+    }
+}
+
+function Test-SL {
+    param([string]$Name, [scriptblock]$Body, [switch]$NeedsJq)
+    $sb = {
+        $savedUP = $env:USERPROFILE
+        try {
+            if ($NeedsJq -and -not $SlJqFound) { throw 'SKIP: jq is not on PATH' }
+            & $Body
+        } finally {
+            $env:USERPROFILE = $savedUP
+        }
+    }.GetNewClosure()
+    Test-Case $Name $sb
+}
+
+# 0 when statusLine equals the template's and every other key equals the original's by value.
+function Test-SlMerged {
+    param([string]$Original)
+    $o = Join-Path $script:T 'orig.json'
+    [IO.File]::WriteAllText($o, $Original)
+    $r = & $RealInvokeJq @('-e', '--slurpfile', 'o', $o, '--slurpfile', 't', $script:SlT, '(.statusLine == $t[0].statusLine) and ((del(.statusLine)) == ($o[0] | del(.statusLine)))', $script:SlS)
+    return $r.Code
+}
+
+Test-SL 'SL1 -ClaudeStatusLine cannot combine with another mode -> 2, nothing called' {
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true; ToolsOnly = $true }) 2 'tools-only'
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true; Export = 'a' }) 2 'export'
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true; Report = 'a' }) 2 'report'
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true; EnableSystemRestore = $true }) 2 'restore'
+    Assert-Eq $script:Calls.Count 0 'no seam called'
+}
+
+Test-SL 'SL2 refusals write nothing: elevated, CLAUDE_CONFIG_DIR, Git Bash home mismatch, no Git Bash' {
+    Initialize-SL
+    $before = @(Get-TreeHashes $script:T)
+    $script:Elev = $true
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 3 'elevated'
+    $script:Elev = $false
+    $script:SlCfg = 'D:\other'
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 3 'CLAUDE_CONFIG_DIR'
+    $script:SlCfg = $null
+    $script:SlHome = 'C:\Users\someone-else'
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 3 'home mismatch'
+    $script:SlHome = $script:SlUP
+    $script:InstallerBash = $null
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 3 'no Git Bash'
+    Assert-Eq (@(Get-TreeHashes $script:T) -join "`n") ($before -join "`n") 'tree unchanged'
+}
+
+Test-SL 'SL2b Git Bash home equal to USERPROFILE ignoring case and a trailing slash or backslash passes the home check' {
+    Initialize-SL
+    $up = $script:SlUP
+    foreach ($h in @(($up + '\'), ($up + '/'), $up.ToUpperInvariant())) {
+        Reset-Stubs
+        Initialize-SL
+        $script:SlHome = $h
+        Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true; DryRun = $true }) 0 "home '$h'"
+        Assert-Log 'would render'
+    }
+} -NeedsJq
+
+Test-SL 'SL3 -DryRun prints "would" lines and writes nothing (settings and script both need changes)' {
+    Initialize-SL
+    [IO.File]::WriteAllText($script:SlP, 'old script')
+    $b1 = @(Get-TreeHashes $script:T)
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true; DryRun = $true }) 0 'exit'
+    Assert-Eq (@(Get-TreeHashes $script:T) -join "`n") ($b1 -join "`n") 'no file added, removed or changed (profile, state, repo)'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:State 'claude'))) 'no backup folder in a dry run'
+    Assert-Log 'would install .* as .*statusline.sh'
+    Assert-Log 'would save .* to .*settings.json, then set only the statusLine key'
+    Assert-Log 'would render'
+    Assert-Eq @(Get-SeamCalls 'Invoke-StatusLineRender').Count 0 'no render in a dry run'
+    Assert-Eq @(Get-SeamCalls 'Invoke-Winget').Count 0 'no winget'
+} -NeedsJq
+
+Test-SL 'SL4 -DryRun without jq: would run winget, settings unknown, exit 0, nothing written' {
+    Initialize-SL
+    $script:SlJqV = $null
+    $b1 = @(Get-TreeHashes $script:T)
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true; DryRun = $true }) 0 'exit'
+    Assert-Log 'would run: winget install --id jqlang.jq'
+    Assert-Log 'state is unknown without jq'
+    Assert-Eq @(Get-SeamCalls 'Invoke-Winget').Count 0 'no winget in a dry run'
+    Assert-Eq (@(Get-TreeHashes $script:T) -join "`n") ($b1 -join "`n") 'nothing written'
+}
+
+Test-SL 'SL5 backup exists before the write; only statusLine changes; script is LF and equals the repo script' {
+    Initialize-SL
+    $origBytes = [IO.File]::ReadAllBytes($script:SlS)
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 0 'exit'
+    Assert-Eq $script:SlBackupAtMerge $true 'the byte-exact backup existed when jq produced the merge'
+    $bk = Join-Path $script:SlB 'settings.json'
+    Assert-True (Test-Path -LiteralPath $bk) 'backup kept after a change'
+    Assert-Eq (Get-BytesSha256 ([IO.File]::ReadAllBytes($bk))) (Get-BytesSha256 $origBytes) 'backup is byte-identical to the original (CRLF kept)'
+    Assert-Eq (Test-SlMerged $SlOriginal) 0 'statusLine equals the template; every other key equal by value'
+    $now = [IO.File]::ReadAllText($script:SlS)
+    Assert-True (-not $now.Contains('old.sh') -and -not $now.Contains('hideX')) 'the old statusLine is replaced exactly, not merged'
+    Assert-True (-not $now.Contains('"model"') -and -not $now.Contains('"hooks"')) 'no other template key is copied'
+    $pb = [IO.File]::ReadAllBytes($script:SlP)
+    Assert-True (-not ($pb -contains 13)) 'no CR in the installed script'
+    Assert-Eq (Get-BytesSha256 $pb) (Get-BytesSha256 ([IO.File]::ReadAllBytes($script:SlSrc))) 'script equals the repo script'
+    Assert-Log 'replacing the existing statusLine \(command: old.sh\)'
+    Assert-Log 'rollback \(one command\): Copy-Item'
+    Assert-Eq $script:SlRenderCalls.Count 1 'rendered once'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:SlB 'payload.json'))) 'payload removed'
+    Assert-Eq @(Get-ChildItem -LiteralPath $script:SlCD -Force | Where-Object { $_.Name -like '*app-configs-tmp*' }).Count 0 'no temp file left'
+} -NeedsJq
+
+Test-SL 'SL6 the printed rollback command restores the original settings.json byte for byte' {
+    Initialize-SL
+    $origHash = Get-BytesSha256 ([IO.File]::ReadAllBytes($script:SlS))
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 0 'exit'
+    Assert-True ((Get-BytesSha256 ([IO.File]::ReadAllBytes($script:SlS))) -ne $origHash) 'settings changed by the run'
+    $line = @($script:LogLines | Where-Object { $_ -match 'rollback \(one command\): ' })
+    Assert-Eq $line.Count 1 'one rollback line'
+    $cmd = $line[0].Substring($line[0].IndexOf('Copy-Item'))
+    Invoke-Expression $cmd
+    Assert-Eq (Get-BytesSha256 ([IO.File]::ReadAllBytes($script:SlS))) $origHash 'restored'
+} -NeedsJq
+
+Test-SL 'SL7 a second run changes nothing, makes no new backup and says current' {
+    Initialize-SL
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 0 'first run'
+    $profile1 = @(Get-TreeHashes $script:SlUP)
+    $backups1 = @(Get-ChildItem -LiteralPath (Join-Path $script:State 'claude') -Directory).Count
+    Stub 'Get-UtcStamp' { '20260101T000001Z' }
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 0 'second run'
+    Assert-Eq (@(Get-TreeHashes $script:SlUP) -join "`n") ($profile1 -join "`n") 'profile unchanged'
+    Assert-Eq @(Get-ChildItem -LiteralPath (Join-Path $script:State 'claude') -Directory).Count $backups1 'no new backup folder'
+    Assert-Log 'statusline.sh is current'
+    Assert-Log 'statusLine is current'
+} -NeedsJq
+
+Test-SL 'SL8 absent settings.json is created with only statusLine; no backup is kept; rollback is a delete' {
+    Initialize-SL -Settings $null
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 0 'exit'
+    $r = & $RealInvokeJq @('-e', '--slurpfile', 't', $script:SlT, '. == {statusLine: $t[0].statusLine}', $script:SlS)
+    Assert-Eq $r.Code 0 'only statusLine'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:State 'claude'))) 'nothing to back up, folder removed'
+    Assert-Log 'did not exist before; rollback: Remove-Item'
+} -NeedsJq
+
+Test-SL 'SL9 existing statusLine already current: settings untouched, only a changed script is backed up' {
+    Initialize-SL -Settings ('{"keep":1,"statusLine":{"type":"command","command":"~/.claude/statusline.sh","padding":2,"refreshInterval":5}}')
+    [IO.File]::WriteAllText($script:SlP, 'edited locally')
+    $h = Get-BytesSha256 ([IO.File]::ReadAllBytes($script:SlS))
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 0 'exit'
+    Assert-Eq (Get-BytesSha256 ([IO.File]::ReadAllBytes($script:SlS))) $h 'settings.json byte-identical'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:SlB 'settings.json'))) 'no settings backup when nothing changes there'
+    Assert-Eq ([IO.File]::ReadAllText((Join-Path $script:SlB 'statusline.sh'))) 'edited locally' 'old script saved'
+    Assert-Eq (Get-BytesSha256 ([IO.File]::ReadAllBytes($script:SlP))) (Get-BytesSha256 ([IO.File]::ReadAllBytes($script:SlSrc))) 'script replaced'
+} -NeedsJq
+
+Test-SL 'SL10 invalid settings.json (garbage, empty, two documents, array, UTF-16) exits 3, unchanged, no backup' {
+    $cases = @(
+        @{ N = 'garbage'; B = [Text.Encoding]::UTF8.GetBytes('{not json') },
+        @{ N = 'empty'; B = [byte[]]@() },
+        @{ N = 'two documents'; B = [Text.Encoding]::UTF8.GetBytes('{"a":1}{"b":2}') },
+        @{ N = 'array'; B = [Text.Encoding]::UTF8.GetBytes('[1]') },
+        @{ N = 'utf-16'; B = [Text.Encoding]::Unicode.GetPreamble() + [Text.Encoding]::Unicode.GetBytes('{"a":1}') },
+        @{ N = 'invalid utf-8'; B = [byte[]]@(0x7B, 0xFF, 0x7D) }
+    )
+    foreach ($c in $cases) {
+        Reset-Stubs
+        Initialize-SL -Settings $null
+        [IO.File]::WriteAllBytes($script:SlS, $c.B)
+        Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 3 $c.N
+        Assert-Eq (Get-BytesSha256 ([IO.File]::ReadAllBytes($script:SlS))) (Get-BytesSha256 $c.B) "$($c.N): unchanged"
+        Assert-True (-not (Test-Path -LiteralPath $script:SlP)) "$($c.N): script not installed"
+        Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:State 'claude'))) "$($c.N): no backup folder left"
+    }
+} -NeedsJq
+
+Test-SL 'SL11 a UTF-8 BOM is accepted and the rewritten file has none' {
+    Initialize-SL -Settings $null
+    [IO.File]::WriteAllBytes($script:SlS, ([byte[]]@(0xEF, 0xBB, 0xBF)) + [Text.Encoding]::UTF8.GetBytes('{"keep":true}'))
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 0 'exit'
+    $b = [IO.File]::ReadAllBytes($script:SlS)
+    Assert-True ($b[0] -ne 0xEF) 'no BOM'
+    Assert-Eq (Test-SlMerged '{"keep":true}') 0 'merged'
+} -NeedsJq
+
+Test-SL 'SL12 read-only settings.json that needs writing exits 3 in both modes, unchanged, no backup' {
+    Initialize-SL
+    $h = Get-BytesSha256 ([IO.File]::ReadAllBytes($script:SlS))
+    Set-ItemProperty -LiteralPath $script:SlS -Name IsReadOnly -Value $true
+    try {
+        Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true; DryRun = $true }) 3 'dry-run'
+        Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 3 'real'
+        Assert-Eq (Get-BytesSha256 ([IO.File]::ReadAllBytes($script:SlS))) $h 'unchanged'
+        Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:State 'claude'))) 'no backup folder left'
+        Assert-True (-not (Test-Path -LiteralPath $script:SlP)) 'script not installed'
+    } finally {
+        Set-ItemProperty -LiteralPath $script:SlS -Name IsReadOnly -Value $false
+    }
+} -NeedsJq
+
+Test-SL 'SL13 render failure exits 1 and keeps the backup and the rollback hint' {
+    Initialize-SL
+    $script:SlRender = @{ Code = 1; Out = ''; Err = 'jq: not found' }
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 1 'exit'
+    Assert-True (Test-Path -LiteralPath (Join-Path $script:SlB 'settings.json')) 'backup kept'
+    Assert-Log 'render check failed \(exit 1\): jq: not found'
+} -NeedsJq
+
+Test-SL 'SL14 a template that is not plain JSON or has another command exits 1 before any write' {
+    Initialize-SL
+    [IO.File]::WriteAllText($script:SlT, '{"statusLine":{"type":"command","command":"{{ .x }}"}}')
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 1 'template action'
+    [IO.File]::WriteAllText($script:SlT, '{"statusLine":{"type":"command","command":"other.sh"}}')
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 1 'other command'
+    Assert-True (-not (Test-Path -LiteralPath $script:SlP)) 'script not installed'
+    Assert-True (-not (Test-Path -LiteralPath (Join-Path $script:State 'claude'))) 'no backup folder'
+}
+
+Test-SL 'SL15 jq below 1.7 exits 3; a missing jq in a real run installs it through winget' {
+    Initialize-SL
+    $script:SlJqV = 'jq-1.6'
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 3 'old jq'
+    Reset-Stubs; Initialize-SL
+    $script:SlJqV = $null
+    Stub 'Invoke-Winget' { param([string]$Id) $script:SlJqV = 'jq-1.8.2'; @{ Code = 0; Out = 'ok'; Err = '' } }
+    Assert-Eq (Run-Boot @{ ClaudeStatusLine = $true }) 0 'installed'
+    Assert-Eq @(Get-SeamCalls 'Invoke-Winget').Count 1 'winget once'
+    Assert-Log 'installing jqlang.jq with winget'
+} -NeedsJq
+
+Test-SL 'SL17 real Git Bash renders the current repo statusline script (temp HOME, nothing written outside temp)' {
+    Stub 'Resolve-Program' $RealResolveProgram
+    $bash = & $RealResolveGitBash
+    if (-not $bash) { throw 'SKIP: Git for Windows bash not found' }
+    $hd = Join-Path $script:T 'home17'
+    $cd = Join-Path $hd '.claude'
+    [void](New-Item -ItemType Directory -Force -Path $cd)
+    $src = Join-Path $OrigRepoRoot 'home\dot_claude\executable_statusline.sh'
+    [IO.File]::WriteAllBytes((Join-Path $cd 'statusline.sh'), [IO.File]::ReadAllBytes($src))
+    $payload = Join-Path $script:T 'payload17.json'
+    $cwd = $script:T.Replace('\', '/')
+    [IO.File]::WriteAllText($payload, '{"model":{"display_name":"check"},"workspace":{"current_dir":"' + $cwd + '"}}')
+    $savedHome = $env:HOME
+    $savedUP = $env:USERPROFILE
+    try {
+        $env:HOME = $hd
+        $env:USERPROFILE = $hd
+        Stub 'Invoke-Native' $RealInvokeNative
+        $r = & $RealInvokeStatusLineRender -Bash $bash -PayloadPath $payload.Replace('\', '/')
+        Assert-Eq $r.Code 0 "render exit (stderr: $($r.Err))"
+        Assert-True ([bool]([string]$r.Out).Trim()) 'at least one non-empty output line'
+        Remove-Item -LiteralPath (Join-Path $cd 'statusline.sh')
+        $r2 = & $RealInvokeStatusLineRender -Bash $bash -PayloadPath $payload.Replace('\', '/')
+        Assert-True ($r2.Code -ne 0) 'a missing installed script makes the render check fail'
+    } finally {
+        $env:HOME = $savedHome
+        $env:USERPROFILE = $savedUP
+    }
+}
+
+Test-SL 'SL16 the default run never mentions or runs step S' {
+    Initialize-Happy
+    Assert-Eq (Run-Boot @{ DryRun = $true }) 0 'default dry-run'
+    Assert-Eq @(Get-SeamCalls 'Invoke-Jq').Count 0 'no jq'
+    Assert-Eq @(Get-SeamCalls 'Get-EnvScopes').Count 0 'no step S probe'
+    Assert-True ((Get-Log) -notmatch 'step S') 'no step S line'
+}
+
 # ---------------------------------------------------------------- done
 
 Test-Case 'Z1 across the whole suite, every advised wsl command that uses --exec or -- names a program proven to resolve' {
@@ -2998,6 +3345,13 @@ Test-Case 'Z1 across the whole suite, every advised wsl command that uses --exec
         }
     }
     Assert-True ($advice -ge 3) "the suite produced $advice advised wsl commands with a program (mv recovery, rollback)"
+}
+
+Test-Case 'Z2 suite guard: the real profile settings.json, statusline.sh and backup root are untouched' {
+    Assert-Eq $env:USERPROFILE $RealUserProfile 'USERPROFILE restored'
+    $after = @((Get-FileState (Join-Path $RealUserProfile '.claude\settings.json')), (Get-FileState (Join-Path $RealUserProfile '.claude\statusline.sh')))
+    Assert-Eq ($after -join "`n") ($SlGuardBefore -join "`n") 'real .claude files'
+    Assert-Eq (Test-Path -LiteralPath (Join-Path $OrigLocalAppData 'app-configs\claude')) $SlGuardStateBefore 'real backup root'
 }
 
 $env:LOCALAPPDATA = $OrigLocalAppData

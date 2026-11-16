@@ -1,6 +1,6 @@
 # T-0052 Claude Code status line on native Windows: execution plan
 
-- **Status:** design reviewed (independent review PASS WITH NOTES, round 3); implementation not started
+- **Status:** implemented in reduced form (T2 to T5 content), uncommitted; independent review and T6 real run pending
 - **Work id:** T-0052-windows-claude-statusline (`Source: local`, per [ticket.md](ticket.md))
 - **Designed against:** `400a30b` (main), plus another session's uncommitted step C work (P0)
 - **Date:** 2026-11-15
@@ -33,7 +33,7 @@ Rejected alternatives (also in ADR-0016):
 | Option | Reason |
 |---|---|
 | A: chezmoi on Windows, limited to the Claude files | No Windows rules exist, so a plain apply deploys about a dozen Unix dotfiles. Limiting it needs an ignore-everything-else list that every new home/ file must be checked against, an unbounded burden. Whether a bash `modify_` script runs without `interpreters` is unknown. The template would push hooks, model and theme, and the Linux `modify_` overwrites invalid JSON. The mechanism is rejected, but its capability (a single source) is kept because step S reads the same repo files. |
-| C: a native PowerShell status line | A second implementation of a 592-line script with no parity tests (bats does not run on Windows) and no speed gain. |
+| C: a native PowerShell status line | A second implementation of the repo status line script with no parity tests (bats does not run on Windows) and no speed gain. |
 | E: point statusLine.command at the repo checkout file | No drift, but it ties Claude to whatever branch is checked out and to the clone path, and needs a Windows-only command value, which is a second source. |
 | Include step S in the default full run | It couples a cosmetic step to the WSL exit codes and widens what the default run writes. Deferred (D2). |
 | ConvertTo-Json merge | PS 5.1 reformats, escapes `<>'&` and limits depth. jq is needed anyway. |
@@ -221,7 +221,7 @@ bats does not run on Windows.
 
 ## Documentation to write later (T5)
 
-- ADR-0016 status becomes "decided, not yet verified" in T5. It is "proposed" until then.
+- ADR-0016 status is `decided-unverified` (owner decision 2026-11-16) until the T6 real run and H1; then `decided`.
 - `docs/platforms/windows/setup.md`: a new section "4b. Claude status line" after section 4:
   - Run `powershell -NoProfile -ExecutionPolicy Bypass -File ops\windows\bootstrap.ps1 -ClaudeStatusLine -DryRun`, then the same command without `-DryRun`.
   - Four bullets on what it does (jq, script, the statusLine key only, render check).
@@ -316,9 +316,23 @@ Committing needs separate authorisation (AGENTS.md); use one conventional commit
 - If nothing shows:
   - check workspace trust and `disableAllHooks`;
   - then run `claude --debug` and look for the statusline error (jq not found means a stale PATH; otherwise a bash path or home problem).
-- Write the result into the T-0052 evidence note and set ADR-0016 to verified.
+- Write the result into the T-0052 evidence note and set ADR-0016 to `decided`.
 
 ## Rollback
 
 - Windows: the setup.md 4b rollback text (see above): restore from `$B`, or remove the `statusLine` key with jq and delete `statusline.sh`; optionally `winget uninstall --id jqlang.jq --exact`.
 - Repo: revert the T-0052 commits.
+
+## Implementation notes (2026-11-16)
+
+Owner decision 2026-11-16: "yes add claude statu line windows implement", then "first save defeault settings so we can easily rollback commit them as default and then apply new". The plan's backup design already covers this: the byte-exact `settings.json` snapshot is written to `$B` before `$S` is touched, and the run prints a one-command `Copy-Item` rollback.
+
+Done: switch in all four places; `Invoke-ClaudeStatusLine` (S1 refusals, S2 contract, S3 tools, S4 decide, read-only check, S6 dry run, S8, S9, S10, S11); seams `Get-EnvScopes`, `Get-GitBashHome`, `Invoke-Jq`, `Invoke-StatusLineRender`, `Get-TemplateStatusLine`; helper `Get-BytesSha256`; tests SL1 to SL16 and the Z2 real-profile guard; setup.md section 4b; ADR-0016 decided-unverified. The script is installed from the repo file at run time, with no copied snapshot of its content.
+
+Deviations from the plan (smaller than designed; nothing weaker than the safety goals):
+- No leftover `*.app-configs-tmp-*` report, no open-for-write probe (only the ReadOnly attribute), no `Claude Code` version report.
+- Tests cover SL1 to SL16, not the full AC1 to AC29 list (no AC19 non-ASCII home case, AC23 temp-collision, AC24/AC25 real Git Bash render, AC26 appeared-during-run, AC29 pre-created `$B`).
+- The render payload is a minimal `{"model":{"display_name":"check"},"workspace":{"current_dir":<repo>}}`.
+- The windows-and-wsl.md bullet (T5) is not done: that file belongs to another agent's uncommitted work.
+
+Tasks T3 to T5 stay unticked until review. T6 (real run) is not started; it needs the owner's go-ahead.

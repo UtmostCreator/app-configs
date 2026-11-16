@@ -137,9 +137,9 @@ dir_of() { printf '%s/docs/architecture/decisions' "$1"; }
 
 @test "seeded: a Status line that contradicts the frontmatter is caught" {
     local c="$BATS_TEST_TMPDIR/repo"; repo_copy "$c"
-    seed "$(ls "$(dir_of "$c")"/0016-*.md)" 's/^Status: proposed/Status: decided/'
+    seed "$(ls "$(dir_of "$c")"/0018-*.md)" 's/^Status: proposed/Status: decided/'
     run check "$c"
-    [[ "$output" == *"0016-native-windows-claude-status-line.md: Status line starts 'decided'"* ]]
+    [[ "$output" == *"0018-interactive-config-manager-frontend.md: Status line starts 'decided'"* ]]
 }
 
 @test "seeded: dangling amends, octal item and an unmentioned amender are caught" {

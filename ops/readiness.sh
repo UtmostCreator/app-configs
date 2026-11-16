@@ -43,7 +43,11 @@ for t in nix home-manager chezmoi mise lefthook git jq yq; do
   if have "$t"; then ok "$t present"; else bad "$t missing (run: sys-install)"; fi
 done
 
-HOST_PROFILE="${HOST_PROFILE:-$(bash "$REPO_ROOT/ops/detect-host.sh" 2>/dev/null || echo unknown)}"
+HOST_SOURCE="env"
+if [[ -z "${HOST_PROFILE:-}" ]]; then
+  HOST_SOURCE="$(bash "$REPO_ROOT/ops/detect-host.sh" --source 2>/dev/null || echo unknown)"
+  HOST_PROFILE="$(bash "$REPO_ROOT/ops/detect-host.sh" 2>/dev/null || echo unknown)"
+fi
 
 hdr "Secret scanner (pre-commit policy: fail closed)"
 if have gitleaks; then ok "gitleaks present"
@@ -161,9 +165,12 @@ if is_nixos; then
   if [[ "$cur_timezone" == "Europe/London" ]]; then ok "system time zone is Europe/London"
   else note "system time zone is ${cur_timezone:-unknown}, not Europe/London — run: sudo sys-setup --apply"; rebuild_needed=1; fi
 
-  # NixOS-WSL does not run Tailscale (sys-setup defaults ENABLE_TAILSCALE=0
-  # there), so a missing daemon must not make a rebuild pending.
-  if [[ "$HOST_PROFILE" != wsl ]]; then
+  # Tailscale is personal-only (ADR-0029): sys-setup defaults ENABLE_TAILSCALE=1
+  # only on linux-desktop, so a missing daemon elsewhere must not make a
+  # rebuild pending.
+  if [[ "$HOST_SOURCE" == default ]]; then
+    note "host profile not recorded — run: sys-install --host <profile>"
+  elif [[ "$HOST_PROFILE" == linux-desktop ]]; then
     if systemctl is-active tailscaled >/dev/null 2>&1; then ok "Tailscale daemon active"
     else note "Tailscale daemon inactive — run: sudo sys-setup --apply"; rebuild_needed=1; fi
   fi

@@ -1,7 +1,18 @@
 # Reaching local services over Tailscale (NixOS desktop)
 
-Scope: the NixOS desktop. sys-setup (`ops/system-setup.sh`) enables the
-`tailscaled` daemon, and `ops/tailscale-setup.sh` installs the repo's Tailscale
+Scope: the NixOS desktop. Tailscale is personal-only
+([ADR-0029](../architecture/decisions/0029-networking-and-remote-access.md),
+T-0057): sys-setup (`ops/system-setup.sh`) enables the `tailscaled` daemon by
+default only when `HOST_PROFILE=linux-desktop`. Work hosts (linux-cli, WSL,
+macOS) get none; the employer VPN applies. To opt in on another NixOS host, run
+`sudo ENABLE_TAILSCALE=1 bash ops/system-setup.sh --apply`. Re-running with
+`ENABLE_TAILSCALE=0` drops the `services.tailscale.enable` entry from the
+managed module (not a module written by `ops/tailscale-setup.sh`). Under sudo
+the host profile comes from the invoking user's host file; with no host file
+(`bash ops/detect-host.sh --source` prints `default`) sys-setup leaves Tailscale as
+the managed module has it; record the host with `sys-install --host <profile>`.
+`ops/tailscale-setup.sh` (`mise run tailscale:setup`)
+is a manual opt-in that no other script runs; it installs the repo's Tailscale
 module (operator rights, pinned package). On Windows and WSL, Tailscale runs on
 the Windows host instead
 ([ADR-0004](../architecture/decisions/0004-tailscale-on-windows-only.md));

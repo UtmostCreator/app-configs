@@ -54,6 +54,19 @@ stub() { printf '#!/bin/sh\nexit 0\n' >"$S/$1"; chmod +x "$S/$1"; }
     [[ "$output" == *"Tailscale daemon inactive"* ]]
 }
 
+@test "NixOS linux-cli (work host): no Tailscale line, so Tailscale cannot make a rebuild pending" {
+    HOST_PROFILE=linux-cli READINESS_ASSUME_NIXOS=1 PATH="$S" run bash "$SCRIPT"
+    [[ "$output" == *"NixOS system layer"* ]]
+    [[ "$output" != *"Tailscale"* ]]
+}
+
+@test "NixOS with no recorded host file: TODO to record it, no tailscaled rebuild loop" {
+    unset HOST_PROFILE
+    READINESS_ASSUME_NIXOS=1 PATH="$S" run bash "$SCRIPT"
+    [[ "$output" == *"host profile not recorded"* ]]
+    [[ "$output" != *"Tailscale daemon inactive"* ]]
+}
+
 @test "NixOS-WSL: no Tailscale line, so Tailscale cannot make a rebuild pending" {
     HOST_PROFILE=wsl READINESS_ASSUME_NIXOS=1 PATH="$S" run bash "$SCRIPT"
     [[ "$output" == *"NixOS system layer"* ]]

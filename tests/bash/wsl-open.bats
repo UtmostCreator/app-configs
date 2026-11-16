@@ -54,16 +54,18 @@ open_() { PATH="$STUBS" run "$STUBS/bash" "$SCRIPT" "$@"; }
 
 @test "fish sets BROWSER and open only on WSL2" {
     # fish ships its own `open` on Linux; check that ours replaces it on WSL2.
+    # `env -u BROWSER` below keeps the case independent of a BROWSER the
+    # caller exported (Claude Code sets BROWSER=true).
     : >"$BATS_TEST_TMPDIR/c.toml"
     f="$BATS_TEST_TMPDIR/config.fish"
     chezmoi execute-template --config "$BATS_TEST_TMPDIR/c.toml" --source "$REPO_ROOT/home" \
         --override-data '{"chezmoi":{"os":"linux"},"name":"T","email":"t@e.t","signingKey":""}' \
         --file "$REPO_ROOT/home/dot_config/fish/config.fish.tmpl" >"$f"
     sed -n '/^# ─── WSL2/,/^end/p' "$f" >"$BATS_TEST_TMPDIR/wsl.fish"
-    run env WSL_DISTRO_NAME=Ubuntu fish --no-config -c "source $BATS_TEST_TMPDIR/wsl.fish; echo \$BROWSER; functions open | string match -q '*wsl-open*'; and echo open-ok"
+    run env -u BROWSER WSL_DISTRO_NAME=Ubuntu fish --no-config -c "source $BATS_TEST_TMPDIR/wsl.fish; echo \$BROWSER; functions open | string match -q '*wsl-open*'; and echo open-ok"
     [ "${lines[0]}" = "wsl-open" ]
     [ "${lines[1]}" = "open-ok" ]
-    run env -u WSL_DISTRO_NAME -u WSL_INTEROP fish --no-config -c "source $BATS_TEST_TMPDIR/wsl.fish; echo \"[\$BROWSER]\"; functions open 2>/dev/null | string match -q '*wsl-open*'; or echo no-open"
+    run env -u BROWSER -u WSL_DISTRO_NAME -u WSL_INTEROP fish --no-config -c "source $BATS_TEST_TMPDIR/wsl.fish; echo \"[\$BROWSER]\"; functions open 2>/dev/null | string match -q '*wsl-open*'; or echo no-open"
     [ "${lines[0]}" = "[]" ]
     [ "${lines[1]}" = "no-open" ]
 }

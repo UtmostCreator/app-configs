@@ -44,5 +44,6 @@ closes, move its directory from [`active/`](active/README.md) to
 | [T-0047: WSL2 on NixOS-WSL, desktop-first (feature)](active/T-0047-nixos-wsl/ticket.md) | open | 2026-11-15 |
 | [T-0048: Cross-OS settings inventory, baseline and per-host overrides (feature)](active/T-0048-cross-os-settings/ticket.md) | open (phase 1: Windows inventory) | 2026-11-15 |
 | [T-0050: Always show user feedback during waits (bug + rule)](active/T-0050-user-feedback-during-waits/ticket.md) | open | 2026-11-15 |
+| [T-0053: Git aliases that delete tags or change repository state while looking read-only (bug)](active/T-0053-git-alias-safety/ticket.md) | open (fixes on feat/ssh-key-lifetime) | 2026-11-15 |
 
 Archived tickets: see [archive/](archive/README.md).

@@ -865,15 +865,20 @@ rich() {
     [[ "$(raw 0.97 false)" == "Cache 97% "$'\033[0;33mcold\033[0m' ]]
 }
 
-@test "minimal layout drops RC, then effort, then quotas below 85%; the agent tag is shortened, then dropped last" {
+@test "minimal layout drops RC, then effort, then quotas below 85%; the agent tag is shortened and kept to the end" {
     out=$(rich | COLUMNS=55 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
     [ "$(sed -n 1p <<<"$out")" = "◆ orchestrator │ rich main* │ Opus:H │ Ctx 14% │ 7d 92%" ]
     out=$(rich | COLUMNS=54 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
     [ "$(sed -n 1p <<<"$out")" = "◆ orchestrator │ rich main* │ Opus │ Ctx 14% │ 7d 92%" ]
     out=$(rich | COLUMNS=48 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
     [ "$(sed -n 1p <<<"$out")" = "◆ orch │ rich main* │ Opus │ Ctx 14% │ 7d 92%" ]
+    # Deliberate requirement change: the agent tag is never dropped while
+    # anything else can go first, so other segments (context, project) give way.
     out=$(rich | COLUMNS=40 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
-    [ "$(sed -n 1p <<<"$out")" = "rich main* │ Opus │ Ctx 14% │ 7d 92%" ]
+    [ "$(sed -n 1p <<<"$out")" = "◆ orch │ rich main* │ Opus │ 7d 92%" ]
+    out=$(rich | COLUMNS=30 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
+    [ "$(sed -n 1p <<<"$out")" = "◆ orch │ Opus │ 7d 92%" ]
+    [[ "$(rich | COLUMNS=22 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g' | sed -n 1p)" == *"◆ orch"* ]]
     # A weaker quota goes before the agent tag does.
     export COLUMNS=60
     run statusline '{"agent": {"name": "orchestrator"}, "rate_limits": {"five_hour": {"used_percentage": 20}, "seven_day": {"used_percentage": 30}}}'
@@ -1139,4 +1144,13 @@ code_before() {
     sum=0; for ((i = 0; i < ${#long}; i++)); do printf -v c %d "'${long:i:1}"; sum=$((sum + c)); done
     palette=(74 103 109 116 133 138 143 152)
     [ "$(code_before '◆ ' "$(jq -n --arg n "$long" '{agent: {name: $n}}')")" = "38;5;${palette[sum % 8]}" ]
+}
+
+@test "minimal: the agent tag goes only when dropping it makes the row fit" {
+    # 13 columns: "Opus │ 7d 92%" fits only without the tag, so it is dropped.
+    out=$(rich | COLUMNS=13 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g' | sed -n 1p)
+    [ "$out" = "Opus │ 7d 92%" ]
+    # 12 columns: nothing fits either way (the 92% quota is never dropped), so the tag stays.
+    out=$(rich | COLUMNS=12 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g' | sed -n 1p)
+    [[ "$out" == *"◆ orch"* ]]
 }

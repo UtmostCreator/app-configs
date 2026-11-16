@@ -1,10 +1,10 @@
 # T-0047 NixOS-WSL, desktop-first: execution plan
 
-- **Status:** draft
+- **Status:** WSL2 setup complete; pending (b), then the open ACs (see "Final design and outcome")
 - **Work id:** T-0047-nixos-wsl (`Source: local`, per ticket.md)
 - **Branch:** main (work branch: unknown)
 - **Designed against:** `c644dd6` (main)
-- **Transfer-0 commits (A, B, C):** unknown until pushed (Windows, docs only)
+- **Transfer-0 commits (A, B, C):** A=3757c2e, B=28c588b, C=892b3e2 (checked with git log)
 - **Date:** 2026-11-15
 
 ## Context
@@ -30,7 +30,7 @@ Chosen (user, recorded):
 - Transfer: commit and push to origin (user decision 2026-11-15; replaces git bundle). `git pull --ff-only` before work and before each commit; push right after each commit; no force-push, rebase or stash. Commits only where hooks run. Exception: Transfer-0 (docs only, Windows, pre-commit run by hand) until AC-T2 passes. Each session confirms its own push authorisation for its task (AGENTS.md).
 - Restore points: Windows restore point before `wsl --install`; `wsl --export` before setup and before Docker (`-Export before-docker`); no export after install (text before/after reports instead). Exports after Docker or after install stay rejected (size, secrets).
 
-Rejected alternatives: Ubuntu, apt, wsl.conf writer, `wsl-docker.sh`; `nixosConfigurations` now; Tailscale inside WSL; automatic docker group; automated winget; export after install.
+Rejected alternatives (Ubuntu no longer rejected: see ADR-0015 and "Final design and outcome"): apt as the NixOS path, wsl.conf writer, `wsl-docker.sh`; `nixosConfigurations` now; Tailscale inside WSL; automatic docker group; automated winget; export after install.
 
 Reboot points:
 
@@ -59,9 +59,9 @@ flowchart TD
 
 ## Acceptance criteria
 
-- [ ] **AC-B1** `wsl.defaultUser = lib.mkForce "utmostcreator";` in a WSL-only module. Build passes. WSL launches as utmostcreator. A test proves a stock `"nixos"` value loses.
+- [x] **AC-B1** `wsl.defaultUser = lib.mkForce "utmostcreator";` in a WSL-only module. Build passes. WSL launches as utmostcreator. A test proves a stock `"nixos"` value loses. Evidence 2026-11-16: wsl.nix:30; tests/bash/nixos-wsl-module.bats 4/4 (WSL, 8f6b4eb); /etc/wsl.conf default=utmostcreator.
 - [ ] **AC-B2** sys-setup backs up every /etc/nixos file it may touch and restores the exact state on a validation (dry-build) failure (content, mode, owner, symlink, existence). Tested for success and simulated failure (D2b). The desktop is unchanged after a validation failure. On a switch failure it prints the `nixos-rebuild switch --rollback` command.
-- [ ] **AC-T1** Bootstrap tests pass, ParseFile, ASCII. While RebootPending is set, the real dry run stops at step 0 without writing. After R2 a normal run checks the WSL version, imports NixOS, runs nix-channel and the systemd/interop check, then stops at the D0 gate (step 6, exit 3). The before-setup report and export run in H2.
+- [ ] **AC-T1** Bootstrap tests pass, ParseFile, ASCII. While RebootPending is set, the real dry run stops at step 0 without writing. After R2 a normal run checks the WSL version, imports NixOS, runs nix-channel and the systemd/interop check, then stops at the D0 gate (step 6, exit 3). The before-setup report and export run in H2. Evidence 2026-11-16: 176 passed, 0 failed; ParseFile and ASCII clean (working tree incl. uncommitted T-0052 T2; HEAD ParseFile clean). Real-host parts: the after-R2 run reached step 6 (evidence/h1-normal-run-2026-11-15.md; exit 3 expected, not captured); the RebootPending real dry run is not recorded (unit tests 1a/1b only). Open until recorded or explicitly deferred.
 - [ ] **AC-D** D1 to D6 and D8 pass on the real desktop, with evidence. D7 is checked per S3 task, not here.
 - [ ] **AC-WSL** Measured in Slice 4:
   - sys-install, sys-update, `nix flake check`
@@ -73,14 +73,14 @@ flowchart TD
   - tailnet reachable from WSL via Windows Tailscale
   - timezone; substituters
 - [ ] **AC-NEG** macOS, linux-desktop and linux-cli unchanged (full bats, flake check, builds). Pushes only in the Transfer steps (user-authorised 2026-11-15; each session confirms its own push authorisation, AGENTS.md). No `wsl --unregister` scripted.
-- [ ] **AC-TZ** Timezone decided in Slice 4: sys-setup forces Europe/London (mkForce); compare with Windows and record the decision.
+- [x] **AC-TZ** Decided: WSL keeps the sys-setup zone Europe/London; Windows is set to match ("GMT Standard Time", T-0048 windows.yaml). Evidence: evidence/final-run-2026-11-16.md.
 - [x] **AC-DOCKER-MSG** The `ws_ensure_docker` error text in ops/projects/workspace/config.sh is fixed in Slice 2b (points to the sys-setup Docker path, not Docker Desktop's WSL integration). Done: `fix(workspace): point the missing-Docker error at sys-setup, not Docker Desktop`.
-- [ ] **AC-T2** The T2 stub tests pass. On the real Windows clone, `ops/doctor.sh` and `ops/validate-config.sh` exit 0, the hooks are installed, the commit-msg good and bad cases behave, and gitleaks catches a planted token. Once AC-T2 passes, Windows commits are allowed (including T1 and T2).
+- [ ] **AC-T2** The T2 stub tests pass. On the real Windows clone, `ops/doctor.sh` and `ops/validate-config.sh` exit 0, the hooks are installed, the commit-msg good and bad cases behave, and gitleaks catches a planted token. Once AC-T2 passes, Windows commits are allowed (including T1 and T2). Open: `--check` is fixed (8f6b4eb; exit 0 on Windows and WSL, 2026-11-16); a real test commit from the Windows clone is still to do (a).
 
 ## Tasks
 
-- [ ] **Transfer-0** Push/pull: commits A, B and C on Windows, pushed to origin (first step; the one hooks exception)
-  - Files: commit A: `docs/work/active/T-0048-cross-os-settings/` (Windows session). Commit B (6 files): `docs/work/active/T-0047-nixos-wsl/ticket.md`, `docs/work/active/T-0047-nixos-wsl/plan.md`, `docs/work/index.md`, `docs/platforms/wsl/setup.md`, `docs/platforms/wsl/windows-and-wsl.md`, `docs/platforms/windows/setup.md`. Commit C (4 files): docs/platforms/index.md, docs/platforms/base.md, `README.md`, `docs/index.md`. Docs only; T1 files stay untracked.
+- [x] **Transfer-0** Push/pull: commits A, B and C on Windows, pushed to origin (first step; the one hooks exception). Done: A=3757c2e, B=28c588b, C=892b3e2 (each an ancestor of origin/main). Verify not recorded as specified: no hook or Linux bats results under evidence/; 28c588b carried 3 extra files (see Files); the hand-run hook flow was superseded (evidence/h1-verification-2026-11-15.md:42).
+  - Files: commit A: `docs/work/active/T-0048-cross-os-settings/` (Windows session). Commit B (planned 6 files; actual 28c588b: 9 files, the 6 below plus docs/platforms/wsl/expected-results.md, evidence/h1-normal-run-2026-11-15.md and evidence/h1-elevated-run-2026-11-15.md): `docs/work/active/T-0047-nixos-wsl/ticket.md`, `docs/work/active/T-0047-nixos-wsl/plan.md`, `docs/work/index.md`, `docs/platforms/wsl/setup.md`, `docs/platforms/wsl/windows-and-wsl.md`, `docs/platforms/windows/setup.md`. Commit C (4 files): docs/platforms/index.md, docs/platforms/base.md, `README.md`, `docs/index.md`. Docs only; T1 files stay untracked.
   - Steps: in order A, B, C. Each: `git pull --ff-only`; stage that commit's files only (T1 files stay out); run `bash ops/hooks/pre-commit.sh`; commit; `git push origin main` right after. Subjects: A `docs(settings): T-0048 Windows settings inventory`; B `docs(wsl): plan T-0047 NixOS-WSL desktop-first`; C `docs(setup): add the setup index and base requirements`. Windows tools: winget ids `twpayne.chezmoi` and `Gitleaks.Gitleaks`, each checked with `command -v`. The pre-commit hook must pass with a working gitleaks scan; a failing hook is never bypassed. The NixOS desktop then runs `git pull --ff-only`.
   - Depends: none. Covers: AC-NEG. Risk: low. Review: yes, a reviewer pass before the commit.
   - Verify: Windows results (the real pre-commit hook, gitleaks scan) recorded here. Linux results, after the `git pull --ff-only` on the NixOS desktop: `bats tests/bash/path-contract.bats` and `bats tests/bash/doc-contracts.bats`, recorded separately under evidence/. Per commit, `git show --stat` lists only that commit's paths.
@@ -218,23 +218,37 @@ flowchart TD
     - Rollback documented: `nixos-rebuild switch --rollback`; `wsl --import` from the before-setup export.
   - Done: every AC-WSL bullet has evidence under `evidence/`.
 
+## Final design and outcome (2026-11-16)
+
+Status: see the header. Final design: ADR-0015 (`docs/architecture/decisions/0015-wsl-distro-selection-nixos-or-ubuntu.md`). Where it differs from the Decision section above, ADR-0015 wins:
+
+- Ubuntu is no longer rejected: both distros run under the one `wsl` profile; NixOS-WSL is the default, Ubuntu is a manual path (setup.md) and untested on a real distro.
+- `genericLinux` stays in the wsl home for Ubuntu; the extra output `wsl-nixos` forces it off. `ops/detect-host.sh --hm-attr` alone picks the output (verified: wsl-nixos on this host).
+- Preflight does not refuse a non-NixOS wsl host.
+- The Windows bootstrap still targets only the distro named NixOS; the `-Distro` switch is deferred (trigger in the ADR).
+
+Commits: `git log --oneline 4568249..8316e94` (20 commits, fast-forwarded to origin/main). In the fix stack (subject-matched): 9a4c97d, 7df0c1f, 445a854, 3ef84a6, 6862dfc, 8beb383, f7619da, 493b69f, e8f7bcc (subjects in ticket.md). Earlier T-0047 commits (`git log --oneline --grep T-0047`): 28c588b (plan), 400a30b (bootstrap script and tests). 4568249 is T-0052/ADR-0016, not T-0047.
+Evidence: `evidence/final-run-2026-11-16.md`.
+
+Open items (a)-(e), owners and follow-ups: ticket.md, "Open after the final run". AC-T2 stays open until (a), a real commit from the Windows clone.
+
 ## Notes
 
 ### Coordination
 
 - Windows session (`___W11_WSL2_SETUP`): ops/windows and tests/windows, docs/platforms/windows and docs/platforms/wsl, the T-0048 folder, this plan.md, docs/platforms/index.md, docs/platforms/base.md, and Slice 2b.
-- NixOS session (`__AppConfigs_fixes`): the D0 files, the S3 files, evidence/d0-*.md and evidence/s3-*.md, and the D-table Pass/Fail cells.
+- NixOS session (`all-reviewed-landing`): the D0 files, the S3 files, evidence/d0-*.md and evidence/s3-*.md, and the D-table Pass/Fail cells.
 - Shared and append-only: docs/work/index.md.
 - Shared: README.md. The Windows session added the setup link; the NixOS session edits it in S3-2; pull before editing.
 - Handoff: the NixOS session pushes and notifies with the SHAs and results.
 
 ### Open
 
-- Transfer-0: the commit SHAs are unknown until made.
+- Transfer-0: A=3757c2e, B=28c588b, C=892b3e2.
 - Unknown until H1/H2: the NixOS-WSL tag and asset digest, flakes on by default, wheelNeedsPassword, whether the `nixos` user is removed.
 - nix-ld placement: decided by D6.
 - Slice 4 criteria have no own ids; they sit under AC-WSL.
-- Timezone: sys-setup forces Europe/London (mkForce), while Slice 4 expects the timezone to match Windows. Decide in Slice 4 (AC-TZ).
+- Timezone: closed 2026-11-16 (AC-TZ): Europe/London in WSL, Windows set to GMT Standard Time.
 
 ### Risks
 

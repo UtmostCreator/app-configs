@@ -87,7 +87,12 @@ run_with_os() {
     [ "$status" -ne 0 ]
     [ ! -f "$MARKS/colima" ]
     [[ "$output" == *"No Docker daemon"* ]]
-    [[ "$output" == *"docs/platforms/wsl/setup.md"* ]]
+    [[ "$output" == *"Start Docker Engine: sudo systemctl start docker"* ]]
+    [[ "$output" == *"NixOS or NixOS-WSL"* ]]
+    [[ "$output" == *"sudo ENABLE_DOCKER=1 DOCKER_GROUP=1 sys-setup --apply"* ]]
+    [[ "$output" == *"DOCKER_ROOTLESS=1"* ]]
+    [[ "$output" == *"docs/platforms/wsl/windows-and-wsl.md"* ]]
+    [[ "$output" != *"Docker Desktop"* ]]
 }
 
 @test "ws-stack start on macOS still restarts Colima with vz" {

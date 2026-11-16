@@ -22,7 +22,14 @@
 # context are padded to the widest row so the model and task columns line up.
 # The trailing task text is cut to the columns left and dropped when fewer than
 # 8 remain, so a row never exceeds `columns`. Names are coloured by agent type,
-# models by family. Without a window size the context shows "tok 298k" (no %).
+# models by price tier (Haiku 62, Sonnet 67, Opus 39, Fable/Mythos 45; unknown neutral),
+# the effort by level (low 96, medium 133, high 170, xhigh 207, max 213, brighter =
+# more effort), same tables as statusline.sh. jq cannot read agent definition files,
+# so the agent colour comes from a table mirroring the `color:` of the Glyphbrace
+# agents (purple orchestrator, blue architect/plan-writer, green implementers and
+# maintainers, yellow reviewers, cyan researcher/assessor/analyzer, red
+# release-auditor, pink agent-factory); other types hash to a palette colour.
+# Without a window size the context shows "tok 298k" (no %).
 #
 # Status: ▶ running  ◷ pending  ✓ completed  ✗ failed  ■ killed. Elapsed time is
 # shown only while running/pending (tasks carry no end time). Runtime colour:
@@ -62,22 +69,34 @@ jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date 
         | split("-")
         | [(.[0][0:1] | ascii_upcase) + .[0][1:]] + (if length > 1 then [.[1:] | join(".")] else [] end)
         | join(" ");
-    # Stable colour per agent type (name column) and per model family; the same
-    # tables as statusline.sh (256-colour mid-tones, none of the warning colours).
-    # Unknown types hash to one of eight colours: sum of the character codes of
-    # the lower-cased name (a-z 0-9 _ - only) modulo 8, as statusline.sh does.
+    # Stable colour per agent type (name column), model family and effort level; the
+    # same tables as statusline.sh (see its header). jq cannot read agent definition
+    # files, so the agent table mirrors the color: line of the Glyphbrace agent files
+    # (colour name -> 256-colour code); unknown types hash to one of eight colours:
+    # sum of the character codes of the lower-cased name (a-z 0-9 _ - only) modulo 8.
     def type_color:
         ascii_downcase as $n
-        | ({researcher: "38;5;37", architect: "38;5;170", implementer: "38;5;108",
-            "super-implementer": "38;5;108", reviewer: "38;5;180", orchestrator: "38;5;69",
-            "plan-writer": "38;5;146", "release-auditor": "38;5;139"})[$n]
-          // (["38;5;74", "38;5;103", "38;5;109", "38;5;116", "38;5;133", "38;5;138",
-               "38;5;143", "38;5;152"]
-              | .[($n | gsub("[^a-z0-9_-]"; "") | explode | add // 0) % 8]);
-    def tint($code): if length > 0 then color($code) else . end;
+        | ({red: "38;5;131", blue: "38;5;75", green: "38;5;108", yellow: "38;5;179",
+            purple: "38;5;140", pink: "38;5;175", cyan: "38;5;37"}) as $codes
+        | ({orchestrator: "purple", architect: "blue", "plan-writer": "blue",
+            implementer: "green", "super-implementer": "green", "configuration-maintainer": "green",
+            "local-maintainer": "green", reviewer: "yellow", "agent-definition-reviewer": "yellow",
+            researcher: "cyan", "fleet-assessor": "cyan", "phoenix-analyzer": "cyan",
+            "release-auditor": "red", "agent-factory": "pink"})[$n] as $cname
+        | if $cname != null then $codes[$cname]
+          else (["38;5;74", "38;5;103", "38;5;109", "38;5;116", "38;5;133", "38;5;138",
+                 "38;5;143", "38;5;152"]
+                | .[($n | gsub("[^a-z0-9_-]"; "") | explode | add // 0) % 8]) end;
+    def tint($code): if length > 0 and $code != "" then color($code) else . end;
+    # Price tier, brighter = dearer: Haiku 62 < Sonnet 67 < Opus 39 < Fable/Mythos 45
+    # (Fable is the dearest family); an unknown family is neutral ("").
     def family_color:
-        if startswith("Opus") then "38;5;141" elif startswith("Son") then "38;5;75"
-        elif startswith("Haiku") then "38;5;79" elif startswith("Fable") then "38;5;175" else "0" end;
+        if startswith("Fable") or startswith("Mythos") then "38;5;45"
+        elif startswith("Opus") then "38;5;39" elif startswith("Son") then "38;5;67"
+        elif startswith("Haiku") then "38;5;62" else "" end;
+    # Effort ramp, brighter = more effort; an unknown level or a numeric budget is neutral ("").
+    def effort_code:
+        ({low: "38;5;96", medium: "38;5;133", high: "38;5;170", xhigh: "38;5;207", max: "38;5;213"})[.] // "";
     # Effort initial after the model (Opus 5.5:H); "max" stays as written, unknown levels get none.
     def eff_i: ({low: "L", medium: "M", high: "H", xhigh: "X", max: "max"})[.] // "";
     # Runtime scale for a running/pending row, by seconds running: under 5m neutral,
@@ -107,6 +126,7 @@ jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date 
         effort: (if .effort == null then ""
                  elif (.effort | type) == "number" then .effort | tokens
                  else (.effort | tostring | eff_i) end),
+        effc: (if (.effort | type) == "string" then .effort | effort_code else "" end),
         # Context % needs both a window size and a token count; with only a count,
         # the raw "tok 298k" is shown, and with neither nothing is invented.
         pct: (if (.contextWindowSize | type) == "number" and .contextWindowSize > 0
@@ -147,6 +167,9 @@ jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date 
     | (if (.status == "running" or .status == "pending") and .since != null then (.since | elapsed | length) else 0 end) as $age_plain_w
     | (.kind | type_color) as $kind_c
     | (.model | sub("^Sonnet"; "Son") | family_color) as $model_c
+    | .effc as $ec
+    | (if .model == "" then "inherit" | tint($model_c)
+       else (.model | tint($model_c)) + (if .effort != "" then ":" + (.effort | tint($ec)) else "" end) end) as $model_seg
     | ($glyph | color($glyph_color)) as $g
     | (.name | rpad($name_w) | color($kind_c)) as $name
     | (if .model == "" then "inherit" else .model + (if .effort != "" then ":" + .effort else "" end) end) as $model_plain
@@ -154,9 +177,15 @@ jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date 
         (if $cols < 60 then
             ((.model | sub("^Sonnet"; "Son")) as $tag
              | (if .model != "" and .effort != "" and (.effort | test("^[A-Za-z]")) then $tag + ":" + .effort else $tag end) as $full
-             | (if 2 + $name_w + 1 + $full_w + 1 + $ctx_w <= $cols
-                then $full | rpad($full_w) else $tag | rpad($tag_w) end) as $mark
-             | ([$g, $name, ($mark | tint($model_c)), $ctx] | map(select(length > 0)) | join(" ")))
+             | (2 + $name_w + 1 + $full_w + 1 + $ctx_w <= $cols) as $roomy
+             | (if $roomy then $full else $tag end) as $plain_mark
+             | (($plain_mark | length) as $len
+                | (if $roomy then $full_w else $tag_w end) as $w
+                | (if $roomy and .effort != "" and .model != "" and (.effort | test("^[A-Za-z]"))
+                   then ($tag | tint($model_c)) + ":" + (.effort | tint($ec))
+                   else $tag | tint($model_c) end)
+                + (" " * ($w - $len))) as $mark
+             | ([$g, $name, $mark, $ctx] | map(select(length > 0)) | join(" ")))
          else
             # Time group: runtime then context, padded so context aligns across rows.
             # A missing context leaves a blank slot of the same width.
@@ -167,7 +196,7 @@ jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date 
                else $ctx_slot end) as $time
             | ($model_plain | length) as $mw
             | (([$g, $name, $time] | map(select(length > 0)) | join(" "))
-               + " \($sep) " + ($model_plain | tint($model_c))) as $base
+               + " \($sep) " + $model_seg) as $base
             | ($cols - ($base | plain | length) - 3) as $room
             | ([$model_w - $mw, 0] | max) as $pad
             | if .task != "" and $room - $pad >= 8

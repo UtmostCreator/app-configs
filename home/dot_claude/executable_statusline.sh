@@ -40,10 +40,17 @@
 #                    upstream as last fetched; this script never fetches
 #   $1.23 · 1h02m    cost.total_cost_usd, cost.total_duration_ms
 #   Cache 91% cold   prompt_cache.hit_ratio; "cold" when prompt_cache.warm is false
-# Colours: the model name is coloured by family (Opus violet, Sonnet blue, Haiku aqua,
-# Fable pink, other models plain) and "◆ agent" by name (fixed for the known agent
-# names, otherwise a stable pick from an 8-colour palette), in every layout; 256-colour
-# mid-tones that avoid the warning colours, and the names stay as text (NO_COLOR: no codes).
+# Colours (256-colour codes; the names and levels stay as text, NO_COLOR: no codes):
+#   model   by price tier on one blue ramp, brighter = dearer: Haiku 62, Sonnet 67,
+#           Opus 39, Fable and Mythos 45 (the dearest); an unknown family is neutral
+#   effort  the effort word or initial, brighter = more effort: low 96, medium 133,
+#           high 170, xhigh 207, max 213
+#   agent   "◆ agent" takes the `color:` of its definition file (<current_dir or
+#           project_dir>/.claude/agents/<name>.md, then $CLAUDE_CONFIG_DIR or ~/.claude
+#           /agents/): red 131, blue 75, green 108, yellow 179, purple 140, orange 173,
+#           pink 175, cyan 37. Without a file or a known colour: the fixed table of the
+#           Glyphbrace agents, then a stable pick from an 8-colour palette by name.
+#   All of these avoid the reserved warning colours of the context and quota scales.
 # Lines are fitted to $COLUMNS by dropping the lowest-priority segments first.
 # The quota with the lower utilisation (7d on a tie) goes before the higher one,
 # and a quota at 85% or more is never dropped, at any width.
@@ -93,51 +100,120 @@ pressure_color() {
     fi
 }
 
-# sgr256 <n>: foreground colour n of the 256-colour palette ("" under NO_COLOR).
-sgr256() { [[ -n "${NO_COLOR:-}" ]] || printf '\033[38;5;%sm' "$1"; }
+# sgr_set <var> <n>: sets <var> to foreground colour n of the 256-colour palette ("" under
+# NO_COLOR); an assignment, not a command substitution, so it costs no fork.
+sgr_set() { if [[ -n "${NO_COLOR:-}" ]]; then printf -v "$1" ''; else printf -v "$1" '\033[38;5;%sm' "$2"; fi; }
 
-# Model and agent colours. 256-colour mid-tones that read on dark and light
-# backgrounds, none of them the reserved warning colours (green/yellow/orange/red
-# of the quota and context scales). Colour is never the only signal: the names
-# stay as text. subagent-statusline.sh is a separate jq program that chezmoi
-# installs on its own, so it carries a copy of these tables (kept in step by the
-# parity tests in claude-subagent-statusline.bats).
+# Model, effort and agent colours (256-colour codes tuned for dark backgrounds; the
+# bright ones fall below 3:1 contrast on light themes. None of them is a reserved
+# warning colour of the quota and context scales). Colour is never the only signal: names and levels stay as text.
+# subagent-statusline.sh is a separate jq program that chezmoi installs on its own,
+# so it carries a copy of these tables (kept in step by the parity tests in
+# claude-subagent-statusline.bats).
 #
-# model_color <display name>: Opus violet, Sonnet blue, Haiku aqua, Fable pink;
-# any other model is neutral (no colour code).
+# Model, by price tier on one blue ramp, brighter = dearer:
+#   Fable/Mythos 45 (brightest, dearest)  Opus 39  Sonnet 67 (mid)  Haiku 62 (dim, cheapest)
+#   An unknown family: neutral (no code; no price is guessed).
+# Effort, on one magenta ramp, brighter = more effort (applied to the effort text):
+#   low 96  medium 133  high 170  xhigh 207  max 213   (unknown level: neutral)
+# Agent, from the agent definition's frontmatter `color:` (Claude Code colour names):
+#   red 131  blue 75  green 108  yellow 179  purple 140  orange 173  pink 175  cyan 37
+#
+# model_color <var> <display name>: sets <var> to the model's colour code ("" = neutral).
 model_color() {
-    case "${1,,}" in
-        opus*)   sgr256 141 ;;
-        sonnet*) sgr256 75 ;;
-        haiku*)  sgr256 79 ;;
-        fable*)  sgr256 175 ;;
-        *)       ;;
+    case "${2,,}" in
+        fable*|mythos*) sgr_set "$1" 45 ;;
+        opus*)   sgr_set "$1" 39 ;;
+        sonnet*) sgr_set "$1" 67 ;;
+        haiku*)  sgr_set "$1" 62 ;;
+        *)       printf -v "$1" '' ;;
     esac
 }
 
-# agent_color <name>: fixed colour for the known agent names, otherwise one of
-# eight palette colours picked by the sum of the character codes of the
-# lower-cased name (keeping only a-z 0-9 _ -), modulo 8: the same name always
-# gets the same colour on every run and host. subagent-statusline.sh computes
-# the identical sum in jq (a parity test in claude-subagent-statusline.bats).
-agent_color() {
-    local name=${1,,} sum=0 code i
-    case "$name" in
-        orchestrator)                  sgr256 69 ;;
-        researcher)                    sgr256 37 ;;
-        architect)                     sgr256 170 ;;
-        implementer|super-implementer) sgr256 108 ;;
-        reviewer)                      sgr256 180 ;;
-        plan-writer)                   sgr256 146 ;;
-        release-auditor)               sgr256 139 ;;
-        *)
-            local palette=(74 103 109 116 133 138 143 152) clean=${name//[^a-z0-9_-]/}
-            for (( i = 0; i < ${#clean}; i++ )); do
-                printf -v code %d "'${clean:i:1}"
-                sum=$(( sum + code ))
-            done
-            sgr256 "${palette[sum % ${#palette[@]}]}" ;;
+# effort_color <var> <level>: sets <var> to the effort's colour code ("" = neutral).
+effort_color() {
+    case "$2" in
+        low)    sgr_set "$1" 96 ;;
+        medium) sgr_set "$1" 133 ;;
+        high)   sgr_set "$1" 170 ;;
+        xhigh)  sgr_set "$1" 207 ;;
+        max)    sgr_set "$1" 213 ;;
+        *)      printf -v "$1" '' ;;
     esac
+}
+
+# colour_name_code <colour name>: the 256-colour code for a Claude Code colour
+# name, set in REPLY; returns 1 for any other word.
+colour_name_code() {
+    case "$1" in
+        red) REPLY=131 ;; blue) REPLY=75 ;; green) REPLY=108 ;; yellow) REPLY=179 ;;
+        purple) REPLY=140 ;; orange) REPLY=173 ;; pink) REPLY=175 ;; cyan) REPLY=37 ;;
+        *) return 1 ;;
+    esac
+}
+
+# agent_def_color <name>: the colour code from the `color:` line of the agent's
+# definition file, set in REPLY (return 1 when there is none). Looked up in
+# <current_dir>/.claude/agents, <project_dir>/.claude/agents, then the user-level
+# agents directory; the first file that has frontmatter decides. Only the frontmatter
+# is read (up to 30 lines of 256 bytes), with builtins only (no fork). The name must be a plain
+# file name ([A-Za-z0-9._-], not starting with "."), so it cannot leave agents/.
+agent_def_color() {
+    local name=$1 dir line n seen
+    [[ "$name" =~ ^[A-Za-z0-9_-][A-Za-z0-9._-]*$ ]] || return 1
+    # Windows-style paths (Git Bash): backslashes become slashes, which Git Bash accepts
+    # (C:/Users/x/proj); anywhere a path does not resolve the file test just fails.
+    local cd_=${current_dir//\\//} pd_=${project_dir//\\//}
+    for dir in "$cd_/.claude/agents" "$pd_/.claude/agents" "${CLAUDE_CONFIG_DIR:-${HOME:-/nonexistent}/.claude}/agents"; do
+        [[ -f "$dir/$name.md" && -r "$dir/$name.md" ]] || continue
+        n=0 seen=0
+        # Bounded: at most 30 lines of at most 256 bytes each.
+        while IFS= read -r -n 256 line && (( ++n <= 30 )); do
+            line=${line%$'\r'}
+            if [[ "$line" == "---" ]]; then
+                (( ++seen >= 2 )) && return 1
+            elif (( n == 1 )); then
+                break    # no frontmatter fence: not an agent definition, try the next location
+            elif [[ "$line" =~ ^color:[[:space:]]*[\"\']?([A-Za-z]+)[\"\']?[[:space:]]*$ ]]; then
+                colour_name_code "${BASH_REMATCH[1],,}" && return 0
+                return 1
+            fi
+        done < "$dir/$name.md"
+        # The first definition with frontmatter decides, like Claude Code: a project
+        # file without a (valid) colour shadows the user-level one.
+        (( n > 1 )) && return 1
+    done
+    return 1
+}
+
+# agent_color <var> <name>: sets <var> to the agent's colour code. Order: the agent
+# definition's `color:`, then the fixed table of Glyphbrace's agents (the same
+# colours as their definition files), then one of eight palette colours picked by
+# the sum of the character codes of the lower-cased name (keeping only a-z 0-9 _ -),
+# modulo 8: the same name always gets the same colour on every run and host.
+# subagent-statusline.sh holds the table and computes the identical sum in jq.
+agent_color() {
+    local name=${2,,} sum=0 code i cname=""
+    if agent_def_color "$2"; then sgr_set "$1" "$REPLY"; return 0; fi
+    case "$name" in
+        orchestrator)                                                            cname=purple ;;
+        architect|plan-writer)                                                   cname=blue ;;
+        implementer|super-implementer|configuration-maintainer|local-maintainer) cname=green ;;
+        reviewer|agent-definition-reviewer)                                      cname=yellow ;;
+        researcher|fleet-assessor|phoenix-analyzer)                              cname=cyan ;;
+        release-auditor)                                                         cname=red ;;
+        agent-factory)                                                           cname=pink ;;
+    esac
+    if [[ -n "$cname" ]]; then
+        colour_name_code "$cname"; sgr_set "$1" "$REPLY"
+        return 0
+    fi
+    local palette=(74 103 109 116 133 138 143 152) clean=${name//[^a-z0-9_-]/}
+    for (( i = 0; i < ${#clean}; i++ )); do
+        printf -v code %d "'${clean:i:1}"
+        sum=$(( sum + code ))
+    done
+    sgr_set "$1" "${palette[sum % ${#palette[@]}]}"
 }
 
 # UTF-8 locale: "│" and "·" separators and block bars; otherwise "|", "-", "#".
@@ -397,12 +473,14 @@ if (( added + removed > 0 )); then
     diff="${GREEN}+${added}${NC}/${RED}-${removed}${NC}"
 fi
 
-model_col=$(model_color "$model_name")
+model_color model_col "$model_name"
+effort_color effort_col "$effort"
 agent_tag="" agent_tag_short=""
 if [[ -n "$agent_name" ]]; then
     # The colour is keyed on the full name, not the shortened label.
-    agent_tag="$(agent_color "$agent_key")◆ ${agent_name}${NC}"
-    agent_tag_short="$(agent_color "$agent_key")◆ ${agent_name:0:4}${NC}"
+    agent_color agent_col "$agent_key"
+    agent_tag="${agent_col}◆ ${agent_name}${NC}"
+    agent_tag_short="${agent_col}◆ ${agent_name:0:4}${NC}"
 fi
 
 # Context: pressure colour on the whole segment. A missing field is "—", never 0%.
@@ -540,8 +618,8 @@ render() {
     [[ "$layout" == minimal ]] && mname=${model_name%% *}
     model_seg="${model_col}${mname}${model_col:+$NC}"
     if [[ -n "$effort" ]] && (( ! drop_effort )); then
-        if [[ "$layout" == full ]]; then model_seg+=" $effort"
-        else model_seg+=":$(effort_initial "$effort")"; fi
+        if [[ "$layout" == full ]]; then model_seg+=" ${effort_col}${effort}${effort_col:+$NC}"
+        else model_seg+=":${effort_col}$(effort_initial "$effort")${effort_col:+$NC}"; fi
     fi
 
     # The agent tag stays while agent.name exists; in minimal it is shortened to
@@ -651,7 +729,7 @@ render_wide() {
     q_group=$(join " $DOT " "$q5" "$q7")
 
     model_seg="${model_col}${mname}${model_col:+$NC}"
-    [[ -n "$effort" ]] && model_seg+=":$(effort_initial "$effort")"
+    [[ -n "$effort" ]] && model_seg+=":${effort_col}$(effort_initial "$effort")${effort_col:+$NC}"
     left=$(join " $SEP " "$remote_control" "$agent_tag" "$repo" "$model_seg")
     right=$(join " $SEP " "$ctx_group" "$q_group")
     align "$left" "$right" || return 1

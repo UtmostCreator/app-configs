@@ -138,9 +138,27 @@ let
       RestartMaxDelaySec=10min
     '';
   };
+
+  # Remote-control agent services ran outside every memory budget and could
+  # peak far above the terminal caps. Cap each one. MemoryMax=16G is a hard
+  # limit: a session that peaks above it is stopped, and the restart back-off
+  # above then applies. That is the intended trade-off. The move into the
+  # shared app-terminals.slice budget is desktop-only and lives in
+  # nix/modules/home/gui.nix. Changed limits and the slice move take effect at
+  # the next restart of each service (restarting is the owner's call).
+  agentMemory = ''
+    [Service]
+    MemoryHigh=12G
+    MemoryMax=16G
+    MemorySwapMax=4G
+  '';
+  agentMemoryLimits = {
+    "systemd/user/claude-remote-control@.service.d/50-memory.conf".text = agentMemory;
+    "systemd/user/codex-remote-control.service.d/50-memory.conf".text = agentMemory;
+  };
 in
 lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
   home.packages = [ aiAuthStatus ];
   systemd.user = lib.mkMerge (updaters ++ [ authCheck ]);
-  xdg.configFile = takeOver // remoteControlBackoff;
+  xdg.configFile = takeOver // remoteControlBackoff // agentMemoryLimits;
 }

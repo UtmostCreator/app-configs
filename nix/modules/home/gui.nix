@@ -473,6 +473,38 @@
           MemorySwapMax=4G
         '';
       };
+  # GNOME Console tabs (vte-spawn-*.scope) get the same budget: an agent
+  # session started from Console used to bypass it.
+  xdg.configFile."systemd/user/vte-spawn-.scope.d/50-memory.conf" =
+    pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux
+      {
+        text = ''
+          [Scope]
+          Slice=app-terminals.slice
+          MemoryHigh=12G
+          MemorySwapMax=4G
+        '';
+      };
+  # The AI remote-control services join the same slice. Their memory caps are
+  # in nix/modules/home/ai-cli-updates.nix (all Linux hosts); the slice only
+  # exists on the desktop, so the Slice= setting lives here. It takes effect at
+  # the next restart of each service.
+  xdg.configFile."systemd/user/claude-remote-control@.service.d/60-slice.conf" =
+    pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux
+      {
+        text = ''
+          [Service]
+          Slice=app-terminals.slice
+        '';
+      };
+  xdg.configFile."systemd/user/codex-remote-control.service.d/60-slice.conf" =
+    pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux
+      {
+        text = ''
+          [Service]
+          Slice=app-terminals.slice
+        '';
+      };
   systemd.user.slices.app-terminals = pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
     Unit.Description = "Terminals and AI agent services (shared memory budget)";
     Slice = {

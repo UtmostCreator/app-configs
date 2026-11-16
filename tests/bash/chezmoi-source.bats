@@ -152,6 +152,17 @@ lib_state() {
     [ "$output" = "[]" ]
 }
 
+@test "T-0009: every consumer sources the library and decides before its chezmoi calls" {
+    local f
+    for f in ops/lib/selection-facts.sh ops/readiness.sh ops/update-all.sh ops/audit.sh ops/bootstrap.sh ops/snapshot-home.sh ops/unix/ssh-agent-setup.sh; do
+        grep -Eq '^[[:space:]]*source .*chezmoi-source\.sh' "$REPO_ROOT/$f" || { echo "$f does not source chezmoi-source.sh"; return 1; }
+        grep -q 'chezmoi_source_set\|_sel_chezmoi_is_configured_source' "$REPO_ROOT/$f" || { echo "$f never decides"; return 1; }
+    done
+    # the inline copy in readiness.sh is gone
+    run grep -n 'readlink -f' "$REPO_ROOT/ops/readiness.sh"
+    [ "$status" -ne 0 ]
+}
+
 @test "T-0009: the library uses no bash 4 feature (it runs from install.sh on a fresh Mac)" {
     if grep -nE '\$\{[A-Za-z_]+(,,|\^\^)|(declare|local|typeset) +-[A-Za-z]*[An]|(^|[^[:alnum:]_])(mapfile|readarray)([^[:alnum:]_]|$)|&>>|\|&' "$REPO_ROOT/ops/lib/chezmoi-source.sh"; then return 1; fi
 }

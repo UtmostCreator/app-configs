@@ -40,6 +40,10 @@
 #                    upstream as last fetched; this script never fetches
 #   $1.23 · 1h02m    cost.total_cost_usd, cost.total_duration_ms
 #   Cache 91% cold   prompt_cache.hit_ratio; "cold" when prompt_cache.warm is false
+# Colours: the model name is coloured by family (Opus violet, Sonnet blue, Haiku aqua,
+# Fable pink, other models plain) and "◆ agent" by name (fixed for the known agent
+# names, otherwise a stable pick from an 8-colour palette), in every layout; 256-colour
+# mid-tones that avoid the warning colours, and the names stay as text (NO_COLOR: no codes).
 # Lines are fitted to $COLUMNS by dropping the lowest-priority segments first.
 # The quota with the lower utilisation (7d on a tie) goes before the higher one,
 # and a quota at 85% or more is never dropped, at any width.
@@ -59,12 +63,10 @@ BLUE=$'\033[0;34m'
 MAGENTA=$'\033[0;35m'
 ORANGE=$'\033[38;5;208m'
 BOLD_RED=$'\033[1;31m'
-CYAN=$'\033[0;36m'
 GREY=$'\033[0;90m'
-BOLD=$'\033[1m'
 NC=$'\033[0m'
 if [[ -n "${NO_COLOR:-}" ]]; then
-    RED="" YELLOW="" GREEN="" BLUE="" MAGENTA="" ORANGE="" BOLD_RED="" CYAN="" GREY="" BOLD="" NC=""
+    RED="" YELLOW="" GREEN="" BLUE="" MAGENTA="" ORANGE="" BOLD_RED="" GREY="" NC=""
 fi
 WIDE_MIN=160    # columns for the wide layout (CLAUDE_STATUSLINE_WIDE_MIN overrides)
 WIDE_MARGIN=3   # cells kept free at the right edge in the wide layout
@@ -91,18 +93,50 @@ pressure_color() {
     fi
 }
 
-# agent_color <type>: stable colour per agent type (same table as
-# subagent-statusline.sh); unknown types are grey.
-agent_color() {
+# sgr256 <n>: foreground colour n of the 256-colour palette ("" under NO_COLOR).
+sgr256() { [[ -n "${NO_COLOR:-}" ]] || printf '\033[38;5;%sm' "$1"; }
+
+# Model and agent colours. 256-colour mid-tones that read on dark and light
+# backgrounds, none of them the reserved warning colours (green/yellow/orange/red
+# of the quota and context scales). Colour is never the only signal: the names
+# stay as text. subagent-statusline.sh is a separate jq program that chezmoi
+# installs on its own, so it carries a copy of these tables (kept in step by the
+# parity tests in claude-subagent-statusline.bats).
+#
+# model_color <display name>: Opus violet, Sonnet blue, Haiku aqua, Fable pink;
+# any other model is neutral (no colour code).
+model_color() {
     case "${1,,}" in
-        researcher)                  printf %s "$CYAN" ;;
-        architect)                   printf %s "$MAGENTA" ;;
-        implementer|super-implementer) printf %s "$GREEN" ;;
-        reviewer)                    printf %s "$YELLOW" ;;
-        orchestrator)                printf %s "$BLUE" ;;
-        plan-writer)                 printf %s "$BOLD" ;;
-        release-auditor)             printf %s "$RED" ;;
-        *)                           printf %s "$GREY" ;;
+        opus*)   sgr256 141 ;;
+        sonnet*) sgr256 75 ;;
+        haiku*)  sgr256 79 ;;
+        fable*)  sgr256 175 ;;
+        *)       ;;
+    esac
+}
+
+# agent_color <name>: fixed colour for the known agent names, otherwise one of
+# eight palette colours picked by the sum of the character codes of the
+# lower-cased name (keeping only a-z 0-9 _ -), modulo 8: the same name always
+# gets the same colour on every run and host. subagent-statusline.sh computes
+# the identical sum in jq (a parity test in claude-subagent-statusline.bats).
+agent_color() {
+    local name=${1,,} sum=0 code i
+    case "$name" in
+        orchestrator)                  sgr256 69 ;;
+        researcher)                    sgr256 37 ;;
+        architect)                     sgr256 170 ;;
+        implementer|super-implementer) sgr256 108 ;;
+        reviewer)                      sgr256 180 ;;
+        plan-writer)                   sgr256 146 ;;
+        release-auditor)               sgr256 139 ;;
+        *)
+            local palette=(74 103 109 116 133 138 143 152) clean=${name//[^a-z0-9_-]/}
+            for (( i = 0; i < ${#clean}; i++ )); do
+                printf -v code %d "'${clean:i:1}"
+                sum=$(( sum + code ))
+            done
+            sgr256 "${palette[sum % ${#palette[@]}]}" ;;
     esac
 }
 
@@ -210,6 +244,7 @@ eval "$(jq -r --argjson now "$NOW" '
       @sh "session_id=\(str(.session_id))",
       @sh "current_dir=\((str($ws.current_dir) | select(. != "")) // str(.cwd))",
       @sh "model_name=\(str($model.display_name) | select(. != "") // "unknown" | sub(" \\([^)]*context\\)$"; ""))",
+      @sh "agent_key=\(.agent | if type == "string" then . elif type == "object" then (.name? // "") else "" end | tostring | gsub("[[:cntrl:]]"; ""))",
       @sh "agent_name=\(.agent | if type == "string" then . elif type == "object" then (.name? // "") else "" end | tostring | gsub("[[:cntrl:]]"; "") | if length > 20 then .[0:19] + "…" else . end)",
       @sh "effort=\(str($eff.level))",
       @sh "ctx_pct=\(if ($cw.used_percentage | type) == "number" then $cw.used_percentage | round
@@ -362,10 +397,12 @@ if (( added + removed > 0 )); then
     diff="${GREEN}+${added}${NC}/${RED}-${removed}${NC}"
 fi
 
+model_col=$(model_color "$model_name")
 agent_tag="" agent_tag_short=""
 if [[ -n "$agent_name" ]]; then
-    agent_tag="$(agent_color "$agent_name")◆ ${agent_name}${NC}"
-    agent_tag_short="$(agent_color "$agent_name")◆ ${agent_name:0:4}${NC}"
+    # The colour is keyed on the full name, not the shortened label.
+    agent_tag="$(agent_color "$agent_key")◆ ${agent_name}${NC}"
+    agent_tag_short="$(agent_color "$agent_key")◆ ${agent_name:0:4}${NC}"
 fi
 
 # Context: pressure colour on the whole segment. A missing field is "—", never 0%.
@@ -501,7 +538,7 @@ render() {
     # minimal drops the version ("Opus 5.5" -> "Opus").
     local mname=$model_name
     [[ "$layout" == minimal ]] && mname=${model_name%% *}
-    model_seg="${BLUE}${mname}${NC}"
+    model_seg="${model_col}${mname}${model_col:+$NC}"
     if [[ -n "$effort" ]] && (( ! drop_effort )); then
         if [[ "$layout" == full ]]; then model_seg+=" $effort"
         else model_seg+=":$(effort_initial "$effort")"; fi
@@ -606,7 +643,7 @@ render_wide() {
     fi
     q_group=$(join " $DOT " "$q5" "$q7")
 
-    model_seg="${BLUE}${mname}${NC}"
+    model_seg="${model_col}${mname}${model_col:+$NC}"
     [[ -n "$effort" ]] && model_seg+=":$(effort_initial "$effort")"
     left=$(join " $SEP " "$remote_control" "$agent_tag" "$repo" "$model_seg")
     right=$(join " $SEP " "$ctx_group" "$q_group")

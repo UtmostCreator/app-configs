@@ -81,6 +81,8 @@ gh auth login        # choose GitHub.com, SSH, and the existing key
 
 ## What the bootstrap never changes (manual only)
 
+Scope: only a bounded bootstrap, see [project scope](../../architecture/project-scope.md). `ops/windows/bootstrap.ps1 -DryRun` writes nothing on Windows but may start the WSL distro and use a temp file inside it (see the script header).
+
 The bootstrap writes no registry values itself (wsl.exe, winget and System Restore record their own state) and does not touch the items below.
 They stay manual on purpose: [ADR-0011](../../architecture/decisions/0011-windows-edition-and-apps.md)
 discards registry and DSC tweaks, and [ADR-0007](../../architecture/decisions/0007-safety-net-restore-points-and-pinned-downloads.md)

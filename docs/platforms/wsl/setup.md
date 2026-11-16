@@ -1,6 +1,8 @@
 # WSL2 setup
 
-Choices (edition, where to run Claude, Docker, reboots, restore points) (planned; the Ubuntu runbook below is replaced by T-0047): [`windows-and-wsl.md`](windows-and-wsl.md).
+NixOS-WSL is the default distro (ADR-0001, ADR-0015), installed by the Windows bootstrap (see [`../windows/setup.md`](../windows/setup.md), T-0047). The Ubuntu path below is the supported alternative.
+
+Choices (edition, where to run Claude, Docker, reboots, restore points): [`windows-and-wsl.md`](windows-and-wsl.md).
 
 WSL2 uses the `wsl` host profile: the same shared CLI and dev modules as macOS
 and Linux (`nix/modules/common`, `nix/modules/home`), with no GUI module and

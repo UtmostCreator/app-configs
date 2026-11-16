@@ -11,8 +11,8 @@ Companion to `docs/plans/migration/implementation.md`. Companion audit docs:
 - **Linux desktop** — primary, full coverage (Home Manager standalone + GUI module)
 - **Linux CLI / headless** — CLI-only coverage (Home Manager standalone, no GUI)
 - **WSL2** — CLI/dev parity with macOS (WSL1 is refused); see
-  `docs/platforms/wsl/setup.md`. Windows-side tooling is out of scope.
-- **Windows native** — explicitly not supported.
+  `docs/platforms/wsl/setup.md`. Windows-side tooling is limited to the bounded bootstrap.
+- **Windows native** — only a bounded WSL bootstrap, see `docs/architecture/project-scope.md`.
 
 ## Principle: one owner per target path, per host
 

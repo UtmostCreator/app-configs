@@ -18,6 +18,7 @@ Short records of what was chosen, what lost and why. Statuses: decided, trial, p
 | [0012](0012-desktop-compositor-gnome-niri-hyprland.md) | GNOME live; niri proposed trial; Hyprland parked | decided (GNOME), proposed (niri) | 2026-11-15 |
 | [0013](0013-desktop-shell-bar-notifications-trial.md) | Trial Dux first, Noctalia second; no shell selected | trial | 2026-11-15 |
 | [0014](0014-tool-stack-recap.md) | chezmoi, mise, Nix + Home Manager, nix-darwin + casks, lefthook | decided (recap) | not recorded |
+| [0016](0016-native-windows-claude-status-line.md) | Native Windows Claude status line: repo script via Git Bash, opt-in bootstrap step `-ClaudeStatusLine` | proposed | 2026-11-15 |
 
 ## Layers
 

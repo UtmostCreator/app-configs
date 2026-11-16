@@ -27,3 +27,4 @@ Piping installers to a shell (no `curl | sh`), reinstalling over a working binar
 - Not built yet: the installer is T-0047 task S3-5; until then installs are manual.
 - The opt-out key is a second mechanism next to the install selection; keep it limited to these two CLIs.
 - Milestone 2 may add native Windows Claude (winget or an inspected install.ps1) with its own `~/.claude`.
+- Amended by ADR-0016: the native Windows status line (one opt-in bootstrap step) is no longer discarded; installing Claude Code on Windows stays Milestone 2.

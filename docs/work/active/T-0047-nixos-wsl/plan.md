@@ -275,8 +275,8 @@ flowchart TD
 
 ### Milestone 2 (out of scope)
 
-- Native Windows Claude statusline via Git Bash.
-  - Native Windows Claude Code: winget `Anthropic.ClaudeCode`, or the official install.ps1 (download, inspect, run). A separate Windows ~/.claude. Statusline via Git Bash as planned.
+- Native Windows Claude statusline via Git Bash: moved to T-0052 (`docs/work/active/T-0052-windows-claude-statusline/`).
+  - Native Windows Claude Code: winget `Anthropic.ClaudeCode`, or the official install.ps1 (download, inspect, run). A separate Windows ~/.claude. The statusline part moved to T-0052.
 - docker.cmd shim to the WSL engine.
 - winget apps (T-0041).
   - Open user decision: T-0041 (approved, docs only, "winget stays manual") vs automating a curated list via `winget import` of a committed JSON.

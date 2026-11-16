@@ -216,6 +216,9 @@ in
       ExecStartPost = "${pkgs.curl}/bin/curl --fail --silent --show-error --retry 15 --retry-connrefused --retry-delay 1 --max-time 30 http://127.0.0.1:9749/ --output /dev/null";
       Restart = "always";
       RestartSec = 5;
+      # Back off a persistent failure instead of retrying every 5s forever.
+      RestartSteps = 8;
+      RestartMaxDelaySec = "10min";
     };
     Install.WantedBy = [ "default.target" ];
   };

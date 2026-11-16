@@ -183,6 +183,13 @@ in
         TimeoutStopSec = 60;
         KillMode = "mixed";
         RestartSec = lib.mkForce "5s";
+        # A bad config exits 78 (EX_CONFIG) and Restart=always retried it every
+        # 5s, thousands of times, each retry costing hundreds of MB and seconds
+        # of CPU. Back off exponentially to 10 minutes instead. The loop also
+        # cleared without a config change once, so a fixed exit-status stop
+        # would strand the gateway. See docs/platforms/nixos/desktop-stability.md.
+        RestartSteps = 8;
+        RestartMaxDelaySec = "10min";
       };
     };
   };

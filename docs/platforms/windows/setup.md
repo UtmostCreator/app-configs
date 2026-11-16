@@ -72,6 +72,38 @@ The installer puts `claude.exe` in `%USERPROFILE%\.local\bin`, which is not on
 Run `claude` and log in through the browser. `claude doctor` confirms the
 install.
 
+## 4b. Optional: Claude status line (native Windows Claude)
+
+Opt-in, [ADR-0016](../../architecture/decisions/0016-native-windows-claude-status-line.md). The default bootstrap run never does this. Run it non-elevated, with Git for Windows installed:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ops\windows\bootstrap.ps1 -ClaudeStatusLine -DryRun   # prints "would ...", writes nothing
+powershell -NoProfile -ExecutionPolicy Bypass -File ops\windows\bootstrap.ps1 -ClaudeStatusLine
+```
+
+It does four things:
+
+- installs `jq` (winget `jqlang.jq`) when it is missing;
+- copies the repo script `home/dot_claude/executable_statusline.sh` to `%USERPROFILE%\.claude\statusline.sh` as it is in the repo at run time (LF);
+- sets only the `statusLine` key in `%USERPROFILE%\.claude\settings.json`, copied from `home/.chezmoitemplates/claude/settings.json`; other keys keep their values (jq re-indents the file);
+- renders the status line once under Git Bash to check it.
+
+Backup: before it replaces anything, the run saves the current files byte for byte to `%LOCALAPPDATA%\app-configs\claude\<UTC>-<PID>\` (`settings.json`, and `statusline.sh` when one existed). A run with nothing to change keeps no backup. Backups are never deleted by the script.
+
+Rollback, one command (the run prints it with the real paths):
+
+```powershell
+Copy-Item -LiteralPath "$env:LOCALAPPDATA\app-configs\claude\<UTC>-<PID>\settings.json" -Destination "$env:USERPROFILE\.claude\settings.json" -Force
+```
+
+If `settings.json` did not exist before, delete it instead. To restore the old script, copy `statusline.sh` back the same way; `winget uninstall --id jqlang.jq --exact` removes jq.
+
+Update: after `git pull`, `-ClaudeStatusLine -DryRun` shows drift; re-run to apply. Close running Windows Claude sessions first, then reopen Windows Terminal (jq is on `PATH` only for new sessions).
+
+It refuses (exit 3, nothing written) when elevated, when `CLAUDE_CONFIG_DIR` is set, when Git Bash's home differs from `%USERPROFILE%`, when jq is older than 1.7, when `settings.json` is not one UTF-8 JSON object, and for read-only or linked targets. Not done: hooks, model, theme, a Nerd Font and Windows Terminal profile changes.
+
+Troubleshooting: accept workspace trust for the folder; `disableAllHooks: true` also disables the status line; Claude Code may pick another bash (`CLAUDE_CODE_GIT_BASH_PATH`); `claude --debug` shows the status line error.
+
 ## 5. Optional: GitHub CLI
 
 ```powershell

@@ -10,7 +10,7 @@
 
   powershell -NoProfile -ExecutionPolicy Bypass -File ops\windows\bootstrap.ps1
       [-DryRun] [-EnableSystemRestore] [-Export <label>] [-Report <label>]
-      [-ToolsOnly]
+      [-ToolsOnly] [-ClaudeStatusLine]
 
   Exit codes: 0 done; 1 failed; 2 bad arguments; 3 stopped for a human step
   (reboot, elevate or de-elevate, a missing precondition).
@@ -35,6 +35,21 @@
   --accept-source-agreements; if it needs them the run exits 3 and prints the
   command for you to decide.
 
+  -ClaudeStatusLine (opt-in; never part of the default run; non-elevated only;
+  ADR-0016) installs the repo Claude Code status line for Claude running natively
+  on Windows: home/dot_claude/executable_statusline.sh as
+  %USERPROFILE%\.claude\statusline.sh (LF), jq through winget when missing, and
+  exactly one key, statusLine, in %USERPROFILE%\.claude\settings.json, copied from
+  home/.chezmoitemplates/claude/settings.json. Before it replaces anything it saves
+  the current file to %LOCALAPPDATA%\app-configs\claude\<UTC>-<PID>\ (settings.json,
+  statusline.sh) and prints the one-command rollback; a run with nothing to change
+  keeps no backup. Other keys are kept by value (jq re-indents the file); the backup
+  keeps the original bytes. -DryRun prints "would ..." and writes nothing. It cannot
+  combine with -ToolsOnly, -Export, -Report or -EnableSystemRestore (exit 2). Exit 3
+  for: elevated, CLAUDE_CONFIG_DIR set, a reparse point or read-only target that needs
+  writing, no Git for Windows bash, Git Bash home not equal to USERPROFILE, jq older
+  than 1.7, an unreadable, non-UTF-8 or non-object settings.json, source agreements.
+
   Labels match ^[a-z0-9][a-z0-9-]{0,39}$. -Export cannot combine with -Report,
   and neither combines with -EnableSystemRestore. Stray positional arguments
   exit 2. A PowerShell binding error (for example -Export with no value) is
@@ -53,6 +68,7 @@ param(
     [string]$Export,
     [string]$Report,
     [switch]$ToolsOnly,
+    [switch]$ClaudeStatusLine,
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest
 )
 
@@ -88,7 +104,8 @@ $SeamNames = @(
     'Get-UtcStamp', 'Get-OsArch', 'Invoke-Native', 'Get-ToolVersion', 'Invoke-Winget',
     'Update-SessionPath', 'Test-LefthookHooks', 'Get-HooksPath', 'Invoke-Lefthook',
     'Resolve-Program', 'Get-ForeignHooks', 'Get-WindowsRelation', 'Test-HooksInstaller',
-    'Resolve-GitBash', 'Invoke-HooksInstaller', 'Get-HookEnvOverrides'
+    'Resolve-GitBash', 'Invoke-HooksInstaller', 'Get-HookEnvOverrides',
+    'Get-EnvScopes', 'Get-GitBashHome', 'Invoke-Jq', 'Invoke-StatusLineRender', 'Get-TemplateStatusLine'
 )
 
 # ---------------------------------------------------------------- seams
@@ -1054,6 +1071,323 @@ function Invoke-CommitTooling {
     Say 'step C: lefthook hooks installed'
     return 0
 }
+# ---------------------------------------------------------------- step S (ADR-0016)
+
+# Seams of step S. Each is the only caller of its native command.
+function Get-EnvScopes {
+    param([string]$Name)
+    return @{
+        Process = [Environment]::GetEnvironmentVariable($Name, 'Process')
+        User = [Environment]::GetEnvironmentVariable($Name, 'User')
+        Machine = [Environment]::GetEnvironmentVariable($Name, 'Machine')
+    }
+}
+
+# The home directory Git Bash resolves, as a Windows path, or $null.
+function Get-GitBashHome {
+    param([string]$Bash)
+    $r = Invoke-Native -ExePath $Bash -Arguments @('-c', 'cygpath -w ~') -TimeoutSeconds 30
+    if ($r.Code -ne 0) { return $null }
+    $l = Get-FirstLine $r.Out
+    if ($l) { return $l.Trim() }
+    return $null
+}
+
+# Returns @{Code; Out; Err}.
+function Invoke-Jq {
+    param([string[]]$Arguments)
+    $exe = Resolve-Program 'jq'
+    if (-not $exe) { return @{ Code = 127; Out = ''; Err = 'unavailable: jq not found' } }
+    return (Invoke-Native -ExePath $exe -Arguments $Arguments -TimeoutSeconds 60)
+}
+
+# Runs the installed status line once under Git Bash, as Claude Code does.
+function Invoke-StatusLineRender {
+    param([string]$Bash, [string]$PayloadPath)
+    return (Invoke-Native -ExePath $Bash -Arguments @('-c', 'STATUSLINE_GIT_TTL=0 ~/.claude/statusline.sh < "$1"', '_', $PayloadPath) -TimeoutSeconds 30)
+}
+
+# The template's statusLine object (ConvertFrom-Json is not on the static allowlist).
+function Get-TemplateStatusLine {
+    param([string]$Path)
+    return ((Get-Content -LiteralPath $Path -Raw -Encoding UTF8) | ConvertFrom-Json).statusLine
+}
+
+function Get-BytesSha256 {
+    param([byte[]]$Bytes)
+    $h = [Security.Cryptography.SHA256]::Create()
+    try { return (($h.ComputeHash($Bytes) | ForEach-Object { $_.ToString('x2') }) -join '') } finally { $h.Dispose() }
+}
+
+# Writes a new file; throws when it already exists (FileMode.CreateNew), so it never overwrites.
+function Write-NewFile {
+    param([string]$Path, [byte[]]$Bytes)
+    $fs = [IO.File]::Open($Path, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write, [IO.FileShare]::None)
+    try { $fs.Write($Bytes, 0, $Bytes.Length) } finally { $fs.Dispose() }
+}
+
+function Test-ReparsePoint {
+    param([string]$Path)
+    if (-not (Test-Path -LiteralPath $Path)) { return $false }
+    return [bool]((Get-Item -LiteralPath $Path -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)
+}
+
+function Test-ReadOnlyFile {
+    param([string]$Path)
+    return [bool]((Get-Item -LiteralPath $Path -Force).Attributes -band [IO.FileAttributes]::ReadOnly)
+}
+
+# Opt-in step S: the repo status line for Claude Code on native Windows. Returns 0, 1 or 3.
+# Order: refusals, repo contract, tools, decide (reads only), backup, script, settings, render.
+# Nothing under %USERPROFILE%\.claude is written before the current files are saved to $B.
+function Invoke-ClaudeStatusLine {
+    if (Test-IsAdmin) { Say 'step S: elevated; re-run non-elevated (the status line belongs to this user)'; return 3 }
+    $claudeDir = Join-Path $env:USERPROFILE '.claude'
+    $S = Join-Path $claudeDir 'settings.json'
+    $P = Join-Path $claudeDir 'statusline.sh'
+    $T = Join-Path $RepoRoot 'home\.chezmoitemplates\claude\settings.json'
+    $SRC = Join-Path $RepoRoot 'home\dot_claude\executable_statusline.sh'
+    $B = Join-Path (Join-Path $script:StateRoot 'claude') "$(Get-UtcStamp)-$PID"
+
+    # refusals: nothing is written
+    $cc = Get-EnvScopes 'CLAUDE_CONFIG_DIR'
+    foreach ($k in @('Process', 'User', 'Machine')) {
+        if ($cc[$k]) {
+            Say "step S: CLAUDE_CONFIG_DIR is set ($k scope); Claude Code does not use $claudeDir then, so nothing was changed"
+            return 3
+        }
+    }
+    foreach ($p in @($claudeDir, $S, $P)) {
+        if (Test-ReparsePoint $p) { Say "step S: $p is a reparse point (link); refusing to write through it"; return 3 }
+    }
+
+    # repo contract
+    if (-not (Test-Path -LiteralPath $T -PathType Leaf) -or -not (Test-Path -LiteralPath $SRC -PathType Leaf)) {
+        Say "step S: the repo files are missing ($T, $SRC)"
+        return 1
+    }
+    if ([IO.File]::ReadAllText($T).Contains('{{')) { Say "step S: $T contains a template action; step S needs plain JSON"; return 1 }
+    try {
+        $tpl = Get-TemplateStatusLine $T
+    } catch {
+        Say "step S: cannot parse $T`: $($_.Exception.Message)"
+        return 1
+    }
+    if (-not $tpl -or $tpl.type -ne 'command' -or $tpl.command -ne '~/.claude/statusline.sh') {
+        Say "step S: the template statusLine is not a command running ~/.claude/statusline.sh; step S owns that exact value"
+        return 1
+    }
+    $srcBytes = [IO.File]::ReadAllBytes($SRC)
+    if ($srcBytes -contains 13) { Say "step S: $SRC has CR bytes; it must keep LF line endings"; return 1 }
+    $srcHash = Get-BytesSha256 $srcBytes
+
+    # tools
+    $bash = Resolve-GitBash
+    if (-not $bash) {
+        Say 'step S: Git for Windows bash was not found (the WindowsApps and WSL bash are never used); install Git for Windows, then re-run'
+        return 3
+    }
+    $gh = Get-GitBashHome $bash
+    if (-not $gh) { Say "step S: could not read the home directory of $bash"; return 1 }
+    if ($gh.TrimEnd('\', '/').ToLowerInvariant() -ne ([string]$env:USERPROFILE).TrimEnd('\', '/').ToLowerInvariant()) {
+        Say "step S: Git Bash home is '$gh' but USERPROFILE is '$env:USERPROFILE'; ~/.claude would differ, so nothing was changed"
+        return 3
+    }
+    $cb = Get-EnvScopes 'CLAUDE_CODE_GIT_BASH_PATH'
+    foreach ($k in @('Process', 'User', 'Machine')) {
+        if ($cb[$k]) { Say "step S: CLAUDE_CODE_GIT_BASH_PATH is set ($k scope): $($cb[$k]); Claude Code uses this bash" }
+    }
+    Update-SessionPath
+    $jqv = Get-ToolVersion -Name 'jq' -VersionArgs @('--version')
+    $jqKnown = $true
+    if ($null -eq $jqv) {
+        if ($script:Dry) {
+            Say "step S: jq absent; would run: winget $((Get-WingetInstallArgs 'jqlang.jq') -join ' ')"
+            $jqKnown = $false
+        } else {
+            Say 'step S: jq absent'
+            $rc = Install-WingetTools -Step 'S' -Tools @(@{ Name = 'jq'; Id = 'jqlang.jq'; VersionArgs = @('--version') })
+            if ($rc -ne 0) { return $rc }
+            Say 'step S: jq installed; sessions started earlier do not see it, so reopen Windows Terminal before starting claude'
+            $jqv = Get-ToolVersion -Name 'jq' -VersionArgs @('--version')
+        }
+    }
+    if ($jqKnown) {
+        if ($jqv -notmatch '^jq-(\d+\.\d+)' -or [version]$Matches[1] -lt [version]'1.7') {
+            Say "step S: jq must be 1.7 or newer, found '$jqv' (jq on PATH: $(Resolve-Program 'jq'))"
+            return 3
+        }
+        Say "step S: $jqv"
+    }
+
+    # decide what needs writing (reads only; in a real run only $B is created)
+    $needScript = (-not (Test-Path -LiteralPath $P)) -or ((Get-Sha256 $P) -ne $srcHash)
+    $haveS = Test-Path -LiteralPath $S
+    $needSettings = $true
+    $snap = $S
+    $snapHash = $null
+    $settingsBytes = $null
+    $replacedS = $false
+    $replacedP = $false
+    $pHint = $null
+    $payload = Join-Path $B 'payload.json'
+    $created = $false
+    try {
+        if (-not $script:Dry) {
+            [void](New-Item -ItemType Directory -Force -Path (Split-Path -Parent $B))
+            try { [void](New-Item -ItemType Directory -Path $B) } catch { Say "step S: backup folder $B already exists or cannot be created"; return 1 }
+            $created = $true
+        }
+        if ($haveS) {
+            try { $settingsBytes = [IO.File]::ReadAllBytes($S) } catch { Say "step S: cannot read $S"; return 3 }
+            $off = 0
+            if ($settingsBytes.Length -ge 3 -and $settingsBytes[0] -eq 0xEF -and $settingsBytes[1] -eq 0xBB -and $settingsBytes[2] -eq 0xBF) { $off = 3 }
+            try {
+                $enc = New-Object Text.UTF8Encoding -ArgumentList $false, $true
+                [void]$enc.GetString($settingsBytes, $off, $settingsBytes.Length - $off)
+            } catch {
+                $why = 'not UTF-8'
+                if ($settingsBytes.Length -ge 2 -and (($settingsBytes[0] -eq 0xFF -and $settingsBytes[1] -eq 0xFE) -or ($settingsBytes[0] -eq 0xFE -and $settingsBytes[1] -eq 0xFF))) { $why = 'not UTF-8 (UTF-16?)' }
+                Say "step S: $S is $why; nothing was changed"
+                return 3
+            }
+            $snapHash = Get-BytesSha256 $settingsBytes
+            if ($created) {
+                # The saved default settings: exact bytes, before anything is written to $S.
+                Write-NewFile -Path (Join-Path $B 'settings.json') -Bytes $settingsBytes
+                $snap = Join-Path $B 'settings.json'
+            }
+            if ($jqKnown) {
+                $v = Invoke-Jq @('-e', '-s', 'length == 1 and (.[0] | type == "object")', $snap)
+                if ($v.Code -eq 2) { Say "step S: cannot read $S"; return 3 }
+                if (@(1, 4, 5) -contains $v.Code) { Say "step S: $S is not one JSON object; nothing was changed (fix or move it, then re-run)"; return 3 }
+                if ($v.Code -ne 0) { Say "step S: jq exited $($v.Code) validating $S`: $(Get-FirstLine $v.Err)"; return 1 }
+                $cur = Invoke-Jq @('-e', '--slurpfile', 't', $T, '.statusLine == $t[0].statusLine', $snap)
+                if ($cur.Code -eq 0) { $needSettings = $false }
+                elseif ($cur.Code -ne 1) { Say "step S: jq exited $($cur.Code) comparing statusLine: $(Get-FirstLine $cur.Err)"; return 1 }
+                else {
+                    $old = Invoke-Jq @('-r', '.statusLine.command // empty', $snap)
+                    $oc = Get-FirstLine $old.Out
+                    if ($oc) { Say "step S: replacing the existing statusLine (command: $oc); the old value is kept in the backup" }
+                    else { Say 'step S: adding or replacing the statusLine key; the old file is kept in the backup' }
+                }
+            }
+        }
+        if (-not $jqKnown) { Say 'step S: settings.json state is unknown without jq' }
+
+        # write access: only for existing targets that need writing
+        if ($needScript -and (Test-Path -LiteralPath $P) -and (Test-ReadOnlyFile $P)) { Say "step S: $P is read-only; clear the read-only attribute, then re-run"; return 3 }
+        if ($needSettings -and $haveS -and (Test-ReadOnlyFile $S)) { Say "step S: $S is read-only; clear the read-only attribute, then re-run"; return 3 }
+
+        if ($script:Dry) {
+            if ($needScript) { Say "step S: would install $SRC as $P (LF, backup of the old file first)" } else { Say "step S: $P is current" }
+            if ($needSettings) {
+                if ($haveS) { Say "step S: would save $S to $B\settings.json, then set only the statusLine key" }
+                else { Say "step S: would create $S with only the statusLine key" }
+            } else { Say "step S: $S statusLine is current" }
+            Say 'step S: would render the status line once under Git Bash to check it'
+            return 0
+        }
+
+        # real run
+        $targets = @()
+        if ($needScript) { $targets += $P }
+        if ($needSettings) { $targets += $S }
+        if ($targets.Count -gt 0) { Say "step S: close running Windows Claude Code sessions first; writing: $($targets -join ', ')" }
+        [void](New-Item -ItemType Directory -Force -Path $claudeDir)
+
+        if ($needScript) {
+            $tmp = "$P.app-configs-tmp-$PID"
+            $tmpMade = $false
+            try {
+                if (Test-Path -LiteralPath $P) { [IO.File]::Copy($P, (Join-Path $B 'statusline.sh'), $false) }
+                Write-NewFile -Path $tmp -Bytes $srcBytes
+                $tmpMade = $true
+                if ((Get-Sha256 $tmp) -ne $srcHash) { throw 'the temp copy does not match the repo script' }
+                if (Test-Path -LiteralPath $P) { [IO.File]::Replace($tmp, $P, [NullString]::Value) } else { Move-Item -LiteralPath $tmp -Destination $P }
+                $replacedP = $true
+            } catch {
+                Say "step S: could not install $P`: $($_.Exception.Message)"
+                if ($tmpMade -and (Test-Path -LiteralPath $tmp)) { Remove-Item -LiteralPath $tmp }
+                return 1
+            }
+            Say "step S: installed $P"
+            if (Test-Path -LiteralPath (Join-Path $B 'statusline.sh')) {
+                $pHint = "step S: previous statusline.sh saved as $B\statusline.sh (restore with Copy-Item -LiteralPath '$($B.Replace("'", "''"))\statusline.sh' -Destination '$($P.Replace("'", "''"))' -Force)"
+                Say $pHint
+            }
+        } else {
+            Say "step S: $P is current"
+        }
+
+        if ($needSettings) {
+            $tmp = "$S.app-configs-tmp-$PID"
+            $tmpMade = $false
+            try {
+                if ($haveS) {
+                    $m = Invoke-Jq @('--binary', '--slurpfile', 't', $T, '.statusLine = $t[0].statusLine', $snap)
+                    if ($m.Code -ne 0) { throw "jq exited $($m.Code): $(Get-FirstLine $m.Err)" }
+                    Write-NewFile -Path $tmp -Bytes ([Text.Encoding]::UTF8.GetBytes([string]$m.Out))
+                    $tmpMade = $true
+                    $chk = Invoke-Jq @('-e', '-s', '--slurpfile', 'o', $snap, '--slurpfile', 't', $T, 'length == 1 and (.[0].statusLine == $t[0].statusLine) and ((.[0] | del(.statusLine)) == ($o[0] | del(.statusLine)))', $tmp)
+                    if ($chk.Code -ne 0) { throw 'the merged file failed verification (statusLine or another key differs)' }
+                    if ((Get-Sha256 $S) -ne $snapHash) { throw 'settings.json changed during the run' }
+                    [IO.File]::Replace($tmp, $S, [NullString]::Value)
+                } else {
+                    $m = Invoke-Jq @('--binary', '-n', '--slurpfile', 't', $T, '{statusLine: $t[0].statusLine}')
+                    if ($m.Code -ne 0) { throw "jq exited $($m.Code): $(Get-FirstLine $m.Err)" }
+                    Write-NewFile -Path $tmp -Bytes ([Text.Encoding]::UTF8.GetBytes([string]$m.Out))
+                    $tmpMade = $true
+                    $chk = Invoke-Jq @('-e', '-s', '--slurpfile', 't', $T, 'length == 1 and .[0] == {statusLine: $t[0].statusLine}', $tmp)
+                    if ($chk.Code -ne 0) { throw 'the new file failed verification' }
+                    if (Test-Path -LiteralPath $S) { throw 'settings.json appeared during the run' }
+                    Move-Item -LiteralPath $tmp -Destination $S
+                }
+                $replacedS = $true
+            } catch {
+                Say "step S: could not write $S`: $($_.Exception.Message); $S is unchanged"
+                if ($tmpMade -and (Test-Path -LiteralPath $tmp)) { Remove-Item -LiteralPath $tmp }
+                if ($pHint) { Say $pHint }
+                return 1
+            }
+            Say "step S: set the statusLine key in $S"
+            if ($haveS) {
+                Say "step S: previous settings.json saved as $B\settings.json"
+                Say "step S: rollback (one command): Copy-Item -LiteralPath '$($B.Replace("'", "''"))\settings.json' -Destination '$($S.Replace("'", "''"))' -Force"
+            } else {
+                Say "step S: settings.json did not exist before; rollback: Remove-Item -LiteralPath '$($S.Replace("'", "''"))'"
+            }
+        } else {
+            Say "step S: $S statusLine is current"
+        }
+
+        # render check, as Claude Code runs it
+        $cwd = ([string]$RepoRoot).Replace('\', '/')
+        $json = '{"model":{"display_name":"check"},"workspace":{"current_dir":"' + $cwd + '"}}'
+        Write-NewFile -Path $payload -Bytes ([Text.Encoding]::UTF8.GetBytes($json))
+        Start-Wait 'step S: rendering the status line once under Git Bash (a few seconds)'
+        $r = Invoke-StatusLineRender -Bash $bash -PayloadPath ($payload.Replace('\', '/'))
+        $line = Get-FirstLine $r.Out
+        if ($r.Code -ne 0 -or -not $line) {
+            Say "step S: the render check failed (exit $($r.Code)): $(Get-FirstLine $r.Err); the files above are installed, see the rollback commands"
+            return 1
+        }
+        Say 'step S: done; reopen Windows Terminal, then start claude'
+        return 0
+    } finally {
+        if ($created) {
+            if (Test-Path -LiteralPath $payload) { Remove-Item -LiteralPath $payload }
+            $bs = Join-Path $B 'settings.json'
+            if (-not $replacedS -and (Test-Path -LiteralPath $bs)) { Remove-Item -LiteralPath $bs }
+            $bp = Join-Path $B 'statusline.sh'
+            if (-not $replacedP -and (Test-Path -LiteralPath $bp)) { Remove-Item -LiteralPath $bp }
+            foreach ($d in @($B, (Split-Path -Parent $B))) {
+                if ((Test-Path -LiteralPath $d) -and @(Get-ChildItem -LiteralPath $d -Force).Count -eq 0) { Remove-Item -LiteralPath $d }
+            }
+        }
+    }
+}
+
 # ---------------------------------------------------------------- export
 
 function Invoke-DistroExport {
@@ -1347,6 +1681,7 @@ function Invoke-BootstrapRun {
         [string]$Export,
         [string]$Report,
         [switch]$ToolsOnly,
+        [switch]$ClaudeStatusLine,
         [Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest
     )
     $script:LogLines = New-Object 'System.Collections.Generic.List[string]'
@@ -1370,12 +1705,18 @@ function Invoke-BootstrapRun {
         Say 'error: -ToolsOnly cannot be combined with -Export, -Report or -EnableSystemRestore'
         return 2
     }
+    if ($ClaudeStatusLine -and ($ToolsOnly -or $hasExport -or $hasReport -or $EnableSystemRestore)) {
+        Say 'error: -ClaudeStatusLine cannot be combined with -ToolsOnly, -Export, -Report or -EnableSystemRestore'
+        return 2
+    }
     foreach ($pair in @(@('Export', $Export, $hasExport), @('Report', $Report, $hasReport))) {
         if ($pair[2] -and $pair[1] -cnotmatch '^[a-z0-9][a-z0-9-]{0,39}$') {
             Say "error: -$($pair[0]) label must match ^[a-z0-9][a-z0-9-]{0,39}$"
             return 2
         }
     }
+
+    if ($ClaudeStatusLine) { return (Invoke-ClaudeStatusLine) }
 
     if ($ToolsOnly) {
         if (Test-IsAdmin) { Say 'step C: elevated; re-run non-elevated (winget installs for this user)'; return 3 }
@@ -1792,6 +2133,7 @@ function Invoke-Bootstrap {
         [string]$Export,
         [string]$Report,
         [switch]$ToolsOnly,
+        [switch]$ClaudeStatusLine,
         [Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest
     )
     $script:HooksWarning = $null

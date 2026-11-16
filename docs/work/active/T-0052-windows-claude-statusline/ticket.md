@@ -2,7 +2,7 @@ Source: local
 
 # T-0052: Claude Code status line on native Windows (feature)
 
-Status: design reviewed; implementation not started. T1 records written and reviewed (PASS WITH NOTES); pre-commit and commit pending.
+Status: implemented (reduced scope, see plan.md "Implementation notes"), review and T6 real run pending. Owner accepted ADR-0016 on 2026-11-16 ("yes add claude statu line windows implement"); ADR-0016 is decided-unverified.
 Relates to: T-0047 (Milestone 2 item pulled forward), ADR-0016
 Amends: ADR-0002, ADR-0006
 Plan: [plan.md](plan.md)
@@ -95,7 +95,7 @@ D2 to D8 are defaults. They stand unless the user overrides them.
   - If it falls back to PowerShell, the `.sh` file association may open a window.
   - S3 reports `CLAUDE_CODE_GIT_BASH_PATH`; H1 detects the rest.
 - R5: jq is visible only to processes started after the install.
-- R6: an edit to the statusline script that breaks Git Bash is caught only when tests/windows runs on Windows (CS-render-real). bats does not run there.
+- R6: an edit to the statusline script that breaks it under Git Bash is caught only by the real Git Bash render case (SL17) when tests/windows runs on Windows; skipped without Git for Windows.
 - R7: leftover temp files and backups accumulate (manual cleanup).
 - R8: unknown whether Claude passes COLUMNS on Windows (layout switching); some glyphs may show as tofu. Separators are ASCII under D5.
 - R9: the dry-run S5 probe opens existing targets for write without writing to them.
@@ -106,6 +106,6 @@ D2 to D8 are defaults. They stand unless the user overrides them.
 - Windows hooks, model, theme, env (see the plan, Scope).
 
 ## Status
-- Design reviewed (independent review: PASS WITH NOTES, round 3). Implementation not started.
+- Design reviewed (PASS WITH NOTES, round 3). Implemented 2026-11-16 in ops/windows/bootstrap.ps1 (uncommitted); tests/windows suite 193 passed, 0 skipped, 0 failed. Not run on the real settings.json yet (T6).
 - T1 (these records): written and reviewed (PASS WITH NOTES); pre-commit and commit pending. T2 to T6 are listed in [plan.md](plan.md).
 - Prerequisite P0: the step C work in `ops/windows/bootstrap.ps1` is committed by its owner first.

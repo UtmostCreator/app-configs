@@ -1,7 +1,7 @@
 ---
 adr: 16
 title: "Native Windows Claude status line: the repo script through Git Bash"
-status: proposed
+status: decided-unverified
 date: 2026-11-15
 platforms: [windows]
 areas: [claude, statusline]
@@ -10,12 +10,12 @@ forbids: [other-windows-claude-keys, chezmoi-on-windows, windows-hooks]
 amends: [2, 6]
 supersedes: []
 superseded_by: []
-related: [T-0052]
+related: [T-0052, 19]
 ---
 # ADR-0016: Native Windows Claude status line: the repo script through Git Bash, installed by the bootstrap
-Status: proposed (design reviewed; not implemented) · Date: 2026-11-15 · Amends: ADR-0002, ADR-0006 · Sources: T-0052, code.claude.com/docs/en/statusline (Windows configuration)
+Status: decided-unverified (owner decision 2026-11-16: "yes add claude statu line windows implement"; implemented, not yet run on this PC or seen in Windows Terminal) · Date: 2026-11-15 · Amends: ADR-0002, ADR-0006 · Sources: T-0052, code.claude.com/docs/en/statusline (Windows configuration)
 
-Amends ADR-0002 and ADR-0006. Their consequence lines are added with this record. Plan: `docs/work/active/T-0052-windows-claude-statusline/plan.md`.
+Cites [ADR-0019](0019-platform-scope-linux-macos-wsl2-first.md) (bounded Windows surface; owner decision above). Amends ADR-0002 and ADR-0006. Their consequence lines are added with this record. Plan: `docs/work/active/T-0052-windows-claude-statusline/plan.md`.
 
 ## Decision
 - Add one opt-in step to ops/windows/bootstrap.ps1, run by `-ClaudeStatusLine`. The default full run does not include it.
@@ -43,7 +43,7 @@ Delete step S if native Windows Claude use ends, or if a later ADR adopts chezmo
 | Option | Why it lost |
 |--------|-------------|
 | A: chezmoi on Windows, limited to the Claude files | No Windows rules exist, so a plain apply deploys about a dozen Unix dotfiles. Limiting it needs an ignore-everything-else list that every new home/ file must be checked against, an unbounded burden. Whether a bash `modify_` script runs without `interpreters` is unknown. The template would push hooks, model and theme, and the Linux `modify_` overwrites invalid JSON. Its capability (a single source) is kept: step S reads the same repo files. |
-| C: a native PowerShell status line | A second implementation of a 592-line script with no parity tests (bats does not run on Windows) and no speed gain. |
+| C: a native PowerShell status line | A second implementation of the repo status line script with no parity tests (bats does not run on Windows) and no speed gain. |
 | E: point statusLine.command at the repo checkout file | No drift, but it ties Claude to whatever branch is checked out and to the clone path, and needs a Windows-only command value, which is a second source. |
 | Include step S in the default full run | It couples a cosmetic step to the WSL exit codes and widens what the default run writes. Deferred (T-0052 D2). |
 | ConvertTo-Json merge | PS 5.1 reformats, escapes `<>'&` and limits depth. jq is needed anyway. |
@@ -56,5 +56,6 @@ Windows hooks, model, theme, subagentStatusLine and env from the repo; installin
 - Updates reach Windows only when `-ClaudeStatusLine` is re-run after `git pull`. `-ClaudeStatusLine -DryRun` shows drift.
 - The step edits a user-owned file. Safeguards: refusals before any write, a backup per change, a temp file verified before the replace, a hash check, read-only and reparse-point refusals.
 - Residual risk R4 (T-0052): Claude-side disagreements. Claude Code may pick another bash (`CLAUDE_CODE_GIT_BASH_PATH`, PATH order) or start in a different environment (old PATH without jq, other HOME or LANG). Which home it resolves is unknown (inferred: `USERPROFILE`). The step reports `CLAUDE_CODE_GIT_BASH_PATH`; the human check H1 detects the rest.
-- Residual risk R6 (T-0052): an edit to the statusline script that breaks Git Bash is caught only when tests/windows runs on Windows (bats does not run there).
-- Status moves to decided-unverified in T5 and to verified after the human check H1 on a real run.
+- Residual risk R6 (T-0052): an edit to the statusline script that breaks it under Git Bash is caught only by the real Git Bash render case in tests/windows (SL17) when that suite is run on Windows; bats does not run there, and the case is skipped without Git for Windows.
+- Status is decided-unverified until the T6 real run and the human check H1; then it becomes decided.
+- Rollback safety (owner request 2026-11-16, "first save defeault settings so we can easily rollback"): a real run saves the current settings.json byte for byte to the backup folder before writing, and prints one Copy-Item command that restores it.

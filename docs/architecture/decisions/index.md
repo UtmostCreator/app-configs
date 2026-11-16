@@ -56,7 +56,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0013](0013-desktop-shell-bar-notifications-trial.md) | Trial Dux first, Noctalia second; no shell selected | trial | 2026-11-15 |
 | [0014](0014-tool-stack-recap.md) | chezmoi, mise, Nix + Home Manager, nix-darwin + casks, lefthook | decided | not recorded |
 | [0015](0015-wsl-distro-selection-nixos-or-ubuntu.md) | WSL distro: NixOS-WSL by default, Ubuntu supported; one `wsl` profile | decided-unverified | 2026-11-15 |
-| [0016](0016-native-windows-claude-status-line.md) | Native Windows Claude status line: repo script via Git Bash, opt-in bootstrap step `-ClaudeStatusLine` | proposed | 2026-11-15 |
+| [0016](0016-native-windows-claude-status-line.md) | Native Windows Claude status line: repo script via Git Bash, opt-in bootstrap step `-ClaudeStatusLine` | decided-unverified | 2026-11-15 |
 | [0017](0017-interactive-shell-fish-or-zsh.md) | fish primary interactive shell for testing purposes; zsh stays supported | trial | 2026-11-16 |
 | [0018](0018-interactive-config-manager-frontend.md) | Interactive configuration manager: a frontend over the existing selection (compiled wizard, Bash fallback); no installer of its own | proposed | 2026-11-16 |
 | [0019](0019-platform-scope-linux-macos-wsl2-first.md) | Platform scope: Linux, macOS and WSL2 first; Windows stays a bounded bootstrap | decided | 2026-11-16 |

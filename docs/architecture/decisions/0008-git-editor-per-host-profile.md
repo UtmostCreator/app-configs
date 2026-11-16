@@ -1,3 +1,17 @@
+---
+adr: 8
+title: "Git editor per host profile"
+status: decided-unverified
+date: 2026-11-15
+platforms: [linux, macos, wsl]
+areas: [git]
+permits: [editor-template-value]
+forbids: [editor-wrapper]
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0047]
+---
 # ADR-0008: Git editor per host profile
 Status: decided (not yet implemented; T-0047 task S3-4) · Date: 2026-11-15 · Sources: T-0047 ticket (Decision) and plan, `home/dot_gitconfig.tmpl`
 

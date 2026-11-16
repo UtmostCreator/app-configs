@@ -1,3 +1,17 @@
+---
+adr: 4
+title: "Tailscale runs on the Windows host only"
+status: decided-unverified
+date: 2026-11-15
+platforms: [windows, wsl]
+areas: [vpn]
+permits: [tailscale-on-windows]
+forbids: []
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0047]
+---
 # ADR-0004: Tailscale runs on the Windows host only
 Status: decided (not yet verified) · Date: 2026-11-15 · Sources: T-0047 ticket and plan, docs/platforms/wsl/windows-and-wsl.md
 

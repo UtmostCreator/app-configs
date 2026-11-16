@@ -1,3 +1,17 @@
+---
+adr: 15
+title: "WSL distro: NixOS-WSL by default, Ubuntu supported; one profile"
+status: decided-unverified
+date: 2026-11-15
+platforms: [wsl, nixos]
+areas: [wsl, distro]
+permits: [nixos-wsl-default, ubuntu-supported]
+forbids: [distro-profile-multiplication, silent-dual-install, bootstrap-touching-other-distros]
+amends: [1]
+supersedes: []
+superseded_by: []
+related: [T-0047]
+---
 # ADR-0015: WSL distro: NixOS-WSL by default, Ubuntu supported; one profile
 Status: decided 2026-11-15 (design ruled; not yet implemented; Ubuntu path untested) · Date: 2026-11-15 · Amends: ADR-0001 · Sources: session decision 2026-11-15 (architect ruling), user-supplied outside research (unverified where it cites Microsoft docs), `nix/hosts/wsl/home.nix`, `ops/detect-host.sh`, `ops/system-setup.sh`
 

@@ -1,3 +1,17 @@
+---
+adr: 7
+title: "Safety net: restore points, exports, pinned downloads, state reports"
+status: decided
+date: 2026-11-15
+platforms: [windows, wsl]
+areas: [safety, recovery]
+permits: [restore-point, wsl-export, pinned-image]
+forbids: [scripted-wsl-unregister, unpinned-download]
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0047]
+---
 # ADR-0007: Safety net: restore points, exports, pinned downloads, state reports
 Status: decided (restore-point step observed on a real install 2026-11-15 with a pre-commit build of bootstrap.ps1; see [evidence](../../work/active/T-0047-nixos-wsl/evidence/h1-elevated-run-2026-11-15.md) and [expected results](../../platforms/wsl/expected-results.md) row 1) · Date: 2026-11-15 · Sources: T-0047 ticket (Recovery) and plan, docs/platforms/wsl/windows-and-wsl.md (Restore points)
 

@@ -1,3 +1,17 @@
+---
+adr: 10
+title: "Cross-OS settings: inventory before alignment"
+status: decided
+date: 2026-11-15
+platforms: [cross, windows]
+areas: [settings, inventory]
+permits: [read-only-inventory]
+forbids: [guessed-values]
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0048]
+---
 # ADR-0010: Cross-OS settings: inventory before alignment
 Status: decided; phase 1 (Windows inventory) done, read-only · Date: 2026-11-15 · Sources: T-0048 ticket and windows.yaml (docs/work/active/T-0048-cross-os-settings)
 

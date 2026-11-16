@@ -1,3 +1,17 @@
+---
+adr: 13
+title: "Desktop shell, bar and notifications: trial order, not yet selected"
+status: trial
+date: 2026-11-15
+platforms: [linux, nixos]
+areas: [desktop, shell]
+permits: [dux-trial, noctalia-trial]
+forbids: [shell-selection-before-trial]
+amends: []
+supersedes: []
+superseded_by: []
+related: []
+---
 # ADR-0013: Desktop shell, bar and notifications: trial order, not yet selected
 Status: trial (user decision 2026-11-15 on the order only) · Date: 2026-11-15 · Sources: `docs/plans/niri-migration.md` (shell, ownership and decisions sections), `docs/research/desktop-migration-claim-audit.md`, `docs/research/nix-config-borrow-analysis.md`
 

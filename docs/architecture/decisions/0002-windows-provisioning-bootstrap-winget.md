@@ -1,5 +1,5 @@
 # ADR-0002: Windows provisioning is one PowerShell bootstrap; winget is the only package manager
-Status: decided (script built, not yet committed) · Date: 2026-11-15 · Sources: T-0047 ticket and plan, docs/platforms/base.md, `docs/work/active/T-0041-windows-app-list/ticket.md`, `docs/work/active/T-0042-install-selection/ticket.md` (lines 407, 530), `docs/plans/migration/implementation.md` (Appendix A)
+Status: decided (script committed; step C observed on a real PC 2026-11-15, see docs/platforms/wsl/expected-results.md row 2) · Date: 2026-11-15 · Sources: T-0047 ticket and plan, docs/platforms/base.md, `docs/work/active/T-0041-windows-app-list/ticket.md`, `docs/work/active/T-0042-install-selection/ticket.md` (lines 407, 530), `docs/plans/migration/implementation.md` (Appendix A)
 
 ## Decision
 - One re-runnable script, ops/windows/bootstrap.ps1 (dry-run, stops for human steps; only the WSL install step is elevated).
@@ -26,5 +26,5 @@ Homebrew on Linux/WSL (a second manager next to Nix), a new app-selection menu o
 - Contradiction to know: T-0041 discards "a repo-run windows/ layer (setup.ps1, doctor.ps1, DSC)" as an open-ended maintenance burden; the bootstrap partly reverses that. Keep it to WSL and commit tooling.
 - Amended by ADR-0019: app-list automation and `winget configure` are not planned.
 - Was open: automate the app list (`winget import` of a committed JSON) or keep it manual; `winget configure` (DSC) deferred "if the plain list proves insufficient". See ADR-0011.
-- Commit-tooling step (T-0047 task T2) is not yet verified on the real PC.
+- Commit-tooling step (step C): observed on a real PC 2026-11-15 (expected-results.md row 2); not yet re-run after later script changes (unknown).
 - ADR-0016 amends "only for commit tooling" / "Keep it to WSL and commit tooling" with one opt-in step (Claude status line; jq via winget).

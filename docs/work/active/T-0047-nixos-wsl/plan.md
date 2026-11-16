@@ -1,6 +1,6 @@
 # T-0047 NixOS-WSL, desktop-first: execution plan
 
-- **Status:** WSL2 setup complete; pending (b), then the open ACs (see "Final design and outcome")
+- **Status:** WSL2 setup complete and verified after landing at 46c4ec7 (2026-11-16); pending (b), the owner sign-ins and decisions, then the open ACs (see "Final design and outcome")
 - **Work id:** T-0047-nixos-wsl (`Source: local`, per ticket.md)
 - **Branch:** main (work branch: unknown)
 - **Designed against:** `c644dd6` (main)
@@ -61,21 +61,21 @@ flowchart TD
 
 - [x] **AC-B1** `wsl.defaultUser = lib.mkForce "utmostcreator";` in a WSL-only module. Build passes. WSL launches as utmostcreator. A test proves a stock `"nixos"` value loses. Evidence 2026-11-16: wsl.nix:30; tests/bash/nixos-wsl-module.bats 4/4 (WSL, 8f6b4eb); /etc/wsl.conf default=utmostcreator.
 - [ ] **AC-B2** sys-setup backs up every /etc/nixos file it may touch and restores the exact state on a validation (dry-build) failure (content, mode, owner, symlink, existence). Tested for success and simulated failure (D2b). The desktop is unchanged after a validation failure. On a switch failure it prints the `nixos-rebuild switch --rollback` command.
-- [ ] **AC-T1** Bootstrap tests pass, ParseFile, ASCII. While RebootPending is set, the real dry run stops at step 0 without writing. After R2 a normal run checks the WSL version, imports NixOS, runs nix-channel and the systemd/interop check, then stops at the D0 gate (step 6, exit 3). The before-setup report and export run in H2. Evidence 2026-11-16: 176 passed, 0 failed; ParseFile and ASCII clean (working tree incl. uncommitted T-0052 T2; HEAD ParseFile clean). Real-host parts: the after-R2 run reached step 6 (evidence/h1-normal-run-2026-11-15.md; exit 3 expected, not captured); the RebootPending real dry run is not recorded (unit tests 1a/1b only). Open until recorded or explicitly deferred.
+- [ ] **AC-T1** Bootstrap tests pass, ParseFile, ASCII. While RebootPending is set, the real dry run stops at step 0 without writing. After R2 a normal run checks the WSL version, imports NixOS, runs nix-channel and the systemd/interop check, then stops at the D0 gate (step 6, exit 3). The before-setup report and export run in H2. Evidence 2026-11-16: 176 passed, 0 failed; ParseFile and ASCII clean (working tree incl. then-uncommitted T-0052 T2, now committed as 46c4ec7; not re-run at 46c4ec7; HEAD ParseFile clean). Real-host parts: the after-R2 run reached step 6 (evidence/h1-normal-run-2026-11-15.md; exit 3 expected, not captured); non-elevated `bootstrap.ps1 -DryRun` exit 0, no WARN/ERROR (2026-11-16, on 8f6b4eb + T2); the RebootPending real dry run is not recorded (unit tests 1a/1b only). Open until recorded or explicitly deferred.
 - [ ] **AC-D** D1 to D6 and D8 pass on the real desktop, with evidence. D7 is checked per S3 task, not here.
 - [ ] **AC-WSL** Measured in Slice 4:
-  - sys-install, sys-update, `nix flake check`
+  - sys-install, sys-update, `nix flake check` (2026-11-16 at 46c4ec7: `update-all.sh` report exit 0 and `--apply --yes` exit 0, readiness ALL SET; sys-install not run; `nix flake check` not re-run at 46c4ec7: unknown)
   - Docker (when enabled)
-  - Claude and Codex, update services, a subagent spawn
+  - Claude and Codex, update services, a subagent spawn (open: both installed in ~/.local/bin, not signed in; login is an owner step; subagent spawn not exercised)
   - statusline
   - a WSL restart keeps the user, systemd and interop
   - origin not under /mnt; ~/Projects on ext4
-  - tailnet reachable from WSL via Windows Tailscale
+  - tailnet reachable from WSL via Windows Tailscale (open: `tailscale up` on Windows, owner step)
   - timezone; substituters
 - [ ] **AC-NEG** macOS, linux-desktop and linux-cli unchanged (full bats, flake check, builds). Pushes only in the Transfer steps (user-authorised 2026-11-15; each session confirms its own push authorisation, AGENTS.md). No `wsl --unregister` scripted.
 - [x] **AC-TZ** Decided: WSL keeps the sys-setup zone Europe/London; Windows is set to match ("GMT Standard Time", T-0048 windows.yaml). Evidence: evidence/final-run-2026-11-16.md.
 - [x] **AC-DOCKER-MSG** The `ws_ensure_docker` error text in ops/projects/workspace/config.sh is fixed in Slice 2b (points to the sys-setup Docker path, not Docker Desktop's WSL integration). Done: `fix(workspace): point the missing-Docker error at sys-setup, not Docker Desktop`.
-- [ ] **AC-T2** The T2 stub tests pass. On the real Windows clone, `ops/doctor.sh` and `ops/validate-config.sh` exit 0, the hooks are installed, the commit-msg good and bad cases behave, and gitleaks catches a planted token. Once AC-T2 passes, Windows commits are allowed (including T1 and T2). Open: `--check` is fixed (8f6b4eb; exit 0 on Windows and WSL, 2026-11-16); a real test commit from the Windows clone is still to do (a).
+- [ ] **AC-T2** The T2 stub tests pass. On the real Windows clone, `ops/doctor.sh` and `ops/validate-config.sh` exit 0, the hooks are installed, the commit-msg good and bad cases behave, and gitleaks catches a planted token. Once AC-T2 passes, Windows commits are allowed (including T1 and T2). Evidence: `--check` fixed (8f6b4eb; exit 0 on Windows and WSL, 2026-11-16); 4 real commits from the Windows clone (093f3a3, 5c0928e, bed65f9, 46c4ec7) passed the pre-commit hooks (no-personal-yaml; ops/hooks/pre-commit.sh: gitleaks, doctor.sh, validate-config.sh); doctor.sh and validate-config.sh exit 0 is implied by pre-commit passing (not captured separately). The 4 commits, including the Windows code commit 46c4ec7, landed before AC-T2 was fully met. Still open: the commit-msg good and bad cases and a planted gitleaks token are not recorded on the real clone.
 
 ## Tasks
 
@@ -230,7 +230,7 @@ Status: see the header. Final design: ADR-0015 (`docs/architecture/decisions/001
 Commits: `git log --oneline 4568249..8316e94` (20 commits, fast-forwarded to origin/main). In the fix stack (subject-matched): 9a4c97d, 7df0c1f, 445a854, 3ef84a6, 6862dfc, 8beb383, f7619da, 493b69f, e8f7bcc (subjects in ticket.md). Earlier T-0047 commits (`git log --oneline --grep T-0047`): 28c588b (plan), 400a30b (bootstrap script and tests). 4568249 is T-0052/ADR-0016, not T-0047.
 Evidence: `evidence/final-run-2026-11-16.md`.
 
-Open items (a)-(e), owners and follow-ups: ticket.md, "Open after the final run". AC-T2 stays open until (a), a real commit from the Windows clone.
+Open items (a)-(e), owners and follow-ups: ticket.md, "Open after the final run". AC-T2 stays open: (a) is resolved (4 Windows commits passed the hooks), but the commit-msg cases and the planted-token check are not recorded. Post-landing results: evidence file, "Post-landing verification".
 
 ## Notes
 

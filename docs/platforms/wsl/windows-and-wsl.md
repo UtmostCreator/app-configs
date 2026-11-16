@@ -23,7 +23,7 @@ The WSL distro = NixOS-WSL, the same path as the NixOS desktop (sys-setup + stan
 
 ## Docker
 
-- One engine: NixOS `virtualisation.docker` (planned).
+- One engine: NixOS `virtualisation.docker` (unverified on WSL).
 - Enable: `sudo ENABLE_DOCKER=1 sys-setup --apply` (unverified on WSL). Add `DOCKER_GROUP=1` for user access, or `DOCKER_ROOTLESS=1`. Not `docker.io`, not `wsl-docker.sh`.
 - Windows `docker` (planned, Milestone 2): `docker.cmd` shim to the WSL docker CLI.
 - Shim: no daemon or binary on Windows, no TCP listener.

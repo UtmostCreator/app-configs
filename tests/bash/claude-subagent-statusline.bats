@@ -471,3 +471,58 @@ model_cols() {
     [ "$output" = "e=▶ E Opus 5 ctx 1%" ]
     [ "${#output}" -le 22 ]
 }
+
+# --- Token colour (no window size: the row shows the raw "tok 298k") --------------------
+
+# tok_code <tokens> [columns]: the SGR code directly before "tok N" (empty when plain).
+tok_code() {
+    bash "$SCRIPT" <<<"$(jq -n --argjson a "$(task a A claude-opus-5 high completed "$1" 0 5)" --argjson c "${2:-120}" '{columns: $c, tasks: [$a]}')" \
+        | jq -r .content | { grep -o $'\033\\[[0-9;]*mtok' || true; } | sed -E 's/^\x1b\[([0-9;]*)mtok$/\1/'
+}
+
+@test "token scale without a window: under 50k dim, under 150k neutral, under 400k orange, else red" {
+    [ "$(tok_code 0)" = "2" ]
+    [ "$(tok_code 49999)" = "2" ]
+    [ -z "$(tok_code 50000)" ]
+    [ -z "$(tok_code 149999)" ]
+    [ "$(tok_code 150000)" = "38;5;208" ]
+    [ "$(tok_code 399999)" = "38;5;208" ]
+    [ "$(tok_code 400000)" = "0;31" ]
+    [ "$(tok_code 2000000)" = "0;31" ]
+}
+
+@test "token colour: the narrow layout colours the count the same way" {
+    [ "$(tok_code 49999 50)" = "2" ]
+    [ "$(tok_code 400000 50)" = "0;31" ]
+}
+
+@test "token colour: a known window keeps the ctx percent scale and shows no tok field" {
+    out=$(bash "$SCRIPT" <<<"$(jq -n --argjson a "$(task a A claude-opus-5 high completed 20000 200000 5)" '{columns: 120, tasks: [$a]}')" | jq -r .content)
+    [[ "$out" != *tok* ]]
+    [ "$(ctx_code 20000)" = "0;32" ]
+}
+
+@test "token colour: a missing token count adds no field and no colour" {
+    input=$(jq -n --argjson a "$(task n N claude-opus-5 high completed 0 0 5 | jq 'del(.tokenCount)')" '{columns: 120, tasks: [$a]}')
+    out=$(bash "$SCRIPT" <<<"$input" | jq -r .content)
+    [[ "$out" != *tok* ]]
+}
+
+@test "token colour: NO_COLOR gives no escapes and the text is unchanged at every width" {
+    for cols in 28 50 59 60 80 120 200; do
+        input=$(jq -n --argjson a "$(task a Alpha claude-opus-5 high running 298000 0 2000)" --argjson c "$cols" '{columns: $c, tasks: [$a]}')
+        colour=$(bash "$SCRIPT" <<<"$input" | jq -r .content)
+        plain=$(NO_COLOR=1 bash "$SCRIPT" <<<"$input" | jq -r .content)
+        [[ "$plain" != *$'\033'* ]]
+        [ "$plain" = "$(sed 's/\x1b\[[0-9;]*m//g' <<<"$colour")" ]
+        [[ "$plain" == *"tok 298k"* ]]
+    done
+    [ "$(NO_COLOR=1 bash "$SCRIPT" <<<"$(jq -n --argjson a "$(task a Alpha claude-opus-5 high running 298000 0 2000)" '{columns: 120, tasks: [$a]}')" | jq -r .content)" = "▶ Alpha 33m20 · tok 298k │ Opus 5:H" ]
+}
+
+@test "token colour: the elapsed time stays tinted next to a coloured token count" {
+    input=$(jq -n --argjson a "$(task a Alpha claude-opus-5 high running 298000 0 2000)" '{columns: 120, tasks: [$a]}')
+    out=$(bash "$SCRIPT" <<<"$input" | jq -r .content)
+    [[ "$out" == *$'\033[38;5;167m33m20\033[0m'* ]]
+    [[ "$out" == *$'\033[38;5;208mtok 298k\033[0m'* ]]
+}

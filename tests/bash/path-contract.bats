@@ -12,6 +12,7 @@
 load ../lib/contract
 
 setup() {
+    command -v python3 >/dev/null || skip "python3 not installed; run: nix shell nixpkgs#python3 -c bats tests/bash/path-contract.bats"
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
     SCAN="$REPO_ROOT/tests/lib/find-missing-paths.py"
     ALLOW="$BATS_TEST_TMPDIR/allow.txt"

@@ -59,8 +59,8 @@ Not owners: OS base directories (`/usr/bin`, `/bin`, `/usr/sbin`, the macOS `/us
 | Binary | Where it comes from | Why both stay |
 |---|---|---|
 | fish | NixOS `programs.fish` (`ops/system-setup.sh:512`, programs.fish.enable) and Home Manager (`nix/modules/home/cli.nix:21`) | the system copy is the login shell; the HM copy is the interactive tool set |
-| git, curl | HM `nix/modules/common/packages.nix:8-16` on every host; the NixOS-WSL system (`ops/system-setup.sh:504-506`); curl also comes from the NixOS base packages on the desktop, while git is not in the desktop system path | bootstrap needs them before Home Manager exists |
-| docker | HM `nix/modules/home/dev.nix:88` and `nix/modules/nixos/docker.nix:59`. The HM `docker` is the full package (CLI plus moby daemon binaries; dockerd resolves to moby), not only the CLI; ADR-0030 proposes docker-client as an optional row | HM is the only owner on hosts without NixOS (Ubuntu WSL, linux-cli non-NixOS, macOS); on NixOS the daemon module adds a second copy (see ADR-0030) |
+| git, curl | HM `nix/modules/common/packages.nix:8-16` on every host; the NixOS-WSL system (`ops/system-setup.sh:503-505`); curl also comes from the NixOS base packages on the desktop, while git is not in the desktop system path | bootstrap needs them before Home Manager exists |
+| docker | HM `nix/modules/home/dev.nix:88` and `nix/modules/nixos/docker.nix:59`. The HM `docker` is the full package (CLI plus moby daemon binaries; dockerd resolves to moby), not only the CLI; ADR-0030 proposes docker-client as an optional row | until the 0030 docker-client row is decided, the allowlist covers the full HM docker package (including dockerd, containerd and runc); docker-client still ships the HM docker binary. HM is the only owner on hosts without NixOS (Ubuntu WSL, linux-cli non-NixOS, macOS); on NixOS the daemon module adds a second copy (see ADR-0030) |
 
 The HM copy of an allowlisted duplicate is never removed.
 
@@ -69,8 +69,8 @@ Found by the live inventory of the linux-desktop host. Each is proposed for remo
 
 | Item | Where it comes from | Follow-up | Status |
 |---|---|---|---|
-| brave, keepassxc, neovim, vscode, opencode, wget (system copies) | the hand-edited /etc/nixos/configuration.nix environment.systemPackages (lines 150-161). HM wins: vscode 1.119 vs 1.146, neovim 0.12.2 vs 0.12.6, opencode 1.15.13 vs 2.2.6 | remove the system copies: T-0029 | Pr |
-| firefox (system copy) | programs.firefox.enable in the hand-edited /etc/nixos/configuration.nix (line 146) | remove: T-0029 | Pr |
+| brave, keepassxc, neovim, vscode, opencode, wget (system copies) | the hand-edited /etc/nixos/configuration.nix environment.systemPackages (lines 150-161 as of 2026-11-16; machine-local, will drift). HM wins: vscode 1.119 vs 1.146, neovim 0.12.2 vs 0.12.6, opencode 1.15.13 vs 2.2.6 | remove the system copies: T-0029 | Pr |
+| firefox (system copy) | programs.firefox.enable in the hand-edited /etc/nixos/configuration.nix (line 146 as of 2026-11-16; machine-local, will drift) | remove: T-0029 | Pr |
 | universal-ctags (system copy) | the hand-edited /etc/nixos/configuration.nix environment.systemPackages, not `nix/modules/nixos/default.nix` (that module has no consumer; see T-0029:34 and :42). Unintended: no reason recorded in commit 315b9f5 | remove the system copy: T-0029 | Pr |
 | gcc, gnumake, gnupg, python312, sqlite, yamllint (imperative nix profile elements) | outside the four-element allowlist | per element: keep (move into Home Manager) or remove (new follow-up row) | Pr |
 | rg, fd, jq, node, shellcheck, actionlint (mise global shadows of the HM copies) | mise globals | remove: ADR-0014 makes mise per-project only, and ADR-0021 asks for one owner | Pr |
@@ -80,6 +80,7 @@ Found by the live inventory of the linux-desktop host. Each is proposed for remo
 - `live_owner_duplicates` in `ops/audit.sh --live` (planned, not yet written; the check, not the ADRs). It skips what `live_nix_profile` already reports.
 - Severity WARN, not FAIL: the repo-audit timer runs `--live` and raises a toast on any FAIL (`nix/modules/home/scripts/repo-audit.sh:71-77`).
 - Tests: planned tests/bash/audit-owner-duplicates.bats (not yet created), with seeded directories, one allowlisted and one unlisted duplicate. A change to `ops/audit.sh` or `ops/lib/*` runs the full `bats tests/bash` suite (AGENTS.md).
+- The planned check must define how it recognises the NixOS base and desktop-module set (for example system-path entries not declared by the repo systemPackages or programs.* settings or by the hand-edited configuration, computed from an eval or from a named static list), and the planned audit-owner-duplicates.bats gets a case for it. The method is left to follow-up I-01.
 
 ## Consequences
 - Nothing is applied by this ADR: no host profile change, no removal, no code. ADR-0011 gets a note.

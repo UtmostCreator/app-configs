@@ -30,7 +30,7 @@ One status per row.
 | Firefox (secondary) | Nix / cask / Mozilla.Firefox | LibreWolf; Chromium | P+W | Pr | Record |
 | Edge | built in, never the default browser. Autolaunch is ADR-0020's. Its PDF role is in ADR-0036 only | none | P+W | Pr | Record |
 | Safari | built in, not the default | none | P+W | Pr | Record |
-| Epiphany (GNOME Web) | GNOME base on Linux, exempt from parity (OS tag); removal via environment.gnome.excludePackages is a T-0029 option | none | P+W | Pr | Record |
+| Epiphany (GNOME Web) | GNOME base on Linux, exempt from parity (tag OS, not Exempt); removal via environment.gnome.excludePackages is a T-0029 option | none | P+W | Pr | Record |
 | duti (brew) | used by `nix/modules/home/scripts/set-default-browser-macos.sh` | SwiftDefaultApps; set by hand | P+W | Pr | Record |
 | Mozilla Maintenance Service | optional; removing it means Firefox updates ask for UAC | none | P+W | Pr | Manual |
 

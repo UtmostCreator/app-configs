@@ -16,8 +16,9 @@ Primary interactive shell is **fish**; zsh and bash configs are still shipped.
 - **Atuin** — searchable shell history (owns Ctrl-R).
 - **bash** — `~/.bashrc` auto-`exec`s into fish for interactive terminals
   (escape hatch: `NO_FISH=1 bash`); also the fallback when fish is absent.
-- **zsh** — still managed (`~/.zshrc`, Oh My Zsh + the zsh-autosuggestions /
-  zsh-syntax-highlighting plugins from `nix/modules/home/shell-packages.nix`)
+- **zsh** — still managed (`~/.zshrc`, with the zsh-autosuggestions /
+  zsh-syntax-highlighting plugins from `nix/modules/home/shell-packages.nix`; on macOS the
+  template sources zsh-syntax-highlighting from Homebrew; Oh My Zsh is optional)
   for hosts/users who prefer it. Not the default on this setup.
 
 On **NixOS**, making fish the *login* shell is a system-level change — see
@@ -67,9 +68,9 @@ NixOS specifics.
 
 ## Prerequisites
 
-`fish`, `starship`, `atuin`, and (for zsh users) `zsh-autosuggestions` /
+`fish`, `starship`, `atuin`, `zsh-autosuggestions` and
 `zsh-syntax-highlighting` all come from Home Manager — see
-`repo-docs/migration-package-ownership.md`. Only zsh users need Oh My Zsh, installed
+`repo-docs/migration-package-ownership.md`. Oh My Zsh is optional (zsh users only), installed
 once per host outside the dotfiles tree:
 
 ```bash

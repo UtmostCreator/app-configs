@@ -17,6 +17,9 @@ $RealInvokeNative = ${function:Invoke-Native}
 $RealGetToolVersion = ${function:Get-ToolVersion}
 $RealGetHooksPath = ${function:Get-HooksPath}
 $RealGetWindowsRelation = ${function:Get-WindowsRelation}
+$RealResolveGitBash = ${function:Resolve-GitBash}
+$RealInvokeHooksInstaller = ${function:Invoke-HooksInstaller}
+$RealGetHookEnvOverrides = ${function:Get-HookEnvOverrides}
 $RealTestLefthookHooks = ${function:Test-LefthookHooks}
 $RealInvokeWinget = ${function:Invoke-Winget}
 $RealInvokeLefthook = ${function:Invoke-Lefthook}
@@ -51,6 +54,7 @@ $Sigs = @{
     'Enable-SystemRestore' = '[string]$Drive'
     'Get-FreeBytes'        = '[string]$Path'
     'Get-WindowsRelation'  = '[string]$Head'
+    'Invoke-HooksInstaller' = '[string]$Bash, [string]$Mode'
     'Invoke-Native'        = '[string]$ExePath, [string[]]$Arguments, [switch]$Passthrough, [int]$TimeoutSeconds, [string]$WorkingDirectory, [int]$HeartbeatSeconds'
     'Get-ToolVersion'      = '[string]$Name, [string[]]$VersionArgs'
     'Resolve-Program'      = '[string]$Name'
@@ -318,6 +322,25 @@ function Initialize-Happy {
     Stub 'Get-UtcStamp' { '20260101T000000Z' }
     $script:WinRel = @{ Src = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; Rel = 'same' }
     Stub 'Get-WindowsRelation' { param([string]$Head) $script:WinRel }
+    $script:Installer = $false
+    $script:InstallerBash = 'C:/Git/bin/bash.exe'
+    $script:CheckSeq = @(0)
+    $script:CheckN = 0
+    $script:CheckOut = 'check out'
+    $script:InstallCode = 0
+    $script:HookEnv = @()
+    Stub 'Test-HooksInstaller' { $script:Installer }
+    Stub 'Resolve-GitBash' { $script:InstallerBash }
+    Stub 'Get-HookEnvOverrides' { @($script:HookEnv) }
+    Stub 'Invoke-HooksInstaller' {
+        param([string]$Bash, [string]$Mode)
+        if ($Mode -eq 'check') {
+            $c = $script:CheckSeq[[math]::Min($script:CheckN, $script:CheckSeq.Count - 1)]
+            $script:CheckN++
+            return @{ Code = $c; Out = $script:CheckOut; Err = '' }
+        }
+        @{ Code = $script:InstallCode; Out = 'install out'; Err = '' }
+    }
     Stub 'Invoke-WslRaw' {
         param([string[]]$Arguments, [switch]$Passthrough, [int]$TimeoutSeconds)
         $script:Raw.Add([pscustomobject]@{ A = $Arguments; Pt = [bool]$Passthrough; Timeout = $TimeoutSeconds; Log = $(if ($script:LogLines) { $script:LogLines.Count } else { 0 }) })
@@ -2613,6 +2636,226 @@ Test-Case 'R3b step 12 announces prompts and silent phases; its failure line is 
     Assert-Eq $beats.Count 0 'no heartbeat lines around the interactive step'
 }
 
+function Get-InstallerCalls {
+    return @($script:Calls | Where-Object { $_.Name -eq 'Invoke-HooksInstaller' })
+}
+
+Test-Case 'H1 installer present and --check exits 0: hooks intact, nothing is installed' {
+    Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(0)
+    Assert-Eq (Run-Boot @{ ToolsOnly = $true }) 0 'exit (tools only: the Windows report also reads core.hooksPath)'
+    Assert-Log 'step C: git hooks intact \(ops/install-git-hooks.sh --check\)'
+    $c = @(Get-InstallerCalls)
+    Assert-Eq $c.Count 1 'one call'
+    Assert-Eq $c[0].Args['Mode'] 'check' 'check only'
+    Assert-Eq $c[0].Args['Bash'] 'C:/Git/bin/bash.exe' 'Git for Windows bash'
+    Assert-Eq @(Get-SeamCalls 'Invoke-Lefthook').Count 0 'lefthook install is not used'
+    Assert-Eq @(Get-SeamCalls 'Get-HooksPath').Count 0 'core.hooksPath is left to the installer'
+}
+
+Test-Case 'H2 --check exits 1: install, then --check again' {
+    Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(1, 0)
+    Assert-Eq (Run-Boot @{}) 0 'exit'
+    $c = @(Get-InstallerCalls)
+    Assert-Eq (($c | ForEach-Object { $_.Args['Mode'] }) -join ',') 'check,install,check' 'order'
+    Assert-Announced $c[1] 'step C: installing the git hooks with ops/install-git-hooks.sh \(a few seconds\)' 'install announced'
+    Assert-Announced $c[0] 'step C: checking the git hooks with ops/install-git-hooks.sh --check' 'first check announced'
+    Assert-Announced $c[2] 'step C: checking the git hooks again' 'second check announced'
+    Assert-Log 'step C: git hooks installed and intact'
+    Assert-Eq @(Get-SeamCalls 'Invoke-Lefthook').Count 0 'lefthook install is not used'
+}
+
+Test-Case 'H3 the installer fails: output and a clear warning, the run continues, a closing notice ends it' {
+    Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(1); $script:InstallCode = 1
+    Assert-Eq (Run-Boot @{}) 0 'the run still succeeds: hooks are not needed to provision WSL'
+    Assert-Log 'step C: installer: install out'
+    Assert-Log 'step C: WARNING: git hooks are NOT installed on Windows \(ops/install-git-hooks.sh exited 1\); commits from this clone will be blocked or unguarded until that is fixed\. ops/install-git-hooks.sh refuses a linked worktree, a foreign core.hooksPath, a missing git or lefthook, git older than 2.31, or a HEAD without ops/githooks; read its output above, fix that, then re-run'
+    Assert-Eq @(Get-InstallerCalls).Count 2 'no second --check after a failed install'
+    Assert-Log 'step 0: no reboot pending'
+    Assert-Log 'step 12: running ops/install.sh'
+    Assert-True ($script:LogLines[$script:LogLines.Count - 1] -match '^\[bootstrap\] NOTICE: git hooks are NOT installed on Windows \(ops/install-git-hooks.sh exited 1\); commits from this clone will be blocked or unguarded until that is fixed \(see the step C warning above\)$') 'the last line of the run is the closing notice'
+}
+
+Test-Case 'H4 --check still failing after the install, or an unexpected --check code: warning and continue' {
+    Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(1, 1)
+    Assert-Eq (Run-Boot @{}) 0 'still not intact'
+    Assert-Log 'WARNING: git hooks are NOT installed on Windows \(the installer ran but --check still exits 1\)'
+    Assert-True ($script:LogLines[$script:LogLines.Count - 1] -match 'NOTICE: git hooks are NOT installed on Windows') 'closing notice'
+    Reset-Stubs; Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(127)
+    Assert-Eq (Run-Boot @{}) 0 'check 127'
+    Assert-Log 'WARNING: git hooks are NOT installed on Windows \(ops/install-git-hooks.sh --check exited 127, expected 0 or 1\)'
+    Assert-Eq @(Get-InstallerCalls).Count 1 'nothing installed on an unexpected code'
+    Assert-Log 'step 12: running ops/install.sh'
+}
+
+Test-Case 'H13 -ToolsOnly and dry runs: the warning does not change the exit code; healthy runs have no notice' {
+    Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(1); $script:InstallCode = 1
+    Assert-Eq (Run-Boot @{ ToolsOnly = $true }) 0 'tools only'
+    Assert-True ($script:LogLines[$script:LogLines.Count - 1] -match 'NOTICE: git hooks are NOT installed') 'closing notice after -ToolsOnly'
+    Reset-Stubs; Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(1)
+    Assert-Eq (Run-Boot @{ DryRun = $true }) 0 'dry run with hooks not intact'
+    Assert-True (-not ((Get-Log) -match 'NOTICE')) 'a dry run that only reports "would run" has no notice'
+    Reset-Stubs; Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(0)
+    Assert-Eq (Run-Boot @{}) 0 'healthy'
+    Assert-True (-not ((Get-Log) -match 'NOTICE|WARNING: git hooks')) 'no notice when the hooks are intact'
+    Reset-Stubs; Initialize-Happy
+    $script:Installer = $true; $script:InstallerBash = $null
+    Assert-Eq (Run-Boot @{}) 3 'no Git bash keeps exit 3'
+    Assert-True (-not ((Get-Log) -match 'NOTICE')) 'no notice: the run stopped on a missing precondition'
+}
+
+Test-Case 'H14 installer output is shown even on exit 0, and a Start-Wait precedes each --check' {
+    Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(0); $script:CheckOut = 'warning: the pre-push hook is stale'
+    Assert-Eq (Run-Boot @{ ToolsOnly = $true }) 0 'exit'
+    Assert-Log 'step C: installer: warning: the pre-push hook is stale'
+    Assert-Log 'step C: git hooks intact'
+    Reset-Stubs; Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(0); $script:CheckOut = ''
+    Assert-Eq (Run-Boot @{ ToolsOnly = $true }) 0 'exit with no output'
+    Assert-True (-not ((Get-Log) -match 'step C: installer:')) 'nothing is printed when there is no output'
+    Reset-Stubs; Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(1, 0)
+    Assert-Eq (Run-Boot @{ ToolsOnly = $true }) 0 'install flow'
+    $c = @(Get-InstallerCalls)
+    Assert-Announced $c[0] 'step C: checking the git hooks with ops/install-git-hooks.sh --check \(a few seconds\)' 'first check'
+    Assert-Announced $c[2] 'step C: checking the git hooks again with ops/install-git-hooks.sh --check \(a few seconds\)' 'second check'
+}
+
+Test-Case 'H5 no Git for Windows bash: a clear message, exit 3, nothing is run' {
+    Initialize-Happy
+    $script:Installer = $true; $script:InstallerBash = $null
+    Assert-Eq (Run-Boot @{}) 3 'exit'
+    Assert-Log 'step C: Git for Windows bash was not found \(the WindowsApps and WSL bash are never used\); install Git for Windows, then re-run'
+    Assert-Eq @(Get-InstallerCalls).Count 0 'no installer call'
+    Assert-Eq @(Get-SeamCalls 'Invoke-Lefthook').Count 0 'no lefthook fallback'
+}
+
+Test-Case 'H6 installer absent (today''s main): the lefthook path is unchanged' {
+    Initialize-Happy
+    $script:Installer = $false; $script:HooksOk = $false
+    Assert-Eq (Run-Boot @{}) 0 'exit'
+    Assert-Eq @(Get-SeamCalls 'Invoke-Lefthook').Count 1 'lefthook install runs as before'
+    Assert-Eq @(Get-InstallerCalls).Count 0 'the installer is not touched'
+    Assert-Eq @(Get-SeamCalls 'Resolve-GitBash').Count 0 'no bash lookup'
+}
+
+Test-Case 'H7 dry run: only --check, and what a real run would do' {
+    Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(1)
+    Assert-Eq (Run-Boot @{ ToolsOnly = $true; DryRun = $true }) 0 'exit'
+    Assert-Eq (($script:Calls | Where-Object { $_.Name -eq 'Invoke-HooksInstaller' } | ForEach-Object { $_.Args['Mode'] }) -join ',') 'check' 'check only'
+    Assert-Log '\[dry-run\] step C: git hooks are not intact \(--check exit 1\); would run: bash ops/install-git-hooks.sh \(Git for Windows bash: C:/Git/bin/bash.exe\), then --check again'
+    Reset-Stubs; Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(0)
+    Assert-Eq (Run-Boot @{ ToolsOnly = $true; DryRun = $true }) 0 'intact'
+    Assert-Log '\[dry-run\] step C: git hooks intact'
+}
+
+Test-Case 'H8 environment variables the hooks refuse are named in a warning, not a failure' {
+    Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(0); $script:HookEnv = @('LEFTHOOK', 'SKIP_HOOKS')
+    Assert-Eq (Run-Boot @{}) 0 'exit'
+    Assert-Log 'step C: warning: LEFTHOOK is set in your environment; the repo''s git hooks refuse it'
+    Assert-Log 'step C: warning: SKIP_HOOKS is set in your environment'
+    $saved = @{}
+    foreach ($n in @('LEFTHOOK', 'LEFTHOOK_VERBOSE', 'LEFTHOOK_QUIET', 'LEFTHOOK_EXCLUDE', 'SKIP_HOOKS')) { $saved[$n] = [Environment]::GetEnvironmentVariable($n); [Environment]::SetEnvironmentVariable($n, '1') }
+    try {
+        $got = @(& $RealGetHookEnvOverrides | Sort-Object)
+        Assert-Eq ($got -join ',') 'LEFTHOOK,LEFTHOOK_EXCLUDE,SKIP_HOOKS' 'LEFTHOOK_VERBOSE and LEFTHOOK_QUIET are allowed'
+    } finally {
+        foreach ($n in $saved.Keys) { [Environment]::SetEnvironmentVariable($n, $saved[$n]) }
+    }
+}
+
+Test-Case 'H9 the script never uninstalls lefthook or unsets the hooks path' {
+    $text = [IO.File]::ReadAllText($ScriptPath)
+    Assert-True (-not ($text -match '(?i)lefthook\s+uninstall')) 'no lefthook uninstall anywhere'
+    Assert-True (-not ($text -match '(?i)core\.hooksPath\s+--unset|--unset\s+core\.hooksPath|config\s+--unset')) 'no unset of the hooks path'
+    Assert-True (-not ($text -match 'Remove-Item[^\r\n]*(hooks|app-configs-hooks)')) 'nothing removes the hooks directory'
+    Initialize-Happy
+    $script:Installer = $true; $script:CheckSeq = @(1, 0)
+    Assert-Eq (Run-Boot @{}) 0 'exit'
+    Assert-Eq @(Get-SeamCalls 'Invoke-Lefthook').Count 0 'lefthook is not run with the installer present'
+}
+
+Test-Case 'H10 Resolve-GitBash derives bash from the git install and never uses the WSL launcher' {
+    $root = Join-Path $script:T 'gfw'
+    $saved = $env:ProgramFiles
+    $env:ProgramFiles = Join-Path $script:T 'no-programfiles'
+    try {
+        # (a) cmd\git.exe next to bin\bash.exe
+        foreach ($p in @('Git\cmd', 'Git\bin')) { [void](New-Item -ItemType Directory -Force -Path (Join-Path $root $p)) }
+        [IO.File]::WriteAllText((Join-Path $root 'Git\cmd\git.exe'), 'x'); [IO.File]::WriteAllText((Join-Path $root 'Git\bin\bash.exe'), 'x')
+        Stub 'Resolve-Program' { param([string]$Name) if ($Name -eq 'git') { Join-Path $root 'Git\cmd\git.exe' } else { 'C:\Windows\System32\bash.exe' } }
+        Assert-Eq (& $RealResolveGitBash) (Join-Path $root 'Git\bin\bash.exe') 'bin\bash.exe'
+        Assert-Eq @($script:Calls | Where-Object { $_.Name -eq 'Resolve-Program' -and $_.Args['Name'] -eq 'bash' }).Count 0 'the PATH bash is never resolved'
+        # (b) mingw64\bin\git.exe, bash under usr\bin
+        foreach ($p in @('G2\mingw64\bin', 'G2\usr\bin')) { [void](New-Item -ItemType Directory -Force -Path (Join-Path $root $p)) }
+        [IO.File]::WriteAllText((Join-Path $root 'G2\mingw64\bin\git.exe'), 'x'); [IO.File]::WriteAllText((Join-Path $root 'G2\usr\bin\bash.exe'), 'x')
+        Stub 'Resolve-Program' { param([string]$Name) Join-Path $root 'G2\mingw64\bin\git.exe' }
+        Assert-True ($null -eq (& $RealResolveGitBash)) 'usr\bin\bash.exe alone is never used (no sed, dirname or mktemp without a login shell)'
+        [void](New-Item -ItemType Directory -Force -Path (Join-Path $root 'G2\bin')); [IO.File]::WriteAllText((Join-Path $root 'G2\bin\bash.exe'), 'x')
+        Assert-Eq (& $RealResolveGitBash) (Join-Path $root 'G2\bin\bash.exe') 'git under mingw64\bin: the install root bin\bash.exe'
+        # (c) a git under WindowsApps (or System32) is never accepted
+        foreach ($p in @('WindowsApps\G3\cmd', 'WindowsApps\G3\bin')) { [void](New-Item -ItemType Directory -Force -Path (Join-Path $root $p)) }
+        [IO.File]::WriteAllText((Join-Path $root 'WindowsApps\G3\cmd\git.exe'), 'x'); [IO.File]::WriteAllText((Join-Path $root 'WindowsApps\G3\bin\bash.exe'), 'x')
+        Stub 'Resolve-Program' { param([string]$Name) Join-Path $root 'WindowsApps\G3\cmd\git.exe' }
+        Assert-True ($null -eq (& $RealResolveGitBash)) 'a WindowsApps bash is rejected'
+        # (d) no git at all
+        Stub 'Resolve-Program' { param([string]$Name) $null }
+        Assert-True ($null -eq (& $RealResolveGitBash)) 'no git, no bash'
+        # (e) the ProgramFiles install is the fallback
+        $env:ProgramFiles = Join-Path $root 'PF'
+        [void](New-Item -ItemType Directory -Force -Path (Join-Path $root 'PF\Git\bin')); [IO.File]::WriteAllText((Join-Path $root 'PF\Git\bin\bash.exe'), 'x')
+        Assert-Eq (& $RealResolveGitBash) (Join-Path $root 'PF\Git\bin\bash.exe') 'ProgramFiles\Git fallback'
+    } finally { $env:ProgramFiles = $saved }
+}
+
+Test-Case 'H11 the installer runs with the resolved bash, from the repo root, with the script as a relative path' {
+    $script:NativeCalls = @()
+    Stub 'Invoke-Native' {
+        param([string]$ExePath, [string[]]$Arguments, [switch]$Passthrough, [int]$TimeoutSeconds, [string]$WorkingDirectory, [int]$HeartbeatSeconds)
+        $script:NativeCalls += , @{ Exe = $ExePath; Args = $Arguments; Wd = $WorkingDirectory; Timeout = $TimeoutSeconds }
+        @{ Code = 0; Out = ''; Err = '' }
+    }
+    [void](& $RealInvokeHooksInstaller -Bash 'C:/Git/bin/bash.exe' -Mode 'check')
+    [void](& $RealInvokeHooksInstaller -Bash 'C:/Git/bin/bash.exe' -Mode 'install')
+    Assert-Eq (($script:NativeCalls | ForEach-Object { $_.Exe }) -join ',') 'C:/Git/bin/bash.exe,C:/Git/bin/bash.exe' 'never a bare bash'
+    Assert-Eq ($script:NativeCalls[0].Args -join ' ') 'ops/install-git-hooks.sh --check' 'check args'
+    Assert-Eq ($script:NativeCalls[1].Args -join ' ') 'ops/install-git-hooks.sh' 'install args'
+    Assert-Eq $script:NativeCalls[0].Wd $script:RepoRoot 'cwd is the repo root'
+    Assert-Eq $script:NativeCalls[0].Timeout 300 'bounded'
+}
+
+Test-Case 'H12 a linked worktree (.git is a file) never reaches the installer' {
+    Initialize-Happy
+    $script:Installer = $true
+    Stub 'Test-RepoGitDir' { $false }
+    Assert-Eq (Run-Boot @{ ToolsOnly = $true }) 0 'tools only'
+    Assert-Log 'hooks skipped'
+    Assert-Eq @(Get-InstallerCalls).Count 0 'no installer call'
+}
+
+Test-Case 'B1 the diverged-clone advice tells how to get personal.yaml back into the new clone (default user, fish-safe)' {
+    Initialize-Happy
+    $script:W.Rel = 'other'; $script:W.HeadSha = ('b' * 40)
+    Assert-Eq (Run-Boot @{}) 1 'exit'
+    Assert-Log 'If the gitignored home/.chezmoidata/personal.yaml exists in the moved folder \(it stays there\), after the re-run copy it into the new clone as the default user, so the new folder and file are yours \(this overwrites the one install.sh seeded from the example\): wsl -d NixOS -- sh -lc ''test -f /home/tester/app-configs.old-20260101T000000Z/home/.chezmoidata/personal.yaml && mkdir -p /home/tester/app-configs/home/.chezmoidata && cp -p /home/tester/app-configs.old-20260101T000000Z/home/.chezmoidata/personal.yaml /home/tester/app-configs/home/.chezmoidata/personal.yaml'', then run this script again so install.sh applies it'
+    $m = [regex]::Match((Get-Log), "wsl -d NixOS -- sh -lc '([^']*)'")
+    Assert-True $m.Success 'the default-user form: wsl -d NixOS -- sh -lc ''...'''
+    $p = '[A-Za-z0-9_./-]+'
+    Assert-True ($m.Groups[1].Value -match "^test -f $p && mkdir -p $p && cp -p $p $p$") 'only safe characters: no dollar sign, quote or backtick (the default user''s shell is fish)'
+    Assert-True (-not ($m.Value -match '-u root')) 'not run as root, so nothing in the new clone ends up root-owned'
+    Assert-True (-not ((Get-Log) -match 'personal\.yaml:|cat .*personal')) 'only the name is printed, never contents'
+}
 Test-Case 'F14 non-x64 Windows is refused with exit 1' {
     Initialize-Happy
     Stub 'Get-OsArch' { 'Arm64' }
@@ -2701,6 +2944,10 @@ Test-Case 'Z1 across the whole suite, every advised wsl command that uses --exec
         foreach ($m in [regex]::Matches($l, '\bwsl\b[^\r\n]*?\s--exec\s+(\S+)')) {
             $advice++
             Assert-True $m.Groups[1].Value.StartsWith('/') "advised --exec program must be absolute: $($m.Value)"
+        }
+        foreach ($m in [regex]::Matches($l, '\bwsl\b[^\r\n]*?\s-d NixOS -- (\S+)')) {
+            $advice++
+            Assert-True (@('sh', 'bash') -contains $m.Groups[1].Value) "advised program after -- must be sh or bash: $($m.Value)"
         }
         foreach ($m in [regex]::Matches($l, '\bwsl\b[^\r\n]*?\s-u root -- (\S+)')) {
             $advice++

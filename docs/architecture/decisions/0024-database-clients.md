@@ -27,8 +27,8 @@ One status per row. HeidiSQL is Exempt (an owner-decision exemption; no R1 test 
 
 | Job | L / M / Win | Alternatives | P/W | Status | Now |
 |---|---|---|---|---|---|
-| Beekeeper Studio Community | `nix/modules/home/gui.nix`, ungrouped (nixpkgs beekeeper-studio 6.2.1 builds on Linux and darwin, verified) / cask (unverified) / manual | DBeaver CE; DataGrip | P+W | DU | Deferred (follow-up I-06) |
-| DBeaver Community | none / cask dbeaver-community (unverified; nixpkgs dbeaver-bin 26.2.4 also builds on darwin, verified) / none | none | P+W | DU | Deferred (I-06) |
+| Beekeeper Studio Community | `nix/modules/home/gui.nix`, ungrouped (nixpkgs beekeeper-studio 6.2.1 is available for Linux and aarch64-darwin in the pinned nixpkgs (meta.platforms evaluated, not built)) / cask (unverified) / manual | DBeaver CE; DataGrip | P+W | DU | Deferred (follow-up I-06) |
+| DBeaver Community | none / cask dbeaver-community (unverified; nixpkgs dbeaver-bin 26.2.4: version confirmed by the reviewer; the darwin availability is attributed to the NixOS session's evaluation) / none | none | P+W | DU | Deferred (I-06) |
 | HeidiSQL (Exempt) | none / none / manual, permanent | none | P+W (GPL) | DU | Manual |
 | Sequel Ace | none / cask, kept as is / none | none | P+W | D (inferred from the DBeaver answer) | Record |
 | mysql CLI | Nix `mariadb` (`nix/modules/home/dev.nix:181`, Linux only) / brew mysql-client (keg-only, reason stated) / none | mycli; usql | P+W | Pr | Record |

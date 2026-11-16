@@ -29,8 +29,8 @@ One status per row.
 |---|---|---|---|---|---|
 | Tailscale on W | none on any work host; W uses the employer VPN | none | W | DU | Deferred (follow-up below) |
 | Tailscale, NixOS desktop | system service, `ENABLE_TAILSCALE` defaults to 1 (`ops/system-setup.sh:219`) | NetBird; ZeroTier; Headscale | P | Pr | Record |
-| Tailscale, macOS | none (the host is W; a cask would need a T-0042 group) | same | P | Pr | Record |
-| Tailscale, WSL | off (ADR-0004) | same | W (ADR-0021 P4) | Pr | Record |
+| Tailscale, macOS | none (the macOS host is W per ADR-0021 P4; a cask would need a T-0042 group) | same | P | Pr | Record |
+| Tailscale, WSL | off (ADR-0004; the WSL host is W per ADR-0021 P4) | same | P | Pr | Record |
 | Tailscale, Windows | manual | same | P | Pr | Manual |
 | SSH | OpenSSH everywhere; discard PuTTY | Termius | P+W | Pr | Record |
 | SFTP GUI (Windows, Ex) | WinSCP | Cyberduck; FileZilla (its installer bundles offers, so it is a suspect) | P+W | DU | Manual |

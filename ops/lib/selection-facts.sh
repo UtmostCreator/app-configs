@@ -34,6 +34,8 @@ SELECTION_PKG_NOISE=(dummy-xdg-mime-dirs)
 SELECTION_LIST_MAX=30
 
 _SEL_LIB_DIR="${BASH_SOURCE[0]%/*}"
+# shellcheck source=ops/lib/chezmoi-source.sh
+source "$_SEL_LIB_DIR/chezmoi-source.sh"
 # shellcheck source=ops/lib/wait-feedback.sh
 source "$_SEL_LIB_DIR/wait-feedback.sh"
 
@@ -424,14 +426,8 @@ SEL_CHEZMOI_SOURCE_ARG=""
 # compared by resolved path against <repo>/<.chezmoiroot>). Templates render
 # .chezmoi.sourceDir, so only the configured spelling matches what apply wrote.
 _sel_chezmoi_is_configured_source() {
-  local repo root="" configured want
-  repo="$(_sel_repo)"
-  if [[ -f "$repo/.chezmoiroot" ]]; then root="$(head -n1 "$repo/.chezmoiroot")"; fi
-  configured="$(chezmoi source-path </dev/null 2>/dev/null | head -n1)" || return 1
-  [[ -n "$configured" ]] || return 1
-  configured="$(readlink -f "$configured" 2>/dev/null)" || return 1
-  want="$(readlink -f "$repo${root:+/$root}" 2>/dev/null)" || return 1
-  [[ "$configured" == "$want" ]]
+  chezmoi_source_set "$(_sel_repo)"
+  [[ "${#CHEZMOI_SOURCE_ARGS[@]}" -eq 0 ]]
 }
 _sel_chezmoi_status() {
   local err="$SELECTION_WORK/chezmoi.err" first

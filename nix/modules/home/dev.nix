@@ -13,6 +13,10 @@ let
     set -euo pipefail
     export CBM_ALLOWED_ROOT=${lib.escapeShellArg "${config.home.homeDirectory}/Projects"}
 
+    # The binary rejects a missing root ("daemon session context was rejected",
+    # exit 1) and Restart=always would loop in `activating` on a fresh home.
+    ${pkgs.coreutils}/bin/mkdir -p "$CBM_ALLOWED_ROOT"
+
     # The MCP transport is stdio and exits on EOF. Keep stdin open so the
     # optional loopback-only graph UI remains available independently of an
     # editor session. Clients must not pass --ui=false: it disables the shared UI.

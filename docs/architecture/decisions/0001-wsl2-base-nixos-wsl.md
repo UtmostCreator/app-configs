@@ -26,3 +26,4 @@ WSL1 (refused in `docs/architecture/tool-ownership.md`; reason not recorded ther
 - Unverified until the T-0047 acceptance run: flakes on by default, wheelNeedsPassword, removal of the old `nixos` user.
 - Revisit when T-0029 is authorised (its sys-setup edits are kept minimal so it can absorb them).
 - Runbook: `docs/platforms/wsl/setup.md`.
+- Amended by ADR-0015: Ubuntu is a supported alternative under the same `wsl` profile (NixOS-WSL uses the wsl-nixos output); NixOS-WSL stays the default and the bootstrap targets only the distro named NixOS.

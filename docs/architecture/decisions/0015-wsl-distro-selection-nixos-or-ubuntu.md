@@ -1,7 +1,7 @@
 # ADR-0015: WSL distro: NixOS-WSL by default, Ubuntu supported; one profile
 Status: decided 2026-11-15 (design ruled; not yet implemented; Ubuntu path untested) · Date: 2026-11-15 · Amends: ADR-0001 · Sources: session decision 2026-11-15 (architect ruling), user-supplied outside research (unverified where it cites Microsoft docs), `nix/hosts/wsl/home.nix`, `ops/detect-host.sh`, `ops/system-setup.sh`
 
-Amends ADR-0001. The ADR index row and ADR-0001's consequence line are added after the first docs commits land.
+Amends ADR-0001 (see its Consequences).
 
 ## Decision
 - Both distros are supported under the one host profile `wsl`. Install only the one a machine needs: NixOS-WSL on the personal PC, Ubuntu where an employer requires a standard distro. They can coexist.

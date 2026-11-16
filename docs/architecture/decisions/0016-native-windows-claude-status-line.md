@@ -43,4 +43,4 @@ Windows hooks, model, theme, subagentStatusLine and env from the repo; installin
 - The step edits a user-owned file. Safeguards: refusals before any write, a backup per change, a temp file verified before the replace, a hash check, read-only and reparse-point refusals.
 - Residual risk R4 (T-0052): Claude-side disagreements. Claude Code may pick another bash (`CLAUDE_CODE_GIT_BASH_PATH`, PATH order) or start in a different environment (old PATH without jq, other HOME or LANG). Which home it resolves is unknown (inferred: `USERPROFILE`). The step reports `CLAUDE_CODE_GIT_BASH_PATH`; the human check H1 detects the rest.
 - Residual risk R6 (T-0052): an edit to the statusline script that breaks Git Bash is caught only when tests/windows runs on Windows (bats does not run there).
-- Status moves to "decided, not yet verified" in T5 and to verified after the human check H1 on a real run.
+- Status moves to decided-unverified in T5 and to verified after the human check H1 on a real run.

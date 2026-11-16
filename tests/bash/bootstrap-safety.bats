@@ -74,7 +74,7 @@ make_repo() { # make_repo <dir>: minimal repo layout chezmoi understands
         run chezmoi execute-template --config "$BATS_TEST_TMPDIR/chezmoi.toml" \
             --source "$r" --file "$r/home/executable_sys-update.tmpl"
         [ "$status" -eq 0 ]
-        [[ "$output" == *"DOTFILES_DIR=\"$r\""* ]]
+        printf '%s\n' "$output" | grep -qx "DOTFILES_DIR=\"$r\""
     done
 }
 
@@ -94,7 +94,77 @@ make_repo() { # make_repo <dir>: minimal repo layout chezmoi understands
     done
 }
 
+# Render the REAL sys-update template for repo $1 into $HOME/.local/bin.
+render_wrapper() {
+    cp "$REPO_ROOT/home/dot_local/bin/executable_sys-update.tmpl" "$1/home/"
+    mkdir -p "$HOME/.local/bin"
+    chezmoi execute-template --config "$BATS_TEST_TMPDIR/chezmoi.toml" --source "$1" \
+        --file "$1/home/executable_sys-update.tmpl" >"$HOME/.local/bin/sys-update"
+}
+
+wsl_chezmoi_stub() {
+    export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
+    printf '#!/bin/sh\necho "$HOME/.local/share/chezmoi"\n' >"$STUBS/chezmoi"
+    chmod +x "$STUBS/chezmoi"
+}
+
+@test "MCP update unit: NixOS-WSL default source dir is missing, the repo comes from the rendered sys-update wrapper" {
+    local wrapper="$REPO_ROOT/nix/modules/home/scripts/codebase-memory-mcp-update.sh" r="$BATS_TEST_TMPDIR/h/app-configs"
+    make_repo "$r"
+    wsl_chezmoi_stub
+    render_wrapper "$r"
+    PATH="$STUBS:$PATH" run bash "$wrapper"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "ran $r/ops/update-codebase-memory-mcp.sh --apply" ]]
+}
+
+@test "MCP update unit: an existing default source dir that is not the repo falls back to the wrapper" {
+    local wrapper="$REPO_ROOT/nix/modules/home/scripts/codebase-memory-mcp-update.sh" r="$BATS_TEST_TMPDIR/h/app-configs"
+    make_repo "$r"
+    wsl_chezmoi_stub
+    mkdir -p "$HOME/.local/share/chezmoi"
+    render_wrapper "$r"
+    PATH="$STUBS:$PATH" run bash "$wrapper"
+    [ "$status" -eq 0 ]
+    [[ "$output" == "ran $r/ops/update-codebase-memory-mcp.sh --apply" ]]
+}
+
+@test "MCP update unit: a wrapper naming a missing directory fails with 'cannot locate the repo'" {
+    wsl_chezmoi_stub
+    mkdir -p "$HOME/.local/bin"
+    printf 'DOTFILES_DIR="%s/gone"\n' "$BATS_TEST_TMPDIR" >"$HOME/.local/bin/sys-update"
+    PATH="$STUBS:$PATH" run bash "$REPO_ROOT/nix/modules/home/scripts/codebase-memory-mcp-update.sh"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"cannot locate the repo"* ]]
+}
+
+@test "both unit scripts locate the repo with no tool but bash and chezmoi on PATH (unit PATHs carry no sed/head)" {
+    # The audit and update units' PATHs are supersets of {bash, chezmoi}; a
+    # script that works with only these cannot depend on sed, head, etc.
+    local r="$BATS_TEST_TMPDIR/h/app-configs" bash_bin script
+    make_repo "$r"
+    mkdir -p "$r/ops"
+    printf '#!/bin/sh\necho "ran $0 $*"\n' >"$r/ops/audit.sh"
+    wsl_chezmoi_stub
+    render_wrapper "$r"
+    bash_bin="$(command -v bash)"
+    mkdir -p "$BATS_TEST_TMPDIR/only"; ln -s "$bash_bin" "$BATS_TEST_TMPDIR/only/bash"
+    cp "$STUBS/chezmoi" "$BATS_TEST_TMPDIR/only/chezmoi"
+    for script in repo-audit.sh codebase-memory-mcp-update.sh; do
+        run env -i HOME="$HOME" PATH="$BATS_TEST_TMPDIR/only" "$bash_bin" "$REPO_ROOT/nix/modules/home/scripts/$script"
+        [ "$status" -eq 0 ]
+        [[ "$output" == *"ran $r/ops/"* ]]
+    done
+}
+
+@test "repo_root() is identical in the audit and the MCP update unit scripts" {
+    body() { sed -n '/^repo_root() {$/,/^}$/p' "$REPO_ROOT/nix/modules/home/scripts/$1"; }
+    [ -n "$(body repo-audit.sh)" ]
+    [ "$(body repo-audit.sh)" = "$(body codebase-memory-mcp-update.sh)" ]
+}
+
 @test "MCP update unit fails loudly when chezmoi is missing" {
+    export HOME="$BATS_TEST_TMPDIR/home"; mkdir -p "$HOME"
     printf '#!/bin/sh\nexit 1\n' >"$STUBS/chezmoi"
     chmod +x "$STUBS/chezmoi"
     PATH="$STUBS:$PATH" run bash "$REPO_ROOT/nix/modules/home/scripts/codebase-memory-mcp-update.sh"

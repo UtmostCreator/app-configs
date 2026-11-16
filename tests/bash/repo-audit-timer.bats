@@ -2,7 +2,9 @@
 # The weekly `ops/audit.sh --live` user timer (nix/modules/home/audit.nix and
 # nix/modules/home/scripts/repo-audit.sh):
 #   - the unit and the timer exist on every Linux Home Manager host and run
-#     the audit through the chezmoi source path, like the cbm updater;
+#     the audit through the chezmoi source path (or, on NixOS-WSL where chezmoi
+#     has no sourceDir, the DOTFILES_DIR rendered into ~/.local/bin/sys-update),
+#     like the cbm updater;
 #   - a clean or WARN-only audit stays quiet, a FAIL sends one notification,
 #     and the audit output always lands on stderr/stdout (the journal);
 #   - the unit itself never fails because the audit found something, or the
@@ -35,6 +37,47 @@ run_unit() { run env PATH="$STUBS:$PATH" FAKE="$FAKE" CALLS="$CALLS" "$@" bash "
     [ "$status" -eq 0 ]
     grep -qx 'args: --live' "$CALLS"
     [[ "$output" == *"PASS  chezmoi: ok"* ]]
+}
+
+# Render the REAL sys-update template for repo $1 into $HOME/.local/bin, as
+# chezmoi does on NixOS-WSL (where `chezmoi source-path` has no sourceDir).
+render_wrapper() {
+    cp "$REPO_ROOT/.chezmoiroot" "$1/"
+    cp "$REPO_ROOT/home/dot_local/bin/executable_sys-update.tmpl" "$1/home/"
+    : >"$BATS_TEST_TMPDIR/chezmoi.toml"
+    mkdir -p "$HOME/.local/bin"
+    chezmoi execute-template --config "$BATS_TEST_TMPDIR/chezmoi.toml" --source "$1" \
+        --file "$1/home/executable_sys-update.tmpl" >"$HOME/.local/bin/sys-update"
+}
+
+wsl_chezmoi_stub() { # source-path prints a default dir, rc 0
+    printf '#!/bin/sh\necho "$HOME/.local/share/chezmoi"\n' >"$STUBS/chezmoi"
+}
+
+@test "NixOS-WSL: chezmoi prints a missing default source dir, the repo comes from the rendered sys-update wrapper" {
+    wsl_chezmoi_stub
+    render_wrapper "$FAKE"
+    run_unit AUDIT_OUT='PASS  chezmoi: ok\n'
+    [ "$status" -eq 0 ]
+    grep -qx 'args: --live' "$CALLS"
+}
+
+@test "a default chezmoi source dir that exists but is not the repo falls back to the wrapper" {
+    wsl_chezmoi_stub
+    mkdir -p "$HOME/.local/share/chezmoi"
+    render_wrapper "$FAKE"
+    run_unit AUDIT_OUT='PASS  chezmoi: ok\n'
+    [ "$status" -eq 0 ]
+    grep -qx 'args: --live' "$CALLS"
+}
+
+@test "no usable source dir and a wrapper naming a missing directory: non-zero, 'cannot locate the repo'" {
+    wsl_chezmoi_stub
+    mkdir -p "$HOME/.local/bin"
+    printf 'DOTFILES_DIR="%s/gone"\n' "$BATS_TEST_TMPDIR" >"$HOME/.local/bin/sys-update"
+    run_unit
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"cannot locate the repo"* ]]
 }
 
 @test "a clean audit sends no notification" {

@@ -323,11 +323,124 @@ no_stash() {
     git tag local-only
     git fp
     git rev-parse -q --verify refs/tags/local-only >/dev/null
-    [ "$(value fp)" = "fetch --prune" ]
     [ "$(value fptags)" = "fetch --prune --prune-tags" ]
     git fptags
     run git rev-parse -q --verify refs/tags/local-only
     [ "$status" -ne 0 ]
+}
+
+# fp_stale_branch [REMOTE]: a remote-tracking branch REMOTE/gone whose remote
+# branch is deleted, plus a local-only tag. fetch.prune is forced off so the
+# stale-branch assertions prove fp's own --prune, not the template default.
+fp_stale_branch() {
+    local r="${1:-origin}"
+    git -C "$BATS_TEST_TMPDIR/other" push -q origin HEAD:refs/heads/gone 2>/dev/null
+    git fetch -q "$r"
+    git rev-parse -q --verify "refs/remotes/$r/gone" >/dev/null
+    git -C "$BATS_TEST_TMPDIR/other" push -q origin :refs/heads/gone 2>/dev/null
+    git tag local-only
+    git config fetch.prune false
+}
+
+tag_kept() { git rev-parse -q --verify refs/tags/local-only >/dev/null; }
+branch_pruned() { ! git rev-parse -q --verify "refs/remotes/${1:-origin}/gone" >/dev/null; }
+
+@test "fp keeps local-only tags and prunes stale branches with fetch.pruneTags=true" {
+    up_fixture
+    fp_stale_branch
+    git config fetch.pruneTags true
+    git fp
+    tag_kept
+    branch_pruned
+}
+
+@test "fp keeps local-only tags and prunes stale branches with remote.origin.pruneTags=true" {
+    up_fixture
+    fp_stale_branch
+    git config remote.origin.pruneTags true
+    git fp
+    tag_kept
+    branch_pruned
+}
+
+@test "fp passes its remote argument through: upstream is fetched and pruned, tags kept" {
+    up_fixture
+    git remote add upstream "$BATS_TEST_TMPDIR/remote.git"
+    git config remote.upstream.pruneTags true
+    fp_stale_branch upstream
+    git fp upstream
+    tag_kept
+    branch_pruned upstream
+}
+
+@test "fp is unchanged when a remote has only branch refspecs" {
+    up_fixture
+    fp_stale_branch
+    run git fp
+    [ "$status" -eq 0 ]
+    tag_kept
+    branch_pruned
+}
+
+@test "fp refuses an explicit refs/tags refspec, deletes no tag and advises --no-prune" {
+    up_fixture
+    fp_stale_branch
+    git config --add remote.origin.fetch '+refs/tags/*:refs/tags/*'
+    run git fp
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"refs/tags"* ]]
+    [[ "$output" == *"git fetch --no-prune"* ]]
+    [[ "$output" == *"fptags"* ]]
+    tag_kept
+}
+
+@test "fp refuses when a second remote has a tag refspec, with --all or fetch.all" {
+    up_fixture
+    fp_stale_branch
+    git remote add upstream "$BATS_TEST_TMPDIR/remote.git"
+    git config --add remote.upstream.fetch '+refs/tags/*:refs/tags/*'
+    run git fp --all
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"git fp:"* ]]
+    tag_kept
+    git config fetch.all true
+    run git fp
+    [ "$status" -ne 0 ]
+    tag_kept
+}
+
+@test "fp refuses a mirror refspec (refs/* into refs/*)" {
+    up_fixture
+    fp_stale_branch
+    git config --add remote.origin.fetch '+refs/*:refs/*'
+    run git fp
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"git fp:"* ]]
+    tag_kept
+}
+
+@test "fp allows tags stored in a remote namespace and a negative tag refspec" {
+    up_fixture
+    fp_stale_branch
+    git config --add remote.origin.fetch '+refs/tags/*:refs/remotes/origin/tags/*'
+    git config --add remote.origin.fetch '^refs/tags/skipped'
+    run git fp
+    [ "$status" -eq 0 ]
+    tag_kept
+    branch_pruned
+}
+
+@test "pruneremotes delegates to fp: prunes branches, keeps tags and refuses tag refspecs" {
+    up_fixture
+    fp_stale_branch
+    git config fetch.pruneTags true
+    git pruneremotes
+    tag_kept
+    branch_pruned
+    git config --add remote.origin.fetch '+refs/tags/*:refs/tags/*'
+    run git pruneremotes
+    [ "$status" -ne 0 ]
+    tag_kept
 }
 
 @test "cleann previews without ignored files and deletes nothing" {

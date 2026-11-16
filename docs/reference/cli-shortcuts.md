@@ -113,8 +113,11 @@ native command.
 | History of one file across renames | `git filelog <file>` (`log --follow -p --`) |
 | Worktrees and branch tracking | `git wtl` (`worktree list`), `git brv` (`branch -vv`) |
 
-`git fp` prunes stale remote-tracking branches and keeps tags; `git fptags` also deletes local tags
-that are absent on the remote. `git cleanf` never deletes ignored files.
+`git fp` (and `git pruneremotes`, which calls it) prunes stale remote-tracking branches and keeps
+tags, even when `fetch.pruneTags` or `remote.<name>.pruneTags` is set. It refuses while any remote
+stores tags through its fetch refspec (destination `refs/tags/*` or a `refs/*` mirror), because
+`--prune` would then delete local-only tags; use `git fetch --no-prune` to fetch anyway. `git fptags`
+also deletes local tags that are absent on the remote. `git cleanf` never deletes ignored files.
 
 Provisioned helper tools that pair with these (Nix, `dev.nix` and `cli.nix`):
 `lazygit` (TUI), `difftastic` (structural diff), `shellcheck` and `shfmt` (shell

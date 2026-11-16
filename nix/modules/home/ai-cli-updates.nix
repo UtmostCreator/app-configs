@@ -125,9 +125,22 @@ let
       (_: {
         force = true;
       });
+
+  # claude-remote-control@.service is a hand-installed template (not managed
+  # here) with Restart=always, RestartSec=10s and no start limit. When a
+  # project's session could not start it looped every 10s, thousands of times.
+  # This drop-in keeps the restart but backs off exponentially to 10 minutes.
+  # See docs/platforms/nixos/desktop-stability.md.
+  remoteControlBackoff = {
+    "systemd/user/claude-remote-control@.service.d/restart-backoff.conf".text = ''
+      [Service]
+      RestartSteps=8
+      RestartMaxDelaySec=10min
+    '';
+  };
 in
 lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
   home.packages = [ aiAuthStatus ];
   systemd.user = lib.mkMerge (updaters ++ [ authCheck ]);
-  xdg.configFile = takeOver;
+  xdg.configFile = takeOver // remoteControlBackoff;
 }

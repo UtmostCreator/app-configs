@@ -87,7 +87,8 @@ $SeamNames = @(
     'Get-WingetList', 'Get-PathEntries', 'Get-FreeBytes', 'Test-RepoGitDir',
     'Get-UtcStamp', 'Get-OsArch', 'Invoke-Native', 'Get-ToolVersion', 'Invoke-Winget',
     'Update-SessionPath', 'Test-LefthookHooks', 'Get-HooksPath', 'Invoke-Lefthook',
-    'Resolve-Program', 'Get-ForeignHooks', 'Get-WindowsRelation'
+    'Resolve-Program', 'Get-ForeignHooks', 'Get-WindowsRelation', 'Test-HooksInstaller',
+    'Resolve-GitBash', 'Invoke-HooksInstaller', 'Get-HookEnvOverrides'
 )
 
 # ---------------------------------------------------------------- seams
@@ -862,6 +863,110 @@ function Write-BothReports {
     Say "Windows report ($Label): $(Join-Path $d 'windows.txt')"
 }
 
+# ---------------------------------------------------------------- git hooks installer
+
+# True when the repo ships the hooks installer. Then lefthook's own installer must not be
+# used (it fails once core.hooksPath is set), and this script never removes a hooks path.
+function Test-HooksInstaller {
+    return (Test-Path -LiteralPath (Join-Path (Join-Path $RepoRoot 'ops') 'install-git-hooks.sh') -PathType Leaf)
+}
+
+# Git for Windows' bash, derived from the git install (never the WindowsApps or System32
+# bash launcher, which starts WSL). $null when it cannot be found.
+function Resolve-GitBash {
+    $dirs = @()
+    $git = Resolve-Program 'git'
+    if ($git) {
+        $d = Split-Path -Parent $git
+        for ($i = 0; $i -lt 3 -and $d; $i++) { $dirs += $d; $d = Split-Path -Parent $d }
+    }
+    if ($env:ProgramFiles) { $dirs += (Join-Path $env:ProgramFiles 'Git') }
+    foreach ($d in $dirs) {
+        # Only bin\bash.exe: usr\bin\bash.exe, started without a login shell, lacks sed, dirname and mktemp.
+        $c = Join-Path $d 'bin\bash.exe'
+        if ((Test-Path -LiteralPath $c -PathType Leaf) -and $c -notmatch '\\(WindowsApps|System32)\\') { return $c }
+    }
+    return $null
+}
+
+# Runs ops/install-git-hooks.sh (or with --check) from the repo root (the main worktree).
+function Invoke-HooksInstaller {
+    param([string]$Bash, [string]$Mode)
+    $a = @('ops/install-git-hooks.sh')
+    if ($Mode -eq 'check') { $a += '--check' }
+    return (Invoke-Native -ExePath $Bash -Arguments $a -WorkingDirectory $RepoRoot -TimeoutSeconds 300)
+}
+
+# Names of the environment variables the repo's git hooks refuse: any LEFTHOOK* except
+# LEFTHOOK_VERBOSE and LEFTHOOK_QUIET, and SKIP_HOOKS.
+function Get-HookEnvOverrides {
+    $names = foreach ($v in (Get-ChildItem Env:)) {
+        $n = $v.Name
+        if (($n -match '^LEFTHOOK' -and @('LEFTHOOK_VERBOSE', 'LEFTHOOK_QUIET') -notcontains $n.ToUpperInvariant()) -or $n -eq 'SKIP_HOOKS') { $n }
+    }
+    return @($names)
+}
+
+function Write-InstallerOutput {
+    param($Result)
+    $lines = @((([string]$Result.Out) + "`n" + ([string]$Result.Err)) -split "`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    foreach ($l in ($lines | Select-Object -First 20)) { Say "step C: installer: $l" }
+    if ($lines.Count -gt 20) { Say "step C: installer: ... ($($lines.Count - 20) more lines)" }
+}
+
+# A refused or failed hooks installer: a warning now and a closing notice at the end of the run.
+# Returns 0 (the run goes on).
+function Write-HooksWarning {
+    param([string]$Hint, [string]$Why)
+    Say "step C: WARNING: git hooks are NOT installed on Windows ($Why); commits from this clone will be blocked or unguarded until that is fixed. $Hint"
+    $script:HooksWarning = "git hooks are NOT installed on Windows ($Why); commits from this clone will be blocked or unguarded until that is fixed (see the step C warning above)"
+    return 0
+}
+
+# Step C hooks part when the repo ships ops/install-git-hooks.sh. Returns 0 or 3. Commit
+# hooks are not needed to provision WSL, so an installer refusal or failure only warns (now,
+# and again in a closing notice at the end of the run) and the run continues; a missing Git
+# for Windows bash is a missing precondition and exits 3.
+function Invoke-HooksInstallerFlow {
+    foreach ($n in (Get-HookEnvOverrides)) {
+        Say "step C: warning: $n is set in your environment; the repo's git hooks refuse it (any LEFTHOOK* variable except LEFTHOOK_VERBOSE and LEFTHOOK_QUIET, and SKIP_HOOKS), so commits are blocked until it is unset"
+    }
+    $bash = Resolve-GitBash
+    if (-not $bash) {
+        Say 'step C: Git for Windows bash was not found (the WindowsApps and WSL bash are never used); install Git for Windows, then re-run'
+        return 3
+    }
+    $hint = 'ops/install-git-hooks.sh refuses a linked worktree, a foreign core.hooksPath, a missing git or lefthook, git older than 2.31, or a HEAD without ops/githooks; read its output above, fix that, then re-run'
+    Start-Wait 'step C: checking the git hooks with ops/install-git-hooks.sh --check (a few seconds)'
+    $chk = Invoke-HooksInstaller -Bash $bash -Mode 'check'
+    Write-InstallerOutput $chk
+    if ($chk.Code -eq 0) {
+        Say 'step C: git hooks intact (ops/install-git-hooks.sh --check)'
+        return 0
+    }
+    if ($chk.Code -ne 1) {
+        return (Write-HooksWarning $hint "ops/install-git-hooks.sh --check exited $($chk.Code), expected 0 or 1")
+    }
+    if ($script:Dry) {
+        Say "step C: git hooks are not intact (--check exit 1); would run: bash ops/install-git-hooks.sh (Git for Windows bash: $bash), then --check again"
+        return 0
+    }
+    Start-Wait 'step C: installing the git hooks with ops/install-git-hooks.sh (a few seconds)'
+    $inst = Invoke-HooksInstaller -Bash $bash -Mode 'install'
+    Write-InstallerOutput $inst
+    if ($inst.Code -ne 0) {
+        return (Write-HooksWarning $hint "ops/install-git-hooks.sh exited $($inst.Code)")
+    }
+    Start-Wait 'step C: checking the git hooks again with ops/install-git-hooks.sh --check (a few seconds)'
+    $chk = Invoke-HooksInstaller -Bash $bash -Mode 'check'
+    Write-InstallerOutput $chk
+    if ($chk.Code -ne 0) {
+        return (Write-HooksWarning $hint "the installer ran but --check still exits $($chk.Code)")
+    }
+    Say 'step C: git hooks installed and intact'
+    return 0
+}
+
 # ---------------------------------------------------------------- step C
 
 # Returns 0 done, 1 failed, 3 human step. Never elevated (the caller checks).
@@ -906,6 +1011,7 @@ function Invoke-CommitTooling {
         Say "step C: $RepoRoot\.git is not a directory; hooks skipped"
         return 0
     }
+    if (Test-HooksInstaller) { return (Invoke-HooksInstallerFlow) }
     $hp = Get-HooksPath
     if ($hp -like 'unavailable*') {
         Say "step C: cannot read git config core.hooksPath ($hp); install Git for Windows, then re-run"
@@ -1160,7 +1266,7 @@ function Resolve-CloneSync {
     # A move, never a delete: the clone can hold gitignored files that git status does
     # not show (for example home/.chezmoidata/personal.yaml, seeded by install.sh).
     $stamp = Get-UtcStamp
-    $recovery = "if you want a fresh clone, move this one aside: wsl -d NixOS -u root -- sh -lc 'mv $Clone $Clone.old-$stamp', then re-run (the clone is recreated from main). Do not delete it: it can hold gitignored files such as home/.chezmoidata/personal.yaml that git status does not show. This script never resets, moves or deletes it"
+    $recovery = "if you want a fresh clone, move this one aside: wsl -d NixOS -u root -- sh -lc 'mv $Clone $Clone.old-$stamp', then re-run (the clone is recreated from main). Do not delete it: it can hold gitignored files such as home/.chezmoidata/personal.yaml that git status does not show. This script never resets, moves or deletes it. If the gitignored home/.chezmoidata/personal.yaml exists in the moved folder (it stays there), after the re-run copy it into the new clone as the default user, so the new folder and file are yours (this overwrites the one install.sh seeded from the example): wsl -d NixOS -- sh -lc 'test -f $Clone.old-$stamp/home/.chezmoidata/personal.yaml && mkdir -p $Clone/home/.chezmoidata && cp -p $Clone.old-$stamp/home/.chezmoidata/personal.yaml $Clone/home/.chezmoidata/personal.yaml', then run this script again so install.sh applies it"
     if ($sync.Rel -eq 'unknown') {
         if ($noGit) {
             $why = $sync.Why
@@ -1222,7 +1328,7 @@ function Write-Step9Recovery {
 
 # ---------------------------------------------------------------- main
 
-function Invoke-Bootstrap {
+function Invoke-BootstrapRun {
     [CmdletBinding(PositionalBinding = $false)]
     param(
         [switch]$DryRun,
@@ -1600,7 +1706,8 @@ nix-shell -p git --run 'git -c safe.directory="`$DST" -C "`$DST" remote set-url 
                 Say "step 9: system-setup.sh exited $($s.Code): the outcome is in its output above. If it shows 'a nixos-rebuild switch had started', the new generation may be active (older versions of system-setup.sh exit 1 for an activated switch with failed units and then restore the files). Check the failed units: wsl -d NixOS -u root -- sh -lc 'systemctl --failed'; fix the cause and re-run this script"
             }
             return 1
-        }        $f = Get-DistroFacts
+        }
+        $f = Get-DistroFacts
         $hasCfg = Test-InWsl -User root -Arguments @("$Sw/test", '-f', '/etc/nixos/app-configs-wsl.nix')
         if ($f.User -ne $user -or -not $hasCfg) {
             Say "step 9: restarting the distro so the new default user takes effect (default user '$($f.User)', want '$user')"
@@ -1662,6 +1769,24 @@ nix-shell -p git --run 'git -c safe.directory="`$DST" -C "`$DST" remote set-url 
     Write-BothReports -Label 'after-install' -User $user
     Say 'step 12b: done. Next: add the SSH key to GitHub, fill personal.yaml, log in to the tools, then run sys-readiness'
     return 0
+}
+
+# The run itself, then a closing notice if the git hooks could not be installed (the exit
+# code is the run's own).
+function Invoke-Bootstrap {
+    [CmdletBinding(PositionalBinding = $false)]
+    param(
+        [switch]$DryRun,
+        [switch]$EnableSystemRestore,
+        [string]$Export,
+        [string]$Report,
+        [switch]$ToolsOnly,
+        [Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest
+    )
+    $script:HooksWarning = $null
+    $rc = Invoke-BootstrapRun @PSBoundParameters
+    if ($script:HooksWarning) { Say "NOTICE: $script:HooksWarning" }
+    return [int]$rc
 }
 
 if ($MyInvocation.InvocationName -ne '.') { exit (Invoke-Bootstrap @PSBoundParameters) }

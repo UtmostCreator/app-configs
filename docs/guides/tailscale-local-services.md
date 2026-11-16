@@ -14,8 +14,16 @@ placeholders.
 - Share only through `tailscale serve` (tailnet-only). Never use
   `tailscale funnel` (public internet).
 - Never set `networking.firewall.trustedInterfaces = [ "tailscale0" ]`. It would
-  expose every non-loopback listener to every tailnet device.
+  keep tailnet traffic unfiltered even if `tailscaled`'s netfilter mode changes
+  (see below).
 - Do not open firewall ports to reach Serve. Serve is proxied by `tailscaled`.
+
+(iptables-based NixOS firewall, as here) `tailscaled`'s own netfilter chain normally accepts inbound traffic on
+`tailscale0` (documented Tailscale behaviour). So the tailnet policy is
+effectively the only filter for tailnet-origin traffic to any non-loopback
+listener. On this host that is Syncthing (22000 tcp/udp, device-authenticated; 21027/udp
+discovery) and mDNS.
+This is why the allow-all rule must go (checklist below).
 
 ## Read-only audit
 
@@ -26,6 +34,7 @@ tailscale version
 tailscale status
 tailscale serve status --json
 tailscale funnel status --json
+tailscale status --json | jq '(.Self.CapMap // {}) | keys'
 tailscale debug prefs
 ss -lntu
 docker ps --format '{{.Names}}\t{{.Ports}}'
@@ -34,7 +43,8 @@ docker ps --format '{{.Names}}\t{{.Ports}}'
 Good looks like:
 
 - `serve status` shows only rules you created on purpose (`{}` when none). `funnel status` shows no
-  `AllowFunnel: true` entries.
+  `AllowFunnel: true` entries. `tailscale status --json | jq '(.Self.CapMap // {}) | keys'`
+  shows no `https://tailscale.com/cap/funnel` key.
 - Prefs: `ShieldsUp` false is fine; no unexpected `AdvertiseRoutes` or exit node.
   `RunSSH` true means Tailscale SSH is on (see the checklist).
 - `ss`: dev services listen on `127.0.0.1` only. Every non-loopback listener should be
@@ -48,7 +58,9 @@ These live in the Tailscale admin console and cannot be checked from the host.
 
 1. Turn on MFA or a passkey at the login (identity) provider.
 2. Review the device list; remove devices you do not recognise. Also review
-   device approval, key expiry and Tailnet Lock.
+   device approval, key expiry and Tailnet Lock. Device approval and Tailnet Lock
+   are mutually exclusive; for a small personal tailnet use device approval.
+   Tailnet Lock was off for this tailnet when audited (check: `tailscale lock status`).
 3. Replace the default allow-all policy with least-privilege grants. A narrow
    grant does not override an allow-all one: delete the allow-all rule, either an
    `acls` accept from `*` to `*:*` or a grant `*` to `*` with `ip: ["*"]`. Grants
@@ -58,35 +70,59 @@ These live in the Tailscale admin console and cannot be checked from the host.
    (`tailscale set --ssh=false`) only if you do not use the SSH tunnel below.
 
 Minimal policy sketch for a single owner (placeholders; adjust before use). It
-allows HTTPS on 8443 and the SSH tunnel (tcp:22 plus an `ssh` rule) from the
-owner's devices to the owner's own devices. Remove `tcp:22` and the `ssh` block
-to block SSH and the tunnel.
+allows HTTPS on 8443 and the SSH tunnel from the owner's devices to the desktop
+only.
 
 ```json
 {
+  "hosts": { "desktop": "<desktop-ip>" },
   "grants": [
     {
-      "src": ["owner@example.com"],
-      "dst": ["autogroup:self"],
+      "src": ["<owner-login>"],
+      "dst": ["desktop"],
       "ip":  ["tcp:8443", "tcp:22"]
     }
+    // Optional, only if the phone syncs over the tailnet (check the connection
+    // type in the Syncthing GUI). To enable it, uncomment the last line and add
+    // a comma after the grant above.
+    // { "src": ["<owner-login>"], "dst": ["desktop"], "ip": ["tcp:22000", "udp:22000"] }
   ],
   "ssh": [
     {
       "action": "check",
-      "src":    ["owner@example.com"],
+      "src":    ["<owner-login>"],
       "dst":    ["autogroup:self"],
-      "users":  ["<your-login>"]
+      "users":  ["<local-user>"]
     }
   ],
   "tests": [
-    { "src": "owner@example.com", "accept": ["<desktop-ip>:8443", "<desktop-ip>:22"], "deny": ["<desktop-ip>:5432"] }
+    {
+      "src": "<owner-login>",
+      "accept": ["desktop:8443", "desktop:22"],
+      "deny":   ["desktop:6006", "desktop:9749", "desktop:8384", "desktop:5433"]
+    }
+  ],
+  "sshTests": [
+    { "src": "<owner-login>", "dst": ["desktop"], "check": ["<local-user>"], "deny": ["root"] }
   ]
 }
 ```
 
-Run the `tests` in the admin console before saving; they fail the save if a rule
-does not do what you expect.
+Why `desktop` and not `autogroup:self`: `autogroup:self` lets any of the owner's
+devices reach any other owner device, which is broader than needed. A tag on the
+desktop is the alternative, with consequences: the tag replaces node ownership,
+`autogroup:self`/user rules stop applying to it, and key expiry is off by default
+for tagged nodes. Syncthing sync (22000) is blocked unless the optional grant is
+added. Remove `tcp:22` and the `ssh` block to block SSH and the tunnel.
+
+SSH is authorised in two layers, and both must allow: the `tcp:22` grant carries
+the connection, and the `ssh` rule authorises the login. SSH rules can't target
+a `hosts` alias. The `tcp:22` grant to `desktop` limits Tailscale SSH to the
+desktop. If you run `dsh-remote-setup`, add `tcp:443` to the grant.
+
+Run the `tests` and `sshTests` in the admin console before saving; they block a
+bad save. Rollback: keep a private copy of the current policy before saving and paste it
+back; configuration audit logs show past changes.
 
 ## Per service
 
@@ -109,9 +145,13 @@ tailscale serve --bg --https=8443 http://127.0.0.1:3000
 # reachable at https://<host>.<tailnet>.ts.net:8443 (tailnet devices only)
 
 tailscale serve status
-tailscale serve --https=8443 off     # stop one port (the CLI prints this line when you start a --bg serve)
+tailscale serve --https=8443 off     # stop one port
 tailscale serve reset                # clear every rule
 ```
+
+`serve --https=8443 off` is documented by Tailscale and printed when a `--bg`
+serve starts; it is not in this version's (1.102.3) `serve --help`, which lists
+`reset`.
 
 `--https` needs MagicDNS and HTTPS certificates. Enabling certificates publishes
 `<host>.<tailnet>.ts.net` in public Certificate Transparency logs. `--http=PORT`
@@ -121,7 +161,7 @@ SSH tunnel alternative (nothing is shared). sshd is off on this host. The tunnel
 uses Tailscale SSH, which is on (`RunSSH`, set by hand: the repo's tailscale module
 only sets `--operator`, and `ops/tailscale-setup.sh` sets up no Tailscale SSH), so
 keeping it on is the owner's decision. It needs an `ssh` rule in the tailnet policy
-and a grant to tcp:22 from the owner to the desktop (both in the sketch above). If
+and a grant to tcp:22 from the owner to the desktop: it needs both layers in the sketch above. If
 sshd is ever wanted, that needs its own repo change (`openFirewall = false`, no
 password login), not a manual enable.
 

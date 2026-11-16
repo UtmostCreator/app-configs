@@ -446,6 +446,43 @@
     Install.WantedBy = [ "graphical-session.target" ];
   };
 
+  # Memory budget for terminal work. Every Ghostty tab or split is a transient
+  # app-ghostty-surface-transient-*.scope. A dash-prefix drop-in (verified with
+  # systemd 260) moves new tabs into app-terminals.slice and caps each tab's
+  # swap. Ghostty's own linux-cgroup-memory-limit adds a 12 GiB MemoryHigh per tab
+  # (home/.chezmoitemplates/ghostty/config.body.tmpl).
+  #
+  # Per-tab limits do not add up, so the slice carries the aggregate budget for
+  # agents, linters and builds started from terminals, leaving room for GNOME
+  # and browsers. At MemoryMax the kernel OOM killer picks a victim inside the
+  # slice (never GNOME Shell), and OOMPolicy=stop stops one tab scope or service
+  # per kill, not necessarily the largest process. Where the Ghostty main
+  # process runs depends on how it was launched: from the GNOME launcher it is
+  # app-com.mitchellh.ghostty.service, outside the slice; from Vicinae it sits
+  # in vicinae.service, unbounded. systemd-oomd still watches each tab for
+  # memory pressure. These are starting values: tune them from
+  # `systemctl --user show app-terminals.slice -p MemoryPeak`.
+  # Existing tabs keep their old placement until reopened.
+  # See docs/platforms/nixos/desktop-stability.md.
+  xdg.configFile."systemd/user/app-ghostty-surface-transient-.scope.d/50-memory.conf" =
+    pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux
+      {
+        text = ''
+          [Scope]
+          Slice=app-terminals.slice
+          MemorySwapMax=4G
+        '';
+      };
+  systemd.user.slices.app-terminals = pkgs.lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
+    Unit.Description = "Terminals and AI agent services (shared memory budget)";
+    Slice = {
+      MemoryAccounting = true;
+      MemoryHigh = "18G";
+      MemoryMax = "22G";
+      MemorySwapMax = "8G";
+    };
+  };
+
   # Keep per-app window toggles stable for multi-window apps. The toggle helper
   # reads the tiny MRU files this service maintains, so Alt+Shift+E returns to
   # the last-used VS Code window instead of the first arbitrary `List()` match.

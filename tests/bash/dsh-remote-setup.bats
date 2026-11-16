@@ -52,3 +52,92 @@ setup() {
         fi
     done
 }
+
+# Autostart is opt-in: only --autostart may call `systemctl --user enable`.
+ok_stubs() {
+    local t
+    for t in tailscale systemctl journalctl jq; do
+        {
+            printf '#!/bin/sh\necho "%s $*" >>"%s"\n' "$t" "$CALLS"
+            case "$t" in
+                systemctl) printf '%s\n' \
+                    '[ "$2" = is-active ] && exit "${FAKE_ACTIVE:-1}"' \
+                    '[ "$2" = is-enabled ] && { echo "${FAKE_ENABLED:-disabled}"; [ "${FAKE_ENABLED:-disabled}" = enabled ]; exit; }' ;;
+                jq) printf 'echo host.example.ts.net\n' ;;
+            esac
+            printf 'exit 0\n'
+        } >"$STUBS/$t"
+        chmod +x "$STUBS/$t"
+    done
+    printf '#!/bin/sh\n[ -n "${FAKE_PORT_OWNED:-}" ] && { echo LISTEN; exit 0; }\nexit 1\n' >"$STUBS/ss"; chmod +x "$STUBS/ss"
+}
+
+@test "default run starts for this session and never enables autostart" {
+    ok_stubs
+    run env PATH="$STUBS:$PATH" bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    grep -qxF "systemctl --user start dsh-remote.service" "$CALLS"
+    [[ "$output" == *"--autostart"* ]]
+    run grep -c "systemctl.* enable" "$CALLS"; [ "$output" = 0 ]
+}
+
+@test "--autostart runs enable --now" {
+    ok_stubs
+    run env PATH="$STUBS:$PATH" bash "$SCRIPT" --autostart
+    [ "$status" -eq 0 ]
+    grep -qxF "systemctl --user enable --now dsh-remote.service" "$CALLS"
+}
+
+@test "--help documents --autostart and calls nothing" {
+    run env PATH="$STUBS:$PATH" bash "$SCRIPT" --help
+    [[ "$output" == *"--autostart"* ]]
+    [ ! -s "$CALLS" ]
+}
+
+@test "status reports autostart and active state with the commands" {
+    ok_stubs
+    run env PATH="$STUBS:$PATH" bash "$REPO_ROOT/home/dot_local/bin/executable_dsh-remote-status"
+    [[ "$output" == *"Autostart at login: disabled"* ]]
+    [[ "$output" == *"Active now:"* ]]
+    [[ "$output" == *"systemctl --user start dsh-remote.service"* ]]
+    [[ "$output" == *"dsh-remote-setup --autostart"* ]]
+    run grep -c "systemctl.* enable" "$CALLS"; [ "$output" = 0 ]
+}
+
+@test "status shows autostart enabled" {
+    ok_stubs
+    run env PATH="$STUBS:$PATH" FAKE_ENABLED=enabled bash "$REPO_ROOT/home/dot_local/bin/executable_dsh-remote-status"
+    [[ "$output" == *"Autostart at login: enabled"* ]]
+    [[ "$output" == *"systemctl --user disable --now dsh-remote.service"* ]]
+}
+
+# already-active and port-owned branches: enable only with --autostart, once.
+@test "already active or port-owned: no enable by default, one enable with --autostart" {
+    local mode
+    for mode in "FAKE_ACTIVE=0" "FAKE_PORT_OWNED=1"; do
+        ok_stubs
+        : >"$CALLS"
+        run env PATH="$STUBS:$PATH" "$mode" bash "$SCRIPT"
+        [ "$status" -eq 0 ]
+        run grep -c "systemctl.* enable" "$CALLS"; [ "$output" = 0 ]
+        : >"$CALLS"
+        run env PATH="$STUBS:$PATH" "$mode" bash "$SCRIPT" --autostart
+        [ "$status" -eq 0 ]
+        run grep -c "systemctl.* enable" "$CALLS"; [ "$output" = 1 ]
+    done
+}
+
+@test "final autostart line reports the real is-enabled state" {
+    ok_stubs
+    run env PATH="$STUBS:$PATH" FAKE_ENABLED=enabled bash "$SCRIPT"
+    [[ "$output" == *"Autostart at login: enabled"* ]]
+    [[ "$output" == *"systemctl --user disable dsh-remote.service"* ]]
+    run env PATH="$STUBS:$PATH" bash "$SCRIPT"
+    [[ "$output" == *"Autostart at login: off"* ]]
+}
+
+@test "status offers stop when active" {
+    ok_stubs
+    run env PATH="$STUBS:$PATH" FAKE_ACTIVE=0 bash "$REPO_ROOT/home/dot_local/bin/executable_dsh-remote-status"
+    [[ "$output" == *"Stop:               systemctl --user stop dsh-remote.service"* ]]
+}

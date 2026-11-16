@@ -424,11 +424,11 @@ fi
 """
 
 [tasks."tools:deepseek-harness:remote-setup"]
-description = "Configure tailnet-only Android access to the local DeepSeek Harness"
+description = "Configure tailnet-only Android access and start DeepSeek Harness now without login autostart (--autostart opts in; stop with systemctl --user stop; clear Serve with tailscale serve reset)"
 run = "dsh-remote-setup"
 
 [tasks."tools:deepseek-harness:remote-status"]
-description = "Show the DSH user service, Tailscale Serve, and Android onboarding URL"
+description = "Show DSH autostart/active state, Tailscale Serve, and the Android onboarding URL"
 run = "dsh-remote-status"
 
 # ─── Project orchestrator (opt-in) ──────────────────────────────────────────

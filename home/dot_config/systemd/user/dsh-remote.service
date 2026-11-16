@@ -14,5 +14,7 @@ RestartSec=15
 NoNewPrivileges=true
 PrivateTmp=true
 
+# Off by default: this only takes effect after an explicit opt-in
+# (`dsh-remote-setup --autostart` / `systemctl --user enable`).
 [Install]
 WantedBy=default.target

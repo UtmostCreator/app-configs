@@ -3,14 +3,20 @@
 set -euo pipefail
 
 usage() {
-  printf 'Usage: dsh-remote-setup [-h|--help]\n'
+  printf 'Usage: dsh-remote-setup [--autostart] [-h|--help]\n'
   printf 'Joins Tailscale, serves http://127.0.0.1:$DSH_REMOTE_PORT (default 3080) and\n'
-  printf 'enables the dsh-remote systemd user service. Linux only.\n'
+  printf 'starts the dsh-remote systemd user service now. It is NOT enabled for login\n'
+  printf 'autostart unless you pass --autostart (enable --now); with user lingering it\n'
+  printf 'keeps running until reboot or: systemctl --user stop dsh-remote.service\n'
+  printf 'The Tailscale Serve rule persists; remove it with: tailscale serve reset\n'
+  printf '(this clears all Serve rules). Linux only.\n'
 }
 
+autostart=0
 case "$#:${1:-}" in
   0:) ;;
   1:-h | 1:--help) usage; exit 0 ;;
+  1:--autostart) autostart=1 ;;
   *) printf 'dsh-remote-setup: unknown argument(s): %s\n' "$*" >&2; usage >&2; exit 2 ;;
 esac
 
@@ -38,11 +44,20 @@ tailscale serve --bg "$port"
 systemctl --user daemon-reload
 if systemctl --user is-active --quiet dsh-remote.service; then
   printf 'dsh-remote.service is already running.\n'
+  if [[ "$autostart" == 1 ]]; then systemctl --user enable dsh-remote.service; fi
 elif ss -ltn "sport = :$port" | grep -q LISTEN; then
   printf 'Port %s is owned by an existing Harness process; leaving it untouched.\n' "$port"
   printf 'When its agents are finished, run: systemctl --user start dsh-remote.service\n'
-else
+  if [[ "$autostart" == 1 ]]; then systemctl --user enable dsh-remote.service; fi
+elif [[ "$autostart" == 1 ]]; then
   systemctl --user enable --now dsh-remote.service
+else
+  systemctl --user start dsh-remote.service
+fi
+if systemctl --user is-enabled --quiet dsh-remote.service 2>/dev/null; then
+  printf 'Autostart at login: enabled (disable: systemctl --user disable dsh-remote.service)\n'
+else
+  printf 'Autostart at login: off (opt in: dsh-remote-setup --autostart)\n'
 fi
 
 printf '\nTailscale Serve status:\n'

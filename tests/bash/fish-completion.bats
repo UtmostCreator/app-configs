@@ -95,10 +95,23 @@ full_binding() { # full_binding <key> -> insert-mode bind after the whole render
 @test "rendered config silences the default fish greeting" {
     # Real startup path: config.fish in a scratch HOME, interactive fish.
     mkdir -p "$HOME/.config/fish"; cp "$CFG" "$HOME/.config/fish/config.fish"
-    run env HOME="$HOME" XDG_CONFIG_HOME="$HOME/.config" \
+    # config.fish runs `op whoami`; the real 1Password CLI forks an `op daemon`
+    # that outlives the test. A failing `op` first on PATH keeps it out.
+    local bin="$BATS_TEST_TMPDIR/opbin"; mkdir -p "$bin"
+    printf '#!/bin/sh\necho "$*" >>"%s/op.calls"\nexit 1\n' "$BATS_TEST_TMPDIR" >"$bin/op"; chmod +x "$bin/op"
+    run env HOME="$HOME" PATH="$bin:$PATH" XDG_CONFIG_HOME="$HOME/.config" \
         XDG_DATA_HOME="$HOME/.local/share" XDG_STATE_HOME="$HOME/.local/state" XDG_CACHE_HOME="$HOME/.cache" \
         fish -i -c 'set -q fish_greeting; and echo "defined[$fish_greeting]"'
     # Unset and empty both expand to nothing; only a defined-empty variable
     # stops fish from printing its stock greeting.
     [[ "$output" == *"defined[]"* ]]
+    # The config did reach `op`, only the stub answered, and no real `op`
+    # (daemon) was started with this test's HOME.
+    grep -qx 'whoami' "$BATS_TEST_TMPDIR/op.calls"
+    local pid
+    for pid in $(pgrep -x op || true); do
+        if tr '\0' '\n' <"/proc/$pid/environ" 2>/dev/null | grep -qxF "HOME=$HOME"; then
+            echo "leaked op pid $pid" >&2; return 1
+        fi
+    done
 }

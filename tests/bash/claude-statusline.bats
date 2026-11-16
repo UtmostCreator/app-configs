@@ -17,7 +17,11 @@ setup() {
 
     export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
     export STATUSLINE_NOW=$NOW TZ=UTC COLUMNS=200 LC_ALL=C.UTF-8
-    unset NO_COLOR
+    unset NO_COLOR CLAUDE_STATUSLINE_MODE
+    # The two-row wide layout switches on automatically from 160 columns; the
+    # pre-existing tests assert the three-row layout at 160 and 200, so they
+    # pin the auto breakpoint out of reach. The wide tests unset it.
+    export CLAUDE_STATUSLINE_WIDE_MIN=100000
     # No git-result caching by default (tests edit the tree between runs); the
     # cache tests turn it on. The cache dir stays inside the test sandbox.
     export STATUSLINE_GIT_TTL=0 XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR/run"
@@ -89,7 +93,7 @@ session_file() {
 
 # --- Main line ----------------------------------------------------------------
 
-@test "wide: dirty branch, diff, effort, real context %, bars, 5h and 7d quota" {
+@test "full: dirty branch, diff, effort, real context %, bars, 5h and 7d quota" {
     edit_tracked
     run statusline "$FULL"
     [ "$status" -eq 0 ]
@@ -181,7 +185,7 @@ Ctx █░░░░░░░░░ 8% · 16k/200k" ]
     [[ "${lines[1]}" == *"548k/1M │ 7d █░░░░░░░░░ 12% ↻Tue" ]]
 }
 
-@test "wide: worktree and PR go on the third row" {
+@test "full: worktree and PR go on the third row" {
     run statusline "$EXTRAS"
     [ "$status" -eq 0 ]
     [ "${#lines[@]}" -eq 3 ]
@@ -298,7 +302,7 @@ Ctx —" ]
 
 # --- Remaining context tokens -----------------------------------------------------
 
-@test "wide: remaining tokens come from remaining_percentage and sit after the token count" {
+@test "full: remaining tokens come from remaining_percentage and sit after the token count" {
     run statusline '{"context_window": {"remaining_percentage": 45.2}}'
     [ "$status" -eq 0 ]
     [[ "${lines[1]}" == "Ctx ██████░░░░ 55% · 548k/1M · ~452k left" ]]
@@ -629,7 +633,7 @@ cache_file() {
     [[ "$output" != *█* && "$output" != *░* ]]
 }
 
-@test "bars appear only on wide layouts" {
+@test "bars appear only on the full layout" {
     export COLUMNS=100
     run statusline '{"rate_limits": {"seven_day": {"used_percentage": 41}}}'
     [[ "$output" != *█* && "$output" != *░* ]]
@@ -885,3 +889,183 @@ rich() {
     [ "$(q7 94)" = "38;5;208" ]
     [ "$(q7 95)" = "0;31" ]
 }
+
+# --- Wide layout: two rows, right-aligned metrics -------------------------------------
+
+# rich_q: the rich session plus a 5h quota (default 88%, the more urgent one).
+rich_q() {
+    rich | jq --argjson p "${1:-88}" '.rate_limits.five_hour = {used_percentage: $p, resets_at: 1738425040}'
+}
+
+# run_rich <cols> [quota-percent-for-5h]: rich_q at a width, ANSI stripped; the wide
+# breakpoint is 160 unless WIDE_MIN is set.
+run_rich() {
+    export CLAUDE_STATUSLINE_WIDE_MIN=${WIDE_MIN:-160}
+    out=$(COLUMNS=$1 bash -c "$(declare -f rich rich_q make_repo session_file); WORK='$WORK' CLAUDE_CONFIG_DIR='$CLAUDE_CONFIG_DIR' rich_q ${2:-88} | bash '$SCRIPT'" | sed 's/\x1b\[[0-9;]*m//g')
+}
+
+@test "wide (160 and 200 columns): exactly two rows, right-aligned inside the safety margin" {
+    for cols in 160 200; do
+        run_rich "$cols"
+        [ "$(wc -l <<<"$out")" -eq 2 ] || { echo "cols=$cols: $out"; false; }
+        while IFS= read -r l; do
+            [ "$(width "$l")" -le $((cols - 3)) ] || { echo "cols=$cols width=$(width "$l"): $l"; false; }
+        done <<<"$out"
+        # Both rows end exactly at the right edge of the usable area.
+        [ "$(width "$(sed -n 1p <<<"$out")")" -eq $((cols - 3)) ]
+        [ "$(width "$(sed -n 2p <<<"$out")")" -eq $((cols - 3)) ]
+        [[ "$(sed -n 1p <<<"$out")" == "RC │ ◆ orchestrator │ rich ⎇ main* │ Opus 5.5:H "* ]]
+        [[ "$(sed -n 1p <<<"$out")" == *"140k/1M · ~860k left │ 5h 88% ↻1h24m · 7d 92% ↻Tue" ]]
+        [[ "$(sed -n 2p <<<"$out")" == "Git ●1 ✚1 …2 +2/-0 "* ]]
+        [[ "$(sed -n 2p <<<"$out")" == *'Cost $294.30 · Session 139h31m · Cache 97%' ]]
+    done
+}
+
+@test "wide: the 5h quota shows when it is the more urgent one, not when 7d is" {
+    run_rich 200 88
+    [[ "$(sed -n 1p <<<"$out")" == *"5h 88%"*"7d 92%"* ]]
+    run_rich 200 20
+    [[ "$(sed -n 1p <<<"$out")" != *"5h"* ]]
+    [[ "$(sed -n 1p <<<"$out")" == *"7d 92%"* ]]
+}
+
+@test "wide: cache is muted grey when healthy, coloured when low" {
+    unset CLAUDE_STATUSLINE_WIDE_MIN
+    raw=$(COLUMNS=200 bash -c "$(declare -f rich rich_q make_repo session_file); WORK='$WORK' CLAUDE_CONFIG_DIR='$CLAUDE_CONFIG_DIR' rich_q | bash '$SCRIPT'" | sed -n 2p)
+    [[ "$raw" == *$'\033[0;90mCache 97%\033[0m' ]]
+    raw=$(COLUMNS=200 bash -c "$(declare -f rich rich_q make_repo session_file); WORK='$WORK' CLAUDE_CONFIG_DIR='$CLAUDE_CONFIG_DIR' rich_q | jq '.prompt_cache.hit_ratio = 0.3' | bash '$SCRIPT'" | sed -n 2p)
+    [[ "$raw" == *$'\033[0;31mCache 30%\033[0m' ]]
+}
+
+@test "wide: optional segments stay conditional (no WT/PR/session/cost placeholders)" {
+    unset CLAUDE_STATUSLINE_WIDE_MIN
+    COLUMNS=200 run statusline '{"agent": {"name": "reviewer"}}'
+    [ "${#lines[@]}" -le 2 ]
+    [[ "$output" != *"WT"* && "$output" != *"PR #"* && "$output" != *"Cost"* && "$output" != *"Session"* && "$output" != *"Cache"* ]]
+    COLUMNS=200 run statusline "$EXTRAS"
+    [[ "$output" == *"WT ui-redesign · PR #184 approved"* ]]
+}
+
+@test "wide: terminal widths 60 to 200 never overflow and always keep the agent tag" {
+    for cols in 60 80 100 120 160 200; do
+        run_rich "$cols"
+        limit=$cols; (( cols >= 160 )) && limit=$((cols - 3))
+        while IFS= read -r l; do
+            [ "$(width "$l")" -le "$limit" ] || { echo "cols=$cols width=$(width "$l"): $l"; false; }
+        done <<<"$out"
+        [[ "$out" == *"◆ orch"* ]] || { echo "cols=$cols lost agent: $out"; false; }
+        [[ "$out" == *"7d "*"92%"* ]] || { echo "cols=$cols lost 7d: $out"; false; }
+        [[ "$out" == *"5h 88%"* ]] || { echo "cols=$cols lost urgent 5h: $out"; false; }
+    done
+    run_rich 120
+    [ "$(wc -l <<<"$out")" -eq 3 ]
+    run_rich 100
+    [ "$(wc -l <<<"$out")" -eq 2 ]
+}
+
+@test "wide: no agent.name means no diamond and no invented label" {
+    unset CLAUDE_STATUSLINE_WIDE_MIN
+    COLUMNS=200 run statusline "$FULL"
+    [[ "$output" != *"◆"* ]]
+    [[ "${lines[0]}" == "advanced-gym ⎇ main │ Opus 5:H "* ]]
+}
+
+@test "wide: very long project or branch names fall back to the full layout, never overflow" {
+    unset CLAUDE_STATUSLINE_WIDE_MIN
+    longp=$(printf 'p%.0s' {1..50}); longb=$(printf 'b%.0s' {1..50})
+    make_repo "$WORK/$longp" "$longb"
+    out=$(jq -n --arg d "$WORK/$longp" '{cwd: $d, agent: {name: "orchestrator"}, model: {display_name: "Opus 5.5 (1M context)"},
+            workspace: {project_dir: $d, current_dir: $d}, effort: {level: "high"},
+            context_window: {total_input_tokens: 140000, context_window_size: 1000000, used_percentage: 14, remaining_percentage: 86},
+            cost: {total_cost_usd: 1.5, total_duration_ms: 3600000}}' \
+        | COLUMNS=160 bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
+    [ "$(wc -l <<<"$out")" -eq 3 ]
+    while IFS= read -r l; do [ "$(width "$l")" -le 160 ]; done <<<"$out"
+    [[ "$out" == *"◆ orchestrator"* ]]
+    [[ "$out" == *"$longp"* && "$out" == *"$longb"* ]]
+}
+
+@test "wide: NO_COLOR prints no escape codes and the same rows" {
+    unset CLAUDE_STATUSLINE_WIDE_MIN
+    colored=$(COLUMNS=200 bash -c "$(declare -f rich rich_q make_repo session_file); WORK='$WORK' CLAUDE_CONFIG_DIR='$CLAUDE_CONFIG_DIR' rich_q | bash '$SCRIPT'")
+    plain=$(COLUMNS=200 NO_COLOR=1 bash -c "$(declare -f rich rich_q make_repo session_file); WORK='$WORK' CLAUDE_CONFIG_DIR='$CLAUDE_CONFIG_DIR' rich_q | bash '$SCRIPT'")
+    [[ "$plain" != *$'\033'* ]]
+    [ "$(wc -l <<<"$plain")" -eq 2 ]
+    [ "$plain" = "$(sed 's/\x1b\[[0-9;]*m//g' <<<"$colored")" ]
+}
+
+@test "wide: CLAUDE_STATUSLINE_MODE=wide pins it below the breakpoint; WIDE_MIN moves the breakpoint" {
+    unset CLAUDE_STATUSLINE_WIDE_MIN
+    withcost=$(jq -c '. + {cost: {total_cost_usd: 1.5, total_duration_ms: 3600000}}' <<<"$FULL")
+    CLAUDE_STATUSLINE_MODE=wide COLUMNS=170 run statusline "$withcost"
+    [ "${#lines[@]}" -eq 2 ]
+    [[ "${lines[1]}" == *"Cost \$1.50 · Session 1h00m" ]]
+    CLAUDE_STATUSLINE_WIDE_MIN=140 COLUMNS=150 run statusline "$withcost"
+    [ "${#lines[@]}" -eq 2 ]
+    CLAUDE_STATUSLINE_WIDE_MIN=100000 CLAUDE_STATUSLINE_MODE=full COLUMNS=200 run statusline "$withcost"
+    [ "${#lines[@]}" -eq 3 ]
+}
+
+# ea_width <text>: display cells counting East Asian wide/fullwidth characters as 2
+# (independent of the script's own width function).
+ea_width() {
+    python3 -I -c 'import sys, unicodedata
+t = sys.argv[1]
+print(sum(2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in t))' "$1"
+}
+
+@test "wide: Hangul, fullwidth and emoji agent names keep every row inside the margin" {
+    unset CLAUDE_STATUSLINE_WIDE_MIN
+    for name in 한국어에이전트한국어에이전트한국어 ＡＢＣＤＥＦＧＨＩＪＫＬＭＮＯＰＱＲＳＴ ✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨✨; do
+        for cols in 160 200; do
+            out=$(payload "$(jq -n --arg n "$name" '{agent: {name: $n}, effort: {level: "high"},
+                cost: {total_cost_usd: 1.5, total_duration_ms: 3600000}}')" \
+                | COLUMNS=$cols bash "$SCRIPT" | sed 's/\x1b\[[0-9;]*m//g')
+            [ "$(wc -l <<<"$out")" -eq 2 ] || { echo "$name cols=$cols: $out"; false; }
+            while IFS= read -r l; do
+                [ "$(ea_width "$l")" -eq $((cols - 3)) ] || { echo "$name cols=$cols ea_width=$(ea_width "$l"): $l"; false; }
+            done <<<"$out"
+        done
+    done
+}
+
+@test "wide: an unknown or non-numeric COLUMNS never selects the wide layout" {
+    unset CLAUDE_STATUSLINE_WIDE_MIN
+    for setting in unset abc "" 1x; do
+        if [ "$setting" = unset ]; then
+            out=$(bash -c "$(declare -f rich rich_q make_repo session_file); WORK='$WORK' CLAUDE_CONFIG_DIR='$CLAUDE_CONFIG_DIR' rich_q | env -u COLUMNS bash '$SCRIPT'" | sed 's/\x1b\[[0-9;]*m//g')
+        else
+            out=$(bash -c "$(declare -f rich rich_q make_repo session_file); WORK='$WORK' CLAUDE_CONFIG_DIR='$CLAUDE_CONFIG_DIR' rich_q | COLUMNS='$setting' bash '$SCRIPT'" | sed 's/\x1b\[[0-9;]*m//g')
+        fi
+        [ "$(wc -l <<<"$out")" -eq 3 ] || { echo "COLUMNS=$setting: $out"; false; }
+        while IFS= read -r l; do [ "$(width "$l")" -le 200 ] || { echo "COLUMNS=$setting: $l"; false; }; done <<<"$out"
+    done
+    # Pinning wide does not help when the width is unknown.
+    out=$(CLAUDE_STATUSLINE_MODE=wide bash -c "$(declare -f rich rich_q make_repo session_file); WORK='$WORK' CLAUDE_CONFIG_DIR='$CLAUDE_CONFIG_DIR' rich_q | env -u COLUMNS bash '$SCRIPT'")
+    [ "$(wc -l <<<"$out")" -eq 3 ]
+}
+
+@test "wide: the breakpoint is 160 columns (159 stays on the full layout)" {
+    run_rich 159
+    [ "$(wc -l <<<"$out")" -eq 3 ]
+    run_rich 160
+    [ "$(wc -l <<<"$out")" -eq 2 ]
+}
+
+@test "wide: a tight row gives up the bar first, then the resets and the Cost/Session labels" {
+    export WIDE_MIN=100
+    # With RC and the 5h quota the thresholds for this payload are 123 and 112.
+    run_rich 123
+    [[ "$out" == *"Ctx █"* && "$out" == *"↻1h24m"* && "$out" == *"Cost \$294.30 · Session 139h31m"* ]]
+    run_rich 122
+    [ "$(wc -l <<<"$out")" -eq 2 ]
+    [[ "$out" != *"█"* && "$out" == *"Ctx 14%"* && "$out" == *"↻1h24m"* && "$out" == *"Cost \$294.30 · Session 139h31m"* ]]
+    run_rich 112
+    [[ "$out" != *"█"* && "$out" == *"↻1h24m"* && "$out" == *"Cost "* ]]
+    run_rich 111
+    [ "$(wc -l <<<"$out")" -eq 2 ]
+    [[ "$out" != *"█"* && "$out" != *"↻"* && "$out" != *"Cost"* && "$out" != *"Session"* ]]
+    [[ "$out" == *'$294.30 · 139h31m · Cache 97%' && "$out" == *"5h 88% · 7d 92%"* ]]
+    while IFS= read -r l; do [ "$(width "$l")" -le 108 ]; done <<<"$out"
+}
+

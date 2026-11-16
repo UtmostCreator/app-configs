@@ -3,7 +3,16 @@
 # (see `statusLine` in settings.json). Field reference:
 # https://code.claude.com/docs/en/statusline#available-data
 #
-# Three rows, three layouts (width picks one; CLAUDE_STATUSLINE_MODE=full|compact|minimal pins it):
+# Four layouts (width picks one; CLAUDE_STATUSLINE_MODE=wide|full|compact|minimal pins it):
+#   wide (>=160, COLUMNS known)  two rows, metrics right-aligned to COLUMNS minus a 3-cell margin:
+#                 RC │ ◆ agent │ project ⎇ branch* │ Opus 5.5:H        Ctx ██░░░░░░░░ 14% · 140k/1M · ~860k left │ 5h 88% ↻1h24m · 7d 92% ↻Tue
+#                 Git ✚83 …87 +A/-R │ WT name · PR #184 approved                Cost $1.23 · Session 1h02m · Cache 91%
+#                 5h joins 7d only when it is the more urgent one (or at 85%+); Cache is muted
+#                 grey when healthy. A row that cannot fit (left + right + a 2-cell gap) first
+#                 gives up the bar, then the reset times and the Cost/Session labels; if it still
+#                 cannot fit the layout falls back to full. The margin (WIDE_MARGIN) keeps clear
+#                 of Claude Code's right-side notifications. CLAUDE_STATUSLINE_WIDE_MIN moves the
+#                 breakpoint (a very large value turns auto-wide off).
 #   full (>=120)  RC │ ◆ agent │ project ⎇ branch* │ Opus 5.5 high
 #                 Ctx ██░░░░░░░░ 14% · 140k/1M · ~860k left │ 5h 72% ↻1h24m · 7d ████░░░░░░ 41% ↻Tue
 #                 Git ✚83 …87 +A/-R │ WT name · PR #184 approved │ $1.23 · 1h02m · Cache 91%
@@ -57,6 +66,8 @@ NC=$'\033[0m'
 if [[ -n "${NO_COLOR:-}" ]]; then
     RED="" YELLOW="" GREEN="" BLUE="" MAGENTA="" ORANGE="" BOLD_RED="" CYAN="" GREY="" BOLD="" NC=""
 fi
+WIDE_MIN=160    # columns for the wide layout (CLAUDE_STATUSLINE_WIDE_MIN overrides)
+WIDE_MARGIN=3   # cells kept free at the right edge in the wide layout
 FULL_MIN=120    # columns for the full layout
 COMPACT_MIN=80  # columns for the compact layout; below it, minimal
 
@@ -114,12 +125,22 @@ bar() {
     printf %s "$out"
 }
 
-# width <text>: display columns, ignoring colour codes. Byte length minus UTF-8
-# continuation bytes, so it does not depend on the caller's locale.
+# width <text>: display columns, ignoring colour codes. Counts UTF-8 characters
+# (byte length minus continuation bytes, so it does not depend on the caller's
+# locale) and counts two cells for what terminals draw double width. It errs on
+# the side of over-counting, which only costs a little padding:
+#   - every 3-byte lead from E3 to EF (U+3000-U+FFFF: CJK, Hangul, fullwidth forms,
+#     private use) and every 4-byte lead F0-F4 (emoji);
+#   - the BMP symbol blocks U+2600-U+27BF and U+2B50/U+2B55 (E2 98-9E, E2 AD 90/95:
+#     many are emoji such as U+2728), except "✚" (U+271A), which this script prints.
 width() {
     local plain=${1//$'\033'\[*([0-9;])m/} LC_ALL=C
+    local calm=${plain//$'\342\234\232'/}
+    local sym=${calm//$'\342'[$'\230'-$'\236']/} star=${calm//$'\342\255'[$'\220\225']/}
+    local extra=$(( (${#calm} - ${#sym}) / 2 + (${#calm} - ${#star}) / 3 ))
     plain=${plain//[$'\200'-$'\277']/}
-    printf %s "${#plain}"
+    local wide=${plain//[!$'\343'-$'\364']/}
+    printf %s $(( ${#plain} + ${#wide} + extra ))
 }
 
 # clock <seconds>: 45s, 12m, 1h02m.
@@ -367,7 +388,7 @@ if [[ -n "$pr_number" ]]; then
 fi
 
 # Session cost and duration, then prompt-cache health; each only when present.
-cost_seg="" dur_seg="" cache_seg="" cost_whole_seg=""
+cost_seg="" dur_seg="" cache_seg="" cache_seg_wide="" cost_whole_seg=""
 if [[ -n "$cost_cents" ]]; then
     printf -v cost_seg '$%d.%02d' $((cost_cents / 100)) $((cost_cents % 100))
 fi
@@ -395,19 +416,26 @@ if [[ "$cache_observed" == true ]]; then
         [[ -z "$cache_hit_seg" ]] && cache_cold="Cache ${cache_cold}"
     fi
     cache_seg=$(join " " "$cache_hit_seg" "$cache_cold")
+    # The wide layout mutes a healthy hit ratio; low or cold keeps its colour.
+    cache_seg_wide=$cache_seg
+    if [[ -n "$cache_hit_seg" && -z "$cache_color" ]]; then
+        cache_seg_wide=$(join " " "${GREY}${cache_hit_seg}${NC}" "$cache_cold")
+    fi
 fi
 
-# Three logical rows, in one of three layouts picked from the terminal width
-# (or pinned with CLAUDE_STATUSLINE_MODE=full|compact|minimal):
+# Up to three logical rows, in one of four layouts picked from the terminal width
+# (or pinned with CLAUDE_STATUSLINE_MODE=wide|full|compact|minimal):
 #   row 1  identity   RC │ ◆ agent │ project ⎇ branch* │ model effort
 #   row 2  pressure   Ctx bar % · used/total · ~left │ 5h .. · 7d ..
 #   row 3  git/telemetry   Git counts +A/-R │ WT/PR │ $cost · time · Cache
-# full (>=120 columns) is all three; compact (>=80) folds row 2 into row 1,
-# shortens labels and drops bars, resets and used/total; minimal folds the same
-# way, drops the model version and the Git group and rounds the cost. Within a
-# layout precision goes first (bars, resets, ~left); a layout that still does
-# not fit gives way to the next smaller one; whole metrics are dropped only in
-# minimal, as a last resort.
+# wide (>=160 columns, COLUMNS known) is two right-aligned rows built by
+# render_wide and tried before the rest; when it cannot fit, the layouts below
+# take over. full (>=120 columns) is the three rows above; compact (>=80) folds
+# row 2 into row 1, shortens labels and drops bars, resets and used/total;
+# minimal folds the same way, drops the model version and the Git group and
+# rounds the cost. Within a layout precision goes first (bars, resets, ~left); a
+# layout that still does not fit gives way to the next smaller one; whole
+# metrics are dropped only in minimal, as a last resort.
 #
 # Of the two quotas, "weak" is the lower utilisation (7d on a tie; a lone quota
 # is weak) and "strong" the other; a quota at QUOTA_KEEP percent or more is
@@ -536,6 +564,73 @@ set_min_flags() {
     drop_extras=$(( $2 >= 1 )) drop_cache=$(( $2 >= 2 )) drop_session=$(( $2 >= 3 ))
 }
 
+# align <left> <right>: sets aligned to left, padding, then right so that it ends
+# at the usable width (cols - WIDE_MARGIN). Fails when they do not fit with at
+# least a 2-cell gap between them (an empty side needs no gap).
+align() {
+    local left=$1 right=$2 avail=$(( cols - WIDE_MARGIN )) wl wr
+    wl=$(width "$left") wr=$(width "$right")
+    if [[ -z "$right" ]]; then
+        (( wl <= avail )) || return 1
+        aligned=$left
+        return 0
+    fi
+    local gap=$(( avail - wl - wr ))
+    if [[ -z "$left" ]]; then
+        (( gap >= 0 )) || return 1
+    else
+        (( gap >= 2 )) || return 1
+    fi
+    printf -v aligned '%s%*s%s' "$left" "$gap" "" "$right"
+}
+
+# render_wide <level>: two right-aligned rows, or failure when a row does not fit.
+#   level 0 context bar, quota resets, Cost/Session labels
+#   level 1 no context bar
+#   level 2 no quota resets, no Cost/Session labels
+render_wide() {
+    local level=$1 q5="" q7="" ctx_group q_group model_seg git_group extras_group tele_group
+    local left right mname=$model_name
+    ctx_group=$ctx_bar
+    (( level >= 1 )) && ctx_group=$ctx_short
+    [[ -n "$ctx_used" && -n "$ctx_size" ]] && ctx_group+=" $DOT ${ctx_used}/${ctx_size}"
+    [[ -n "$ctx_left" ]] && ctx_group+=" $DOT ~${ctx_left} left"
+    # 7d always; 5h only when it is the more urgent window or at QUOTA_KEEP+.
+    if [[ -n "$q7_pct" ]]; then
+        q7="$(level_color "$q7_pct")7d ${q7_pct}%${NC}"
+        (( level < 2 )) && [[ -n "$q7_reset" ]] && q7+=" ↻$q7_reset"
+    fi
+    if [[ -n "$q5_pct" ]] && { [[ -z "$q7_pct" ]] || (( q5_pct >= q7_pct || q5_pct >= QUOTA_KEEP )); }; then
+        q5="$(level_color "$q5_pct")5h ${q5_pct}%${NC}"
+        (( level < 2 )) && [[ -n "$q5_reset" ]] && q5+=" ↻$q5_reset"
+    fi
+    q_group=$(join " $DOT " "$q5" "$q7")
+
+    model_seg="${BLUE}${mname}${NC}"
+    [[ -n "$effort" ]] && model_seg+=":$(effort_initial "$effort")"
+    left=$(join " $SEP " "$remote_control" "$agent_tag" "$repo" "$model_seg")
+    right=$(join " $SEP " "$ctx_group" "$q_group")
+    align "$left" "$right" || return 1
+    row1=$aligned
+
+    git_group=""
+    [[ -n "$git_counts$diff" ]] && git_group="Git $(join " " "$git_counts" "$diff")"
+    extras_group=$(join " $DOT " "$wt_seg" "$pr_seg")
+    left=$(join " $SEP " "$git_group" "$extras_group")
+    local cost_part=$cost_seg dur_part=$dur_seg
+    if (( level < 2 )); then
+        [[ -n "$cost_part" ]] && cost_part="Cost $cost_part"
+        [[ -n "$dur_part" ]] && dur_part="Session $dur_part"
+    fi
+    right=$(join " $DOT " "$cost_part" "$dur_part" "$cache_seg_wide")
+    row2=""
+    if [[ -n "$left$right" ]]; then
+        align "$left" "$right" || return 1
+        row2=$aligned
+    fi
+    row3=""
+}
+
 # fits: every non-empty row is within the terminal.
 fits() {
     local r
@@ -544,8 +639,11 @@ fits() {
     done
 }
 
-cols=${COLUMNS:-999}
-[[ "$cols" =~ ^[0-9]+$ ]] || cols=999
+# Unknown width (COLUMNS unset or not a number, e.g. a host that does not pass it)
+# is treated as unlimited for the other layouts, but never selects the wide layout,
+# which pads to the terminal edge.
+cols=999 cols_known=0
+if [[ -n "${COLUMNS:-}" && "$COLUMNS" =~ ^[0-9]+$ ]]; then cols=$COLUMNS cols_known=1; fi
 
 layouts=(full compact minimal)
 max_level=(2 1 0)
@@ -560,8 +658,20 @@ case "${CLAUDE_STATUSLINE_MODE:-}" in
     minimal) start=2 pinned=1 ;;
 esac
 
+# Wide first: from WIDE_MIN columns, or when pinned with MODE=wide. If a row
+# cannot fit, the usual width-based layouts below take over (full at 120+).
+wide_min=${CLAUDE_STATUSLINE_WIDE_MIN:-$WIDE_MIN}
+[[ "$wide_min" =~ ^[0-9]+$ ]] || wide_min=$WIDE_MIN
+
 row1="" row2="" row3=""
 done=0
+if (( cols_known )) && { [[ "${CLAUDE_STATUSLINE_MODE:-}" == wide ]] \
+    || { (( cols >= wide_min )) && [[ -z "${CLAUDE_STATUSLINE_MODE:-}" ]]; }; }; then
+    for (( level = 0; level <= 2; level++ )); do
+        if render_wide "$level"; then done=1; break; fi
+    done
+    (( done )) || { row1="" row2="" row3=""; }
+fi
 for (( li = start; li <= 2 && ! done; li++ )); do
     if (( li == 2 )); then
         for (( a = 0; a <= 6; a++ )); do

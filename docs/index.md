@@ -19,6 +19,7 @@ the topic you need.
 | Microsoft Teams not sending or reactions reverting (macOS) | [`teams-troubleshooting.md`](guides/teams-troubleshooting.md) |
 | macOS disk cleanup: what is safe to clear and how to check | [`macos-cleanup.md`](guides/macos-cleanup.md) |
 | OpenClaw Telegram bot: secrets, pairing, service (Linux desktop) | [`openclaw-telegram.md`](guides/openclaw-telegram.md) |
+| Reach local services from another device over Tailscale (NixOS desktop): rules, audit, safe sharing | [`tailscale-local-services.md`](guides/tailscale-local-services.md) |
 | Kanto ORA4 / USB audio validation | [`ora4-audio.md`](reference/ora4-audio.md) |
 | VS Code extensions | [`vscode-extensions.md`](../repo-docs/vscode-extensions.md) |
 | CLI shortcuts: abbreviations, git aliases, ports/logs/process helpers | [`cli-shortcuts.md`](reference/cli-shortcuts.md) |

@@ -41,9 +41,10 @@ closes, move its directory from [`active/`](active/README.md) to
 | [T-0044: Remember linux-desktop versus linux-cli per machine (feature)](active/T-0044-remember-linux-host/ticket.md) | open (T1-T4 implemented on feat/remember-linux-host, not landed; pending human checks: real headless Linux sys-install, macOS bash 3.2 dry run) | 2026-11 |
 | [T-0045: WSL: systemd requirement and codebase-memory-mcp units (bug)](active/T-0045-wsl-systemd-cbm/ticket.md) | open | 2026-11 |
 | [T-0046: macOS first-run readiness: blockers, fixes and a real-Mac verification order (bug)](active/T-0046-macos-first-run-readiness/ticket.md) | open | 2026-11 |
-| [T-0047: WSL2 on NixOS-WSL, desktop-first (feature)](active/T-0047-nixos-wsl/ticket.md) | open | 2026-11-15 |
+| [T-0047: WSL2 on NixOS-WSL, desktop-first (feature)](active/T-0047-nixos-wsl/ticket.md) | open (WSL2 setup complete; pending (b), then open ACs) | 2026-11-15 |
 | [T-0048: Cross-OS settings inventory, baseline and per-host overrides (feature)](active/T-0048-cross-os-settings/ticket.md) | open (phase 1: Windows inventory) | 2026-11-15 |
 | [T-0050: Always show user feedback during waits (bug + rule)](active/T-0050-user-feedback-during-waits/ticket.md) | open | 2026-11-15 |
+| [T-0051: Git hooks must work on Windows end to end (bug)](active/T-0051-windows-git-hooks/ticket.md) | open | 2026-11-15 |
 | [T-0052: Claude Code status line on native Windows (feature)](active/T-0052-windows-claude-statusline/ticket.md) | open (design reviewed; implementation not started) | 2026-11-15 |
 
 Archived tickets: see [archive/](archive/README.md).

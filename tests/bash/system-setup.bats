@@ -16,7 +16,7 @@ run_setup() {
   printf '%s\n' "$1" > "$FIX/configuration.nix"
   SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
     USER_NAME=alice ENABLE_DOCKER="${SS_DOCKER:-0}" ENABLE_TAILSCALE="${SS_TAILSCALE:-0}" \
-    SYSTEM_TIMEZONE=Europe/London \
+    ENABLE_DESKTOP_STABILITY="${SS_STABILITY:-0}" SYSTEM_TIMEZONE=Europe/London \
     run bash "$REPO_ROOT/ops/system-setup.sh"
 }
 
@@ -301,7 +301,8 @@ apply_setup() {
   mkdir -p "$R/ops/lib" "$R/nix/modules/nixos" "$BATS_TEST_TMPDIR/home" "$BATS_TEST_TMPDIR/stubs"
   cp "$REPO_ROOT/ops/system-setup.sh" "$REPO_ROOT/ops/detect-host.sh" "$REPO_ROOT/ops/detect-timezone.sh" "$R/ops/"
   cp "$REPO_ROOT/ops/lib/preflight.sh" "$R/ops/lib/"
-  cp "$REPO_ROOT/nix/modules/nixos/docker.nix" "$REPO_ROOT/nix/modules/nixos/wsl.nix" "$R/nix/modules/nixos/"
+  cp "$REPO_ROOT/nix/modules/nixos/docker.nix" "$REPO_ROOT/nix/modules/nixos/wsl.nix" \
+    "$REPO_ROOT/nix/modules/nixos/desktop-stability.nix" "$R/nix/modules/nixos/"
   REBUILD_LOG="$BATS_TEST_TMPDIR/rebuild.log"; : > "$REBUILD_LOG"
   cat > "$BATS_TEST_TMPDIR/stubs/nixos-rebuild" <<'STUB'
 #!/bin/sh
@@ -325,9 +326,13 @@ STUB
   export REBUILD_LOG
 }
 
-# run_apply [ENV=value ...]: apply against $FIX with the repo copy.
+# run_apply [ENV=value ...]: apply against $FIX with the repo copy. The stability
+# module is pinned off (callers opt in with ENABLE_DESKTOP_STABILITY=1) unless
+# SS_STABILITY_DEFAULT=1, which leaves the script's own per-profile default.
 run_apply() {
-  run env HOME="$BATS_TEST_TMPDIR/home" PATH="$BATS_TEST_TMPDIR/stubs:$PATH" REBUILD_LOG="$REBUILD_LOG" \
+  local pin=(ENABLE_DESKTOP_STABILITY=0)
+  [ -z "${SS_STABILITY_DEFAULT:-}" ] || pin=()
+  run env "${pin[@]}" HOME="$BATS_TEST_TMPDIR/home" PATH="$BATS_TEST_TMPDIR/stubs:$PATH" REBUILD_LOG="$REBUILD_LOG" \
     SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" SYSTEM_TIMEZONE=Europe/London \
     SYSTEM_SETUP_USER_EXISTS=0 \
     SYSTEM_SETUP_DOCKER_DESKTOP_DIR="$BATS_TEST_TMPDIR/no-docker-desktop" "$@" \
@@ -698,4 +703,215 @@ prepare_existing() {
   # And an up-to-date machine is a no-op again.
   run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1
   [[ "$output" == *"All recommended system settings already present."* ]]
+}
+
+# -- desktop stability baseline (nix/modules/nixos/desktop-stability.nix) --------
+
+@test "stability report: on by default on linux-desktop, imported from the copied module" {
+  printf '{ }\n' > "$FIX/configuration.nix"
+  run env HOST_PROFILE=linux-desktop SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
+    USER_NAME=alice SYSTEM_TIMEZONE=Europe/London ENABLE_DOCKER=0 bash "$REPO_ROOT/ops/system-setup.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"imports = [ ./app-configs-stability.nix ];"* ]]
+  [[ "$output" == *"myConfig.desktopStability.enable = true;"* ]]
+  [ ! -e "$FIX/app-configs-stability.nix" ]
+}
+
+@test "stability report: off by default on NixOS-WSL" {
+  run_wsl
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"app-configs-stability.nix"* ]]
+  [[ "$output" != *"desktopStability"* ]]
+}
+
+@test "stability report: off by default on linux-cli" {
+  printf '{ }\n' > "$FIX/configuration.nix"
+  run env HOST_PROFILE=linux-cli SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
+    USER_NAME=alice SYSTEM_TIMEZONE=Europe/London ENABLE_DOCKER=0 bash "$REPO_ROOT/ops/system-setup.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"app-configs-stability.nix"* ]]
+  [[ "$output" != *"desktopStability"* ]]
+}
+
+@test "stability report: options set in configuration.nix are reported as user-owned and still win" {
+  SS_STABILITY=1 run_setup '{
+  zramSwap.enable = false;
+  services.smartd = { enable = false; };
+}'
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"zramSwap is set in configuration.nix; your value wins"* ]]
+  [[ "$output" == *"services.smartd is set in configuration.nix; your value wins"* ]]
+  [[ "$output" != *"services.fwupd is set"* ]]
+  [[ "$output" == *"myConfig.desktopStability.enable = true;"* ]]
+}
+
+@test "stability report: a configuration.nix that imports the copy itself owns it" {
+  SS_STABILITY=1 run_setup '{ imports = [ ./app-configs-stability.nix ]; myConfig.desktopStability.enable = true; }'
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"imports = [ ./app-configs-stability.nix ];"* ]]
+  [ "$(sed -n '/Would add the following/,/Report only/p' <<<"$output" | grep -c 'desktopStability')" -eq 0 ]
+}
+
+@test "stability apply: the copy is written, imported once, enabled and recorded in the backup manifest" {
+  apply_setup
+  printf '{ pkgs, ... }:\n{\n  imports = [ ./hardware-configuration.nix ];\n}\n' > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  cmp "$FIX/app-configs-stability.nix" "$REPO_ROOT/nix/modules/nixos/desktop-stability.nix"
+  [ "$(grep -c 'imports =' "$FIX/app-configs-extra.nix")" -eq 1 ]
+  grep -q 'imports = \[ ./app-configs-docker.nix ./app-configs-stability.nix \];' "$FIX/app-configs-extra.nix"
+  grep -q 'myConfig.desktopStability.enable = true;' "$FIX/app-configs-extra.nix"
+  backup="$(ls -d "$FIX".app-configs-backup-* | head -n1)"
+  grep -q 'app-configs-stability.nix	absent' "$backup/manifest.tsv"
+  # Up to date now: a second run is a no-op.
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1
+  [[ "$output" == *"All recommended system settings already present."* ]]
+}
+
+@test "AC1: an outdated or missing stability copy is never skipped by the early exit" {
+  apply_setup
+  printf '{ pkgs, ... }:\n{\n  imports = [ ./hardware-configuration.nix ];\n}\n' > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  printf '# old stability copy\n{ ... }: { }\n' > "$FIX/app-configs-stability.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [[ "$output" != *"All recommended system settings already present."* ]]
+  cmp "$FIX/app-configs-stability.nix" "$REPO_ROOT/nix/modules/nixos/desktop-stability.nix"
+  rm "$FIX/app-configs-stability.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [[ "$output" != *"All recommended system settings already present."* ]]
+  cmp "$FIX/app-configs-stability.nix" "$REPO_ROOT/nix/modules/nixos/desktop-stability.nix"
+}
+
+@test "stability apply: ENABLE_DESKTOP_STABILITY=0 drops the import and removes the stale copy" {
+  apply_setup
+  printf '{ pkgs, ... }:\n{\n  imports = [ ./hardware-configuration.nix ];\n}\n' > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [ -f "$FIX/app-configs-stability.nix" ]
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=0
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [ ! -e "$FIX/app-configs-stability.nix" ]
+  [ "$(grep -cE 'app-configs-stability.nix|desktopStability' "$FIX/app-configs-extra.nix")" -eq 0 ]
+}
+
+@test "stability apply: a copy imported by configuration.nix itself is never removed" {
+  apply_setup
+  printf '{ pkgs, ... }:\n{\n  imports = [ ./hardware-configuration.nix ./app-configs-stability.nix ];\n}\n' > "$FIX/configuration.nix"
+  printf '# user-managed copy\n{ ... }: { }\n' > "$FIX/app-configs-stability.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=0
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [ "$(cat "$FIX/app-configs-stability.nix" | head -n1)" = "# user-managed copy" ]
+}
+
+DESK_CFG='{ pkgs, ... }:
+{
+  imports = [ ./hardware-configuration.nix ];
+}'
+
+@test "AC2: regenerating for a stale stability copy keeps every managed setting and import" {
+  apply_setup
+  printf '%s\n' "$DESK_CFG" > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1 ENABLE_TAILSCALE=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  cp "$FIX/app-configs-extra.nix" "$BATS_TEST_TMPDIR/extra-1.nix"
+  printf '# stale\n{ ... }: { }\n' > "$FIX/app-configs-stability.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1 ENABLE_TAILSCALE=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  diff "$BATS_TEST_TMPDIR/extra-1.nix" "$FIX/app-configs-extra.nix"
+  for want in 'imports = \[ ./app-configs-docker.nix ./app-configs-stability.nix \];' 'myConfig.docker.enable = true;' \
+    'programs.fish.enable = true;' 'trusted-users' 'nix.gc =' 'time.timeZone' 'services.tailscale.enable = true;' \
+    'myConfig.desktopStability.enable = true;'; do
+    grep -q "$want" "$FIX/app-configs-extra.nix" || { echo "missing: $want"; return 1; }
+  done
+}
+
+@test "AC3+AC6: a dry-build failure restores every file, including a stability copy that did not exist" {
+  apply_setup
+  printf '%s\n' "$DESK_CFG" > "$FIX/configuration.nix"
+  before="$(state "$FIX")"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1 STUB_FAIL_DRY=1
+  [ "$status" -ne 0 ]
+  [ "$(state "$FIX")" = "$before" ]
+  [ ! -e "$FIX/app-configs-stability.nix" ]
+  backup="$(ls -d "$FIX".app-configs-backup-* | head -n1)"
+  grep -q 'app-configs-stability.nix	absent' "$backup/manifest.tsv"
+}
+
+@test "AC3: a failure restores an existing stability copy exactly" {
+  apply_setup
+  printf '%s\n' "$DESK_CFG" > "$FIX/configuration.nix"
+  printf '# previous copy\n{ ... }: { }\n' > "$FIX/app-configs-stability.nix"; chmod 600 "$FIX/app-configs-stability.nix"
+  before="$(state "$FIX")"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1 STUB_FAIL_REAL=1
+  [ "$status" -ne 0 ]
+  [ "$(state "$FIX")" = "$before" ]
+}
+
+@test "AC6: after activation (exit 4) the files stay and no rollback is claimed as done" {
+  apply_setup
+  printf '%s\n' "$DESK_CFG" > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1 STUB_REAL_RC=4
+  [ "$status" -eq 4 ]
+  cmp "$FIX/app-configs-stability.nix" "$REPO_ROOT/nix/modules/nixos/desktop-stability.nix"
+  [[ "$output" == *"activated the new generation"* ]]
+  [[ "$output" != *"restored every touched file"* ]]
+  [[ "$output" == *"to return to the previous generation run: sudo nixos-rebuild switch --rollback"* ]]
+}
+
+@test "AC4: a second run is idempotent (no file changes, no rebuild of new files)" {
+  apply_setup
+  printf '%s\n' "$DESK_CFG" > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  after1="$(state "$FIX")"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"All recommended system settings already present."* ]]
+  [ "$(state "$FIX")" = "$after1" ]
+}
+
+@test "AC5: NixOS-WSL never gets the stability module by default; only an explicit opt-in adds it" {
+  apply_setup
+  printf '%s\n' "$WSL_STOCK" > "$FIX/configuration.nix"
+  SS_STABILITY_DEFAULT=1 run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [ ! -e "$FIX/app-configs-stability.nix" ]
+  [ "$(grep -cE 'desktopStability|fwupd|smartd|zram' "$FIX/app-configs-extra.nix")" -eq 0 ]
+  SS_STABILITY_DEFAULT=1 run_apply HOST_PROFILE=wsl USER_NAME=wsluser SYSTEM_SETUP_USER_EXISTS=1 ENABLE_DESKTOP_STABILITY=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  cmp "$FIX/app-configs-stability.nix" "$REPO_ROOT/nix/modules/nixos/desktop-stability.nix"
+}
+
+@test "stability: the default desktop apply (no override) installs the module" {
+  apply_setup
+  printf '%s\n' "$DESK_CFG" > "$FIX/configuration.nix"
+  SS_STABILITY_DEFAULT=1 run_apply HOST_PROFILE=linux-desktop USER_NAME=alice
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  cmp "$FIX/app-configs-stability.nix" "$REPO_ROOT/nix/modules/nixos/desktop-stability.nix"
+}
+
+@test "stability: zram is opt-in (DESKTOP_STABILITY_ZRAM=1), and toggling it regenerates" {
+  SS_STABILITY=1 run_setup '{ }'
+  [[ "$output" != *"zram.enable"* ]]
+  SS_STABILITY=1 DESKTOP_STABILITY_ZRAM=1 run_setup '{ }'
+  [[ "$output" == *"myConfig.desktopStability.zram.enable = true;"* ]]
+  apply_setup
+  printf '%s\n' "$DESK_CFG" > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_DESKTOP_STABILITY=1 DESKTOP_STABILITY_ZRAM=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [[ "$output" != *"All recommended system settings already present."* ]]
+  grep -q 'myConfig.desktopStability.zram.enable = true;' "$FIX/app-configs-extra.nix"
+}
+
+@test "stability module: every assigned value is lib.mkDefault, so configuration.nix always wins" {
+  m="$REPO_ROOT/nix/modules/nixos/desktop-stability.nix"
+  # Literal values (booleans, numbers, strings) assigned under config.
+  bad="$(grep -vE '^[[:space:]]*#' "$m" | grep -nE '=[[:space:]]*(true|false|[0-9]+|"[^"]*")[[:space:]]*;' | grep -v 'lib.mkDefault' || true)"
+  [ -z "$bad" ] || { echo "$bad"; return 1; }
+  [ "$(grep -vE '^[[:space:]]*#' "$m" | grep -cE 'extraConfig|coredump|swappiness')" -eq 0 ]
 }

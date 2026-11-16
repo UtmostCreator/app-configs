@@ -2,7 +2,9 @@
 # system-setup.sh — automate the NixOS SYSTEM layer that standalone Home
 # Manager cannot set: fish as login shell, your user in trusted-users, a
 # declarative non-destructive GC timer, the system time zone, the Docker
-# daemon, and private Tailscale access. Then runs `nixos-rebuild switch`.
+# daemon, private Tailscale access and, on linux-desktop, the desktop stability
+# baseline (fwupd discovery, smartd; zram opt-in; nix/modules/nixos/
+# desktop-stability.nix). Then runs `nixos-rebuild switch`.
 #
 # Requires sudo (it edits /etc/nixos and rebuilds the system). It is:
 #   - idempotent: skips settings already present; safe to re-run
@@ -38,6 +40,8 @@
 #   USER_NAME=youruser sudo bash ops/system-setup.sh --apply
 #   ENABLE_DOCKER=0 sudo bash ops/system-setup.sh --apply   # skip docker daemon
 #   ENABLE_TAILSCALE=0 sudo bash ops/system-setup.sh --apply # skip Tailscale
+#   ENABLE_DESKTOP_STABILITY=0 sudo bash ops/system-setup.sh --apply # skip stability baseline
+#   DESKTOP_STABILITY_ZRAM=1 sudo bash ops/system-setup.sh --apply   # also zram swap (opt-in)
 #
 # Exit non-zero on failure. NixOS only.
 
@@ -197,6 +201,17 @@ ENABLE_DOCKER="${ENABLE_DOCKER:-$(( IS_WSL == 1 ? 0 : 1 ))}"
 DOCKER_GROUP="${DOCKER_GROUP:-0}"
 DOCKER_ROOTLESS="${DOCKER_ROOTLESS:-0}"
 
+# Desktop stability baseline (nix/modules/nixos/desktop-stability.nix): fwupd
+# discovery and smartd, all lib.mkDefault so any value in configuration.nix wins;
+# zram swap only with DESKTOP_STABILITY_ZRAM=1. Copied and imported like the
+# Docker module. On by default only on linux-desktop (never on WSL unless
+# ENABLE_DESKTOP_STABILITY=1); ENABLE_DESKTOP_STABILITY=0 removes it.
+STABILITY_MODULE_SRC="$(cd "$SCRIPT_DIR/.." && pwd)/nix/modules/nixos/desktop-stability.nix"
+STABILITY_MODULE_NAME="app-configs-stability.nix"
+STABILITY_MODULE_DST="$NIXOS_DIR/${STABILITY_MODULE_NAME}"
+ENABLE_DESKTOP_STABILITY="${ENABLE_DESKTOP_STABILITY:-$([[ "$HOST_PROFILE" == linux-desktop ]] && echo 1 || echo 0)}"
+DESKTOP_STABILITY_ZRAM="${DESKTOP_STABILITY_ZRAM:-0}"
+
 # Tailscale provides the private transport for loopback-only developer tools.
 # The daemon is enabled here; joining a tailnet and configuring `tailscale
 # serve` remain explicit, one-time user actions handled by dsh-remote-setup
@@ -281,6 +296,13 @@ note_disabled programs.fish "$(opt_disabled programs.fish.enable)"
 note_disabled nix.gc "$gc_disabled_re"
 (( ENABLE_DOCKER == 1 )) && note_disabled docker "$(opt_disabled virtualisation.docker.enable)"
 (( ENABLE_TAILSCALE == 1 )) && note_disabled tailscale "$(opt_disabled services.tailscale.enable)"
+# Stability baseline: the module only sets lib.mkDefault values, so an option the
+# user already assigns stays theirs (no eval conflict). Say so in the report.
+if (( ENABLE_DESKTOP_STABILITY == 1 )); then
+  for o in services.fwupd services.smartd zramSwap; do
+    in_sys "${o//./\\.}[.[:space:]=]" && log "$o is set in configuration.nix; your value wins over the stability module's lib.mkDefault"
+  done
+fi
 
 need_fish=1; need_trusted=1; need_gc=1; need_timezone=1
 # nix-ld (NixOS-WSL only): user-owned when configuration.nix assigns it at all.
@@ -310,6 +332,13 @@ if (( ENABLE_DOCKER == 1 )); then
   need_docker=1
   { in_sys "$(opt_set virtualisation.docker.enable)" || in_sys "${DOCKER_MODULE_NAME//./\\.}"; } && need_docker=0
 fi
+# Stability: skipped when configuration.nix already imports the copy or turns the
+# toggle on itself.
+need_stability=0
+if (( ENABLE_DESKTOP_STABILITY == 1 )); then
+  need_stability=1
+  { in_sys "${STABILITY_MODULE_NAME//./\\.}" || in_sys "$(opt_set myConfig.desktopStability.enable)"; } && need_stability=0
+fi
 need_tailscale=0
 if (( ENABLE_TAILSCALE == 1 )); then
   need_tailscale=1
@@ -317,7 +346,7 @@ if (( ENABLE_TAILSCALE == 1 )); then
 fi
 
 # Already fully applied? (live state or already in the module we manage)
-have_fish=0; have_trusted=0; have_gc=0; have_timezone=0; have_docker=1; have_tailscale=1; have_wsl=1
+have_fish=0; have_trusted=0; have_gc=0; have_timezone=0; have_docker=1; have_tailscale=1; have_wsl=1; have_stability=1
 { in_sys "$(opt_set programs.fish.enable)" || in_module "$(opt_enabled programs.fish.enable)"; } && have_fish=1
 { in_sys "$(trusted_re)" || in_module "$(trusted_re)"; } && have_trusted=1
 { in_sys 'nix\.gc' || in_module 'nix\.gc'; } && have_gc=1
@@ -337,6 +366,19 @@ if (( ENABLE_TAILSCALE == 1 )); then
   { systemctl is-active tailscaled >/dev/null 2>&1 \
     || in_sys "$(opt_set services.tailscale.enable)" \
     || in_module "$(opt_enabled services.tailscale.enable)"; } && have_tailscale=1
+fi
+
+# Stability: satisfied when configuration.nix owns it, or our module imports the
+# copy, turns it on, and the copy matches the repo (so module updates propagate).
+if (( ENABLE_DESKTOP_STABILITY == 1 )); then
+  have_stability=0
+  { (( need_stability == 0 )) \
+    || { in_module "${STABILITY_MODULE_NAME//./\\.}" && in_module "$(opt_enabled myConfig.desktopStability.enable)" \
+         && [[ -f "$STABILITY_MODULE_DST" ]] && cmp -s "$STABILITY_MODULE_SRC" "$STABILITY_MODULE_DST" \
+         && { in_module "$(opt_enabled myConfig.desktopStability.zram.enable)" && zram_on=1 || zram_on=0; (( zram_on == DESKTOP_STABILITY_ZRAM )); }; }; } && have_stability=1
+elif in_module "${STABILITY_MODULE_NAME//./\\.}"; then
+  # Disabled now, but our module still imports it: regenerate to drop it.
+  have_stability=0
 fi
 
 # NixOS-WSL: satisfied when the wsl module is imported and its copy is current.
@@ -394,7 +436,7 @@ rebuild_system() {
   SWITCH_STARTED=0; BOOT_STARTED=0
 }
 
-if (( have_fish == 1 && have_trusted == 1 && have_gc == 1 && have_timezone == 1 && have_docker == 1 && have_tailscale == 1 && have_wsl == 1 )); then
+if (( have_fish == 1 && have_trusted == 1 && have_gc == 1 && have_timezone == 1 && have_docker == 1 && have_tailscale == 1 && have_wsl == 1 && have_stability == 1 )); then
   log "All recommended system settings already present."
   if [[ "$MODE" == "apply" ]]; then
     require_apply_env
@@ -418,6 +460,7 @@ SNIPPET="$(mktemp)"
   imports_list=""
   (( need_docker == 1 )) && imports_list="./$DOCKER_MODULE_NAME"
   (( IS_WSL == 1 )) && imports_list="${imports_list:+$imports_list }./$WSL_MODULE_NAME"
+  (( need_stability == 1 )) && imports_list="${imports_list:+$imports_list }./$STABILITY_MODULE_NAME"
   (( need_docker == 1 )) && {
     echo "  # Docker daemon via the self-contained module copied next to this file"
     echo "  # (./$DOCKER_MODULE_NAME). Copied rather than imported by absolute path"
@@ -434,7 +477,16 @@ SNIPPET="$(mktemp)"
     echo "  # NixOS-WSL: wsl.defaultUser from the module copied next to this"
     echo "  # file (./$WSL_MODULE_NAME). wsl.* lines in configuration.nix are never edited."
   }
+  (( need_stability == 1 )) && {
+    echo "  # Desktop stability baseline from the module copied next to this file"
+    echo "  # (./$STABILITY_MODULE_NAME): fwupd discovery and smartd, all lib.mkDefault."
+    echo "  # Disable with ENABLE_DESKTOP_STABILITY=0 when re-running this script."
+  }
   [[ -z "$imports_list" ]] || echo "  imports = [ $imports_list ];"
+  (( need_stability == 1 )) && {
+    echo "  myConfig.desktopStability.enable = true;"
+    [[ "$DESKTOP_STABILITY_ZRAM" == 1 ]] && echo "  myConfig.desktopStability.zram.enable = true;"
+  }
   (( need_docker == 1 )) && {
     echo "  myConfig.docker.enable = true;"
     if (( IS_WSL == 1 )) && [[ "$DOCKER_GROUP" != 1 ]]; then
@@ -507,7 +559,7 @@ snapshot_state() {
   mkdir -m 700 "$BACKUP_DIR" "$BACKUP_DIR/files" 2>/dev/null \
     || { BACKUP_DIR=""; fail "cannot create the backup directory ${NIXOS_DIR%/}.app-configs-backup-${STAMP}"; }
   : > "$manifest"
-  for p in "$SYS" "$FLAKE" "$MODULE" "$DOCKER_MODULE_DST" "$WSL_MODULE_DST" \
+  for p in "$SYS" "$FLAKE" "$MODULE" "$DOCKER_MODULE_DST" "$WSL_MODULE_DST" "$STABILITY_MODULE_DST" \
            "$NIXOS_DIR/flake.lock" "${SYS}.tmp" "${FLAKE}.tmp"; do
     name="$(basename "$p")"; mode="-"; own="-"; tgt="-"
     if [[ -L "$p" ]]; then
@@ -555,6 +607,18 @@ elif [[ -e "$DOCKER_MODULE_DST" || -L "$DOCKER_MODULE_DST" ]]; then
   # copy so no orphaned file lingers in /etc/nixos.
   rm -f "$DOCKER_MODULE_DST"
   log "Removed stale $DOCKER_MODULE_DST (ENABLE_DOCKER=0)"
+fi
+
+# Stability module, same reason as the Docker copy. Removed when this run no
+# longer imports it, so no orphaned file lingers in /etc/nixos.
+if (( need_stability == 1 )); then
+  [[ -f "$STABILITY_MODULE_SRC" ]] || fail "stability module not found at $STABILITY_MODULE_SRC"
+  cp --remove-destination "$STABILITY_MODULE_SRC" "$STABILITY_MODULE_DST" || fail "could not write $STABILITY_MODULE_DST"
+  log "Copied stability module -> $STABILITY_MODULE_DST"
+elif (( ENABLE_DESKTOP_STABILITY == 0 )) && ! in_sys "${STABILITY_MODULE_NAME//./\\.}" \
+  && [[ -e "$STABILITY_MODULE_DST" || -L "$STABILITY_MODULE_DST" ]]; then
+  rm -f "$STABILITY_MODULE_DST"
+  log "Removed stale $STABILITY_MODULE_DST (ENABLE_DESKTOP_STABILITY=0)"
 fi
 
 # NixOS-WSL module, same reason as the Docker copy.

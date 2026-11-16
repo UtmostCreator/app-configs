@@ -8,7 +8,11 @@
       # because a pure-eval flake forbids importing outside /etc/nixos.
       # myConfig.docker.enable turns on the daemon and adds alice to the
       # docker group. Disable with ENABLE_DOCKER=0 when re-running this script.
-      imports = [ ./app-configs-docker.nix ];
+      # Desktop stability baseline from the module copied next to this file
+      # (./app-configs-stability.nix): fwupd discovery and smartd, all lib.mkDefault.
+      # Disable with ENABLE_DESKTOP_STABILITY=0 when re-running this script.
+      imports = [ ./app-configs-docker.nix ./app-configs-stability.nix ];
+      myConfig.desktopStability.enable = true;
       myConfig.docker.enable = true;
       myConfig.docker.user = "alice";
       programs.fish.enable = true;

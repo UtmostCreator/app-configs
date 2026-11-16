@@ -88,10 +88,12 @@ STUB
     [[ "$output" == *"journalctl --user -u codebase-memory-mcp-ui"* ]]
 }
 
-@test "readiness cbm ui unit: activating on the first start (no restarts) is noted, not a loop" {
+@test "readiness cbm ui unit: activating on the first start (no restarts) says starting, with no TODO and no start advice" {
     cbm_stub activating 0
     PATH="$S" run bash "$SCRIPT"
-    [[ "$output" == *"[TODO] codebase-memory-mcp-ui.service activating (run: systemctl --user start codebase-memory-mcp-ui)"* ]]
+    [[ "$output" == *"codebase-memory-mcp-ui.service is starting"* ]]
+    [[ "$output" != *"[TODO] codebase-memory-mcp-ui"* ]]
+    [[ "$output" != *"systemctl --user start"* ]]
     [[ "$output" != *"restart-looping"* ]]
 }
 
@@ -171,6 +173,8 @@ STUB
     chmod +x "$S/chezmoi"; ln -s "$(command -v readlink)" "$S/readlink"
     PATH="$S" run bash "$SCRIPT"
     [[ "$output" == *"[TODO] chezmoi has pending changes"* ]]
+    # the advice must work on this host: unconfigured, so it names --source=<repo>
+    [[ "$output" == *"run: chezmoi --source=$REPO_ROOT apply  or  sys-update"* ]]
 }
 
 @test "readiness chezmoi: a configured sourceDir equal to the repo is verified without --source" {
@@ -185,4 +189,17 @@ STUB
     chmod +x "$S/chezmoi"; ln -s "$(command -v readlink)" "$S/readlink"
     PATH="$S" run bash "$SCRIPT"
     [[ "$output" == *"[OK]   all managed dotfiles match"* ]]
+}
+
+@test "readiness chezmoi: configured and drifting, the advice is a plain chezmoi apply" {
+    cat >"$S/chezmoi" <<STUB
+#!/bin/sh
+case "\$*" in
+  *source-path*) echo "$REPO_ROOT/home"; exit 0 ;;
+esac
+exit 1
+STUB
+    chmod +x "$S/chezmoi"; ln -s "$(command -v readlink)" "$S/readlink"
+    PATH="$S" run bash "$SCRIPT"
+    [[ "$output" == *"run: chezmoi apply  or  sys-update"* ]]
 }

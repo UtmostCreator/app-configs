@@ -26,6 +26,8 @@ for arg in "$@"; do
 done
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=ops/lib/chezmoi-source.sh
+source "$REPO_ROOT/ops/lib/chezmoi-source.sh"
 
 pass=0 warn=0 err=0
 ok()   { printf '  [OK]   %s\n' "$*"; pass=$((pass+1)); }
@@ -65,19 +67,11 @@ done
 hdr "Dotfiles (chezmoi)"
 if have chezmoi; then
   # `chezmoi init --source=<repo>` does not persist sourceDir (ops/install.sh),
-  # so a plain verify fails on such hosts. Same decision as the chezmoi status
-  # probe in ops/lib/selection-facts.sh (not sourceable here:
-  # install-selection.bats limits that file to its owners): no --source when
-  # chezmoi is already configured with this repo, else --source=<repo>.
-  chezmoi_src=(--source="$REPO_ROOT")
-  chezmoi_root=""
-  [[ -f "$REPO_ROOT/.chezmoiroot" ]] && chezmoi_root="/$(head -n1 "$REPO_ROOT/.chezmoiroot")"
-  chezmoi_cfg="$(chezmoi source-path </dev/null 2>/dev/null | head -n1)"
-  if [[ -n "$chezmoi_cfg" && "$(readlink -f "$chezmoi_cfg" 2>/dev/null)" == "$(readlink -f "$REPO_ROOT$chezmoi_root" 2>/dev/null)" ]]; then
-    chezmoi_src=()
-  fi
-  if chezmoi ${chezmoi_src[@]+"${chezmoi_src[@]}"} verify >/dev/null 2>&1; then ok "all managed dotfiles match"
-  else note "chezmoi has pending changes (run: chezmoi apply  or  sys-update)"; fi
+  # so a plain verify fails on such hosts: ops/lib/chezmoi-source.sh decides
+  # whether the call needs --source=<repo>.
+  chezmoi_source_set "$REPO_ROOT"
+  if chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} verify >/dev/null 2>&1; then ok "all managed dotfiles match"
+  else note "chezmoi has pending changes (run: chezmoi $(chezmoi_source_hint)apply  or  sys-update)"; fi
 fi
 
 hdr "Maintenance commands usable"
@@ -132,6 +126,9 @@ if [[ "$(uname -s 2>/dev/null)" == Linux ]] && have systemctl; then
       note "$cbm_unit failed (see: journalctl --user -u codebase-memory-mcp-ui)"
     elif [[ "$cbm_state" == activating && "$cbm_restarts" -gt 0 ]]; then
       note "$cbm_unit is restart-looping (activating, $cbm_restarts restarts; see: journalctl --user -u codebase-memory-mcp-ui)"
+    elif [[ "$cbm_state" == activating ]]; then
+      # First start, no restart yet: not a problem and nothing to run.
+      printf '  [INFO] %s is starting (activating, no restarts yet)\n' "$cbm_unit"
     else
       note "$cbm_unit $cbm_state (run: systemctl --user start codebase-memory-mcp-ui)"
     fi

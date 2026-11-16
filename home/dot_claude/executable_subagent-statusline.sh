@@ -29,7 +29,9 @@
 # agents (purple orchestrator, blue architect/plan-writer, green implementers and
 # maintainers, yellow reviewers, cyan researcher/assessor/analyzer, red
 # release-auditor, pink agent-factory); other types hash to a palette colour.
-# Without a window size the context shows "tok 298k" (no %).
+# Without a window size the context shows "tok 298k" (no %), coloured by the raw count:
+# under 50k dim, under 150k neutral, 150k orange (38;5;208), 400k+ red (0;31). With a
+# window size the token load is the "ctx N%" field, coloured by the context scale below.
 #
 # Status: ▶ running  ◷ pending  ✓ completed  ✗ failed  ■ killed. Elapsed time is
 # shown only while running/pending (tasks carry no end time). Runtime colour:
@@ -57,6 +59,11 @@ jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date 
         if . >= 1000000 then "\((. / 100000 | floor) / 10)M"
         elif . >= 1000 then "\(. / 1000 | floor)k"
         else "\(floor)" end;
+    # Raw token count scale (shown only without a window size, as "tok 298k"): under 50k
+    # dim (SGR 2), under 150k neutral, under 400k orange, 400k+ red; the orange and red
+    # are the ctx_code ones so there is no new warning hue.
+    def tok_code:
+        if . < 50000 then "2" elif . < 150000 then "" elif . < 400000 then "38;5;208" else "0;31" end;
     def pad2: tostring | if length < 2 then "0" + . else . end;
     def rpad($n): if length < $n then . + (" " * ($n - length)) else . end;
     # Strings only, no control characters (untrusted payload text).
@@ -133,6 +140,7 @@ jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date 
                  and (.tokenCount | type) == "number"
               then .tokenCount * 100 / .contextWindowSize + 0.5 | floor else null end),
         tokens: (if (.tokenCount | type) == "number" then .tokenCount | tokens else null end),
+        tokc: (if (.tokenCount | type) == "number" then .tokenCount | tok_code else "" end),
         since: .startTime
       }] as $rows0
     # Agents sharing a type are numbered #1, #2 ... in startTime, then id, order.
@@ -156,7 +164,7 @@ jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date 
     | .pct as $p
     | (if $p != null
        then ("ctx \($p)%" | color($p | ctx_code)) + (if $p >= 80 then " " + ("!" | color("0;31")) else "" end)
-       elif .tokens != null then "tok \(.tokens)" else "" end) as $ctx
+       elif .tokens != null then (.tokc as $tc | "tok \(.tokens)" | tint($tc)) else "" end) as $ctx
     | (if .pct != null then 5 + (.pct | tostring | length) + (if .pct >= 80 then 2 else 0 end)
        elif .tokens != null then 4 + (.tokens | length) else 0 end) as $ctx_plain_w
     | (if (.status == "running" or .status == "pending") and .since != null

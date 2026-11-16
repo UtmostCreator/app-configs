@@ -200,12 +200,13 @@ real_task() {
     [ "$output" = "aad0147d1d0ef9f0e=▶ reviewer Son 5.5:H ctx 0%" ]
 }
 
-@test "colour: a known agent type and its model family are coloured, unknown types are grey" {
+@test "colour: a known agent type and its model family are coloured, unknown types hash to a palette colour" {
     input=$(jq -n --argjson a "$(real_task reviewer x)" --argjson b "$(real_task mystery x)" \
         '{columns: 167, tasks: [$a, $b]}')
     run bash -c "bash '$SCRIPT' <<<'$input' | jq -r .content"
-    [ "${lines[0]}" = "$(printf '\033[0;34m▶\033[0m \033[0;33mreviewer\033[0m 1s · \033[0;32mctx 0%%\033[0m │ \033[0;36mSonnet 5.5:H\033[0m │ x')" ]
-    [[ "${lines[1]}" == *$'\033[0;90mmystery \033[0m'* ]]
+    [ "${lines[0]}" = "$(printf '\033[0;34m▶\033[0m \033[38;5;180mreviewer\033[0m 1s · \033[0;32mctx 0%%\033[0m │ \033[38;5;75mSonnet 5.5:H\033[0m │ x')" ]
+    # Unknown types hash to a palette colour: 797 (sum of the character codes) % 8 = 5, 138.
+    [[ "${lines[1]}" == *$'\033[38;5;138mmystery \033[0m'* ]]
 }
 
 @test "colour: narrow fit is decided on visible width: exact fit keeps the effort initial, one less drops it" {
@@ -260,6 +261,50 @@ visible_widths() {
         [ -n "$sub" ]
         [ "$sub" = "$main" ] || { echo "$t: subagent=$sub main=$main"; false; }
     done
+}
+
+# main_code <payload-json> <label>: the SGR parameters directly before <label> in the
+# main renderer's first row. sub_code <task-json> <label>: the same in the subagent row.
+main_code() {
+    jq -c . <<<"$1" | COLUMNS=200 bash "$REPO_ROOT/home/dot_claude/executable_statusline.sh" | head -1 \
+        | sed -nE "s/.*\x1b\[([0-9;]*)m$2.*/\1/p" | head -1
+}
+sub_code() {
+    bash "$SCRIPT" <<<"$(jq -n --argjson a "$1" '{columns: 200, tasks: [$a]}')" | jq -r .content \
+        | sed -nE "s/.*\x1b\[([0-9;]*)m$2.*/\1/p" | head -1
+}
+
+@test "parity: both scripts colour every model family the same way, and unknown models stay plain" {
+    export GIT_CONFIG_GLOBAL=/dev/null CLAUDE_CONFIG_DIR="$BATS_TEST_TMPDIR/c" XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR" STATUSLINE_GIT_TTL=0
+    for pair in opus:Opus sonnet:Sonnet haiku:Haiku fable:Fable; do
+        id=${pair%%:*}; name=${pair##*:}
+        sub=$(sub_code "$(real_task reviewer x | jq --arg m "claude-$id-5" '.model = $m')" "$name")
+        main=$(main_code "{\"cwd\": \"/nonexistent\", \"model\": {\"display_name\": \"$name 5\"}}" "$name")
+        [ -n "$sub" ]
+        [ "$sub" = "$main" ] || { echo "$name: subagent=$sub main=$main"; false; }
+        case "$name" in Opus) [ "$sub" = "38;5;141" ] ;; Sonnet) [ "$sub" = "38;5;75" ] ;;
+            Haiku) [ "$sub" = "38;5;79" ] ;; Fable) [ "$sub" = "38;5;175" ] ;; esac
+    done
+    # An unknown family carries no model colour code in the main renderer.
+    [ -z "$(main_code '{"cwd": "/nonexistent", "model": {"display_name": "Mystery 9"}}' Mystery)" ]
+}
+
+@test "parity: names hitting all eight palette slots and a name over 20 characters get the same colour" {
+    export GIT_CONFIG_GLOBAL=/dev/null CLAUDE_CONFIG_DIR="$BATS_TEST_TMPDIR/c" XDG_RUNTIME_DIR="$BATS_TEST_TMPDIR" STATUSLINE_GIT_TTL=0
+    declare -A slots
+    # Single letters: character code mod 8 runs through 0-7 (h=104 -> 0, a=97 -> 1 ... g=103 -> 7).
+    for t in h a b c d e f g abcdefghijklmnopqrstuvwxyz-long-agent-name-d; do
+        sub=$(bash "$SCRIPT" <<<"$(jq -n --argjson a "$(real_task "$t" x)" '{columns: 167, tasks: [$a]}')" \
+            | jq -r .content | sed -E 's/^\x1b\[[0-9;]*m[^\x1b]*\x1b\[0m \x1b\[([0-9;]*)m.*/\1/')
+        main=$(jq -n --arg t "$t" '{cwd: "/nonexistent", agent: {name: $t}}' | COLUMNS=200 bash "$REPO_ROOT/home/dot_claude/executable_statusline.sh" | head -1 \
+            | sed -E 's/^\x1b\[([0-9;]*)m.*/\1/')
+        [[ "$sub" =~ ^38\;5\;[0-9]+$ ]]
+        [ "$sub" = "$main" ] || { echo "$t: subagent=$sub main=$main"; false; }
+        slots[$sub]=1
+    done
+    # The nine names produced exactly the eight palette colours.
+    [ "${#slots[@]}" -eq 8 ]
+    for c in 74 103 109 116 133 138 143 152; do [ -n "${slots[38;5;$c]:-}" ] || { echo "palette slot $c never hit"; false; }; done
 }
 
 # --- Colour scales ---------------------------------------------------------------------

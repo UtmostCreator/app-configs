@@ -62,16 +62,22 @@ jq -c --arg sep "$sep" --arg dot "$dot" --argjson now "${STATUSLINE_NOW:-$(date 
         | split("-")
         | [(.[0][0:1] | ascii_upcase) + .[0][1:]] + (if length > 1 then [.[1:] | join(".")] else [] end)
         | join(" ");
-    # Stable colour per agent type (name column) and per model family. Basic SGR
-    # codes only, so they follow the terminal palette; unknown types are grey.
+    # Stable colour per agent type (name column) and per model family; the same
+    # tables as statusline.sh (256-colour mid-tones, none of the warning colours).
+    # Unknown types hash to one of eight colours: sum of the character codes of
+    # the lower-cased name (a-z 0-9 _ - only) modulo 8, as statusline.sh does.
     def type_color:
-        ({researcher: "0;36", architect: "0;35", implementer: "0;32",
-          "super-implementer": "0;32", reviewer: "0;33", orchestrator: "0;34",
-          "plan-writer": "1", "release-auditor": "0;31"})[ascii_downcase] // "0;90";
+        ascii_downcase as $n
+        | ({researcher: "38;5;37", architect: "38;5;170", implementer: "38;5;108",
+            "super-implementer": "38;5;108", reviewer: "38;5;180", orchestrator: "38;5;69",
+            "plan-writer": "38;5;146", "release-auditor": "38;5;139"})[$n]
+          // (["38;5;74", "38;5;103", "38;5;109", "38;5;116", "38;5;133", "38;5;138",
+               "38;5;143", "38;5;152"]
+              | .[($n | gsub("[^a-z0-9_-]"; "") | explode | add // 0) % 8]);
     def tint($code): if length > 0 then color($code) else . end;
     def family_color:
-        if startswith("Opus") then "0;35" elif startswith("Son") then "0;36"
-        elif startswith("Haiku") then "0;32" else "0" end;
+        if startswith("Opus") then "38;5;141" elif startswith("Son") then "38;5;75"
+        elif startswith("Haiku") then "38;5;79" elif startswith("Fable") then "38;5;175" else "0" end;
     # Effort initial after the model (Opus 5.5:H); "max" stays as written, unknown levels get none.
     def eff_i: ({low: "L", medium: "M", high: "H", xhigh: "X", max: "max"})[.] // "";
     # Runtime scale for a running/pending row, by seconds running: under 5m neutral,

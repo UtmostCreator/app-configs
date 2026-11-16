@@ -567,16 +567,16 @@ cache_file() {
     [ "$status" -eq 0 ]
     [ "${lines[0]}" = "◆ orchestrator │ advanced-gym ⎇ main │ Opus 5" ]
     raw=$(payload '{"agent": {"name": "orchestrator"}}' | bash "$SCRIPT" | head -1)
-    [[ "$raw" == $'\033[0;34m◆ orchestrator\033[0m │ '* ]]
+    [[ "$raw" == $'\033[38;5;69m◆ orchestrator\033[0m │ '* ]]
 }
 
-@test "agent: unknown type is grey, and the tag follows RC and survives narrow widths" {
+@test "agent: an unknown type still has a colour, and the tag follows RC and survives narrow widths" {
     export COLUMNS=70
     session_file 222 sess-1 session_01Abc
     run statusline '{"session_id": "sess-1", "agent": {"name": "mystery"}}'
     [ "$output" = "RC │ ◆ mystery │ advanced-gym main │ Opus │ Ctx 55%" ]
     raw=$(payload '{"agent": {"name": "mystery"}}' | bash "$SCRIPT" | head -1)
-    [[ "$raw" == $'\033[0;90m◆ mystery\033[0m │ '* ]]
+    [[ "$raw" == $'\033[38;5;'*$'m◆ mystery\033[0m │ '* ]]
     # The compact layout (80-119 columns) keeps the tag too.
     COLUMNS=100 run statusline '{"agent": {"name": "mystery"}}'
     [[ "${lines[0]}" == "◆ mystery │ advanced-gym main │ Opus 5:H"* || "${lines[0]}" == "◆ mystery │ advanced-gym main │ Opus 5"* ]]
@@ -1069,3 +1069,74 @@ print(sum(2 if unicodedata.east_asian_width(c) in "WF" else 1 for c in t))' "$1"
     while IFS= read -r l; do [ "$(width "$l")" -le 108 ]; done <<<"$out"
 }
 
+# --- Model and agent colours -------------------------------------------------------
+
+# code_before <label> [payload-override]: the SGR parameters directly before
+# <label> on row 1 (e.g. 38;5;69), or "none" when it is uncoloured.
+code_before() {
+    local raw
+    raw=$(payload "${2:-{\}}" | bash "$SCRIPT" | head -1)
+    if [[ "$raw" =~ $'\033'\[([0-9\;]*)m"$1" ]]; then printf %s "${BASH_REMATCH[1]}"; else printf none; fi
+}
+
+@test "colour: model families have distinct stable colours, unknown models are neutral" {
+    mc() { code_before "$1" "{\"model\": {\"display_name\": \"$2\"}}"; }
+    [ "$(mc Opus 'Opus 5.5')" = "38;5;141" ]
+    [ "$(mc Sonnet 'Sonnet 5')" = "38;5;75" ]
+    [ "$(mc Haiku 'Haiku 4.5')" = "38;5;79" ]
+    [ "$(mc Fable 'Fable 1')" = "38;5;175" ]
+    [ "$(mc Mystery 'Mystery 9')" = "none" ]
+    # The version and the 1M-context suffix do not change the family colour.
+    [ "$(mc Opus 'Opus 4 (1M context)')" = "38;5;141" ]
+}
+
+@test "colour: the same model and agent keep their colour in every layout" {
+    export CLAUDE_STATUSLINE_WIDE_MIN=160
+    for cols in 200 140 100 60; do
+        [ "$(COLUMNS=$cols code_before Opus '{"agent": {"name": "reviewer"}}')" = "38;5;141" ] || { echo "model cols=$cols"; false; }
+        [ "$(COLUMNS=$cols code_before '◆ ' '{"agent": {"name": "reviewer"}}')" = "38;5;180" ] || { echo "agent cols=$cols"; false; }
+    done
+    for mode in wide full compact minimal; do
+        [ "$(CLAUDE_STATUSLINE_MODE=$mode COLUMNS=200 code_before Opus '{"agent": {"name": "reviewer"}}')" = "38;5;141" ] || { echo "mode=$mode"; false; }
+    done
+}
+
+@test "colour: known agents have fixed distinct colours; others hash (character-code sum mod 8) to a stable palette colour" {
+    declare -A seen
+    for a in orchestrator researcher architect implementer reviewer plan-writer release-auditor; do
+        c=$(code_before '◆ ' "{\"agent\": {\"name\": \"$a\"}}")
+        [[ "$c" =~ ^38\;5\;[0-9]+$ ]]
+        [ -z "${seen[$c]:-}" ] || { echo "$a shares $c with ${seen[$c]}"; false; }
+        seen[$c]=$a
+    done
+    [ "$(code_before '◆ ' '{"agent": {"name": "super-implementer"}}')" = "$(code_before '◆ ' '{"agent": {"name": "implementer"}}')" ]
+    # Unknown names: same name, same colour on every run; case does not matter.
+    a1=$(code_before '◆ ' '{"agent": {"name": "mystery"}}')
+    a2=$(code_before '◆ ' '{"agent": {"name": "mystery"}}')
+    a3=$(code_before '◆ ' '{"agent": {"name": "Mystery"}}')
+    [ "$a1" = "$a2" ]; [ "$a1" = "$a3" ]
+    [ "$a1" = "38;5;138" ]
+    [[ "$(code_before '◆ ' '{"agent": {"name": "zebra"}}')" =~ ^38\;5\;[0-9]+$ ]]
+}
+
+@test "colour: model and agent colours never use the reserved warning codes" {
+    for a in orchestrator researcher architect implementer reviewer plan-writer release-auditor mystery zebra qa-bot; do
+        c=$(code_before '◆ ' "{\"agent\": {\"name\": \"$a\"}}")
+        case "$c" in 0\;31|0\;33|0\;32|1\;31|38\;5\;208) false ;; esac
+    done
+}
+
+@test "colour: NO_COLOR keeps agent and model names as text without escape codes" {
+    out=$(payload '{"agent": {"name": "reviewer"}}' | NO_COLOR=1 bash "$SCRIPT")
+    [[ "$out" != *$'\033'* ]]
+    [[ "$out" == *"◆ reviewer"*"Opus 5"* ]]
+}
+
+
+@test "colour: a long agent name is coloured by its full name, not the shortened label" {
+    long=abcdefghijklmnopqrstuvwxyz-long-agent-name-d
+    # character-code sum of the full name mod 8 picks the palette slot
+    sum=0; for ((i = 0; i < ${#long}; i++)); do printf -v c %d "'${long:i:1}"; sum=$((sum + c)); done
+    palette=(74 103 109 116 133 138 143 152)
+    [ "$(code_before '◆ ' "$(jq -n --arg n "$long" '{agent: {name: $n}}')")" = "38;5;${palette[sum % 8]}" ]
+}

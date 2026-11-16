@@ -80,7 +80,11 @@ switch (uname -s)
             # --timeout is in minutes (keychain 2.8+ and 3.x), before the keys.
             set -l timeout_args
             test -n "$__hours"; and set timeout_args --timeout (math $__hours \* 60)
-            keychain --eval --quiet $timeout_args $keys | source
+            # keychain has no syntax flag: it picks the --eval dialect from
+            # $SHELL. A fish started from bash (WSL login shell, a terminal
+            # launched from bash, a stale SHELL) would get POSIX `export`
+            # lines that `source` rejects, so name fish for this call only.
+            SHELL=(status fish-path) keychain --eval --quiet $timeout_args $keys | source
         else
             # Fallback: persistent agent env file shared across shells.
             set -l env_file $HOME/.ssh/agent.env

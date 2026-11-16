@@ -156,6 +156,41 @@ load_agent_fish() {
     [ "$(cat "$HOME/keychain-args")" = "--eval --quiet --timeout 480 present" ]
 }
 
+# keychain picks its --eval syntax from $SHELL (3.0.4 and 2.8.x alike). A fish
+# started with SHELL=/bin/bash (WSL, a terminal launched from bash) used to get
+# POSIX `export` lines that fish cannot source, and a bash/zsh sourcing the
+# loader with SHELL=fish got fish syntax. This stub mirrors that behaviour.
+shell_aware_keychain_stub() {
+    stub keychain 'case "$SHELL" in
+    *fish) echo "set -gx KC_SOCK /tmp/kc.sock" ;;
+    *) echo "KC_SOCK=/tmp/kc.sock; export KC_SOCK;" ;;
+esac'
+}
+
+# NixOS-WSL: users.users.<u>.shell = pkgs.fish makes $SHELL
+# /nix/store/<hash>-wrapped-fish/wrapper, whose basename keychain does not
+# recognise as fish. Plain /bin/bash covers a fish started from bash.
+@test "fish: keychain --eval syntax is fish whatever SHELL is (bash, nix wrapped-fish)" {
+    command -v fish >/dev/null || skip "fish not installed"
+    shell_aware_keychain_stub
+    local fish_script="$REPO_ROOT/home/dot_config/fish/conf.d/ssh-agent.fish"
+    for tool in fish bash cat awk touch chmod; do ln -sf "$(command -v "$tool")" "$STUBS/$tool"; done
+    local sh
+    for sh in /bin/bash /nix/store/5b1mi4qz6fl5jvmlylg1aasizg0cbc0r-wrapped-fish/wrapper; do
+        run env SHELL="$sh" PATH="$STUBS" HOME="$HOME" XDG_CONFIG_HOME="$BATS_TEST_TMPDIR/xdg" \
+            "$STUBS/fish" --no-config -i -c 'source $argv[1]; echo "sock=$KC_SOCK"' "$fish_script"
+        [[ "$output" == *"sock=/tmp/kc.sock"* ]] || { echo "SHELL=$sh: $output" >&2; return 1; }
+        if [[ "$output" == *rror* ]]; then echo "SHELL=$sh parse error: $output" >&2; return 1; fi
+    done
+}
+
+@test "bash: keychain --eval syntax is POSIX even when SHELL is fish" {
+    shell_aware_keychain_stub
+    SHELL=/usr/bin/fish PATH="$(isolate_path)" \
+        bash --norc --noprofile -i -c '. "$1"; echo "sock=${KC_SOCK:-}" >"$HOME/out"' _ "$SCRIPT" 2>/dev/null
+    grep -q 'sock=/tmp/kc.sock' "$HOME/out"
+}
+
 # --- multi-key splitting (zsh does not word-split unquoted expansions) ------
 #
 # The loader is sourced by zsh from ~/.zshrc, so a multi-key list must load

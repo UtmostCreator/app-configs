@@ -117,7 +117,10 @@ _app_configs_ssh_linux_keychain() {
     if [ -n "$hours" ]; then
         set -- --timeout "$((hours * 60))" "$@"
     fi
-    eval "$(keychain --eval --quiet "$@")"
+    # keychain has no syntax flag: it picks the --eval dialect from $SHELL, so
+    # a stale SHELL=fish would emit fish syntax that eval cannot run. Name the
+    # Bourne dialect (bash, zsh and ksh all accept it) for this call only.
+    eval "$(SHELL=/bin/sh keychain --eval --quiet "$@")"
 }
 
 _app_configs_ssh_linux_plain() {

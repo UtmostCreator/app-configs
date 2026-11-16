@@ -19,6 +19,7 @@ The `wsl` and `linux-cli` profiles enable systemd user units (the codebase-memor
 - ops/readiness.sh (a CBM unit check and a WSL systemd TODO)
 - ops/install.sh or ops/lib/preflight.sh (the systemd preflight, once the open question is decided)
 - tests/bash for the above (extend the existing readiness, preflight and update-all suites; new cases only)
+- nix/modules/home/dev.nix (the CBM UI wrapper only) and tests/bash/cbm-ui-wrapper.bats: added by slice 1 for the root-cause fix (the wrapper must create CBM_ALLOWED_ROOT); owner-directed
 - docs/platforms/wsl/setup.md is owned by T-0039, not this ticket
 
 ## Findings
@@ -54,6 +55,13 @@ The `wsl` and `linux-cli` profiles enable systemd user units (the codebase-memor
 4. Decide (c) with the user, then add the preflight with its test.
 5. Record (d); hand (e) to T-0039.
 
+## Progress
+Slice 1 (branch fix/cbm-ui-allowed-root, 2026-11-16), reproduced on a fresh NixOS-WSL home:
+- Root cause: the CBM UI wrapper exports `CBM_ALLOWED_ROOT=$HOME/Projects` but nothing creates `~/Projects`. codebase-memory-mcp 0.12.1 rejects a missing root ("daemon session context was rejected", exit 1), ExecStartPost curl fails, and `Restart=always` `RestartSec=5` loops the unit in `activating`. It never reaches `failed`, so update-all's failed-unit check and readiness both missed it.
+- Fix 1 (done): the wrapper in `nix/modules/home/dev.nix` runs `mkdir -p "$CBM_ALLOWED_ROOT"` before the binary. Test: `tests/bash/cbm-ui-wrapper.bats`.
+- Fix 2 (done, part of option b): `ops/readiness.sh` has a "Codebase Memory MCP UI" section. It reads `systemctl --user show -p ActiveState,NRestarts,LoadState`: OK when active, TODO when `failed` or `activating` with NRestarts>0. It is skipped when not Linux, systemctl is missing, the user manager gives no state, or the unit is not installed. Tests: `tests/bash/readiness.bats`.
+- Still open: option (a) (update-all failed-units false green, AC1), the WSL systemd-off TODO in readiness (AC2 second half), (c) preflight (AC3), the (d) decision (AC4), and independent review. The readiness TODO leaves the exit code at 0 until T-0035 (exit 3). The ticket stays open.
+
 ## Verification
 - `bats tests/bash/readiness.bats tests/bash/ops-script-args.bats` plus the preflight and update-all suites.
 - `bats tests/bash` (required for `ops/update-all.sh` and `ops/lib/*` changes).
@@ -64,7 +72,7 @@ The `wsl` and `linux-cli` profiles enable systemd user units (the codebase-memor
 - Warn or fail for the systemd preflight on wsl?
 - Keep or gate the CBM units on headless hosts (wsl, linux-cli)?
 - Does WSL tolerate trailing comments in /etc/wsl.conf? (verify on a real host)
-- Is `CBM_ALLOWED_ROOT=$HOME/Projects` acceptable on WSL (missing ~/Projects on a fresh home; repo clone outside the root)? Observe in T-0040 step 10b.
+- Is `CBM_ALLOWED_ROOT=$HOME/Projects` acceptable on WSL? The root is now created by the wrapper (slice 1); the repo clone outside the root (~/app-configs) is still open. Observe in T-0040 step 10b.
 - What does the Determinate Nix installer do without systemd?
 
 ## Out of scope / notes

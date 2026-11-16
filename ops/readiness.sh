@@ -97,6 +97,35 @@ if [[ "$HOST_PROFILE" == wsl ]]; then
   done < <(bash "$REPO_ROOT/ops/wsl-check.sh")
 fi
 
+# The CBM UI unit exists only where Home Manager installed it (Linux with a
+# running systemd user manager). Restart=always keeps a crashing unit in
+# `activating` and never reaches `failed`, so NRestarts is read as well.
+# Skipped without output on macOS, without systemctl, with no user manager
+# (show prints nothing) and when the unit is not installed (LoadState=not-found).
+if [[ "$(uname -s 2>/dev/null)" == Linux ]] && have systemctl; then
+  cbm_unit=codebase-memory-mcp-ui.service
+  cbm_state="" cbm_restarts=0 cbm_load=""
+  while IFS='=' read -r k v; do
+    case "$k" in
+      ActiveState) cbm_state="$v" ;;
+      NRestarts) cbm_restarts="$v" ;;
+      LoadState) cbm_load="$v" ;;
+    esac
+  done < <(systemctl --user show -p ActiveState,NRestarts,LoadState "$cbm_unit" 2>/dev/null)
+  [[ "$cbm_restarts" =~ ^[0-9]+$ ]] || cbm_restarts=0
+  if [[ -n "$cbm_state" && "$cbm_load" != not-found ]]; then
+    hdr "Codebase Memory MCP UI (systemd user unit)"
+    if [[ "$cbm_state" == active ]]; then ok "$cbm_unit active"
+    elif [[ "$cbm_state" == failed ]]; then
+      note "$cbm_unit failed (see: journalctl --user -u codebase-memory-mcp-ui)"
+    elif [[ "$cbm_state" == activating && "$cbm_restarts" -gt 0 ]]; then
+      note "$cbm_unit is restart-looping (activating, $cbm_restarts restarts; see: journalctl --user -u codebase-memory-mcp-ui)"
+    else
+      note "$cbm_unit $cbm_state (run: systemctl --user start codebase-memory-mcp-ui)"
+    fi
+  fi
+fi
+
 rebuild_needed=0
 if is_nixos; then
   hdr "NixOS system layer (live state)"

@@ -17,6 +17,10 @@ Status: decided; phase 1 (Windows inventory) done, read-only · Date: 2026-11-15
 
 Amended by ADR-0019: applying Windows settings needs its own ADR.
 
+Amended by ADR-0020 (2026-11-16): for step W's scope only, apply may run before T-0047 completes (owner decision). A committed snapshot, undo.json and `-DryRun` replace the restore point and powercfg requirement for this non-elevated scope. The step-W snapshot is not the phase-3 baseline.
+
+Amended by ADR-0034 and ADR-0035 (2026-11-16): the NVIDIA profile step and the elevated `-MachineWide` mode may also apply before T-0047 completes. Owner decision 2026-11-16, asked "May -MachineWide and the NVIDIA profile step run before T-0047 closes?": "Yes, allow now". Each keeps its own snapshot, restore point or undo export and `-DryRun`.
+
 ## Decision
 - One YAML inventory per system with real values, then compare, then choose a baseline, then per-host overrides, then an optional apply command.
 - Nothing is applied until the WSL2 milestone (T-0047) is done. A value that cannot be read is `unknown`; never guess.

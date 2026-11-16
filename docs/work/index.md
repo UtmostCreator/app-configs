@@ -46,5 +46,6 @@ closes, move its directory from [`active/`](active/README.md) to
 | [T-0050: Always show user feedback during waits (bug + rule)](active/T-0050-user-feedback-during-waits/ticket.md) | open | 2026-11-15 |
 | [T-0051: Git hooks must work on Windows end to end (bug)](active/T-0051-windows-git-hooks/ticket.md) | open | 2026-11-15 |
 | [T-0052: Claude Code status line on native Windows (feature)](active/T-0052-windows-claude-statusline/ticket.md) | open (design reviewed; implementation not started) | 2026-11-15 |
+| [T-0055: Windows safe settings: snapshot first, profiles, telemetry, NVIDIA (feature)](active/T-0055-windows-safe-settings/ticket.md) | open (decision records written; nothing built) | 2026-11-16 |
 
 Archived tickets: see [archive/](archive/README.md).

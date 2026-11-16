@@ -38,5 +38,8 @@ A general Windows configuration layer; Windows app automation; applying Windows 
 
 ## Consequences
 - ADR-0002, ADR-0010, ADR-0011 and ADR-0018 carry an "Amended by ADR-0019" note.
+- Amended by ADR-0020 (2026-11-16): windows-app-automation stays forbidden except removing a closed list of inbox apps for the current user and re-registering those packages during `-WindowsRollback` (`Add-AppxPackage -RegisterByFamilyName -MainPackage`, no network install). windows-settings-apply is narrowed to the closed catalogue.
+- Amended by ADR-0035 (2026-11-16): machine-scope settings apply under that ADR (personal profile, elevated `-MachineWide`, corporate-device detection).
+- Amended by ADR-0034 (2026-11-16): applying an NVIDIA DRS profile (captured Profile Inspector `.nip`, personal profile, NVIDIA hardware only) outside the ADR-0020 catalogue is permitted under ADR-0034.
 - README.md and docs/architecture/tool-ownership.md now say "only a bounded WSL bootstrap" instead of "not supported" and "out of scope".
 - ADR frontmatter tags (`platforms`, `permits`, `forbids`) make this boundary searchable before the next ADR; see the index.

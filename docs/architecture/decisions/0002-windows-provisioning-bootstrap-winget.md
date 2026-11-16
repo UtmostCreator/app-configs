@@ -24,6 +24,7 @@ Homebrew on Linux/WSL (a second manager next to Nix), a new app-selection menu o
 
 ## Consequences
 - Contradiction to know: T-0041 discards "a repo-run windows/ layer (setup.ps1, doctor.ps1, DSC)" as an open-ended maintenance burden; the bootstrap partly reverses that. Keep it to WSL and commit tooling.
-- Open: automate the app list (`winget import` of a committed JSON) or keep it manual; `winget configure` (DSC) deferred "if the plain list proves insufficient". See ADR-0011.
+- Amended by ADR-0019: app-list automation and `winget configure` are not planned.
+- Was open: automate the app list (`winget import` of a committed JSON) or keep it manual; `winget configure` (DSC) deferred "if the plain list proves insufficient". See ADR-0011.
 - Commit-tooling step (T-0047 task T2) is not yet verified on the real PC.
 - ADR-0016 amends "only for commit tooling" / "Keep it to WSL and commit tooling" with one opt-in step (Claude status line; jq via winget).

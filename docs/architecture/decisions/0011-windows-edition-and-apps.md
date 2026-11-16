@@ -1,6 +1,8 @@
 # ADR-0011: Windows edition and apps
 Status: edition decided; app list approved as a manual list; automation OPEN · Date: 2026-11-14 (T-0041 approval), 2026-11-15 (edition, TrafficMonitor Lite) · Sources: docs/platforms/wsl/windows-and-wsl.md, `docs/work/active/T-0041-windows-app-list/ticket.md`, `docs/work/active/T-0042-install-selection/ticket.md`
 
+Amended by ADR-0019: Windows app automation is not planned (was OPEN).
+
 ## Decision
 - Edition: Windows 11 Home is enough. WSL2 needs only Virtual Machine Platform; Pro's Hyper-V Manager, Sandbox, BitLocker and Group Policy are not used. (This PC was being upgraded to Pro anyway; nothing here requires it.)
 - Apps: a documented copy-only list, installed by hand with winget, one `winget install --id <id> --exact` at a time. Ids are unverified until `winget show`. Automation is open (Milestone 2).

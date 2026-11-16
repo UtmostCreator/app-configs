@@ -1,6 +1,8 @@
 # ADR-0018: Interactive configuration manager: a frontend over the existing selection, not a new installer
 Status: proposed (nothing implemented; `sys-config` and its flags are a proposed API, not existing) · Date: 2026-11-16 · Reopens: T-0042 "TUI ... ruled out" and ADR-0002 "no gum/fzf menu" · Sources: owner request 2026-11-16 with an outside AI-written recommendation (unverified where noted), T-0042, T-0043, ops/install.sh, nix/modules/home/profile.nix, a read-only look at the local KitPact checkout
 
+Amended by ADR-0019: a Windows frontend is out of scope.
+
 Does not amend an accepted record. If accepted, ADR-0002, ADR-0011 and the T-0042 "Discarded or deferred" list get a consequence line.
 
 ## Decision

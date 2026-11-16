@@ -1,3 +1,17 @@
+---
+adr: 2
+title: "Windows provisioning is one PowerShell bootstrap; winget is the only package manager"
+status: decided
+date: 2026-11-15
+platforms: [windows, wsl]
+areas: [bootstrap, packages]
+permits: [powershell-bootstrap, winget-commit-tooling]
+forbids: [other-windows-package-managers, elevated-full-run, gum-fzf-menu]
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0047, T-0041, T-0042]
+---
 # ADR-0002: Windows provisioning is one PowerShell bootstrap; winget is the only package manager
 Status: decided (script committed; step C observed on a real PC 2026-11-15, see docs/platforms/wsl/expected-results.md row 2) · Date: 2026-11-15 · Sources: T-0047 ticket and plan, docs/platforms/base.md, `docs/work/active/T-0041-windows-app-list/ticket.md`, `docs/work/active/T-0042-install-selection/ticket.md` (lines 407, 530), `docs/plans/migration/implementation.md` (Appendix A)
 

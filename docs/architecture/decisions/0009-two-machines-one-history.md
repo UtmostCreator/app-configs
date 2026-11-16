@@ -1,3 +1,17 @@
+---
+adr: 9
+title: "Two machines, one history: push/pull, desktop first, file ownership"
+status: decided
+date: 2026-11-15
+platforms: [cross]
+areas: [workflow, git]
+permits: [ff-only-sync, desktop-first]
+forbids: [force-push, rebase, stash]
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0047]
+---
 # ADR-0009: Two machines, one history: push/pull, desktop first, file ownership
 Status: decided · Date: 2026-11-15 · Sources: T-0047 ticket (Transfer, Coordination) and plan (Decisions), `AGENTS.md`
 

@@ -1,3 +1,17 @@
+---
+adr: 5
+title: "Commit tooling first, hooks everywhere"
+status: decided
+date: 2026-11-15
+platforms: [cross, windows]
+areas: [hooks, secrets]
+permits: [lefthook, gitleaks, chezmoi-before-first-commit]
+forbids: [no-verify, hook-bypass, fail-open-scanner]
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0047]
+---
 # ADR-0005: Commit tooling first, hooks everywhere
 Status: decided (Windows commit-tooling step built in ops/windows/bootstrap.ps1 and observed 2026-11-15, expected-results.md row 2) · Date: 2026-11-15 · Sources: docs/platforms/base.md, `.lefthook.yml`, `ops/hooks/pre-commit.sh`, `ops/install.sh` (steps 3, 9), T-0047 plan (task T2), `repo-docs/migration-source-of-truth.md` (line 77)
 

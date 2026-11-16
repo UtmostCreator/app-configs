@@ -1,3 +1,17 @@
+---
+adr: 6
+title: "AI CLIs: keep Claude Code and Codex, install only when missing, run Claude in WSL"
+status: decided-unverified
+date: 2026-11-15
+platforms: [linux, wsl]
+areas: [ai-cli]
+permits: [install-when-missing, claude-in-wsl]
+forbids: [reinstall-over-working-binary]
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0047]
+---
 # ADR-0006: AI CLIs: keep Claude Code and Codex, install only when missing, run Claude in WSL
 Status: decided-unverified (installer not yet built) · Date: 2026-11-15 · Sources: T-0047 plan (decisions, S3-5, Milestone 2), `nix/modules/home/ai-cli-updates.nix`, docs/platforms/wsl/windows-and-wsl.md
 

@@ -1,3 +1,17 @@
+---
+adr: 3
+title: "Docker on WSL is one declarative engine inside NixOS-WSL"
+status: decided-unverified
+date: 2026-11-15
+platforms: [wsl, nixos]
+areas: [docker]
+permits: [nixos-docker-engine, explicit-docker-group]
+forbids: [automatic-docker-group]
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0047]
+---
 # ADR-0003: Docker on WSL is one declarative engine inside NixOS-WSL
 Status: decided (not yet verified; rootless on WSL unverified) · Date: 2026-11-15 · Sources: T-0047 ticket and plan, docs/platforms/wsl/windows-and-wsl.md, `nix/modules/nixos/docker.nix`
 

@@ -1,3 +1,17 @@
+---
+adr: 14
+title: "Tool stack recap: one owner per concern"
+status: decided
+date: unknown
+platforms: [cross]
+areas: [tooling, ownership]
+permits: [one-owner-per-concern]
+forbids: [chezmoi-run-scripts, asdf, nvm, husky]
+amends: []
+supersedes: []
+superseded_by: []
+related: []
+---
 # ADR-0014: Tool stack recap: one owner per concern
 Status: decided (recap of an existing decision) · Date: not recorded (original migration plan) · Sources: `docs/plans/migration/implementation.md`, `docs/architecture/tool-ownership.md`, `repo-docs/software-and-cli-tools.md`, `repo-docs/migration-package-ownership.md`
 

@@ -1,3 +1,17 @@
+---
+adr: 18
+title: "Interactive configuration manager: a frontend over the existing selection"
+status: proposed
+date: 2026-11-16
+platforms: [linux, macos]
+areas: [installer, selection]
+permits: [optional-frontend]
+forbids: [own-installer, eval-user-input, windows-frontend]
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0042]
+---
 # ADR-0018: Interactive configuration manager: a frontend over the existing selection, not a new installer
 Status: proposed (nothing implemented; `sys-config` and its flags are a proposed API, not existing) · Date: 2026-11-16 · Reopens: T-0042 "TUI ... ruled out" and ADR-0002 "no gum/fzf menu" · Sources: owner request 2026-11-16 with an outside AI-written recommendation (unverified where noted), T-0042, T-0043, ops/install.sh, nix/modules/home/profile.nix, a read-only look at the local KitPact checkout
 

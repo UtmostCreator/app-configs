@@ -1,3 +1,17 @@
+---
+adr: 12
+title: "Desktop compositor: GNOME live, niri trial proposed, Hyprland parked"
+status: partly-decided
+date: 2026-11-15
+platforms: [linux, nixos]
+areas: [desktop, compositor]
+permits: [gnome-default, niri-trial]
+forbids: [unauthorised-niri-migration]
+amends: []
+supersedes: []
+superseded_by: []
+related: []
+---
 # ADR-0012: Desktop compositor: GNOME live, niri trial proposed, Hyprland parked
 Status: GNOME decided (stay for now); niri proposed trial; Hyprland deferred · Date: 2026-11-15 (niri plan; the GNOME decision date is not recorded) · Sources: `docs/plans/future-upgrades.md` (section 12), `docs/plans/niri-migration.md`, `docs/research/niri-vs-hyprland.md`, `docs/research/desktop-migration-claim-audit.md`, `docs/plans/hyprland-migration.md`, `docs/work/active/T-0029-nixos-system-ownership/ticket.md`
 

@@ -1,3 +1,17 @@
+---
+adr: 1
+title: "WSL2 base is NixOS-WSL, on the desktop path"
+status: decided-unverified
+date: 2026-11-15
+platforms: [wsl, nixos]
+areas: [wsl, sys-setup, home-manager]
+permits: [nixos-wsl, standalone-home-manager, sys-setup]
+forbids: [nixosConfigurations-for-wsl]
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0047]
+---
 # ADR-0001: WSL2 base is NixOS-WSL, on the desktop path
 Status: decided (not yet verified on a real WSL install) · Date: 2026-11-15 · Sources: T-0047 ticket and plan (Decision), docs/platforms/wsl/windows-and-wsl.md, `docs/architecture/tool-ownership.md`
 

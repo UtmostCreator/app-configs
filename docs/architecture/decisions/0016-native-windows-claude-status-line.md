@@ -1,3 +1,17 @@
+---
+adr: 16
+title: "Native Windows Claude status line: the repo script through Git Bash"
+status: proposed
+date: 2026-11-15
+platforms: [windows]
+areas: [claude, statusline]
+permits: [statusline-bootstrap-step, jq-via-winget]
+forbids: [other-windows-claude-keys, chezmoi-on-windows, windows-hooks]
+amends: [2, 6]
+supersedes: []
+superseded_by: []
+related: [T-0052]
+---
 # ADR-0016: Native Windows Claude status line: the repo script through Git Bash, installed by the bootstrap
 Status: proposed (design reviewed; not implemented) · Date: 2026-11-15 · Amends: ADR-0002, ADR-0006 · Sources: T-0052, code.claude.com/docs/en/statusline (Windows configuration)
 

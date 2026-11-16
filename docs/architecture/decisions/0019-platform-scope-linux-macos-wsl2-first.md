@@ -1,3 +1,17 @@
+---
+adr: 19
+title: "Platform scope: Linux, macOS and WSL2 first; Windows stays bounded"
+status: decided
+date: 2026-11-16
+platforms: [cross, windows]
+areas: [scope, platform]
+permits: [bounded-windows-bootstrap, wsl-runtime-interop]
+forbids: [windows-app-automation, windows-settings-apply, general-windows-layer, wsl-changing-windows]
+amends: [2, 10, 11, 18]
+supersedes: []
+superseded_by: []
+related: []
+---
 # ADR-0019: Platform scope: Linux, macOS and WSL2 first; Windows stays bounded
 Status: decided (owner decision 2026-11-16) · Date: 2026-11-16 · Amends: ADR-0002, ADR-0010, ADR-0011, ADR-0018 · Sources: owner decision 2026-11-16, [project scope](../project-scope.md)
 
@@ -25,3 +39,4 @@ A general Windows configuration layer; Windows app automation; applying Windows 
 ## Consequences
 - ADR-0002, ADR-0010, ADR-0011 and ADR-0018 carry an "Amended by ADR-0019" note.
 - README.md and docs/architecture/tool-ownership.md now say "only a bounded WSL bootstrap" instead of "not supported" and "out of scope".
+- ADR frontmatter tags (`platforms`, `permits`, `forbids`) make this boundary searchable before the next ADR; see the index.

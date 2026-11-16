@@ -1,3 +1,17 @@
+---
+adr: 11
+title: "Windows edition and apps"
+status: partly-decided
+date: 2026-11-14
+platforms: [windows]
+areas: [apps, windows-edition]
+permits: [windows-home, manual-app-list]
+forbids: [windows-app-automation, registry-tweaks, dsc, hotkey-scripts]
+amends: []
+supersedes: []
+superseded_by: []
+related: [T-0041, T-0042]
+---
 # ADR-0011: Windows edition and apps
 Status: edition decided; app list approved as a manual list; automation OPEN · Date: 2026-11-14 (T-0041 approval), 2026-11-15 (edition, TrafficMonitor Lite) · Sources: docs/platforms/wsl/windows-and-wsl.md, `docs/work/active/T-0041-windows-app-list/ticket.md`, `docs/work/active/T-0042-install-selection/ticket.md`
 

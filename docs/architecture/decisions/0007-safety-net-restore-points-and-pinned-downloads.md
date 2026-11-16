@@ -1,5 +1,5 @@
 # ADR-0007: Safety net: restore points, exports, pinned downloads, state reports
-Status: decided (not yet exercised on a real install) · Date: 2026-11-15 · Sources: T-0047 ticket (Recovery) and plan, docs/platforms/wsl/windows-and-wsl.md (Restore points)
+Status: decided (restore-point step observed on a real install 2026-11-15 with a pre-commit build of bootstrap.ps1; see [evidence](../../work/active/T-0047-nixos-wsl/evidence/h1-elevated-run-2026-11-15.md) and [expected results](../../platforms/wsl/expected-results.md) row 1) · Date: 2026-11-15 · Sources: T-0047 ticket (Recovery) and plan, docs/platforms/wsl/windows-and-wsl.md (Restore points)
 
 ## Decision
 - A Windows restore point before installing WSL.

@@ -10,7 +10,7 @@ Short records of what was chosen, what lost and why. Statuses: decided, trial, p
 | [0004](0004-tailscale-on-windows-only.md) | Tailscale on the Windows host only | decided, not yet verified | 2026-11-15 |
 | [0005](0005-commit-tooling-first-hooks-everywhere.md) | lefthook, gitleaks and chezmoi before the first commit, hooks never bypassed | decided, Windows part planned | 2026-11-15 |
 | [0006](0006-ai-clis-claude-code-and-codex.md) | Keep Claude Code and Codex; install only when missing; Claude runs in WSL | decided, installer not built | 2026-11-15 |
-| [0007](0007-safety-net-restore-points-and-pinned-downloads.md) | Restore point, exports, pinned image, three distinct recoveries | decided, not yet verified | 2026-11-15 |
+| [0007](0007-safety-net-restore-points-and-pinned-downloads.md) | Restore point, exports, pinned image, three distinct recoveries | decided, restore point observed 2026-11-15 | 2026-11-15 |
 | [0008](0008-git-editor-per-host-profile.md) | Git editor nvim on wsl and linux-cli, `code --wait` elsewhere | decided, not implemented | 2026-11-15 |
 | [0009](0009-two-machines-one-history.md) | Desktop first, sync by push/pull fast-forward only, split file ownership | decided | 2026-11-15 |
 | [0010](0010-cross-os-settings-inventory-first.md) | Cross-OS settings: inventory, compare, baseline; apply nothing yet | decided, phase 1 done | 2026-11-15 |

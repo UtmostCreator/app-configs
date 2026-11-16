@@ -823,6 +823,28 @@ STUB
     [ "$status" -eq 1 ]
 }
 
+@test "--check passes when only the sourced _lefthook.sh lacks +x (Windows NTFS has no exec bit for shebang-less files)" {
+    mkrepo
+    install_hooks >/dev/null
+    chmod -x "$DEST/_lefthook.sh"
+    [ ! -x "$DEST/_lefthook.sh" ]
+    run install_hooks --check
+    echo "$output"
+    [ "$status" -eq 0 ]
+}
+
+@test "--check still fails for each dispatcher without +x, even when _lefthook.sh has it" {
+    mkrepo
+    install_hooks >/dev/null
+    for h in pre-commit commit-msg pre-push post-merge; do
+        chmod -x "$DEST/$h"
+        run install_hooks --check
+        [ "$status" -eq 1 ]
+        [[ "$output" == *"$h is not executable"* ]]
+        chmod +x "$DEST/$h"
+    done
+}
+
 @test "--check fails after HEAD moved a dispatcher blob, and says to re-run the installer" {
     mkrepo
     install_hooks >/dev/null

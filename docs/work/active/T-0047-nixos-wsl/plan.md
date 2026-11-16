@@ -74,7 +74,7 @@ flowchart TD
   - timezone; substituters
 - [ ] **AC-NEG** macOS, linux-desktop and linux-cli unchanged (full bats, flake check, builds). Pushes only in the Transfer steps (user-authorised 2026-11-15; each session confirms its own push authorisation, AGENTS.md). No `wsl --unregister` scripted.
 - [ ] **AC-TZ** Timezone decided in Slice 4: sys-setup forces Europe/London (mkForce); compare with Windows and record the decision.
-- [ ] **AC-DOCKER-MSG** The ops/projects/workspace/config.sh:88-89 error text is fixed in Slice 2b (points to the sys-setup Docker path, not Docker Desktop's WSL integration).
+- [x] **AC-DOCKER-MSG** The `ws_ensure_docker` error text in ops/projects/workspace/config.sh is fixed in Slice 2b (points to the sys-setup Docker path, not Docker Desktop's WSL integration). Done: `fix(workspace): point the missing-Docker error at sys-setup, not Docker Desktop`.
 - [ ] **AC-T2** The T2 stub tests pass. On the real Windows clone, `ops/doctor.sh` and `ops/validate-config.sh` exit 0, the hooks are installed, the commit-msg good and bad cases behave, and gitleaks catches a planted token. Once AC-T2 passes, Windows commits are allowed (including T1 and T2).
 
 ## Tasks
@@ -148,9 +148,9 @@ flowchart TD
     - `ops/validate-config.sh`: ASCII check for ops/windows, and its line-5 header.
     - No new doc-contracts rule. Extend tests/lib/find-missing-paths.py and tests/bash/path-contract.bats if anything is missing (no duplicate check).
     - `ops/wsl-check.sh` Docker TODO text; `tests/bash/wsl-check.bats`.
-    - `ops/projects/workspace/config.sh:88-89` error text: it recommends Docker Desktop's WSL integration; change it to the sys-setup Docker path (AC-DOCKER-MSG).
+    - `ws_ensure_docker` error text in `ops/projects/workspace/config.sh`: it recommended Docker Desktop's WSL integration; it now points at the sys-setup Docker path (AC-DOCKER-MSG).
     - Docs:
-      - `docs/platforms/wsl/setup.md`: runbook rewrite for NixOS-WSL, one Mermaid, R1/R2, rollback (`nixos-rebuild switch --rollback`; `wsl --import` from the before-setup export); the no-linger note (Tailscale off, so no linger: user timers and CBM run only while a WSL session is open); the nix-channel note (`nix-channel --update` floats WSL nixpkgs, same model as the desktop). Keep: Docker section (`sudo ENABLE_DOCKER=1 sys-setup --apply`; target of `ops/projects/workspace/config.sh:89`); "SSH key before nvim" (`followups.md:19`); macOS-differences table (`README.md:144`, `docs/index.md:26`).
+      - `docs/platforms/wsl/setup.md`: runbook rewrite for NixOS-WSL, one Mermaid, R1/R2, rollback (`nixos-rebuild switch --rollback`; `wsl --import` from the before-setup export); the no-linger note (Tailscale off, so no linger: user timers and CBM run only while a WSL session is open); the nix-channel note (`nix-channel --update` floats WSL nixpkgs, same model as the desktop). Keep: Docker section (`sudo ENABLE_DOCKER=1 sys-setup --apply`; the message currently points at the Docker section of `docs/platforms/wsl/windows-and-wsl.md` until setup.md is rewritten and `ws_ensure_docker` is repointed); "SSH key before nvim" (`followups.md:19`); macOS-differences table (`README.md:144`, `docs/index.md:26`).
       - `docs/platforms/wsl/windows-and-wsl.md`: Windows-side items.
       - One-line edits: `README.md:94`; `docs/architecture/tool-ownership.md:14`; `home/personal.yaml.example:30`; `docs/index.md:26`; `docs/platforms/windows/setup.md` "Next: WSL2".
       - `docs/plans/migration/implementation.md`: lines 9, 41, 84, 90, 91, 254, 1087, 1477, 1479, 1616; Appendix A line 1666. (WSL = NixOS-WSL with the bootstrap exception; clipcopy via clip.exe; Windows artefacts; detect-host.sh.)

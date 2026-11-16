@@ -76,17 +76,21 @@ ws_ensure_herd() {
 
 # ws_ensure_docker: make sure a Docker daemon is reachable. macOS restarts
 # the Colima VM (cpu=2, memory=2GiB, vm-type=vz) and logs to ~/logs/colima.
-# Other hosts (WSL2, Linux) use the daemon that is already running (Docker
-# Engine or Docker Desktop's WSL integration); Colima there would be a VM
-# inside a VM, and vz is macOS-only.
+# Other hosts (WSL2, Linux) use the daemon that is already running; Colima
+# there would be a VM inside a VM, and vz is macOS-only. The hint names the
+# host-neutral start step first, then the NixOS/NixOS-WSL install path
+# (sys-setup, ADR-0003; Docker Desktop is not recommended).
 ws_ensure_docker() {
 	if [[ "$(uname -s)" != Darwin ]]; then
 		if docker info >/dev/null 2>&1; then
 			echo "Using the running Docker daemon (Colima is macOS-only here)."
 			return 0
 		fi
-		echo "[ERROR] No Docker daemon reachable. Start Docker Engine (sudo systemctl start docker)" \
-			"or enable Docker Desktop's WSL integration; see docs/platforms/wsl/setup.md." >&2
+		echo "[ERROR] No Docker daemon reachable. Start Docker Engine:" \
+			"sudo systemctl start docker. On NixOS or NixOS-WSL, install it with" \
+			"'sudo ENABLE_DOCKER=1 DOCKER_GROUP=1 sys-setup --apply' (or DOCKER_ROOTLESS=1" \
+			"for rootless), then open a new login session; see" \
+			"docs/platforms/wsl/windows-and-wsl.md." >&2
 		return 1
 	fi
 	local log_dir="$HOME/logs/colima"

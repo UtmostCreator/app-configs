@@ -112,7 +112,7 @@ Order: baseline, tests (D2b, D8 bats), backup + restorability check, dry-activat
   - timezone; substituters
 - [ ] AC-NEG: macOS, linux-desktop, linux-cli unchanged (full bats, flake check, builds). No force-push. No `wsl --unregister` scripted.
 - [ ] AC-TZ: decide the timezone in Slice 4 (sys-setup forces Europe/London via mkForce vs Windows' zone) and record the decision.
-- [ ] AC-DOCKER-MSG: ops/projects/workspace/config.sh:88-89 no longer recommends Docker Desktop WSL integration (Slice 2b).
+- [x] AC-DOCKER-MSG: `ws_ensure_docker` in ops/projects/workspace/config.sh no longer recommends Docker Desktop WSL integration (Slice 2b). Done: `fix(workspace): point the missing-Docker error at sys-setup, not Docker Desktop`.
 
 ## Transfer (push/pull)
 

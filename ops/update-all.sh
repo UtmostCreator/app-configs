@@ -119,6 +119,8 @@ source "$REPO_ROOT/ops/lib/selection.sh"
 source "$REPO_ROOT/ops/lib/install-record.sh"
 # shellcheck source=ops/lib/update-ui.sh
 source "$REPO_ROOT/ops/lib/update-ui.sh"
+# shellcheck source=ops/lib/chezmoi-source.sh
+source "$REPO_ROOT/ops/lib/chezmoi-source.sh"
 # shellcheck source=ops/update-version-report.sh
 source "$REPO_ROOT/ops/update-version-report.sh"
 
@@ -848,23 +850,33 @@ fi
 CHEZMOI_CONFLICTS=()
 CHEZMOI_STATUS_OK=1
 if have chezmoi; then
+  # Every plain chezmoi call needs --source=<repo> where sourceDir is not
+  # persisted (ops/lib/chezmoi-source.sh); empty where chezmoi is configured.
+  chezmoi_source_set "$REPO_ROOT"
+  # Applying from a checkout other than the one chezmoi is configured for would
+  # bake this checkout's path into the rendered files (sourceDir in templates).
+  if [[ "$MODE" == "apply" && "$CHEZMOI_SOURCE_STATE" == other ]]; then
+    precheck_fail "managed files" "chezmoi is configured for $CHEZMOI_SOURCE_PATH; run sys-update from that checkout"
+  elif [[ "$CHEZMOI_SOURCE_STATE" == other ]]; then
+    ui_warn "managed files" "--apply will refuse: chezmoi is configured for $CHEZMOI_SOURCE_PATH; run sys-update from that checkout"
+  fi
   # A failing `chezmoi status` is not "no local edits": it means unknown.
-  if _chezmoi_status="$(chezmoi status 2>/dev/null)"; then
+  if _chezmoi_status="$(chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} status 2>/dev/null)"; then
     mapfile -t _chezmoi_edited < <(printf '%s\n' "$_chezmoi_status" \
       | awk 'substr($0,1,1)=="M" && substr($0,2,1)!=" " {print substr($0,4)}')
   else
     CHEZMOI_STATUS_OK=0
     _chezmoi_edited=()
     if [[ "$MODE" == "apply" ]]; then
-      precheck_fail "managed files" "chezmoi status failed, so local edits cannot be ruled out (run: chezmoi status)"
+      precheck_fail "managed files" "chezmoi status failed, so local edits cannot be ruled out (run: chezmoi $(chezmoi_source_hint)status)"
     else
-      ui_warn "managed files" "chezmoi status failed, so local edits cannot be ruled out (run: chezmoi status)"
+      ui_warn "managed files" "chezmoi status failed, so local edits cannot be ruled out (run: chezmoi $(chezmoi_source_hint)status)"
     fi
   fi
   if [[ "${#_chezmoi_edited[@]}" -gt 0 ]]; then
-    _chezmoi_dest="$(chezmoi target-path 2>/dev/null || true)"
+    _chezmoi_dest="$(chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} target-path 2>/dev/null || true)"
     for _target in "${_chezmoi_edited[@]}"; do
-      _source="$(chezmoi source-path "${_chezmoi_dest:-$HOME}/$_target" 2>/dev/null || true)"
+      _source="$(chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} source-path "${_chezmoi_dest:-$HOME}/$_target" 2>/dev/null || true)"
       [[ "${_source##*/}" == modify_* ]] && continue
       CHEZMOI_CONFLICTS+=("$_target")
     done
@@ -915,8 +927,8 @@ if [[ "$PRECHECK_FAILED" == 1 ]]; then
     printf '  Override:  sys-update --allow-dirty\n\n'
   fi
   if [[ "${#CHEZMOI_CONFLICTS[@]}" -gt 0 && "$CHEZMOI_FORCE" != 1 ]]; then
-    printf '  Inspect:   chezmoi diff %s\n' "${CHEZMOI_CONFLICTS[@]/#/~/}"
-    printf '  Keep:      port the edit into the repo source, then: chezmoi apply %s\n' "${CHEZMOI_CONFLICTS[@]/#/~/}"
+    printf '  Inspect:   chezmoi %sdiff %s\n' "$(chezmoi_source_hint)" "${CHEZMOI_CONFLICTS[@]/#/~/}"
+    printf '  Keep:      port the edit into the repo source, then: chezmoi %sapply %s\n' "$(chezmoi_source_hint)" "${CHEZMOI_CONFLICTS[@]/#/~/}"
     printf '  Discard:   sys-update --force   (the repo version wins)\n\n'
   fi
   exit 1
@@ -1282,11 +1294,14 @@ check_activated_target() {
 
 # chezmoi -------------------------------------------------------------------
 if [[ "$STEP_FAILED" == 0 ]] && have chezmoi; then
-  PENDING="$(chezmoi status 2>/dev/null | grep -c . || true)"
-  CHEZMOI_ARGS=(apply --no-tty)
+  chezmoi_source_set "$REPO_ROOT"
+  PENDING="$(chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} status 2>/dev/null | grep -c . || true)"
+  CHEZMOI_ARGS=()
+  [[ "${#CHEZMOI_SOURCE_ARGS[@]}" -gt 0 ]] && CHEZMOI_ARGS+=("${CHEZMOI_SOURCE_ARGS[@]}")
+  CHEZMOI_ARGS+=(apply --no-tty)
   [[ "$CHEZMOI_FORCE" == 1 ]] && CHEZMOI_ARGS+=(--force)
   # The diff is recorded before the apply so the log always shows what changed.
-  [[ "$MODE" == "apply" ]] && { ui_log_only ""; ui_log_only "\$ chezmoi diff"; chezmoi diff >> "${UI_LOG:-/dev/null}" 2>&1 || true; }
+  [[ "$MODE" == "apply" ]] && { ui_log_only ""; ui_log_only "\$ chezmoi diff"; chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} diff >> "${UI_LOG:-/dev/null}" 2>&1 || true; }
   if run_step "chezmoi" chezmoi "${CHEZMOI_ARGS[@]}"; then
     [[ "$MODE" == "apply" ]] && ui_ok "chezmoi" "$( ((PENDING > 0)) && echo "$PENDING file(s) applied" || echo 'already in sync')"
   else
@@ -1575,9 +1590,10 @@ if [[ "$MODE" == "apply" && "$DO_VERIFY" == 1 ]]; then
   fi
 
   if have chezmoi; then
-    if chezmoi verify >/dev/null 2>&1; then ui_ok "managed files" "no drift"
-    else ui_warn "managed files" "chezmoi reports drift (run: chezmoi diff)"
-         ui_note warn chezmoi "managed files drifted after apply — run: chezmoi diff"; fi
+    chezmoi_source_set "$REPO_ROOT"
+    if chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} verify >/dev/null 2>&1; then ui_ok "managed files" "no drift"
+    else ui_warn "managed files" "chezmoi reports drift (run: chezmoi $(chezmoi_source_hint)diff)"
+         ui_note warn chezmoi "managed files drifted after apply — run: chezmoi $(chezmoi_source_hint)diff"; fi
   fi
 
 

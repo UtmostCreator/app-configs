@@ -17,7 +17,7 @@ setup() {
 
 chezmoi_manages() { # chezmoi_manages yes|no
     if [ "$1" = yes ]; then
-        printf '#!/bin/sh\n[ "$1" = source-path ] && exit 0\nexit 1\n' >"$STUBS/chezmoi"
+        printf '#!/bin/sh\n# an unconfigured chezmoi: only a call with --source=<repo> answers\ncase "$*" in --source=*" source-path"*) exit 0 ;; esac\nexit 1\n' >"$STUBS/chezmoi"
     else
         printf '#!/bin/sh\nexit 1\n' >"$STUBS/chezmoi"
     fi
@@ -152,7 +152,7 @@ stub_uname() { printf '#!/bin/sh\necho %s\n' "$1" >"$STUBS/uname"; chmod +x "$ST
 }
 
 @test "--remove keeps a chezmoi-managed loader when the rc is unmanaged" {
-    printf '#!/bin/sh\ncase "$2" in *ssh-agent.sh) exit 0;; esac\nexit 1\n' >"$STUBS/chezmoi"
+    printf '#!/bin/sh\ncase "$*" in *ssh-agent.sh) exit 0;; esac\nexit 1\n' >"$STUBS/chezmoi"
     chmod +x "$STUBS/chezmoi"
     setup_run /bin/zsh
     [ "$status" -eq 0 ]
@@ -433,7 +433,7 @@ stub_uname() { printf '#!/bin/sh\necho %s\n' "$1" >"$STUBS/uname"; chmod +x "$ST
     [[ "$output" == *"WARN"*"IgnoreUnknown"* ]]
 }
 
-# NixOS (users.users.<u>.shell = pkgs.fish) makes the login shell
+# NixOS-WSL (users.users.<u>.shell = pkgs.fish) makes the login shell
 # /nix/store/<hash>-wrapped-fish/wrapper: the basename is `wrapper`.
 @test "fish: a NixOS wrapped-fish login shell is detected as fish" {
     chezmoi_manages yes

@@ -187,6 +187,21 @@ bs_fixture() {
         if [ "$s" = darwin-rebuild ] && [ -z "${WITH_DARWIN_REBUILD:-}" ]; then continue; fi
         cat >"$BSTUBS/$s" <<STUB
 #!/usr/bin/env bash
+if [ "$s" = chezmoi ]; then
+  # An unconfigured chezmoi (sourceDir not persisted by \`chezmoi init --source\`):
+  # every subcommand but init fails without --source=<repo>. CALLS gets the call
+  # without that flag (stable greps); the raw call goes to CALLS.raw.
+  echo "chezmoi \$*" >>"$CALLS.raw"
+  _src=0; _a=()
+  for _x in "\$@"; do case "\$_x" in --source=*) _src=1 ;; *) _a+=("\$_x") ;; esac; done
+  set -- "\${_a[@]}"
+  # a plain source-path answers like real chezmoi: the default path, rc 0, directory missing
+  if [ "\$*" = source-path ] && [ "\$_src" = 0 ]; then echo "\$HOME/.local/share/chezmoi"; exit 0; fi
+  if [ "\${CHEZMOI_UNCONFIGURED:-1}" = 1 ] && [ "\$_src" = 0 ] && [ "\${1:-}" != init ]; then
+    echo "chezmoi: stat \$HOME/.local/share/chezmoi: no such file or directory" >&2
+    exit 1
+  fi
+fi
 echo "$s \$* [pwd=\$PWD]" >>"$CALLS"
 case "\${STUB_FAIL:-}" in "$s \$1"*) exit 1 ;; esac
 if [ "$s" = nix ] && [ "\${1:-}" = --version ]; then echo "nix (stub) 2.0"; fi
@@ -390,7 +405,7 @@ mutated() { grep -Eq '^(nix profile|nix flake|chezmoi (init|apply)|mise (trust|i
     export HM_PROFILE_MANIFEST="$BATS_TEST_TMPDIR/no-profile/manifest.json"
     bs --yes
     [ "$status" -eq 0 ]
-    grep -q '^profilebin chezmoi apply' "$CALLS"
+    grep -q '^profilebin chezmoi .*apply' "$CALLS"
 }
 
 @test "bootstrap macOS apply checks sudo up front: no TTY uses sudo -n, nothing mutated" {
@@ -422,6 +437,16 @@ mutated() { grep -Eq '^(nix profile|nix flake|chezmoi (init|apply)|mise (trust|i
     bs --dry-run --yes
     [ "$status" -eq 1 ]
     if mutated; then return 1; fi
+}
+
+@test "T-0009: bootstrap passes --source=<repo> to chezmoi diff and apply after init (sourceDir is not persisted)" {
+    bs_fixture
+    bs --yes
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    grep -qF "chezmoi init --source=$FX" "$CALLS.raw"
+    grep -qF "chezmoi --source=$FX diff" "$CALLS.raw"
+    grep -qF "chezmoi --source=$FX apply" "$CALLS.raw"
+    grep -q '^chezmoi apply' "$CALLS"
 }
 
 @test "bootstrap fails when chezmoi diff fails and never applies" {

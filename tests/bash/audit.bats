@@ -54,6 +54,19 @@ esac
 EOF
     cat >"$BIN/chezmoi" <<EOF
 #!/usr/bin/env bash
+# Unconfigured chezmoi (sourceDir not persisted): every subcommand fails unless
+# the call carries --source=<repo>. CALLS gets the call without that flag; the
+# raw call goes to CALLS.chezmoi-raw.
+echo "chezmoi \$*" >>"$CALLS.chezmoi-raw"
+_src=0; _a=()
+for _x in "\$@"; do case "\$_x" in --source=*) _src=1 ;; *) _a+=("\$_x") ;; esac; done
+set -- "\${_a[@]}"
+# a plain source-path answers like real chezmoi: the default path, rc 0, directory missing
+if [[ "\$*" == source-path && "\$_src" == 0 && ! -f "$FIX/chezmoi-source" ]]; then echo "\$HOME/.local/share/chezmoi"; exit 0; fi
+if [[ "\${CHEZMOI_UNCONFIGURED:-1}" == 1 && "\$_src" == 0 ]]; then
+  echo "stat \$HOME/.local/share/chezmoi: no such file or directory" >&2
+  exit 1
+fi
 echo "chezmoi \$*" >>"$CALLS"
 case "\$1" in
   status) cat "$FIX/chezmoi-status" ;;
@@ -279,6 +292,15 @@ audit() { run env -i PATH="$BIN" HOME="$HOME" XDG_STATE_HOME="$XDG_STATE_HOME" T
     audit --live
     [ "$status" -eq 0 ]
     [[ "$output" == *"WARN  chezmoi: 1 pending"* ]]
+}
+
+@test "T-0009: --live chezmoi on an unconfigured host passes --source=<repo>, so status does not fail" {
+    printf ' M .config/x\n' >"$FIX/chezmoi-status"
+    audit --live
+    [[ "$output" != *"chezmoi status failed"* ]] || { echo "$output"; return 1; }
+    [[ "$output" == *"WARN  chezmoi: 1 pending change(s)"* ]]
+    [[ "$output" == *"chezmoi --source="*" diff"* ]]
+    grep -q '^chezmoi --source=.* status' "$CALLS.chezmoi-raw"
 }
 
 @test "--live systemd: a failed user unit is a FAIL, an unreachable manager a WARN" {

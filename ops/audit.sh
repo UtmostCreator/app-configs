@@ -63,6 +63,8 @@ source "$ROOT/ops/lib/hm-switch.sh"
 source "$ROOT/ops/lib/selection.sh"
 # shellcheck source=ops/lib/state-lock.sh
 source "$ROOT/ops/lib/state-lock.sh"
+# shellcheck source=ops/lib/chezmoi-source.sh
+source "$ROOT/ops/lib/chezmoi-source.sh"
 
 n_pass=0 n_warn=0 n_fail=0
 pass() { n_pass=$((n_pass + 1)); printf 'PASS  %s\n' "$*"; }
@@ -279,7 +281,8 @@ audit_deep() {
 live_chezmoi() {
   if ! have chezmoi; then warn "chezmoi: not installed; drift not checked"; return; fi
   local status_out edited=() target source dest pending
-  if ! status_out="$(chezmoi status 2>&1)"; then
+  chezmoi_source_set "$ROOT"
+  if ! status_out="$(chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} status 2>&1)"; then
     warn "chezmoi: chezmoi status failed: $(head -n1 <<<"$status_out")"
     return
   fi
@@ -288,9 +291,9 @@ live_chezmoi() {
   mapfile -t edited < <(awk 'substr($0,1,1)=="M" && substr($0,2,1)!=" " {print substr($0,4)}' <<<"$status_out")
   local conflicts=()
   if ((${#edited[@]})); then
-    dest="$(chezmoi target-path 2>/dev/null || true)"
+    dest="$(chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} target-path 2>/dev/null || true)"
     for target in "${edited[@]}"; do
-      source="$(chezmoi source-path "${dest:-$HOME}/$target" 2>/dev/null || true)"
+      source="$(chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} source-path "${dest:-$HOME}/$target" 2>/dev/null || true)"
       [[ "${source##*/}" == modify_* ]] && continue
       conflicts+=("$target")
     done
@@ -298,9 +301,9 @@ live_chezmoi() {
   pending="$(grep -c . <<<"$status_out" || true)"
   if ((${#conflicts[@]})); then
     fail "chezmoi: ${#conflicts[@]} managed file(s) edited by hand (sys-update refuses to run): ${conflicts[*]}"
-    printf '        port the edit into the repo source, or: chezmoi diff\n'
+    printf '        port the edit into the repo source, or: chezmoi %sdiff\n' "$(chezmoi_source_hint)"
   elif ((pending > 0)); then
-    warn "chezmoi: $pending pending change(s) (chezmoi diff; sys-update applies them)"
+    warn "chezmoi: $pending pending change(s) (chezmoi $(chezmoi_source_hint)diff; sys-update applies them)"
   else
     pass "chezmoi: managed files in sync"
   fi

@@ -24,6 +24,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && cd .. && pwd)"
+# shellcheck source=ops/lib/chezmoi-source.sh
+source "$ROOT_DIR/ops/lib/chezmoi-source.sh"
 # Bash/zsh snippet lives at home/dot_config/app-configs/ssh-agent.sh and the
 # fish snippet at home/dot_config/fish/conf.d/ssh-agent.fish (chezmoi source
 # tree). The deployed paths under $HOME are $DEPLOY_DIR/ssh-agent.sh and
@@ -73,7 +75,7 @@ detect_shell() {
         [ -n "$sh" ] || sh="${SHELL:-}"
     fi
     name="$(basename "$sh")"
-    # NixOS (users.users.<u>.shell = pkgs.fish) uses
+    # NixOS-WSL (users.users.<u>.shell = pkgs.fish) uses
     # /nix/store/<hash>-wrapped-fish/wrapper, whose basename is `wrapper`.
     case "$sh" in
         /nix/store/*-wrapped-fish/*) name=fish ;;
@@ -186,7 +188,10 @@ check_keychain_linux() {
 # refuses to run) and the next apply would undo it anyway. The managed rc
 # templates already source the loader.
 chezmoi_managed() {
-    command -v chezmoi >/dev/null 2>&1 && chezmoi source-path "$1" >/dev/null 2>&1
+    command -v chezmoi >/dev/null 2>&1 || return 1
+    # sourceDir may not be persisted (chezmoi init --source): carry --source then.
+    chezmoi_source_set "$ROOT_DIR"
+    chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} source-path "$1" >/dev/null 2>&1
 }
 
 install_posix_snippet() {

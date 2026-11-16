@@ -92,6 +92,8 @@ source "$REPO_ROOT/ops/lib/hm-switch.sh"
 source "$REPO_ROOT/ops/lib/selection.sh"
 # shellcheck source=ops/lib/preflight.sh
 source "$REPO_ROOT/ops/lib/preflight.sh"
+# shellcheck source=ops/lib/chezmoi-source.sh
+source "$REPO_ROOT/ops/lib/chezmoi-source.sh"
 
 # Test guard (ops/lib/preflight.sh): an apply run under bats must stay inside
 # the test's scratch HOME and repo copy.
@@ -232,8 +234,10 @@ else
   command -v chezmoi >/dev/null 2>&1 || fail "chezmoi missing after base-tool install"
   log "chezmoi init --source=$REPO_ROOT"
   chezmoi init --source="$REPO_ROOT"
+  # init --source does not persist sourceDir: later calls carry --source too.
+  chezmoi_source_set "$REPO_ROOT"
   log "Preview pending chezmoi changes:"
-  chezmoi diff
+  chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} diff
   if ! $APPROVED && ! confirm "Apply these chezmoi changes?"; then
     fail "aborted before chezmoi apply: nothing was applied; Nix and the bootstrap tools stay installed."
   fi
@@ -242,7 +246,7 @@ else
   else
     fail "ops/snapshot-home.sh missing or not executable"
   fi
-  chezmoi apply
+  chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} apply
 fi
 
 # ─── 5. Home Manager / nix-darwin ───────────────────────────────────────────

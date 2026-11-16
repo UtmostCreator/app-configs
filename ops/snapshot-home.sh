@@ -25,6 +25,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=ops/lib/chezmoi-source.sh
+source "$ROOT_DIR/ops/lib/chezmoi-source.sh"
 
 PRINT_DIR=0
 if [[ $# -gt 1 ]]; then
@@ -73,7 +75,8 @@ log "Snapshot dir: $SNAPSHOT_DIR"
 
 # Enumerate first and check the exit status: a failed enumeration must not
 # look like an empty one. chezmoi managed emits paths relative to $HOME.
-MANAGED_LIST="$(chezmoi managed --include files,symlinks)" \
+chezmoi_source_set "$ROOT_DIR"
+MANAGED_LIST="$(chezmoi ${CHEZMOI_SOURCE_ARGS[@]+"${CHEZMOI_SOURCE_ARGS[@]}"} managed --include files,symlinks)" \
   || fail "chezmoi managed failed; cannot enumerate managed files"
 
 managed_count=0

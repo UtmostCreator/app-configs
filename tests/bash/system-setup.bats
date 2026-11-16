@@ -197,6 +197,84 @@ run_wsl() {
   [[ "$output" == *"Rebuild cmd: nixos-rebuild switch (non-flake)"* ]]
 }
 
+# ADR-0029 / T-0057: Tailscale is personal-only. Default on linux-desktop only;
+# an explicit ENABLE_TAILSCALE=1 still opts in anywhere.
+@test "tailscale report: off by default on linux-cli" {
+  printf '{ }\n' > "$FIX/configuration.nix"
+  run env HOST_PROFILE=linux-cli SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
+    USER_NAME=alice SYSTEM_TIMEZONE=Europe/London ENABLE_DOCKER=0 bash "$REPO_ROOT/ops/system-setup.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"services.tailscale.enable"* ]]
+}
+
+@test "tailscale report: ENABLE_TAILSCALE=1 opts in on linux-cli" {
+  printf '{ }\n' > "$FIX/configuration.nix"
+  run env HOST_PROFILE=linux-cli SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
+    USER_NAME=alice SYSTEM_TIMEZONE=Europe/London ENABLE_DOCKER=0 ENABLE_TAILSCALE=1 \
+    bash "$REPO_ROOT/ops/system-setup.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"services.tailscale.enable = true;"* ]]
+}
+
+@test "tailscale report: ENABLE_TAILSCALE=0 still skips it on linux-desktop" {
+  printf '{ }\n' > "$FIX/configuration.nix"
+  run env HOST_PROFILE=linux-desktop SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
+    USER_NAME=alice SYSTEM_TIMEZONE=Europe/London ENABLE_TAILSCALE=0 bash "$REPO_ROOT/ops/system-setup.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"services.tailscale.enable"* ]]
+}
+
+# Under sudo, HOME is /root, so the host file must be read from the invoking
+# user's home (SUDO_USER). A stub `getent` on PATH supplies that home.
+sudo_report() {
+  printf '{ }\n' > "$FIX/configuration.nix"
+  mkdir -p "$BATS_TEST_TMPDIR/sudohome" "$BATS_TEST_TMPDIR/roothome" "$BATS_TEST_TMPDIR/getent-stub"
+  printf '#!/bin/sh\necho "alice:x:1000:1000::%s:/bin/sh"\n' "$BATS_TEST_TMPDIR/sudohome" > "$BATS_TEST_TMPDIR/getent-stub/getent"
+  chmod +x "$BATS_TEST_TMPDIR/getent-stub/getent"
+  run env -i PATH="$BATS_TEST_TMPDIR/getent-stub:$PATH" HOME="$BATS_TEST_TMPDIR/roothome" SUDO_USER=alice \
+    SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
+    USER_NAME=alice SYSTEM_TIMEZONE=Europe/London ENABLE_DOCKER=0 "$@" \
+    bash "$REPO_ROOT/ops/system-setup.sh"
+}
+
+@test "sudo: a linux-cli host file under the invoking user's home keeps Tailscale and stability off" {
+  mkdir -p "$BATS_TEST_TMPDIR/sudohome/.config/app-configs"
+  printf 'linux-cli\n' > "$BATS_TEST_TMPDIR/sudohome/.config/app-configs/host"
+  sudo_report
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [[ "$output" != *"services.tailscale.enable"* ]]
+  [[ "$output" != *"desktopStability"* ]]
+}
+
+@test "sudo: a linux-desktop host file under the invoking user's home turns both on" {
+  mkdir -p "$BATS_TEST_TMPDIR/sudohome/.config/app-configs"
+  printf 'linux-desktop\n' > "$BATS_TEST_TMPDIR/sudohome/.config/app-configs/host"
+  sudo_report
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [[ "$output" == *"services.tailscale.enable = true;"* ]]
+  [[ "$output" == *"desktopStability"* ]]
+}
+
+@test "sudo: no host file adds neither, says why, and an explicit ENABLE_TAILSCALE=1 still works" {
+  sudo_report
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [[ "$output" != *"services.tailscale.enable"* ]]
+  [[ "$output" != *"desktopStability"* ]]
+  [[ "$output" == *"host profile not recorded"* ]]
+  sudo_report ENABLE_TAILSCALE=1
+  [[ "$output" == *"services.tailscale.enable = true;"* ]]
+}
+
+@test "linger: kept on linux-cli without Tailscale, absent on NixOS-WSL" {
+  printf '{ }\n' > "$FIX/configuration.nix"
+  run env HOST_PROFILE=linux-cli SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
+    USER_NAME=alice SYSTEM_TIMEZONE=Europe/London ENABLE_DOCKER=0 bash "$REPO_ROOT/ops/system-setup.sh"
+  [[ "$output" == *'users.users."alice".linger = true;'* ]]
+  [[ "$output" != *"services.tailscale.enable"* ]]
+  run_wsl
+  [[ "$output" != *"linger"* ]]
+}
+
 @test "desktop: the wsl branches are inert (no wsl import, no wsl guard, DOCKER_ROOTLESS ignored)" {
   printf '{ }\n' > "$FIX/configuration.nix"
   run env HOST_PROFILE=linux-desktop SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
@@ -795,6 +873,48 @@ prepare_existing() {
   [ "$status" -eq 0 ] || { echo "$output"; return 1; }
   [ ! -e "$FIX/app-configs-stability.nix" ]
   [ "$(grep -cE 'app-configs-stability.nix|desktopStability' "$FIX/app-configs-extra.nix")" -eq 0 ]
+}
+
+@test "tailscale apply: ENABLE_TAILSCALE=0 drops the entry from the managed module and keeps linger" {
+  apply_setup
+  printf '{ pkgs, ... }:\n{\n  imports = [ ./hardware-configuration.nix ];\n}\n' > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_TAILSCALE=1
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  grep -q 'services.tailscale.enable = true;' "$FIX/app-configs-extra.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice ENABLE_TAILSCALE=0
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [ "$(grep -c 'services.tailscale' "$FIX/app-configs-extra.nix")" -eq 0 ]
+  grep -q 'users.users."alice".linger = true;' "$FIX/app-configs-extra.nix"
+}
+
+# Host profile not recorded (source default): preview and apply preserve the
+# managed module's Tailscale and stability; explicit values still win.
+@test "no host file: apply keeps tailscale and stability that the module has, and says so" {
+  SS_STABILITY_DEFAULT=1
+  apply_setup
+  printf '{ pkgs, ... }:\n{\n  imports = [ ./hardware-configuration.nix ];\n}\n' > "$FIX/configuration.nix"
+  run_apply HOST_PROFILE=linux-desktop USER_NAME=alice
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  cp "$FIX/app-configs-extra.nix" "$BATS_TEST_TMPDIR/before.nix"
+  grep -q 'services.tailscale.enable = true;' "$BATS_TEST_TMPDIR/before.nix"
+  run_apply USER_NAME=alice
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [[ "$output" == *"host profile not recorded"* ]]
+  diff "$BATS_TEST_TMPDIR/before.nix" "$FIX/app-configs-extra.nix"
+  [ -f "$FIX/app-configs-stability.nix" ]
+}
+
+@test "no host file: a bare module gets neither tailscale nor stability, and explicit values win" {
+  SS_STABILITY_DEFAULT=1
+  apply_setup
+  printf '{ pkgs, ... }:\n{\n  imports = [ ./hardware-configuration.nix ];\n}\n' > "$FIX/configuration.nix"
+  run_apply USER_NAME=alice
+  [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+  [ "$(grep -cE 'services.tailscale|desktopStability' "$FIX/app-configs-extra.nix")" -eq 0 ]
+  run_apply USER_NAME=alice ENABLE_TAILSCALE=1
+  grep -q 'services.tailscale.enable = true;' "$FIX/app-configs-extra.nix"
+  run_apply USER_NAME=alice ENABLE_TAILSCALE=0
+  [ "$(grep -c 'services.tailscale' "$FIX/app-configs-extra.nix")" -eq 0 ]
 }
 
 @test "stability apply: a copy imported by configuration.nix itself is never removed" {

@@ -147,7 +147,7 @@ Shell shortcuts (abbreviations, git aliases, port/log helpers):
 setup and checks: [`docs/platforms/wsl/setup.md`](docs/platforms/wsl/setup.md).
 
 `sys-readiness` is opinionated: on NixOS it also expects fish as the login
-shell, a system GC timer, the `Europe/London` time zone and Tailscale.
+shell, a system GC timer, the `Europe/London` time zone and, on a linux-desktop host, Tailscale.
 
 ## Recovery
 

@@ -248,7 +248,7 @@ description = "Report the NixOS system snippet (fish login shell + trusted-users
 run = "bash ops/system-setup.sh"
 
 [tasks."tailscale:setup"]
-description = "Report the private Tailscale NixOS setup; apply with sudo bash ops/tailscale-setup.sh --apply"
+description = "Manual opt-in (personal hosts only, ADR-0029): report the private Tailscale NixOS setup; apply with sudo bash ops/tailscale-setup.sh --apply"
 run = "bash ops/tailscale-setup.sh"
 
 [tasks.cleanup]

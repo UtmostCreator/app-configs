@@ -2,7 +2,7 @@
 # system-setup.sh — automate the NixOS SYSTEM layer that standalone Home
 # Manager cannot set: fish as login shell, your user in trusted-users, a
 # declarative non-destructive GC timer, the system time zone, the Docker
-# daemon, private Tailscale access and, on linux-desktop, the desktop stability
+# daemon and, on linux-desktop, private Tailscale access and the desktop stability
 # baseline (fwupd discovery, smartd; zram opt-in; nix/modules/nixos/
 # desktop-stability.nix). Then runs `nixos-rebuild switch`.
 #
@@ -39,8 +39,9 @@
 #   sudo bash ops/system-setup.sh --apply    # apply + nixos-rebuild switch
 #   USER_NAME=youruser sudo bash ops/system-setup.sh --apply
 #   ENABLE_DOCKER=0 sudo bash ops/system-setup.sh --apply   # skip docker daemon
-#   ENABLE_TAILSCALE=0 sudo bash ops/system-setup.sh --apply # skip Tailscale
-#   ENABLE_DESKTOP_STABILITY=0 sudo bash ops/system-setup.sh --apply # skip stability baseline
+#   sudo ENABLE_TAILSCALE=0 bash ops/system-setup.sh --apply # skip Tailscale (default on only on linux-desktop)
+#   sudo ENABLE_TAILSCALE=1 bash ops/system-setup.sh --apply # opt in on another host
+#   sudo ENABLE_DESKTOP_STABILITY=0 bash ops/system-setup.sh --apply # skip stability baseline
 #   DESKTOP_STABILITY_ZRAM=1 sudo bash ops/system-setup.sh --apply   # also zram swap (opt-in)
 #
 # Exit non-zero on failure. NixOS only.
@@ -129,9 +130,30 @@ fi
   || fail "not NixOS — this script only applies to NixOS systems"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# The host profile (macos | linux-desktop | linux-cli | wsl). Only `wsl` changes
-# anything below: every IS_WSL branch is inert on the desktop.
-HOST_PROFILE="${HOST_PROFILE:-$(bash "$SCRIPT_DIR/detect-host.sh" 2>/dev/null || echo unknown)}"
+# The host profile (macos | linux-desktop | linux-cli | wsl). `wsl` switches the
+# IS_WSL branches; linux-desktop (confirmed) turns on Tailscale and desktop
+# stability by default; every other profile leaves both off.
+#
+# Under sudo, HOME is root's, so detect-host.sh would find no host file and fall
+# back to linux-desktop. Run it with the invoking user's HOME instead, so it
+# resolves and reads that user's host file (detect-host.sh owns the path). When the profile still
+# comes from that built-in default (source `default`, root or not), the
+# profile-dependent toggles (Tailscale, desktop stability) are preserved: neither
+# added nor dropped, whatever the managed module has stays (see below). An
+# explicit ENABLE_TAILSCALE / ENABLE_DESKTOP_STABILITY always wins.
+PROFILE_UNCONFIRMED=0
+TS_EXPLICIT="${ENABLE_TAILSCALE+x}"
+STAB_EXPLICIT="${ENABLE_DESKTOP_STABILITY+x}"
+if [[ -z "${HOST_PROFILE:-}" ]]; then
+  detect_env=()
+  if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != root && -z "${APP_CONFIGS_HOST_FILE:-}" ]]; then
+    sudo_home="$(getent passwd "$SUDO_USER" 2>/dev/null | cut -d: -f6)"
+    [[ -n "$sudo_home" ]] && detect_env=(HOME="$sudo_home" XDG_CONFIG_HOME="$sudo_home/.config")
+  fi
+  HOST_PROFILE="$(env "${detect_env[@]}" bash "$SCRIPT_DIR/detect-host.sh" 2>/dev/null || echo unknown)"
+  [[ "$(env "${detect_env[@]}" bash "$SCRIPT_DIR/detect-host.sh" --source 2>/dev/null)" == default ]] \
+    && PROFILE_UNCONFIRMED=1
+fi
 IS_WSL=0
 [[ "$HOST_PROFILE" == wsl ]] && IS_WSL=1
 # SYSTEM_SETUP_NIXOS_DIR is a test seam (default /etc/nixos); tests point it at
@@ -209,14 +231,16 @@ DOCKER_ROOTLESS="${DOCKER_ROOTLESS:-0}"
 STABILITY_MODULE_SRC="$(cd "$SCRIPT_DIR/.." && pwd)/nix/modules/nixos/desktop-stability.nix"
 STABILITY_MODULE_NAME="app-configs-stability.nix"
 STABILITY_MODULE_DST="$NIXOS_DIR/${STABILITY_MODULE_NAME}"
-ENABLE_DESKTOP_STABILITY="${ENABLE_DESKTOP_STABILITY:-$([[ "$HOST_PROFILE" == linux-desktop ]] && echo 1 || echo 0)}"
+ENABLE_DESKTOP_STABILITY="${ENABLE_DESKTOP_STABILITY:-$([[ "$HOST_PROFILE" == linux-desktop && "$PROFILE_UNCONFIRMED" == 0 ]] && echo 1 || echo 0)}"
 DESKTOP_STABILITY_ZRAM="${DESKTOP_STABILITY_ZRAM:-0}"
 
 # Tailscale provides the private transport for loopback-only developer tools.
 # The daemon is enabled here; joining a tailnet and configuring `tailscale
 # serve` remain explicit, one-time user actions.
-# Off by default on NixOS-WSL (ENABLE_TAILSCALE=1 opts in).
-ENABLE_TAILSCALE="${ENABLE_TAILSCALE:-$(( IS_WSL == 1 ? 0 : 1 ))}"
+# Personal-only (ADR-0029): on by default only on a confirmed linux-desktop,
+# never on a work host (linux-cli, WSL). ENABLE_TAILSCALE=1 opts in anywhere;
+# =0 drops it from the managed module on the next run.
+ENABLE_TAILSCALE="${ENABLE_TAILSCALE:-$([[ "$HOST_PROFILE" == linux-desktop && "$PROFILE_UNCONFIRMED" == 0 ]] && echo 1 || echo 0)}"
 
 # Two distinct questions, kept separate to make re-runs idempotent:
 #
@@ -255,6 +279,20 @@ active_nix() {
 in_text()   { local t; t="$(active_nix "$1")"; grep -Eq "$2" <<<"$t"; }
 in_sys()    { in_text "$SYS" "$1"; }
 in_module() { [[ -f "$MODULE" ]] && in_text "$MODULE" "$1"; }
+# Host profile not recorded (source `default`): leave Tailscale and desktop
+# stability as the managed module has them, in report and apply alike. A host
+# file under a custom XDG_CONFIG_HOME is not found under sudo and lands here too.
+if (( PROFILE_UNCONFIRMED == 1 )); then
+  log "host profile not recorded; Tailscale/desktop stability left as they are — record it with: sys-install --host <profile>"
+  if [[ -z "$TS_EXPLICIT" ]]; then
+    ENABLE_TAILSCALE=0
+    in_module 'services\.tailscale\.enable\s*=\s*true' && ENABLE_TAILSCALE=1
+  fi
+  if [[ -z "$STAB_EXPLICIT" ]]; then
+    ENABLE_DESKTOP_STABILITY=0
+    in_module "${STABILITY_MODULE_NAME//./\\.}" && ENABLE_DESKTOP_STABILITY=1
+  fi
+fi
 # Regexes for "<dotted.option> = true" / "= false" / either (dots escaped).
 opt_enabled()  { local o="${1//./\\.}"; printf '%s\\s*=\\s*true' "$o"; }
 opt_disabled() { local o="${1//./\\.}"; printf '%s\\s*=\\s*false' "$o"; }
@@ -343,6 +381,15 @@ if (( ENABLE_TAILSCALE == 1 )); then
   need_tailscale=1
   in_sys "$(opt_set services.tailscale.enable)" && need_tailscale=0
 fi
+# Lingering keeps user services (update timers, codebase-memory) running after
+# logout. It was emitted with Tailscale; it is now separate and is emitted on
+# every non-WSL host (including an explicit ENABLE_TAILSCALE=0, which used to
+# drop it) and wherever Tailscale is explicitly enabled.
+need_linger=0
+if (( IS_WSL == 0 || ENABLE_TAILSCALE == 1 )); then
+  need_linger=1
+  in_sys 'users\.users\."?'"${USER_NAME//./\\.}"'"?\.linger\s*=' && need_linger=0
+fi
 
 # Already fully applied? (live state or already in the module we manage)
 have_fish=0; have_trusted=0; have_gc=0; have_timezone=0; have_docker=1; have_tailscale=1; have_wsl=1; have_stability=1
@@ -365,6 +412,13 @@ if (( ENABLE_TAILSCALE == 1 )); then
   { systemctl is-active tailscaled >/dev/null 2>&1 \
     || in_sys "$(opt_set services.tailscale.enable)" \
     || in_module "$(opt_enabled services.tailscale.enable)"; } && have_tailscale=1
+elif in_module "$(opt_enabled services.tailscale.enable)"; then
+  # Disabled now, but our module still enables it: regenerate to drop it.
+  have_tailscale=0
+fi
+have_linger=1
+if (( need_linger == 1 )); then
+  in_module 'linger\s*=\s*true' || have_linger=0
 fi
 
 # Stability: satisfied when configuration.nix owns it, or our module imports the
@@ -435,7 +489,7 @@ rebuild_system() {
   SWITCH_STARTED=0; BOOT_STARTED=0
 }
 
-if (( have_fish == 1 && have_trusted == 1 && have_gc == 1 && have_timezone == 1 && have_docker == 1 && have_tailscale == 1 && have_wsl == 1 && have_stability == 1 )); then
+if (( have_fish == 1 && have_trusted == 1 && have_gc == 1 && have_timezone == 1 && have_docker == 1 && have_tailscale == 1 && have_linger == 1 && have_wsl == 1 && have_stability == 1 )); then
   log "All recommended system settings already present."
   if [[ "$MODE" == "apply" ]]; then
     require_apply_env
@@ -528,6 +582,8 @@ SNIPPET="$(mktemp)"
   (( need_tailscale == 1 )) && {
     echo "  # Private remote access for loopback-only developer services."
     echo "  services.tailscale.enable = true;"
+  }
+  (( need_linger == 1 )) && {
     echo "  # Keep user services available after logout and across headless boots."
     echo "  users.users.\"${USER_NAME}\".linger = true;"
   }

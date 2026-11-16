@@ -112,6 +112,22 @@ worktree and temporary files.
   for 64 minutes.)
 - Clean up background jobs before finishing.
 
+## Project scope
+
+This repo targets Linux (NixOS and other Linux), macOS and WSL2. The Windows 11
+host gets only the bounded WSL bootstrap already decided; see
+`docs/architecture/project-scope.md` and ADR-0019. Anything the repo
+installs, writes or automates on the Windows host (a bootstrap step, a winget
+id, a key or file) needs a new ADR tagged `windows` that cites ADR-0019, plus
+an explicit owner decision. Manual docs and the manual app list stay under
+ADR-0011. WSL must
+not run winget or PowerShell to change Windows.
+
+Before writing any ADR, follow the "Before writing a new ADR" rule in
+`docs/architecture/decisions/index.md`: search the frontmatter tags
+`permits`, `forbids` and `platforms`, then add frontmatter and an index row.
+`tests/bash/adr-contract.bats` checks the frontmatter and the index row.
+
 <!-- glyphbrace:managed:begin guidance-codex:v1 -->
 # Repository Instructions
 

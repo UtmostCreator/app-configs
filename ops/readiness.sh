@@ -64,7 +64,19 @@ done
 
 hdr "Dotfiles (chezmoi)"
 if have chezmoi; then
-  if chezmoi verify >/dev/null 2>&1; then ok "all managed dotfiles match"
+  # `chezmoi init --source=<repo>` does not persist sourceDir (ops/install.sh),
+  # so a plain verify fails on such hosts. Same decision as the chezmoi status
+  # probe in ops/lib/selection-facts.sh (not sourceable here:
+  # install-selection.bats limits that file to its owners): no --source when
+  # chezmoi is already configured with this repo, else --source=<repo>.
+  chezmoi_src=(--source="$REPO_ROOT")
+  chezmoi_root=""
+  [[ -f "$REPO_ROOT/.chezmoiroot" ]] && chezmoi_root="/$(head -n1 "$REPO_ROOT/.chezmoiroot")"
+  chezmoi_cfg="$(chezmoi source-path </dev/null 2>/dev/null | head -n1)"
+  if [[ -n "$chezmoi_cfg" && "$(readlink -f "$chezmoi_cfg" 2>/dev/null)" == "$(readlink -f "$REPO_ROOT$chezmoi_root" 2>/dev/null)" ]]; then
+    chezmoi_src=()
+  fi
+  if chezmoi ${chezmoi_src[@]+"${chezmoi_src[@]}"} verify >/dev/null 2>&1; then ok "all managed dotfiles match"
   else note "chezmoi has pending changes (run: chezmoi apply  or  sys-update)"; fi
 fi
 

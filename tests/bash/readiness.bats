@@ -136,3 +136,53 @@ STUB
     HOST_PROFILE=macos PATH="$S" run bash "$SCRIPT"
     [[ "$output" != *"codebase-memory-mcp-ui"* ]]
 }
+
+# `chezmoi init --source=<repo>` (ops/install.sh) does not persist sourceDir, so
+# on WSL a plain `chezmoi verify` fails with "stat ~/.local/share/chezmoi" and
+# readiness reported pending changes. chezmoi_stub: verify fails unless the call
+# carries --source=<repo root>; `source-path` fails like an unconfigured chezmoi.
+chezmoi_stub() {
+    cat >"$S/chezmoi" <<STUB
+#!/bin/sh
+case "\$*" in
+  *source-path*) exit 1 ;;
+  *--source=$REPO_ROOT\ verify*) exit 0 ;;
+esac
+echo "stat \$HOME/.local/share/chezmoi: no such file" >&2
+exit 1
+STUB
+    chmod +x "$S/chezmoi"
+    ln -s "$(command -v readlink)" "$S/readlink"
+}
+
+@test "readiness chezmoi: an unpersisted sourceDir is verified with --source=<repo>, not reported as drift" {
+    chezmoi_stub
+    PATH="$S" run bash "$SCRIPT"
+    [[ "$output" == *"[OK]   all managed dotfiles match"* ]]
+    [[ "$output" != *"chezmoi has pending changes"* ]]
+}
+
+@test "readiness chezmoi: real drift is still a TODO" {
+    cat >"$S/chezmoi" <<'STUB'
+#!/bin/sh
+case "$*" in *source-path*) exit 1 ;; esac
+exit 1
+STUB
+    chmod +x "$S/chezmoi"; ln -s "$(command -v readlink)" "$S/readlink"
+    PATH="$S" run bash "$SCRIPT"
+    [[ "$output" == *"[TODO] chezmoi has pending changes"* ]]
+}
+
+@test "readiness chezmoi: a configured sourceDir equal to the repo is verified without --source" {
+    cat >"$S/chezmoi" <<STUB
+#!/bin/sh
+case "\$*" in
+  *source-path*) echo "$REPO_ROOT/home"; exit 0 ;;
+  verify*) exit 0 ;;
+esac
+exit 1
+STUB
+    chmod +x "$S/chezmoi"; ln -s "$(command -v readlink)" "$S/readlink"
+    PATH="$S" run bash "$SCRIPT"
+    [[ "$output" == *"[OK]   all managed dotfiles match"* ]]
+}

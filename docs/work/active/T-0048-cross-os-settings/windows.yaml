@@ -124,7 +124,8 @@ settings:
     raw: 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize AppsUseLightTheme (1), SystemUsesLightTheme (1)'
     how: Get-ItemProperty on the raw key
   timezone:
-    value: Pacific Standard Time
+    # Re-read on 2026-11-16 (the capture header says 2026-11-15); the value changed to match WSL (T-0047 AC-TZ).
+    value: GMT Standard Time
     unit: enum
     raw: Get-TimeZone Id
     how: (Get-TimeZone).Id

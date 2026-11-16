@@ -1,6 +1,8 @@
 # ADR-0010: Cross-OS settings: inventory before alignment
 Status: decided; phase 1 (Windows inventory) done, read-only · Date: 2026-11-15 · Sources: T-0048 ticket and windows.yaml (docs/work/active/T-0048-cross-os-settings)
 
+Amended by ADR-0019: applying Windows settings needs its own ADR.
+
 ## Decision
 - One YAML inventory per system with real values, then compare, then choose a baseline, then per-host overrides, then an optional apply command.
 - Nothing is applied until the WSL2 milestone (T-0047) is done. A value that cannot be read is `unknown`; never guess.

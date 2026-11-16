@@ -8,7 +8,7 @@
 load ../lib/contract
 
 TOOLS=(bash env git jq awk sed grep head tail cut sort uniq wc tr paste mktemp rm date stat
-    uname dirname basename find cat diff mkdir touch sleep ls readlink cp mv tee xargs)
+    uname dirname basename find cat diff mkdir touch sleep ls readlink cp mv tee xargs du df timeout id)
 
 setup() {
     REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
@@ -18,7 +18,7 @@ setup() {
     export APP_CONFIGS_SELECTION_DIR="$BATS_TEST_TMPDIR/no-selection"
     unset TMUX SYS_UPDATE_STATE_DIR HM_PROFILE_MANIFEST
     export XDG_STATE_HOME="$BATS_TEST_TMPDIR/state"
-    FIX="$BATS_TEST_TMPDIR/fix"; mkdir -p "$FIX"
+    FIX="$BATS_TEST_TMPDIR/fix"; mkdir -p "$FIX" "$BATS_TEST_TMPDIR/scratch"
     CALLS="$BATS_TEST_TMPDIR/calls"; : >"$CALLS"
     COPY="$BATS_TEST_TMPDIR/repo"
     repo_copy "$COPY"
@@ -132,6 +132,11 @@ audit() { run env -i PATH="$BIN" HOME="$HOME" XDG_STATE_HOME="$XDG_STATE_HOME" T
     ${HM_PROFILE_MANIFEST:+HM_PROFILE_MANIFEST="$HM_PROFILE_MANIFEST"} \
     ${STUB_CI_RC:+STUB_CI_RC="$STUB_CI_RC"} ${STUB_ARCH_RC:+STUB_ARCH_RC="$STUB_ARCH_RC"} \
     ${STUB_RES_WRITE:+STUB_RES_WRITE="$STUB_RES_WRITE"} \
+    TMPDIR="${T_TMPDIR:-$BATS_TEST_TMPDIR/scratch}" \
+    APP_CONFIGS_AUDIT_AGENT_SCRATCH="${T_AGENT_SCRATCH:-$BATS_TEST_TMPDIR/no-agent-scratch}" \
+    APP_CONFIGS_AUDIT_TMP_FS_WARN_PCT="${T_FS_PCT:-101}" \
+    ${T_DU_TIMEOUT:+APP_CONFIGS_AUDIT_TMP_DU_TIMEOUT="$T_DU_TIMEOUT"} \
+    ${T_WARN_KB:+APP_CONFIGS_AUDIT_TMP_WARN_KB="$T_WARN_KB"} ${T_WARN_GB:+APP_CONFIGS_AUDIT_TMP_WARN_GB="$T_WARN_GB"} \
     bash "$COPY/ops/audit.sh" "$@"; }
 
 # -- arguments -----------------------------------------------------------------
@@ -402,6 +407,195 @@ audit() { run env -i PATH="$BIN" HOME="$HOME" XDG_STATE_HOME="$XDG_STATE_HOME" T
     [[ "$output" == *"WARN  chezmoi: not installed"* ]]
     [[ "$output" == *"WARN  systemd: systemctl not found"* ]]
     [[ "$output" == *"WARN  cbm: codebase-memory-mcp not installed"* ]]
+}
+
+# -- --live temp / agent scratch growth (detection only) -----------------------
+
+scratch_fixture() { # scratch_fixture DIR: big/ 300 KB, mid/ 150 KB, small/ 20 KB
+    mkdir -p "$1/big" "$1/mid" "$1/small"
+    head -c 300000 /dev/zero >"$1/big/f"
+    head -c 150000 /dev/zero >"$1/mid/f"
+    head -c 20000 /dev/zero >"$1/small/f"
+}
+
+@test "--live scratch: above the threshold WARNs with the biggest subdirectories, biggest first, and deletes nothing" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"; scratch_fixture "$T_TMPDIR"
+    export T_WARN_KB=100
+    audit --live
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"WARN  scratch: $T_TMPDIR holds "*"above 100 KB"* ]]
+    [[ "$output" == *"separate, owner-approved"* ]]
+    [[ "$output" != *"rm "* ]]
+    [[ "$output" == *"/big"*"/mid"*"/small"* ]]
+    [ -f "$T_TMPDIR/big/f" ] && [ -f "$T_TMPDIR/mid/f" ] && [ -f "$T_TMPDIR/small/f" ]
+}
+
+@test "--live scratch: lists at most the top 5 subdirectories" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"; scratch_fixture "$T_TMPDIR"
+    local i; for i in 1 2 3 4; do mkdir "$T_TMPDIR/x$i"; head -c 200000 /dev/zero >"$T_TMPDIR/x$i/f"; done
+    export T_WARN_KB=100
+    audit --live
+    [[ "$output" == *"/big"* && "$output" == *"/x1"* ]]
+    [[ "$output" != *"/small"* && "$output" != *"/mid"* ]]
+}
+
+@test "--live scratch: below the threshold is a PASS, no WARN" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"; scratch_fixture "$T_TMPDIR"
+    export T_WARN_KB=100000
+    audit --live
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"PASS  scratch: $T_TMPDIR"* ]]
+    [[ "$output" != *"WARN  scratch"* ]]
+}
+
+@test "--live scratch: the agent scratch directory is measured too, once when it is the same as TMPDIR" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"; scratch_fixture "$T_TMPDIR"
+    export T_AGENT_SCRATCH="$BATS_TEST_TMPDIR/claude-agent"; scratch_fixture "$T_AGENT_SCRATCH"
+    export T_WARN_KB=100
+    audit --live
+    [[ "$output" == *"WARN  scratch: $T_TMPDIR holds"* && "$output" == *"WARN  scratch: $T_AGENT_SCRATCH holds"* ]]
+    export T_AGENT_SCRATCH="$T_TMPDIR"
+    audit --live
+    [ "$(grep -c 'WARN  scratch:' <<<"$output")" -eq 1 ]
+}
+
+@test "--live scratch: a missing directory is skipped quietly, and the GB variable is honoured" {
+    export T_AGENT_SCRATCH="$BATS_TEST_TMPDIR/does-not-exist"
+    audit --live
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"does-not-exist"* ]]
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"; scratch_fixture "$T_TMPDIR"
+    export T_WARN_GB=1
+    audit --live
+    [[ "$output" == *"PASS  scratch: $T_TMPDIR"*"(limit 1.0 GB)"* ]]
+}
+
+@test "--live scratch: a filesystem above the used-space threshold WARNs" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"; scratch_fixture "$T_TMPDIR"
+    export T_WARN_KB=100000 T_FS_PCT=0
+    audit --live
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN  scratch: filesystem holding $T_TMPDIR is "*"% used"* ]]
+}
+
+@test "--live scratch: without du it degrades to a WARN" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"; scratch_fixture "$T_TMPDIR"
+    rm "$BIN/du"
+    audit --live
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN  scratch: du not found"* ]]
+}
+
+# A du stand-in: prints the given "KB<TAB>path" lines, then hangs (exec so the
+# kill from `timeout` also closes the pipe), or exits with a status.
+du_stub() { # du_stub RC SLEEP_SECONDS LINES...
+    local rc="$1" nap="$2"; shift 2; rm -f "$BIN/du"
+    { printf '#!/usr/bin/env bash\n'
+      local l; for l in "$@"; do printf 'printf "%%b\\n" %q\n' "$l"; done
+      ((nap)) && printf 'exec sleep %s\n' "$nap"
+      printf 'exit %s\n' "$rc"; } >"$BIN/du"
+    chmod +x "$BIN/du"
+}
+
+@test "--live scratch: a du timeout is a WARN, never a PASS" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"
+    du_stub 0 20
+    T_DU_TIMEOUT=1 audit --live
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    [[ "$output" == *"WARN  scratch:"*"du timed out after 1s"* ]]
+    [[ "$output" != *"PASS  scratch"* ]]
+}
+
+@test "--live scratch: a timeout with partial sizes over the limit WARNs 'at least' and lists the top 5" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"
+    du_stub 0 20 "300\t$T_TMPDIR/aa" "900\t$T_TMPDIR/bb" "100\t$T_TMPDIR/cc"
+    T_WARN_KB=1000 T_DU_TIMEOUT=1 audit --live
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN  scratch: $T_TMPDIR holds at least 1 MB (du timed out"*"above 1000 KB limit"* ]]
+    [[ "$output" == *"/bb"*"/aa"*"/cc"* ]]
+    [[ "$output" != *"PASS  scratch"* ]]
+}
+
+@test "--live scratch: a timeout with partial sizes under the limit WARNs unknown with a lower bound" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"
+    du_stub 0 20 "300\t$T_TMPDIR/aa"
+    T_WARN_KB=1000 T_DU_TIMEOUT=1 audit --live
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN  scratch: $T_TMPDIR size unknown, at least 300 KB measured (du timed out"* ]]
+    [[ "$output" != *"PASS  scratch"* ]]
+}
+
+@test "--live scratch: du that fails with no output is 'could not measure', not a PASS" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"
+    du_stub 1 0
+    audit --live
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN  scratch: could not measure $T_TMPDIR"* ]]
+    [[ "$output" != *"PASS  scratch"* ]]
+}
+
+@test "--live scratch: without timeout nothing is measured and it WARNs" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"
+    rm "$BIN/timeout"
+    audit --live
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN  scratch: timeout not found"* ]]
+    [[ "$output" != *"PASS  scratch"* ]]
+}
+
+@test "--live scratch: a du that read the total but hit unreadable entries says so" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"
+    du_stub 1 0 "50\t$T_TMPDIR/aa" "60\t$T_TMPDIR"
+    audit --live
+    [[ "$output" == *"PASS  scratch: $T_TMPDIR holds 60 KB (partial: some entries unreadable)"* ]]
+}
+
+@test "--live scratch: an agent dir inside TMPDIR is counted once, under TMPDIR" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"; scratch_fixture "$T_TMPDIR"
+    export T_AGENT_SCRATCH="$T_TMPDIR/claude-agent"; scratch_fixture "$T_AGENT_SCRATCH"
+    audit --live
+    [ "$(grep -c 'scratch: .* holds' <<<"$output")" -eq 1 ]
+    [[ "$output" == *"scratch: $T_TMPDIR holds"* ]]
+}
+
+@test "--live scratch: a TMPDIR inside the agent dir is counted once, under the agent dir" {
+    export T_AGENT_SCRATCH="$BATS_TEST_TMPDIR/agentparent"; mkdir -p "$T_AGENT_SCRATCH/tmp"
+    export T_TMPDIR="$T_AGENT_SCRATCH/tmp"; scratch_fixture "$T_TMPDIR"
+    audit --live
+    [ "$(grep -c 'scratch: .* holds' <<<"$output")" -eq 1 ]
+    [[ "$output" == *"scratch: $T_AGENT_SCRATCH holds"* ]]
+}
+
+@test "--live scratch: a symlinked TMPDIR is measured through the link" {
+    scratch_fixture "$BATS_TEST_TMPDIR/real"
+    ln -s "$BATS_TEST_TMPDIR/real" "$BATS_TEST_TMPDIR/link"
+    export T_TMPDIR="$BATS_TEST_TMPDIR/link" T_WARN_KB=100
+    audit --live
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"WARN  scratch: $BATS_TEST_TMPDIR/real holds"* ]]
+    [[ "$output" == *"/real/big"* ]]
+}
+
+@test "--live scratch: the audit's own temp dir never shows in the top 5" {
+    export T_TMPDIR="$BATS_TEST_TMPDIR/scratch"; scratch_fixture "$T_TMPDIR"
+    export T_WARN_KB=100
+    audit --live
+    [[ "$output" != *"$T_TMPDIR/audit."* ]]
+}
+
+@test "--live scratch: a bad GB value (1.5, abc) warns and the rest of the live section still runs" {
+    local v
+    # Leading zeros would be read as octal by bash arithmetic (08 aborts, 010 = 8).
+    for v in 1.5 abc 08 010 -1; do
+        T_WARN_GB="$v" audit --live
+        [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+        [[ "$output" == *"WARN  scratch: APP_CONFIGS_AUDIT_TMP_WARN_GB is not a whole number"* ]]
+        [[ "$output" == *"PASS  worktree: unchanged by the live checks"* ]]
+    done
+}
+
+@test "--live scratch: du is always called with -x (one filesystem)" {
+    grep -q 'du -x -k --max-depth=1' "$REPO_ROOT/ops/audit.sh"
 }
 
 # -- default mode and the read-only guarantee ----------------------------------

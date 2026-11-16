@@ -27,7 +27,8 @@
       # vendor_conf.d from the profile share dir; no config needed.
       # NOTE: fzf-fish was intentionally NOT added — it would double-bind
       # Ctrl-T/Alt-C, which are already owned by `fzf --fish` + Atuin in
-      # config.fish. Keeping one fzf integration avoids the conflict.
+      # config.fish. Keeping one fzf integration avoids the conflict. Tab uses
+      # fzf's own fzf_complete (from `fzf --fish`), so no completion plugin.
       fishPlugins.autopair
       fzf
       jq

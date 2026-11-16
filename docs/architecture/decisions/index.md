@@ -6,7 +6,7 @@ Scope: [project scope](../project-scope.md) (ADR-0019). Short records of what wa
 
 1. Search the frontmatter for overlap: `grep -l "windows" docs/architecture/decisions/0*.md`, or grep the `platforms:`, `permits:` and `forbids:` lines for your keywords.
 2. Read every related ADR found, and check whether yours amends or supersedes one.
-3. Add frontmatter (below) and an index row with the same status. The ADR contract test (added next) checks the required fields and the row.
+3. Add frontmatter (below) and an index row with the same status. `tests/bash/adr-contract.bats` checks the required fields and the row.
 4. An ADR numbered above 19 with the `windows` platform must cite ADR-0019 in `amends` or `related`, and needs an explicit owner decision. Earlier ADRs are not retro-required to cite ADR-0019 unless it amends them.
 
 ## Frontmatter

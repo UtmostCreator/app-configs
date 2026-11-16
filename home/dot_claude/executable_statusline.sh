@@ -550,11 +550,14 @@ render() {
     (( drop_rc )) && rc_part=""
     (( drop_agent_short )) && agent_part=$agent_tag_short
     (( drop_agent )) && agent_part=""
+    local repo_part=$repo_short
+    (( drop_repo )) && repo_part=""
+    (( drop_ctx )) && [[ "$layout" == minimal ]] && ctx_group=""
     if [[ "$layout" == full ]]; then
         row1=$(join " $SEP " "$rc_part" "$agent_part" "$repo" "$model_seg")
         row2=$(join " $SEP " "$ctx_group" "$q_group")
     else
-        row1=$(join " $SEP " "$rc_part" "$agent_part" "$repo_short" "$model_seg" "$ctx_group" "$q_group")
+        row1=$(join " $SEP " "$rc_part" "$agent_part" "$repo_part" "$model_seg" "$ctx_group" "$q_group")
         row2=""
     fi
 
@@ -581,7 +584,7 @@ render() {
 set_flags() {
     local layout=$1 level=$2
     drop_bars=0 drop_resets=0 drop_left=0 drop_weak=0 drop_strong=0 drop_effort=0
-    drop_agent=0 drop_agent_short=0 drop_rc=0 drop_cache=0 drop_session=0 drop_extras=0
+    drop_agent=0 drop_agent_short=0 drop_rc=0 drop_cache=0 drop_session=0 drop_extras=0 drop_ctx=0 drop_repo=0
     case "$layout" in
         full)    drop_bars=$(( level >= 1 )) drop_resets=$(( level >= 2 )) ;;
         compact) drop_left=$(( level >= 1 )) ;;
@@ -591,13 +594,17 @@ set_flags() {
 # set_min_flags <row1-level> <row3-level>: minimal gives up whole metrics, row by
 # row so that a crowded row 1 never costs row 3 anything. Row 1 loses RC, the
 # effort, the lower quota, the higher one (below QUOTA_KEEP), then the agent tag
-# is shortened to "◆ orch" and finally dropped, in that order;
+# is shortened to "◆ orch", then the context and the project/branch go; the tag
+# is dropped only after all of those, and only when that makes the row fit, in that order;
 # row 3 loses WT/PR, the cache, then cost and time.
 set_min_flags() {
     drop_bars=0 drop_resets=0 drop_left=0
     drop_rc=$(( $1 >= 1 )) drop_effort=$(( $1 >= 2 ))
     drop_weak=$(( $1 >= 3 )) drop_strong=$(( $1 >= 4 ))
-    drop_agent_short=$(( $1 >= 5 )) drop_agent=$(( $1 >= 6 ))
+    drop_agent_short=$(( $1 >= 5 ))
+    # Past the shortened tag, the context, then the project/branch go; the tag
+    # itself is the very last thing to give way (level 8, only below ~20 columns).
+    drop_ctx=$(( $1 >= 6 )) drop_repo=$(( $1 >= 7 )) drop_agent=$(( $1 >= 8 ))
     drop_extras=$(( $2 >= 1 )) drop_cache=$(( $2 >= 2 )) drop_session=$(( $2 >= 3 ))
 }
 
@@ -711,11 +718,13 @@ if (( cols_known )) && { [[ "${CLAUDE_STATUSLINE_MODE:-}" == wide ]] \
 fi
 for (( li = start; li <= 2 && ! done; li++ )); do
     if (( li == 2 )); then
-        for (( a = 0; a <= 6; a++ )); do
+        for (( a = 0; a <= 8; a++ )); do
             set_min_flags "$a" 0
             render minimal
             (( $(width "$row1") <= cols && $(width "$row2") <= cols )) && break
         done
+        # The tag goes only when dropping it is what makes the row fit.
+        (( a > 8 )) && a=7
         for (( b = 0; b <= 3; b++ )); do
             set_min_flags "$a" "$b"
             render minimal

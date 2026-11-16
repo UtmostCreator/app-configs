@@ -266,7 +266,8 @@ in
         ]
       }:${config.home.profileDirectory}/bin";
       # Find the repo through chezmoi's source dir (the sys-* helpers do the
-      # same), not a fixed ~/Projects/app-configs: README installs to
+      # same; on NixOS-WSL, where chezmoi has no sourceDir, the DOTFILES_DIR in
+      # ~/.local/bin/sys-update), not a fixed ~/Projects/app-configs: README installs to
       # ~/app-configs. chezmoi is on PATH via the profile bin dir above.
       # Logic in scripts/codebase-memory-mcp-update.sh (tested by
       # tests/bash/bootstrap-safety.bats).

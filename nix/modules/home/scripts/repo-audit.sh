@@ -1,6 +1,7 @@
 # Entry point for the repo-audit user unit (audit.nix): the weekly, read-only
-# `ops/audit.sh --live`. Finds the repo through chezmoi's source dir, like the
-# sys-* helpers and the codebase-memory-mcp-update unit, so it works for any
+# `ops/audit.sh --live`. Finds the repo through chezmoi's source dir (or the
+# sys-update wrapper's DOTFILES_DIR on NixOS-WSL), like the
+# codebase-memory-mcp-update unit, so it works for any
 # clone location.
 #
 # The audit output goes to the journal. A FAIL also raises one notification
@@ -10,12 +11,35 @@
 # audit failing on its own account.
 set -uo pipefail
 
-src="$(chezmoi source-path)" || { echo "repo-audit: chezmoi source-path failed" >&2; exit 1; }
-audit="$src/../ops/audit.sh"
-if [[ ! -f "$audit" ]]; then
-  echo "repo-audit: $audit not found" >&2
-  exit 1
-fi
+# Repo root. chezmoi's source dir is <repo>/home. On NixOS-WSL chezmoi has no
+# persisted sourceDir (`chezmoi init --source=<repo>` does not store it), so
+# `chezmoi source-path` prints the default ~/.local/share/chezmoi with rc 0
+# although it does not exist. A candidate counts only if it holds the script
+# the unit runs (pure bash: the unit PATHs carry no sed/head). Then fall back to the DOTFILES_DIR that chezmoi
+# baked into the ~/.local/bin/sys-update wrapper when it rendered it (the repo
+# path of the apply that installed it, any clone location).
+repo_root() {
+  local need="$1" src dir line
+  src="$(chezmoi source-path 2>/dev/null)" || src=""
+  if [[ -n "$src" && -f "$src/../$need" ]]; then
+    printf '%s\n' "$src/.."
+    return 0
+  fi
+  dir=""
+  if [[ -r "$HOME/.local/bin/sys-update" ]]; then
+    while IFS= read -r line; do
+      if [[ -z "$dir" && "$line" =~ ^DOTFILES_DIR=\"(.*)\"$ ]]; then dir="${BASH_REMATCH[1]}"; fi
+    done <"$HOME/.local/bin/sys-update"
+  fi
+  if [[ -n "$dir" && -f "$dir/$need" ]]; then
+    printf '%s\n' "$dir"
+    return 0
+  fi
+  return 1
+}
+
+root="$(repo_root ops/audit.sh)" || { echo "repo-audit: cannot locate the repo (chezmoi source-path and the sys-update wrapper's DOTFILES_DIR both lack ops/audit.sh)" >&2; exit 1; }
+audit="$root/ops/audit.sh"
 
 # PowerShell single-quoted literal; typographic quotes also end a literal.
 ps_quote() {

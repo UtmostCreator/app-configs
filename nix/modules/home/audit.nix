@@ -33,7 +33,9 @@ lib.mkIf pkgs.stdenv.hostPlatform.isLinux {
         ]
       }:${config.home.profileDirectory}/bin";
       # The repo is found through chezmoi's source dir (on PATH via the profile
-      # bin dir above), as in the codebase-memory-mcp-update unit.
+      # bin dir above), as in the codebase-memory-mcp-update unit; on NixOS-WSL
+      # (no chezmoi sourceDir) the script falls back to the DOTFILES_DIR in
+      # ~/.local/bin/sys-update.
       ExecStart = "${pkgs.writeShellScript "repo-audit" (builtins.readFile ./scripts/repo-audit.sh)}";
       TimeoutStartSec = "10min";
     };

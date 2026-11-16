@@ -25,4 +25,39 @@ final: prev: {
       })
     else
       prev.opencode;
+
+  # TEMPORARY (2026-11-16): Ghostty 1.4.0 segfaults at startup under the ibus
+  # GTK4 input-method module (ibus 1.5.33, GTK 4.24). ibus_im_context_set_client_widget
+  # and gtk_text_view_init recurse until the stack overflows. Other GTK4 apps are
+  # unaffected. Run Ghostty with GTK's built-in simple IM (GTK4 id
+  # gtk-im-context-simple) instead. Keyboard layouts switched by GNOME Shell
+  # (not ibus) are unaffected. The variable is inherited by everything started
+  # from a Ghostty shell, so GTK apps launched from a tab also lose ibus input.
+  # The D-Bus and systemd activation files hard-code the package's own bin path,
+  # so they are rewritten to point at the wrapper too. The version guard makes
+  # this a no-op after an upgrade. Recheck with
+  #   GTK_IM_MODULE=ibus <unwrapped ghostty>
+  # and remove this attr once it starts.
+  # A review cited Red Hat bug 2512529 / ibus PR 2929 as the upstream report;
+  # not verified here, so check it before relying on it to drop this attr.
+  # See docs/platforms/nixos/desktop-stability.md.
+  ghostty =
+    if prev.ghostty.version == "1.4.0" && prev.stdenv.hostPlatform.isLinux then
+      prev.symlinkJoin {
+        name = "ghostty-${prev.ghostty.version}-simple-im";
+        paths = [ prev.ghostty ];
+        nativeBuildInputs = [ prev.makeWrapper ];
+        postBuild = ''
+          rm "$out/bin/ghostty"
+          makeWrapper ${prev.ghostty}/bin/ghostty "$out/bin/ghostty" --set GTK_IM_MODULE gtk-im-context-simple
+          for f in share/dbus-1/services/com.mitchellh.ghostty.service \
+                   share/systemd/user/app-com.mitchellh.ghostty.service; do
+            rm "$out/$f"
+            sed "s|${prev.ghostty}/bin/ghostty|$out/bin/ghostty|g" "${prev.ghostty}/$f" > "$out/$f"
+          done
+        '';
+        inherit (prev.ghostty) version meta;
+      }
+    else
+      prev.ghostty;
 }

@@ -146,7 +146,13 @@ if [ "$MODE" = check ]; then
           bad "$dest/$n is missing"
           continue
         fi
-        [ -x "$dest/$n" ] || bad "$dest/$n is not executable"
+        if [ "$n" = "$SUPPORT" ]; then
+          # Sourced, never executed: on Windows/NTFS -x is true only for files
+          # starting with #!, and this one has no shebang. Readable is enough.
+          [ -r "$dest/$n" ] || bad "$dest/$n is not readable"
+        else
+          [ -x "$dest/$n" ] || bad "$dest/$n is not executable"
+        fi
         actual="$(g hash-object --no-filters -- "$dest/$n")"
         [ "$actual" = "$id" ] || bad "$dest/$n differs from the installed manifest (edited?)"
         if [ "$is_main" = 1 ]; then

@@ -229,7 +229,6 @@ write_profile() { printf '%b' "$2" >"$T/repo/nix/profiles/$1.toml"; }
     lacks '.config/flameshot'
     has '.config/Code'
     has '.config/ghostty'
-    has '.local/bin/dsh-remote-setup'
     run render darwin macos false
     has '.config/ghostty'
     has '.config/karabiner'

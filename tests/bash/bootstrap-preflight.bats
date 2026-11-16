@@ -40,7 +40,7 @@ if [[ "$tool" == nix && "\${1:-}" == eval ]]; then
     sed -nE 's/^[[:space:]]*username = "([^"]+)";.*/\\1/p' "\$4"; exit 0
 fi
 printf '%s %s\n' "$tool" "\$*" >> "\$CALLS"
-if [[ "$tool" == chezmoi && "\${1:-}" == diff && "\${FAIL_DIFF:-0}" == 1 ]]; then
+if [[ "$tool" == chezmoi && "\$*" == *diff* && "\${FAIL_DIFF:-0}" == 1 ]]; then
     echo "chezmoi: template error" >&2; exit 1
 fi
 exit 0

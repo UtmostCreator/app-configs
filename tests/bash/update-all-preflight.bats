@@ -135,6 +135,17 @@ stub_chezmoi() {
   mkdir -p "$STUBS"
   cat > "$STUBS/chezmoi" <<'STUB'
 #!/usr/bin/env bash
+# Unconfigured chezmoi (sourceDir not persisted): every subcommand fails unless
+# the call carries --source=<repo>; the flag is stripped before dispatch.
+_src=0 _a=()
+for _x in "$@"; do if [[ "$_x" == --source=* ]]; then _src=1; else _a+=("$_x"); fi; done
+set -- ${_a[@]+"${_a[@]}"}
+# a plain source-path answers like real chezmoi: the default path, rc 0, directory missing
+if [[ "$*" == source-path && "$_src" == 0 ]]; then echo "$HOME/.local/share/chezmoi"; exit 0; fi
+if [[ "${CHEZMOI_UNCONFIGURED:-1}" == 1 && "$_src" == 0 ]]; then
+  echo "stat $HOME/.local/share/chezmoi: no such file or directory" >&2
+  exit 1
+fi
 case "$1" in
   status) [[ -n "${CHEZMOI_STATUS:-}" ]] && printf '%s\n' "$CHEZMOI_STATUS" ;;
   target-path) [[ $# -eq 1 ]] && printf '%s\n' "$HOME" ;;
@@ -338,7 +349,7 @@ host_file_fixture() { # host_file_fixture <value> <hostProfile-line> <gui-line>
   PATH="$BATS_TEST_TMPDIR/cbin:$PATH" run bash "$FAKE/ops/update-all.sh"
   local warn_line chezmoi_line
   warn_line="$(printf '%s\n' "$output" | grep -n 'detected host: linux-cli' | head -n1 | cut -d: -f1)"
-  chezmoi_line="$(printf '%s\n' "$output" | grep -n 'would run: chezmoi apply' | head -n1 | cut -d: -f1)"
+  chezmoi_line="$(printf '%s\n' "$output" | grep -n 'would run: chezmoi .*apply' | head -n1 | cut -d: -f1)"
   [ -n "$warn_line" ]
   [ -n "$chezmoi_line" ] || { echo "no chezmoi step line found:"; echo "$output"; return 1; }
   [ "$warn_line" -lt "$chezmoi_line" ]

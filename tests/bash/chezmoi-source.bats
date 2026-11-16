@@ -119,6 +119,9 @@ lib_state() {
     chezmoi_as -fail;                   [ "$(lib_state)" = "unconfigured|" ]
     chezmoi_as -empty;                  [ "$(lib_state)" = "unconfigured|" ]
     # real chezmoi prints its default path with rc 0 even when the directory is missing
+    # ~/.local/share exists on a real host, so readlink -f succeeds and only the
+    # -d test keeps this unconfigured
+    mkdir -p "$HOME/.local/share"
     chezmoi_as "$HOME/.local/share/chezmoi"
     [ ! -e "$HOME/.local/share/chezmoi" ]
     [ "$(lib_state)" = "unconfigured|" ]

@@ -14,6 +14,13 @@ setup() {
   : > "$MANAGED_FILE"
   cat > "$STUBS/chezmoi" <<'STUB'
 #!/usr/bin/env bash
+# CHEZMOI_UNCONFIGURED=1 (sourceDir not persisted): every subcommand but a plain
+# source-path fails without --source=<repo>; source-path answers like real
+# chezmoi (the default path, rc 0, directory missing).
+if [[ "${CHEZMOI_UNCONFIGURED:-0}" == 1 && "$*" != *--source=* ]]; then
+  [[ "$*" == source-path ]] && { echo "$HOME/.local/share/chezmoi"; exit 0; }
+  echo "chezmoi: stat $HOME/.local/share/chezmoi: no such file or directory" >&2; exit 1
+fi
 [[ "${CHEZMOI_FAIL:-0}" == 1 ]] && { echo "chezmoi: boom" >&2; exit 1; }
 cat "$MANAGED_FILE"
 STUB
@@ -26,6 +33,12 @@ snap() { run env PATH="$STUBS:$PATH" bash "$REPO_ROOT/ops/snapshot-home.sh" "$@"
   CHEZMOI_FAIL=1 snap
   [ "$status" -ne 0 ]
   [[ "$output" != *"Snapshot complete"* ]]
+}
+
+@test "T-0009: an unconfigured chezmoi is asked with --source=<repo>, so the snapshot succeeds" {
+  echo dotfile > "$MANAGED_FILE"; echo hi > "$HOME/dotfile"
+  CHEZMOI_UNCONFIGURED=1 snap --print-dir
+  [ "$status" -eq 0 ]
 }
 
 @test "an empty managed list is a legitimate success" {

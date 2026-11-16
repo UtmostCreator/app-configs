@@ -70,6 +70,26 @@ JSON
   for tool in nix chezmoi home-manager mise lefthook; do
     cat > "$STUBS/$tool" <<STUB
 #!/usr/bin/env bash
+# An unconfigured chezmoi (NixOS-WSL after \`chezmoi init --source\`: sourceDir is
+# not persisted, ~/.local/share/chezmoi does not exist): every subcommand,
+# source-path included, fails unless the call carries --source=<repo>. The log
+# gets the call without that flag so the exact-command assertions stay stable;
+# the raw call goes to \$STUB_LOG.raw.
+if [[ "$tool" == chezmoi ]]; then
+  printf 'chezmoi %s\n' "\$*" >> "\$STUB_LOG.raw"
+  _has_src=0 _args=()
+  for _a in "\$@"; do if [[ "\$_a" == --source=* ]]; then _has_src=1; else _args+=("\$_a"); fi; done
+  set -- \${_args[@]+"\${_args[@]}"}
+  # Real chezmoi prints its default source path with rc 0 even when that
+  # directory does not exist (CHEZMOI_SP overrides the answer).
+  if [[ "\$*" == source-path && "\$_has_src" == 0 ]]; then
+    printf '%s\\n' "\${CHEZMOI_SP:-\$HOME/.local/share/chezmoi}"; exit 0
+  fi
+  if [[ "\${CHEZMOI_UNCONFIGURED:-1}" == 1 && "\$_has_src" == 0 ]]; then
+    echo "chezmoi: stat \$HOME/.local/share/chezmoi: no such file or directory" >&2
+    exit 1
+  fi
+fi
 printf '%s %s\n' "$tool" "\$*" >> "\$STUB_LOG"
 case "$tool \$*" in
   "nix flake update"*)    [[ "\${FAIL_FLAKE_UPDATE:-0}" == 1 ]] && { echo "error: cannot update inputs" >&2; exit 1; }
@@ -210,6 +230,97 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
   grep -q 'chezmoi apply --no-tty' "$STUB_LOG"
 }
 
+# T-0009: `chezmoi init --source=<repo>` does not persist sourceDir, so on such a
+# host (NixOS-WSL) every plain chezmoi call fails. The stub above fails every
+# subcommand without --source=<repo> (CHEZMOI_UNCONFIGURED, default 1).
+@test "T-0009: unconfigured chezmoi: apply, status and diff carry --source=<repo>" {
+  run_update
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"no such file"* ]]
+  [[ "$output" != *"chezmoi status failed"* ]]
+  [[ "$output" != *"drifted after apply"* ]]
+  for sub in "status" "diff" "apply --no-tty"; do
+    grep -qF "chezmoi --source=$FAKE $sub" "$STUB_LOG.raw" || { echo "no '$sub' call with --source=$FAKE"; cat "$STUB_LOG.raw"; return 1; }
+  done
+  # no chezmoi call ran without it (source-path is the configured-source probe)
+  if grep -v -e '^chezmoi --source=' -e '^chezmoi source-path' "$STUB_LOG.raw"; then echo "plain chezmoi call above"; return 1; fi
+  grep -q '^chezmoi apply --no-tty' "$STUB_LOG"
+}
+
+@test "T-0009: unconfigured chezmoi: the post-apply drift check (verify) carries --source=<repo>" {
+  export HOST_PROFILE=linux-cli   # no browser gate
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup
+  [[ "$output" != *"drifted after apply"* ]] || { echo "$output"; return 1; }
+  grep -qF "chezmoi --source=$FAKE verify" "$STUB_LOG.raw" || { cat "$STUB_LOG.raw"; echo "$output"; return 1; }
+}
+
+@test "T-0009: a chezmoi already configured with this repo is called without --source" {
+  # source-path resolves to <repo>/home (.chezmoiroot): the same decision as selection-facts
+  mkdir -p "$FAKE/home"; printf 'home\n' > "$FAKE/.chezmoiroot"
+  export CHEZMOI_UNCONFIGURED=0
+  local real="$STUBS/chezmoi"
+  mv "$real" "$STUBS/chezmoi.inner"
+  cat > "$real" <<STUB
+#!/usr/bin/env bash
+if [[ "\$1" == source-path && \$# -eq 1 ]]; then printf '%s\n' "$FAKE/home"; exit 0; fi
+exec "$STUBS/chezmoi.inner" "\$@"
+STUB
+  chmod +x "$real"
+  git -C "$FAKE" add -A; git -C "$FAKE" -c user.email=t@t -c user.name=t commit -q -m chezmoiroot
+  run_update
+  [ "$status" -eq 0 ]
+  grep -q '^chezmoi apply --no-tty' "$STUB_LOG.raw"
+  if grep -q -- '--source=' "$STUB_LOG.raw"; then cat "$STUB_LOG.raw"; return 1; fi
+}
+
+@test "T-0009: a configured source reached through a symlink is also called without --source" {
+  mkdir -p "$FAKE/home"; printf 'home\n' > "$FAKE/.chezmoiroot"
+  ln -s "$FAKE/home" "$BATS_TEST_TMPDIR/home-link"
+  export CHEZMOI_UNCONFIGURED=0
+  mv "$STUBS/chezmoi" "$STUBS/chezmoi.inner"
+  printf '#!/usr/bin/env bash\nif [[ "$1" == source-path && $# -eq 1 ]]; then printf "%%s\\n" "%s"; exit 0; fi\nexec "%s" "$@"\n' \
+    "$BATS_TEST_TMPDIR/home-link" "$STUBS/chezmoi.inner" > "$STUBS/chezmoi"
+  chmod +x "$STUBS/chezmoi"
+  git -C "$FAKE" add -A; git -C "$FAKE" -c user.email=t@t -c user.name=t commit -q -m chezmoiroot
+  run_update
+  [ "$status" -eq 0 ]
+  grep -q '^chezmoi apply --no-tty' "$STUB_LOG.raw"
+  if grep -q -- '--source=' "$STUB_LOG.raw"; then cat "$STUB_LOG.raw"; return 1; fi
+}
+
+# F1: chezmoi is configured for another, existing checkout and this one is a
+# worktree: applying with --source=<worktree> would bake the worktree path into
+# the rendered files (sourceDir), so an apply is refused. Report mode only reads.
+@test "T-0009: apply from a worktree on a host configured for another checkout is refused, nothing changed" {
+  mkdir -p "$BATS_TEST_TMPDIR/main checkout/home"
+  export CHEZMOI_SP="$BATS_TEST_TMPDIR/main checkout/home"
+  run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"chezmoi is configured for $CHEZMOI_SP; run sys-update from that checkout"* ]]
+  [[ "$output" == *"stopped before"* ]]
+  if grep -q 'nix flake update\|chezmoi apply\|home-manager switch' "$STUB_LOG"; then cat "$STUB_LOG" >&2; return 1; fi
+}
+
+@test "T-0009: the same host in report mode is not refused (read-only calls keep --source)" {
+  mkdir -p "$BATS_TEST_TMPDIR/main checkout/home"
+  export CHEZMOI_SP="$BATS_TEST_TMPDIR/main checkout/home"
+  run env PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
+  [[ "$output" == *"--apply will refuse: chezmoi is configured for $CHEZMOI_SP; run sys-update from that checkout"* ]]
+  [[ "$output" != *"Update stopped"* ]]
+  grep -qF "chezmoi --source=$FAKE status" "$STUB_LOG.raw"
+}
+
+@test "T-0009: a default source path that does not exist (real chezmoi prints it with rc 0) applies with --source" {
+  # CHEZMOI_SP unset: source-path prints $HOME/.local/share/chezmoi, which is
+  # missing while ~/.local/share exists (the real WSL shape: readlink -f
+  # succeeds, so only the -d test keeps the state unconfigured)
+  mkdir -p "$HOME/.local/share"
+  [ ! -e "$HOME/.local/share/chezmoi" ]
+  run_update
+  [ "$status" -eq 0 ]
+  grep -qF "chezmoi --source=$FAKE apply --no-tty" "$STUB_LOG.raw"
+}
+
 @test "a hand-edited managed file stops the update before anything is mutated" {
   export CHEZMOI_STATUS='MM .gitconfig'
   run_update
@@ -217,7 +328,7 @@ commits() { git -C "$FAKE" rev-list --count HEAD; }
   [[ "$output" == *"stopped before"* ]]
   [[ "$output" == *".gitconfig"* ]]
   # names a way to inspect the edit and a way past it
-  [[ "$output" == *"chezmoi diff"* ]]
+  [[ "$output" == *"chezmoi --source="*" diff"* ]]
   [[ "$output" == *"--force"* ]]
   if grep -q 'nix flake update' "$STUB_LOG"; then echo 'assertion failed: expected no match' >&2; return 1; fi
   if grep -q 'chezmoi apply' "$STUB_LOG"; then echo 'assertion failed: expected no match' >&2; return 1; fi

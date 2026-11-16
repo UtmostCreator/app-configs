@@ -138,10 +138,31 @@ setup() {
   [[ "$output" == *"394"* ]]
 }
 
-@test "keeps deprecation notices as warnings" {
+@test "reports the Nix CLI install->add alias notice as info, not a Home Manager warning" {
   run classify_warning "warning: 'install' is a deprecated alias for 'add'"
   [ "$status" -eq 0 ]
-  [[ "$output" == warn* ]]
+  [[ "$output" == info*nix* ]]
+  [[ "$output" != *home-manager* ]]
+  [[ "$output" == *"nix profile install"* ]]
+  [[ "$output" == *harmless* ]]
+}
+
+@test "names other Nix CLI deprecated aliases without blaming Home Manager" {
+  run classify_warning "warning: 'ping' is a deprecated alias for 'info'"
+  [ "$status" -eq 0 ]
+  [[ "$output" == info*nix* ]]
+  [[ "$output" == *"ping"* ]]
+  [[ "$output" == *"'info'"* ]]
+  [[ "$output" != *"Home Manager"* ]]
+}
+
+@test "keeps a Home Manager option deprecation as a warning" {
+  run classify_warning "evaluation warning: programs.foo.bar is a deprecated alias for programs.foo.baz"
+  [ "$status" -eq 0 ]
+  [[ "$output" == warn*home-manager* ]]
+  run classify_warning "trace: warning: programs.foo.bar is a deprecated alias for programs.foo.baz"
+  [ "$status" -eq 0 ]
+  [[ "$output" == warn*home-manager* ]]
 }
 
 @test "explains npm peer dependency conflicts" {

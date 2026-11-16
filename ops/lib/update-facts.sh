@@ -186,7 +186,7 @@ git_upstream() {
 # human can act on — or demotes them to information when they are expected.
 # Returns 1 for anything unrecognised so callers can ignore ordinary output.
 classify_warning() {
-  local line="$1" n systems
+  local line="$1" n systems old new
 
   case "$line" in
     *"omitted these incompatible systems"*)
@@ -201,7 +201,21 @@ classify_warning() {
       printf 'info\thome-manager\t%s unread news %s (read them with: home-manager news)\n' \
         "${n:-some}" "$([[ "$n" == 1 ]] && echo entry || echo entries)"
       return 0 ;;
+    "warning: '"*"' is a deprecated alias for '"*)
+      # Printed by the Nix CLI itself (not Home Manager). The one seen every
+      # run is Home Manager's activation calling `nix profile install`.
+      old="${line#warning: \'}"
+      old="${old%%\'*}"
+      new="${line##*alias for \'}"
+      new="${new%\'*}"
+      if [[ "$old" == install && "$new" == add ]]; then
+        printf "info\tnix\tHome Manager uses 'nix profile install' (a deprecated alias of 'nix profile add' in newer Nix); harmless, upstream\n"
+      else
+        printf "info\tnix\tNix CLI: '%s' is a deprecated alias for '%s'; harmless\n" "$old" "$new"
+      fi
+      return 0 ;;
     *"is a deprecated alias for"*)
+      # Anything else (e.g. an `evaluation warning:` option deprecation).
       printf 'warn\thome-manager\tdeprecation notice during activation (see the run log)\n'
       return 0 ;;
     *"not added from a flake"*|*"can't be checked for upgrades"*)

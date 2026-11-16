@@ -73,6 +73,11 @@ detect_shell() {
         [ -n "$sh" ] || sh="${SHELL:-}"
     fi
     name="$(basename "$sh")"
+    # NixOS (users.users.<u>.shell = pkgs.fish) uses
+    # /nix/store/<hash>-wrapped-fish/wrapper, whose basename is `wrapper`.
+    case "$sh" in
+        /nix/store/*-wrapped-fish/*) name=fish ;;
+    esac
     case "$name" in
         fish|zsh|bash) echo "$name" ;;
         *) die "Unsupported shell '$name'. Set APP_CONFIGS_SSH_SHELL=bash|zsh|fish to choose which rc file to wire." ;;

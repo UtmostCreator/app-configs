@@ -432,3 +432,21 @@ stub_uname() { printf '#!/bin/sh\necho %s\n' "$1" >"$STUBS/uname"; chmod +x "$ST
     [ "$status" -eq 0 ]
     [[ "$output" == *"WARN"*"IgnoreUnknown"* ]]
 }
+
+# NixOS (users.users.<u>.shell = pkgs.fish) makes the login shell
+# /nix/store/<hash>-wrapped-fish/wrapper: the basename is `wrapper`.
+@test "fish: a NixOS wrapped-fish login shell is detected as fish" {
+    chezmoi_manages yes
+    run env USER=no-such-user-bats PATH="$STUBS:$PATH" \
+        SHELL=/nix/store/5b1mi4qz6fl5jvmlylg1aasizg0cbc0r-wrapped-fish/wrapper bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [[ "$output" != *"Unsupported shell"* ]]
+    [ "$(cat "$HOME/.config/fish/conf.d/ssh-agent.fish")" = "# managed fish snippet" ]
+}
+
+@test "an unknown shell is still refused with the same message" {
+    chezmoi_manages yes
+    run env USER=no-such-user-bats PATH="$STUBS:$PATH" SHELL=/usr/bin/nu bash "$SCRIPT"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"Unsupported shell 'nu'. Set APP_CONFIGS_SSH_SHELL=bash|zsh|fish"* ]]
+}

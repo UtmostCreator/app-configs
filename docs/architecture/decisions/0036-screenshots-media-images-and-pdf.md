@@ -28,7 +28,7 @@ One status per row.
 | Job | L / M / Win | Alternatives | P/W | Status | Now |
 |---|---|---|---|---|---|
 | Screenshot, Linux | Flameshot | none | P+W | Pr | Record |
-| Screenshot, macOS (CM) | built-in Cmd+Shift+5 (cask removed: `docs/reference/app-catalog.md:28`, commit fb1d74e; ADR-0014 rules out Nix GUI apps on macOS) | CleanShot X | P+W | Pr | Record |
+| Screenshot, macOS (CM) | built-in Cmd+Shift+5 (cask removed: `docs/reference/app-catalog.md:28`, commit fb1d74e; nixpkgs has darwin builds; the real reason is ADR-0014 ruling out Nix GUI apps on macOS plus the removed cask) | CleanShot X | P+W | Pr | Record |
 | Screenshot, Windows P | Flameshot | ShareX | P | DU | Manual |
 | Screenshot, Windows W (OS, built in) | Snipping Tool (ADR-0021 R3 keeps W installs to a minimum) | none | W | Pr | Manual |
 | PDF, Linux | Brave (`nix/modules/home/default-apps.nix`) | Okular | P+W | Pr | Record |

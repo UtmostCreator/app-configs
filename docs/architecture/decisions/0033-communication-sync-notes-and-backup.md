@@ -37,4 +37,4 @@ One status per row.
 | Granola | ungrouped cask on the W macOS host today. A suspect (it records meetings): in W only with employer consent. Moving it to P needs a T-0042 group | none | P; W with consent | Pr | Record |
 
 ## Consequences
-- Nothing is installed by this ADR. Kopia's package availability on each OS is unverified.
+- Nothing is installed by this ADR. kopia 0.23.1 exists in nixpkgs for Linux and darwin (verified); kopia-ui is Linux-only, so a macOS GUI would need a cask.

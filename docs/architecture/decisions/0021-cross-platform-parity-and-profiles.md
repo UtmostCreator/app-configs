@@ -6,7 +6,7 @@ date: 2026-11-16
 platforms: [cross, windows]
 areas: [tool-selection, parity, profiles, path-owners, audit]
 permits: [linux-macos-parity, windows-follows-winget, native-exception-with-owner-approval, per-host-profile, owner-duplicate-allowlist]
-forbids: [mandatory-driver-install, removing-home-manager-copies]
+forbids: [mandatory-driver-install, removing-hm-copy-of-allowlisted-duplicate]
 amends: [11]
 supersedes: []
 superseded_by: []
@@ -47,23 +47,34 @@ One status per row.
 
 ## P6: owner directories
 1. Home Manager: the `home-manager-path` element of the user's nix profile, and on macOS the nix-darwin HM directory `/etc/profiles/per-user/<user>/bin` (`useUserPackages`, `nix/flake.nix:195-201`).
-2. Other imperative nix profile elements: only chezmoi, mise, home-manager and lefthook are allowed. This four-element allowlist is new. Today `live_nix_profile` only flags files that collide with Home Manager (`ops/lib/profile-conflicts.sh:19-46`; `ops/audit.sh:349`, `:368-371`); the planned `live_owner_duplicates` check enforces the allowlist.
+2. Other imperative nix profile elements: only chezmoi, mise, home-manager and lefthook are allowed. This four-element allowlist is new. Today `live_nix_profile` only flags files that collide with Home Manager (`ops/lib/profile-conflicts.sh:19-46`; `ops/audit.sh:349`, `:368-371`); the planned `live_owner_duplicates` check enforces the allowlist. Known violations today (live inventory): six imperative elements, gcc, gnumake, gnupg, python312, sqlite and yamllint, are installed, so the allowlist is already broken; see the known-violations table below (keep or remove follow-up, proposed).
 3. `/run/current-system/sw/bin` (NixOS, and nix-darwin on macOS).
 4. The Homebrew prefix: `bin`, plus `opt/*/bin` for keg-only formulae.
 5. mise installs and shims.
 6. `~/.local/bin`: vendor binaries (ADR-0006) and chezmoi scripts.
 
-Not owners: OS base directories (`/usr/bin`, `/bin`, `/usr/sbin`, the macOS `/usr/bin/git` and `curl` shims, Ubuntu's apt `/usr/bin/docker`). They are ignored; PATH order decides which copy runs.
+Not owners: OS base directories (`/usr/bin`, `/bin`, `/usr/sbin`, the macOS `/usr/bin/git` and `curl` shims, Ubuntu's apt `/usr/bin/docker`). They are ignored; PATH order decides which copy runs. The NixOS base and desktop-module packages (for example xz, man-db, glib, shared-mime-info, wireplumber) also appear in /run/current-system/sw/bin and duplicate Home Manager copies; the NixOS base set is ignored like the OS base directories, so the planned WARN does not flag it. Only packages the repo or the hand-edited system configuration add on top of that set are checked.
 
 ## P6: allowlist of intentional duplicates
 | Binary | Where it comes from | Why both stay |
 |---|---|---|
-| fish | NixOS `programs.fish` (`ops/system-setup.sh:513`) and Home Manager (`nix/modules/home/cli.nix:21`) | the system copy is the login shell; the HM copy is the interactive tool set |
-| git, curl | HM `nix/modules/common/packages.nix:8-16` on every host, and the NixOS-WSL system (`ops/system-setup.sh:504-506`) | bootstrap needs them before Home Manager exists |
-| universal-ctags | HM `nix/modules/common/packages.nix` and `nix/modules/nixos/default.nix:3` | none recorded in commit 315b9f5; unintended, remove the system copy later (follow-up) |
-| docker CLI | HM `nix/modules/home/dev.nix:88` and `nix/modules/nixos/docker.nix:59` | HM is the only CLI owner on hosts without NixOS (Ubuntu WSL, linux-cli, macOS); on NixOS the daemon module adds a second copy (see ADR-0030) |
+| fish | NixOS `programs.fish` (`ops/system-setup.sh:512`, programs.fish.enable) and Home Manager (`nix/modules/home/cli.nix:21`) | the system copy is the login shell; the HM copy is the interactive tool set |
+| git, curl | HM `nix/modules/common/packages.nix:8-16` on every host; the NixOS-WSL system (`ops/system-setup.sh:504-506`); curl also comes from the NixOS base packages on the desktop, while git is not in the desktop system path | bootstrap needs them before Home Manager exists |
+| docker | HM `nix/modules/home/dev.nix:88` and `nix/modules/nixos/docker.nix:59`. The HM `docker` is the full package (CLI plus moby daemon binaries; dockerd resolves to moby), not only the CLI; ADR-0030 proposes docker-client as an optional row | HM is the only owner on hosts without NixOS (Ubuntu WSL, linux-cli non-NixOS, macOS); on NixOS the daemon module adds a second copy (see ADR-0030) |
 
-The HM copies are never removed.
+The HM copy of an allowlisted duplicate is never removed.
+
+## P6: known violations (not allowlisted)
+Found by the live inventory of the linux-desktop host. Each is proposed for removal or a decision; none is applied by this ADR. HM wins on PATH for all system copies.
+
+| Item | Where it comes from | Follow-up | Status |
+|---|---|---|---|
+| brave, keepassxc, neovim, vscode, opencode, wget (system copies) | the hand-edited /etc/nixos/configuration.nix environment.systemPackages (lines 150-161). HM wins: vscode 1.119 vs 1.146, neovim 0.12.2 vs 0.12.6, opencode 1.15.13 vs 2.2.6 | remove the system copies: T-0029 | Pr |
+| firefox (system copy) | programs.firefox.enable in the hand-edited /etc/nixos/configuration.nix (line 146) | remove: T-0029 | Pr |
+| universal-ctags (system copy) | the hand-edited /etc/nixos/configuration.nix environment.systemPackages, not `nix/modules/nixos/default.nix` (that module has no consumer; see T-0029:34 and :42). Unintended: no reason recorded in commit 315b9f5 | remove the system copy: T-0029 | Pr |
+| gcc, gnumake, gnupg, python312, sqlite, yamllint (imperative nix profile elements) | outside the four-element allowlist | per element: keep (move into Home Manager) or remove (new follow-up row) | Pr |
+| rg, fd, jq, node, shellcheck, actionlint (mise global shadows of the HM copies) | mise globals | remove: ADR-0014 makes mise per-project only, and ADR-0021 asks for one owner | Pr |
+| uv in ~/.local/bin, first on PATH before the HM uv | owner directory 6 allows only vendor binaries (ADR-0006) and chezmoi scripts | remove | Pr |
 
 ## P6: the planned check
 - `live_owner_duplicates` in `ops/audit.sh --live` (planned, not yet written; the check, not the ADRs). It skips what `live_nix_profile` already reports.
@@ -71,7 +82,7 @@ The HM copies are never removed.
 - Tests: planned tests/bash/audit-owner-duplicates.bats (not yet created), with seeded directories, one allowlisted and one unlisted duplicate. A change to `ops/audit.sh` or `ops/lib/*` runs the full `bats tests/bash` suite (AGENTS.md).
 
 ## Consequences
-- Nothing is applied by this ADR: no host profile change, no Home Manager removal, no code. ADR-0011 gets a note.
+- Nothing is applied by this ADR: no host profile change, no removal, no code. ADR-0011 gets a note.
 - ADRs 0022 to 0033, 0036 and 0037 cite this one for parity, profiles and the native exception.
 - The P/W split stays a target for macOS until T-0042 groups land; the macOS work host keeps its current apps.
 - Unknown: employer policy for W rows; PATH order for allowlisted duplicates (check with `type -a <binary>`).

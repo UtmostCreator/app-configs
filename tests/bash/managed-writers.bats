@@ -28,6 +28,17 @@ setup() {
 # run-bats.sh exports HOME=<scratch dir> before it writes the test identity,
 # so $HOME/.gitconfig is never the user's chezmoi-managed file.
 ops/run-bats.sh | .gitconfig | writes into the scratch HOME it just created
+# ops/windows/bootstrap.ps1 embeds WSL bash in here-strings that writes to temp and report files,
+# and prints advice text containing "->" and "<dir>" that the redirect regex reads as writes.
+# The scanner cannot resolve those variable targets, and it reports unresolved ones once the file
+# names a managed path literally; step S does (the Windows-side status line command,
+# ~/.claude/statusline.sh, which step S never writes from bash). One entry per variable target,
+# so a new unresolved target or a literal managed path written in this file is still reported.
+ops/windows/bootstrap.ps1 | $f | embedded WSL bash writes the decoded script to its own mktemp file
+ops/windows/bootstrap.ps1 | $dir/* | embedded WSL bash writes into the host-snapshot report directory it just created
+ops/windows/bootstrap.ps1 | $final | embedded WSL bash moves the finished report directory into place
+ops/windows/bootstrap.ps1 | $file | not a write: advice text "<dir> $file" read as a redirect
+ops/windows/bootstrap.ps1 | $src12 | not a write: message text "($head12 -> $src12)" read as a redirect
 EOF
     cat >"$ALLOW_NIX" <<'EOF'
 # Home Manager owns flameshot.ini on Linux; chezmoi ignores it there

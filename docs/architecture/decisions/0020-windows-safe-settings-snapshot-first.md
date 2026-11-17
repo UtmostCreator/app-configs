@@ -114,7 +114,7 @@ Callers: S = reachable from Invoke-WindowsSnapshot; A = Invoke-WindowsSettings (
 | Get-UserAppxPackage | T4 | S, A, R | Get-AppxPackage: Name, ErrorAction |
 | Remove-UserAppxPackage | T6 | A | Remove-AppxPackage: Package, ErrorAction |
 | Register-UserAppxPackage | T7 | R | Add-AppxPackage: RegisterByFamilyName, MainPackage, ErrorAction |
-| Read-WindowsSettingsCatalogue | T3/T4 | S, A, R | Import-PowerShellDataFile: LiteralPath, ErrorAction (catalogue `ops/windows/windows-settings.psd1`) |
+| Read-WindowsSettingsCatalogue | T3/T4 | S, A, R | Import-PowerShellDataFile: LiteralPath, ErrorAction (the catalogue file named under Decision; planned for T3) |
 | Read-WindowsSettingsFile | T4 | S, A, R | Get-Content: LiteralPath, Raw, Encoding, ErrorAction; ConvertFrom-Json: InputObject |
 | Write-WindowsSettingsFile | T4 | S, A | New-Item: Path, ItemType, ErrorAction; ConvertTo-Json: InputObject, Depth; Write-NewFile |
 | Test-WindowsSettingsCommitted | T6 | A, R | Invoke-Native: ExePath, Arguments, WorkingDirectory, TimeoutSeconds; Resolve-Program: Name (pinned) |

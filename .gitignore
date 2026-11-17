@@ -74,6 +74,21 @@ mise.local.toml
 .claude/settings.local.json
 .claude/worktrees/
 
+# Installed AI agent and skill guidance (Glyphbrace, Claude, Codex, Copilot,
+# OpenCode). Kept local per checkout; never committed.
+/.claude/agents/
+/.claude/skills/
+/.codex/
+/.agents/
+/.glyphbrace/
+/.opencode/
+/.github/agents/
+/.github/skills/
+/.github/prompts/
+/.github/instructions/
+/.github/hooks/
+/.github/copilot-instructions.md
+
 # Python bytecode (tests and tools import ops/*.py)
 __pycache__/
 *.pyc

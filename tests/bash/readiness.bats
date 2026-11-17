@@ -62,6 +62,14 @@ stub() { printf '#!/bin/sh\nexit 0\n' >"$S/$1"; chmod +x "$S/$1"; }
 
 @test "NixOS with no recorded host file: TODO to record it, no tailscaled rebuild loop" {
     unset HOST_PROFILE
+    # Pin detection to plain Linux with no host file, so a live WSL2 kernel cannot answer.
+    printf '6.18.33\n' >"$BATS_TEST_TMPDIR/osrelease"
+    printf 'Linux version 6.18.33 (builder@host) (gcc) #1 SMP\n' >"$BATS_TEST_TMPDIR/proc-version"
+    export DETECT_HOST_OSRELEASE="$BATS_TEST_TMPDIR/osrelease" \
+        DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/proc-version" \
+        DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-WSLInterop" \
+        DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-run-WSL"
+    unset WSL_DISTRO_NAME HOST_PROFILE_DEFAULT APP_CONFIGS_HOST_FILE
     READINESS_ASSUME_NIXOS=1 PATH="$S" run bash "$SCRIPT"
     [[ "$output" == *"host profile not recorded"* ]]
     [[ "$output" != *"Tailscale daemon inactive"* ]]

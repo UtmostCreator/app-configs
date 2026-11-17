@@ -225,8 +225,10 @@ clean() { [ -z "$(git -C "$FAKE" status --porcelain)" ]; }
 }
 
 @test "WSL1 is refused with the conversion command" {
+  printf '4.4.0-19041-Microsoft\n' >"$BATS_TEST_TMPDIR/osrelease"
   printf 'Linux version 4.4.0-19041-Microsoft (Microsoft@Microsoft.com)\n' > "$BATS_TEST_TMPDIR/version"
   run env HOST_PROFILE=wsl DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version" \
+    DETECT_HOST_OSRELEASE="$BATS_TEST_TMPDIR/osrelease" \
     PATH="$STUBS:$PATH" bash "$FAKE/ops/update-all.sh"
   [ "$status" -ne 0 ]
   [[ "$output" == *"WSL1"* ]]

@@ -9,12 +9,25 @@ setup() {
   REPO_ROOT="$(cd "$BATS_TEST_DIRNAME/../.." && pwd)"
   FIX="$BATS_TEST_TMPDIR/nixos"
   mkdir -p "$FIX"
+  # Pin the host-detection inputs to plain Linux with no host file, so the live
+  # host (for example WSL2) cannot change what detect-host.sh reports when a
+  # test leaves HOST_PROFILE unset.
+  printf '6.18.33\n' > "$BATS_TEST_TMPDIR/osrelease"
+  printf 'Linux version 6.18.33 (builder@host) (gcc) #1 SMP\n' > "$BATS_TEST_TMPDIR/proc-version"
+  export DETECT_HOST_OSRELEASE="$BATS_TEST_TMPDIR/osrelease" \
+    DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/proc-version" \
+    DETECT_HOST_WSL_INTEROP="$BATS_TEST_TMPDIR/no-WSLInterop" \
+    DETECT_HOST_WSL_RUN="$BATS_TEST_TMPDIR/no-run-WSL"
+  unset HOST_PROFILE_DEFAULT WSL_DISTRO_NAME APP_CONFIGS_HOST_FILE
 }
 
 # run_setup <configuration.nix text>
+# HOST_PROFILE is pinned (override with SS_PROFILE=...) so the live host, for
+# example WSL2, never changes which system-setup.sh branch a fixture hits.
 run_setup() {
   printf '%s\n' "$1" > "$FIX/configuration.nix"
-  SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
+  HOST_PROFILE="${SS_PROFILE:-linux-desktop}" \
+    SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
     USER_NAME=alice ENABLE_DOCKER="${SS_DOCKER:-0}" ENABLE_TAILSCALE="${SS_TAILSCALE:-0}" \
     ENABLE_DESKTOP_STABILITY="${SS_STABILITY:-0}" SYSTEM_TIMEZONE=Europe/London \
     run bash "$REPO_ROOT/ops/system-setup.sh"
@@ -232,6 +245,8 @@ sudo_report() {
   printf '#!/bin/sh\necho "alice:x:1000:1000::%s:/bin/sh"\n' "$BATS_TEST_TMPDIR/sudohome" > "$BATS_TEST_TMPDIR/getent-stub/getent"
   chmod +x "$BATS_TEST_TMPDIR/getent-stub/getent"
   run env -i PATH="$BATS_TEST_TMPDIR/getent-stub:$PATH" HOME="$BATS_TEST_TMPDIR/roothome" SUDO_USER=alice \
+    DETECT_HOST_OSRELEASE="$DETECT_HOST_OSRELEASE" DETECT_HOST_PROC_VERSION="$DETECT_HOST_PROC_VERSION" \
+    DETECT_HOST_WSL_INTEROP="$DETECT_HOST_WSL_INTEROP" DETECT_HOST_WSL_RUN="$DETECT_HOST_WSL_RUN" \
     SYSTEM_SETUP_ASSUME_NIXOS=1 SYSTEM_SETUP_NIXOS_DIR="$FIX" \
     USER_NAME=alice SYSTEM_TIMEZONE=Europe/London ENABLE_DOCKER=0 "$@" \
     bash "$REPO_ROOT/ops/system-setup.sh"

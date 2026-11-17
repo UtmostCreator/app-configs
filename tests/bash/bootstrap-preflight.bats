@@ -162,8 +162,10 @@ host_checks() {
 }
 
 @test "WSL1 is refused with the conversion command, before anything else" {
+    printf '4.4.0-19041-Microsoft\n' >"$BATS_TEST_TMPDIR/osrelease"
     printf 'Linux version 4.4.0-19041-Microsoft (Microsoft@Microsoft.com)\n' >"$BATS_TEST_TMPDIR/version"
     run env PATH="$STUBS:$PATH" HOST_PROFILE=wsl DETECT_HOST_PROC_VERSION="$BATS_TEST_TMPDIR/version" \
+        DETECT_HOST_OSRELEASE="$BATS_TEST_TMPDIR/osrelease" \
         bash "$REPO_ROOT/ops/bootstrap.sh" --dry-run
     [ "$status" -ne 0 ]
     [[ "$output" == *"WSL1"* ]]

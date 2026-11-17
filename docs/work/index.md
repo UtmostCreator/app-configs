@@ -47,7 +47,7 @@ closes, move its directory from [`active/`](active/README.md) to
 | [T-0051: Git hooks must work on Windows end to end (bug)](active/T-0051-windows-git-hooks/ticket.md) | open | 2026-11-15 |
 | [T-0052: Claude Code status line on native Windows (feature)](active/T-0052-windows-claude-statusline/ticket.md) | open (design reviewed; implementation not started) | 2026-11-15 |
 | [T-0055: Windows safe settings: snapshot first, profiles, telemetry, NVIDIA (feature)](active/T-0055-windows-safe-settings/ticket.md) | open (decision records written; nothing built) | 2026-11-16 |
-| [T-0056: Remove the DeepSeek harness and its remote access, for now (chore)](active/T-0056-remove-deepseek-harness/ticket.md) | removed; live cleanup pending | 2026-11-16 |
+| [T-0056: Remove the DeepSeek harness and its remote access, for now (chore)](active/T-0056-remove-deepseek-harness/ticket.md) | removed; live cleanup pending; may return later | 2026-11-16 |
 | [T-0057: Enable Tailscale by default only on the personal desktop (feature)](active/T-0057-tailscale-desktop-only/ticket.md) | open (implemented on a branch) | 2026-11-16 |
 
 Archived tickets: see [archive/](archive/README.md).

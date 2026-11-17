@@ -21,6 +21,7 @@ Cites [ADR-0019](0019-platform-scope-linux-macos-wsl2-first.md) (owner decision 
 - "disable all telemetry for home windows work profile must not touch it for now".
 - "allow 2 script option for telemetry or for this setup and be able to select during install". The selection is a required switch: the owner chose "Required switch" over an interactive prompt (`-SetupProfile personal|work`, ADR-0020).
 - 2026-11-16, asked "May -MachineWide and the NVIDIA profile step run before T-0047 closes?": "Yes, allow now". So `-MachineWide` may apply before T-0047 completes (ADR-0010 amended).
+- 2026-11-17 owner: the snapshot readers below are approved (O2).
 
 ## Honesty about what is possible
 - Windows Home's minimum diagnostic level is Required. `AllowTelemetry=0` is honoured only on Enterprise, Education and Server (Microsoft Learn, link above).
@@ -71,8 +72,9 @@ Read once before any write; values are printed, never identities.
 - The `-MachineWide` help text is the explicit acknowledgement that no account on this PC is used for work. setup.md tells the owner to run `-WindowsRollback -MachineWide` before adding a work account or enrolling.
 
 ## Closed seams
-- Writers: Set-ServiceStart, Set-TaskEnabled, Set-MachinePolicyValue.
-- Readers: Get-DeviceJoinState (`dsregcmd.exe /status` only; returns parsed booleans only), Get-MdmEnrollments, Get-EnabledLocalUserCount.
+- Writers: Set-ServiceStart, Set-TaskEnabled, Set-MachinePolicyValue (sets or removes a value; creates only Assert-MachineTarget keys (N2); on rollback removes only keys a run created, when empty).
+- Readers: detection Get-DeviceJoinState (`dsregcmd.exe /status` only; parsed booleans only), Get-DomainMembership (Win32_ComputerSystem PartOfDomain only), Get-MdmEnrollments, Get-EnabledLocalUserCount; snapshot readers Get-MachinePolicyValue, Get-ServiceStart, Get-TaskState (read only, used by `-WindowsSnapshot`, non-elevated).
+- Each seam's commands and callers are listed in ADR-0020 "Boundary rules".
 - A pure Assert-MachineTarget with hive-relative keys (3 policy keys, DiagTrack, 6 tasks).
 - Tests P1 to P12 plus dsregcmd and MDM fixtures (to be built).
 

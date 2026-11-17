@@ -5,6 +5,7 @@
 - Karabiner-Elements (macOS remapping, Windows-like behaviour): `home/dot_config/karabiner/karabiner.json`, deployed to `~/.config/karabiner/karabiner.json`
 - VS Code keybindings: `home/.chezmoitemplates/vscode/keybindings.json`
 - Raycast hotkeys, quicklinks and commands (auditable reference, not a native import): `reference/raycast/shortcuts.yaml`. Raycast shows post-remap logical shortcuts, so read it alongside the Karabiner config. Restore Raycast settings from its native export, not this file.
+- Cross-OS hotkey comparison (macOS reference vs NixOS vs proposed Windows; documentation only, draft for owner review): [hotkeys.yaml](hotkeys.yaml)
 
 ## Linux / NixOS: show desktop
 

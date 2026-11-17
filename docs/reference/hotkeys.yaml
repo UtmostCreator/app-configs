@@ -1,0 +1,855 @@
+# Cross-OS hotkey comparison table (macOS vs NixOS vs Windows).
+#
+# DOCUMENTATION ONLY. Nothing reads, parses or applies this file. It is not
+# automation and not an import format for any tool.
+#
+# - macOS is the reference column: the current bindings, as the Karabiner
+#   profile and the Raycast hotkeys produce them. "Win" on macOS means the
+#   Left Cmd key, the Win key position on a PC keyboard: every Karabiner rule
+#   triggers on left_command or left_gui and none uses right_command. The
+#   Karabiner rule descriptions and keyboard.md say "Right Cmd"; where
+#   keyboard.md and karabiner.json disagree, this table follows karabiner.json.
+# - NixOS records what the repo declares today. It is not changed here.
+# - Windows proposes the bindings closest to macOS, using tools already
+#   decided in ADR-0027 (Raycast for Windows, PowerToys incl. Command
+#   Palette), ADR-0036 (Flameshot), ADR-0011:47 and ADR-0025:25 (Windows
+#   Terminal; VS Code at ADR-0011:47). Windows os-default cells are documented
+#   Windows behaviour and are NOT verified on the owner's PC. Windows changes are
+#   manual until a Windows ADR citing ADR-0019 exists; ADR-0011 forbids
+#   hotkey scripts and AutoHotkey, and ADR-0019 forbids Windows settings
+#   automation. None of this is installed or configured on the Windows host.
+# - The owner reviews this table before anything changes.
+#
+# Owner decisions (2026-11-17, quoted):
+#   "alt space everywhere" (launcher)
+#   "Raycast window cmds (Recommended)" (macOS window management)
+#
+# managed_by values:
+#   repo-automated  declared in the repo and applied by it (Nix, chezmoi)
+#   repo-manual     a repo doc or reference records it, applied by hand
+#   os-default      the OS or a bundled app provides it; the repo does not declare it
+#   proposed        a recommendation (possibly of an OS default); not declared
+#                   or applied anywhere
+#   none            no binding exists or none is proposed (binding "none",
+#                   tool "none" unless a tool is known)
+# src is plain text: a repo file:line, or "none" where nothing in the repo declares it.
+# A binding of "unknown" means a binding exists but the repo does not record it.
+
+schema_version: 1
+status: draft
+date: 2026-11-17
+
+tools:
+  macos:
+    karabiner: "Karabiner-Elements; the Windows muscle memory profile remaps Win/Alt/Ctrl keys"
+    raycast: "Raycast; launcher, clipboard, app hotkeys and window commands"
+    ghostty: "Ghostty terminal"
+    alttab: "AltTab (cask in nix/modules/darwin/homebrew.nix)"
+    aerospace: "AeroSpace tiling WM (cask in nix/modules/darwin/homebrew.nix)"
+    rectangle: "Rectangle; called by Karabiner via rectangle:// URLs but NOT installed by the repo"
+    macos: "macOS built-ins"
+  nixos:
+    gnome: "GNOME Shell and its keybindings (nix/modules/home/gnome-keybindings.nix)"
+    vicinae: "Vicinae launcher and clipboard; raise-or-launch helper vicinae-toggle-app"
+    ghostty: "Ghostty terminal"
+    flameshot: "Flameshot screenshots (resident user service)"
+    keyd: "keyd system-layer key remap (nix/modules/nixos/keyd-f1-remap.nix)"
+  windows:
+    raycast: "Raycast for Windows (ADR-0027 still says unverified; v2.0 is out of beta per Raycast changelog https://raycast.com/changelog/windows, read 2026-11-17); NOT installed on the owner's Windows PC (observed 2026-11-17)"
+    powertoys: "PowerToys: Keyboard Manager, FancyZones, Command Palette (ADR-0027 exception); NOT installed on the owner's Windows PC (observed 2026-11-17)"
+    windows_terminal: "Windows Terminal (installed on the owner's Windows PC, observed 2026-11-17)"
+    vscode: "VS Code (installed on the owner's Windows PC, observed 2026-11-17)"
+    flameshot: "Flameshot (installed on the owner's Windows PC, observed 2026-11-17; ADR-0036 personal-profile pick)"
+    windows: "Windows 11 built-ins"
+
+actions:
+  # ---------------------------------------------------------------- launcher
+  - id: launcher
+    macos:
+      binding: "unknown"
+      tool: raycast
+      managed_by: none
+      src: "reference/raycast/shortcuts.yaml (no launcher hotkey recorded)"
+      note: "Raycast has a launcher hotkey but the repo does not record it; read it from the Raycast app."
+    nixos:
+      binding: "Ctrl+Space"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:37"
+      note: "Chosen to stay clear of Super+Space layout switching."
+    windows:
+      binding: "Alt+Space"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Owner decision: Alt+Space everywhere. On Windows, Alt+Space is the OS window menu; Raycast (or PowerToys Command Palette) can take it over, so the window menu is lost. CONFLICT: Alt+Space is already bound in VS Code to editor.action.triggerSuggest (home/.chezmoitemplates/vscode/keybindings.json:237; see also docs/reference/nvim/keymap.md:173); Ctrl+Space still works for suggest. Changing NixOS and macOS to Alt+Space is a follow-up, not made here."
+
+  - id: clipboard_history
+    macos:
+      binding: "Alt+V"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:43"
+    nixos:
+      binding: "Alt+V"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:46"
+    windows:
+      binding: "Alt+V"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Win+V is the built-in clipboard history (os-default) and stays available."
+
+  # ------------------------------------------------------------ app launching
+  - id: terminal
+    macos:
+      binding: "Alt+Shift+T"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:31"
+      note: "Opens Ghostty."
+    nixos:
+      binding: "Alt+Shift+T"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:54"
+      note: "Raise-or-launch Ghostty."
+    windows:
+      binding: "Alt+Shift+T"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Would open Windows Terminal (Ghostty is not the Windows terminal)."
+
+  - id: terminal_quick
+    macos:
+      binding: "Win+` (Cmd+backquote)"
+      tool: ghostty
+      managed_by: repo-automated
+      src: "home/.chezmoitemplates/ghostty/config.body.tmpl:72"
+      note: "Global quick terminal, top, 35%."
+    nixos:
+      binding: "Super+`"
+      tool: ghostty
+      managed_by: repo-automated
+      src: "home/.chezmoitemplates/ghostty/config.body.tmpl:72"
+      note: "cmd+backquote is declared in the shared Ghostty template with no OS guard, so on Linux it is Super+backquote. Whether global binds work on GNOME Wayland is unverified."
+    windows:
+      binding: "Win+`"
+      tool: windows_terminal
+      managed_by: os-default
+      src: "none"
+      note: "Windows Terminal's quake mode (Win+backquote) is its default global summon (unverified on the host); no remap proposed."
+
+  - id: editor
+    macos:
+      binding: "Alt+Shift+E"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:39"
+      note: "Opens VS Code. In Ghostty, Cmd+Shift+E is open_config (ghostty template line 94), which is terminal-local."
+    nixos:
+      binding: "Alt+Shift+E"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:87"
+    windows:
+      binding: "Alt+Shift+E"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+
+  - id: editor_recent_projects
+    macos:
+      binding: "Alt+E"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:47"
+      note: "Search Recent Projects."
+    nixos:
+      binding: "Alt+E"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:123"
+    windows:
+      binding: "Alt+E"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "The Raycast VS Code extension has supported Windows since 2025-12-12 (reported; not verified here), so a recent-projects command should be available."
+
+  - id: browser
+    macos:
+      binding: "Alt+F1"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:29"
+      note: "CONFLICT: opens Firefox on macOS."
+    nixos:
+      binding: "F1"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:65"
+      note: "CONFLICT: opens Brave (not Firefox), and uses bare F1 with no Alt."
+    windows:
+      binding: "Alt+F1"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Closest to macOS. The owner must choose the browser (Firefox vs Brave) and whether NixOS should move to Alt+F1."
+
+  - id: file_manager
+    macos:
+      binding: "Win+E"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:2895"
+      note: "Opens Finder. Raycast also launches Finder on Alt+2 (reference/raycast/shortcuts.yaml:27)."
+    nixos:
+      binding: "Super+E"
+      tool: gnome
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:112"
+      note: "Raise-or-launch Nautilus."
+    windows:
+      binding: "Win+E"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "Built-in File Explorer; already matches macOS and NixOS."
+
+  # ------------------------------------------------------------ system actions
+  - id: show_desktop
+    macos:
+      binding: "Win+D"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:13"
+      note: "Minimizes all windows via AppleScript (not a toggle). Win+, is peek desktop (F11), karabiner.json:2950."
+    nixos:
+      binding: "Super+D"
+      tool: gnome
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:287"
+      note: "Native show-desktop; toggles and restores."
+    windows:
+      binding: "Win+D"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "OS default; matches macOS and NixOS; no remap proposed. Win+, (peek) also exists natively."
+
+  - id: lock_screen
+    macos:
+      binding: "Win+L"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:2929"
+      note: "Sends Ctrl+Cmd+Q."
+    nixos:
+      binding: "Super+L"
+      tool: gnome
+      managed_by: os-default
+      src: "none"
+      note: "GNOME default; not declared in this repo (unverified on the host)."
+    windows:
+      binding: "Win+L"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "OS-reserved; the lock key cannot be overridden by PowerToys or Raycast."
+
+  - id: task_manager
+    macos:
+      binding: "Ctrl+Shift+Esc"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:2488"
+      note: "Opens Activity Monitor."
+    nixos:
+      binding: "unknown"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "GNOME may have a default; not declared in this repo (unverified on the host)."
+    windows:
+      binding: "Ctrl+Shift+Esc"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "Opens Task Manager."
+
+  - id: system_settings
+    macos:
+      binding: "Win+I"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:2912"
+    nixos:
+      binding: "unknown"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "GNOME may have a default; not declared in this repo (unverified on the host)."
+    windows:
+      binding: "Win+I"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+
+  # -------------------------------------------------------- window management
+  - id: window_maximize
+    macos:
+      binding: "Win+Up"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:51"
+      note: "Raycast Maximize is shown as Cmd+Up (Left Cmd = Win), and that is what runs. The Karabiner rule at karabiner.json:2972 matches key_code vk_none, so it can never fire; it is dead and also references Rectangle (not installed by the repo). Cleanup only (see follow_ups). Owner chose Raycast window commands."
+    nixos:
+      binding: "Super+Up"
+      tool: gnome
+      managed_by: os-default
+      src: "none"
+      note: "GNOME default maximize; not declared in this repo (unverified on the host)."
+    windows:
+      binding: "Win+Up"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "Native Snap maximize. A Raycast Windows window command could duplicate it; unknown whether Raycast for Windows ships window commands."
+
+  - id: window_snap_left_right
+    macos:
+      binding: "Win+Left / Win+Right"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:3101"
+      note: "Sends Fn+Ctrl+Arrow (macOS native tiling). Raycast has no recorded half-screen hotkey."
+    nixos:
+      binding: "Super+Left / Super+Right"
+      tool: gnome
+      managed_by: os-default
+      src: "none"
+      note: "GNOME default half-tiling; not declared in this repo (unverified on the host)."
+    windows:
+      binding: "Win+Left / Win+Right"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "Native Snap Layouts. PowerToys FancyZones can add zones (shift-drag); that would be a separate proposal."
+
+  - id: window_move_monitor
+    macos:
+      binding: "Win+Shift+Left / Win+Shift+Right"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:3030"
+      note: "Calls rectangle://execute-action?name=previous-display / next-display. Rectangle is not installed by the repo (drift); replace with Raycast window commands later (see follow_ups)."
+    nixos:
+      binding: "Super+Shift+Left / Super+Shift+Right"
+      tool: gnome
+      managed_by: os-default
+      src: "none"
+      note: "GNOME default move-to-monitor; not declared in this repo (unverified on the host)."
+    windows:
+      binding: "Win+Shift+Left / Win+Shift+Right"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "Native move window to another monitor."
+
+  - id: window_center
+    macos:
+      binding: "Alt+Shift+F"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:49"
+      note: "Center Three Fourths."
+    nixos:
+      binding: "Alt+Shift+F"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:133"
+      note: "Resize to 75% width, full height, centered."
+    windows:
+      binding: "Alt+Shift+F"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Needs Raycast Windows window commands (unverified). Fallback: a PowerToys FancyZones centered zone, with no single hotkey."
+
+  - id: window_hide_minimize
+    macos:
+      binding: "Win+Down (hide window); Win+Home (hide all except active)"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:2989"
+      note: "Win+Down sends Cmd+H; Win+Home is at karabiner.json:3009. Win+Shift+Up (maximize-height, :3065) and Win+Shift+Down (restore, :3083) also call Rectangle URLs."
+    nixos:
+      binding: "Super+H (minimize); Super+Down (unmaximize)"
+      tool: gnome
+      managed_by: os-default
+      src: "none"
+      note: "GNOME default (gsettings-desktop-schemas org.gnome.desktop.wm.keybindings); not declared in this repo (unverified on the host)"
+    windows:
+      binding: "Win+Down; Win+Home"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "Native: Win+Down restores or minimizes; Win+Home minimizes all except active. Close to the macOS behaviour."
+
+  # ----------------------------------------------------------- app and tab nav
+  - id: switch_app
+    macos:
+      binding: "Alt+Tab"
+      tool: alttab
+      managed_by: repo-manual
+      src: "nix/modules/darwin/homebrew.nix:62"
+      note: "AltTab cask installed; its hotkey is set in the app and is not recorded in the repo (unverified). The Karabiner rule group at karabiner.json:2442 only maps Alt+F4."
+    nixos:
+      binding: "Alt+Tab"
+      tool: gnome
+      managed_by: os-default
+      src: "none"
+      note: "GNOME default; not declared in this repo (unverified on the host)."
+    windows:
+      binding: "Alt+Tab"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+
+  - id: task_view
+    macos:
+      binding: "Win+Tab"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:3143"
+      note: "Sends Ctrl+Up (Mission Control). Win+Shift+Tab is at :3163."
+    nixos:
+      binding: "Super"
+      tool: gnome
+      managed_by: os-default
+      src: "none"
+      note: "GNOME Activities overview; not declared in this repo (unverified on the host)."
+    windows:
+      binding: "Win+Tab"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "Task View."
+
+  - id: close_window
+    macos:
+      binding: "Alt+F4 (Cmd+W)"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:2445"
+      note: "Alt+F4 sends Cmd+W."
+    nixos:
+      binding: "Alt+F4"
+      tool: gnome
+      managed_by: os-default
+      src: "none"
+      note: "GNOME default close; not declared in this repo (unverified on the host)."
+    windows:
+      binding: "Alt+F4"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "Closes the active window; Ctrl+W closes a tab or document."
+
+  - id: quit_app
+    macos:
+      binding: "Alt+Shift+F4 (Cmd+Q)"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:2465"
+      note: "Alt+Shift+F4 sends Cmd+Q."
+    nixos:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "No repo binding; Alt+F4 closes the window."
+    windows:
+      binding: "Alt+F4"
+      tool: windows
+      managed_by: proposed
+      src: "none"
+      note: "Windows has no separate quit; Alt+F4 closes the last window and normally exits the app. Alt+Shift+F4 would need a PowerToys Keyboard Manager remap, which is probably not worth it."
+
+  - id: new_tab
+    macos:
+      binding: "Ctrl+T (Cmd+T)"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:151"
+      note: "Global patch maps Ctrl+T to Cmd+T, excluding VS Code, JetBrains and terminals (:92). Ghostty keeps native Cmd+T."
+    nixos:
+      binding: "Ctrl+T"
+      tool: ghostty
+      managed_by: repo-automated
+      src: "home/.chezmoitemplates/ghostty/config.body.tmpl:79"
+      note: "CONFLICT: Ctrl+T shadows fzf's file picker inside Ghostty on Linux. Ghostty's Linux default is Ctrl+Shift+T."
+    windows:
+      binding: "Ctrl+T (browsers); Ctrl+Shift+T (Windows Terminal)"
+      tool: windows_terminal
+      managed_by: os-default
+      src: "none"
+      note: "Browser Ctrl+T is native. Windows Terminal's default new-tab is Ctrl+Shift+T, so it does not shadow fzf; no remap proposed."
+
+  # ----------------------------------------------------------------- misc keys
+  - id: screenshot_area
+    macos:
+      binding: "Cmd+Shift+4 (area); Cmd+Shift+5 (toolbar)"
+      tool: macos
+      managed_by: os-default
+      src: "docs/architecture/decisions/0036-screenshots-media-images-and-pdf.md:31"
+      note: "ADR-0036 records the built-in Cmd+Shift+5 tool (no Flameshot cask). Cmd+Shift+4 is the macOS default area capture (unverified on the host). With Left Cmd = Win, the closest Windows key is Win+Shift+S. Raycast also has an unrelated Alt+Shift+S quicklink (shortcuts.yaml:56)."
+    nixos:
+      binding: "F4 (area to clipboard); Alt+Shift+S (repeat last region); Alt+P (pin)"
+      tool: flameshot
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:150"
+      note: "CONFLICT: F4 is the Flameshot area picker (the module header still says GNOME). Alt+Shift+S is a Raycast quicklink on macOS but repeat-last-region on NixOS (:166)."
+    windows:
+      binding: "Win+Shift+S"
+      tool: windows
+      managed_by: proposed
+      src: "none"
+      note: "Snipping Tool area capture (ADR-0036 work profile pick). The personal profile uses Flameshot (on the owner's Windows PC, observed 2026-11-17); its hotkey is set in its own config, so F4 or Win+Shift+S is a manual choice for the owner."
+
+  - id: emoji
+    macos:
+      binding: "Ctrl+Cmd+Space"
+      tool: macos
+      managed_by: os-default
+      src: "none"
+      note: "macOS default; not declared in this repo (unverified on the host)."
+    nixos:
+      binding: "Ctrl+."
+      tool: gnome
+      managed_by: os-default
+      src: "none"
+      note: "GTK emoji chooser in text fields (unverified on the host)."
+    windows:
+      binding: "Win+."
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "Native emoji panel; Win+; also works."
+
+  - id: layout_switch
+    macos:
+      binding: "Ctrl+Space"
+      tool: macos
+      managed_by: os-default
+      src: "none"
+      note: "macOS default for the previous input source; not declared in this repo (unverified on the host)."
+    nixos:
+      binding: "Super+Space"
+      tool: gnome
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:281"
+      note: "XKB grp:win_space_toggle between us and ru; deliberately not Alt+Shift (collides with the Alt+Shift app shortcuts)."
+    windows:
+      binding: "Win+Space"
+      tool: windows
+      managed_by: os-default
+      src: "none"
+      note: "Native input-language switch. Windows also toggles layouts with Alt+Shift by default, which collides with the Alt+Shift app family below; disabling that hotkey is a manual setting."
+
+  # ------------------------------------------- other Raycast hotkeys (macOS)
+  - id: search_files
+    macos:
+      binding: "Alt+T"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:45"
+      note: "Search Files."
+    nixos:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "No NixOS binding."
+    windows:
+      binding: "Alt+T"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Raycast for Windows file search; availability of the command is unverified."
+
+  - id: quicklink_bs
+    macos:
+      binding: "Alt+Shift+S"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:56"
+      note: "Quicklink named bs."
+    nixos:
+      binding: "Alt+Shift+S"
+      tool: flameshot
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:166"
+      note: "CONFLICT: a different action (Flameshot repeat last region)."
+    windows:
+      binding: "Alt+Shift+S"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Only if the quicklink exists on Windows; owner to decide which action keeps this key across OSes."
+
+  - id: quicklink_create
+    macos:
+      binding: "Alt+F13"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:62"
+      note: "Create Quicklink."
+    nixos:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "macOS-only."
+    windows:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "macOS-only: standard PC keyboards have no F13 key."
+
+  - id: quicklink_gh_example_prs
+    macos:
+      binding: "Ctrl+Alt+Shift+Cmd+Left"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:68"
+      note: "Quicklink GH Example PRs."
+    nixos:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "macOS-only."
+    windows:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "macOS-only: Ctrl+Alt+Shift+Win is the Office-key chord on Windows, so no equivalent is proposed."
+
+  # ------------------------------------------------------ Alt+Shift app family
+  # shortcuts.yaml (macOS) and gnome-keybindings.nix (NixOS) bind different apps
+  # on some letters. Rows are per app. Windows proposes the macOS key, via
+  # Raycast for Windows. Several apps below may not be on Windows at all.
+  - id: app_vscode
+    macos:
+      binding: "Alt+Shift+E"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:39"
+    nixos:
+      binding: "Alt+Shift+E"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:87"
+    windows:
+      binding: "Alt+Shift+E"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Same as the editor row. The Windows default Alt+Shift layout toggle may interfere (see layout_switch)."
+
+  - id: app_terminal_ghostty
+    macos:
+      binding: "Alt+Shift+T"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:31"
+    nixos:
+      binding: "Alt+Shift+T"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:54"
+    windows:
+      binding: "Alt+Shift+T"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Same as the terminal row; Windows Terminal."
+
+  - id: app_obsidian
+    macos:
+      binding: "Ctrl+Alt+O"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:37"
+    nixos:
+      binding: "Alt+Shift+O"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:95"
+      note: "CONFLICT: differs from macOS."
+    windows:
+      binding: "Ctrl+Alt+O"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "macOS is the reference. Alt+Shift+O on NixOS would need aligning."
+
+  - id: app_messenger
+    macos:
+      binding: "Alt+Shift+R"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:35"
+      note: "Messenger."
+    nixos:
+      binding: "Alt+Shift+R"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:71"
+      note: "CONFLICT: the same key opens Telegram on NixOS (personal profile)."
+    windows:
+      binding: "Alt+Shift+R"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Which messenger app (Messenger or Telegram) is installed on Windows is unknown."
+
+  - id: app_dbeaver
+    macos:
+      binding: "Alt+Shift+D"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:25"
+      note: "DBeaver."
+    nixos:
+      binding: "Alt+Shift+D"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:79"
+      note: "CONFLICT: the same key opens Vesktop on NixOS (personal profile)."
+    windows:
+      binding: "Alt+Shift+D"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Which app (DBeaver or Vesktop) belongs on this key on Windows is for the owner to decide."
+
+  - id: app_bruno
+    macos:
+      binding: "Alt+Shift+B"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:21"
+    nixos:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "No NixOS binding for Bruno."
+    windows:
+      binding: "Alt+Shift+B"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+
+  - id: app_vpn
+    macos:
+      binding: "Alt+Shift+V"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:23"
+    nixos:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "No NixOS binding for the VPN app."
+    windows:
+      binding: "Alt+Shift+V"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+
+  - id: app_karabiner
+    macos:
+      binding: "Alt+K"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:33"
+      note: "Karabiner-Elements; macOS only."
+    nixos:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "Not applicable on NixOS."
+    windows:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "Not applicable on Windows; no equivalent app proposed."
+
+  - id: app_password_manager
+    macos:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "reference/raycast/shortcuts.yaml (none recorded)"
+    nixos:
+      binding: "Alt+1"
+      tool: vicinae
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix:105"
+      note: "KeePassXC."
+    windows:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "No macOS reference binding; leave unset until the owner picks one."
+
+  - id: app_finder_alt
+    macos:
+      binding: "Alt+2"
+      tool: raycast
+      managed_by: repo-manual
+      src: "reference/raycast/shortcuts.yaml:27"
+      note: "Finder; the primary file-manager key is Win+E (file_manager row)."
+    nixos:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+      note: "NixOS uses Super+E only."
+    windows:
+      binding: "Alt+2"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Optional; Win+E already covers it."
+
+follow_ups:
+  - id: windows_adr
+    text: "Automating any Windows hotkey (Keyboard Manager settings, FancyZones, Raycast hotkeys, Flameshot config) needs a new ADR tagged windows that cites ADR-0019, plus an explicit owner decision. ADR-0011 forbids hotkey scripts and AutoHotkey. Until then every Windows row is manual and proposed."
+  - id: karabiner_rectangle_to_raycast
+    text: "Karabiner calls rectangle:// URLs for Win+Shift+Left/Right, Win+Shift+Up and Win+Shift+Down (karabiner.json:3030, :3065, :3083), but Rectangle is not installed by the repo. The owner chose Raycast window commands. Change those rules later; not done here. The Win+Up rule (:2972) matches vk_none and never fires (Raycast Cmd+Up runs); removing it is cleanup only."
+  - id: karabiner_and_keyboard_md_right_cmd
+    text: "karabiner.json rule descriptions and keyboard.md call the Win key Right Cmd, but every rule triggers on left_command or left_gui. Fix the descriptions in karabiner.json and the text in keyboard.md later; not done here."
+  - id: nixos_vicinae_alt_space
+    text: "NixOS Vicinae launcher is Ctrl+Space (gnome-keybindings.nix:37). Moving it to Alt+Space (owner decision) is a later change. Not made here."
+  - id: raycast_macos_launcher_hotkey
+    text: "The macOS Raycast launcher hotkey is not recorded in the repo. Read it from the Raycast app, record it, then set it to Alt+Space. Not changed here."
+  - id: raycast_shortcuts_relation
+    text: "reference/raycast/shortcuts.yaml is the auditable Raycast reference (not a native import). This table reuses its values and should be updated when that file changes; no tooling reads either file, so drift is possible."
+  - id: browser_choice
+    text: "Browser key conflict: macOS Alt+F1 opens Firefox, NixOS F1 opens Brave. Owner to pick the browser and key."
+  - id: alt_shift_layout_toggle
+    text: "On Windows, Alt+Shift toggles the input language by default and can interfere with the Alt+Shift app family. Disabling it is a manual Windows setting."

@@ -25,6 +25,7 @@ Written 2026-11-16 against main 63d206a.
 - Taskbar: "also add yaml and if we can setup this task panel pinned"; "keepass and sync thing goes before putty"; HeidiSQL is a permanent Windows exception.
 - 2026-11-16, context only: Tailscale is not used on work hosts. The owner also said "remove deepseek harness for now"; its removal is handled by the NixOS session and is not part of this change.
 - 2026-11-16, asked "May -MachineWide and the NVIDIA profile step run before T-0047 closes?": "Yes, allow now" (ADR-0010 amended by ADR-0034 and ADR-0035).
+- 2026-11-17, O1 (may step W create a missing HKCU key?): "Refuse, exit 3 (Recommended)". O2 (may ADR-0035 list the read-only reader seams?): "Yes, add them (Recommended)".
 
 ## Acceptance criteria
 | ID | Criterion |
@@ -60,8 +61,8 @@ Sequential; each task starts after the previous is done. Statuses are pending un
 | Task | Work | State |
 |---|---|---|
 | T1 | Decision records: ADR-0020, ADR-0034, ADR-0035, amendments, this ticket, docs files (this change) | written, awaiting review |
-| T2 | Boundary rules R1 to R10 and seeded tests | pending |
-| T3 | Catalogue `windows-settings.psd1` and test W1 (the catalogue schema test; ids W, SD and P are defined in ADR-0020; visual effects and telemetry entries before the snapshot) | pending |
+| T2 | Boundary rules R1 to R10 and seeded tests | BR0-BR10 and BR-real added; in review |
+| T3 | Catalogue `windows-settings.psd1` and test W1 (the catalogue schema test; ids W, BR and P are defined in ADR-0020; visual effects and telemetry entries before the snapshot) | pending |
 | T4 | `-WindowsSnapshot` | pending |
 | T5 | Capture and commit `windows-main` (owner) and test W25 (snapshot covers every entry) | pending |
 | T6 | `-WindowsSettings` with the profile selector | pending |
@@ -83,3 +84,7 @@ Sequential; each task starts after the previous is done. Statuses are pending un
 - Bit positions for control animations (byte 4, 0x02) are unverified.
 - Whether a Profile Inspector import merges or replaces is unverified (T11).
 - DiagTrack behaviour after a Windows feature update is unknown.
+- O1 (decided 2026-11-17, owner): step W never creates a missing HKCU key; an entry whose key is absent is refused (exit 3).
+- O2 (decided 2026-11-17, owner): ADR-0035 lists the reader seams Get-MachinePolicyValue, Get-ServiceStart, Get-TaskState and Get-DomainMembership. T4 is no longer blocked by it.
+- T6 adds a W test that refuses telemetry-user entries until T8 detection exists (AC-P4).
+- Host facts to check at T4: non-elevated Get-ScheduledTask reads of the six tasks; Win32_Service.DelayedAutoStart.

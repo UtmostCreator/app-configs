@@ -364,14 +364,17 @@ function Get-SeamCalls {
 
 # ---------------------------------------------------------------- static
 
+# The S1 allowlist of built-ins; the boundary R1 meta-test reuses it.
+$S1Safe = @('ForEach-Object', 'Where-Object', 'Select-Object', 'Sort-Object', 'Join-Path', 'Split-Path',
+    'Test-Path', 'Get-ChildItem', 'Get-Item', 'New-Item', 'Move-Item', 'Remove-Item', 'New-Object', 'Write-Host')
+
 Test-Case 'S1 allowlist: every other command sits inside a seam function' {
     $tokens = $null; $errs = $null
     $ast = [Management.Automation.Language.Parser]::ParseFile($ScriptPath, [ref]$tokens, [ref]$errs)
     Assert-Eq $errs.Count 0 'parse errors'
     $defined = @($ast.FindAll({ param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] }, $true) | ForEach-Object { $_.Name })
     # Built-ins that only touch the local file system or the console, anywhere.
-    $safe = @('ForEach-Object', 'Where-Object', 'Select-Object', 'Sort-Object', 'Join-Path', 'Split-Path',
-        'Test-Path', 'Get-ChildItem', 'Get-Item', 'New-Item', 'Move-Item', 'Remove-Item', 'New-Object', 'Write-Host')
+    $safe = $S1Safe
     $hits = $ast.FindAll({
         param($n)
         if ($n -is [Management.Automation.Language.CommandAst]) {
@@ -3346,6 +3349,1891 @@ Test-Case 'Z1 across the whole suite, every advised wsl command that uses --exec
     }
     Assert-True ($advice -ge 3) "the suite produced $advice advised wsl commands with a program (mv recovery, rollback)"
 }
+
+# ---------------------------------------------------------------- ADR-0020 boundary rules (T-0055 T2)
+# Static checker for step W, as specified in ADR-0020 "Boundary rules". The ADR is the
+# contract. The ids BR0..BR10 and BR-real are the ADR's R1..R10 (BRn tests Rn); the R
+# prefix belongs to the report-script tests above. The rules apply to the functions in
+# $BoundaryScope and their nested scriptblocks. Step W does not exist yet, so the real
+# maps are empty and the rules are proven on a fixture model of step W plus seeded
+# defects (inject one defect into a copy, assert it is caught; negative seeds assert a
+# legal form is not flagged). The checker only reads source text (the syntax tree); the
+# only session reads are the cmdlet metadata lookups used by R1 meta-tests and R9.
+$BoundaryScope = @()
+$CommandOwners = @{}
+$BoundaryCommon = @{}
+$BoundarySwitches = @('Raw', 'RegisterByFamilyName')
+$BoundaryTypeAllow = @('string', 'char', 'bool', 'boolean', 'byte', 'int', 'int32', 'long', 'int64', 'object', 'array',
+    'void', 'switch', 'hashtable', 'ordered', 'pscustomobject', 'datetime', 'bitconverter', 'io.path',
+    'text.utf8encoding', 'collections.generic.list')
+$BoundaryEntries = @('Invoke-WindowsSnapshot', 'Invoke-WindowsSettings', 'Invoke-WindowsRollback')
+$BoundaryEntrySwitch = @{ 'Invoke-WindowsSnapshot' = 'WindowsSnapshot'; 'Invoke-WindowsSettings' = 'WindowsSettings'; 'Invoke-WindowsRollback' = 'WindowsRollback' }
+$BoundaryEntryParams = @('Label', 'SetupProfile', 'DryRun', 'MachineWide')
+$BoundaryDispatcher = 'Invoke-BootstrapRun'
+$BoundarySwitchNames = @('WindowsSnapshot', 'WindowsSettings', 'WindowsRollback', 'MachineWide')
+$BoundaryTrusted = @('Say', 'Get-UtcStamp', 'Test-IsAdmin', 'Write-NewFile', 'Get-RestorePoints', 'New-RestorePoint', 'Invoke-Native', 'Resolve-Program')
+$BoundaryWriters = @('Set-UserRegistryValue', 'Remove-UserAppxPackage', 'Register-UserAppxPackage', 'Set-MachinePolicyValue', 'Set-ServiceStart', 'Set-TaskEnabled')
+$BoundaryOwnedMembers = @('GetValue', 'GetValueKind', 'GetValueNames', 'GetSubKeyNames')
+$BoundaryR3Commands = @(
+    'Invoke-Expression', 'Invoke-Command', 'Invoke-Item', 'Invoke-WebRequest', 'Invoke-RestMethod', 'Start-Process',
+    'Stop-Process', 'Start-Job', 'Add-Type', 'Import-Module', 'New-Module', 'New-PSDrive', 'Set-Alias', 'New-Alias',
+    'Get-Command', 'Get-Variable', 'Set-Variable', 'New-Variable', 'Set-Item', 'Clear-Item', 'Clear-ItemProperty',
+    'Copy-Item', 'Copy-ItemProperty', 'Move-Item', 'Move-ItemProperty', 'Rename-Item', 'Rename-ItemProperty',
+    'Set-Acl', 'Set-CimInstance', 'New-CimInstance', 'Remove-CimInstance', 'Invoke-CimMethod', 'Get-WmiObject',
+    'Invoke-WmiMethod', 'Set-WmiInstance', 'Register-ScheduledTask', 'Set-ScheduledTask', 'Unregister-ScheduledTask',
+    'Get-AppxProvisionedPackage', 'Add-AppxProvisionedPackage', 'Remove-AppxProvisionedPackage',
+    'Enable-WindowsOptionalFeature', 'Disable-WindowsOptionalFeature', 'Set-ExecutionPolicy', 'Restart-Computer',
+    'Set-Content', 'Add-Content', 'Out-File')
+$BoundaryR3Members = @(
+    'OpenSubKey', 'OpenBaseKey', 'OpenRemoteBaseKey', 'FromHandle', 'CreateSubKey', 'DeleteSubKey', 'DeleteSubKeyTree',
+    'DeleteValue', 'SetValue', 'SetAccessControl', 'Flush',
+    'Invoke', 'InvokeReturnAsIs', 'InvokeWithContext', 'InvokeMember', 'InvokeScript', 'InvokeProvider', 'InvokeCommand',
+    'SessionState', 'NewScriptBlock', 'CreateInstance', 'CreateDelegate', 'DynamicInvoke',
+    'Assembly', 'DefinedTypes', 'ExportedTypes', 'Module', 'DeclaredMethods', 'DeclaredFields', 'TypeHandle',
+    'GetMethod', 'GetMethods', 'GetProperty', 'GetProperties', 'GetField', 'GetFields', 'GetMember', 'GetMembers',
+    'GetConstructor', 'GetConstructors', 'GetNestedType', 'GetNestedTypes', 'GetInterface', 'GetInterfaces',
+    'GetEvent', 'GetEvents', 'GetTypes', 'GetTypeFromProgID', 'GetTypeFromCLSID')
+$BoundaryAutoVars = @('_', 'PSItem', 'null', 'true', 'false', 'Matches', 'PID', 'PSCmdlet', 'ExecutionContext', 'Host',
+    'MyInvocation', 'PSBoundParameters', 'args', 'input', 'Profile', 'PSDefaultParameterValues', 'Error', 'ErrorView',
+    'EnabledExperimentalFeatures', 'Event', 'EventArgs', 'EventSubscriber', 'ForEach', 'HOME', 'IsCoreCLR', 'IsLinux',
+    'IsMacOS', 'IsWindows', 'LASTEXITCODE', 'NestedPromptLevel', 'PSCommandPath', 'PSCulture', 'PSEdition', 'PSHOME',
+    'PSScriptRoot', 'PSSenderInfo', 'PSUICulture', 'PSVersionTable', 'PWD', 'Sender', 'ShellId', 'StackTrace', 'switch',
+    'this', 'ConsoleFileName', 'MaximumHistoryCount', 'OFS', 'PSEmailServer', 'PSSessionApplicationName',
+    'PSSessionConfigurationName', 'PSSessionOption', 'Transcript', 'Home', 'Args', 'LastExitCode')
+$BoundarySpecialVars = @('_', 'PSItem', 'null', 'true', 'false', 'Matches', 'PID')
+$BoundaryMaxParams = @{
+    'Set-Service'           = @('Name', 'StartupType', 'ErrorAction')
+    'Stop-Service'          = @('Name', 'ErrorAction')
+    'Start-Service'         = @('Name', 'ErrorAction')
+    'Disable-ScheduledTask' = @('TaskPath', 'TaskName', 'ErrorAction')
+    'Enable-ScheduledTask'  = @('TaskPath', 'TaskName', 'ErrorAction')
+    'Get-ScheduledTask'     = @('TaskPath', 'TaskName', 'ErrorAction')
+    'Get-CimInstance'       = @('ClassName', 'Filter', 'Property', 'ErrorAction')
+    'Get-AppxPackage'       = @('Name', 'ErrorAction')
+    'Remove-AppxPackage'    = @('Package', 'ErrorAction')
+    'Add-AppxPackage'       = @('RegisterByFamilyName', 'MainPackage', 'ErrorAction')
+}
+$BoundaryR2Regex = '(?i)(?<![A-Za-z0-9_])(?:HKCU|HKLM|HKCR|HKU|HKCC)(?=[:\\])|HKEY_[A-Z_]+|Registry::'
+$BoundaryR5PrefixRegex = '(?i)^(alias|function|variable|env|cert|wsman):'
+$BoundaryR8Regex1 = '(?i)(?:^|[\s"''\\/=])(?:reg|regedit|schtasks|sc|wsl|cmd|powershell|pwsh)\.(?:exe|com)(?=$|[\s"'';|&])'
+$BoundaryR8Regex2 = '(?i)^\s*(?:reg|regedit|schtasks|sc|wsl|cmd|powershell|pwsh)\s*$'
+$BoundaryKeyRegex = '^(?:[A-Z][A-Za-z]*-[A-Z][A-Za-z]*|\.[A-Za-z]+|HK(?:CU|LM):\\)$'
+
+$BtFn = [Management.Automation.Language.FunctionDefinitionAst]
+$BtCmd = [Management.Automation.Language.CommandAst]
+$BtVar = [Management.Automation.Language.VariableExpressionAst]
+$BtStr = [Management.Automation.Language.StringConstantExpressionAst]
+$BtExp = [Management.Automation.Language.ExpandableStringExpressionAst]
+$BtMem = [Management.Automation.Language.MemberExpressionAst]
+$BtInv = [Management.Automation.Language.InvokeMemberExpressionAst]
+$BtTypeExp = [Management.Automation.Language.TypeExpressionAst]
+$BtTypeCon = [Management.Automation.Language.TypeConstraintAst]
+$BtParen = [Management.Automation.Language.ParenExpressionAst]
+$BtPipe = [Management.Automation.Language.PipelineAst]
+$BtArr = [Management.Automation.Language.ArrayExpressionAst]
+$BtArrLit = [Management.Automation.Language.ArrayLiteralAst]
+$BtSb = [Management.Automation.Language.ScriptBlockExpressionAst]
+$BtConst = [Management.Automation.Language.ConstantExpressionAst]
+$BtParam = [Management.Automation.Language.CommandParameterAst]
+
+$script:BExt = @{}
+$script:BMeta = @{}
+
+function Get-BMapKey {
+    param($Map, [string]$Key)
+    foreach ($k in $Map.Keys) { if ($k -ceq $Key) { return $k } }
+    return $null
+}
+
+function Get-BNearestFn {
+    param($Node)
+    $p = $Node
+    while ($p) {
+        if ($p -is $BtFn) { return $p.Name }
+        $p = $p.Parent
+    }
+    return $null
+}
+
+function Test-BInScope {
+    param($Node, $Scope)
+    $p = $Node
+    while ($p) {
+        # a nested scriptblock is not a function: the walk passes through it (R10)
+        if ($p -is $BtFn -and ($Scope -ccontains $p.Name)) { return $true }
+        $p = $p.Parent
+    }
+    return $false
+}
+
+function Test-BExternalCmdlet {
+    param([string]$Name)
+    if ($script:BExt.ContainsKey($Name)) { return $script:BExt[$Name] }
+    $r = $false
+    $c = @(Get-Command -Name $Name -CommandType Cmdlet, Function -ErrorAction SilentlyContinue)
+    if ($c.Count -gt 0 -and $c[0].Name -ceq $Name -and $c[0].ModuleName) { $r = $true }
+    $script:BExt[$Name] = $r
+    return $r
+}
+
+function Get-BMeta {
+    param([string]$Name, [string]$Prefix)
+    $ck = "$Name|$Prefix"
+    if ($script:BMeta.ContainsKey($ck)) { return $script:BMeta[$ck] }
+    $arg = $env:SystemRoot
+    if ($Prefix) { $arg = $Prefix }
+    $c = @(Get-Command -Name $Name -CommandType Cmdlet, Function -ArgumentList $arg -ErrorAction SilentlyContinue)
+    $r = $null
+    if ($c.Count -gt 0 -and $c[0].ModuleName) { $r = $c[0].Parameters }
+    $script:BMeta[$ck] = $r
+    return $r
+}
+
+function Get-BCallInfo {
+    param($Cmd, $Switches)
+    $named = New-Object 'System.Collections.Generic.List[object]'
+    $valueless = New-Object 'System.Collections.Generic.List[string]'
+    $pos = 0
+    $splat = $false
+    $els = $Cmd.CommandElements
+    $i = 1
+    while ($i -lt $els.Count) {
+        $e = $els[$i]
+        if ($e -is $BtParam) {
+            $pn = $e.ParameterName
+            if ($null -ne $e.Argument) {
+                [void]$named.Add(@{ Name = $pn; Arg = $e.Argument })
+            } elseif ($Switches -ccontains $pn) {
+                [void]$named.Add(@{ Name = $pn; Arg = $null })
+            } elseif (($i + 1) -lt $els.Count -and $els[$i + 1] -isnot $BtParam) {
+                [void]$named.Add(@{ Name = $pn; Arg = $els[$i + 1] })
+                $i++
+            } else {
+                [void]$named.Add(@{ Name = $pn; Arg = $null })
+                [void]$valueless.Add($pn)
+            }
+        } elseif ($e -is $BtVar -and $e.Splatted) {
+            $splat = $true
+        } else {
+            $pos++
+        }
+        $i++
+    }
+    return @{ Named = $named; Positional = $pos; Splat = $splat; Valueless = $valueless }
+}
+
+function Get-BArg {
+    param($Info, [string]$Name)
+    foreach ($x in $Info.Named) { if ($x.Name -ceq $Name) { return $x } }
+    return $null
+}
+
+function Get-BAssignLeaves {
+    # every assignment target on the left side: through casts and array literals (multiple assignment)
+    param($Expr)
+    if ($Expr -is [Management.Automation.Language.ConvertExpressionAst]) { return @(Get-BAssignLeaves $Expr.Child) }
+    if ($Expr -is $BtParen) {
+        # a parenthesised target is the same target: unwrap a single expression statement, otherwise keep the paren as an unsupported leaf
+        $pl = $Expr.Pipeline
+        if ($pl -is $BtPipe -and $pl.PipelineElements.Count -eq 1 -and $pl.PipelineElements[0] -is [Management.Automation.Language.CommandExpressionAst]) {
+            return @(Get-BAssignLeaves $pl.PipelineElements[0].Expression)
+        }
+        return @($Expr)
+    }
+    if ($Expr -is $BtArrLit) {
+        $r = @()
+        foreach ($e in $Expr.Elements) { $r += @(Get-BAssignLeaves $e) }
+        return $r
+    }
+    return @($Expr)
+}
+
+function Get-BAssignVars {
+    param($Expr)
+    return @(Get-BAssignLeaves $Expr | Where-Object -FilterScript { $_ -is $BtVar })
+}
+
+function Get-BPrefixOf {
+    # owner function name -> the registry prefix key it owns
+    param($Owners)
+    $m = @{}
+    foreach ($pk in @('HKCU:\', 'HKLM:\')) {
+        $ek = Get-BMapKey $Owners $pk
+        if ($ek) { foreach ($o in $Owners[$ek].Keys) { $m[$o] = $pk } }
+    }
+    return $m
+}
+
+function Get-BArrayElements {
+    param($Expr)
+    if ($Expr -isnot $BtArr) { return $null }
+    $st = @($Expr.SubExpression.Statements)
+    if ($st.Count -eq 0) { return @() }
+    if ($st.Count -ne 1 -or $st[0] -isnot $BtPipe -or $st[0].PipelineElements.Count -ne 1) { return $null }
+    $ce = $st[0].PipelineElements[0]
+    if ($ce -isnot [Management.Automation.Language.CommandExpressionAst]) { return $null }
+    if ($ce.Expression -is $BtArrLit) { return @($ce.Expression.Elements) }
+    return @($ce.Expression)
+}
+
+function Get-BInnerCommand {
+    # the single command inside a parenthesised expression, or $null
+    param($Expr)
+    if ($Expr -isnot $BtParen) { return $null }
+    $p = $Expr.Pipeline
+    if ($p -isnot $BtPipe -or $p.PipelineElements.Count -ne 1) { return $null }
+    $c = $p.PipelineElements[0]
+    if ($c -isnot $BtCmd) { return $null }
+    return $c
+}
+
+function Test-BTypeAllowed {
+    param($TypeName, $Allow)
+    if ($TypeName -is [Management.Automation.Language.ArrayTypeName]) { return (Test-BTypeAllowed $TypeName.ElementType $Allow) }
+    if ($TypeName -is [Management.Automation.Language.GenericTypeName]) {
+        if (-not (Test-BTypeAllowed $TypeName.TypeName $Allow)) { return $false }
+        foreach ($g in $TypeName.GenericArguments) { if (-not (Test-BTypeAllowed $g $Allow)) { return $false } }
+        return $true
+    }
+    if ($TypeName.AssemblyName) { return $false }
+    $norm = ($TypeName.Name -replace '^(?i)System\.', '').ToLowerInvariant()
+    return ($Allow -ccontains $norm)
+}
+
+function Test-BTypeText {
+    # a New-Object TypeName constant, parsed as a type literal
+    param([string]$Text, $Allow)
+    if ($Text -match '[`,]') { return $false }
+    $t = $null; $e = $null
+    $a = [Management.Automation.Language.Parser]::ParseInput("[$Text]", [ref]$t, [ref]$e)
+    if ($e.Count -ne 0) { return $false }
+    $te = $a.Find({ param($n) $n -is $BtTypeExp }, $true)
+    if (-not $te) { return $false }
+    return (Test-BTypeAllowed $te.TypeName $Allow)
+}
+
+function Get-BReachable {
+    param($Ast, [string[]]$Start)
+    $fns = @{}
+    foreach ($f in @($Ast.FindAll({ param($n) $n -is $BtFn }, $true))) { if (-not $fns.ContainsKey($f.Name)) { $fns[$f.Name] = $f } }
+    $seen = New-Object 'System.Collections.Generic.List[string]'
+    $queue = New-Object 'System.Collections.Generic.Queue[string]'
+    foreach ($s in $Start) {
+        if ($fns.ContainsKey($s) -and ($BoundaryTrusted -notcontains $s)) {
+            $nm = $fns[$s].Name
+            if (-not ($seen -ccontains $nm)) { $seen.Add($nm); $queue.Enqueue($nm) }
+        }
+    }
+    while ($queue.Count -gt 0) {
+        $cur = $queue.Dequeue()
+        foreach ($c in @($fns[$cur].Body.FindAll({ param($n) $n -is $BtCmd }, $true))) {
+            $nm = $c.GetCommandName()
+            if ($nm -and $fns.ContainsKey($nm) -and ($BoundaryTrusted -notcontains $nm)) {
+                $dn = $fns[$nm].Name
+                if (-not ($seen -ccontains $dn)) { $seen.Add($dn); $queue.Enqueue($dn) }
+            }
+        }
+    }
+    return @($seen)
+}
+
+function Get-BDispatcherInfo {
+    param($Ast)
+    $problems = New-Object 'System.Collections.Generic.List[string]'
+    $branches = New-Object 'System.Collections.Generic.List[object]'
+    $d = $Ast.Find({ param($n) $n -is $BtFn -and $n.Name -ceq $BoundaryDispatcher }, $true)
+    $params = @()
+    if ($Ast.ParamBlock) { $params += @($Ast.ParamBlock.Parameters) }
+    foreach ($f in @($Ast.FindAll({ param($n) $n -is $BtFn -and ($n.Name -ceq $BoundaryDispatcher -or $n.Name -ceq 'Invoke-Bootstrap') }, $true))) {
+        if ($f.Body.ParamBlock) { $params += @($f.Body.ParamBlock.Parameters) }
+    }
+    $declared = @()
+    foreach ($p in $params) {
+        $pn = $p.Name.VariablePath.UserPath
+        foreach ($sw in $BoundarySwitchNames) { if ($pn -ieq $sw -and -not ($declared -contains $sw)) { $declared += $sw } }
+    }
+    if (-not $d) {
+        [void]$problems.Add("dispatcher $BoundaryDispatcher not found (fail closed)")
+        return @{ Found = $false; Problems = $problems; Branches = @(); Declared = $declared }
+    }
+    foreach ($if in @($d.FindAll({ param($n) $n -is [Management.Automation.Language.IfStatementAst] }, $true))) {
+        foreach ($cl in $if.Clauses) {
+            $ment = @()
+            foreach ($vx in @($cl.Item1.FindAll({ param($n) $n -is $BtVar }, $true))) {
+                # the switch counts only when it is read positively: not under -not or !
+                $neg = $false
+                $pp = $vx.Parent
+                while ($pp) {
+                    if ($pp -is [Management.Automation.Language.UnaryExpressionAst] -and @('Not', 'Exclaim') -contains $pp.TokenKind.ToString()) { $neg = $true }
+                    if ($pp -eq $cl.Item1) { break }
+                    $pp = $pp.Parent
+                }
+                if ($neg) { continue }
+                foreach ($sw in $BoundarySwitchNames) { if ($vx.VariablePath.UserPath -ieq $sw -and -not ($ment -contains $sw)) { $ment += $sw } }
+            }
+            if ($ment.Count -eq 0) { continue }
+            [void]$branches.Add(@{ Body = $cl.Item2; Mentions = $ment; Line = $cl.Item1.Extent.StartLineNumber })
+            $cx = $cl.Item1
+            if ($cx -is $BtPipe -and $cx.PipelineElements.Count -eq 1 -and $cx.PipelineElements[0] -is [Management.Automation.Language.CommandExpressionAst]) { $cx = $cx.PipelineElements[0].Expression }
+            $okCond = $false
+            $cur = $cx
+            while ($cur -is [Management.Automation.Language.BinaryExpressionAst] -and $cur.Operator.ToString() -eq 'And') { $cur = $cur.Left }
+            if ($cur -is $BtVar -and ($BoundarySwitchNames -contains $cur.VariablePath.UserPath)) { $okCond = $true }
+            if (-not $okCond) {
+                [void]$problems.Add("branch at line $($cl.Item1.Extent.StartLineNumber): the condition must be a bare switch or '`$Switch -and ...': $($cl.Item1.Extent.Text)")
+            }
+            # every statement is one entry-point or Say command, or a return of one (or of a constant)
+            $okCmd = {
+                param($x)
+                if ($x -isnot $BtCmd) { return $false }
+                $xn = $x.GetCommandName()
+                return ($xn -and (($BoundaryEntries -ccontains $xn) -or $xn -ceq 'Say'))
+            }
+            foreach ($st in @($cl.Item2.Statements)) {
+                $good = $false
+                if ($st -is $BtPipe -and $st.PipelineElements.Count -eq 1 -and (& $okCmd $st.PipelineElements[0])) { $good = $true }
+                if ($st -is [Management.Automation.Language.ReturnStatementAst]) {
+                    $rp = $st.Pipeline
+                    if ($null -eq $rp) { $good = $true }
+                    elseif ($rp -is $BtPipe -and $rp.PipelineElements.Count -eq 1) {
+                        $re = $rp.PipelineElements[0]
+                        if (& $okCmd $re) { $good = $true }
+                        elseif ($re -is [Management.Automation.Language.CommandExpressionAst] -and $re.Expression -is $BtConst) { $good = $true }
+                    }
+                }
+                if (-not $good) {
+                    [void]$problems.Add("branch at line $($cl.Item1.Extent.StartLineNumber) has a statement other than an entry-point call, Say or return: $($st.Extent.Text)")
+                }
+            }
+            if (@($cl.Item2.FindAll({ param($n) $n -is $BtMem }, $true)).Count -gt 0) {
+                [void]$problems.Add("branch at line $($cl.Item1.Extent.StartLineNumber) contains a member access")
+            }
+            foreach ($c in @($cl.Item2.FindAll({ param($n) $n -is $BtCmd }, $true))) {
+                $cn = $c.GetCommandName()
+                if (-not $cn -or (($BoundaryEntries -ccontains $cn) -eq $false -and $cn -cne 'Say')) {
+                    [void]$problems.Add("branch at line $($cl.Item1.Extent.StartLineNumber) calls '$($c.Extent.Text)' (only entry points and Say)")
+                }
+            }
+        }
+    }
+    foreach ($sw in $declared) {
+        $has = $false
+        foreach ($b in $branches) { if ($b.Mentions -contains $sw) { $has = $true } }
+        if (-not $has) { [void]$problems.Add("W switch -$sw is declared but has no branch in $BoundaryDispatcher") }
+    }
+    return @{ Found = $true; Problems = $problems; Branches = $branches.ToArray(); Declared = $declared }
+}
+
+function Get-BPinProblems {
+    # R6 value pins for Invoke-Native and Resolve-Program; returns messages
+    param($Cmd, [string]$Fn, $Switches)
+    $m = New-Object 'System.Collections.Generic.List[string]'
+    $name = $Cmd.GetCommandName()
+    $info = Get-BCallInfo $Cmd $Switches
+    if ($info.Positional -gt 0 -or $info.Splat -or $info.Valueless.Count -gt 0) { [void]$m.Add("$name has positional, splatted or valueless arguments") }
+    if ($name -ceq 'Resolve-Program') {
+        $inner = $Cmd.Parent
+        $ok = $false
+        if ($inner -is $BtPipe -and $inner.Parent -is $BtParen -and $inner.Parent.Parent -is $BtCmd) {
+            $outer = $inner.Parent.Parent
+            if ($outer.GetCommandName() -ceq 'Invoke-Native' -and (Get-BInnerCommand $inner.Parent) -eq $Cmd) { $ok = $true }
+        }
+        if (-not $ok) { [void]$m.Add('Resolve-Program is allowed only inline as the -ExePath of the pinned git call') }
+        if ($Fn -cne 'Test-WindowsSettingsCommitted') { [void]$m.Add("Resolve-Program is not pinned in '$Fn'") }
+        $a = Get-BArg $info 'Name'
+        if ($info.Named.Count -ne 1 -or -not $a -or $a.Arg -isnot $BtStr -or $a.Arg.Value -cne 'git.exe') { [void]$m.Add("Resolve-Program must be exactly -Name 'git.exe'") }
+        return @($m)
+    }
+    # Invoke-Native
+    $pinned = ($Fn -ceq 'Get-DeviceJoinState' -or $Fn -ceq 'Test-WindowsSettingsCommitted')
+    if (-not $pinned) { [void]$m.Add("Invoke-Native is not pinned in '$Fn'"); return @($m) }
+    $want = @('ExePath', 'Arguments')
+    if ($Fn -ceq 'Test-WindowsSettingsCommitted') { $want += 'WorkingDirectory' }
+    foreach ($x in $info.Named) {
+        if (-not (($want -ccontains $x.Name) -or $x.Name -ceq 'TimeoutSeconds')) { [void]$m.Add("Invoke-Native parameter -$($x.Name) is not part of the pinned form") }
+    }
+    foreach ($w in $want) { if (-not (Get-BArg $info $w)) { [void]$m.Add("Invoke-Native pinned form needs -$w") } }
+    $t = Get-BArg $info 'TimeoutSeconds'
+    if ($t -and ($t.Arg -isnot $BtConst -or $t.Arg.Value -isnot [int])) { [void]$m.Add('-TimeoutSeconds must be an int constant') }
+    $exe = Get-BArg $info 'ExePath'
+    $args1 = Get-BArg $info 'Arguments'
+    $els = $null
+    if ($args1) { $els = Get-BArrayElements $args1.Arg }
+    if ($Fn -ceq 'Get-DeviceJoinState') {
+        $jc = $null
+        if ($exe) { $jc = Get-BInnerCommand $exe.Arg }
+        $okJoin = $false
+        if ($jc -and $jc.GetCommandName() -ceq 'Join-Path') {
+            $ji = Get-BCallInfo $jc $Switches
+            $jp = Get-BArg $ji 'Path'
+            $jch = Get-BArg $ji 'ChildPath'
+            if ($ji.Named.Count -eq 2 -and $ji.Positional -eq 0 -and -not $ji.Splat -and $jp -and $jch -and
+                $jp.Arg -is $BtVar -and $jp.Arg.VariablePath.UserPath -ieq 'env:SystemRoot' -and
+                $jch.Arg -is $BtStr -and $jch.Arg.Value -ceq 'System32\dsregcmd.exe') { $okJoin = $true }
+        }
+        if (-not $okJoin) { [void]$m.Add("-ExePath must be exactly (Join-Path -Path `$env:SystemRoot -ChildPath 'System32\dsregcmd.exe')") }
+        if ($null -eq $els -or $els.Count -ne 1 -or $els[0] -isnot $BtStr -or $els[0].Value -cne '/status') { [void]$m.Add("-Arguments must be exactly @('/status')") }
+        return @($m)
+    }
+    # Test-WindowsSettingsCommitted
+    $rc = $null
+    if ($exe) { $rc = Get-BInnerCommand $exe.Arg }
+    if (-not $rc -or $rc.GetCommandName() -cne 'Resolve-Program') { [void]$m.Add("-ExePath must be exactly (Resolve-Program -Name 'git.exe')") }
+    $wd = Get-BArg $info 'WorkingDirectory'
+    if ($wd -and ($wd.Arg -isnot $BtVar -or $wd.Arg.VariablePath.UserPath -cne 'script:RepoRoot')) { [void]$m.Add('-WorkingDirectory must be exactly $script:RepoRoot') }
+    $form1 = @('ls-files', '--error-unmatch', '--')
+    $form2 = @('diff', '--quiet', '--no-ext-diff', '--no-textconv', 'HEAD', '--')
+    $okArr = $false
+    if ($null -ne $els) {
+        foreach ($form in @($form1, $form2)) {
+            if ($els.Count -ne ($form.Count + 1)) { continue }
+            $match = $true
+            for ($k = 0; $k -lt $form.Count; $k++) {
+                if ($els[$k] -isnot $BtStr -or $els[$k].Value -cne $form[$k]) { $match = $false }
+            }
+            $last = $els[$form.Count]
+            if ($match -and (($last -is $BtVar -and -not $last.Splatted) -or $last -is $BtStr)) { $okArr = $true }
+        }
+    }
+    if (-not $okArr) { [void]$m.Add("-Arguments must be exactly @('ls-files', '--error-unmatch', '--', <path>) or @('diff', '--quiet', '--no-ext-diff', '--no-textconv', 'HEAD', '--', <path>)") }
+    return @($m)
+}
+
+function Test-BInlineJoin {
+    param($Arg, [string]$Prefix, $Switches)
+    $c = Get-BInnerCommand $Arg
+    if (-not $c -or $c.GetCommandName() -cne 'Join-Path') { return $false }
+    $i = Get-BCallInfo $c $Switches
+    $p = Get-BArg $i 'Path'
+    $ch = Get-BArg $i 'ChildPath'
+    return ($i.Named.Count -eq 2 -and $i.Positional -eq 0 -and -not $i.Splat -and $p -and $ch -and
+        $p.Arg -is $BtStr -and $p.Arg.Value -ceq $Prefix)
+}
+
+function Get-BoundaryViolations {
+    param($Ast, $Maps)
+    $v = New-Object 'System.Collections.Generic.List[string]'
+    $owners = $Maps.Owners
+    $common = $Maps.Common
+    $scope = @($Maps.Scope)
+    $switches = @($Maps.Switches)
+    $allow = @($Maps.TypeAllow)
+    $used = New-Object 'System.Collections.Generic.HashSet[string]'
+    $Maps['Used'] = $used
+    $all = @($Ast.FindAll({ param($n) $true }, $true))
+    $funcs = @($all | Where-Object -FilterScript { $_ -is $BtFn })
+    $defined = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+    foreach ($f in $funcs) { [void]$defined.Add($f.Name) }
+
+    $prefixOf = Get-BPrefixOf $owners
+
+    $wseams = @()
+    foreach ($k in $owners.Keys) {
+        if ($defined.Contains($k) -and ($BoundaryTrusted -notcontains $k) -and $k -match '^[A-Z][A-Za-z]*-[A-Z][A-Za-z]*$') { $wseams += $k }
+    }
+
+    # assignment targets and locals (R5)
+    $targetSet = New-Object 'System.Collections.Generic.HashSet[object]'
+    foreach ($n in $all) {
+        if ($n -is [Management.Automation.Language.AssignmentStatementAst]) {
+            foreach ($t in @(Get-BAssignVars $n.Left)) { [void]$targetSet.Add($t) }
+        } elseif ($n -is [Management.Automation.Language.UnaryExpressionAst]) {
+            if (@('PostfixPlusPlus', 'PostfixMinusMinus', 'PlusPlus', 'MinusMinus') -contains $n.TokenKind.ToString()) {
+                foreach ($t in @(Get-BAssignVars $n.Child)) { [void]$targetSet.Add($t) }
+            }
+        } elseif ($n -is [Management.Automation.Language.ForEachStatementAst]) {
+            [void]$targetSet.Add($n.Variable)
+        } elseif ($n -is [Management.Automation.Language.ParameterAst]) {
+            [void]$targetSet.Add($n.Name)
+        }
+    }
+    $locals = @{}
+    foreach ($t in $targetSet) {
+        $vp = $t.VariablePath
+        if ($vp.IsDriveQualified -or $vp.IsGlobal -or $vp.IsScript) { continue }
+        $fn = Get-BNearestFn $t
+        if (-not $fn) { continue }
+        if (-not $locals.ContainsKey($fn)) { $locals[$fn] = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase) }
+        [void]$locals[$fn].Add(($vp.UserPath -replace '^(?i)(local|private):', ''))
+    }
+
+    $dispatcher = Get-BDispatcherInfo $Ast
+    foreach ($pm in $dispatcher.Problems) { [void]$v.Add("R1 line 0: $pm") }
+    $entryOk = New-Object 'System.Collections.Generic.HashSet[object]'
+    foreach ($b in $dispatcher.Branches) {
+        foreach ($c in @($b.Body.FindAll({ param($n) $n -is $BtCmd }, $true))) {
+            $cn = $c.GetCommandName()
+            if ($cn -and $BoundaryEntrySwitch.ContainsKey($cn) -and ($b.Mentions -contains $BoundaryEntrySwitch[$cn])) { [void]$entryOk.Add($c) }
+        }
+    }
+
+    foreach ($n in $all) {
+        $line = $n.Extent.StartLineNumber
+
+        # whole script: using statements, type definitions
+        if ($n -is [Management.Automation.Language.UsingStatementAst]) { [void]$v.Add("R4 line ${line}: using statement") }
+        if ($n -is [Management.Automation.Language.TypeDefinitionAst]) { [void]$v.Add("R4 line ${line}: type definition") }
+
+        # whole script: function definitions
+        if ($n -is $BtFn) {
+            $nm = $n.Name
+            $top = ($n.Parent -is [Management.Automation.Language.NamedBlockAst] -and $n.Parent.Parent -eq $Ast)
+            $reqOnce = ($scope -ccontains $nm) -or ($prefixOf.ContainsKey($nm)) -or ($wseams -ccontains $nm)
+            foreach ($k in $owners.Keys) { if ($owners[$k].Keys -ccontains $nm) { $reqOnce = $true } }
+            $isTrusted = ($BoundaryTrusted -contains $nm) -or ($BoundaryEntries -contains $nm)
+            if (($reqOnce -or $isTrusted) -and -not $top) { [void]$v.Add("R1 line ${line}: function '$nm' is not defined at top level") }
+            if ($reqOnce -or $isTrusted) {
+                $cnt = @($funcs | Where-Object -FilterScript { $_.Name -ceq $nm -or $_.Name -ieq $nm }).Count
+                if ($cnt -gt 1) { [void]$v.Add("R1 line ${line}: function '$nm' is defined $cnt times") }
+            }
+            if ($BoundaryR3Commands -contains $nm) { [void]$v.Add("R1 line ${line}: script function '$nm' is named like an R3 command") }
+            foreach ($mp in @($owners, $common)) {
+                foreach ($k in $mp.Keys) {
+                    if ($k -ieq $nm -and $k -match '^[A-Z][A-Za-z]*-[A-Z][A-Za-z]*$' -and ($BoundaryTrusted -notcontains $k) -and (Test-BExternalCmdlet $k)) {
+                        [void]$v.Add("R1 line ${line}: script function '$nm' is named like the external cmdlet key '$k'")
+                    }
+                }
+            }
+            if ($BoundaryEntries -contains $nm) {
+                foreach ($p in @($n.Body.ParamBlock.Parameters)) {
+                    if ($BoundaryEntryParams -notcontains $p.Name.VariablePath.UserPath) { [void]$v.Add("R5 line ${line}: entry point '$nm' parameter `$$($p.Name.VariablePath.UserPath) does not mirror a switch name") }
+                }
+            }
+        }
+
+        # whole script: W seam callers and entry-point callers
+        if ($n -is $BtCmd) {
+            $cn0 = $n.GetCommandName()
+            if ($cn0) {
+                foreach ($ws in $wseams) {
+                    if ($ws -ieq $cn0) {
+                        $ownerKey = Get-BMapKey $owners $ws
+                        $fn0 = Get-BNearestFn $n
+                        $isOwner = $false
+                        foreach ($o in $owners[$ownerKey].Keys) { if ($fn0 -and $o -ceq $fn0) { $isOwner = $true } }
+                        if (-not $isOwner) { [void]$v.Add("R1 line ${line}: seam '$cn0' is called in '$fn0', which is not one of its owners") }
+                    }
+                }
+                foreach ($en in $BoundaryEntries) {
+                    if ($en -ieq $cn0 -and -not $entryOk.Contains($n)) { [void]$v.Add("R1 line ${line}: entry point '$cn0' is called outside its dispatcher branch") }
+                }
+            }
+        }
+
+        if (-not (Test-BInScope $n $scope)) { continue }
+        $fnName = Get-BNearestFn $n
+
+        # R10
+        if ($n -is $BtFn -and $n.Parent) {
+            $pp = $n.Parent
+            while ($pp) {
+                if ($pp -is $BtFn -and ($scope -ccontains $pp.Name)) { [void]$v.Add("R10 line ${line}: function definition '$($n.Name)' inside scope function '$($pp.Name)'"); break }
+                $pp = $pp.Parent
+            }
+        }
+        if ($n -is [Management.Automation.Language.AttributeAst]) { [void]$v.Add("R4 line ${line}: attribute [$($n.TypeName.Name)] in scope") }
+
+        # strings: R2, R5 prefixes, R8
+        if ($n -is $BtStr -or $n -is $BtExp) {
+            $sv = $n.Value
+            if ($sv -match $BoundaryR2Regex) {
+                $exact = ($n -is $BtStr -and ($sv -ceq 'HKCU:\' -or $sv -ceq 'HKLM:\'))
+                if (-not $exact) {
+                    [void]$v.Add("R2 line ${line}: registry literal in '$sv'")
+                } else {
+                    $pk2 = Get-BMapKey $owners $sv
+                    if ($pk2 -and $fnName -and ($owners[$pk2].Keys -ccontains $fnName)) { [void]$used.Add("$pk2|$fnName") }
+                    else { [void]$v.Add("R2 line ${line}: '$sv' used outside the owners of that prefix ('$fnName')") }
+                }
+            }
+            if ($sv -match $BoundaryR5PrefixRegex) { [void]$v.Add("R5 line ${line}: provider or drive prefix in '$sv'") }
+            if ($sv -match $BoundaryR8Regex1 -or $sv -match $BoundaryR8Regex2) { [void]$v.Add("R8 line ${line}: executable name in '$sv'") }
+        }
+
+        # variables: R5
+        if ($n -is $BtVar) {
+            $vp = $n.VariablePath
+            $isT = $targetSet.Contains($n)
+            if ($vp.IsDriveQualified) {
+                if ($vp.DriveName -ieq 'env') {
+                    if ($isT) { [void]$v.Add("R5 line ${line}: assignment to `$$($vp.UserPath)") }
+                } else {
+                    [void]$v.Add("R5 line ${line}: drive-qualified variable `$$($vp.UserPath)")
+                }
+            } elseif ($vp.IsGlobal) {
+                [void]$v.Add("R5 line ${line}: `$$($vp.UserPath)")
+            } elseif ($vp.IsScript) {
+                if ($isT) { [void]$v.Add("R5 line ${line}: assignment to `$$($vp.UserPath)") }
+            } else {
+                $vn = ($vp.UserPath -replace '^(?i)(local|private):', '')
+                if ($isT) {
+                    if ($vn -ine 'null' -and (($BoundaryAutoVars -contains $vn) -or $vn -like '*Preference')) { [void]$v.Add("R5 line ${line}: local `$$vn is named like an automatic or preference variable") }
+                } elseif ($BoundarySpecialVars -contains $vn) {
+                    # allowed
+                } elseif (-not ($fnName -and $locals.ContainsKey($fnName) -and $locals[$fnName].Contains($vn))) {
+                    [void]$v.Add("R5 line ${line}: unqualified variable `$$vn is not a local of '$fnName'")
+                }
+            }
+        }
+
+        # types: R4
+        if ($n -is $BtTypeExp -or $n -is $BtTypeCon) {
+            if (-not (Test-BTypeAllowed $n.TypeName $allow)) { [void]$v.Add("R4 line ${line}: type [$($n.TypeName.FullName)] is not on the allowlist") }
+        }
+        if ($n -is [Management.Automation.Language.BinaryExpressionAst] -and @('Is', 'IsNot', 'As') -contains $n.Operator.ToString()) {
+            if ($n.Right -isnot $BtTypeExp) { [void]$v.Add("R4 line ${line}: right side of -$($n.Operator) must be a type literal") }
+        }
+
+        # R3 (e), (f)
+        if ($n -is [Management.Automation.Language.AssignmentStatementAst]) {
+            foreach ($lf in @(Get-BAssignLeaves $n.Left)) {
+                if ($lf -is $BtMem) { [void]$v.Add("R3 line ${line}: assignment to a member") }
+                elseif ($lf -isnot $BtVar -and $lf -isnot [Management.Automation.Language.IndexExpressionAst]) { [void]$v.Add("R5 line ${line}: unsupported assignment target shape: $($lf.Extent.Text)") }
+            }
+        }
+        if ($n -is [Management.Automation.Language.UnaryExpressionAst]) {
+            if (@('PostfixPlusPlus', 'PostfixMinusMinus', 'PlusPlus', 'MinusMinus') -contains $n.TokenKind.ToString()) {
+                foreach ($lf in @(Get-BAssignLeaves $n.Child)) {
+                    if ($lf -is $BtMem) { [void]$v.Add("R3 line ${line}: ++ or -- on a member") }
+                    elseif ($lf -isnot $BtVar -and $lf -isnot [Management.Automation.Language.IndexExpressionAst]) { [void]$v.Add("R5 line ${line}: unsupported ++ or -- operand shape: $($lf.Extent.Text)") }
+                }
+            }
+        }
+        if ($n -is [Management.Automation.Language.FileRedirectionAst]) { [void]$v.Add("R3 line ${line}: file redirection") }
+        if ($n -is [Management.Automation.Language.DataStatementAst]) { [void]$v.Add("R3 line ${line}: data statement") }
+
+        # members: R3 (c), (d), R10, owned members (R1)
+        if ($n -is $BtMem) {
+            $mem = $n.Member
+            if ($mem -isnot $BtStr) {
+                [void]$v.Add("R3 line ${line}: non-constant member name")
+            } else {
+                $mname = $mem.Value
+                if (($BoundaryR3Members -contains $mname) -or $mname -like 'GetRuntime*') { [void]$v.Add("R3 line ${line}: banned member .$mname") }
+                if ($n -is $BtInv) {
+                    $margs = @()
+                    if ($n.Arguments) { $margs = @($n.Arguments) }
+                    if ($mname -ieq 'GetType' -and $margs.Count -gt 0) { [void]$v.Add("R3 line ${line}: GetType with an argument") }
+                    if (($mname -ieq 'ForEach' -or $mname -ieq 'Where') -and $margs.Count -gt 0 -and $margs[0] -isnot $BtSb) { [void]$v.Add("R3 line ${line}: .$mname with a non-scriptblock argument") }
+                }
+                if ($mname -ieq 'SetEnvironmentVariable') { [void]$v.Add("R10 line ${line}: SetEnvironmentVariable") }
+                if ($BoundaryOwnedMembers -contains $mname) {
+                    $mk = $null
+                    foreach ($k in $owners.Keys) { if ($k.StartsWith('.') -and $k.Substring(1) -ieq $mname) { $mk = $k } }
+                    if ($mk -and $fnName -and ($owners[$mk].Keys -ccontains $fnName) -and $mname -ceq $mk.Substring(1)) { [void]$used.Add("$mk|$fnName") }
+                    else { [void]$v.Add("R1 line ${line}: owned member .$mname used in '$fnName', which does not own it") }
+                }
+            }
+            if ($n.Static) {
+                if ($n.Expression -isnot $BtTypeExp -or -not (Test-BTypeAllowed $n.Expression.TypeName $allow)) { [void]$v.Add("R3 line ${line}: static member access on a type that is not an R4 type literal") }
+            }
+        }
+
+        if ($n -isnot $BtCmd) { continue }
+
+        # commands
+        if ($n.InvocationOperator.ToString() -ne 'Unknown') { [void]$v.Add("R3 line ${line}: invocation operator $($n.InvocationOperator)"); continue }
+        $name = $n.GetCommandName()
+        if (-not $name) { [void]$v.Add("R1 line ${line}: dynamic command name"); continue }
+        if ($BoundaryR3Commands -contains $name) { [void]$v.Add("R3 line ${line}: banned command $name") }
+        if ($name -ieq 'Out-Null') { [void]$v.Add("R6 line ${line}: output must be discarded with [void] or `$null =, not Out-Null") }
+
+        $info = Get-BCallInfo $n $switches
+        $plist = $null
+        $isOwned = $false
+        $ok = $false
+        $ownerKey = Get-BMapKey $owners $name
+        if ($ownerKey) {
+            $isOwned = $true
+            $own = $null
+            foreach ($o in $owners[$ownerKey].Keys) { if ($fnName -and $o -ceq $fnName) { $own = $o } }
+            if ($own) { $ok = $true; $plist = $owners[$ownerKey][$own]; [void]$used.Add("$ownerKey|$own") }
+            else { [void]$v.Add("R1 line ${line}: '$name' is called in '$fnName', which is not one of its owners") }
+        } elseif ($BoundaryEntries -ccontains $name) {
+            [void]$v.Add("R1 line ${line}: scope function '$fnName' calls entry point '$name'")
+        } elseif ($scope -ccontains $name) {
+            $ok = $true
+        } else {
+            $ck = Get-BMapKey $common $name
+            if ($ck) { $ok = $true; $plist = $common[$ck]; [void]$used.Add("common|$ck") }
+            elseif ($name -notmatch '-' -and -not $defined.Contains($name)) { [void]$v.Add("R5 line ${line}: '$name' is not a script function and is reported as an alias") }
+            else { [void]$v.Add("R1 line ${line}: '$name' is not an exact key of the command map") }
+        }
+
+        # R6 splatting for any command
+        if ($info.Splat) { [void]$v.Add("R6 line ${line}: $name uses splatting") }
+
+        if ($ok -and $null -ne $plist) {
+            $names = @($plist | ForEach-Object -Process { ($_ -split '=', 2)[0] })
+            foreach ($x in $info.Named) {
+                if (-not ($names -ccontains $x.Name)) { [void]$v.Add("R6 line ${line}: $name parameter -$($x.Name) is not on the allowlist") }
+            }
+            if ($info.Positional -gt 0) { [void]$v.Add("R6 line ${line}: $name has a positional argument") }
+            foreach ($vl in $info.Valueless) { [void]$v.Add("R6 line ${line}: $name parameter -$vl takes no value but is not in `$BoundarySwitches") }
+            foreach ($pe in $plist) {
+                if ($pe -match '=') {
+                    $pn2 = ($pe -split '=', 2)[0]; $pv2 = ($pe -split '=', 2)[1]
+                    $a2 = Get-BArg $info $pn2
+                    if (-not $a2 -or $a2.Arg -isnot $BtStr -or $a2.Arg.Value -cne $pv2) { [void]$v.Add("R6 line ${line}: $name -$pn2 must be the constant '$pv2'") }
+                }
+            }
+        }
+        if ($ok -and $isOwned -and (Test-BExternalCmdlet $name)) {
+            $pl = $n.Parent
+            if ($pl -isnot $BtPipe -or $pl.PipelineElements[0] -ne $n) { [void]$v.Add("R6 line ${line}: owned cmdlet $name is not first in its pipeline") }
+        }
+        if ($name -ceq 'ForEach-Object') {
+            $a = Get-BArg $info 'Process'
+            if ($a -and $a.Arg -isnot $BtSb) { [void]$v.Add("R6 line ${line}: ForEach-Object -Process needs a scriptblock literal") }
+        }
+        if ($name -ceq 'Where-Object') {
+            $a = Get-BArg $info 'FilterScript'
+            if ($a -and $a.Arg -isnot $BtSb) { [void]$v.Add("R6 line ${line}: Where-Object -FilterScript needs a scriptblock literal") }
+        }
+        if ($name -ceq 'Select-Object') {
+            $a = Get-BArg $info 'ExpandProperty'
+            if ($a) {
+                if ($a.Arg -isnot $BtStr -or ($BoundaryR3Members -contains $a.Arg.Value) -or $a.Arg.Value -like 'GetRuntime*') { [void]$v.Add("R6 line ${line}: Select-Object -ExpandProperty needs a constant that is not a banned member") }
+            }
+        }
+        if ($name -ceq 'Get-CimInstance') {
+            $a = Get-BArg $info 'ClassName'
+            if ($a -and $a.Arg -isnot $BtStr) { [void]$v.Add("R6 line ${line}: Get-CimInstance -ClassName must be a constant") }
+        }
+        if ($name -ceq 'Invoke-Native' -or $name -ceq 'Resolve-Program') {
+            foreach ($pm in @(Get-BPinProblems $n $fnName $switches)) { [void]$v.Add("R6 line ${line}: $pm") }
+        }
+
+        # R7
+        if ($name -ieq 'New-Object') {
+            $tn = Get-BArg $info 'TypeName'
+            $bad = ($info.Positional -gt 0 -or $info.Splat -or -not $tn)
+            foreach ($x in $info.Named) { if ($x.Name -cne 'TypeName' -and $x.Name -cne 'ArgumentList') { $bad = $true } }
+            if ($bad) { [void]$v.Add("R7 line ${line}: New-Object takes only a named -TypeName and an optional -ArgumentList, no positionals, no COM") }
+            if ($tn) {
+                if ($tn.Arg -isnot $BtStr -or -not (Test-BTypeText $tn.Arg.Value $allow)) { [void]$v.Add("R4 line ${line}: New-Object -TypeName must be a constant, allowlisted type name without backtick or comma") }
+            }
+        }
+
+        # R2: inline Join-Path in the owners of a prefix key
+        if ($prefixOf.ContainsKey($fnName)) {
+            $pa = Get-BArg $info 'LiteralPath'
+            if (-not $pa -and $name -ceq 'New-Item') { $pa = Get-BArg $info 'Path' }
+            if ($pa -and -not (Test-BInlineJoin $pa.Arg $prefixOf[$fnName] $switches)) {
+                [void]$v.Add("R2 line ${line}: $name path argument is not written inline as (Join-Path -Path '$($prefixOf[$fnName])' -ChildPath <expr>)")
+            }
+        }
+
+        # R9: -LiteralPath from metadata
+        if ($ok -and ($isOwned -or $plist) -and $name -cne 'New-Item' -and $name -cne 'Join-Path' -and (Test-BExternalCmdlet $name)) {
+            $meta = Get-BMeta $name $prefixOf[$fnName]
+            if ($null -eq $meta) { [void]$v.Add("R9 line ${line}: no metadata for $name") }
+            else {
+                $hasLit = $false
+                foreach ($k in $meta.Keys) { if ($k -ceq 'LiteralPath') { $hasLit = $true } }
+                if ($hasLit) {
+                    if (-not (Get-BArg $info 'LiteralPath')) { [void]$v.Add("R9 line ${line}: $name must take -LiteralPath") }
+                    if (Get-BArg $info 'Path') { [void]$v.Add("R9 line ${line}: $name must not take -Path") }
+                }
+            }
+        }
+    }
+
+    # snapshot reachability: no writer seam
+    foreach ($r in @(Get-BReachable $Ast @('Invoke-WindowsSnapshot'))) {
+        if ($BoundaryWriters -contains $r) { [void]$v.Add("R1 line 0: writer seam '$r' is reachable from Invoke-WindowsSnapshot") }
+    }
+    return @($v)
+}
+
+function Get-BoundaryScopeProblems {
+    param($Ast, $Maps)
+    $r = @(Get-BReachable $Ast $BoundaryEntries)
+    $p = @()
+    foreach ($x in $r) { if (-not (@($Maps.Scope) -ccontains $x)) { $p += "R1: '$x' is reachable from the entry points but is not in `$BoundaryScope" } }
+    foreach ($x in @($Maps.Scope)) { if (-not ($r -ccontains $x)) { $p += "R1: `$BoundaryScope names '$x', which is not reachable from the entry points" } }
+    return $p
+}
+
+function Get-BoundaryMapProblems {
+    param($Ast, $Maps, $SeamNames, $S1Safe)
+    $p = New-Object 'System.Collections.Generic.List[string]'
+    $owners = $Maps.Owners
+    $common = $Maps.Common
+    $switches = @($Maps.Switches)
+    $used = $Maps.Used
+    $fnAst = @{}
+    foreach ($f in @($Ast.FindAll({ param($n) $n -is $BtFn }, $true))) { if (-not $fnAst.ContainsKey($f.Name)) { $fnAst[$f.Name] = $f } }
+    $prefixOf = Get-BPrefixOf $owners
+
+    $nullOk = {
+        param($key)
+        return ($key.StartsWith('.') -or $key -match '^HK(CU|LM):\\$' -or ($BoundaryTrusted -ccontains $key))
+    }
+    $checkList = {
+        param($key, $owner, $list)
+        if ($null -eq $list) {
+            if (-not (& $nullOk $key)) { [void]$p.Add("R1: '$key' / '$owner' has a `$null parameter list, allowed only for member keys, prefix keys and trusted helpers") }
+            return
+        }
+        if ($key.StartsWith('.') -or $key -match '^HK(CU|LM):\\$') { [void]$p.Add("R1: '$key' must have a `$null list"); return }
+        $pfx = $prefixOf[$owner]
+        foreach ($pe in @($list)) {
+            $pn = ($pe -split '=', 2)[0]
+            $isSwitch = $null
+            $found = $false
+            if ($fnAst.ContainsKey($key)) {
+                $pb = $fnAst[$key].Body.ParamBlock
+                if ($pb) {
+                    foreach ($pa in $pb.Parameters) {
+                        if ($pa.Name.VariablePath.UserPath -ceq $pn) {
+                            $found = $true
+                            $isSwitch = ($pa.StaticType -eq [switch])
+                        }
+                    }
+                }
+            } else {
+                $meta = Get-BMeta $key $pfx
+                if ($null -eq $meta) { [void]$p.Add("R1: no metadata for '$key' (unresolvable)"); continue }
+                foreach ($mk in $meta.Keys) {
+                    if ($mk -ceq $pn) { $found = $true; $isSwitch = [bool]$meta[$mk].SwitchParameter }
+                }
+            }
+            if (-not $found) { [void]$p.Add("R1: parameter '$pn' of '$key' is not canonical (exact case, not an alias) in its metadata"); continue }
+            if ($isSwitch -ne ($switches -ccontains $pn)) { [void]$p.Add("R1: switch status of '-$pn' of '$key' does not match `$BoundarySwitches") }
+        }
+        if ($BoundaryMaxParams.ContainsKey($key)) {
+            foreach ($pe in @($list)) {
+                $pn = ($pe -split '=', 2)[0]
+                if (-not ($BoundaryMaxParams[$key] -ccontains $pn)) { [void]$p.Add("R6: '-$pn' of '$key' exceeds the maximum list") }
+            }
+        }
+    }
+    foreach ($k in $owners.Keys) {
+        if ($k -cnotmatch $BoundaryKeyRegex) { [void]$p.Add("R1: owned key '$k' has a bad grammar") }
+        if ($BoundaryR3Commands -contains $k) { [void]$p.Add("R1: owned key '$k' is an R3 command") }
+        if (Get-BMapKey $common $k) { [void]$p.Add("R1: key '$k' is both owned and common") }
+        foreach ($o in $owners[$k].Keys) {
+            if ($o -cnotmatch '^[A-Z][A-Za-z]*-[A-Z][A-Za-z]*$') { [void]$p.Add("R1: owner '$o' of '$k' has a bad grammar") }
+            if (-not $used.Contains("$k|$o")) { [void]$p.Add("R1: owner '$o' does not use its key '$k'") }
+            & $checkList $k $o $owners[$k][$o]
+        }
+    }
+    foreach ($k in $common.Keys) {
+        if ($k -cnotmatch $BoundaryKeyRegex -and ($BoundaryTrusted -cnotcontains $k)) { [void]$p.Add("R1: common key '$k' has a bad grammar") }
+        if ($BoundaryR3Commands -contains $k) { [void]$p.Add("R1: common key '$k' is an R3 command") }
+        if (-not $used.Contains("common|$k")) { [void]$p.Add("R1: common key '$k' is not used") }
+        if (Test-BExternalCmdlet $k) {
+            if (-not ($S1Safe -ccontains $k)) { [void]$p.Add("R1: external common key '$k' is not in S1's safe list") }
+        }
+        & $checkList $k '' $common[$k]
+    }
+    if ($SeamNames) {
+        foreach ($k in $owners.Keys) {
+            if ($fnAst.ContainsKey($k) -and ($BoundaryTrusted -notcontains $k) -and $k -match '^[A-Z][A-Za-z]*-[A-Z][A-Za-z]*$' -and -not ($SeamNames -ccontains $k)) { [void]$p.Add("R1: seam '$k' is not in `$SeamNames") }
+        }
+    }
+    return @($p)
+}
+
+# ---- fixture: a model of step W that follows the ADR-0020 seam table. It is not the real script.
+$BoundaryFixture = @'
+function Say { param([string]$Text) }
+function Get-UtcStamp { return 'x' }
+function Test-IsAdmin { return $false }
+function Write-NewFile { param([string]$Path, [byte[]]$Bytes) }
+function Get-RestorePoints { return @() }
+function New-RestorePoint { param([string]$Description) }
+function Invoke-Native { param([string]$ExePath, [string[]]$Arguments, [string]$WorkingDirectory, [int]$TimeoutSeconds) }
+function Resolve-Program { param([string]$Name) }
+
+function Assert-WindowsSettingsTarget {
+    param([string]$Key, [string]$Name, $Value)
+    if (-not $Key -or -not $Name) { throw 'refused' }
+}
+
+function Assert-MachineTarget {
+    param([string]$Key, [string]$Name, $Value)
+    if (-not $Key -or -not $Name) { throw 'refused' }
+}
+
+function Get-UserRegistryValue {
+    param([string]$Key, [string]$Name)
+    $item = Get-Item -LiteralPath (Join-Path -Path 'HKCU:\' -ChildPath $Key) -ErrorAction Stop
+    $names = $item.GetValueNames()
+    if ($names -notcontains $Name) { return $null }
+    $kind = $item.GetValueKind($Name)
+    return [pscustomobject]@{ Kind = [string]$kind; Value = $item.GetValue($Name) }
+}
+
+function Get-UserRegistryValueNames {
+    param([string]$Key)
+    $item = Get-Item -LiteralPath (Join-Path -Path 'HKCU:\' -ChildPath $Key) -ErrorAction Stop
+    return @($item.GetValueNames())
+}
+
+function Set-UserRegistryValue {
+    param([string]$Key, [string]$Name, $Value, [string]$Type, [bool]$Remove)
+    Assert-WindowsSettingsTarget -Key $Key -Name $Name -Value $Value
+    if ($Remove) {
+        Remove-ItemProperty -LiteralPath (Join-Path -Path 'HKCU:\' -ChildPath $Key) -Name $Name -ErrorAction Stop
+    } else {
+        Set-ItemProperty -LiteralPath (Join-Path -Path 'HKCU:\' -ChildPath $Key) -Name $Name -Value $Value -Type $Type -ErrorAction Stop
+    }
+}
+
+function Get-UserAppxPackage {
+    param([string]$Name)
+    return @(Get-AppxPackage -Name $Name -ErrorAction Stop)
+}
+
+function Remove-UserAppxPackage {
+    param([string]$Package)
+    Remove-AppxPackage -Package $Package -ErrorAction Stop
+}
+
+function Register-UserAppxPackage {
+    param([string]$Family)
+    Add-AppxPackage -RegisterByFamilyName -MainPackage $Family -ErrorAction Stop
+}
+
+function Read-WindowsSettingsFile {
+    param([string]$Path)
+    $text = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 -ErrorAction Stop
+    return ConvertFrom-Json -InputObject $text
+}
+
+function Read-WindowsSettingsCatalogue {
+    param([string]$Path)
+    return Import-PowerShellDataFile -LiteralPath $Path -ErrorAction Stop
+}
+
+function Write-WindowsSettingsFile {
+    param([string]$Path, $Data)
+    $json = ConvertTo-Json -InputObject $Data -Depth 8
+    $list = New-Object -TypeName 'System.Collections.Generic.List[string]'
+    [void](New-Item -Path $Path -ItemType Directory -ErrorAction Stop)
+    $bytes = [Text.UTF8Encoding]::new($false).GetBytes($json)
+    Write-NewFile -Path $Path -Bytes $bytes
+}
+
+function Test-WindowsSettingsCommitted {
+    param([string]$Path)
+    $tracked = Invoke-Native -ExePath (Resolve-Program -Name 'git.exe') -WorkingDirectory $script:RepoRoot -Arguments @('ls-files', '--error-unmatch', '--', $Path)
+    $clean = Invoke-Native -ExePath (Resolve-Program -Name 'git.exe') -WorkingDirectory $script:RepoRoot -Arguments @('diff', '--quiet', '--no-ext-diff', '--no-textconv', 'HEAD', '--', $Path) -TimeoutSeconds 60
+    return ($tracked.ExitCode -eq 0 -and $clean.ExitCode -eq 0)
+}
+
+function Get-MachinePolicyValue {
+    param([string]$Key, [string]$Name)
+    $item = Get-Item -LiteralPath (Join-Path -Path 'HKLM:\' -ChildPath $Key) -ErrorAction Stop
+    $names = $item.GetValueNames()
+    if ($names -notcontains $Name) { return $null }
+    $kind = $item.GetValueKind($Name)
+    return [pscustomobject]@{ Kind = [string]$kind; Value = $item.GetValue($Name) }
+}
+
+function Get-ServiceStart {
+    param([string]$Name)
+    return Get-CimInstance -ClassName Win32_Service -Filter "Name='$Name'" -Property StartMode -ErrorAction Stop
+}
+
+function Get-TaskState {
+    param([string]$TaskPath, [string]$TaskName)
+    return Get-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction Stop
+}
+
+function Set-MachinePolicyValue {
+    param([string]$Key, [string]$Name, $Value, [string]$Type, [bool]$Remove)
+    Assert-MachineTarget -Key $Key -Name $Name -Value $Value
+    if ($Remove) {
+        Remove-ItemProperty -LiteralPath (Join-Path -Path 'HKLM:\' -ChildPath $Key) -Name $Name -ErrorAction Stop
+        Remove-Item -LiteralPath (Join-Path -Path 'HKLM:\' -ChildPath $Key) -ErrorAction Stop
+    } else {
+        [void](New-Item -Path (Join-Path -Path 'HKLM:\' -ChildPath $Key) -ErrorAction Stop)
+        Set-ItemProperty -LiteralPath (Join-Path -Path 'HKLM:\' -ChildPath $Key) -Name $Name -Value $Value -Type $Type -ErrorAction Stop
+    }
+}
+
+function Set-ServiceStart {
+    param([string]$Name, [string]$StartupType)
+    Assert-MachineTarget -Key $Name -Name $StartupType
+    Set-Service -Name $Name -StartupType $StartupType -ErrorAction Stop
+    Stop-Service -Name $Name -ErrorAction Stop
+    Start-Service -Name $Name -ErrorAction Stop
+}
+
+function Set-TaskEnabled {
+    param([string]$TaskPath, [string]$TaskName, [bool]$Enabled)
+    Assert-MachineTarget -Key $TaskPath -Name $TaskName
+    if ($Enabled) {
+        Enable-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction Stop
+    } else {
+        Disable-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction Stop
+    }
+}
+
+function Get-DeviceJoinState {
+    $r = Invoke-Native -ExePath (Join-Path -Path $env:SystemRoot -ChildPath 'System32\dsregcmd.exe') -Arguments @('/status')
+    return $r
+}
+
+function Get-DomainMembership {
+    return Get-CimInstance -ClassName Win32_ComputerSystem -Property PartOfDomain -ErrorAction Stop | Select-Object -ExpandProperty 'PartOfDomain'
+}
+
+function Get-MdmEnrollments {
+    $roots = Get-ChildItem -LiteralPath (Join-Path -Path 'HKLM:\' -ChildPath 'SOFTWARE\Microsoft\Enrollments') -ErrorAction Stop
+    $ids = $roots | Where-Object -FilterScript { $_.GetValueNames() -contains 'ProviderID' } | ForEach-Object -Process { $_.GetValue('ProviderID') } | Select-Object -First 1
+    return @($ids)
+}
+
+function Get-EnabledLocalUserCount {
+    return @(Get-CimInstance -ClassName Win32_UserAccount -Filter 'LocalAccount=True' -Property Name -ErrorAction Stop).Count
+}
+
+function Get-ProbeLocal {
+    param([string]$Probe)
+    # SEED-ANCHOR
+    return $Probe
+}
+
+function Invoke-WindowsSnapshot {
+    param([string]$Label, [switch]$DryRun)
+    # SNAP-ANCHOR
+    $cat = Read-WindowsSettingsCatalogue -Path $Label
+    $snap = Read-WindowsSettingsFile -Path $Label
+    $cur = Get-UserRegistryValue -Key $Label -Name $Label
+    $curNames = Get-UserRegistryValueNames -Key $Label
+    $pkg = Get-UserAppxPackage -Name $Label
+    $mval = Get-MachinePolicyValue -Key $Label -Name $Label
+    $svc = Get-ServiceStart -Name $Label
+    $task = Get-TaskState -TaskPath $Label -TaskName $Label
+    $probe = Get-ProbeLocal -Probe $Label
+    Write-WindowsSettingsFile -Path $Label -Data $cat
+    Say "snapshot $Label"
+    return 0
+}
+
+function Invoke-WindowsSettings {
+    param([string]$Label, [string]$SetupProfile, [switch]$DryRun, [switch]$MachineWide)
+    if ($SetupProfile -cne 'personal' -and $SetupProfile -cne 'work') { return 2 }
+    if ($MachineWide -and -not (Test-IsAdmin)) {
+        Say 'step W: run elevated: .\ops\windows\bootstrap.ps1 -WindowsSettings x -SetupProfile personal -MachineWide'
+        return 3
+    }
+    $stamp = Get-UtcStamp
+    $committed = Test-WindowsSettingsCommitted -Path $Label
+    $cat = Read-WindowsSettingsCatalogue -Path $Label
+    $snap = Read-WindowsSettingsFile -Path $Label
+    $cur = Get-UserRegistryValue -Key $Label -Name $Label
+    $curNames = Get-UserRegistryValueNames -Key $Label
+    $pkg = Get-UserAppxPackage -Name $Label
+    $mval = Get-MachinePolicyValue -Key $Label -Name $Label
+    $svc = Get-ServiceStart -Name $Label
+    $task = Get-TaskState -TaskPath $Label -TaskName $Label
+    $join = Get-DeviceJoinState
+    $dom = Get-DomainMembership
+    $mdm = Get-MdmEnrollments
+    $accounts = Get-EnabledLocalUserCount
+    $points = Get-RestorePoints
+    $probe = Get-ProbeLocal -Probe $Label
+    if ($DryRun) { return 0 }
+    New-RestorePoint -Description 'step W'
+    Write-WindowsSettingsFile -Path $Label -Data $cat
+    Set-UserRegistryValue -Key $Label -Name $Label -Value 1 -Type 'DWord' -Remove $false
+    Remove-UserAppxPackage -Package $Label
+    Set-MachinePolicyValue -Key $Label -Name $Label -Value 1 -Type 'DWord' -Remove $false
+    Set-ServiceStart -Name $Label -StartupType 'Disabled'
+    Set-TaskEnabled -TaskPath $Label -TaskName $Label -Enabled $false
+    Say "step W: $Label done"
+    return 0
+}
+
+function Invoke-WindowsRollback {
+    param([string]$Label, [switch]$MachineWide)
+    $committed = Test-WindowsSettingsCommitted -Path $Label
+    $cat = Read-WindowsSettingsCatalogue -Path $Label
+    $snap = Read-WindowsSettingsFile -Path $Label
+    $cur = Get-UserRegistryValue -Key $Label -Name $Label
+    $curNames = Get-UserRegistryValueNames -Key $Label
+    $pkg = Get-UserAppxPackage -Name $Label
+    $mval = Get-MachinePolicyValue -Key $Label -Name $Label
+    $svc = Get-ServiceStart -Name $Label
+    $task = Get-TaskState -TaskPath $Label -TaskName $Label
+    Set-UserRegistryValue -Key $Label -Name $Label -Value 1 -Type 'DWord' -Remove $true
+    Register-UserAppxPackage -Family $Label
+    Set-MachinePolicyValue -Key $Label -Name $Label -Value 1 -Type 'DWord' -Remove $true
+    Set-ServiceStart -Name $Label -StartupType 'Manual'
+    Set-TaskEnabled -TaskPath $Label -TaskName $Label -Enabled $true
+    Say "step W: rollback $Label done"
+    return 0
+}
+
+function Other-Fixture {
+    param([string]$Probe)
+    $PSDefaultParameterValues = @{}
+    & $Probe
+    Get-Item -LiteralPath $Probe
+    return $Probe
+}
+
+function Invoke-BootstrapRun {
+    param([string]$WindowsSnapshot, [string]$WindowsSettings, [string]$WindowsRollback, [string]$SetupProfile, [switch]$DryRun, [switch]$MachineWide)
+    if ($WindowsSnapshot) { return Invoke-WindowsSnapshot -Label $WindowsSnapshot -DryRun:$DryRun }
+    if ($WindowsSettings) { return Invoke-WindowsSettings -Label $WindowsSettings -SetupProfile $SetupProfile -DryRun:$DryRun -MachineWide:$MachineWide }
+    if ($WindowsRollback) { return Invoke-WindowsRollback -Label $WindowsRollback -MachineWide:$MachineWide }
+    if ($MachineWide) { Say 'step W: -MachineWide needs -WindowsSettings or -WindowsRollback'; return 2 }
+    return 0
+}
+'@
+$BoundaryFixture = $BoundaryFixture.Replace("`r`n", "`n")
+
+function New-BFixtureMaps {
+    $S = 'Invoke-WindowsSnapshot'; $A = 'Invoke-WindowsSettings'; $R = 'Invoke-WindowsRollback'
+    $o = @{}
+    $add = {
+        param($key, $list, $who)
+        $o[$key] = @{}
+        foreach ($w in $who) { $o[$key][$w] = $list }
+    }
+    $lit = @('LiteralPath', 'ErrorAction')
+    # seams (concrete callers)
+    & $add 'Get-UserRegistryValue' @('Key', 'Name') @($S, $A, $R)
+    & $add 'Get-UserRegistryValueNames' @('Key') @($S, $A, $R)
+    & $add 'Set-UserRegistryValue' @('Key', 'Name', 'Value', 'Type', 'Remove') @($A, $R)
+    & $add 'Get-UserAppxPackage' @('Name') @($S, $A, $R)
+    & $add 'Remove-UserAppxPackage' @('Package') @($A)
+    & $add 'Register-UserAppxPackage' @('Family') @($R)
+    & $add 'Read-WindowsSettingsFile' @('Path') @($S, $A, $R)
+    & $add 'Read-WindowsSettingsCatalogue' @('Path') @($S, $A, $R)
+    & $add 'Write-WindowsSettingsFile' @('Path', 'Data') @($S, $A)
+    & $add 'Test-WindowsSettingsCommitted' @('Path') @($A, $R)
+    & $add 'Get-MachinePolicyValue' @('Key', 'Name') @($S, $A, $R)
+    & $add 'Get-ServiceStart' @('Name') @($S, $A, $R)
+    & $add 'Get-TaskState' @('TaskPath', 'TaskName') @($S, $A, $R)
+    & $add 'Set-MachinePolicyValue' @('Key', 'Name', 'Value', 'Type', 'Remove') @($A, $R)
+    & $add 'Set-ServiceStart' @('Name', 'StartupType') @($A, $R)
+    & $add 'Set-TaskEnabled' @('TaskPath', 'TaskName', 'Enabled') @($A, $R)
+    & $add 'Get-DeviceJoinState' @() @($A)
+    & $add 'Get-DomainMembership' @() @($A)
+    & $add 'Get-MdmEnrollments' @() @($A)
+    & $add 'Get-EnabledLocalUserCount' @() @($A)
+    # cmdlets, members, prefixes
+    $reg = @('Get-UserRegistryValue', 'Get-UserRegistryValueNames')
+    & $add 'Get-Item' $lit @('Get-UserRegistryValue', 'Get-UserRegistryValueNames', 'Get-MachinePolicyValue')
+    & $add '.GetValueNames' $null @('Get-UserRegistryValue', 'Get-UserRegistryValueNames', 'Get-MachinePolicyValue', 'Get-MdmEnrollments')
+    & $add '.GetValueKind' $null @('Get-UserRegistryValue', 'Get-MachinePolicyValue')
+    & $add '.GetValue' $null @('Get-UserRegistryValue', 'Get-MachinePolicyValue', 'Get-MdmEnrollments')
+    & $add 'HKCU:\' $null @('Get-UserRegistryValue', 'Get-UserRegistryValueNames', 'Set-UserRegistryValue')
+    & $add 'HKLM:\' $null @('Get-MachinePolicyValue', 'Set-MachinePolicyValue', 'Get-MdmEnrollments')
+    & $add 'Set-ItemProperty' @('LiteralPath', 'Name', 'Value', 'Type', 'ErrorAction') @('Set-UserRegistryValue', 'Set-MachinePolicyValue')
+    & $add 'Remove-ItemProperty' @('LiteralPath', 'Name', 'ErrorAction') @('Set-UserRegistryValue', 'Set-MachinePolicyValue')
+    & $add 'New-Item' @('Path', 'ErrorAction') @('Set-MachinePolicyValue')
+    $o['New-Item']['Write-WindowsSettingsFile'] = @('Path', 'ItemType', 'ErrorAction')
+    & $add 'Remove-Item' $lit @('Set-MachinePolicyValue')
+    & $add 'Get-ChildItem' $lit @('Get-MdmEnrollments')
+    & $add 'Get-AppxPackage' @('Name', 'ErrorAction') @('Get-UserAppxPackage')
+    & $add 'Remove-AppxPackage' @('Package', 'ErrorAction') @('Remove-UserAppxPackage')
+    & $add 'Add-AppxPackage' @('RegisterByFamilyName', 'MainPackage', 'ErrorAction') @('Register-UserAppxPackage')
+    & $add 'Get-Content' @('LiteralPath', 'Raw', 'Encoding', 'ErrorAction') @('Read-WindowsSettingsFile')
+    & $add 'ConvertFrom-Json' @('InputObject') @('Read-WindowsSettingsFile')
+    & $add 'ConvertTo-Json' @('InputObject', 'Depth') @('Write-WindowsSettingsFile')
+    & $add 'Import-PowerShellDataFile' $lit @('Read-WindowsSettingsCatalogue')
+    & $add 'Get-CimInstance' @('ClassName=Win32_Service', 'Filter', 'Property', 'ErrorAction') @('Get-ServiceStart')
+    $o['Get-CimInstance']['Get-DomainMembership'] = @('ClassName=Win32_ComputerSystem', 'Property', 'ErrorAction')
+    $o['Get-CimInstance']['Get-EnabledLocalUserCount'] = @('ClassName=Win32_UserAccount', 'Filter', 'Property', 'ErrorAction')
+    & $add 'Get-ScheduledTask' @('TaskPath', 'TaskName', 'ErrorAction') @('Get-TaskState')
+    & $add 'Set-Service' @('Name', 'StartupType', 'ErrorAction') @('Set-ServiceStart')
+    & $add 'Stop-Service' @('Name', 'ErrorAction') @('Set-ServiceStart')
+    & $add 'Start-Service' @('Name', 'ErrorAction') @('Set-ServiceStart')
+    & $add 'Disable-ScheduledTask' @('TaskPath', 'TaskName', 'ErrorAction') @('Set-TaskEnabled')
+    & $add 'Enable-ScheduledTask' @('TaskPath', 'TaskName', 'ErrorAction') @('Set-TaskEnabled')
+    # trusted and pinned helpers
+    & $add 'Write-NewFile' $null @('Write-WindowsSettingsFile')
+    & $add 'Get-RestorePoints' $null @($A)
+    & $add 'New-RestorePoint' $null @($A)
+    & $add 'Invoke-Native' @('ExePath', 'Arguments', 'TimeoutSeconds') @('Get-DeviceJoinState')
+    $o['Invoke-Native']['Test-WindowsSettingsCommitted'] = @('ExePath', 'Arguments', 'WorkingDirectory', 'TimeoutSeconds')
+    & $add 'Resolve-Program' @('Name') @('Test-WindowsSettingsCommitted')
+    $c = @{
+        'Say'             = $null
+        'Get-UtcStamp'    = $null
+        'Test-IsAdmin'    = $null
+        'Join-Path'       = @('Path', 'ChildPath')
+        'New-Object'      = @('TypeName', 'ArgumentList')
+        'ForEach-Object'  = @('Process')
+        'Where-Object'    = @('FilterScript')
+        'Select-Object'   = @('First', 'ExpandProperty')
+    }
+    return @{ Scope = @(); Owners = $o; Common = $c; TypeAllow = $BoundaryTypeAllow; Switches = $BoundarySwitches }
+}
+
+$script:BSeeds = @{}
+function Add-BSeedCount {
+    param([string]$Rule, [bool]$Neg)
+    if (-not $script:BSeeds.ContainsKey($Rule)) { $script:BSeeds[$Rule] = @(0, 0) }
+    $i = 0
+    if ($Neg) { $i = 1 }
+    $script:BSeeds[$Rule][$i]++
+}
+
+function Get-BText {
+    param([string]$Text, $Maps)
+    $t = $null; $e = $null
+    $a = [Management.Automation.Language.Parser]::ParseInput($Text, [ref]$t, [ref]$e)
+    if ($e.Count -ne 0) { throw "seed does not parse: $($e[0].Message)" }
+    if (-not $Maps) { $Maps = New-BFixtureMaps }
+    $Maps.Scope = @(Get-BReachable $a $BoundaryEntries)
+    $v = @(Get-BoundaryViolations $a $Maps)
+    return @{ V = $v; Ast = $a; Maps = $Maps }
+}
+
+function Edit-BFirst {
+    param([string]$Text, [string]$Find, [string]$Rep)
+    $i = $Text.IndexOf($Find)
+    Assert-True ($i -ge 0) "seed target exists: $Find"
+    return $Text.Substring(0, $i) + $Rep + $Text.Substring($i + $Find.Length)
+}
+
+function Assert-BCaught {
+    param([string]$Rule, [string]$Text, [string]$Label)
+    $r = Get-BText $Text
+    $hits = @($r.V | Where-Object -FilterScript { $_ -like "$Rule *" })
+    Assert-True ($hits.Count -ge 1) "$Rule catches: $Label (violations: $($r.V -join ' | '))"
+    Add-BSeedCount $Rule $false
+}
+
+function Assert-BInject {
+    param([string]$Rule, [string]$Code)
+    Assert-BCaught $Rule (Edit-BFirst $BoundaryFixture '# SEED-ANCHOR' $Code) $Code
+}
+
+function Assert-BEdit {
+    param([string]$Rule, [string]$Find, [string]$Rep)
+    Assert-BCaught $Rule (Edit-BFirst $BoundaryFixture $Find $Rep) "$Find -> $Rep"
+}
+
+function Assert-BClean {
+    param([string]$Rule, [string]$Code)
+    $r = Get-BText (Edit-BFirst $BoundaryFixture '# SEED-ANCHOR' $Code)
+    Assert-Eq $r.V.Count 0 "negative seed '$Code' is clean: $($r.V -join ' | ')"
+    Add-BSeedCount $Rule $true
+}
+
+function Get-BMapProblemsFor {
+    param($Maps, [string]$Text)
+    $r = Get-BText $Text $Maps
+    return @(Get-BoundaryMapProblems $r.Ast $r.Maps $null $S1Safe)
+}
+
+Test-Case 'BR0 fixture: the clean fixture has no violations and no map problems; the scope is the reachable set; rules apply inside the scope only' {
+    $r = Get-BText $BoundaryFixture
+    Assert-Eq $r.V.Count 0 "clean fixture: $($r.V -join ' | ')"
+    Assert-Eq (@(Get-BoundaryScopeProblems $r.Ast $r.Maps)).Count 0 'scope equals the reachable set'
+    Assert-Eq (@(Get-BoundaryMapProblems $r.Ast $r.Maps $null $S1Safe)).Count 0 "map problems: $(@(Get-BoundaryMapProblems $r.Ast $r.Maps $null $S1Safe) -join ' | ')"
+    Assert-True (-not ($r.Maps.Scope -ccontains 'Other-Fixture')) 'Other-Fixture is out of scope (it holds defects on purpose)'
+    foreach ($w in @('Get-UserRegistryValue', 'Set-ServiceStart', 'Get-ProbeLocal', 'Invoke-WindowsSnapshot', 'Get-DeviceJoinState')) { Assert-True ($r.Maps.Scope -ccontains $w) "$w is in scope" }
+    foreach ($w in @('Say', 'Invoke-Native', 'Resolve-Program', 'Write-NewFile', 'Invoke-BootstrapRun')) { Assert-True (-not ($r.Maps.Scope -ccontains $w)) "$w is outside the scope (trusted, pinned or dispatcher)" }
+    # the same defects become violations as soon as the function is reachable
+    $t = Edit-BFirst $BoundaryFixture '# SEED-ANCHOR' 'Other-Fixture -Probe $Probe'
+    Assert-True (@((Get-BText $t).V | Where-Object -FilterScript { $_ -like 'R3 *' }).Count -ge 1) 'Other-Fixture reached: its & is flagged'
+    Assert-True (@((Get-BText $t).V | Where-Object -FilterScript { $_ -like 'R5 *' }).Count -ge 1) 'Other-Fixture reached: its $PSDefaultParameterValues is flagged'
+    # a scope list that differs from the reachable set is reported
+    $r.Maps.Scope = @($r.Maps.Scope | Where-Object -FilterScript { $_ -cne 'Get-ProbeLocal' })
+    Assert-True (@(Get-BoundaryScopeProblems $r.Ast $r.Maps).Count -ge 1) 'a missing scope name is reported'
+    $r.Maps.Scope = @($r.Maps.Scope) + 'Other-Fixture'
+    Assert-True (@(Get-BoundaryScopeProblems $r.Ast $r.Maps).Count -ge 1) 'an extra scope name is reported'
+}
+
+Test-Case 'BR1 closed command map: owners, precedence, entry branches, snapshot reachability, pins, meta-tests (seeded)' {
+    # a seam called by a function that is not an owner, even inside scope (precedence over "scope function")
+    Assert-BInject 'R1' 'Remove-UserAppxPackage -Package $Probe'
+    Assert-BInject 'R1' 'Get-UserRegistryValue -Key $Probe -Name $Probe'
+    Assert-BInject 'R1' 'Get-Item -LiteralPath $Probe'
+    Assert-BInject 'R1' 'Invoke-Native -ExePath $Probe'
+    Assert-BInject 'R1' 'Unknown-Command $Probe'
+    Assert-BInject 'R1' 'Invoke-WindowsRollback -Label $Probe'
+    Assert-BInject 'R1' '$x = Other-Unknown'
+    # step S (reachable from the snapshot) calls a writer, directly and through a helper
+    Assert-BInject 'R1' 'Set-UserRegistryValue -Key $Probe -Name $Probe -Value 1 -Type ''DWord'' -Remove $false'
+    Assert-BEdit 'R1' '# SNAP-ANCHOR' 'Set-UserRegistryValue -Key $Label -Name $Label -Value 1 -Type ''DWord'' -Remove $false'
+    Assert-BEdit 'R1' '# SNAP-ANCHOR' 'Set-ServiceStart -Name $Label -StartupType ''Disabled'''
+    # exact keys: case matters, entry names and dynamic names are rejected
+    Assert-BEdit 'R1' 'Set-Service -Name $Name' 'set-service -Name $Name'
+    Assert-BEdit 'R1' 'Stop-Service -Name $Name' 'STOP-SERVICE -Name $Name'
+    Assert-BEdit 'R1' 'Get-ProbeLocal -Probe $Label' 'get-probelocal -Probe $Label'
+    # whole script: seam callers and entry callers outside scope
+    Assert-BCaught 'R1' ($BoundaryFixture + "`nfunction Outside-Caller { Get-UserRegistryValue -Key 'a' -Name 'b' }`n") 'a W seam called outside its owners, outside scope'
+    Assert-BCaught 'R1' ($BoundaryFixture + "`nfunction Outside-Entry { Invoke-WindowsSnapshot -Label 'a' }`n") 'an entry point called outside its dispatcher branch'
+    Assert-BEdit 'R1' 'return Invoke-WindowsRollback -Label $WindowsRollback' 'return Invoke-WindowsSnapshot -Label $WindowsRollback'
+    # define-once, top level, no shadowing
+    Assert-BCaught 'R1' ($BoundaryFixture + "`nfunction Get-ProbeLocal { }`n") 'a duplicate definition'
+    Assert-BCaught 'R1' ($BoundaryFixture + "`nfunction Get-UserRegistryValue { }`n") 'a duplicate seam definition'
+    Assert-BCaught 'R1' ($BoundaryFixture + "`nfunction Join-Path { }`n") 'a script function named like an external common key'
+    Assert-BCaught 'R1' ($BoundaryFixture + "`nfunction Get-Item { }`n") 'a script function named like an external owned key'
+    Assert-BCaught 'R1' ($BoundaryFixture + "`nfunction Set-Item { }`n") 'a script function named like an R3 command'
+    Assert-BCaught 'R1' ($BoundaryFixture + "`nif (`$true) { function Say { } }`n") 'a helper defined below top level'
+    # dispatcher branches: only entry-point calls, Say and return; the switch must be read positively
+    Assert-BEdit 'R1' 'if ($WindowsSnapshot) { return Invoke-WindowsSnapshot' 'if ($WindowsSnapshot) { [IO.File]::Delete(''x''); return Invoke-WindowsSnapshot'
+    Assert-BEdit 'R1' 'return Invoke-WindowsRollback -Label $WindowsRollback -MachineWide:$MachineWide' 'return [IO.File]::Delete(''x'')'
+    Assert-BEdit 'R1' 'if ($WindowsSnapshot) { return Invoke-WindowsSnapshot' 'if ($WindowsSnapshot) { $q = 1; return Invoke-WindowsSnapshot'
+    Assert-BEdit 'R1' 'if ($WindowsSnapshot) { return Invoke-WindowsSnapshot' 'if ($WindowsSnapshot) { Get-Date; return Invoke-WindowsSnapshot'
+    Assert-BEdit 'R1' 'if ($WindowsSnapshot) { return Invoke-WindowsSnapshot' 'if ($WindowsSnapshot) { Say ([IO.File]::Exists(''x'')); return Invoke-WindowsSnapshot'
+    Assert-BEdit 'R1' 'if ($WindowsRollback) {' 'if (-not $WindowsRollback) {'
+    Assert-BEdit 'R1' 'if ($WindowsRollback) {' 'if (!$WindowsRollback) {'
+    Assert-BEdit 'R1' 'if ($WindowsSnapshot) { return Invoke-WindowsSnapshot' 'if ($WindowsSnapshot -eq $true) { return Invoke-WindowsSnapshot'
+    Assert-BEdit 'R1' 'if ($WindowsSnapshot) { return Invoke-WindowsSnapshot' 'if ($WindowsSnapshot -or $DryRun) { return Invoke-WindowsSnapshot'
+    Assert-BEdit 'R1' 'if ($WindowsSnapshot) { return Invoke-WindowsSnapshot' 'if ($DryRun -and $WindowsSnapshot) { return Invoke-WindowsSnapshot'
+    Assert-BEdit 'R1' 'if ($WindowsSnapshot) { return Invoke-WindowsSnapshot' 'if ($WindowsSnapshot -eq $false) { return Invoke-WindowsSnapshot'
+    $cond = Get-BText (Edit-BFirst $BoundaryFixture 'if ($WindowsSnapshot) { return Invoke-WindowsSnapshot' 'if ($WindowsSnapshot -and $DryRun) { return Invoke-WindowsSnapshot')
+    Assert-Eq $cond.V.Count 0 "a bare switch followed by -and is accepted: $($cond.V -join ' | ')"
+    Add-BSeedCount 'R1' $true
+    # writer reachability, isolated from the owner rule: the writer is listed as owned by the snapshot side
+    foreach ($wcase in @(
+            @('Invoke-WindowsSnapshot', '# SNAP-ANCHOR', 'Set-UserRegistryValue -Key $Label -Name $Label -Value 1 -Type ''DWord'' -Remove $false', 'Set-UserRegistryValue', @('Key', 'Name', 'Value', 'Type', 'Remove')),
+            @('Invoke-WindowsSnapshot', '# SNAP-ANCHOR', 'Set-ServiceStart -Name $Label -StartupType ''Disabled''', 'Set-ServiceStart', @('Name', 'StartupType')),
+            @('Get-ProbeLocal', '# SEED-ANCHOR', 'Remove-UserAppxPackage -Package $Probe', 'Remove-UserAppxPackage', @('Package')))) {
+        $wm = New-BFixtureMaps
+        $wm.Owners[$wcase[3]][$wcase[0]] = $wcase[4]
+        $wr = Get-BText (Edit-BFirst $BoundaryFixture $wcase[1] $wcase[2]) $wm
+        Assert-Eq (@($wr.V | Where-Object -FilterScript { $_ -like '*is called in*' })).Count 0 "the owner rule is satisfied for $($wcase[3]) in $($wcase[0])"
+        Assert-True (@($wr.V | Where-Object -FilterScript { $_ -like 'R1 *writer seam*reachable from Invoke-WindowsSnapshot*' }).Count -ge 1) "the snapshot writer rule catches $($wcase[3]) via $($wcase[0])"
+        Add-BSeedCount 'R1' $false
+    }
+    # every W seam must be in $SeamNames
+    $sr = Get-BText $BoundaryFixture
+    $sfn = @($sr.Ast.FindAll({ param($n) $n -is $BtFn }, $true) | ForEach-Object -Process { $_.Name })
+    $sn = @($sr.Maps.Owners.Keys | Where-Object -FilterScript { ($sfn -ccontains $_) -and ($BoundaryTrusted -cnotcontains $_) })
+    Assert-True ($sn.Count -ge 15) "the fixture has W seams ($($sn.Count))"
+    Assert-Eq (@(Get-BoundaryMapProblems $sr.Ast $sr.Maps $sn $S1Safe)).Count 0 'a complete $SeamNames list has no problem'
+    Add-BSeedCount 'R1' $true
+    foreach ($drop in @('Set-ServiceStart', 'Get-UserRegistryValue', 'Get-DeviceJoinState')) {
+        $p = @(Get-BoundaryMapProblems $sr.Ast $sr.Maps @($sn | Where-Object -FilterScript { $_ -cne $drop }) $S1Safe | Where-Object -FilterScript { $_ -like "*$drop*SeamNames*" })
+        Assert-True ($p.Count -ge 1) "a seam missing from `$SeamNames is reported: $drop"
+        Add-BSeedCount 'R1' $false
+    }
+    # negative seeds
+    Assert-BClean 'R1' 'Say ''x'''
+    Assert-BClean 'R1' '$stamp = Get-UtcStamp'
+    Assert-BClean 'R1' '$ok = Test-IsAdmin'
+    Assert-BClean 'R1' '$probe2 = Join-Path -Path $Probe -ChildPath ''x'''
+    # meta-tests on the fixture maps (map mutations)
+    $lit2 = @('LiteralPath', 'ErrorAction')
+    $mutations = @(
+        @('a stale key (never used)', { param($m) $m.Owners['Get-Date'] = @{ 'Get-ProbeLocal' = @('Date') } }),
+        @('an owner that does not use its key', { param($m) $m.Owners['Get-Item']['Get-ServiceStart'] = @('LiteralPath', 'ErrorAction') }),
+        @('a stale common key', { param($m) $m.Common['Get-Date'] = @('Date') }),
+        @('a null list outside member, prefix and trusted keys', { param($m) $m.Owners['Set-Service']['Set-ServiceStart'] = $null }),
+        @('a bad key grammar', { param($m) $m.Owners['get item'] = @{ 'Get-ProbeLocal' = @('x') } }),
+        @('a key that is both owned and common', { param($m) $m.Common['Get-Item'] = $lit2 }),
+        @('an R3 command as a map key', { param($m) $m.Owners['Start-Process'] = @{ 'Get-ProbeLocal' = @('FilePath') } }),
+        @('an external common key that is not in the S1 safe list', { param($m) $m.Common['Get-Date'] = @('Date') }),
+        @('a non-canonical parameter (case)', { param($m) $m.Owners['Get-Item']['Get-UserRegistryValue'] = @('literalpath', 'ErrorAction') }),
+        @('a parameter alias instead of the canonical name', { param($m) $m.Owners['Get-Item']['Get-UserRegistryValue'] = @('PSPath', 'ErrorAction') }),
+        @('a switch parameter that is not in $BoundarySwitches', { param($m) $m.Owners['Get-Content']['Read-WindowsSettingsFile'] = @('LiteralPath', 'Raw', 'Encoding', 'ErrorAction', 'Force') }),
+        @('a $BoundarySwitches entry that is not a switch', { param($m) $m.Switches = @('Raw', 'RegisterByFamilyName', 'ErrorAction') }),
+        @('a non-canonical parameter of a script-function seam', { param($m) $m.Owners['Get-UserRegistryValue']['Invoke-WindowsSnapshot'] = @('key', 'Name') }),
+        @('a member key with a non-null list', { param($m) $m.Owners['.GetValue']['Get-UserRegistryValue'] = @('x') }),
+        @('an unresolvable cmdlet', { param($m) $m.Owners['Get-Nonexistent'] = @{ 'Get-ProbeLocal' = @('Name') } })
+    )
+    foreach ($mu in $mutations) {
+        $m = New-BFixtureMaps
+        & $mu[1] $m
+        $p = @(Get-BMapProblemsFor $m $BoundaryFixture | Where-Object -FilterScript { $_ -like 'R1*' })
+        Assert-True ($p.Count -ge 1) "map meta-test catches: $($mu[0])"
+        Add-BSeedCount 'R1' $false
+    }
+    # a stale pair in the real direction: remove the only use of a key from the source
+    $t = Edit-BFirst $BoundaryFixture '$ids = $roots | Where-Object -FilterScript { $_.GetValueNames() -contains ''ProviderID'' } | ForEach-Object -Process { $_.GetValue(''ProviderID'') } | Select-Object -First 1' '$ids = $roots'
+    $p = @(Get-BMapProblemsFor (New-BFixtureMaps) $t | Where-Object -FilterScript { $_ -like 'R1*' })
+    Assert-True ($p.Count -ge 1) 'a key whose use was removed from the source is reported as unused'
+    Add-BSeedCount 'R1' $false
+    # the clean fixture maps pass the same meta-test
+    Assert-Eq (@(Get-BMapProblemsFor (New-BFixtureMaps) $BoundaryFixture)).Count 0 'clean maps have no problems'
+    Add-BSeedCount 'R1' $true
+}
+
+Test-Case 'BR2 registry literals only exactly HKCU:\ and HKLM:\ in their owners, with inline Join-Path path arguments (seeded)' {
+    Assert-BEdit 'R2' '(Join-Path -Path ''HKCU:\'' -ChildPath $Key)' '$Key'
+    Assert-BEdit 'R2' '(Join-Path -Path ''HKCU:\'' -ChildPath $Key)' '"HKCU:\$Key"'
+    Assert-BEdit 'R2' '(Join-Path -Path ''HKCU:\'' -ChildPath $Key)' '(Join-Path ''HKCU:\'' $Key)'
+    Assert-BEdit 'R2' '(Join-Path -Path ''HKCU:\'' -ChildPath $Key)' '(Join-Path -Path ''HKLM:\'' -ChildPath $Key)'
+    Assert-BEdit 'R2' '(Join-Path -Path ''HKCU:\'' -ChildPath $Key)' '(Join-Path -Path $env:SystemRoot -ChildPath $Key)'
+    Assert-BEdit 'R2' '(Join-Path -Path ''HKLM:\'' -ChildPath $Key)' '(Join-Path -Path ''HKCU:\'' -ChildPath $Key)'
+    Assert-BInject 'R2' '$p = Join-Path -Path ''HKCU:\'' -ChildPath $Probe'
+    Assert-BInject 'R2' '$p = ''HKCU:\Software\x'''
+    Assert-BInject 'R2' '$p = "HKCU:\$Probe"'
+    Assert-BInject 'R2' '$p = ''HKLM:\SOFTWARE'''
+    Assert-BInject 'R2' '$p = ''HKEY_CURRENT_USER\Software'''
+    Assert-BInject 'R2' '$p = ''Registry::HKEY_LOCAL_MACHINE'''
+    Assert-BInject 'R2' '$p = ''HKU:\.DEFAULT'''
+    Assert-BInject 'R2' '$p = ''HKCR:\x'''
+    Assert-BInject 'R2' '$p = ''HKCC:\x'''
+    Assert-BInject 'R2' '$p = ''hkcu:\x'''
+    Assert-BInject 'R2' '$p = ''HKCU:'''
+    Assert-BInject 'R2' '$p = ''HKCU:\'''
+    # the Set-MachinePolicyValue New-Item -Path rule
+    Assert-BEdit 'R2' '[void](New-Item -Path (Join-Path -Path ''HKLM:\'' -ChildPath $Key) -ErrorAction Stop)' '[void](New-Item -Path $Key -ErrorAction Stop)'
+    Assert-BEdit 'R2' 'Remove-Item -LiteralPath (Join-Path -Path ''HKLM:\'' -ChildPath $Key)' 'Remove-Item -LiteralPath $Key'
+    Assert-BClean 'R2' '$s = ''SOFTWARE\Microsoft\Windows'''
+    Assert-BClean 'R2' '$s = ''HKCUx'''
+    Assert-BClean 'R2' '$s = ''The HKLM word without a colon'''
+}
+
+Test-Case 'BR3 banned commands, operators, members, dynamic access, member assignment, redirection (seeded)' {
+    foreach ($c in $BoundaryR3Commands) { Assert-BInject 'R3' $c }
+    foreach ($s in @('& $x', '. $x', '& { }', '& ''Set-Service''', '& $Probe', '. $Probe', '& ''x'' $Probe', '. { }')) { Assert-BInject 'R3' $s }
+    foreach ($m in $BoundaryR3Members) { Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$null = $o.' + $m) }
+    foreach ($m in @('OpenSubKey', 'DeleteValue', 'SetValue', 'GetMethod', 'Invoke', 'InvokeProvider')) { Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$null = $o.' + $m + '($Probe)') }
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$null = $o.GetRuntimeMethods()')
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$null = $o.GetType(''x'')')
+    Assert-BInject 'R3' ('$t = $Probe' + "`n" + '$null = $t::LocalMachine')
+    Assert-BInject 'R3' ('$t = $Probe' + "`n" + '$null = $t::Parse($Probe)')
+    Assert-BInject 'R3' '$null = [Microsoft.Win32.Registry]::CurrentUser'
+    Assert-BInject 'R3' '$null = [Environment]::MachineName'
+    Assert-BInject 'R3' ('$f = $Probe' + "`n" + '$f.IsReadOnly = $true')
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$o.IsReadOnly, $y = $true, 1')
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$y, $o.IsReadOnly = 1, $true')
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '[bool]$o.IsReadOnly, $y = $true, 1')
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$o.A, $o.B = 1, 2')
+    # parenthesised and nested targets are the same targets; ++ and -- go through the same normalisation
+    foreach ($form in @('($o.IsReadOnly) = $true', '[bool]($o.IsReadOnly) = $true', '$y, ($o.IsReadOnly) = 1, $true', '(($o.A)) = 1', '($o.A), ($o.B) = 1, 2', '[int]($o.A), $y = 1, 2', '($o.Count)++', '--($o.Count)', '(($o.Count))++')) {
+        Assert-BInject 'R3' ('$o = $Probe' + "`n" + $form)
+    }
+    foreach ($form in @('($env:Path) = ''x''', '($script:RepoRoot) = ''x''', '$y, ($env:Path) = 1, ''x''', '(($env:Path)) = ''x''', '($global:g) = 1', '[string]($env:Path) = ''x''', '($env:Path)++', '(($script:RepoRoot))++')) {
+        Assert-BInject 'R5' $form
+    }
+    Assert-BClean 'R3' ('$h = @{}' + "`n" + '($h)[''a''] = 1')
+    Assert-BClean 'R3' ('$h = @{}' + "`n" + '$h[''a''] = 1')
+    Assert-BClean 'R3' ('$y = 1' + "`n" + '($y) = 2')
+    Assert-BClean 'R3' ('$y = 1' + "`n" + '$y++')
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$o.Count++')
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$o.Count--')
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '++$o.Count')
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$o.Count += 1')
+    Assert-BInject 'R3' '''x'' > C:\tmp\o.txt'
+    Assert-BInject 'R3' '''x'' >> C:\tmp\o.txt'
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$null = $o.ForEach(''Delete'')')
+    Assert-BInject 'R3' ('$o = $Probe' + "`n" + '$null = $o.Where(''x'')')
+    Assert-BInject 'R3' ('$o = $Probe; $m = ''Delete''' + "`n" + '$o.$m()')
+    Assert-BInject 'R3' ('$o = $Probe; $m = ''Name''' + "`n" + '$null = $o.$m')
+    Assert-BInject 'R3' '$d = data { ''x'' }'
+    # owned members are R1-owned: a non-owner may not use them
+    Assert-BInject 'R1' ('$o = $Probe' + "`n" + '$null = $o.GetValue(''x'')')
+    Assert-BInject 'R1' ('$o = $Probe' + "`n" + '$null = $o.GetValueNames()')
+    Assert-BInject 'R1' ('$o = $Probe' + "`n" + '$null = $o.getvalue(''x'')')
+    # negative seeds
+    Assert-BClean 'R3' '$enc = [Text.UTF8Encoding]::new($false)'
+    Assert-BClean 'R3' ('$enc = [Text.UTF8Encoding]::new($false)' + "`n" + '$b = $enc.GetBytes(''x'')')
+    Assert-BClean 'R3' 'Say ''x'' 2>&1'
+    Assert-BClean 'R3' ('$h = @{}' + "`n" + '$h[''k''] = 1')
+    Assert-BClean 'R3' ('$l = New-Object -TypeName ''System.Collections.Generic.List[string]''' + "`n" + '$l.Add(''x'')')
+    Assert-BClean 'R3' '$n = [IO.Path]::GetFileName($Probe)'
+    Assert-BClean 'R3' ('$o = $Probe' + "`n" + '$s = $o.GetEnumerator()')
+    Assert-BClean 'R3' ('$o = @(1, 2)' + "`n" + '$c = $o.Count')
+    Assert-BClean 'R3' ('$o = @(1, 2)' + "`n" + '$f = $o.ForEach({ $_ })')
+    Assert-BClean 'R3' ('$o = $Probe' + "`n" + '$t = $o.GetType()')
+    Assert-BClean 'R3' ('$h = @{}' + "`n" + '$h[''a''], $y = 1, 2')
+    Assert-BClean 'R3' '$s = [string]::Join('','', @(''a'', ''b''))'
+}
+
+Test-Case 'BR4 closed type allowlist, attributes, type definitions, using (seeded)' {
+    foreach ($ty in @('wmiclass', 'wmi', 'adsi', 'type', 'scriptblock', 'powershell', 'Environment', 'Microsoft.Win32.Registry', 'IO.File', 'Reflection.Assembly', 'Diagnostics.Process', 'xml', 'regex', 'ref', 'System.Environment', 'Collections.ArrayList')) {
+        Assert-BInject 'R4' ('$z = [' + $ty + ']$Probe')
+    }
+    Assert-BInject 'R4' '$null = [Microsoft.Win32.Registry]::CurrentUser'
+    Assert-BInject 'R4' ('$z = $Probe -as ''Microsoft.Win32.Registry''')
+    Assert-BInject 'R4' ('$z = $Probe -is ''string''')
+    Assert-BInject 'R4' ('$z = $Probe -isnot ''string''')
+    Assert-BInject 'R4' ('$z = $Probe -as [type]')
+    Assert-BInject 'R4' ('$z = $Probe -is [Microsoft.Win32.Registry]')
+    Assert-BInject 'R4' '$l = [Collections.Generic.List[type]]::new()'
+    Assert-BInject 'R4' '$l = [Collections.Generic.Dictionary[string, string]]::new()'
+    Assert-BInject 'R4' '$l = [Collections.Generic.List[Microsoft.Win32.Registry]]::new()'
+    Assert-BInject 'R4' '$l = [type[]]@()'
+    Assert-BInject 'R4' '$l = New-Object -TypeName ''System.Collections.Generic.List`1[System.String]'''
+    Assert-BInject 'R4' '$l = New-Object -TypeName ''System.Collections.Generic.Dictionary[string,string]'''
+    Assert-BInject 'R4' '$l = New-Object -TypeName ''Microsoft.Win32.Registry'''
+    Assert-BInject 'R4' '$l = New-Object -TypeName $Probe'
+    Assert-BInject 'R4' '$l = New-Object -TypeName "System.Collections.Generic.List[string]$Probe"'
+    Assert-BInject 'R4' '$l = New-Object -TypeName ''string[;'''
+    Assert-BEdit 'R4' 'param([string]$Probe)' 'param([Parameter()][string]$Probe)'
+    Assert-BEdit 'R4' 'param([string]$Probe)' 'param([CmdletBinding()][string]$Probe)'
+    Assert-BEdit 'R4' 'param([string]$Probe)' 'param([Microsoft.Win32.Registry]$Probe)'
+    Assert-BEdit 'R4' 'param([string]$Probe)' 'param([type]$Probe)'
+    Assert-BCaught 'R4' ('using namespace System' + "`n" + $BoundaryFixture) 'using namespace'
+    Assert-BCaught 'R4' ('using namespace System.Text' + "`n" + $BoundaryFixture) 'using module'
+    Assert-BCaught 'R4' ($BoundaryFixture + "`nclass Evil { }`n") 'a type definition'
+    Assert-BCaught 'R4' ($BoundaryFixture + "`nenum Color { Red }`n") 'an enum definition'
+    # negative seeds
+    Assert-BClean 'R4' '$enc = [Text.UTF8Encoding]::new($false)'
+    Assert-BClean 'R4' '$s = [string[]]@(''a'')'
+    Assert-BClean 'R4' '$i = [int]''5'''
+    Assert-BClean 'R4' '$i = [System.Int32]5'
+    Assert-BClean 'R4' '$l = [Collections.Generic.List[string]]::new()'
+    Assert-BClean 'R4' '$l = [System.Collections.Generic.List[int]]::new()'
+    Assert-BClean 'R4' '$l = [System.Collections.Generic.List[string[]]]::new()'
+    Assert-BClean 'R4' '$z = $Probe -is [string]'
+    Assert-BClean 'R4' '$z = $Probe -as [int]'
+    Assert-BClean 'R4' '$z = [ordered]@{ a = 1 }'
+    Assert-BClean 'R4' '$z = [datetime]::UtcNow'
+    Assert-BClean 'R4' '$z = [BitConverter]::ToString([byte[]]@(1, 2))'
+    Assert-BClean 'R4' '$z = [pscustomobject]@{ a = 1 }'
+    Assert-BClean 'R4' '$z = [IO.Path]::GetFileName($Probe)'
+    Assert-BClean 'R4' '$z = [hashtable]@{}'
+    Assert-BClean 'R4' '$z = [bool]$Probe'
+    Assert-BClean 'R4' '$z = [char]65'
+    Assert-BClean 'R4' '$z = [long]1'
+    Assert-BClean 'R4' '[void]$Probe'
+}
+
+Test-Case 'BR5 session state: locals only, no automatic or preference locals, no qualified writes, no prefixes, no aliases (seeded)' {
+    Assert-BInject 'R5' '$null = $PSCmdlet.SessionState.InvokeCommand'
+    Assert-BInject 'R5' '$z = $RepoRoot'
+    Assert-BInject 'R5' '$z = $Unknown'
+    Assert-BInject 'R5' '$Profile = 1'
+    Assert-BInject 'R5' '$PSDefaultParameterValues = @{ ''*:ErrorAction'' = ''Ignore'' }'
+    Assert-BInject 'R5' '$ErrorActionPreference = ''Ignore'''
+    Assert-BInject 'R5' '$VerbosePreference = ''Continue'''
+    Assert-BInject 'R5' '$Host = 1'
+    Assert-BInject 'R5' '$args = 1'
+    Assert-BInject 'R5' '$input = 1'
+    Assert-BInject 'R5' '$MyInvocation = 1'
+    Assert-BInject 'R5' '$ExecutionContext = 1'
+    Assert-BInject 'R5' '$PSBoundParameters = 1'
+    Assert-BInject 'R5' '$true = 1'
+    Assert-BInject 'R5' '$null = $ExecutionContext.SessionState'
+    Assert-BInject 'R5' '$null = $global:ExecutionContext'
+    Assert-BInject 'R5' '$z = ${C:\x}'
+    Assert-BInject 'R5' '$z = ${function:Say}'
+    Assert-BInject 'R5' '$z = $variable:Probe'
+    Assert-BInject 'R5' '$env:X = 1'
+    Assert-BInject 'R5' '$global:y = 1'
+    Assert-BInject 'R5' '$z = $global:y'
+    Assert-BInject 'R5' '$script:y = 1'
+    Assert-BInject 'R5' '$script:y++'
+    Assert-BInject 'R5' '$env:Path += ''x'''
+    Assert-BInject 'R5' '$z = ''alias:ls'''
+    Assert-BInject 'R5' '$z = ''function:Say'''
+    Assert-BInject 'R5' '$z = ''variable:Probe'''
+    Assert-BInject 'R5' '$z = ''env:Path'''
+    Assert-BInject 'R5' '$z = ''cert:\CurrentUser'''
+    Assert-BInject 'R5' '$z = ''wsman:localhost'''
+    Assert-BInject 'R5' 'gci'
+    Assert-BInject 'R5' 'ls'
+    Assert-BInject 'R5' '%'
+    Assert-BInject 'R5' 'iex'
+    Assert-BInject 'R5' 'foreach ($Error in @(1)) { }'
+    Assert-BEdit 'R5' 'param([string]$Key, [string]$Name)' 'param([string]$Key, [string]$Name, [string]$Profile)'
+    Assert-BEdit 'R5' '$committed = Test-WindowsSettingsCommitted -Path $Label' '$committed = Test-WindowsSettingsCommitted -Path $Other'
+    # entry-point parameters mirror the switch names
+    Assert-BEdit 'R5' 'param([string]$Label, [switch]$DryRun)' 'param([string]$Label, [switch]$DryRun, [string]$Extra)'
+    # negative seeds
+    Assert-BClean 'R5' ('$h = @{}' + "`n" + '$h[''k''] = 1')
+    Assert-BClean 'R5' ('$z = $script:RepoRoot')
+    Assert-BClean 'R5' ('$z = $env:SystemRoot')
+    Assert-BClean 'R5' ('$z = $env:LOCALAPPDATA')
+    Assert-BClean 'R5' '$z = @(1, 2) | ForEach-Object -Process { $_ }'
+    Assert-BClean 'R5' '$z = @(1, 2) | ForEach-Object -Process { $PSItem }'
+    Assert-BClean 'R5' '$z = $true -and $false'
+    Assert-BClean 'R5' '$z = $PID'
+    Assert-BClean 'R5' '$z = ''x'' -match ''y''; $q = $Matches'
+    Assert-BClean 'R5' 'foreach ($item in @(1, 2)) { $z = $item }'
+    Assert-BClean 'R5' '$a1, $b1 = @(1, 2); $z = $a1 + $b1'
+    Assert-BClean 'R5' '$i = 0; $i++'
+    Assert-BClean 'R5' '[int]$typed = 1'
+    Assert-BClean 'R5' '$f = { param($x1) $x1 }'
+    Assert-BClean 'R5' '$DryRun = 1'
+    $r5 = Get-BText (Edit-BFirst $BoundaryFixture 'param([string]$Probe)' 'param([string]$Probe, [switch]$DryRun)')
+    Assert-Eq $r5.V.Count 0 "a local DryRun parameter is clean: $($r5.V -join ' | ')"
+    Add-BSeedCount 'R5' $true
+    # $null = ... is the ADR's discard form, also inside an owner
+    $owner = Edit-BFirst $BoundaryFixture '    $item = Get-Item -LiteralPath (Join-Path -Path ''HKCU:\'' -ChildPath $Key) -ErrorAction Stop' ('    $null = Get-Item -LiteralPath (Join-Path -Path ''HKCU:\'' -ChildPath $Key) -ErrorAction Stop' + "`n" + '    $item = Get-Item -LiteralPath (Join-Path -Path ''HKCU:\'' -ChildPath $Key) -ErrorAction Stop')
+    $r6 = Get-BText $owner
+    Assert-Eq $r6.V.Count 0 "a `$null = discard inside an owner is clean: $($r6.V -join ' | ')"
+    Add-BSeedCount 'R5' $true
+    Assert-BClean 'R5' '$null = $Probe'
+}
+
+Test-Case 'BR6 parameters: full names from the owner list, no positionals, switches, pipeline first, value pins, pinned Invoke-Native and Resolve-Program (seeded)' {
+    # names
+    Assert-BEdit 'R6' '-StartupType $StartupType -ErrorAction Stop' '-StartupT $StartupType -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Enable-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName' 'Enable-ScheduledTask -TaskPath $TaskPath -taskname $TaskName'
+    Assert-BEdit 'R6' 'Disable-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName' 'Disable-ScheduledTask -TaskPath $TaskPath -taskname $TaskName'
+    Assert-BEdit 'R6' 'Stop-Service -Name $Name -ErrorAction Stop' 'Stop-Service -Name $Name -EA Stop'
+    Assert-BEdit 'R6' 'Set-Service -Name $Name -StartupType $StartupType -ErrorAction Stop' 'Set-Service -Name $Name -StartupType $StartupType -Force -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Set-Service -Name $Name -StartupType $StartupType -ErrorAction Stop' 'Set-Service -Name $Name -StartupType $StartupType -Confirm:$false -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Start-Service -Name $Name -ErrorAction Stop' 'Start-Service -Name $Name -PassThru -ErrorAction Stop'
+    Assert-BEdit 'R6' '-ClassName Win32_Service' '-Class Win32_Service'
+    Assert-BEdit 'R6' '-ClassName Win32_Service' '-ClassName Win32_Service -ComputerName x'
+    Assert-BEdit 'R6' '-ClassName Win32_Service' '-ClassName Win32_Process'
+    Assert-BEdit 'R6' '-ClassName Win32_Service' '-ClassName $Name'
+    Assert-BEdit 'R6' 'return Get-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction Stop' 'return Get-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction Stop -Verbose'
+    Assert-BEdit 'R6' 'Get-AppxPackage -Name $Name -ErrorAction Stop' 'Get-AppxPackage -Name $Name -AllUsers -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Remove-AppxPackage -Package $Package -ErrorAction Stop' 'Remove-AppxPackage -Package $Package -AllUsers -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Remove-AppxPackage -Package $Package -ErrorAction Stop' 'Remove-AppxPackage -Package $Package -User $Package -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Add-AppxPackage -RegisterByFamilyName -MainPackage $Family -ErrorAction Stop' 'Add-AppxPackage -Path $Family -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Add-AppxPackage -RegisterByFamilyName -MainPackage $Family -ErrorAction Stop' 'Add-AppxPackage -RegisterByFamilyName -MainPackage $Family -Register $Family -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Add-AppxPackage -RegisterByFamilyName -MainPackage $Family -ErrorAction Stop' 'Add-AppxPackage -RegisterByFamilyName -MainPackage $Family -DependencyPath $Family -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Add-AppxPackage -RegisterByFamilyName -MainPackage $Family -ErrorAction Stop' 'Add-AppxPackage -RegisterByFamilyName -MainPackage $Family -ForceApplicationShutdown -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Add-AppxPackage -RegisterByFamilyName -MainPackage $Family -ErrorAction Stop' 'Add-AppxPackage -RegisterByFamilyName $Family -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Add-AppxPackage -RegisterByFamilyName -MainPackage $Family -ErrorAction Stop' 'Add-AppxPackage -RegisterByFamilyName -MainPackage -ErrorAction Stop'
+    # positionals, splatting, valueless parameters
+    Assert-BEdit 'R6' 'Set-Service -Name $Name' 'Set-Service $Name'
+    Assert-BEdit 'R6' 'Get-AppxPackage -Name $Name' 'Get-AppxPackage $Name'
+    Assert-BEdit 'R6' 'Get-Content -LiteralPath $Path -Raw -Encoding UTF8' 'Get-Content -LiteralPath $Path -Raw $true -Encoding UTF8'
+    Assert-BEdit 'R6' 'Get-Content -LiteralPath $Path -Raw -Encoding UTF8' 'Get-Content -LiteralPath $Path -Raw -Encoding'
+    Assert-BEdit 'R6' 'Get-Content -LiteralPath $Path -Raw -Encoding UTF8' 'Get-Content @args -LiteralPath $Path -Raw -Encoding UTF8'
+    Assert-BInject 'R6' '$h = @{ Name = ''x'' }; $z = Join-Path @h'
+    Assert-BInject 'R6' '$h = @{ Name = ''x'' }; Say @h'
+    Assert-BInject 'R6' '$z = Join-Path $Probe ''x'''
+    Assert-BInject 'R6' '$z = Join-Path -Path $Probe -ChildPath ''x'' -Resolve'
+    # pipelines, Out-Null, value pins
+    Assert-BEdit 'R6' 'return Get-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction Stop' 'return $TaskPath | Get-ScheduledTask -TaskPath $TaskPath -TaskName $TaskName -ErrorAction Stop'
+    Assert-BEdit 'R6' 'Remove-AppxPackage -Package $Package -ErrorAction Stop' '$Package | Remove-AppxPackage -Package $Package -ErrorAction Stop'
+    Assert-BInject 'R6' '@(1) | Out-Null'
+    Assert-BInject 'R6' '$z = @(1) | Out-Null'
+    Assert-BInject 'R6' '@(1) | ForEach-Object DeleteValue ''x'''
+    Assert-BInject 'R6' '@(1) | ForEach-Object -MemberName SetValue'
+    Assert-BInject 'R6' '@(1) | ForEach-Object -Process $Probe'
+    Assert-BInject 'R6' '@(1) | ForEach-Object { $_ }'
+    Assert-BInject 'R6' '@(1) | ForEach-Object -Begin { } -Process { $_ }'
+    Assert-BInject 'R6' '@(1) | Where-Object -Property x'
+    Assert-BInject 'R6' '@(1) | Where-Object -FilterScript $Probe'
+    Assert-BInject 'R6' '@(1) | Where-Object { $_ }'
+    Assert-BInject 'R6' '@(1) | Select-Object -Property x'
+    Assert-BInject 'R6' '@(1) | Select-Object -ExpandProperty ''InvokeProvider'''
+    Assert-BInject 'R6' '@(1) | Select-Object -ExpandProperty $Probe'
+    Assert-BInject 'R6' '@(1) | Select-Object -ExpandProperty ''GetRuntimeMethods'''
+    Assert-BInject 'R6' '@(1) | Select-Object -Last 1'
+    Assert-BEdit 'R6' 'Get-CimInstance -ClassName Win32_Service -Filter' 'Get-CimInstance -Filter'
+    Assert-BEdit 'R6' 'Get-CimInstance -ClassName Win32_ComputerSystem -Property' 'Get-CimInstance -Property'
+    Assert-BEdit 'R6' 'Get-CimInstance -ClassName Win32_UserAccount -Filter' 'Get-CimInstance -Filter'
+    # maximum lists: a fixture map that widens a list is reported by the meta-test
+    foreach ($mx in @(
+            @('Get-AppxPackage', 'Get-UserAppxPackage', @('Name', 'AllUsers', 'ErrorAction')),
+            @('Remove-AppxPackage', 'Remove-UserAppxPackage', @('Package', 'AllUsers', 'ErrorAction')),
+            @('Remove-AppxPackage', 'Remove-UserAppxPackage', @('Package', 'User', 'ErrorAction')),
+            @('Add-AppxPackage', 'Register-UserAppxPackage', @('RegisterByFamilyName', 'MainPackage', 'Path', 'ErrorAction')),
+            @('Add-AppxPackage', 'Register-UserAppxPackage', @('RegisterByFamilyName', 'MainPackage', 'ForceApplicationShutdown', 'ErrorAction')),
+            @('Set-Service', 'Set-ServiceStart', @('Name', 'StartupType', 'ErrorAction', 'Force')),
+            @('Get-CimInstance', 'Get-ServiceStart', @('ClassName=Win32_Service', 'Filter', 'Property', 'ErrorAction', 'ComputerName')),
+            @('Get-ScheduledTask', 'Get-TaskState', @('TaskPath', 'TaskName', 'ErrorAction', 'CimSession')))) {
+        $mm = New-BFixtureMaps
+        $mm.Owners[$mx[0]][$mx[1]] = $mx[2]
+        $mp = @(Get-BMapProblemsFor $mm $BoundaryFixture | Where-Object -FilterScript { $_ -like 'R6*exceeds the maximum*' })
+        Assert-True ($mp.Count -ge 1) "the maximum-list meta-test catches $($mx[0]) with $($mx[2] -join ',')"
+        Add-BSeedCount 'R6' $false
+    }
+    # negative seed: the clean maps stay within the maximum lists
+    Assert-Eq (@(Get-BMapProblemsFor (New-BFixtureMaps) $BoundaryFixture | Where-Object -FilterScript { $_ -like 'R6*' })).Count 0 'clean maps are within the maximum lists'
+    Add-BSeedCount 'R6' $true
+    # pinned Invoke-Native and Resolve-Program
+    $gitCall = '-ExePath (Resolve-Program -Name ''git.exe'') -WorkingDirectory $script:RepoRoot -Arguments @(''ls-files'', ''--error-unmatch'', ''--'', $Path)'
+    Assert-BEdit 'R6' '-ExePath (Resolve-Program -Name ''git.exe'') -WorkingDirectory $script:RepoRoot -Arguments @(''ls-files'', ''--error-unmatch'', ''--'', $Path)' '-ExePath ''git.exe'' -WorkingDirectory $script:RepoRoot -Arguments @(''ls-files'', ''--error-unmatch'', ''--'', $Path)'
+    Assert-BEdit 'R6' ('$tracked = Invoke-Native ' + $gitCall) ('$git = ''git.exe''' + "`n" + '    $tracked = Invoke-Native -ExePath $git -WorkingDirectory $script:RepoRoot -Arguments @(''ls-files'', ''--error-unmatch'', ''--'', $Path)')
+    Assert-BEdit 'R6' ('$tracked = Invoke-Native ' + $gitCall) ('if ($Path) { $git = ''git.exe'' }' + "`n" + '    $tracked = Invoke-Native -ExePath $git -WorkingDirectory $script:RepoRoot -Arguments @(''ls-files'', ''--error-unmatch'', ''--'', $Path)')
+    Assert-BEdit 'R6' ('$tracked = Invoke-Native ' + $gitCall) ('$tracked = Invoke-Native -ExePath $git -WorkingDirectory $script:RepoRoot -Arguments @(''ls-files'', ''--error-unmatch'', ''--'', $Path)')
+    Assert-BEdit 'R6' ('$tracked = Invoke-Native ' + $gitCall) ('$git, $other = ''git.exe'', ''x''' + "`n" + '    $tracked = Invoke-Native -ExePath $git -WorkingDirectory $script:RepoRoot -Arguments @(''ls-files'', ''--error-unmatch'', ''--'', $Path)')
+    Assert-BEdit 'R6' ('$tracked = Invoke-Native ' + $gitCall) ('foreach ($git in @(''git.exe'')) { $null = $git }' + "`n" + '    $tracked = Invoke-Native -ExePath $git -WorkingDirectory $script:RepoRoot -Arguments @(''ls-files'', ''--error-unmatch'', ''--'', $Path)')
+    Assert-BEdit 'R6' ('$tracked = Invoke-Native ' + $gitCall) ('$git = data { ''git.exe'' }' + "`n" + '    $tracked = Invoke-Native -ExePath $git -WorkingDirectory $script:RepoRoot -Arguments @(''ls-files'', ''--error-unmatch'', ''--'', $Path)')
+    $withDefault = [regex]::Replace($BoundaryFixture, '(function Test-WindowsSettingsCommitted \{\s*param\(\[string\]\$Path)\)', '$1, [string]$git = ''git.exe'')')
+    Assert-True ($withDefault -ne $BoundaryFixture) 'param default seed applied'
+    Assert-BCaught 'R6' (Edit-BFirst $withDefault '$tracked = Invoke-Native -ExePath (Resolve-Program -Name ''git.exe'')' '$tracked = Invoke-Native -ExePath $git') 'param default'
+    Assert-BEdit 'R6' '$tracked = Invoke-Native -ExePath (Resolve-Program -Name ''git.exe'') -WorkingDirectory $script:RepoRoot -Arguments @(''ls-files'', ''--error-unmatch'', ''--'', $Path)' '$tracked = Invoke-Native -ExePath $Path -WorkingDirectory $script:RepoRoot -Arguments @(''ls-files'', ''--error-unmatch'', ''--'', $Path)'
+    Assert-BEdit 'R6' '''ls-files'', ''--error-unmatch'', ''--'', $Path' '''-c'', ''alias.x=!sh'', ''ls-files'', ''--error-unmatch'', ''--'', $Path'
+    Assert-BEdit 'R6' '''ls-files'', ''--error-unmatch'', ''--'', $Path' '''--config-env=a=B'', ''ls-files'', ''--error-unmatch'', ''--'', $Path'
+    Assert-BEdit 'R6' '''ls-files'', ''--error-unmatch'', ''--'', $Path' '''ls-files'', ''--error-unmatch'', ''--'', $Path, ''extra'''
+    Assert-BEdit 'R6' '''ls-files'', ''--error-unmatch'', ''--'', $Path' '''ls-files'', ''--error-unmatch'', ''--'''
+    Assert-BEdit 'R6' '''ls-files'', ''--error-unmatch'', ''--'', $Path' '''ls-files'', $Path, ''--'', $Path'
+    Assert-BEdit 'R6' '''diff'', ''--quiet'', ''--no-ext-diff'', ''--no-textconv'', ''HEAD'', ''--'', $Path' '''diff'', ''--quiet'', ''--no-ext-diff'', ''HEAD'', ''--'', $Path'
+    Assert-BEdit 'R6' '''diff'', ''--quiet'', ''--no-ext-diff'', ''--no-textconv'', ''HEAD'', ''--'', $Path' '''diff'', ''--quiet'', ''--ext-diff'', ''--no-textconv'', ''HEAD'', ''--'', $Path'
+    Assert-BEdit 'R6' '''diff'', ''--quiet'', ''--no-ext-diff'', ''--no-textconv'', ''HEAD'', ''--'', $Path' '$Path'
+    Assert-BEdit 'R6' '-WorkingDirectory $script:RepoRoot -Arguments @(''ls-files''' '-WorkingDirectory $RepoRoot -Arguments @(''ls-files'''
+    Assert-BEdit 'R6' '-WorkingDirectory $script:RepoRoot -Arguments @(''ls-files''' '-WorkingDirectory $Path -Arguments @(''ls-files'''
+    Assert-BEdit 'R6' '-WorkingDirectory $script:RepoRoot -Arguments @(''ls-files''' '-Arguments @(''ls-files'''
+    Assert-BEdit 'R6' '-TimeoutSeconds 60' '-TimeoutSeconds $Path'
+    Assert-BEdit 'R6' '-TimeoutSeconds 60' '-TimeoutSeconds ''60'''
+    Assert-BEdit 'R6' '-TimeoutSeconds 60' '-TimeoutSeconds 60 -Passthrough'
+    Assert-BEdit 'R6' 'Resolve-Program -Name ''git.exe''' 'Resolve-Program -Name ''git'''
+    Assert-BEdit 'R6' 'Resolve-Program -Name ''git.exe''' 'Resolve-Program -Name $Path'
+    Assert-BEdit 'R6' 'Resolve-Program -Name ''git.exe''' 'Resolve-Program ''git.exe'''
+    Assert-BEdit 'R6' 'Resolve-Program -Name ''git.exe''' 'Resolve-Program -Name ''git.exe'' -Extra 1'
+    Assert-BInject 'R6' '$z = Resolve-Program -Name ''git.exe'''
+    Assert-BInject 'R6' '$z = Invoke-Native -ExePath ''x'''
+    Assert-BEdit 'R6' '-ExePath (Join-Path -Path $env:SystemRoot -ChildPath ''System32\dsregcmd.exe'') -Arguments @(''/status'')' '-ExePath ''dsregcmd.exe'' -Arguments @(''/status'')'
+    Assert-BEdit 'R6' '-ExePath (Join-Path -Path $env:SystemRoot -ChildPath ''System32\dsregcmd.exe'') -Arguments @(''/status'')' '-ExePath (Join-Path -Path $env:SystemRoot -ChildPath ''System32\dsregcmd.exe'') -Arguments @(''/status'', ''/debug'')'
+    Assert-BEdit 'R6' '-ExePath (Join-Path -Path $env:SystemRoot -ChildPath ''System32\dsregcmd.exe'') -Arguments @(''/status'')' '-ExePath (Join-Path -Path $env:SystemRoot -ChildPath ''System32\cmdkey.exe'') -Arguments @(''/status'')'
+    Assert-BEdit 'R6' '-ExePath (Join-Path -Path $env:SystemRoot -ChildPath ''System32\dsregcmd.exe'') -Arguments @(''/status'')' '-ExePath (Join-Path -Path $env:windir -ChildPath ''System32\dsregcmd.exe'') -Arguments @(''/status'')'
+    Assert-BEdit 'R6' '-ExePath (Join-Path -Path $env:SystemRoot -ChildPath ''System32\dsregcmd.exe'') -Arguments @(''/status'')' '-ExePath (Join-Path -Path $env:SystemRoot -ChildPath ''System32\dsregcmd.exe'') -Arguments @(''/status'') -WorkingDirectory $script:RepoRoot'
+    Assert-BEdit 'R6' '-ExePath (Join-Path -Path $env:SystemRoot -ChildPath ''System32\dsregcmd.exe'') -Arguments @(''/status'')' '-ExePath (Join-Path -Path $env:SystemRoot -ChildPath ''System32\dsregcmd.exe'') -Arguments @(''/status'') -TimeoutSeconds ''x'''
+    # negative seeds
+    Assert-BClean 'R6' '$z = Join-Path -Path $Probe -ChildPath ''x'''
+    Assert-BClean 'R6' '$z = @(1) | ForEach-Object -Process { $_ }'
+    Assert-BClean 'R6' '$z = @(1) | Where-Object -FilterScript { $_ }'
+    Assert-BClean 'R6' '$z = @(1) | Select-Object -First 1'
+    Assert-BClean 'R6' '$z = @(@{ a = 1 }) | Select-Object -ExpandProperty ''a'''
+    Assert-BClean 'R6' '[void]$Probe'
+    Assert-BClean 'R6' '$null = $Probe'
+    Assert-BClean 'R6' 'Say "x $Probe"'
+    Assert-BClean 'R6' '$z = Get-ProbeLocal $Probe'
+    Assert-BClean 'R6' '$z = Get-ProbeLocal -Probe $Probe'
+}
+
+Test-Case 'BR7 New-Object only with a named -TypeName (R4) and an optional -ArgumentList, no positionals, no COM (seeded)' {
+    Assert-BInject 'R7' '$z = New-Object System.Text.StringBuilder'
+    Assert-BInject 'R7' '$z = New-Object ''System.Collections.Generic.List[string]'' @()'
+    Assert-BInject 'R7' '$z = New-Object -ComObject WScript.Shell'
+    Assert-BInject 'R7' '$z = New-Object -ComObject Shell.Application -Strict'
+    Assert-BInject 'R7' '$z = New-Object -TypeName ''System.Collections.Generic.List[string]'' -Property @{ Capacity = 1 }'
+    Assert-BInject 'R7' '$z = New-Object -TypeName ''System.Collections.Generic.List[string]'' -Strict'
+    Assert-BInject 'R7' '$z = New-Object -TypeName ''System.Collections.Generic.List[string]'' a b c'
+    Assert-BInject 'R7' '$h = @{ TypeName = ''x'' }; $z = New-Object @h'
+    Assert-BInject 'R7' '$z = New-Object -ArgumentList 1'
+    Assert-BInject 'R7' '$z = New-Object -Type ''System.Collections.Generic.List[string]'''
+    Assert-BClean 'R7' '$z = New-Object -TypeName ''System.Collections.Generic.List[string]'''
+    Assert-BClean 'R7' '$z = New-Object -TypeName ''System.Collections.Generic.List[string]'' -ArgumentList 4'
+    Assert-BClean 'R7' '$z = New-Object -ArgumentList 4 -TypeName ''System.Collections.Generic.List[string]'''
+}
+
+Test-Case 'BR8 tripwire: no executable-name strings in scope; programs only through the pinned forms (seeded)' {
+    Assert-BInject 'R8' '$z = @("C:\Program Files\x\reg.exe", ''add'')'
+    Assert-BInject 'R8' '$z = ''C:\Program Files\PowerShell\7\pwsh.exe'''
+    Assert-BInject 'R8' '$z = ''%SystemRoot%\System32\reg.exe'''
+    Assert-BInject 'R8' '$z = ''reg.com'''
+    Assert-BInject 'R8' '$z = ''sc'''
+    Assert-BInject 'R8' '$z = ''powershell.exe'''
+    Assert-BInject 'R8' '$z = ''cmd.exe /c schtasks'''
+    Assert-BInject 'R8' '$z = ''reg'''
+    Assert-BInject 'R8' '$z = '' schtasks '''
+    Assert-BInject 'R8' '$z = ''regedit.exe'''
+    Assert-BInject 'R8' '$z = ''wsl.exe'''
+    Assert-BInject 'R8' '$z = ''C:\Windows\System32\wsl.exe'''
+    Assert-BInject 'R8' '$z = ''/usr/bin/pwsh.exe'''
+    Assert-BInject 'R8' '$z = "run=reg.exe add"'
+    Assert-BInject 'R8' '$z = "x $Probe schtasks.exe;"'
+    Assert-BInject 'R8' '$z = ''SC.EXE'''
+    Assert-BInject 'R8' '$z = ''pwsh'''
+    Assert-BInject 'R8' '$z = ''cmd'''
+    Assert-BInject 'R8' 'reg.exe add x'
+    # negative seeds
+    Assert-BClean 'R8' '$z = ''PowerShell 5.1 is required'''
+    Assert-BClean 'R8' '$z = ''Reg value missing'''
+    Assert-BClean 'R8' '$z = ''the sc word in a sentence'''
+    Assert-BClean 'R8' '$z = ''dsregcmd.exe'''
+    Assert-BClean 'R8' '$z = ''System32\dsregcmd.exe'''
+    Assert-BClean 'R8' '$z = ''git.exe'''
+    Assert-BClean 'R8' '$z = ''registry.exe.txt'''
+    Assert-BClean 'R8' '$z = ''myreg.exe'''
+    Assert-BClean 'R8' 'Say "step W: run elevated: .\ops\windows\bootstrap.ps1 -WindowsSettings x -SetupProfile personal -MachineWide"'
+    Assert-BClean 'R8' 'Say "step W: run elevated: Disable-ScheduledTask -TaskPath ''\x\'' -TaskName ''y''"'
+    Assert-BClean 'R8' 'Say ''step W: run elevated: .\ops\windows\bootstrap.ps1 -WindowsRollback x -MachineWide'''
+}
+
+Test-Case 'BR9 -LiteralPath from metadata: map cmdlets that have it take -LiteralPath and never -Path; New-Item and Join-Path are exempt (seeded)' {
+    Assert-BEdit 'R9' 'Get-Content -LiteralPath $Path -Raw' 'Get-Content -Path $Path -Raw'
+    Assert-BEdit 'R9' 'Import-PowerShellDataFile -LiteralPath $Path' 'Import-PowerShellDataFile -Path $Path'
+    Assert-BEdit 'R9' 'Get-Item -LiteralPath (Join-Path -Path ''HKCU:\'' -ChildPath $Key) -ErrorAction Stop' 'Get-Item -Path (Join-Path -Path ''HKCU:\'' -ChildPath $Key) -ErrorAction Stop'
+    Assert-BEdit 'R9' 'Remove-Item -LiteralPath (Join-Path -Path ''HKLM:\'' -ChildPath $Key)' 'Remove-Item -Path (Join-Path -Path ''HKLM:\'' -ChildPath $Key)'
+    Assert-BEdit 'R9' 'Get-ChildItem -LiteralPath (Join-Path' 'Get-ChildItem -Path (Join-Path'
+    Assert-BEdit 'R9' 'Set-ItemProperty -LiteralPath (Join-Path -Path ''HKCU:\'' -ChildPath $Key) -Name' 'Set-ItemProperty -Path (Join-Path -Path ''HKCU:\'' -ChildPath $Key) -Name'
+    Assert-BEdit 'R9' 'Remove-ItemProperty -LiteralPath (Join-Path -Path ''HKCU:\'' -ChildPath $Key)' 'Remove-ItemProperty -Name $Name -Path (Join-Path -Path ''HKCU:\'' -ChildPath $Key)'
+    Assert-BEdit 'R9' 'Get-Content -LiteralPath $Path -Raw' 'Get-Content -LiteralPath $Path -Path $Path -Raw'
+    Assert-BEdit 'R9' 'Get-Content -LiteralPath $Path -Raw' 'Get-Content -Raw'
+    # negative seeds: New-Item (no -LiteralPath in 5.1, N1) and Join-Path keep -Path
+    $r = Get-BText $BoundaryFixture
+    Assert-Eq (@($r.V | Where-Object -FilterScript { $_ -like 'R9 *' })).Count 0 'the clean fixture has no R9 violation although New-Item and Join-Path take -Path'
+    Add-BSeedCount 'R9' $true
+    Assert-True ($BoundaryFixture.Contains('New-Item -Path $Path -ItemType Directory')) 'New-Item -Path is in the fixture'
+    Assert-True ($BoundaryFixture.Contains('Join-Path -Path')) 'Join-Path -Path is in the fixture'
+    Add-BSeedCount 'R9' $true
+}
+
+Test-Case 'BR10 nested scriptblocks count as their function; no nested function definitions; SetEnvironmentVariable is banned (seeded)' {
+    # a defect inside a nested scriptblock of an in-scope function is attributed to that function
+    Assert-BInject 'R3' '$z = @(1) | ForEach-Object -Process { & $Probe }'
+    Assert-BInject 'R5' '$z = @(1) | ForEach-Object -Process { $Unknown }'
+    Assert-BInject 'R1' '$z = @(1) | Where-Object -FilterScript { Get-Item -LiteralPath $_ }'
+    Assert-BInject 'R3' '$z = { & $Probe }'
+    Assert-BInject 'R10' 'function Inner { }'
+    Assert-BInject 'R10' 'function Inner { function Deeper { } }'
+    Assert-BInject 'R10' '[Environment]::SetEnvironmentVariable(''A'', ''B'', ''User'')'
+    Assert-BInject 'R10' '[System.Environment]::SetEnvironmentVariable(''A'', $null, ''Machine'')'
+    Assert-BInject 'R10' '$z = @(1) | ForEach-Object -Process { [Environment]::SetEnvironmentVariable(''A'', ''B'') }'
+    Assert-BInject 'R10' ('$o = $Probe' + "`n" + '$o.SetEnvironmentVariable(''A'', ''B'')')
+    Assert-BInject 'R10' ('$o = $Probe' + "`n" + '$o.setenvironmentvariable(''A'', ''B'')')
+    # the same defect outside the scope is not attributed to any scope function
+    $t =$BoundaryFixture + "`nfunction Out-Of-Scope { `$z = @(1) | ForEach-Object -Process { & `$Probe }; [Environment]::SetEnvironmentVariable('A', 'B') }`n"
+    Assert-Eq (@((Get-BText $t).V | Where-Object -FilterScript { $_ -like 'R3 *' -or $_ -like 'R10 *' })).Count 0 'a defect in a function that is not in scope is not reported'
+    Add-BSeedCount 'R10' $true
+    Assert-BClean 'R10' '$z = @(1) | ForEach-Object -Process { $_ }'
+    Assert-BClean 'R10' '$z = { param($x1) $x1 }'
+}
+
+Test-Case 'BR-real the real script: dispatcher anchored, switches have branches, the reachable set is $BoundaryScope, every rule holds (seeded on copies)' {
+    $text = [IO.File]::ReadAllText($ScriptPath)
+    $tokens = $null; $errs = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile($ScriptPath, [ref]$tokens, [ref]$errs)
+    Assert-Eq $errs.Count 0 'parse errors'
+    $maps = @{ Scope = $BoundaryScope; Owners = $CommandOwners; Common = $BoundaryCommon; TypeAllow = $BoundaryTypeAllow; Switches = $BoundarySwitches }
+    $d = Get-BDispatcherInfo $ast
+    Assert-True $d.Found "the dispatcher $BoundaryDispatcher is found"
+    Assert-Eq $d.Declared.Count 0 "no W switch is declared yet: $($d.Declared -join ',')"
+    Assert-Eq $d.Problems.Count 0 "dispatcher problems: $($d.Problems -join ' | ')"
+    $reach = @(Get-BReachable $ast $BoundaryEntries)
+    Assert-Eq $reach.Count 0 "no entry point exists yet, so the reachable set is empty: $($reach -join ',')"
+    Assert-Eq (@(Get-BoundaryScopeProblems $ast $maps)).Count 0 "scope problems: $(@(Get-BoundaryScopeProblems $ast $maps) -join ' | ')"
+    $v = @(Get-BoundaryViolations $ast $maps)
+    Assert-Eq $v.Count 0 "boundary violations: $($v -join ' | ')"
+    $mp = @(Get-BoundaryMapProblems $ast $maps $SeamNames $S1Safe)
+    Assert-Eq $mp.Count 0 "map problems: $($mp -join ' | ')"
+    Assert-Eq $CommandOwners.Count 0 'the real owner map stays empty until its seam lands'
+    Assert-Eq $BoundaryCommon.Count 0 'the real common map stays empty until its key is used'
+    # trusted and pinned helpers exist exactly once in the real script
+    foreach ($h in $BoundaryTrusted) { Assert-Eq (@($ast.FindAll({ param($n) $n -is $BtFn -and $n.Name -ceq $h }, $true))).Count 1 "trusted helper $h is defined once" }
+    # no real script function carries an entry-point or W seam name yet, and none is named like an R3 command
+    foreach ($e in $BoundaryEntries) { Assert-True (-not (@($ast.FindAll({ param($n) $n -is $BtFn -and $n.Name -ieq $e }, $true)).Count)) "$e does not exist yet" }
+    # seeded copies of the real script
+    $a2 = [Management.Automation.Language.Parser]::ParseInput($text.Replace('function Invoke-BootstrapRun', 'function Invoke-BootstrapRunX'), [ref]$tokens, [ref]$errs)
+    Assert-True (@(Get-BoundaryViolations $a2 $maps | Where-Object -FilterScript { $_ -like 'R1 *dispatcher*' }).Count -ge 1) 'a missing dispatcher fails closed'
+    Add-BSeedCount 'R1' $false
+    foreach ($sw in @('WindowsSnapshot', 'WindowsSettings', 'WindowsRollback', 'MachineWide')) {
+        $a3 = [Management.Automation.Language.Parser]::ParseInput($text.Replace('[switch]$ClaudeStatusLine,', "[switch]`$ClaudeStatusLine, [switch]`$$sw,"), [ref]$tokens, [ref]$errs)
+        Assert-True (@(Get-BoundaryViolations $a3 $maps | Where-Object -FilterScript { $_ -like 'R1 *declared but has no branch*' }).Count -ge 1) "a declared -$sw without a branch fails"
+        Add-BSeedCount 'R1' $false
+    }
+    # a branch must hold only entry-point calls, Say and return; each variant is injected right after the real anchor
+    Assert-True ($text.Contains('    # arguments')) 'the anchor "    # arguments" exists in Invoke-BootstrapRun'
+    foreach ($bv in @(
+            @('Get-Date; return 0', 'calls ''Get-Date'''),
+            @('$q = 1; return 0', 'has a statement other than'),
+            @('[IO.File]::Delete(''x''); return 0', 'has a statement other than'),
+            @('return [IO.File]::Delete(''x'')', 'has a statement other than'),
+            @('Say ([IO.File]::Exists(''x'')); return 0', 'contains a member access'))) {
+        $inj = $text.Replace('[switch]$ClaudeStatusLine,', '[switch]$ClaudeStatusLine, [switch]$WindowsSnapshot,').Replace('    # arguments', ('    if ($WindowsSnapshot) { ' + $bv[0] + ' }' + "`n" + '    # arguments'))
+        Assert-True ($inj.Contains('if ($WindowsSnapshot) {')) 'the branch was injected'
+        $a4 = [Management.Automation.Language.Parser]::ParseInput($inj, [ref]$tokens, [ref]$errs)
+        Assert-Eq $errs.Count 0 "the seeded real-script copy parses: $($bv[0])"
+        Assert-True (@(Get-BoundaryViolations $a4 $maps | Where-Object -FilterScript { $_ -like 'R1 *' -and $_ -like "*$($bv[1])*" }).Count -ge 1) "a bad branch fails: $($bv[0])"
+        Add-BSeedCount 'R1' $false
+    }
+    # negative: a branch with only Say and return is accepted
+    $okb = $text.Replace('[switch]$ClaudeStatusLine,', '[switch]$ClaudeStatusLine, [switch]$WindowsSnapshot,').Replace('    # arguments', '    if ($WindowsSnapshot) { Say ''x''; return 2 }' + "`n" + '    # arguments')
+    $a7 = [Management.Automation.Language.Parser]::ParseInput($okb, [ref]$tokens, [ref]$errs)
+    Assert-Eq (@(Get-BDispatcherInfo $a7).Problems).Count 0 'a Say-and-return branch is accepted'
+    Add-BSeedCount 'R1' $true
+    # an entry point that exists but is not in the scope list
+    $a5 = [Management.Automation.Language.Parser]::ParseInput($text + "`nfunction Invoke-WindowsSnapshot { param([string]`$Label) return 0 }`n", [ref]$tokens, [ref]$errs)
+    Assert-True (@(Get-BoundaryScopeProblems $a5 $maps).Count -ge 1) 'an entry point missing from $BoundaryScope is reported'
+    Add-BSeedCount 'R1' $false
+    # a using statement anywhere in the script
+    $a6 = [Management.Automation.Language.Parser]::ParseInput('using namespace System' + "`n" + $text, [ref]$tokens, [ref]$errs)
+    Assert-True (@(Get-BoundaryViolations $a6 $maps | Where-Object -FilterScript { $_ -like 'R4 *using*' }).Count -ge 1) 'a using statement fails'
+    Add-BSeedCount 'R4' $false
+}
+
+[Console]::WriteLine('BR seeds (rule: seeded / negative): ' + (($script:BSeeds.Keys | Sort-Object | ForEach-Object -Process { "$_ $($script:BSeeds[$_][0])/$($script:BSeeds[$_][1])" }) -join ', '))
 
 Test-Case 'Z2 suite guard: the real profile settings.json, statusline.sh and backup root are untouched' {
     Assert-Eq $env:USERPROFILE $RealUserProfile 'USERPROFILE restored'

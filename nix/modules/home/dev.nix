@@ -141,8 +141,13 @@ in
       # CLIs (@arizeai/phoenix-cli, @arizeai/phoenix-mcp) are not in nixpkgs —
       # install those via `mise run tools:observability:install`.
       repomix # package repository context for LLM prompts (AI)
-      python3Packages.lizard # per-function cyclomatic complexity analyzer (terryyin/lizard); binary: lizard
-      python3Packages.pytest # Python test runner
+      # One Python interpreter for every host: the bats suite needs python3 on PATH.
+      # withPackages keeps the lizard (per-function cyclomatic complexity,
+      # terryyin/lizard) and pytest CLIs on PATH from this single env.
+      (python3.withPackages (ps: [
+        ps.lizard
+        ps.pytest
+      ]))
       scc
       semgrep
       shellcheck

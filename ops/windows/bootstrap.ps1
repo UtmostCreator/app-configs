@@ -108,6 +108,76 @@ $SeamNames = @(
     'Get-EnvScopes', 'Get-GitBashHome', 'Invoke-Jq', 'Invoke-StatusLineRender', 'Get-TemplateStatusLine'
 )
 
+# ---------------------------------------------------------------- step W catalogue bounds (ADR-0020 "Catalogue contract"); pure, not seams, not in $SeamNames; W1 pins them
+function Get-WindowsSettingsTagKeys {
+    return @{
+        'startup' = @{
+            Registry = @(
+                @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run'; Names = @('OneDrive', 'MicrosoftEdgeAutoLaunch_*') }
+                @{ Key = 'Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData\MSTeams_8wekyb3d8bbwe\TeamsTfwStartupTask'; Names = @('State') }
+            )
+            Services = @()
+            Tasks = @()
+        }
+        'consumer' = @{ Registry = @(); Services = @(); Tasks = @() }
+        'support' = @{ Registry = @(); Services = @(); Tasks = @() }
+        'work-app' = @{ Registry = @(); Services = @(); Tasks = @() }
+        'report-only' = @{ Registry = @(); Services = @(); Tasks = @() }
+        'visual' = @{
+            Registry = @(
+                @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects'; Names = @('VisualFXSetting') }
+                @{ Key = 'Control Panel\Desktop\WindowMetrics'; Names = @('MinAnimate') }
+                @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Names = @('TaskbarAnimations') }
+                @{ Key = 'Control Panel\Desktop'; Names = @('UserPreferencesMask') }
+            )
+            Services = @()
+            Tasks = @()
+        }
+        'telemetry-user' = @{
+            Registry = @(
+                @{ Key = 'Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo'; Names = @('Enabled') }
+                @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Privacy'; Names = @('TailoredExperiencesWithDiagnosticDataEnabled') }
+                @{ Key = 'Software\Microsoft\Siuf\Rules'; Names = @('NumberOfSIUFInPeriod') }
+                @{ Key = 'Software\Microsoft\InputPersonalization'; Names = @('RestrictImplicitInkCollection', 'RestrictImplicitTextCollection') }
+                @{ Key = 'Software\Microsoft\InputPersonalization\TrainedDataStore'; Names = @('HarvestContacts') }
+                @{ Key = 'Software\Microsoft\Personalization\Settings'; Names = @('AcceptedPrivacyPolicy') }
+                @{ Key = 'Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy'; Names = @('HasAccepted') }
+                @{ Key = 'Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Names = @('SubscribedContent-338389Enabled', 'SystemPaneSuggestionsEnabled', 'SoftLandingEnabled', 'SubscribedContent-338393Enabled', 'SubscribedContent-353694Enabled', 'SubscribedContent-353696Enabled', 'SubscribedContent-310093Enabled') }
+                @{ Key = 'Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement'; Names = @('ScoobeSystemSettingEnabled') }
+                @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Names = @('Start_TrackProgs', 'Start_IrisRecommendations') }
+                @{ Key = 'Control Panel\International\User Profile'; Names = @('HttpAcceptLanguageOptOut') }
+            )
+            Services = @()
+            Tasks = @()
+        }
+        'telemetry-machine' = @{
+            Registry = @(
+                @{ Key = 'SOFTWARE\Policies\Microsoft\Windows\DataCollection'; Names = @('DoNotShowFeedbackNotifications') }
+                @{ Key = 'SOFTWARE\Policies\Microsoft\Windows\System'; Names = @('PublishUserActivities', 'UploadUserActivities') }
+                @{ Key = 'SOFTWARE\Policies\Microsoft\SQMClient\Windows'; Names = @('CEIPEnable') }
+            )
+            Services = @('DiagTrack')
+            Tasks = @('\Microsoft\Windows\Customer Experience Improvement Program\Consolidator', '\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip', '\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector', '\Microsoft\Windows\Feedback\Siuf\DmClient', '\Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload', '\Microsoft\Windows\Autochk\Proxy')
+        }
+        'telemetry-record' = @{
+            Registry = @(
+                @{ Key = 'SOFTWARE\Policies\Microsoft\Windows\DataCollection'; Names = @('AllowTelemetry', 'LimitDiagnosticLogCollection', 'LimitDumpCollection') }
+                @{ Key = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection'; Names = @('AllowTelemetry', 'MaxTelemetryAllowed') }
+                @{ Key = 'SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location'; Names = @('Value') }
+            )
+            Services = @('dmwappushservice')
+            Tasks = @()
+        }
+    }
+}
+
+function Get-WindowsSettingsProtectedAppx {
+    return @{
+        Names = @('Microsoft.ZuneMusic', 'Microsoft.DesktopAppInstaller', 'Microsoft.WindowsStore', 'Microsoft.StorePurchaseApp', 'Microsoft.SecHealthUI', 'Microsoft.WindowsTerminal', 'MicrosoftCorporationII.WindowsSubsystemForLinux')
+        Prefixes = @('Microsoft.VCLibs.', 'Microsoft.UI.Xaml.', 'Microsoft.NET.Native.', 'Microsoft.WindowsAppRuntime.')
+    }
+}
+
 # ---------------------------------------------------------------- seams
 
 function Test-IsAdmin {

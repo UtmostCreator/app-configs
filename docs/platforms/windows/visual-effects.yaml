@@ -1,4 +1,4 @@
-# Documentation of the ADR-0020 visual-effects catalogue entries; the executable source will be ops/windows/windows-settings.psd1 (not yet implemented); a parity test will check the id/recommended lines; keep this format: one `- id:` block per option, simple `key: value` lines, no anchors.
+# Documentation of the ADR-0020 visual-effects catalogue entries; the executable source is ops/windows/windows-settings.psd1; test V1 (tests/windows/bootstrap.tests.ps1) checks the id, recommended and UPM byte/mask lines; keep this format: one `- id:` block per option, simple `key: value` lines, no anchors.
 #
 # Scope: Windows 11 Performance Options > Visual Effects dialog (17 options, in dialog order) plus the preset.
 # Goal (owner 2026-11-16): "research what to select in here and create yaml file without ui impact or worsening ui ux on windows".

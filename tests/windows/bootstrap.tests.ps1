@@ -3359,6 +3359,9 @@ Test-Case 'Z1 across the whole suite, every advised wsl command that uses --exec
 # defects (inject one defect into a copy, assert it is caught; negative seeds assert a
 # legal form is not flagged). The checker only reads source text (the syntax tree); the
 # only session reads are the cmdlet metadata lookups used by R1 meta-tests and R9.
+# R5 SCRIPT-STATE: $BoundaryScriptReads lists the only $script: variables step W may read;
+# any write, element write, ++/-- or method call through a $script: or $global: root is
+# a violation (the mutable-state ban).
 $BoundaryScope = @()
 $CommandOwners = @{}
 $BoundaryCommon = @{}
@@ -3368,9 +3371,10 @@ $BoundaryTypeAllow = @('string', 'char', 'bool', 'boolean', 'byte', 'int', 'int3
     'text.utf8encoding', 'collections.generic.list')
 $BoundaryEntries = @('Invoke-WindowsSnapshot', 'Invoke-WindowsSettings', 'Invoke-WindowsRollback')
 $BoundaryEntrySwitch = @{ 'Invoke-WindowsSnapshot' = 'WindowsSnapshot'; 'Invoke-WindowsSettings' = 'WindowsSettings'; 'Invoke-WindowsRollback' = 'WindowsRollback' }
-$BoundaryEntryParams = @('Label', 'SetupProfile', 'DryRun', 'MachineWide')
+$BoundaryEntryParams = @('Label', 'SetupProfile', 'DryRun', 'MachineWide', 'RemoveApps', 'DisableTeamsStartup')
 $BoundaryDispatcher = 'Invoke-BootstrapRun'
-$BoundarySwitchNames = @('WindowsSnapshot', 'WindowsSettings', 'WindowsRollback', 'MachineWide')
+$BoundarySwitchNames = @('WindowsSnapshot', 'WindowsSettings', 'WindowsRollback', 'MachineWide', 'RemoveApps', 'DisableTeamsStartup')
+$BoundaryScriptReads = @('RepoRoot')
 $BoundaryTrusted = @('Say', 'Get-UtcStamp', 'Test-IsAdmin', 'Write-NewFile', 'Get-RestorePoints', 'New-RestorePoint', 'Invoke-Native', 'Resolve-Program')
 $BoundaryWriters = @('Set-UserRegistryValue', 'Remove-UserAppxPackage', 'Register-UserAppxPackage', 'Set-MachinePolicyValue', 'Set-ServiceStart', 'Set-TaskEnabled')
 $BoundaryOwnedMembers = @('GetValue', 'GetValueKind', 'GetValueNames', 'GetSubKeyNames')
@@ -3585,6 +3589,34 @@ function Get-BInnerCommand {
     $c = $p.PipelineElements[0]
     if ($c -isnot $BtCmd) { return $null }
     return $c
+}
+
+function Get-BRootVar {
+    # the variable at the root of an index, member or method chain, or $null
+    param($Expr)
+    $e = $Expr
+    while ($e) {
+        if ($e -is $BtVar) { return $e }
+        if ($e -is [Management.Automation.Language.IndexExpressionAst]) { $e = $e.Target; continue }
+        if ($e -is $BtMem) { $e = $e.Expression; continue }
+        if ($e -is [Management.Automation.Language.ConvertExpressionAst]) { $e = $e.Child; continue }
+        if ($e -is [Management.Automation.Language.SubExpressionAst] -or $e -is $BtArr) {
+            $st = @($e.SubExpression.Statements)
+            if ($st.Count -eq 1 -and $st[0] -is $BtPipe -and $st[0].PipelineElements.Count -eq 1 -and $st[0].PipelineElements[0] -is [Management.Automation.Language.CommandExpressionAst]) { $e = $st[0].PipelineElements[0].Expression; continue }
+        }
+        if ($e -is $BtParen) {
+            $pl = $e.Pipeline
+            if ($pl -is $BtPipe -and $pl.PipelineElements.Count -eq 1 -and $pl.PipelineElements[0] -is [Management.Automation.Language.CommandExpressionAst]) { $e = $pl.PipelineElements[0].Expression; continue }
+        }
+        return $null
+    }
+    return $null
+}
+
+function Test-BScriptRooted {
+    param($Expr)
+    $rv = Get-BRootVar $Expr
+    return ($null -ne $rv -and ($rv.VariablePath.IsScript -or $rv.VariablePath.IsGlobal))
 }
 
 function Test-BTypeAllowed {
@@ -3964,6 +3996,7 @@ function Get-BoundaryViolations {
                 [void]$v.Add("R5 line ${line}: `$$($vp.UserPath)")
             } elseif ($vp.IsScript) {
                 if ($isT) { [void]$v.Add("R5 line ${line}: assignment to `$$($vp.UserPath)") }
+                elseif (-not ($BoundaryScriptReads -ccontains ($vp.UserPath -replace '^(?i)script:', ''))) { [void]$v.Add("R5 line ${line}: `$$($vp.UserPath) is not on `$BoundaryScriptReads") }
             } else {
                 $vn = ($vp.UserPath -replace '^(?i)(local|private):', '')
                 if ($isT) {
@@ -3987,6 +4020,7 @@ function Get-BoundaryViolations {
         # R3 (e), (f)
         if ($n -is [Management.Automation.Language.AssignmentStatementAst]) {
             foreach ($lf in @(Get-BAssignLeaves $n.Left)) {
+                if (($lf -is [Management.Automation.Language.IndexExpressionAst] -or $lf -is $BtMem) -and (Test-BScriptRooted $lf)) { [void]$v.Add("R5 line ${line}: SCRIPT-STATE: assignment through a `$script: or `$global: root: $($lf.Extent.Text)") }
                 if ($lf -is $BtMem) { [void]$v.Add("R3 line ${line}: assignment to a member") }
                 elseif ($lf -isnot $BtVar -and $lf -isnot [Management.Automation.Language.IndexExpressionAst]) { [void]$v.Add("R5 line ${line}: unsupported assignment target shape: $($lf.Extent.Text)") }
             }
@@ -3994,6 +4028,7 @@ function Get-BoundaryViolations {
         if ($n -is [Management.Automation.Language.UnaryExpressionAst]) {
             if (@('PostfixPlusPlus', 'PostfixMinusMinus', 'PlusPlus', 'MinusMinus') -contains $n.TokenKind.ToString()) {
                 foreach ($lf in @(Get-BAssignLeaves $n.Child)) {
+                    if (($lf -is [Management.Automation.Language.IndexExpressionAst] -or $lf -is $BtMem) -and (Test-BScriptRooted $lf)) { [void]$v.Add("R5 line ${line}: SCRIPT-STATE: ++ or -- through a `$script: or `$global: root: $($lf.Extent.Text)") }
                     if ($lf -is $BtMem) { [void]$v.Add("R3 line ${line}: ++ or -- on a member") }
                     elseif ($lf -isnot $BtVar -and $lf -isnot [Management.Automation.Language.IndexExpressionAst]) { [void]$v.Add("R5 line ${line}: unsupported ++ or -- operand shape: $($lf.Extent.Text)") }
                 }
@@ -4028,6 +4063,8 @@ function Get-BoundaryViolations {
                 if ($n.Expression -isnot $BtTypeExp -or -not (Test-BTypeAllowed $n.Expression.TypeName $allow)) { [void]$v.Add("R3 line ${line}: static member access on a type that is not an R4 type literal") }
             }
         }
+
+        if ($n -is $BtInv -and -not $n.Static -and (Test-BScriptRooted $n.Expression)) { [void]$v.Add("R5 line ${line}: SCRIPT-STATE: method call on a `$script: or `$global: root: .$($n.Member)") }
 
         if ($n -isnot $BtCmd) { continue }
 
@@ -4416,7 +4453,7 @@ function Invoke-WindowsSnapshot {
 }
 
 function Invoke-WindowsSettings {
-    param([string]$Label, [string]$SetupProfile, [switch]$DryRun, [switch]$MachineWide)
+    param([string]$Label, [string]$SetupProfile, [switch]$DryRun, [switch]$MachineWide, [switch]$RemoveApps, [switch]$DisableTeamsStartup)
     if ($SetupProfile -cne 'personal' -and $SetupProfile -cne 'work') { return 2 }
     if ($MachineWide -and -not (Test-IsAdmin)) {
         Say 'step W: run elevated: .\ops\windows\bootstrap.ps1 -WindowsSettings x -SetupProfile personal -MachineWide'
@@ -4479,11 +4516,13 @@ function Other-Fixture {
 }
 
 function Invoke-BootstrapRun {
-    param([string]$WindowsSnapshot, [string]$WindowsSettings, [string]$WindowsRollback, [string]$SetupProfile, [switch]$DryRun, [switch]$MachineWide)
+    param([string]$WindowsSnapshot, [string]$WindowsSettings, [string]$WindowsRollback, [string]$SetupProfile, [switch]$DryRun, [switch]$MachineWide, [switch]$RemoveApps, [switch]$DisableTeamsStartup)
     if ($WindowsSnapshot) { return Invoke-WindowsSnapshot -Label $WindowsSnapshot -DryRun:$DryRun }
-    if ($WindowsSettings) { return Invoke-WindowsSettings -Label $WindowsSettings -SetupProfile $SetupProfile -DryRun:$DryRun -MachineWide:$MachineWide }
+    if ($WindowsSettings) { return Invoke-WindowsSettings -Label $WindowsSettings -SetupProfile $SetupProfile -DryRun:$DryRun -MachineWide:$MachineWide -RemoveApps:$RemoveApps -DisableTeamsStartup:$DisableTeamsStartup }
     if ($WindowsRollback) { return Invoke-WindowsRollback -Label $WindowsRollback -MachineWide:$MachineWide }
     if ($MachineWide) { Say 'step W: -MachineWide needs -WindowsSettings or -WindowsRollback'; return 2 }
+    if ($RemoveApps) { Say 'step W: -RemoveApps needs -WindowsSettings'; return 2 }
+    if ($DisableTeamsStartup) { Say 'step W: -DisableTeamsStartup needs -WindowsSettings -SetupProfile work'; return 2 }
     return 0
 }
 '@
@@ -4609,6 +4648,14 @@ function Assert-BInject {
     Assert-BCaught $Rule (Edit-BFirst $BoundaryFixture '# SEED-ANCHOR' $Code) $Code
 }
 
+function Assert-BInjectLike {
+    param([string]$Rule, [string]$Like, [string]$Code)
+    $r = Get-BText (Edit-BFirst $BoundaryFixture '# SEED-ANCHOR' $Code)
+    $hits = @($r.V | Where-Object -FilterScript { $_ -like "$Rule *$Like*" })
+    Assert-True ($hits.Count -ge 1) "$Rule catches ($Like): $Code (violations: $($r.V -join ' | '))"
+    Add-BSeedCount $Rule $false
+}
+
 function Assert-BEdit {
     param([string]$Rule, [string]$Find, [string]$Rep)
     Assert-BCaught $Rule (Edit-BFirst $BoundaryFixture $Find $Rep) "$Find -> $Rep"
@@ -4648,6 +4695,9 @@ Test-Case 'BR0 fixture: the clean fixture has no violations and no map problems;
 
 Test-Case 'BR1 closed command map: owners, precedence, entry branches, snapshot reachability, pins, meta-tests (seeded)' {
     # a seam called by a function that is not an owner, even inside scope (precedence over "scope function")
+    Assert-BEdit 'R1' '    if ($RemoveApps) { Say ''step W: -RemoveApps needs -WindowsSettings''; return 2 }' ''
+    Assert-BEdit 'R1' '    if ($DisableTeamsStartup) { Say ''step W: -DisableTeamsStartup needs -WindowsSettings -SetupProfile work''; return 2 }' ''
+    Assert-BEdit 'R1' 'if ($RemoveApps) { Say ''step W: -RemoveApps needs -WindowsSettings''; return 2 }' 'if ($RemoveApps) { return Invoke-WindowsSettings -Label ''x'' -SetupProfile ''work'' }'
     Assert-BInject 'R1' 'Remove-UserAppxPackage -Package $Probe'
     Assert-BInject 'R1' 'Get-UserRegistryValue -Key $Probe -Name $Probe'
     Assert-BInject 'R1' 'Get-Item -LiteralPath $Probe'
@@ -4929,9 +4979,23 @@ Test-Case 'BR5 session state: locals only, no automatic or preference locals, no
     Assert-BEdit 'R5' '$committed = Test-WindowsSettingsCommitted -Path $Label' '$committed = Test-WindowsSettingsCommitted -Path $Other'
     # entry-point parameters mirror the switch names
     Assert-BEdit 'R5' 'param([string]$Label, [switch]$DryRun)' 'param([string]$Label, [switch]$DryRun, [string]$Extra)'
+    Assert-BInjectLike 'R5' 'SCRIPT-STATE' '$script:RepoRoot[''x''] = 1'
+    Assert-BInjectLike 'R5' 'SCRIPT-STATE' '$script:RepoRoot[''x''] += 1'
+    Assert-BInjectLike 'R5' 'SCRIPT-STATE' '$script:RepoRoot[''x'']++'
+    Assert-BInjectLike 'R5' 'SCRIPT-STATE' '$null = $script:RepoRoot.Replace(''a'', ''b'')'
+    Assert-BInjectLike 'R5' 'SCRIPT-STATE' '$null = $script:RepoRoot.Clear()'
+    Assert-BInjectLike 'R5' 'SCRIPT-STATE' '$null = $script:RepoRoot[0].Insert(0, ''x'')'
+    Assert-BInjectLike 'R5' 'SCRIPT-STATE' '$global:X[0] = 1'
+    Assert-BInjectLike 'R5' 'BoundaryScriptReads' '$z = $script:K'
+    Assert-BInjectLike 'R5' 'BoundaryScriptReads' '$null = $script:L.Add(1)'
+    Assert-BInjectLike 'R5' 'SCRIPT-STATE' '$null = $( $script:RepoRoot ).Clear()'
+    Assert-BInjectLike 'R5' 'SCRIPT-STATE' '$null = @($script:RepoRoot)[0].Clear()'
+    Assert-BEdit 'R5' '[switch]$RemoveApps, [switch]$DisableTeamsStartup)' '[switch]$RemoveAppx, [switch]$DisableTeamsStartup)'
     # negative seeds
     Assert-BClean 'R5' ('$h = @{}' + "`n" + '$h[''k''] = 1')
     Assert-BClean 'R5' ('$z = $script:RepoRoot')
+    Assert-BClean 'R5' '$z = $script:RepoRoot.Length'
+    Assert-BClean 'R5' '$z = [string]::Concat(''a'', ''b'')'
     Assert-BClean 'R5' ('$z = $env:SystemRoot')
     Assert-BClean 'R5' ('$z = $env:LOCALAPPDATA')
     Assert-BClean 'R5' '$z = @(1, 2) | ForEach-Object -Process { $_ }'
@@ -5198,7 +5262,7 @@ Test-Case 'BR-real the real script: dispatcher anchored, switches have branches,
     $a2 = [Management.Automation.Language.Parser]::ParseInput($text.Replace('function Invoke-BootstrapRun', 'function Invoke-BootstrapRunX'), [ref]$tokens, [ref]$errs)
     Assert-True (@(Get-BoundaryViolations $a2 $maps | Where-Object -FilterScript { $_ -like 'R1 *dispatcher*' }).Count -ge 1) 'a missing dispatcher fails closed'
     Add-BSeedCount 'R1' $false
-    foreach ($sw in @('WindowsSnapshot', 'WindowsSettings', 'WindowsRollback', 'MachineWide')) {
+    foreach ($sw in @('WindowsSnapshot', 'WindowsSettings', 'WindowsRollback', 'MachineWide', 'RemoveApps', 'DisableTeamsStartup')) {
         $a3 = [Management.Automation.Language.Parser]::ParseInput($text.Replace('[switch]$ClaudeStatusLine,', "[switch]`$ClaudeStatusLine, [switch]`$$sw,"), [ref]$tokens, [ref]$errs)
         Assert-True (@(Get-BoundaryViolations $a3 $maps | Where-Object -FilterScript { $_ -like 'R1 *declared but has no branch*' }).Count -ge 1) "a declared -$sw without a branch fails"
         Add-BSeedCount 'R1' $false
@@ -5233,7 +5297,1456 @@ Test-Case 'BR-real the real script: dispatcher anchored, switches have branches,
     Add-BSeedCount 'R4' $false
 }
 
+function Test-BScriptReadOperand {
+    # a path operand: $PSScriptRoot, a single-quoted literal, or a nested allowed Split-Path/Join-Path in parentheses
+    param($Op)
+    if ($Op -is $BtVar) { return ($Op.VariablePath.UserPath -ieq 'PSScriptRoot') }
+    if ($Op -is $BtStr) { return ($Op.StringConstantType.ToString() -ceq 'SingleQuoted') }
+    if ($Op -is $BtParen) { return (Test-BScriptReadValue $Op.Pipeline -CommandOnly) }
+    return $false
+}
+
+function Test-BScriptReadValue {
+    # a string or number literal, or Split-Path/Join-Path with no array or comma argument and no -Resolve (only -Parent -Leaf -Path -ChildPath),
+    # every path operand being $PSScriptRoot, a single-quoted literal or a nested allowed form (the existing RepoRoot pattern)
+    param($Right, [switch]$CommandOnly)
+    $pe = $Right
+    if ($Right -is $BtPipe) {
+        if ($Right.PipelineElements.Count -ne 1) { return $false }
+        $pe = $Right.PipelineElements[0]
+    }
+    if ($pe -is [Management.Automation.Language.CommandExpressionAst]) {
+        if ($CommandOnly) { return $false }
+        $x = $pe.Expression
+        if ($x -is $BtStr) { return ($x.StringConstantType.ToString() -ne 'BareWord') }
+        return ($x -is $BtConst -and $x.Value -is [ValueType])
+    }
+    if ($pe -is $BtCmd) {
+        $cn = $pe.GetCommandName()
+        if (-not ($cn -ceq 'Split-Path' -or $cn -ceq 'Join-Path')) { return $false }
+        if (@($pe.Redirections).Count -ne 0) { return $false }
+        $els = @($pe.CommandElements)
+        $nOps = 0
+        for ($i = 1; $i -lt $els.Count; $i++) {
+            $el = $els[$i]
+            if ($el -is $BtParam) {
+                if (@('Parent', 'Leaf', 'Path', 'ChildPath') -cnotcontains $el.ParameterName) { return $false }
+                if ($el.Argument) {
+                    if (-not (Test-BScriptReadOperand $el.Argument)) { return $false }
+                    $nOps++
+                }
+            } else {
+                if (-not (Test-BScriptReadOperand $el)) { return $false }
+                $nOps++
+            }
+        }
+        return ($nOps -ge 1)
+    }
+    return $false
+}
+
+function Get-BLeftNames {
+    # every variable name on an assignment left side: plain, cast or inside a comma list
+    param($Left)
+    if ($Left -is $BtVar) { return @($Left.VariablePath.UserPath -replace '^(?i)script:', '') }
+    if ($Left -is [Management.Automation.Language.ConvertExpressionAst]) { return @(Get-BLeftNames $Left.Child) }
+    if ($Left -is $BtArrLit) { return @($Left.Elements | ForEach-Object -Process { Get-BLeftNames $_ }) }
+    return @()
+}
+
+function Get-BScriptReadAssigns {
+    param($Ast, [string]$Name)
+    return @($Ast.FindAll({ param($n) $n -is [Management.Automation.Language.AssignmentStatementAst] -and (@(Get-BLeftNames $n.Left) -ccontains $Name) }, $true))
+}
+
+function Test-BScriptReadAssign {
+    # plain `$Name = <string or number value>` at script level; any cast, comma list or compound operator fails
+    param($Asg)
+    return ($null -eq (Get-BNearestFn $Asg) -and $Asg.Left -is $BtVar -and $Asg.Operator.ToString() -ceq 'Equals' -and (Test-BScriptReadValue $Asg.Right))
+}
+
+Test-Case 'BR5 invariant: every $BoundaryScriptReads name is assigned only a string or number value at script level in the real script' {
+    $tk = $null; $er = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile($ScriptPath, [ref]$tk, [ref]$er)
+    Assert-Eq $er.Count 0 'parse errors'
+    foreach ($name in $BoundaryScriptReads) {
+        $asg = Get-BScriptReadAssigns $ast $name
+        Assert-True ($asg.Count -ge 1) "$name is assigned in the real script"
+        foreach ($a in $asg) {
+            Assert-True (Test-BScriptReadAssign $a) "$name is assigned only a plain string or number value at script level (line $($a.Extent.StartLineNumber)): $($a.Extent.Text)"
+        }
+    }
+    # seeds: the value test rejects mutable, computed or array values and accepts the legal forms
+    $badVals = @('$x = @{}', '$x = @(1, 2)', '$x = New-Object System.Collections.ArrayList', '$x = Get-Date', '$x = [System.Collections.ArrayList]::new()', '$x = "a $y"', '$x = $y',
+        '$x = Join-Path -Path ''a'',''b'' -ChildPath ''c''', '$x = Split-Path -Path ''a\b'',''c\d'' -Parent', '$x = Split-Path -Parent $PSScriptRoot -Resolve',
+        '$x = Split-Path -Parent (Get-Date)', '$x = Split-Path -Parent $y', '$x = Split-Path -Parent "$PSScriptRoot"', '$x = Split-Path -Parent ''a'', ''b''',
+        '$x = Join-Path (Split-Path -Parent $PSScriptRoot) (Get-Date)', '$x = Split-Path -Parent -LiteralPath ''a''', '$x = Split-Path -Parent $PSScriptRoot | Out-String')
+    foreach ($bad in $badVals) {
+        $a2 = [Management.Automation.Language.Parser]::ParseInput($bad, [ref]$tk, [ref]$er)
+        $as2 = @($a2.FindAll({ param($n) $n -is [Management.Automation.Language.AssignmentStatementAst] }, $true))[0]
+        Assert-True (-not (Test-BScriptReadValue $as2.Right)) "the value test rejects: $bad"
+    }
+    $goodVals = @('$x = ''a''', '$x = 5', '$x = Split-Path -Parent $PSScriptRoot', '$x = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)',
+        '$x = Join-Path $PSScriptRoot ''sub''', '$x = Join-Path -Path (Split-Path -Parent $PSScriptRoot) -ChildPath ''sub''')
+    foreach ($good in $goodVals) {
+        $a2 = [Management.Automation.Language.Parser]::ParseInput($good, [ref]$tk, [ref]$er)
+        $as2 = @($a2.FindAll({ param($n) $n -is [Management.Automation.Language.AssignmentStatementAst] }, $true))[0]
+        Assert-True (Test-BScriptReadValue $as2.Right) "the value test accepts: $good"
+    }
+    # seeds: the assignment finder sees cast and comma-list left sides, and the assignment test fails them
+    foreach ($bad in @('$a, $RepoRoot = 1, @{}', '[string[]]$RepoRoot = ''a''', '[object]$RepoRoot = @{}', '$RepoRoot += ''a''', 'function f { $RepoRoot = ''a'' }', '$script:RepoRoot = Get-Date')) {
+        $a3 = [Management.Automation.Language.Parser]::ParseInput($bad, [ref]$tk, [ref]$er)
+        $found = @(Get-BScriptReadAssigns $a3 'RepoRoot')
+        Assert-True ($found.Count -ge 1) "the finder sees: $bad"
+        Assert-True (@($found | Where-Object -FilterScript { -not (Test-BScriptReadAssign $_) }).Count -ge 1) "the assignment test rejects: $bad"
+    }
+    $a3 = [Management.Automation.Language.Parser]::ParseInput('$RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)', [ref]$tk, [ref]$er)
+    Assert-True (Test-BScriptReadAssign @(Get-BScriptReadAssigns $a3 'RepoRoot')[0]) 'the assignment test accepts the RepoRoot pattern'
+}
+
 [Console]::WriteLine('BR seeds (rule: seeded / negative): ' + (($script:BSeeds.Keys | Sort-Object | ForEach-Object -Process { "$_ $($script:BSeeds[$_][0])/$($script:BSeeds[$_][1])" }) -join ', '))
+
+# ---------------------------------------------------------------- ADR-0020 catalogue W1, W1g, V1, V2 (T-0055 T3)
+# W1 checks ops\windows\windows-settings.psd1 and the two pure functions in bootstrap.ps1 against the ADR-0020
+# "Catalogue contract" and ADR-0035 "Key expansion". The oracle constants below are copied from those ADR tables.
+# Paths come from $OrigRepoRoot because Test-Case repoints $script:RepoRoot to a temp directory.
+# T3 loads the catalogue with Import-PowerShellDataFile; T4 switches this to Read-WindowsSettingsCatalogue.
+# Problem strings are "<code>: <Id or '-'>: <message>". Every seed works on a copy and must produce exactly its code.
+$WCatPath = Join-Path $OrigRepoRoot 'ops\windows\windows-settings.psd1'
+$WYamlPath = Join-Path $OrigRepoRoot 'docs\platforms\windows\visual-effects.yaml'
+
+# Oracle constants, copied mechanically from ADR-0020 ("Entries", "N12 allowlist", (b), (d), (e), "Notices") and ADR-0035 "Key expansion".
+# When an ADR table changes, change these in the same commit; W1 pins the catalogue and the two bootstrap.ps1 functions to them.
+$W1Ids = @(
+    'startup-edge', 'startup-onedrive', 'startup-teams', 'appx-microsoft-bingnews',
+    'appx-microsoft-bingweather', 'appx-microsoft-bingsearch', 'appx-microsoft-microsoftsolitairecollection', 'appx-clipchamp-clipchamp',
+    'appx-microsoft-powerautomatedesktop', 'appx-microsoft-windowsfeedbackhub', 'appx-microsoft-windows-devhome', 'appx-microsoft-todos',
+    'appx-microsoft-yourphone', 'appx-microsoftwindows-crossdevice', 'appx-microsoftcorporationii-microsoftfamily', 'appx-microsoft-gamingapp',
+    'appx-microsoft-xboxgamingoverlay', 'appx-microsoft-xboxspeechtotextoverlay', 'appx-microsoft-xbox-tcui', 'appx-microsoft-xboxidentityprovider',
+    'appx-microsoft-gethelp', 'appx-microsoftcorporationii-quickassist', 'appx-msteams', 'appx-microsoft-outlookforwindows',
+    'appx-microsoft-microsoftofficehub', 'notice-work-folders', 'notice-onedrive-task', 'preset',
+    'animate-windows', 'taskbar-animations', 'fade-slide-menus', 'combo-slide',
+    'fade-slide-tooltips', 'fade-menu-items', 'animate-controls', 'tel-advertising-id',
+    'tel-tailored-experiences', 'tel-feedback-frequency', 'tel-implicit-ink', 'tel-implicit-text',
+    'tel-harvest-contacts', 'tel-personalization-policy', 'tel-online-speech', 'tel-tips-338389',
+    'tel-system-pane-suggestions', 'tel-soft-landing', 'tel-suggested-338393', 'tel-suggested-353694',
+    'tel-suggested-353696', 'tel-suggested-310093', 'tel-scoobe', 'tel-track-progs',
+    'tel-iris-recommendations', 'tel-accept-language-optout', 'tel-m-feedback-notifications', 'tel-m-publish-activities',
+    'tel-m-upload-activities', 'tel-m-ceip', 'tel-m-diagtrack', 'tel-m-task-consolidator',
+    'tel-m-task-usbceip', 'tel-m-task-diskdiag', 'tel-m-task-dmclient', 'tel-m-task-dmclient-download',
+    'tel-m-task-autochk-proxy', 'rec-allowtelemetry-policy', 'rec-allowtelemetry-current', 'rec-maxtelemetry-current',
+    'rec-limit-diaglog', 'rec-limit-dump', 'rec-dmwappush', 'rec-location'
+)
+$W1TagKeys = @{
+    'startup' = @{
+        Registry = @(
+            @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run'; Names = @('OneDrive', 'MicrosoftEdgeAutoLaunch_*') }
+            @{ Key = 'Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData\MSTeams_8wekyb3d8bbwe\TeamsTfwStartupTask'; Names = @('State') }
+        )
+        Services = @()
+        Tasks = @()
+    }
+    'consumer' = @{ Registry = @(); Services = @(); Tasks = @() }
+    'support' = @{ Registry = @(); Services = @(); Tasks = @() }
+    'work-app' = @{ Registry = @(); Services = @(); Tasks = @() }
+    'report-only' = @{ Registry = @(); Services = @(); Tasks = @() }
+    'visual' = @{
+        Registry = @(
+            @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects'; Names = @('VisualFXSetting') }
+            @{ Key = 'Control Panel\Desktop\WindowMetrics'; Names = @('MinAnimate') }
+            @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Names = @('TaskbarAnimations') }
+            @{ Key = 'Control Panel\Desktop'; Names = @('UserPreferencesMask') }
+        )
+        Services = @()
+        Tasks = @()
+    }
+    'telemetry-user' = @{
+        Registry = @(
+            @{ Key = 'Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo'; Names = @('Enabled') }
+            @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Privacy'; Names = @('TailoredExperiencesWithDiagnosticDataEnabled') }
+            @{ Key = 'Software\Microsoft\Siuf\Rules'; Names = @('NumberOfSIUFInPeriod') }
+            @{ Key = 'Software\Microsoft\InputPersonalization'; Names = @('RestrictImplicitInkCollection', 'RestrictImplicitTextCollection') }
+            @{ Key = 'Software\Microsoft\InputPersonalization\TrainedDataStore'; Names = @('HarvestContacts') }
+            @{ Key = 'Software\Microsoft\Personalization\Settings'; Names = @('AcceptedPrivacyPolicy') }
+            @{ Key = 'Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy'; Names = @('HasAccepted') }
+            @{ Key = 'Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Names = @('SubscribedContent-338389Enabled', 'SystemPaneSuggestionsEnabled', 'SoftLandingEnabled', 'SubscribedContent-338393Enabled', 'SubscribedContent-353694Enabled', 'SubscribedContent-353696Enabled', 'SubscribedContent-310093Enabled') }
+            @{ Key = 'Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement'; Names = @('ScoobeSystemSettingEnabled') }
+            @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Names = @('Start_TrackProgs', 'Start_IrisRecommendations') }
+            @{ Key = 'Control Panel\International\User Profile'; Names = @('HttpAcceptLanguageOptOut') }
+        )
+        Services = @()
+        Tasks = @()
+    }
+    'telemetry-machine' = @{
+        Registry = @(
+            @{ Key = 'SOFTWARE\Policies\Microsoft\Windows\DataCollection'; Names = @('DoNotShowFeedbackNotifications') }
+            @{ Key = 'SOFTWARE\Policies\Microsoft\Windows\System'; Names = @('PublishUserActivities', 'UploadUserActivities') }
+            @{ Key = 'SOFTWARE\Policies\Microsoft\SQMClient\Windows'; Names = @('CEIPEnable') }
+        )
+        Services = @('DiagTrack')
+        Tasks = @('\Microsoft\Windows\Customer Experience Improvement Program\Consolidator', '\Microsoft\Windows\Customer Experience Improvement Program\UsbCeip', '\Microsoft\Windows\DiskDiagnostic\Microsoft-Windows-DiskDiagnosticDataCollector', '\Microsoft\Windows\Feedback\Siuf\DmClient', '\Microsoft\Windows\Feedback\Siuf\DmClientOnScenarioDownload', '\Microsoft\Windows\Autochk\Proxy')
+    }
+    'telemetry-record' = @{
+        Registry = @(
+            @{ Key = 'SOFTWARE\Policies\Microsoft\Windows\DataCollection'; Names = @('AllowTelemetry', 'LimitDiagnosticLogCollection', 'LimitDumpCollection') }
+            @{ Key = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection'; Names = @('AllowTelemetry', 'MaxTelemetryAllowed') }
+            @{ Key = 'SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location'; Names = @('Value') }
+        )
+        Services = @('dmwappushservice')
+        Tasks = @()
+    }
+}
+$W1Protected = @{ Names = @('Microsoft.ZuneMusic', 'Microsoft.DesktopAppInstaller', 'Microsoft.WindowsStore', 'Microsoft.StorePurchaseApp', 'Microsoft.SecHealthUI', 'Microsoft.WindowsTerminal', 'MicrosoftCorporationII.WindowsSubsystemForLinux'); Prefixes = @('Microsoft.VCLibs.', 'Microsoft.UI.Xaml.', 'Microsoft.NET.Native.', 'Microsoft.WindowsAppRuntime.') }
+$W1Consumer = @('Microsoft.BingNews', 'Microsoft.BingWeather', 'Microsoft.BingSearch', 'Microsoft.MicrosoftSolitaireCollection', 'Clipchamp.Clipchamp', 'Microsoft.PowerAutomateDesktop', 'Microsoft.WindowsFeedbackHub', 'Microsoft.Windows.DevHome', 'Microsoft.Todos', 'Microsoft.YourPhone', 'MicrosoftWindows.CrossDevice', 'MicrosoftCorporationII.MicrosoftFamily', 'Microsoft.GamingApp', 'Microsoft.XboxGamingOverlay', 'Microsoft.XboxSpeechToTextOverlay', 'Microsoft.Xbox.TCUI', 'Microsoft.XboxIdentityProvider')
+$W1Support = @('Microsoft.GetHelp', 'MicrosoftCorporationII.QuickAssist')
+$W1WorkApps = @('MSTeams', 'Microsoft.OutlookForWindows', 'Microsoft.MicrosoftOfficeHub')
+$W1Telemetry = @(
+    @{ Ref = 'U1'; Id = 'tel-advertising-id'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo'; ValueName = 'Enabled'; Target = 0; Source = 'chosen'; Host = 'HC'; Exec = $false }
+    @{ Ref = 'U2'; Id = 'tel-tailored-experiences'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\Privacy'; ValueName = 'TailoredExperiencesWithDiagnosticDataEnabled'; Target = 0; Source = 'chosen'; Host = 'HC'; Exec = $false }
+    @{ Ref = 'U3'; Id = 'tel-feedback-frequency'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Siuf\Rules'; ValueName = 'NumberOfSIUFInPeriod'; Target = 0; Source = 'public'; Host = 'UC'; Exec = $false }
+    @{ Ref = 'U4'; Id = 'tel-implicit-ink'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\InputPersonalization'; ValueName = 'RestrictImplicitInkCollection'; Target = 1; Source = 'public'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'U4'; Id = 'tel-implicit-text'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\InputPersonalization'; ValueName = 'RestrictImplicitTextCollection'; Target = 1; Source = 'public'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'U4'; Id = 'tel-harvest-contacts'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\InputPersonalization\TrainedDataStore'; ValueName = 'HarvestContacts'; Target = 0; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'U4'; Id = 'tel-personalization-policy'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Personalization\Settings'; ValueName = 'AcceptedPrivacyPolicy'; Target = 0; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'U5'; Id = 'tel-online-speech'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Speech_OneCore\Settings\OnlineSpeechPrivacy'; ValueName = 'HasAccepted'; Target = 0; Source = 'public'; Host = 'UC'; Exec = $false }
+    @{ Ref = 'U6'; Id = 'tel-tips-338389'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; ValueName = 'SubscribedContent-338389Enabled'; Target = 0; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'U6'; Id = 'tel-system-pane-suggestions'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; ValueName = 'SystemPaneSuggestionsEnabled'; Target = 0; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'U6'; Id = 'tel-soft-landing'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; ValueName = 'SoftLandingEnabled'; Target = 0; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'U7'; Id = 'tel-suggested-338393'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; ValueName = 'SubscribedContent-338393Enabled'; Target = 0; Source = 'none'; Host = 'HK'; Exec = $false }
+    @{ Ref = 'U7'; Id = 'tel-suggested-353694'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; ValueName = 'SubscribedContent-353694Enabled'; Target = 0; Source = 'none'; Host = 'HK'; Exec = $false }
+    @{ Ref = 'U7'; Id = 'tel-suggested-353696'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; ValueName = 'SubscribedContent-353696Enabled'; Target = 0; Source = 'none'; Host = 'HK'; Exec = $false }
+    @{ Ref = 'U7'; Id = 'tel-suggested-310093'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; ValueName = 'SubscribedContent-310093Enabled'; Target = 0; Source = 'none'; Host = 'HK'; Exec = $false }
+    @{ Ref = 'U8'; Id = 'tel-scoobe'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement'; ValueName = 'ScoobeSystemSettingEnabled'; Target = 0; Source = 'adr'; Host = 'UC'; Exec = $false }
+    @{ Ref = 'U9'; Id = 'tel-track-progs'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; ValueName = 'Start_TrackProgs'; Target = 0; Source = 'public'; Host = 'HK'; Exec = $false }
+    @{ Ref = 'U9'; Id = 'tel-iris-recommendations'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; ValueName = 'Start_IrisRecommendations'; Target = 0; Source = 'adr'; Host = 'HK'; Exec = $false }
+    @{ Ref = 'U10'; Id = 'tel-accept-language-optout'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Control Panel\International\User Profile'; ValueName = 'HttpAcceptLanguageOptOut'; Target = 1; Source = 'public'; Host = 'HK'; Exec = $false }
+    @{ Ref = 'E2'; Id = 'tel-m-feedback-notifications'; Tag = 'telemetry-machine'; Scope = 'machine'; Kind = 'DWord'; Key = 'SOFTWARE\Policies\Microsoft\Windows\DataCollection'; ValueName = 'DoNotShowFeedbackNotifications'; Target = 1; Source = 'public'; Host = 'HK'; Exec = $false }
+    @{ Ref = 'E3'; Id = 'tel-m-publish-activities'; Tag = 'telemetry-machine'; Scope = 'machine'; Kind = 'DWord'; Key = 'SOFTWARE\Policies\Microsoft\Windows\System'; ValueName = 'PublishUserActivities'; Target = 0; Source = 'public'; Host = 'HK'; Exec = $false }
+    @{ Ref = 'E3'; Id = 'tel-m-upload-activities'; Tag = 'telemetry-machine'; Scope = 'machine'; Kind = 'DWord'; Key = 'SOFTWARE\Policies\Microsoft\Windows\System'; ValueName = 'UploadUserActivities'; Target = 0; Source = 'public'; Host = 'HK'; Exec = $false }
+    @{ Ref = 'E4'; Id = 'tel-m-ceip'; Tag = 'telemetry-machine'; Scope = 'machine'; Kind = 'DWord'; Key = 'SOFTWARE\Policies\Microsoft\SQMClient\Windows'; ValueName = 'CEIPEnable'; Target = 0; Source = 'adr'; Host = 'UC'; Exec = $false }
+    @{ Ref = 'S1'; Id = 'tel-m-diagtrack'; Tag = 'telemetry-machine'; Scope = 'machine'; Kind = 'Service'; Name = 'DiagTrack'; Target = 'Disabled'; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'T1'; Id = 'tel-m-task-consolidator'; Tag = 'telemetry-machine'; Scope = 'machine'; Kind = 'Task'; TaskPath = '\Microsoft\Windows\Customer Experience Improvement Program\'; TaskName = 'Consolidator'; Target = 'Disabled'; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'T1'; Id = 'tel-m-task-usbceip'; Tag = 'telemetry-machine'; Scope = 'machine'; Kind = 'Task'; TaskPath = '\Microsoft\Windows\Customer Experience Improvement Program\'; TaskName = 'UsbCeip'; Target = 'Disabled'; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'T2'; Id = 'tel-m-task-diskdiag'; Tag = 'telemetry-machine'; Scope = 'machine'; Kind = 'Task'; TaskPath = '\Microsoft\Windows\DiskDiagnostic\'; TaskName = 'Microsoft-Windows-DiskDiagnosticDataCollector'; Target = 'Disabled'; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'T3'; Id = 'tel-m-task-dmclient'; Tag = 'telemetry-machine'; Scope = 'machine'; Kind = 'Task'; TaskPath = '\Microsoft\Windows\Feedback\Siuf\'; TaskName = 'DmClient'; Target = 'Disabled'; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'T3'; Id = 'tel-m-task-dmclient-download'; Tag = 'telemetry-machine'; Scope = 'machine'; Kind = 'Task'; TaskPath = '\Microsoft\Windows\Feedback\Siuf\'; TaskName = 'DmClientOnScenarioDownload'; Target = 'Disabled'; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'T4'; Id = 'tel-m-task-autochk-proxy'; Tag = 'telemetry-machine'; Scope = 'machine'; Kind = 'Task'; TaskPath = '\Microsoft\Windows\Autochk\'; TaskName = 'Proxy'; Target = 'Disabled'; Source = 'adr'; Host = 'HC'; Exec = $true }
+    @{ Ref = 'E1'; Id = 'rec-allowtelemetry-policy'; Tag = 'telemetry-record'; Scope = 'machine'; Kind = 'Record'; RecordOf = 'DWord'; Key = 'SOFTWARE\Policies\Microsoft\Windows\DataCollection'; ValueName = 'AllowTelemetry'; Source = 'chosen'; Host = 'HK'; Exec = $null }
+    @{ Ref = 'E1'; Id = 'rec-allowtelemetry-current'; Tag = 'telemetry-record'; Scope = 'machine'; Kind = 'Record'; RecordOf = 'DWord'; Key = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection'; ValueName = 'AllowTelemetry'; Source = 'chosen'; Host = 'HC'; Exec = $null }
+    @{ Ref = 'E1'; Id = 'rec-maxtelemetry-current'; Tag = 'telemetry-record'; Scope = 'machine'; Kind = 'Record'; RecordOf = 'DWord'; Key = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection'; ValueName = 'MaxTelemetryAllowed'; Source = 'adr'; Host = 'HC'; Exec = $null }
+    @{ Ref = 'REC'; Id = 'rec-limit-diaglog'; Tag = 'telemetry-record'; Scope = 'machine'; Kind = 'Record'; RecordOf = 'DWord'; Key = 'SOFTWARE\Policies\Microsoft\Windows\DataCollection'; ValueName = 'LimitDiagnosticLogCollection'; Source = 'chosen'; Host = 'HK'; Exec = $null }
+    @{ Ref = 'REC'; Id = 'rec-limit-dump'; Tag = 'telemetry-record'; Scope = 'machine'; Kind = 'Record'; RecordOf = 'DWord'; Key = 'SOFTWARE\Policies\Microsoft\Windows\DataCollection'; ValueName = 'LimitDumpCollection'; Source = 'chosen'; Host = 'HK'; Exec = $null }
+    @{ Ref = 'REC'; Id = 'rec-dmwappush'; Tag = 'telemetry-record'; Scope = 'machine'; Kind = 'Record'; RecordOf = 'Service'; Name = 'dmwappushservice'; Source = 'adr'; Host = 'HC'; Exec = $null }
+    @{ Ref = 'REC'; Id = 'rec-location'; Tag = 'telemetry-record'; Scope = 'machine'; Kind = 'Record'; RecordOf = 'String'; Key = 'SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location'; ValueName = 'Value'; Source = 'adr'; Host = 'HC'; Exec = $null }
+)
+$W1Labels = @{
+    'startup-edge' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'startup-onedrive' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'startup-teams' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-bingnews' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-bingweather' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-bingsearch' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-microsoftsolitairecollection' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-clipchamp-clipchamp' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-powerautomatedesktop' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-windowsfeedbackhub' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-windows-devhome' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-todos' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-yourphone' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoftwindows-crossdevice' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoftcorporationii-microsoftfamily' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-gamingapp' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-xboxgamingoverlay' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-xboxspeechtotextoverlay' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-xbox-tcui' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-xboxidentityprovider' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-gethelp' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoftcorporationii-quickassist' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-msteams' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-outlookforwindows' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'appx-microsoft-microsoftofficehub' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'preset' = @{ Source = 'adr'; Host = 'HK'; Exec = $false }
+    'animate-windows' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'taskbar-animations' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'fade-slide-menus' = @{ Source = 'adr'; Host = 'HP'; Exec = $false }
+    'combo-slide' = @{ Source = 'adr'; Host = 'HP'; Exec = $false }
+    'fade-slide-tooltips' = @{ Source = 'adr'; Host = 'HP'; Exec = $false }
+    'fade-menu-items' = @{ Source = 'adr'; Host = 'HP'; Exec = $false }
+    'animate-controls' = @{ Source = 'adr'; Host = 'HP'; Exec = $false }
+    'tel-advertising-id' = @{ Source = 'chosen'; Host = 'HC'; Exec = $false }
+    'tel-tailored-experiences' = @{ Source = 'chosen'; Host = 'HC'; Exec = $false }
+    'tel-feedback-frequency' = @{ Source = 'public'; Host = 'UC'; Exec = $false }
+    'tel-implicit-ink' = @{ Source = 'public'; Host = 'HC'; Exec = $true }
+    'tel-implicit-text' = @{ Source = 'public'; Host = 'HC'; Exec = $true }
+    'tel-harvest-contacts' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'tel-personalization-policy' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'tel-online-speech' = @{ Source = 'public'; Host = 'UC'; Exec = $false }
+    'tel-tips-338389' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'tel-system-pane-suggestions' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'tel-soft-landing' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'tel-suggested-338393' = @{ Source = 'none'; Host = 'HK'; Exec = $false }
+    'tel-suggested-353694' = @{ Source = 'none'; Host = 'HK'; Exec = $false }
+    'tel-suggested-353696' = @{ Source = 'none'; Host = 'HK'; Exec = $false }
+    'tel-suggested-310093' = @{ Source = 'none'; Host = 'HK'; Exec = $false }
+    'tel-scoobe' = @{ Source = 'adr'; Host = 'UC'; Exec = $false }
+    'tel-track-progs' = @{ Source = 'public'; Host = 'HK'; Exec = $false }
+    'tel-iris-recommendations' = @{ Source = 'adr'; Host = 'HK'; Exec = $false }
+    'tel-accept-language-optout' = @{ Source = 'public'; Host = 'HK'; Exec = $false }
+    'tel-m-feedback-notifications' = @{ Source = 'public'; Host = 'HK'; Exec = $false }
+    'tel-m-publish-activities' = @{ Source = 'public'; Host = 'HK'; Exec = $false }
+    'tel-m-upload-activities' = @{ Source = 'public'; Host = 'HK'; Exec = $false }
+    'tel-m-ceip' = @{ Source = 'adr'; Host = 'UC'; Exec = $false }
+    'tel-m-diagtrack' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'tel-m-task-consolidator' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'tel-m-task-usbceip' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'tel-m-task-diskdiag' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'tel-m-task-dmclient' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'tel-m-task-dmclient-download' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'tel-m-task-autochk-proxy' = @{ Source = 'adr'; Host = 'HC'; Exec = $true }
+    'rec-allowtelemetry-policy' = @{ Source = 'chosen'; Host = 'HK'; Exec = $null }
+    'rec-allowtelemetry-current' = @{ Source = 'chosen'; Host = 'HC'; Exec = $null }
+    'rec-maxtelemetry-current' = @{ Source = 'adr'; Host = 'HC'; Exec = $null }
+    'rec-limit-diaglog' = @{ Source = 'chosen'; Host = 'HK'; Exec = $null }
+    'rec-limit-dump' = @{ Source = 'chosen'; Host = 'HK'; Exec = $null }
+    'rec-dmwappush' = @{ Source = 'adr'; Host = 'HC'; Exec = $null }
+    'rec-location' = @{ Source = 'adr'; Host = 'HC'; Exec = $null }
+}
+$W1NoticeText = @{
+    'notice-work-folders' = @{ personal = 'NOTICE step W: Work Folders sync tasks are not changed by step W; they need elevation. Change them by hand only if you do not use Work Folders.'; work = 'NOTICE step W: Work Folders sync tasks are not changed in the work profile; they stay as configured.' }
+    'notice-onedrive-task' = @{ personal = 'NOTICE step W: the OneDrive scheduled startup task is not changed by step W; the OneDrive sign-in entry is handled by the startup entries.'; work = 'NOTICE step W: OneDrive startup is not changed in the work profile.' }
+}
+$W1Matrix = @{
+    'startup' = @{ Kinds = @('StartupApproved', 'DWord'); Scope = 'user'; Profiles = $null }
+    'consumer' = @{ Kinds = @('AppxRemove'); Scope = 'user'; Profiles = @('personal', 'work') }
+    'support' = @{ Kinds = @('AppxRemove'); Scope = 'user'; Profiles = @('personal') }
+    'work-app' = @{ Kinds = @('AppxRemove'); Scope = 'user'; Profiles = @('personal') }
+    'report-only' = @{ Kinds = @('Notice'); Scope = 'user'; Profiles = @('personal', 'work') }
+    'visual' = @{ Kinds = @('DWord', 'String', 'BinaryBit'); Scope = 'user'; Profiles = @('personal', 'work') }
+    'telemetry-user' = @{ Kinds = @('DWord'); Scope = 'user'; Profiles = @('personal') }
+    'telemetry-machine' = @{ Kinds = @('DWord', 'Service', 'Task'); Scope = 'machine'; Profiles = @('personal') }
+    'telemetry-record' = @{ Kinds = @('Record'); Scope = 'machine'; Profiles = @('personal') }
+}
+$W1UpmFrom = @(0x9E, 0x1E, 0x07, 0x80, 0x12, 0x00, 0x00, 0x00)
+$W1UpmTo = @(0x98, 0x12, 0x07, 0x80, 0x10, 0x00, 0x00, 0x00)
+
+# Fixed in code (not oracle data): the closed sets of ADR-0020 "Catalogue contract".
+$W1Tags = @('startup', 'consumer', 'support', 'work-app', 'report-only', 'visual', 'telemetry-user', 'telemetry-machine', 'telemetry-record')
+$W1Kinds = @('DWord', 'String', 'BinaryBit', 'StartupApproved', 'AppxRemove', 'Notice', 'Service', 'Task', 'Record')
+$W1Sources = @('public', 'adr', 'chosen', 'none')
+$W1Hosts = @('HC', 'HK', 'UC', 'HP')
+$W1OptIns = @('RemoveApps', 'DisableTeamsStartup')
+$W1GpuRegex = '(?i)(^|[^a-z0-9])(nvidia|nvcpl|radeon|amd|gpu|drs)([^a-z0-9]|$)|\.nip$'
+$W1RunKey = 'Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run'
+$W1SysAppRegex = '^Software\\Classes\\Local Settings\\Software\\Microsoft\\Windows\\CurrentVersion\\AppModel\\SystemAppData\\([A-Za-z0-9.]+)_([a-z0-9]{13})\\[A-Za-z0-9]+$'
+$W1CommonFields = @('Id', 'Tag', 'Kind', 'Scope', 'Profiles')
+$W1WriterReq = @('WindowsDefaultState', 'Verified', 'Effect', 'Source', 'Host', 'Executable')
+$W1KindFields = @{
+    'DWord'           = @{ Req = @('Key', 'ValueName', 'Target') + $W1WriterReq; Opt = @('WindowsDefault', 'Ref', 'NoOpValues', 'OptIn', 'PolicyValues', 'RequiresUnmanaged') }
+    'String'          = @{ Req = @('Key', 'ValueName', 'Target') + $W1WriterReq; Opt = @('WindowsDefault', 'Ref') }
+    'BinaryBit'       = @{ Req = @('Key', 'ValueName', 'Byte', 'Mask', 'Target') + $W1WriterReq; Opt = @('WindowsDefault', 'Ref') }
+    'StartupApproved' = @{ Req = @('Key', 'Target') + $W1WriterReq; Opt = @('ValueName', 'Pattern', 'WindowsDefault', 'Ref') }
+    'AppxRemove'      = @{ Req = @('Name', 'Target', 'OptIn', 'Source', 'Host', 'Executable'); Opt = @('Ref') }
+    'Notice'          = @{ Req = @('Notice'); Opt = @('Ref') }
+    'Service'         = @{ Req = @('Name', 'Target') + $W1WriterReq; Opt = @('WindowsDefault', 'Ref') }
+    'Task'            = @{ Req = @('TaskPath', 'TaskName', 'Target') + $W1WriterReq; Opt = @('WindowsDefault', 'Ref') }
+    'Record'          = @{ Req = @('RecordOf', 'Source', 'Host'); Opt = @('Ref', 'Key', 'ValueName', 'Name') }
+}
+
+$script:WSeeds = @{}
+$script:WFailures = New-Object 'System.Collections.Generic.List[string]'
+
+function Add-WSeedCount {
+    param([string]$Code, [bool]$Neg)
+    if (-not $script:WSeeds.ContainsKey($Code)) { $script:WSeeds[$Code] = @(0, 0) }
+    $i = 0
+    if ($Neg) { $i = 1 }
+    $script:WSeeds[$Code][$i]++
+}
+
+function Add-WFailure {
+    param([string]$Msg)
+    [void]$script:WFailures.Add($Msg)
+}
+
+function Assert-WNoFailures {
+    $f = @($script:WFailures)
+    $script:WFailures.Clear()
+    Assert-True ($f.Count -eq 0) ("$($f.Count) W check(s) failed:`n  " + ($f -join "`n  "))
+}
+
+function Assert-WOnly {
+    param($Problems, [string]$Code, [string]$Label)
+    $pp = @($Problems)
+    if ($pp.Count -lt 1) { Add-WFailure "$Code seed '$Label' was not caught"; return }
+    foreach ($x in $pp) {
+        if (-not $x.StartsWith("${Code}:")) { Add-WFailure "$Code seed '$Label' yields other codes: $($pp -join ' | ')"; return }
+    }
+    Add-WSeedCount $Code $false
+}
+
+function Assert-WAbsent {
+    param($Problems, [string]$Code, [string]$Label)
+    $pp = @($Problems)
+    foreach ($x in $pp) {
+        if ($x.StartsWith("${Code}:")) { Add-WFailure "$Code negative '$Label' was flagged: $x"; return }
+    }
+    Add-WSeedCount $Code $true
+}
+
+function Add-WProblem {
+    param($List, [string]$Code, [string]$Id, [string]$Msg)
+    [void]$List.Add("${Code}: ${Id}: $Msg")
+}
+
+function Copy-WData {
+    param($X)
+    if ($X -is [hashtable]) {
+        $h = @{}
+        foreach ($k in $X.Keys) { $h[$k] = Copy-WData $X[$k] }
+        return $h
+    }
+    if ($X -is [System.Collections.IEnumerable] -and $X -isnot [string]) {
+        $l = New-Object 'System.Collections.Generic.List[object]'
+        foreach ($i in $X) { $l.Add((Copy-WData $i)) }
+        return , ($l.ToArray())
+    }
+    return $X
+}
+
+function Get-WReal {
+    if ($null -eq $script:WRealData) { $script:WRealData = Import-PowerShellDataFile -LiteralPath $WCatPath -ErrorAction Stop }
+    return (Copy-WData $script:WRealData)
+}
+
+function Get-WEntry {
+    param($Data, [string]$Id)
+    foreach ($x in $Data.Entries) { if ($x.Id -ceq $Id) { return $x } }
+    throw "Get-WEntry: no entry $Id"
+}
+
+function Edit-WEntry {
+    param($Data, [string]$Id, [hashtable]$Set = @{}, [string[]]$Remove = @())
+    $e = Get-WEntry $Data $Id
+    foreach ($k in $Set.Keys) { $e[$k] = $Set[$k] }
+    foreach ($k in $Remove) { $e.Remove($k) }
+}
+
+function Add-WEntry {
+    param($Data, $Entry)
+    $Data.Entries = [object[]](@($Data.Entries) + @(, $Entry))
+}
+
+function Copy-WEntryAs {
+    param($Data, [string]$Id, [string]$NewId, [hashtable]$Set = @{})
+    $c = Copy-WData (Get-WEntry $Data $Id)
+    $c['Id'] = $NewId
+    foreach ($k in $Set.Keys) { $c[$k] = $Set[$k] }
+    Add-WEntry $Data $c
+}
+
+function Remove-WEntry {
+    param($Data, [string]$Id)
+    $Data.Entries = [object[]]@($Data.Entries | Where-Object -FilterScript { $_.Id -cne $Id })
+}
+
+function Swap-WEntries {
+    param($Data, [string]$A, [string]$B)
+    $l = @($Data.Entries)
+    $i = -1; $j = -1
+    for ($n = 0; $n -lt $l.Count; $n++) {
+        if ($l[$n].Id -ceq $A) { $i = $n }
+        if ($l[$n].Id -ceq $B) { $j = $n }
+    }
+    if ($i -lt 0 -or $j -lt 0) { throw "Swap-WEntries: missing $A or $B" }
+    $t = $l[$i]; $l[$i] = $l[$j]; $l[$j] = $t
+    $Data.Entries = [object[]]$l
+}
+
+function Test-WSameSet {
+    param($A, $B, [bool]$IgnoreCase = $false)
+    $cmp = [StringComparer]::Ordinal
+    if ($IgnoreCase) { $cmp = [StringComparer]::OrdinalIgnoreCase }
+    $x = New-Object 'System.Collections.Generic.List[string]'
+    $y = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($i in @($A)) { $x.Add([string]$i) }
+    foreach ($i in @($B)) { $y.Add([string]$i) }
+    $x.Sort($cmp); $y.Sort($cmp)
+    if ($x.Count -ne $y.Count) { return $false }
+    for ($i = 0; $i -lt $x.Count; $i++) { if (-not $cmp.Equals($x[$i], $y[$i])) { return $false } }
+    return $true
+}
+
+function Test-WDeepEqual {
+    param($A, $B)
+    if ($A -is [hashtable] -or $B -is [hashtable]) {
+        if ($A -isnot [hashtable] -or $B -isnot [hashtable]) { return $false }
+        if ($A.Count -ne $B.Count) { return $false }
+        foreach ($k in $A.Keys) {
+            if (-not (@($B.Keys) -ccontains $k)) { return $false }
+            if (-not (Test-WDeepEqual $A[$k] $B[$k])) { return $false }
+        }
+        return $true
+    }
+    if ($A -is [Array] -or $B -is [Array]) {
+        if ($A -isnot [Array] -or $B -isnot [Array]) { return $false }
+        if ($A.Count -ne $B.Count) { return $false }
+        for ($i = 0; $i -lt $A.Count; $i++) { if (-not (Test-WDeepEqual $A[$i] $B[$i])) { return $false } }
+        return $true
+    }
+    if ($null -eq $A -or $null -eq $B) { return ($null -eq $A -and $null -eq $B) }
+    if ($A.GetType() -ne $B.GetType()) { return $false }
+    return ($A -ceq $B)
+}
+
+function Test-WConstantAst {
+    # the descendant nodes (and the node itself) that are not allowed in a data-only literal
+    param($Node)
+    $ns = 'Management.Automation.Language'
+    $bad = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($n in @($Node.FindAll({ param($x) $true }, $true))) {
+        $ok = $false
+        if ($n -is [Management.Automation.Language.ScriptBlockAst]) {
+            $ok = ($null -eq $n.Parent)
+        } elseif ($n -is [Management.Automation.Language.NamedBlockAst]) {
+            $ok = ($n.Parent -is [Management.Automation.Language.ScriptBlockAst] -and $null -eq $n.Parent.Parent)
+        } elseif ($n -is [Management.Automation.Language.StringConstantExpressionAst]) {
+            $t = $n.StringConstantType.ToString()
+            if ($t -ceq 'SingleQuoted') { $ok = $true }
+            elseif ($t -ceq 'BareWord' -and $n.Parent -is [Management.Automation.Language.HashtableAst]) {
+                foreach ($kv in $n.Parent.KeyValuePairs) { if ([object]::ReferenceEquals($kv.Item1, $n)) { $ok = $true } }
+            }
+        } elseif ($n -is [Management.Automation.Language.VariableExpressionAst]) {
+            $vn = $n.VariablePath.UserPath
+            $ok = ($vn -ceq 'true' -or $vn -ceq 'false')
+        } elseif ($n -is [Management.Automation.Language.ConstantExpressionAst]) {
+            $ok = $true
+        } elseif ($n -is [Management.Automation.Language.StatementBlockAst] -or $n -is [Management.Automation.Language.PipelineAst] -or
+            $n -is [Management.Automation.Language.CommandExpressionAst] -or $n -is [Management.Automation.Language.HashtableAst] -or
+            $n -is [Management.Automation.Language.ArrayExpressionAst] -or $n -is [Management.Automation.Language.ArrayLiteralAst]) {
+            $ok = $true
+        }
+        if (-not $ok) { [void]$bad.Add($n) }
+    }
+    return $bad
+}
+
+function Get-WAstProblems {
+    param([string]$Path)
+    $p = New-Object 'System.Collections.Generic.List[string]'
+    $bytes = [IO.File]::ReadAllBytes($Path)
+    if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) { Add-WProblem $p 'W1-ast' '-' 'the file has a byte order mark' }
+    foreach ($b in $bytes) { if ($b -gt 0x7F) { Add-WProblem $p 'W1-ast' '-' 'the file has a byte above 0x7F'; break } }
+    $tk = $null; $er = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile($Path, [ref]$tk, [ref]$er)
+    if ($er.Count -gt 0) { Add-WProblem $p 'W1-ast' '-' "parse error: $($er[0].Message)"; return $p }
+    if ($ast.ParamBlock) { Add-WProblem $p 'W1-ast' '-' 'the root has a param block' }
+    $st = @()
+    if ($ast.EndBlock) { $st = @($ast.EndBlock.Statements) }
+    if ($st.Count -ne 1) { Add-WProblem $p 'W1-ast' '-' "the root holds $($st.Count) statements, expected 1"; return $p }
+    $s0 = $st[0]
+    if ($s0 -isnot [Management.Automation.Language.PipelineAst] -or $s0.PipelineElements.Count -ne 1 -or
+        $s0.PipelineElements[0] -isnot [Management.Automation.Language.CommandExpressionAst] -or
+        $s0.PipelineElements[0].Expression -isnot [Management.Automation.Language.HashtableAst]) {
+        Add-WProblem $p 'W1-ast' '-' 'the root statement is not a single hashtable literal'
+        return $p
+    }
+    foreach ($n in @(Test-WConstantAst $ast)) {
+        Add-WProblem $p 'W1-ast' '-' "line $($n.Extent.StartLineNumber): not allowed in a data file: $($n.GetType().Name) $($n.Extent.Text)"
+    }
+    return $p
+}
+
+function Get-WFnBodyProblems {
+    param($Ast)
+    $p = New-Object 'System.Collections.Generic.List[string]'
+    foreach ($fnName in @('Get-WindowsSettingsTagKeys', 'Get-WindowsSettingsProtectedAppx')) {
+        $defs = @($Ast.FindAll({ param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -ceq $fnName }, $true))
+        if ($defs.Count -ne 1) { Add-WProblem $p 'W1-fn-body' $fnName "defined $($defs.Count) times, expected 1"; continue }
+        $f = $defs[0]
+        if (-not ($f.Parent -is [Management.Automation.Language.NamedBlockAst] -and $f.Parent.Parent -eq $Ast)) { Add-WProblem $p 'W1-fn-body' $fnName 'not defined at top level'; continue }
+        $b = $f.Body
+        if ($b.ParamBlock -or $b.DynamicParamBlock -or $b.BeginBlock -or $b.ProcessBlock) { Add-WProblem $p 'W1-fn-body' $fnName 'has a param, dynamicparam, begin or process block'; continue }
+        $st = @()
+        if ($b.EndBlock) { $st = @($b.EndBlock.Statements) }
+        if ($st.Count -ne 1 -or $st[0] -isnot [Management.Automation.Language.ReturnStatementAst]) { Add-WProblem $p 'W1-fn-body' $fnName 'the body is not exactly one return statement'; continue }
+        $pl = $st[0].Pipeline
+        if ($pl -isnot [Management.Automation.Language.PipelineAst] -or $pl.PipelineElements.Count -ne 1 -or $pl.PipelineElements[0] -isnot [Management.Automation.Language.CommandExpressionAst]) { Add-WProblem $p 'W1-fn-body' $fnName 'the return is not a single expression'; continue }
+        $lit = $pl.PipelineElements[0].Expression
+        if ($lit -isnot [Management.Automation.Language.HashtableAst] -and $lit -isnot [Management.Automation.Language.ArrayExpressionAst]) { Add-WProblem $p 'W1-fn-body' $fnName 'the return is not a hashtable or array literal'; continue }
+        foreach ($n in @(Test-WConstantAst $lit)) { Add-WProblem $p 'W1-fn-body' $fnName "line $($n.Extent.StartLineNumber): not a constant: $($n.GetType().Name) $($n.Extent.Text)" }
+    }
+    return $p
+}
+
+function Get-WOracleProblems {
+    param($TagKeys, $Protected, $OracleTagKeys = $W1TagKeys, $OracleTelemetry = $W1Telemetry)
+    $p = New-Object 'System.Collections.Generic.List[string]'
+    if (-not (Test-WDeepEqual $TagKeys $W1TagKeys)) { Add-WProblem $p 'W1-oracle-allow' '-' 'Get-WindowsSettingsTagKeys differs from the ADR-0020 N12 table' }
+    if (-not (Test-WDeepEqual $Protected $W1Protected)) { Add-WProblem $p 'W1-oracle-protected' '-' 'Get-WindowsSettingsProtectedAppx differs from the ADR-0020 (d) protected set' }
+    foreach ($tag in @('telemetry-user', 'telemetry-machine', 'telemetry-record')) {
+        $rows = New-Object 'System.Collections.Generic.List[object]'
+        $svc = New-Object 'System.Collections.Generic.List[object]'
+        $tsk = New-Object 'System.Collections.Generic.List[object]'
+        foreach ($r in $OracleTelemetry) {
+            if ($r.Tag -cne $tag) { continue }
+            if ($r.ContainsKey('Key')) {
+                $row = $null
+                foreach ($x in $rows) { if ($x.Key -ieq $r.Key) { $row = $x } }
+                if ($null -eq $row) { $row = @{ Key = $r.Key; Names = (New-Object 'System.Collections.Generic.List[object]') }; $rows.Add($row) }
+                $dup = $false
+                foreach ($nm in $row.Names) { if ($nm -ieq $r.ValueName) { $dup = $true } }
+                if (-not $dup) { $row.Names.Add($r.ValueName) }
+            } elseif ($r.Kind -ceq 'Task') {
+                $tsk.Add($r.TaskPath + $r.TaskName)
+            } elseif ($r.ContainsKey('Name')) {
+                $svc.Add($r.Name)
+            }
+        }
+        $want = @()
+        foreach ($x in $rows) { $want += , @{ Key = $x.Key; Names = [object[]]$x.Names.ToArray() } }
+        $have = $OracleTagKeys[$tag]
+        if (-not (Test-WDeepEqual ([object[]]$want) $have.Registry) -or -not (Test-WDeepEqual ([object[]]$svc.ToArray()) $have.Services) -or -not (Test-WDeepEqual ([object[]]$tsk.ToArray()) $have.Tasks)) {
+            Add-WProblem $p 'W1-oracle-sync' $tag 'the ADR-0035 Key expansion rows and the ADR-0020 N12 table disagree'
+        }
+    }
+    return $p
+}
+
+function Get-WBitProblem {
+    param($E)
+    if ($E['Byte'] -lt 0 -or $E['Byte'] -gt 7) { return 'Byte must be 0 to 7' }
+    if (@(1, 2, 4, 8, 16, 32, 64, 128) -notcontains $E['Mask']) { return 'Mask must be a single bit' }
+    if ($E['Byte'] -eq 3 -and $E['Mask'] -eq 0x80) { return 'byte 3 with mask 0x80 is forbidden' }
+    if ($E['Target'] -ne 0 -and $E['Target'] -ne 1) { return 'Target must be 0 or 1' }
+    if ($E['Key'] -ine 'Control Panel\Desktop' -or $E['ValueName'] -ine 'UserPreferencesMask') { return 'BinaryBit applies to UserPreferencesMask only' }
+    return $null
+}
+
+function Test-WEntryTier1 {
+    param($E, $Seen, $P)
+    $id = '-'
+    if ($E['Id'] -is [string]) { $id = $E['Id'] }
+    foreach ($f in @('Id', 'Key', 'Name', 'ValueName', 'TaskName')) {
+        if ($E.ContainsKey($f) -and $E[$f] -is [string] -and $E[$f] -match $W1GpuRegex) { Add-WProblem $P 'W1-gpu' $id "$f names a GPU or driver-profile target"; return }
+    }
+    if ($E['Id'] -isnot [string] -or $E['Id'] -cnotmatch '^[a-z0-9][a-z0-9-]{0,47}$') { Add-WProblem $P 'W1-id' $id 'Id does not match ^[a-z0-9][a-z0-9-]{0,47}$'; return }
+    if (-not $Seen.Add($E['Id'])) { Add-WProblem $P 'W1-id' $id 'duplicate Id'; return }
+    $tag = $E['Tag']
+    if ($tag -isnot [string] -or $W1Tags -cnotcontains $tag) { Add-WProblem $P 'W1-tag' $id 'Tag is not in the closed set'; return }
+    $kind = $E['Kind']
+    if ($kind -isnot [string] -or $W1Kinds -cnotcontains $kind -or $W1Matrix[$tag].Kinds -cnotcontains $kind) { Add-WProblem $P 'W1-kind' $id "Kind is not allowed for Tag $tag"; return }
+    if ($E['Scope'] -isnot [string] -or $E['Scope'] -cne $W1Matrix[$tag].Scope) { Add-WProblem $P 'W1-scope' $id "Scope must be $($W1Matrix[$tag].Scope) for Tag $tag"; return }
+    if ($kind -ceq 'Record') {
+        $ro = $E['RecordOf']
+        $hasKey = $E.ContainsKey('Key'); $hasVn = $E.ContainsKey('ValueName'); $hasName = $E.ContainsKey('Name')
+        $shapeOk = $false
+        if ($ro -is [string]) {
+            if ($ro -ceq 'DWord' -or $ro -ceq 'String') { $shapeOk = ($hasKey -and $hasVn -and -not $hasName) }
+            elseif ($ro -ceq 'Service') { $shapeOk = ($hasName -and -not $hasKey -and -not $hasVn) }
+        }
+        if (-not $shapeOk) { Add-WProblem $P 'W1-record-of' $id 'RecordOf must be DWord or String (Key and ValueName, no Name) or Service (Name, no Key or ValueName)'; return }
+        foreach ($f in @('Target', 'WindowsDefaultState', 'WindowsDefault', 'Verified', 'Effect', 'Executable')) {
+            if ($E.ContainsKey($f)) { Add-WProblem $P 'W1-record-field' $id "a Record must not carry $f"; return }
+        }
+    }
+    # W1-field
+    $kf = $W1KindFields[$kind]
+    $req = @($W1CommonFields) + @($kf.Req)
+    $allowed = $req + @($kf.Opt)
+    foreach ($k in @($E.Keys)) { if ($allowed -cnotcontains $k) { Add-WProblem $P 'W1-field' $id "unknown field $k"; return } }
+    foreach ($k in $req) { if (-not $E.ContainsKey($k)) { Add-WProblem $P 'W1-field' $id "missing field $k"; return } }
+    $isTel = $tag -like 'telemetry-*'
+    if ($E.ContainsKey('Ref') -and -not $isTel) { Add-WProblem $P 'W1-field' $id 'Ref is only for telemetry Tags'; return }
+    if ($isTel -and -not $E.ContainsKey('Ref')) { Add-WProblem $P 'W1-field' $id 'a telemetry Tag needs Ref'; return }
+    if ($kind -ceq 'StartupApproved' -and ($E.ContainsKey('ValueName') -eq $E.ContainsKey('Pattern'))) { Add-WProblem $P 'W1-field' $id 'StartupApproved needs exactly one of ValueName and Pattern'; return }
+    # W1-type
+    foreach ($f in @('Id', 'Tag', 'Kind', 'Scope', 'Key', 'ValueName', 'Pattern', 'Name', 'TaskPath', 'TaskName', 'Source', 'Host', 'OptIn', 'RecordOf', 'Ref', 'Effect', 'WindowsDefaultState')) {
+        if ($E.ContainsKey($f) -and $E[$f] -isnot [string]) { Add-WProblem $P 'W1-type' $id "$f must be a string"; return }
+    }
+    if ($E.ContainsKey('Source') -and $W1Sources -cnotcontains $E['Source']) { Add-WProblem $P 'W1-type' $id 'Source is not in the closed set'; return }
+    if ($E.ContainsKey('Host') -and $W1Hosts -cnotcontains $E['Host']) { Add-WProblem $P 'W1-type' $id 'Host is not in the closed set'; return }
+    foreach ($f in @('Profiles', 'NoOpValues', 'PolicyValues')) {
+        if ($E.ContainsKey($f) -and $E[$f] -isnot [object[]]) { Add-WProblem $P 'W1-type' $id "$f must be an array"; return }
+    }
+    foreach ($f in @('Verified', 'Executable', 'RequiresUnmanaged')) {
+        if ($E.ContainsKey($f) -and $E[$f] -isnot [bool]) { Add-WProblem $P 'W1-type' $id "$f must be a bool"; return }
+    }
+    foreach ($f in @('Byte', 'Mask')) {
+        if ($E.ContainsKey($f) -and $E[$f] -isnot [int]) { Add-WProblem $P 'W1-type' $id "$f must be an int"; return }
+    }
+    if ($E.ContainsKey('Notice') -and $E['Notice'] -isnot [hashtable]) { Add-WProblem $P 'W1-type' $id 'Notice must be a hashtable'; return }
+    if ($E.ContainsKey('Target')) {
+        $t = $E['Target']
+        $tok = $true
+        if ($kind -ceq 'DWord' -or $kind -ceq 'BinaryBit') { $tok = ($t -is [int] -or $t -is [long]) }
+        elseif ($kind -ceq 'String') { $tok = ($t -is [string]) }
+        elseif ($kind -ceq 'StartupApproved') { $tok = ($t -is [string] -and $t -ceq 'disabled') }
+        elseif ($kind -ceq 'AppxRemove') { $tok = ($t -is [string] -and $t -ceq 'absent') }
+        elseif ($kind -ceq 'Service' -or $kind -ceq 'Task') { $tok = ($t -is [string] -and $t -ceq 'Disabled') }
+        if (-not $tok) { Add-WProblem $P 'W1-type' $id "Target has the wrong type or value for Kind $kind"; return }
+    }
+    # W1-range
+    if ($kind -ceq 'DWord') {
+        foreach ($f in @('Target', 'WindowsDefault')) {
+            if ($E.ContainsKey($f)) {
+                $v = $E[$f]
+                if ($v -is [long] -or ($v -is [int] -and $v -lt 0)) { Add-WProblem $P 'W1-range' $id "$f is outside 0 to 0x7FFFFFFF"; return }
+            }
+        }
+    }
+}
+
+function Test-WEntryTier2 {
+    param($E, $TagKeys, $Protected, $P)
+    $id = $E['Id']; $tag = $E['Tag']; $kind = $E['Kind']; $scope = $E['Scope']
+    # W1-profile
+    $pr = @($E['Profiles'])
+    $profOk = ($pr.Count -ge 1)
+    foreach ($x in $pr) { if ($x -isnot [string] -or ($x -cne 'personal' -and $x -cne 'work')) { $profOk = $false } }
+    if ($profOk -and -not (Test-WSameSet $pr (@($pr | Select-Object -Unique)))) { $profOk = $false }
+    $mp = $W1Matrix[$tag].Profiles
+    if ($profOk -and $null -ne $mp -and -not (Test-WSameSet $pr $mp)) { $profOk = $false }
+    if (-not $profOk) { Add-WProblem $P 'W1-profile' $id 'Profiles must be a distinct subset of personal and work that matches the Tag' }
+    # key group
+    if ($E.ContainsKey('Key')) {
+        $key = $E['Key']
+        $keyBad = $false
+        if ($key -match '(?i)^HK|HKEY_|Registry::' -or $key.Contains('*') -or $key.Contains('?') -or $key.Contains('/')) { $keyBad = $true }
+        foreach ($seg in ($key -split '\\')) { if ($seg -ceq '.' -or $seg -ceq '..') { $keyBad = $true } }
+        if ($E.ContainsKey('Pattern') -and $E['Pattern'] -cnotmatch '^[A-Za-z0-9]+_\*$') { $keyBad = $true }
+        if ($keyBad) {
+            Add-WProblem $P 'W1-key' $id 'Key or Pattern has a hive form, a wildcard, a slash or a dot segment'
+        } else {
+            $canonBad = ($key.StartsWith('\') -or $key.EndsWith('\') -or $key.Contains('\\'))
+            foreach ($seg in ($key -split '\\')) { if ($seg.StartsWith(' ') -or $seg.EndsWith(' ')) { $canonBad = $true } }
+            if ($canonBad) {
+                Add-WProblem $P 'W1-key-canon' $id 'Key is not in canonical form'
+            } elseif ($scope -ceq 'user' -and $key -match '(?i)(^|\\)Policies(\\|$)') {
+                Add-WProblem $P 'W1-policies' $id 'a user-scope key must not be under Policies'
+            } elseif ($tag -ceq 'startup' -and $key -ine $W1RunKey -and $key -notmatch $W1SysAppRegex) {
+                Add-WProblem $P 'W1-startup-shape' $id 'a startup key must be the Run key or a SystemAppData task key'
+            } else {
+                $row = $null
+                $tkRow = $TagKeys[$tag]
+                if ($null -ne $tkRow) { foreach ($r in @($tkRow.Registry)) { if ($null -eq $row -and $r.Key -ieq $key) { $row = $r } } }
+                if ($null -eq $row) {
+                    Add-WProblem $P 'W1-allow' $id 'Key is not on the allowlist of its Tag'
+                } else {
+                    $names = @($row.Names)
+                    $tripleOk = $true
+                    if ($E.ContainsKey('Pattern')) {
+                        $tripleOk = $false
+                        foreach ($nm in $names) { if ($nm -ieq $E['Pattern']) { $tripleOk = $true } }
+                    } elseif ($E.ContainsKey('ValueName')) {
+                        $tripleOk = $false
+                        foreach ($nm in $names) { if ($E['ValueName'] -like $nm) { $tripleOk = $true } }
+                    }
+                    if (-not $tripleOk) { Add-WProblem $P 'W1-triple' $id 'ValueName or Pattern is not allowed under this key for this Tag' }
+                }
+            }
+        }
+    }
+    if ($kind -ceq 'Service' -or ($kind -ceq 'Record' -and $E['RecordOf'] -ceq 'Service')) {
+        $on = $false
+        if ($null -ne $TagKeys[$tag]) { foreach ($s in @($TagKeys[$tag].Services)) { if ($s -ieq $E['Name']) { $on = $true } } }
+        if (-not $on) { Add-WProblem $P 'W1-allow' $id 'service is not on the allowlist of its Tag' }
+    }
+    if ($kind -ceq 'Task') {
+        $on = $false
+        if ($null -ne $TagKeys[$tag]) { foreach ($s in @($TagKeys[$tag].Tasks)) { if ($s -ieq ($E['TaskPath'] + $E['TaskName'])) { $on = $true } } }
+        if (-not $on) { Add-WProblem $P 'W1-allow' $id 'task is not on the allowlist of its Tag' }
+    }
+    if ($kind -ceq 'BinaryBit') {
+        $bp = Get-WBitProblem $E
+        if ($bp) { Add-WProblem $P 'W1-bit' $id $bp }
+    }
+    if ($kind -ceq 'AppxRemove') {
+        $nm = $E['Name']
+        $prot = $false
+        foreach ($x in @($Protected.Names)) { if ($nm -ieq $x) { $prot = $true } }
+        foreach ($x in @($Protected.Prefixes)) { if ($nm.StartsWith($x, [StringComparison]::OrdinalIgnoreCase)) { $prot = $true } }
+        if ($prot) { Add-WProblem $P 'W1-protected' $id 'a protected package must never be removed' }
+        $wantAppxId = 'appx-' + $nm.ToLowerInvariant().Replace('.', '-')
+        if ($E['Id'] -cne $wantAppxId) { Add-WProblem $P 'W1-appx-id' $id "an AppxRemove Id must be $wantAppxId" }
+    }
+    if ($E.ContainsKey('NoOpValues')) {
+        $nv = @($E['NoOpValues'])
+        $nopOk = ($tag -ceq 'startup' -and $kind -ceq 'DWord')
+        foreach ($x in $nv) { if ($x -isnot [int] -or $x -lt 0 -or $x -eq $E['Target']) { $nopOk = $false } }
+        if (@($nv | Select-Object -Unique).Count -ne $nv.Count) { $nopOk = $false }
+        if ($tag -ceq 'startup' -and $kind -ceq 'DWord' -and ($nv.Count -ne 1 -or $nv[0] -ne 0)) { $nopOk = $false }
+        if (-not $nopOk) { Add-WProblem $P 'W1-noop' $id 'NoOpValues is only for startup DWord entries: distinct ints >= 0 that exclude the Target' }
+    }
+    if ($E.ContainsKey('Effect')) {
+        $ef = $E['Effect']
+        $efOk = ($ef -ceq 'none' -or $ef -ceq 'sign-out')
+        if ($tag -ceq 'visual' -and $ef -cne 'sign-out') { $efOk = $false }
+        if ($tag -cne 'visual' -and $ef -cne 'none') { $efOk = $false }
+        if (-not $efOk) { Add-WProblem $P 'W1-effect' $id 'Effect must be sign-out for visual and none for every other Tag' }
+    }
+    if ($E.ContainsKey('WindowsDefaultState')) {
+        $ws = $E['WindowsDefaultState']
+        $dOk = ($ws -ceq 'value' -or $ws -ceq 'absent' -or $ws -ceq 'unknown')
+        if ($dOk) {
+            if (($ws -ceq 'value') -ne $E.ContainsKey('WindowsDefault')) { $dOk = $false }
+            elseif ($ws -ceq 'value') {
+                $wd = $E['WindowsDefault']
+                if ($kind -ceq 'DWord') { if ($wd -isnot [int] -or $wd -lt 0) { $dOk = $false } }
+                elseif ($kind -ceq 'BinaryBit') { if ($wd -isnot [int] -or ($wd -ne 0 -and $wd -ne 1)) { $dOk = $false } }
+                elseif ($kind -ceq 'StartupApproved') { $dOk = $false }
+                else { if ($wd -isnot [string]) { $dOk = $false } }
+            }
+        }
+        if (-not $dOk) { Add-WProblem $P 'W1-default' $id 'WindowsDefaultState or WindowsDefault is invalid' }
+    }
+    if ($E.ContainsKey('Verified') -and $E['Verified'] -ne $false) { Add-WProblem $P 'W1-verified' $id 'Verified must be $false until its human check' }
+    if ($kind -ceq 'Notice') {
+        $nt = $E['Notice']
+        foreach ($k in @($nt.Keys)) {
+            $tx = $nt[$k]
+            $why = $null
+            if ($tx -isnot [string]) { $why = 'the text is not a string' }
+            elseif (-not $tx.StartsWith('NOTICE step W: ', [StringComparison]::Ordinal)) { $why = 'the text does not start with NOTICE step W: ' }
+            elseif ($tx -cmatch '[^\x00-\x7F]') { $why = 'the text is not ASCII' }
+            elseif ($tx -match $BoundaryR8Regex1 -or $tx -match $BoundaryR8Regex2) { $why = 'the text names an executable' }
+            else {
+                foreach ($bad in @('S-1-5-', '\', 'OneDrive Startup Task', 'OneDrive Reporting Task', 'OneDrive Standalone Update Task', 'Work Folders Logon Synchronization', 'Work Folders Maintenance Work')) {
+                    if ($tx.IndexOf($bad, [StringComparison]::Ordinal) -ge 0) { $why = "the text contains '$bad'" }
+                }
+            }
+            if ($why) { Add-WProblem $P 'W1-notice' $id "profile ${k}: $why" }
+        }
+        if (-not (Test-WSameSet @($nt.Keys) $pr)) { Add-WProblem $P 'W1-notice-profiles' $id 'the Notice keys must equal Profiles' }
+    }
+    # W1-optin
+    if ($kind -ceq 'AppxRemove') {
+        if ($E['OptIn'] -cne 'RemoveApps') { Add-WProblem $P 'W1-optin' $id 'an AppxRemove entry needs OptIn RemoveApps' }
+    } elseif ($E.ContainsKey('OptIn') -and $E['OptIn'] -cne 'DisableTeamsStartup') {
+        Add-WProblem $P 'W1-optin' $id 'only OptIn DisableTeamsStartup is allowed on a non-Appx entry'
+    }
+    # W1-gate
+    if ($kind -cne 'AppxRemove' -and $kind -cne 'Notice' -and $kind -cne 'Record') {
+        $isTeams = ($tag -ceq 'startup' -and $kind -ceq 'DWord')
+        $gateOk = $true
+        if ($isTeams) {
+            # the Teams SystemAppData startup entry carries the full gate; OptIn's value is checked by W1-optin, NoOpValues' value by W1-noop
+            foreach ($gf in @('NoOpValues', 'OptIn', 'PolicyValues', 'RequiresUnmanaged')) { if (-not $E.ContainsKey($gf)) { $gateOk = $false } }
+            if ($E['Target'] -isnot [int] -or $E['Target'] -ne 1) { $gateOk = $false }
+        } else {
+            foreach ($gf in @('OptIn', 'PolicyValues', 'RequiresUnmanaged')) { if ($E.ContainsKey($gf)) { $gateOk = $false } }
+        }
+        if ($E.ContainsKey('PolicyValues')) {
+            $pv = @($E['PolicyValues'])
+            if ($pv.Count -ne 2 -or $pv[0] -isnot [int] -or $pv[1] -isnot [int] -or $pv[0] -ne 3 -or $pv[1] -ne 4) { $gateOk = $false }
+        }
+        if ($E.ContainsKey('RequiresUnmanaged') -and $E['RequiresUnmanaged'] -ne $true) { $gateOk = $false }
+        if (-not $gateOk) { Add-WProblem $P 'W1-gate' $id 'only the Teams SystemAppData startup entry carries the gate: Target 1, NoOpValues, OptIn, PolicyValues @(3,4), RequiresUnmanaged $true' }
+    }
+    if ($E.ContainsKey('Executable')) {
+        $want = (($E['Source'] -ceq 'public' -or $E['Source'] -ceq 'adr') -and $E['Host'] -ceq 'HC')
+        if ($E['Executable'] -ne $want) { Add-WProblem $P 'W1-exec' $id "Executable must be $want for Source $($E['Source']) and Host $($E['Host'])" }
+    }
+    if ($W1Labels.ContainsKey($id) -and $E.ContainsKey('Source') -and $E.ContainsKey('Host')) {
+        if ($E['Source'] -cne $W1Labels[$id].Source -or $E['Host'] -cne $W1Labels[$id].Host) { Add-WProblem $P 'W1-oracle-label' $id 'Source or Host differs from the ADR label' }
+    }
+}
+
+function Get-WTargetKey {
+    param($E)
+    return (($E['Scope'] + '|' + $E['Key'] + '|' + $E['ValueName'])).ToLowerInvariant()
+}
+
+function Test-WCatalogueGlobal {
+    param($Entries, $TagKeys, $P)
+    $appx = @($Entries | Where-Object -FilterScript { $_['Kind'] -ceq 'AppxRemove' })
+    # W1-list
+    $listBad = $false
+    foreach ($prof in @('personal', 'work')) {
+        $have = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+        foreach ($a in $appx) { if (@($a['Profiles']) -ccontains $prof) { [void]$have.Add($a['Name']) } }
+        $want = @($W1Consumer)
+        if ($prof -ceq 'personal') { $want = @($W1Consumer) + @($W1Support) + @($W1WorkApps) }
+        if (-not (Test-WSameSet @($have) $want $true)) { $listBad = $true; Add-WProblem $P 'W1-list' '-' "the AppxRemove names for profile $prof differ from the ADR-0020 (b) lists" }
+    }
+    # W1-order
+    if (-not $listBad) {
+        $order = New-Object 'System.Collections.Generic.List[string]'
+        foreach ($a in $appx) { if ($a['Tag'] -ceq 'consumer' -and @($order | Where-Object -FilterScript { $_ -ieq $a['Name'] }).Count -eq 0) { $order.Add($a['Name']) } }
+        if (-not (Test-WDeepEqual ([object[]]$order.ToArray()) ([object[]]@($W1Consumer)))) { Add-WProblem $P 'W1-order' '-' 'the consumer names are not in ADR-0020 (b) order' }
+    }
+    # W1-n8 and W1-work-startup
+    foreach ($e in $Entries) {
+        if ($e['Tag'] -ceq 'startup' -and $e.ContainsKey('Key')) {
+            $m = [regex]::Match($e['Key'], $W1SysAppRegex)
+            if ($m.Success) {
+                $pkg = $m.Groups[1].Value
+                foreach ($prof in @($e['Profiles'])) {
+                    foreach ($a in $appx) {
+                        if ($a['Name'] -ieq $pkg -and @($a['Profiles']) -ccontains $prof) { Add-WProblem $P 'W1-n8' $e['Id'] "package $pkg is removed in profile $prof by $($a['Id'])" }
+                    }
+                }
+            }
+        }
+    }
+    $ws = @($Entries | Where-Object -FilterScript { $_['Tag'] -ceq 'startup' -and @($_['Profiles']) -ccontains 'work' } | ForEach-Object -Process { $_['Id'] })
+    if (-not (Test-WDeepEqual ([object[]]$ws) ([object[]]@('startup-teams')))) { Add-WProblem $P 'W1-work-startup' '-' 'the work startup set must be exactly startup-teams' }
+    # W1-dup-target
+    $whole = New-Object 'System.Collections.Generic.List[object]'
+    $wholeKeys = @{}
+    $bitKeys = @{}
+    $bitValues = @{}
+    $patterns = New-Object 'System.Collections.Generic.List[object]'
+    foreach ($e in $Entries) {
+        $k = $e['Kind']
+        if ($k -ceq 'DWord' -or $k -ceq 'String' -or ($k -ceq 'StartupApproved' -and $e.ContainsKey('ValueName'))) {
+            $tk = Get-WTargetKey $e
+            if ($wholeKeys.ContainsKey($tk)) { Add-WProblem $P 'W1-dup-target' $e['Id'] "same target as $($wholeKeys[$tk])" } else { $wholeKeys[$tk] = $e['Id']; [void]$whole.Add($e) }
+        } elseif ($k -ceq 'StartupApproved') {
+            [void]$patterns.Add($e)
+        } elseif ($k -ceq 'BinaryBit') {
+            $tk = (Get-WTargetKey $e) + '|' + $e['Byte'] + '|' + $e['Mask']
+            if ($bitKeys.ContainsKey($tk)) { Add-WProblem $P 'W1-dup-target' $e['Id'] "same bit as $($bitKeys[$tk])" } else { $bitKeys[$tk] = $e['Id'] }
+            $bitValues[(Get-WTargetKey $e)] = $e['Id']
+        }
+    }
+    foreach ($tk in @($wholeKeys.Keys)) {
+        if ($bitValues.ContainsKey($tk)) { Add-WProblem $P 'W1-dup-target' $wholeKeys[$tk] "whole-value target shares its value with the BinaryBit entry $($bitValues[$tk])" }
+    }
+    foreach ($pe in $patterns) {
+        foreach ($we in $whole) {
+            if ($we['Scope'] -ceq $pe['Scope'] -and $we['Key'] -ieq $pe['Key'] -and $we['ValueName'] -like $pe['Pattern']) {
+                Add-WProblem $P 'W1-dup-target' $pe['Id'] "Pattern matches the value name of $($we['Id'])"
+            }
+        }
+    }
+    $names = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+    foreach ($e in $Entries) {
+        $ident = $null
+        if ($e['Kind'] -ceq 'AppxRemove') { $ident = 'appx|' + $e['Name'] }
+        elseif ($e['Kind'] -ceq 'Service') { $ident = 'svc|' + $e['Name'] }
+        elseif ($e['Kind'] -ceq 'Task') { $ident = 'task|' + $e['TaskPath'] + $e['TaskName'] }
+        if ($null -ne $ident -and -not $names.Add($ident)) { Add-WProblem $P 'W1-dup-target' $e['Id'] "duplicate $ident" }
+    }
+    # W1-record-overlap
+    foreach ($e in $Entries) {
+        if ($e['Kind'] -cne 'Record') { continue }
+        if ($e['RecordOf'] -ceq 'Service') {
+            foreach ($w in $Entries) { if ($w['Kind'] -ceq 'Service' -and $w['Name'] -ieq $e['Name']) { Add-WProblem $P 'W1-record-overlap' $e['Id'] "same service as writer $($w['Id'])" } }
+        } else {
+            $tk = Get-WTargetKey $e
+            if ($wholeKeys.ContainsKey($tk)) { Add-WProblem $P 'W1-record-overlap' $e['Id'] "same value as writer $($wholeKeys[$tk])" }
+            if ($bitValues.ContainsKey($tk)) { Add-WProblem $P 'W1-record-overlap' $e['Id'] "same value as writer $($bitValues[$tk])" }
+        }
+    }
+    # W1-dead-allow
+    foreach ($tag in @($TagKeys.Keys)) {
+        $mine = @($Entries | Where-Object -FilterScript { $_['Tag'] -ceq $tag })
+        foreach ($row in @($TagKeys[$tag].Registry)) {
+            foreach ($nm in @($row.Names)) {
+                $used = $false
+                foreach ($e in $mine) {
+                    if ($e.ContainsKey('Key') -and $e['Key'] -ieq $row.Key) {
+                        if (($e.ContainsKey('ValueName') -and $e['ValueName'] -ieq $nm) -or ($e.ContainsKey('Pattern') -and $e['Pattern'] -ieq $nm)) { $used = $true }
+                    }
+                }
+                if (-not $used) { Add-WProblem $P 'W1-dead-allow' '-' "$tag $($row.Key) $nm is used by no entry" }
+            }
+        }
+        foreach ($s in @($TagKeys[$tag].Services)) {
+            $used = $false
+            foreach ($e in $mine) { if ($e.ContainsKey('Name') -and ($e['Kind'] -ceq 'Service' -or $e['Kind'] -ceq 'Record') -and $e['Name'] -ieq $s) { $used = $true } }
+            if (-not $used) { Add-WProblem $P 'W1-dead-allow' '-' "$tag service $s is used by no entry" }
+        }
+        foreach ($s in @($TagKeys[$tag].Tasks)) {
+            $used = $false
+            foreach ($e in $mine) { if ($e['Kind'] -ceq 'Task' -and ($e['TaskPath'] + $e['TaskName']) -ieq $s) { $used = $true } }
+            if (-not $used) { Add-WProblem $P 'W1-dead-allow' '-' "$tag task $s is used by no entry" }
+        }
+    }
+    # W1-oracle-telemetry
+    foreach ($e in $Entries) {
+        if (-not ($e['Tag'] -like 'telemetry-*')) { continue }
+        $o = $null
+        foreach ($r in $W1Telemetry) { if ($r.Id -ceq $e['Id']) { $o = $r } }
+        if ($null -eq $o) { continue }
+        $bad = ($e['Ref'] -cne $o.Ref -or $e['Scope'] -cne $o.Scope -or $e['Kind'] -cne $o.Kind)
+        foreach ($f in @('Key', 'ValueName', 'Name', 'TaskPath', 'TaskName')) {
+            if ($o.ContainsKey($f)) { if (-not $e.ContainsKey($f) -or $e[$f] -ine $o[$f]) { $bad = $true } }
+            elseif ($e.ContainsKey($f)) { $bad = $true }
+        }
+        if ($o.ContainsKey('RecordOf') -and $e['RecordOf'] -cne $o.RecordOf) { $bad = $true }
+        if ($o.ContainsKey('Target')) {
+            if (-not $e.ContainsKey('Target') -or $e['Target'].GetType() -ne $o.Target.GetType() -or $e['Target'] -cne $o.Target) { $bad = $true }
+        } elseif ($e.ContainsKey('Target')) { $bad = $true }
+        if ($bad) { Add-WProblem $P 'W1-oracle-telemetry' $e['Id'] 'differs from the ADR-0035 Key expansion row' }
+    }
+    # W1-oracle-notice
+    foreach ($e in $Entries) {
+        if ($e['Kind'] -cne 'Notice' -or -not $W1NoticeText.ContainsKey($e['Id'])) { continue }
+        foreach ($prof in @($e['Profiles'])) {
+            if ($e['Notice'][$prof] -cne $W1NoticeText[$e['Id']][$prof]) { Add-WProblem $P 'W1-oracle-notice' $e['Id'] "the $prof text differs from ADR-0020 Notices" }
+        }
+    }
+}
+
+function Get-WCatalogueProblems {
+    param($Data, $TagKeys = (Get-WindowsSettingsTagKeys), $Protected = (Get-WindowsSettingsProtectedAppx))
+    $p = New-Object 'System.Collections.Generic.List[string]'
+    # tier 0
+    if ($Data -isnot [hashtable] -or @($Data.Keys).Count -ne 1 -or @($Data.Keys) -cnotcontains 'Entries') { Add-WProblem $p 'W1-top' '-' 'the top level must be a hashtable whose only key is Entries'; return $p }
+    if ($Data['Entries'] -isnot [object[]]) { Add-WProblem $p 'W1-top' '-' 'Entries must be an array'; return $p }
+    foreach ($x in $Data['Entries']) { if ($x -isnot [hashtable]) { Add-WProblem $p 'W1-top' '-' 'every entry must be a hashtable'; return $p } }
+    $entries = @($Data['Entries'])
+    # tier 1
+    $seen = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::Ordinal)
+    foreach ($e in $entries) { Test-WEntryTier1 $e $seen $p }
+    if ($p.Count -gt 0) { return $p }
+    # tier 2
+    foreach ($e in $entries) { Test-WEntryTier2 $e $TagKeys $Protected $p }
+    if ($p.Count -gt 0) { return $p }
+    # tier 3
+    Test-WCatalogueGlobal $entries $TagKeys $p
+    if ($p.Count -gt 0) { return $p }
+    # tier 4
+    $ids = @($entries | ForEach-Object -Process { $_['Id'] })
+    if (-not (Test-WDeepEqual ([object[]]$ids) ([object[]]@($W1Ids)))) { Add-WProblem $p 'W1-oracle-ids' '-' 'the entry Ids differ from the 72 Ids of ADR-0020 and ADR-0035, or are in another order' }
+    return $p
+}
+
+function Get-WVisualProblems {
+    param($Data, [string[]]$YamlLines)
+    $p = New-Object 'System.Collections.Generic.List[string]'
+    $blocks = [ordered]@{}
+    $cur = $null
+    foreach ($ln in $YamlLines) {
+        if ($ln -match '^- id: (\S+)\s*$') { $cur = $Matches[1]; $blocks[$cur] = @{ managed = $null; recommended = $null; registry = $null }; continue }
+        if ($null -ne $cur -and $ln -match '^  (managed|recommended|registry): (.*)$') { $blocks[$cur][$Matches[1]] = $Matches[2].Trim() }
+    }
+    $visual = @($Data.Entries | Where-Object -FilterScript { $_['Tag'] -ceq 'visual' })
+    foreach ($id in $blocks.Keys) {
+        $b = $blocks[$id]
+        $e = $null
+        foreach ($x in $Data.Entries) { if ($x['Id'] -ceq $id) { $e = $x } }
+        if ($b.managed -ceq 'true') {
+            if ($null -eq $e -or $e['Tag'] -cne 'visual') { Add-WProblem $p 'V1' $id 'a managed: true block has no visual entry'; continue }
+            $rec = $b.recommended
+            $kind = $e['Kind']
+            if ($rec -ceq '3') {
+                if ($kind -cne 'DWord' -or $e['Target'] -ne 3) { Add-WProblem $p 'V1' $id 'recommended 3 needs a DWord entry with Target 3' }
+            } elseif ($rec -ceq 'off') {
+                $tOk = ($kind -ceq 'DWord' -and $e['Target'] -is [int] -and $e['Target'] -eq 0) -or ($kind -ceq 'String' -and $e['Target'] -ceq '0') -or ($kind -ceq 'BinaryBit' -and $e['Target'] -is [int] -and $e['Target'] -eq 0)
+                if (-not $tOk) { Add-WProblem $p 'V1' $id 'recommended off needs Target 0 (DWord), ''0'' (String) or 0 (BinaryBit)' }
+            } else {
+                Add-WProblem $p 'V1' $id "unexpected recommended value $rec"
+            }
+            if ($kind -ceq 'BinaryBit') {
+                $m = [regex]::Match([string]$b.registry, 'UPM byte (\d), mask 0x([0-9A-Fa-f]{2})')
+                if (-not $m.Success) { Add-WProblem $p 'V1' $id 'registry line has no UPM byte and mask' }
+                elseif ($e['Byte'] -ne [int]$m.Groups[1].Value -or $e['Mask'] -ne [Convert]::ToInt32($m.Groups[2].Value, 16)) { Add-WProblem $p 'V1' $id 'Byte or Mask differs from the yaml registry line' }
+            }
+        } elseif ($null -ne $e) {
+            Add-WProblem $p 'V1' $id 'a managed: false block has a catalogue entry'
+        }
+    }
+    foreach ($e in $visual) {
+        if (-not $blocks.Contains($e['Id']) -or $blocks[$e['Id']].managed -cne 'true') { Add-WProblem $p 'V1' $e['Id'] 'a visual entry has no managed: true block' }
+    }
+    return $p
+}
+
+function Get-WUpmProblems {
+    param($Data)
+    $p = New-Object 'System.Collections.Generic.List[string]'
+    $b = [int[]]@($W1UpmFrom)
+    foreach ($e in $Data.Entries) {
+        if ($e['Kind'] -cne 'BinaryBit') { continue }
+        if ($e['Target'] -eq 0) { $b[$e['Byte']] = $b[$e['Byte']] -band (0xFF -bxor $e['Mask']) }
+        else { $b[$e['Byte']] = $b[$e['Byte']] -bor $e['Mask'] }
+    }
+    $got = ($b | ForEach-Object -Process { '{0:X2}' -f $_ }) -join ' '
+    $want = (@($W1UpmTo) | ForEach-Object -Process { '{0:X2}' -f $_ }) -join ' '
+    if ($got -cne $want) { Add-WProblem $p 'V2' '-' "UserPreferencesMask would become $got, expected $want" }
+    return $p
+}
+
+function Edit-WLine {
+    # replace the first Find inside the catalogue line of one entry
+    param([string]$Text, [string]$Id, [string]$Find, [string]$Rep)
+    $lines = $Text -split "`n"
+    $hit = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) { if ($lines[$i].Contains("Id = '$Id';")) { $hit = $i } }
+    Assert-True ($hit -ge 0) "catalogue line of $Id exists"
+    $ix = $lines[$hit].IndexOf($Find)
+    Assert-True ($ix -ge 0) "anchor '$Find' exists in the line of $Id"
+    $lines[$hit] = $lines[$hit].Substring(0, $ix) + $Rep + $lines[$hit].Substring($ix + $Find.Length)
+    return ($lines -join "`n")
+}
+
+function Invoke-WSeed {
+    param([string]$Code, [string]$Label, [scriptblock]$Mutate)
+    $d = Get-WReal
+    $null = & $Mutate $d
+    Assert-WOnly @(Get-WCatalogueProblems -Data $d) $Code $Label
+}
+
+function Invoke-WNegative {
+    param([string]$Code, [string]$Label, [scriptblock]$Mutate)
+    $d = Get-WReal
+    $null = & $Mutate $d
+    Assert-WAbsent @(Get-WCatalogueProblems -Data $d) $Code $Label
+}
+
+function Invoke-WAstSeed {
+    param([string]$Label, [string]$Text)
+    $f = Join-Path $script:T 'w1.psd1'
+    [IO.File]::WriteAllText($f, $Text)
+    Assert-WOnly @(Get-WAstProblems -Path $f) 'W1-ast' $Label
+}
+
+Test-Case 'W1a the real catalogue, the real functions and the oracles are clean; counts and the default personal run set' {
+    $real = Get-WReal
+    Assert-Eq (@(Get-WAstProblems -Path $WCatPath)).Count 0 "W1-ast on the real file: $(@(Get-WAstProblems -Path $WCatPath) -join ' | ')"
+    $cp = @(Get-WCatalogueProblems -Data $real)
+    Assert-Eq $cp.Count 0 "catalogue problems: $($cp -join ' | ')"
+    $op = @(Get-WOracleProblems -TagKeys (Get-WindowsSettingsTagKeys) -Protected (Get-WindowsSettingsProtectedAppx))
+    Assert-Eq $op.Count 0 "oracle problems: $($op -join ' | ')"
+    $tk = $null; $er = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile($ScriptPath, [ref]$tk, [ref]$er)
+    $fp = @(Get-WFnBodyProblems -Ast $ast)
+    Assert-Eq $fp.Count 0 "function body problems: $($fp -join ' | ')"
+    foreach ($n in @('Get-WindowsSettingsTagKeys', 'Get-WindowsSettingsProtectedAppx')) { Assert-True ($SeamNames -cnotcontains $n) "$n is not a seam" }
+    # oracle meta-checks
+    Assert-Eq $W1Ids.Count 72 'the oracle has 72 Ids'
+    Assert-Eq @($W1Ids | Select-Object -Unique).Count 72 'the oracle Ids are unique'
+    $telIds = @($W1Telemetry | ForEach-Object -Process { $_.Id })
+    Assert-Eq $telIds.Count 37 'the ADR-0035 table has 37 rows'
+    $tail = @($W1Ids | Select-Object -Last 37)
+    Assert-True (Test-WDeepEqual ([object[]]$tail) ([object[]]$telIds)) 'the ADR-0035 Ids are the last 37 oracle Ids, in order'
+    foreach ($k in $W1Labels.Keys) {
+        $l = $W1Labels[$k]
+        if ($null -ne $l.Exec) {
+            $want = (($l.Source -ceq 'public' -or $l.Source -ceq 'adr') -and $l.Host -ceq 'HC')
+            Assert-True ($l.Exec -eq $want) "oracle label of $k is consistent: Exec $($l.Exec), Source $($l.Source), Host $($l.Host)"
+        }
+    }
+    # counts
+    $ex = @($real.Entries | Where-Object -FilterScript { $_['Executable'] -eq $true })
+    $nx = @($real.Entries | Where-Object -FilterScript { $_.ContainsKey('Executable') -and $_['Executable'] -eq $false })
+    Assert-Eq $ex.Count 41 'executable entries'
+    Assert-Eq $nx.Count 22 'report-only writer entries'
+    $run = @($real.Entries | Where-Object -FilterScript { $_['Executable'] -eq $true -and @($_['Profiles']) -ccontains 'personal' -and $_['Scope'] -ceq 'user' -and -not $_.ContainsKey('OptIn') -and $_['Tag'] -cne 'telemetry-user' } | ForEach-Object -Process { $_['Id'] })
+    Assert-True (Test-WDeepEqual ([object[]]$run) ([object[]]@('startup-edge', 'startup-onedrive', 'animate-windows', 'taskbar-animations'))) "the default personal run set: $($run -join ',')"
+    # negatives that need nothing but the clean real data
+    foreach ($c in @('W1-top', 'W1-tag', 'W1-kind', 'W1-scope', 'W1-record-of', 'W1-record-field', 'W1-field', 'W1-type', 'W1-gpu', 'W1-profile', 'W1-key', 'W1-key-canon', 'W1-policies', 'W1-startup-shape', 'W1-allow', 'W1-triple', 'W1-bit', 'W1-protected', 'W1-noop', 'W1-effect', 'W1-default', 'W1-verified', 'W1-notice', 'W1-notice-profiles', 'W1-optin', 'W1-gate', 'W1-exec', 'W1-oracle-label', 'W1-list', 'W1-order', 'W1-n8', 'W1-work-startup', 'W1-dup-target', 'W1-record-overlap', 'W1-dead-allow', 'W1-oracle-telemetry', 'W1-oracle-notice', 'W1-oracle-ids', 'W1-appx-id')) {
+        Assert-WAbsent $cp $c 'real catalogue'
+    }
+    Assert-WAbsent @(Get-WAstProblems -Path $WCatPath) 'W1-ast' 'real file'
+    $f2 = Join-Path $script:T 'w1-comment.psd1'
+    [IO.File]::WriteAllText($f2, ([IO.File]::ReadAllText($WCatPath) + "`n# comment`n"))
+    Assert-WAbsent @(Get-WAstProblems -Path $f2) 'W1-ast' 'real file plus a comment line'
+    Assert-WAbsent $op 'W1-oracle-allow' 'real output'
+    Assert-WAbsent $op 'W1-oracle-protected' 'real output'
+    Assert-WAbsent $op 'W1-oracle-sync' 'real oracles'
+    Assert-WAbsent $fp 'W1-fn-body' 'real script'
+    Assert-WNoFailures
+}
+
+Test-Case 'W1b catalogue tiers 0 and 1 (seeded)' {
+    $wt = [IO.File]::ReadAllText($WCatPath)
+    Invoke-WAstSeed 'preset Target = [int]''3''' (Edit-WLine $wt 'preset' 'Target = 3;' 'Target = [int]''3'';')
+    Invoke-WAstSeed 'double-quoted notice with a variable' ($wt.Replace('work = ''NOTICE step W: OneDrive startup is not changed in the work profile.''', 'work = "NOTICE step W: OneDrive startup is not changed in the work profile. $true"'))
+    $i = $wt.IndexOf('Source = ''adr''')
+    Invoke-WAstSeed 'first Source double-quoted' ($wt.Substring(0, $i) + 'Source = "adr"' + $wt.Substring($i + 'Source = ''adr'''.Length))
+    Invoke-WAstSeed 'Executable = $null' (Edit-WLine $wt 'taskbar-animations' 'Executable = $true' 'Executable = $null')
+    Invoke-WAstSeed 'Target = (0)' (Edit-WLine $wt 'taskbar-animations' 'Target = 0;' 'Target = (0);')
+    Invoke-WAstSeed 'non-ASCII comment' ($wt + "`n# x" + [char]0xE9 + "`n")
+    Invoke-WAstSeed 'Key = $env:X' (Edit-WLine $wt 'animate-windows' 'Key = ''Control Panel\Desktop\WindowMetrics''' 'Key = $env:X')
+
+    Invoke-WSeed 'W1-top' 'extra top-level key' { param($d) $d['Protected'] = @() }
+    Invoke-WSeed 'W1-top' 'Entries is a hashtable' { param($d) $d['Entries'] = @{ Id = 'preset' } }
+
+    Invoke-WSeed 'W1-id' 'uppercase Id' { param($d) Edit-WEntry $d 'preset' -Set @{ Id = 'Preset' } }
+    Invoke-WSeed 'W1-id' 'duplicate Id' { param($d) Edit-WEntry $d 'combo-slide' -Set @{ Id = 'fade-slide-menus' } }
+    $d = Get-WReal
+    $longId = 'appx-microsoftcorporationii-microsoftfamily'
+    Assert-Eq $longId.Length 43 'the long Id has 43 characters'
+    Assert-WAbsent @(Get-WCatalogueProblems -Data $d) 'W1-id' 'the real 43-character Id'
+
+    Invoke-WSeed 'W1-tag' 'Visual' { param($d) Edit-WEntry $d 'preset' -Set @{ Tag = 'Visual' } }
+    Invoke-WSeed 'W1-tag' 'gpu' { param($d) Edit-WEntry $d 'preset' -Set @{ Tag = 'gpu' } }
+    Invoke-WSeed 'W1-kind' 'dword' { param($d) Edit-WEntry $d 'preset' -Set @{ Kind = 'dword' } }
+    Invoke-WSeed 'W1-kind' 'AppxRemove on a visual Tag' { param($d) Edit-WEntry $d 'preset' -Set @{ Kind = 'AppxRemove' } }
+    Invoke-WSeed 'W1-scope' 'User' { param($d) Edit-WEntry $d 'preset' -Set @{ Scope = 'User' } }
+    Invoke-WSeed 'W1-scope' 'machine' { param($d) Edit-WEntry $d 'preset' -Set @{ Scope = 'machine' } }
+
+    Invoke-WSeed 'W1-record-of' 'RecordOf Task' { param($d) Edit-WEntry $d 'rec-dmwappush' -Set @{ RecordOf = 'Task' } }
+    Invoke-WSeed 'W1-record-of' 'service record with a Key' { param($d) Edit-WEntry $d 'rec-dmwappush' -Set @{ Key = 'SOFTWARE\X' } }
+    Invoke-WSeed 'W1-record-of' 'DWord record without ValueName' { param($d) Edit-WEntry $d 'rec-limit-dump' -Remove @('ValueName') }
+    Invoke-WSeed 'W1-record-field' 'Record with Target' { param($d) Edit-WEntry $d 'rec-limit-dump' -Set @{ Target = 1 } }
+    Invoke-WSeed 'W1-record-field' 'Record with Verified' { param($d) Edit-WEntry $d 'rec-limit-dump' -Set @{ Verified = $false } }
+    Invoke-WSeed 'W1-record-field' 'Record with Executable' { param($d) Edit-WEntry $d 'rec-limit-dump' -Set @{ Executable = $false } }
+
+    Invoke-WSeed 'W1-field' 'unknown field' { param($d) Edit-WEntry $d 'preset' -Set @{ Force = $true } }
+    Invoke-WSeed 'W1-field' 'missing Profiles' { param($d) Edit-WEntry $d 'preset' -Remove @('Profiles') }
+    Invoke-WSeed 'W1-field' 'Ref on a visual entry' { param($d) Edit-WEntry $d 'preset' -Set @{ Ref = 'U1' } }
+    Invoke-WSeed 'W1-field' 'telemetry entry without Ref' { param($d) Edit-WEntry $d 'tel-implicit-ink' -Remove @('Ref') }
+    Invoke-WSeed 'W1-field' 'ValueName and Pattern together' { param($d) Edit-WEntry $d 'startup-edge' -Set @{ ValueName = 'X' } }
+    Invoke-WSeed 'W1-field' 'Executable on a Notice' { param($d) Edit-WEntry $d 'notice-work-folders' -Set @{ Executable = $false } }
+    Invoke-WSeed 'W1-field' 'AppxRemove without OptIn' { param($d) Edit-WEntry $d 'appx-microsoft-todos' -Remove @('OptIn') }
+
+    Invoke-WSeed 'W1-type' 'DWord Target as a string' { param($d) Edit-WEntry $d 'taskbar-animations' -Set @{ Target = '0' } }
+    Invoke-WSeed 'W1-type' 'String Target as an int' { param($d) Edit-WEntry $d 'animate-windows' -Set @{ Target = 0 } }
+    Invoke-WSeed 'W1-type' 'Profiles as a string' { param($d) Edit-WEntry $d 'preset' -Set @{ Profiles = 'personal' } }
+    Invoke-WSeed 'W1-type' 'Verified as a string' { param($d) Edit-WEntry $d 'preset' -Set @{ Verified = 'false' } }
+    Invoke-WSeed 'W1-type' 'StartupApproved Target enabled' { param($d) Edit-WEntry $d 'startup-edge' -Set @{ Target = 'enabled' } }
+    Invoke-WSeed 'W1-type' 'Source outside the closed set' { param($d) Edit-WEntry $d 'preset' -Set @{ Source = 'x' } }
+
+    Invoke-WSeed 'W1-range' 'Int32 minimum' { param($d) Edit-WEntry $d 'taskbar-animations' -Set @{ Target = [int]-2147483648 } }
+    Invoke-WSeed 'W1-range' 'Int64 value' { param($d) Edit-WEntry $d 'taskbar-animations' -Set @{ Target = [long]2147483648 } }
+    Invoke-WNegative 'W1-range' 'Target 0x7FFFFFFF' { param($d) Edit-WEntry $d 'taskbar-animations' -Set @{ Target = 0x7FFFFFFF } }
+
+    Invoke-WSeed 'W1-gpu' 'nvidia in an Id' { param($d) Edit-WEntry $d 'taskbar-animations' -Set @{ Id = 'nvidia-taskbar' } }
+    Assert-WNoFailures
+}
+
+Test-Case 'W1c catalogue tier 2 (seeded)' {
+    Invoke-WSeed 'W1-profile' 'telemetry entry in both profiles' { param($d) Edit-WEntry $d 'tel-implicit-ink' -Set @{ Profiles = @('personal', 'work') } }
+    Invoke-WSeed 'W1-profile' 'empty' { param($d) Edit-WEntry $d 'preset' -Set @{ Profiles = @() } }
+    Invoke-WSeed 'W1-profile' 'home' { param($d) Edit-WEntry $d 'preset' -Set @{ Profiles = @('home') } }
+    Invoke-WSeed 'W1-profile' 'Personal' { param($d) Edit-WEntry $d 'preset' -Set @{ Profiles = @('Personal') } }
+    Invoke-WSeed 'W1-profile' 'work, work' { param($d) Edit-WEntry $d 'preset' -Set @{ Profiles = @('work', 'work') } }
+    Invoke-WSeed 'W1-profile' 'consumer entry in personal only' { param($d) Edit-WEntry $d 'appx-microsoft-todos' -Set @{ Profiles = @('personal') } }
+    Invoke-WNegative 'W1-profile' 'work, personal order' { param($d) Edit-WEntry $d 'appx-microsoft-todos' -Set @{ Profiles = @('work', 'personal') } }
+
+    $wk = 'Control Panel\Desktop\WindowMetrics'
+    Invoke-WSeed 'W1-key' 'HKCU: prefix' { param($d) Edit-WEntry $d 'animate-windows' -Set @{ Key = 'HKCU:\Control Panel\Desktop\WindowMetrics' } }
+    Invoke-WSeed 'W1-key' 'HKEY_CURRENT_USER' { param($d) Edit-WEntry $d 'animate-windows' -Set @{ Key = 'HKEY_CURRENT_USER\Control Panel\Desktop\WindowMetrics' } }
+    Invoke-WSeed 'W1-key' 'dot-dot segment' { param($d) Edit-WEntry $d 'animate-windows' -Set @{ Key = 'Control Panel\..\Desktop\WindowMetrics' } }
+    Invoke-WSeed 'W1-key' 'forward slashes' { param($d) Edit-WEntry $d 'animate-windows' -Set @{ Key = 'Control Panel/Desktop/WindowMetrics' } }
+    Invoke-WSeed 'W1-key' 'wildcard' { param($d) Edit-WEntry $d 'animate-windows' -Set @{ Key = 'Control Panel\Desktop\*' } }
+    Invoke-WSeed 'W1-key' 'bare * Pattern' { param($d) Edit-WEntry $d 'startup-edge' -Set @{ Pattern = '*' } }
+
+    Invoke-WSeed 'W1-key-canon' 'doubled backslash' { param($d) Edit-WEntry $d 'animate-windows' -Set @{ Key = 'Control Panel\\Desktop\WindowMetrics' } }
+    Invoke-WSeed 'W1-key-canon' 'trailing backslash' { param($d) Edit-WEntry $d 'animate-windows' -Set @{ Key = 'Control Panel\Desktop\WindowMetrics\' } }
+    Invoke-WSeed 'W1-key-canon' 'leading backslash' { param($d) Edit-WEntry $d 'animate-windows' -Set @{ Key = '\Control Panel\Desktop\WindowMetrics' } }
+    Invoke-WSeed 'W1-key-canon' 'space at a segment edge' { param($d) Edit-WEntry $d 'animate-windows' -Set @{ Key = 'Control Panel\ Desktop\WindowMetrics' } }
+
+    Invoke-WSeed 'W1-policies' 'user key under Policies' { param($d) Edit-WEntry $d 'tel-tips-338389' -Set @{ Key = 'Software\Policies\Microsoft\Windows\CloudContent' } }
+
+    Invoke-WSeed 'W1-startup-shape' 'a plain Run key' { param($d) Edit-WEntry $d 'startup-onedrive' -Set @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Run' } }
+    Invoke-WSeed 'W1-startup-shape' 'package without a publisher id' {
+        param($d)
+        $t = Get-WEntry $d 'startup-teams'
+        Edit-WEntry $d 'startup-teams' -Set @{ Key = $t['Key'].Replace('MSTeams_8wekyb3d8bbwe', 'MSTeams') }
+    }
+
+    Invoke-WSeed 'W1-allow' 'key not on the list' { param($d) Edit-WEntry $d 'tel-tips-338389' -Set @{ Key = 'Software\Microsoft\Windows\CurrentVersion\Run' } }
+    Invoke-WSeed 'W1-allow' 'service not on the list' { param($d) Edit-WEntry $d 'tel-m-diagtrack' -Set @{ Name = 'WerSvc' } }
+    Invoke-WSeed 'W1-allow' 'task not on the list' { param($d) Edit-WEntry $d 'tel-m-task-autochk-proxy' -Set @{ TaskName = 'Other' } }
+    Invoke-WSeed 'W1-triple' 'value name of another key' { param($d) Edit-WEntry $d 'taskbar-animations' -Set @{ ValueName = 'Start_TrackProgs' } }
+
+    Invoke-WSeed 'W1-bit' 'Byte 8' { param($d) Edit-WEntry $d 'fade-slide-menus' -Set @{ Byte = 8 } }
+    Invoke-WSeed 'W1-bit' 'Mask 0x03' { param($d) Edit-WEntry $d 'fade-slide-menus' -Set @{ Mask = 0x03 } }
+    Invoke-WSeed 'W1-bit' 'byte 3 with mask 0x80' { param($d) Edit-WEntry $d 'fade-slide-menus' -Set @{ Byte = 3; Mask = 0x80 } }
+    Invoke-WSeed 'W1-bit' 'Target 2' { param($d) Edit-WEntry $d 'fade-slide-menus' -Set @{ Target = 2 } }
+    Invoke-WSeed 'W1-bit' 'BinaryBit on another value' { param($d) Edit-WEntry $d 'taskbar-animations' -Set @{ Kind = 'BinaryBit'; Byte = 0; Mask = 0x01 } }
+    Invoke-WNegative 'W1-bit' 'byte 7 with mask 0x80' { param($d) Edit-WEntry $d 'animate-controls' -Set @{ Byte = 7; Mask = 0x80 } }
+
+    foreach ($pn in @('Microsoft.ZuneMusic', 'Microsoft.VCLibs.140.00.UWPDesktop', 'Microsoft.UI.Xaml.2.8', 'Microsoft.UI.Xaml.CBS', 'Microsoft.NET.Native.Framework.2.2', 'Microsoft.WindowsAppRuntime.1.8', 'Microsoft.WindowsAppRuntime.CBS.2', 'microsoft.zunemusic', 'microsoft.vclibs.140.00', 'MICROSOFT.WINDOWSSTORE', 'microsoft.ui.xaml.2.8')) {
+        $name = $pn
+        $newId = 'appx-' + $pn.ToLowerInvariant().Replace('.', '-')
+        Invoke-WSeed 'W1-protected' $name { param($d) Edit-WEntry $d 'appx-microsoft-bingnews' -Set @{ Name = $name; Id = $newId } }
+    }
+    Invoke-WNegative 'W1-protected' 'Microsoft.UIX' { param($d) Edit-WEntry $d 'appx-microsoft-bingnews' -Set @{ Name = 'Microsoft.UIX'; Id = 'appx-microsoft-uix' } }
+    Invoke-WSeed 'W1-appx-id' 'two Names swapped' {
+        param($d)
+        $a = Get-WEntry $d 'appx-microsoft-bingnews'; $b = Get-WEntry $d 'appx-microsoft-bingweather'
+        $t = $a['Name']; $a['Name'] = $b['Name']; $b['Name'] = $t
+    }
+    Invoke-WSeed 'W1-appx-id' 'an Id that is not derived from the Name' { param($d) Edit-WEntry $d 'appx-microsoft-todos' -Set @{ Id = 'appx-todos' } }
+
+    Invoke-WSeed 'W1-noop' 'the Target in NoOpValues' { param($d) Edit-WEntry $d 'startup-teams' -Set @{ NoOpValues = @(1) } }
+    Invoke-WSeed 'W1-noop' 'a negative value' { param($d) Edit-WEntry $d 'startup-teams' -Set @{ NoOpValues = @(-1) } }
+    Invoke-WSeed 'W1-noop' 'NoOpValues on a visual entry' { param($d) Edit-WEntry $d 'taskbar-animations' -Set @{ NoOpValues = @(0) } }
+    Invoke-WSeed 'W1-noop' 'startup-teams NoOpValues other than the pinned @(0)' { param($d) Edit-WEntry $d 'startup-teams' -Set @{ NoOpValues = @(2) } }
+
+    Invoke-WSeed 'W1-effect' 'sign-out on telemetry' { param($d) Edit-WEntry $d 'tel-implicit-ink' -Set @{ Effect = 'sign-out' } }
+    Invoke-WSeed 'W1-effect' 'none on visual' { param($d) Edit-WEntry $d 'preset' -Set @{ Effect = 'none' } }
+    Invoke-WSeed 'W1-effect' 'reboot' { param($d) Edit-WEntry $d 'preset' -Set @{ Effect = 'reboot' } }
+
+    Invoke-WSeed 'W1-default' 'WindowsDefault with state absent' { param($d) Edit-WEntry $d 'preset' -Set @{ WindowsDefault = 3 } }
+    Invoke-WSeed 'W1-default' 'state value without WindowsDefault' { param($d) Edit-WEntry $d 'animate-windows' -Remove @('WindowsDefault') }
+    Invoke-WSeed 'W1-default' 'state maybe' { param($d) Edit-WEntry $d 'preset' -Set @{ WindowsDefaultState = 'maybe' } }
+    Invoke-WSeed 'W1-verified' 'BinaryBit Verified true' { param($d) Edit-WEntry $d 'fade-slide-menus' -Set @{ Verified = $true } }
+    Invoke-WSeed 'W1-verified' 'startup Verified true' { param($d) Edit-WEntry $d 'startup-edge' -Set @{ Verified = $true } }
+
+    Invoke-WSeed 'W1-notice' 'names schtasks.exe' { param($d) $e = Get-WEntry $d 'notice-work-folders'; $e['Notice']['personal'] = $e['Notice']['personal'] + ' schtasks.exe' }
+    Invoke-WSeed 'W1-notice' 'carries a SID' { param($d) $e = Get-WEntry $d 'notice-work-folders'; $e['Notice']['personal'] = $e['Notice']['personal'] + ' S-1-5-21-1' }
+    Invoke-WSeed 'W1-notice' 'names a task' { param($d) $e = Get-WEntry $d 'notice-work-folders'; $e['Notice']['personal'] = $e['Notice']['personal'] + ' OneDrive Startup Task' }
+    Invoke-WSeed 'W1-notice' 'is not ASCII' { param($d) $e = Get-WEntry $d 'notice-work-folders'; $e['Notice']['personal'] = $e['Notice']['personal'] + [string][char]0xE9 }
+    Invoke-WSeed 'W1-notice-profiles' 'without work' { param($d) $e = Get-WEntry $d 'notice-work-folders'; $e['Notice'].Remove('work') }
+    Invoke-WSeed 'W1-notice-profiles' 'extra home key' { param($d) $e = Get-WEntry $d 'notice-work-folders'; $e['Notice']['home'] = 'NOTICE step W: x' }
+
+    Invoke-WSeed 'W1-optin' 'RemoveApps entry opts into Teams' { param($d) Edit-WEntry $d 'appx-microsoft-todos' -Set @{ OptIn = 'DisableTeamsStartup' } }
+    Invoke-WSeed 'W1-gate' 'the whole Teams gate removed' { param($d) Edit-WEntry $d 'startup-teams' -Remove @('OptIn', 'PolicyValues', 'RequiresUnmanaged') }
+    Invoke-WSeed 'W1-gate' 'the whole Teams gate and NoOpValues removed' { param($d) Edit-WEntry $d 'startup-teams' -Remove @('NoOpValues', 'OptIn', 'PolicyValues', 'RequiresUnmanaged') }
+    Invoke-WSeed 'W1-gate' 'Teams Target 2' { param($d) Edit-WEntry $d 'startup-teams' -Set @{ Target = 2 } }
+    Invoke-WSeed 'W1-gate' 'the full gate on taskbar-animations' { param($d) Edit-WEntry $d 'taskbar-animations' -Set @{ OptIn = 'DisableTeamsStartup'; PolicyValues = @(3, 4); RequiresUnmanaged = $true } }
+    Invoke-WSeed 'W1-optin' 'Teams entry opts into RemoveApps' { param($d) Edit-WEntry $d 'startup-teams' -Set @{ OptIn = 'RemoveApps' } }
+    Invoke-WSeed 'W1-optin' 'unknown OptIn' { param($d) Edit-WEntry $d 'appx-microsoft-todos' -Set @{ OptIn = 'Other' } }
+
+    Invoke-WSeed 'W1-gate' 'PolicyValues without OptIn' { param($d) Edit-WEntry $d 'taskbar-animations' -Set @{ PolicyValues = @(3, 4) } }
+    Invoke-WSeed 'W1-gate' 'RequiresUnmanaged false' { param($d) Edit-WEntry $d 'startup-teams' -Set @{ RequiresUnmanaged = $false } }
+    Invoke-WSeed 'W1-gate' 'PolicyValues @(3)' { param($d) Edit-WEntry $d 'startup-teams' -Set @{ PolicyValues = @(3) } }
+    Invoke-WSeed 'W1-gate' 'OptIn removed' { param($d) Edit-WEntry $d 'startup-teams' -Remove @('OptIn') }
+
+    Invoke-WSeed 'W1-exec' 'chosen and HC marked executable' { param($d) Edit-WEntry $d 'tel-advertising-id' -Set @{ Executable = $true } }
+    Invoke-WSeed 'W1-exec' 'public and HK marked executable' { param($d) Edit-WEntry $d 'tel-accept-language-optout' -Set @{ Executable = $true } }
+    Invoke-WSeed 'W1-exec' 'machine HK marked executable' { param($d) Edit-WEntry $d 'tel-m-feedback-notifications' -Set @{ Executable = $true } }
+    Invoke-WSeed 'W1-oracle-label' 'Host promoted without the ADR' { param($d) Edit-WEntry $d 'tel-accept-language-optout' -Set @{ Host = 'HC'; Executable = $true } }
+    Assert-WNoFailures
+}
+
+Test-Case 'W1d catalogue tiers 3 and 4 (seeded)' {
+    Invoke-WSeed 'W1-list' 'a consumer app is missing' { param($d) Remove-WEntry $d 'appx-microsoft-bingnews' }
+    Invoke-WSeed 'W1-list' 'an extra app' { param($d) Copy-WEntryAs $d 'appx-microsoft-todos' 'appx-microsoft-extra' @{ Name = 'Microsoft.Extra' } }
+    Invoke-WSeed 'W1-order' 'two consumer entries swapped' { param($d) Swap-WEntries $d 'appx-microsoft-gamingapp' 'appx-microsoft-xbox-tcui' }
+    Invoke-WSeed 'W1-n8' 'Teams startup in the personal profile' { param($d) Edit-WEntry $d 'startup-teams' -Set @{ Profiles = @('personal', 'work') } }
+    Invoke-WSeed 'W1-work-startup' 'Edge startup in the work profile' { param($d) Edit-WEntry $d 'startup-edge' -Set @{ Profiles = @('personal', 'work') } }
+
+    Invoke-WSeed 'W1-dup-target' 'whole-value target in another case' { param($d) Copy-WEntryAs $d 'taskbar-animations' 'taskbar-animations-2' @{ Key = 'software\microsoft\windows\currentversion\explorer\advanced' } }
+    Invoke-WSeed 'W1-dup-target' 'the same bit twice' { param($d) Copy-WEntryAs $d 'fade-slide-menus' 'fade-slide-menus-2' }
+    Invoke-WSeed 'W1-dup-target' 'a whole-value entry on UserPreferencesMask' {
+        param($d)
+        Add-WEntry $d @{ Id = 'upm-whole'; Tag = 'visual'; Kind = 'DWord'; Scope = 'user'; Profiles = @('personal', 'work'); Key = 'Control Panel\Desktop'; ValueName = 'UserPreferencesMask'; Target = 0; WindowsDefaultState = 'unknown'; Verified = $false; Effect = 'sign-out'; Source = 'adr'; Host = 'HC'; Executable = $true }
+    }
+    Invoke-WSeed 'W1-dup-target' 'a name the Pattern matches' { param($d) Copy-WEntryAs $d 'startup-onedrive' 'startup-edge-x' @{ ValueName = 'MicrosoftEdgeAutoLaunch_0123' } }
+    Invoke-WSeed 'W1-dup-target' 'a service twice' { param($d) Copy-WEntryAs $d 'tel-m-diagtrack' 'tel-m-diagtrack-2' }
+
+    # W1-record-overlap, second seed of the spec: a Service record that shares the DiagTrack writer's name
+    $d = Get-WReal
+    $tkc = Copy-WData (Get-WindowsSettingsTagKeys)
+    $tkc['telemetry-record'].Services = [object[]]@('dmwappushservice', 'DiagTrack')
+    Add-WEntry $d @{ Id = 'rec-x'; Tag = 'telemetry-record'; Kind = 'Record'; Scope = 'machine'; Profiles = @('personal'); Ref = 'REC'; RecordOf = 'Service'; Name = 'DiagTrack'; Source = 'adr'; Host = 'HC' }
+    Assert-WOnly @(Get-WCatalogueProblems -Data $d -TagKeys $tkc) 'W1-record-overlap' 'a Service record named DiagTrack'
+    # W1-record-overlap, registry form: a Record on a writer's key and value name
+    $d = Get-WReal
+    $tkc = Copy-WData (Get-WindowsSettingsTagKeys)
+    $row = @($tkc['telemetry-record'].Registry | Where-Object -FilterScript { $_.Key -ceq 'SOFTWARE\Policies\Microsoft\Windows\DataCollection' })[0]
+    $row.Names = [object[]](@($row.Names) + 'DoNotShowFeedbackNotifications')
+    Add-WEntry $d @{ Id = 'rec-y'; Tag = 'telemetry-record'; Kind = 'Record'; Scope = 'machine'; Profiles = @('personal'); Ref = 'REC'; RecordOf = 'DWord'; Key = 'SOFTWARE\Policies\Microsoft\Windows\DataCollection'; ValueName = 'DoNotShowFeedbackNotifications'; Source = 'chosen'; Host = 'HK' }
+    Assert-WOnly @(Get-WCatalogueProblems -Data $d -TagKeys $tkc) 'W1-record-overlap' 'a DWord record on the feedback-notifications value'
+
+    $d = Get-WReal
+    $tkc = Copy-WData (Get-WindowsSettingsTagKeys)
+    $tkc['visual'].Registry = [object[]](@($tkc['visual'].Registry) + @(, @{ Key = 'Control Panel\Mouse'; Names = [object[]]@('MouseSpeed') }))
+    Assert-WOnly @(Get-WCatalogueProblems -Data $d -TagKeys $tkc) 'W1-dead-allow' 'an allowlist row no entry uses'
+
+    Invoke-WSeed 'W1-oracle-telemetry' 'tel-tips-338389 Target 1' { param($d) Edit-WEntry $d 'tel-tips-338389' -Set @{ Target = 1 } }
+    Invoke-WSeed 'W1-oracle-notice' 'a changed word' {
+        param($d)
+        $e = Get-WEntry $d 'notice-onedrive-task'
+        $e['Notice']['work'] = $e['Notice']['work'].Replace('changed', 'altered')
+    }
+    Invoke-WSeed 'W1-oracle-ids' 'two visual entries swapped' { param($d) Swap-WEntries $d 'animate-windows' 'taskbar-animations' }
+    Assert-WNoFailures
+}
+
+Test-Case 'W1e oracle and function-body checks (seeded)' {
+    $tk = Get-WindowsSettingsTagKeys
+    $pr = Get-WindowsSettingsProtectedAppx
+    $c1 = Copy-WData $tk
+    $adv = @($c1['telemetry-user'].Registry | Where-Object -FilterScript { $_.Key -ceq 'Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' })[0]
+    $adv.Names = [object[]]@($adv.Names | Where-Object -FilterScript { $_ -cne 'Start_IrisRecommendations' })
+    Assert-WOnly @(Get-WOracleProblems -TagKeys $c1 -Protected $pr) 'W1-oracle-allow' 'the function output lacks Start_IrisRecommendations'
+    $p1 = Copy-WData $pr
+    $p1.Names = [object[]]@($p1.Names | Where-Object -FilterScript { $_ -cne 'Microsoft.WindowsStore' })
+    Assert-WOnly @(Get-WOracleProblems -TagKeys $tk -Protected $p1) 'W1-oracle-protected' 'the protected set lacks Microsoft.WindowsStore'
+    $t1 = Copy-WData $W1Telemetry
+    $t1 = [object[]](@($t1) + @(, @{ Ref = 'U99'; Id = 'tel-x'; Tag = 'telemetry-user'; Scope = 'user'; Kind = 'DWord'; Key = 'Software\X'; ValueName = 'Y'; Target = 0 }))
+    Assert-WOnly @(Get-WOracleProblems -TagKeys $tk -Protected $pr -OracleTelemetry $t1) 'W1-oracle-sync' 'an extra ADR-0035 row'
+    $o1 = Copy-WData $W1TagKeys
+    $adv2 = @($o1['telemetry-user'].Registry | Where-Object -FilterScript { $_.Key -ceq 'Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced' })[0]
+    $adv2.Names = [object[]]@($adv2.Names | Where-Object -FilterScript { $_ -cne 'Start_IrisRecommendations' })
+    Assert-WOnly @(Get-WOracleProblems -TagKeys $tk -Protected $pr -OracleTagKeys $o1) 'W1-oracle-sync' 'the N12 oracle lacks Start_IrisRecommendations'
+
+    $text = [IO.File]::ReadAllText($ScriptPath)
+    $hdr = 'function Get-WindowsSettingsTagKeys {'
+    $variants = @(
+        @('a script variable in a protected name', $text.Replace('''Microsoft.ZuneMusic''', '$script:Extra')),
+        @('a method call in a protected name', $text.Replace('''Microsoft.WindowsStore''', '[string]::Concat(''Microsoft.'', ''WindowsStore'')')),
+        @('a second statement in the body', $text.Replace($hdr, $hdr + "`n    `$q = 1"))
+    )
+    foreach ($v in $variants) {
+        $t = $null; $er = $null
+        $a = [Management.Automation.Language.Parser]::ParseInput($v[1], [ref]$t, [ref]$er)
+        Assert-Eq $er.Count 0 "the seed '$($v[0])' parses"
+        Assert-WOnly @(Get-WFnBodyProblems -Ast $a) 'W1-fn-body' $v[0]
+    }
+    Assert-WNoFailures
+}
+
+Test-Case 'W1f every W1 code has a seed and a negative' {
+    $codes = @('W1-ast', 'W1-top', 'W1-id', 'W1-tag', 'W1-kind', 'W1-scope', 'W1-record-of', 'W1-record-field', 'W1-field', 'W1-type', 'W1-range', 'W1-gpu',
+        'W1-profile', 'W1-key', 'W1-key-canon', 'W1-policies', 'W1-startup-shape', 'W1-allow', 'W1-triple', 'W1-bit', 'W1-protected', 'W1-noop', 'W1-effect',
+        'W1-default', 'W1-verified', 'W1-notice', 'W1-notice-profiles', 'W1-optin', 'W1-gate', 'W1-exec', 'W1-oracle-label', 'W1-appx-id',
+        'W1-list', 'W1-order', 'W1-n8', 'W1-work-startup', 'W1-dup-target', 'W1-record-overlap', 'W1-dead-allow', 'W1-oracle-telemetry', 'W1-oracle-notice', 'W1-oracle-ids',
+        'W1-oracle-allow', 'W1-oracle-protected', 'W1-oracle-sync', 'W1-fn-body')
+    foreach ($c in $codes) {
+        Assert-True ($script:WSeeds.ContainsKey($c)) "$c has seed counts"
+        Assert-True ($script:WSeeds[$c][0] -ge 1) "$c has at least one seed"
+        Assert-True ($script:WSeeds[$c][1] -ge 1) "$c has at least one negative"
+    }
+}
+
+Test-Case 'W1g the boundary dialect holds for the two pure functions (seeded)' {
+    $m = @{ Scope = @('Get-WindowsSettingsTagKeys', 'Get-WindowsSettingsProtectedAppx'); Owners = @{}; Common = @{}; TypeAllow = $BoundaryTypeAllow; Switches = $BoundarySwitches }
+    $tk = $null; $er = $null
+    $ast = [Management.Automation.Language.Parser]::ParseFile($ScriptPath, [ref]$tk, [ref]$er)
+    Assert-Eq $er.Count 0 'parse errors'
+    $v = @(Get-BoundaryViolations $ast $m)
+    Assert-Eq $v.Count 0 "boundary violations on the real script: $($v -join ' | ')"
+    $text = [IO.File]::ReadAllText($ScriptPath)
+    $hdr = 'function Get-WindowsSettingsTagKeys {'
+    Assert-True ($text.IndexOf($hdr) -ge 0) 'the function header exists'
+    foreach ($seed in @(@('R5', '$script:Cache = 1'), @('R4', '$null = [regex]''x'''), @('R1', '$null = Get-Date'))) {
+        $t2 = $text.Replace($hdr, $hdr + "`n    " + $seed[1])
+        $t = $null; $er2 = $null
+        $a2 = [Management.Automation.Language.Parser]::ParseInput($t2, [ref]$t, [ref]$er2)
+        Assert-Eq $er2.Count 0 "the seed '$($seed[1])' parses"
+        $m2 = @{ Scope = @('Get-WindowsSettingsTagKeys', 'Get-WindowsSettingsProtectedAppx'); Owners = @{}; Common = @{}; TypeAllow = $BoundaryTypeAllow; Switches = $BoundarySwitches }
+        $v2 = @(Get-BoundaryViolations $a2 $m2 | Where-Object -FilterScript { $_ -like "$($seed[0]) *" })
+        Assert-True ($v2.Count -ge 1) "$($seed[0]) catches '$($seed[1])' in the pure function"
+    }
+}
+
+Test-Case 'V1 the catalogue matches visual-effects.yaml (seeded)' {
+    $lines = [IO.File]::ReadAllLines($WYamlPath)
+    $real = Get-WReal
+    $p = @(Get-WVisualProblems -Data $real -YamlLines $lines)
+    Assert-Eq $p.Count 0 "V1 problems: $($p -join ' | ')"
+    $d = Get-WReal
+    Edit-WEntry $d 'animate-controls' -Set @{ Mask = 0x04 }
+    Assert-True (@(Get-WVisualProblems -Data $d -YamlLines $lines).Count -ge 1) 'V1 catches animate-controls Mask 0x04'
+    $d = Get-WReal
+    Edit-WEntry $d 'preset' -Set @{ Target = 0 }
+    Assert-True (@(Get-WVisualProblems -Data $d -YamlLines $lines).Count -ge 1) 'V1 catches preset Target 0'
+    $d = Get-WReal
+    Remove-WEntry $d 'combo-slide'
+    Assert-True (@(Get-WVisualProblems -Data $d -YamlLines $lines).Count -ge 1) 'V1 catches a missing managed entry'
+}
+
+Test-Case 'V2 applying every BinaryBit target to the recorded mask gives the ADR result (seeded)' {
+    $real = Get-WReal
+    $p = @(Get-WUpmProblems -Data $real)
+    Assert-Eq $p.Count 0 "V2 problems: $($p -join ' | ')"
+    $d = Get-WReal
+    Edit-WEntry $d 'combo-slide' -Set @{ Byte = 1 }
+    Assert-True (@(Get-WUpmProblems -Data $d).Count -ge 1) 'V2 catches combo-slide Byte 1'
+}
+
+[Console]::WriteLine('W seeds (code: seeded / negative): ' + (($script:WSeeds.Keys | Sort-Object | ForEach-Object -Process { "$_ $($script:WSeeds[$_][0])/$($script:WSeeds[$_][1])" }) -join ', '))
+
 
 Test-Case 'Z2 suite guard: the real profile settings.json, statusline.sh and backup root are untouched' {
     Assert-Eq $env:USERPROFILE $RealUserProfile 'USERPROFILE restored'

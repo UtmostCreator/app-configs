@@ -47,6 +47,22 @@ Class: align / platform-specific / skip. Skip (per-device): brightness, scaling,
 
 NixOS and macOS sources are unverified research input until phase 2.
 
+### Shared defaults and intentional differences
+
+| Setting | macOS | Native NixOS desktop | Windows host / WSL |
+| --- | --- | --- | --- |
+| Time zone | nix-darwin defaults to `Europe/London` | NixOS time zone module defaults to `Europe/London` where imported | `GMT Standard Time` observed on Windows; `Europe/London` observed in NixOS-WSL; Windows configuration stays manual |
+| Clock display | nix-darwin enables 24-hour time | GNOME Home Manager profile uses `24h` | `HH:mm` observed on Windows; WSL has no desktop clock |
+| Browser | Stable Brave via Homebrew and Launch Services | Stable Brave via Nix and desktop associations | Brave observed on Windows; install and default selection stay manual |
+| PDF viewer | Preview (ADR-0036) | Brave | Keep the platform's separate PDF choice; not a shared MIME policy |
+| Desktop and power | Finder, Dock, and input defaults stay in nix-darwin; power and other host preferences are not copied | GNOME preferences stay in dconf; physical power settings require a native-host inventory | See the Windows inventory. WSL inherits the host's display and power behavior |
+
+These are selected defaults, not a complete baseline. Do not copy raw repeat,
+power, or scroll values between operating systems: the units and semantics
+differ. Use the [Mac checks](../../../platforms/macos/setup.md#cross-platform-checks)
+and the [Windows inventory](windows.yaml); a live NixOS desktop capture and
+end-to-end Mac activation are still pending.
+
 ## YAML schema
 ```yaml
 system: windows            # windows | nixos | macos

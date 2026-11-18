@@ -1,0 +1,42 @@
+#!/bin/sh
+# Versioned pre-commit hook — focused on staged snapshot only.
+# Checks: debug leftovers, conflict markers, .env files.
+# Does NOT block on branch name (that belongs in CI/commit-msg).
+
+set -eu
+
+# --- Staged files (added/modified only) ---
+STAGED=$(git diff --cached --name-only --diff-filter=ACM)
+[ -z "$STAGED" ] && exit 0
+
+# --- 1. Conflict markers ---
+if echo "$STAGED" | xargs grep -HnE '^(<{7}|>{7}|={7})' 2>/dev/null; then
+  echo "✖ Conflict markers found in staged files (see above)."
+  exit 1
+fi
+
+# --- 2. Debug leftovers in PHP files ---
+PHP_FILES=$(echo "$STAGED" | grep '\.php$' || true)
+if [ -n "$PHP_FILES" ]; then
+  if echo "$PHP_FILES" | xargs grep -HnE '\b(dd|dump|var_dump|ray)\s*\(' 2>/dev/null; then
+    echo "✖ Debug statement found in staged PHP files (see above)."
+    exit 1
+  fi
+fi
+
+# --- 3. Debug leftovers in JS/Vue files ---
+JS_FILES=$(echo "$STAGED" | grep -E '\.(js|ts|vue)$' || true)
+if [ -n "$JS_FILES" ]; then
+  if echo "$JS_FILES" | xargs grep -HnE '\bconsole\.(log|debug|dir)\b' 2>/dev/null; then
+    echo "✖ console.log/debug found in staged JS/Vue files (see above)."
+    exit 1
+  fi
+fi
+
+# --- 4. Prevent committing .env (but allow .env.example) ---
+if echo "$STAGED" | grep -qE '(^|/)\.env$'; then
+  echo "✖ Do not commit .env files. Use .env.example instead."
+  exit 1
+fi
+
+exit 0

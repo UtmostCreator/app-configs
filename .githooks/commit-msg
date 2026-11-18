@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Versioned commit-msg hook.
+# 1. Non-empty subject
+# 2. Subject length ≤ 250 chars
+# 3. Conventional commit format
+
+set -euo pipefail
+
+msg_file="$1"
+max=250
+
+confirm_non_ticket_branch() {
+  local branch="$1"
+
+  if [ -r /dev/tty ]; then
+    printf '✖ Branch "%s" does not start with DEV-NNNN. Allow this commit anyway? [y/N] ' "$branch" > /dev/tty
+    read -r answer < /dev/tty || exit 1
+    normalized_answer="$(printf '%s' "${answer:-}" | tr -cd '[:alpha:]' | tr '[:upper:]' '[:lower:]')"
+
+    case "$normalized_answer" in
+      y|yes)
+        return 0
+        ;;
+      *)
+        echo '  Commit aborted.' > /dev/tty
+        exit 1
+        ;;
+    esac
+  fi
+
+  echo "✖ Branch '$branch' does not start with DEV-NNNN."
+  echo "  Re-run in an interactive terminal to confirm the commit, or rename the branch."
+  exit 1
+}
+
+# --- Pass through merge and rebase commits ---
+subject_raw="$(sed -n '1{s/[[:space:]]*$//;p;q;}' "$msg_file")"
+if echo "$subject_raw" | grep -qE '^Merge |^Rebase '; then
+  exit 0
+fi
+
+# --- Confirm commits on branches without a ticket prefix ---
+branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+if [ -n "${branch:-}" ] && ! echo "$branch" | grep -qE '^[A-Z]+-[0-9]+'; then
+  confirm_non_ticket_branch "$branch"
+fi
+
+# --- Extract first line, trim trailing whitespace ---
+subject="$(sed -n '1{s/[[:space:]]*$//;p;q;}' "$msg_file")"
+len=${#subject}
+
+if [ "$len" -eq 0 ]; then
+  echo "✖ Empty commit subject is not allowed."
+  exit 1
+fi
+
+if [ "$len" -gt "$max" ]; then
+  echo "✖ Commit subject exceeds $max characters ($len found)."
+  echo "  Subject: \"$subject\""
+  echo "  Tip: Keep the first line concise (≤ $max)."
+  exit 1
+fi
+
+# --- Conventional commit format check ---
+if ! echo "$subject" | grep -qE '^(DEV-[0-9]+ )?(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|repo)(\(.+\))?: .+'; then
+  echo "✖ Commit subject must follow conventional commit format."
+  echo "  Expected: [DEV-NNNN ]type(scope): summary  (ticket and scope are optional)"
+  echo "  Types:    feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert|repo"
+  echo "  Got:      \"$subject\""
+  exit 1
+fi
+
+exit 0

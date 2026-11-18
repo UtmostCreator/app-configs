@@ -1,0 +1,22 @@
+#!/bin/sh
+# Versioned post-merge hook.
+# Detects dependency drift after pull/merge.
+
+changed_files="$(git diff --name-only HEAD@{1} HEAD 2>/dev/null || true)"
+
+if echo "$changed_files" | grep -q 'composer.lock'; then
+  echo ""
+  echo "⚠  composer.lock changed — run: composer install"
+fi
+
+if echo "$changed_files" | grep -q 'package-lock.json'; then
+  echo ""
+  echo "⚠  package-lock.json changed — run: npm ci"
+fi
+
+if echo "$changed_files" | grep -q 'database/migrations/'; then
+  echo ""
+  echo "⚠  Migrations changed — consider: php artisan migrate"
+fi
+
+exit 0

@@ -1,5 +1,7 @@
-{ ... }:
+{ lib, ... }:
 {
+  time.timeZone = lib.mkDefault "Europe/London";
+
   # macOS system defaults expressed declaratively. Applied by
   # `darwin-rebuild switch --flake ./nix#macos`. Only declares preferences
   # that the user actively maintains by hand today — grow this from real
@@ -20,6 +22,7 @@
     };
 
     NSGlobalDomain = {
+      AppleICUForce24HourTime = true;
       ApplePressAndHoldEnabled = false;
       KeyRepeat = 2;
       InitialKeyRepeat = 15;

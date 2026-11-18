@@ -244,6 +244,7 @@ in
   dconf.settings = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
     {
       "org/gnome/desktop/interface" = {
+        clock-format = "24h";
         # Disable all GNOME UI animations (window open/close/minimize, workspace
         # and overview transitions). The app shortcuts above (Alt+Shift+<letter>)
         # raise/minimize windows constantly; with animations on, each toggle

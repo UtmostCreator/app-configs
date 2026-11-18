@@ -35,6 +35,8 @@ in
       cleanup = "none";
     };
 
+    taps = [ "nikitabobko/tap" ];
+
     casks = [
       # ── Browsers ──────────────────────────────────────────
       "brave-browser"
@@ -58,7 +60,7 @@ in
       "raycast"
 
       # ── Windows, keyboard and input ──────────────────────
-      "aerospace"
+      "nikitabobko/tap/aerospace"
       "alt-tab"
       "betterdisplay"
     ]

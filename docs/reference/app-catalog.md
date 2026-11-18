@@ -35,7 +35,7 @@ build exists, never installed on Linux.
 | **Raycast** | **macOS-only** | cask | launcher — **not installed on Linux** |
 | **AeroSpace** | **macOS-only** | cask | tiling WM — **not installed on Linux** |
 | Sequel Ace | macOS-only | cask | MySQL GUI |
-| BBEdit | macOS-only | cask | editor |
+| BBEdit | macOS-only | optional manual cask | editor |
 | BetterDisplay | macOS-only | cask | display control |
 | Karabiner-Elements | macOS-only | cask | keyboard remap |
 | Ice / AltTab / Stats / NoTunes / LinearMouse | macOS-only | cask (opt) | menu-bar/UX utilities |

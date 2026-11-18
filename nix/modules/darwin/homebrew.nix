@@ -37,7 +37,7 @@ in
 
     casks = [
       # ── Browsers ──────────────────────────────────────────
-      "brave-browser@beta"
+      "brave-browser"
       "firefox"
 
       # ── Development applications ─────────────────────────

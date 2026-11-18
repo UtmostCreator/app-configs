@@ -69,19 +69,23 @@ If a local dev URL misbehaves, allow it explicitly:
 This is a per-user runtime setting, not something this repo provisions — it is
 documented here so the default-browser choice does not surprise local dev work.
 
-## macOS — Brave Beta on every activation
+## macOS — Brave Stable for web and Preview for PDF
 
-Homebrew installs `brave-browser@beta` and `duti`. The user Home Manager
+Homebrew installs `brave-browser` and `duti`. The user Home Manager
 activation in `nix/modules/home/default-browser-macos.nix` registers
-`/Applications/Brave Browser Beta.app` with Launch Services, then uses `duti`
-to set `com.brave.Browser.beta` for HTTP, HTTPS, HTML, XHTML and PDF. It checks
-the resulting HTML handler. This runs on each `darwin-rebuild switch` and on
+`/Applications/Brave Browser.app` with Launch Services, then uses `duti`
+to set `com.brave.Browser` for HTTP, HTTPS, HTML and XHTML and
+`com.apple.Preview` for PDF. It checks both the HTML and PDF handlers.
+This runs on each `darwin-rebuild switch` and on
 standalone macOS Home Manager activation (after installing the cask and duti).
 The activation fails if the app is absent or setting a handler fails.
 
+Beta and Stable use separate profiles. Migrate browser data before removing
+Beta; activation does not migrate or uninstall it.
+
 ```bash
-duti -d public.html  # com.brave.Browser.beta
-duti -d com.adobe.pdf
+duti -d public.html   # com.brave.Browser
+duti -d com.adobe.pdf  # com.apple.Preview
 ```
 
 ## Linux Brave package and updates

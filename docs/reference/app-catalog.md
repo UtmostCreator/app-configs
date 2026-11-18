@@ -24,7 +24,7 @@ build exists, never installed on Linux.
 | Ghostty | Nix(GUI-Linux) | cask | GPU terminal |
 | VS Code | Nix(GUI-Linux) `vscode` | cask `visual-studio-code` | single IDE on all systems |
 | Firefox | Nix(GUI-Linux) | cask | browser (parity: cask enabled) |
-| Brave | Nix(GUI-Linux) official stable | cask `brave-browser@beta` | default browser; official release packaged by this repo |
+| Brave | Nix(GUI-Linux) official stable | cask `brave-browser` (stable) | default browser; official release packaged by this repo |
 | Flameshot | Nix(GUI-Linux) | not shipped on macOS (cask removed) | screenshots |
 | Bruno | Nix(GUI-Linux) | cask | API client (Linux build exists) |
 | QDirStat / GrandPerspective | Nix(GUI-Linux) `qdirstat` | cask `grandperspective` | disk usage analyser (Linux also has GNOME Baobab) |

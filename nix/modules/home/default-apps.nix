@@ -99,7 +99,7 @@ in
   # read-only store link, which prevents GNOME from changing defaults.
   #
   # This module is imported ONLY by the linux-desktop host. macOS uses the
-  # user activation in default-browser-macos.nix (Brave Beta via duti).
+  # user activation in default-browser-macos.nix (Brave and Preview via duti).
   #
   # Guarded on isLinux so an accidental import on Darwin is a no-op rather than
   # writing a Linux mimeapps.list into a macOS home.

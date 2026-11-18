@@ -21,7 +21,7 @@ Install these by hand. The repo does not (yet) check for them.
 xcode-select --install                 # provides git, needed to clone
 # Homebrew: follow https://brew.sh (hard prerequisite, see below)
 brew --prefix                          # expect /opt/homebrew
-brew info --cask nikitabobko/tap/aerospace   # the plain `aerospace` is expected to fail
+brew info --cask nikitabobko/tap/aerospace   # optional tap/cask availability check
 git clone https://github.com/UtmostCreator/app-configs.git ~/app-configs
 cd ~/app-configs
 /bin/bash --version                    # expect 3.2.x
@@ -70,7 +70,7 @@ surprise and record it in the ticket.
    Nix exists; repeat it after step 4 to close T-0042 human check 2. Check 3
    (brew preview) needs the casks installed first (step 6).
 
-4. **Real install (LIVE).** Only after fixes 1 to 3 of the ticket have landed.
+4. **Real install (LIVE).** Review the remaining first-run gaps below before applying.
    ```bash
    bash ops/install.sh --profile work
    ```
@@ -218,21 +218,16 @@ Fixes are specified in the ticket. Numbers match its fix tasks.
    and `bootstrap.sh` use `sudo`. The failure comes after `chezmoi apply`, with
    no automatic darwin rollback.
 2. **BLOCKER, Homebrew absent is not detected.** See Prerequisites. The
-   default-browser script then exits 1 ("Brave Beta is missing").
-3. **Blocker (inferred), the `aerospace` cask.** homebrew-cask has no
-   aerospace (formulae.brew.sh API 404 on 2026-11-15, no rename or migration
-   entry). The `nikitabobko/homebrew-tap` repository has `Casks/aerospace.rb`,
-   so the qualified token is `nikitabobko/tap/aerospace`. The repo declares no
-   taps. Activation runs under `set -e`, so a failing `brew bundle` probably
-   aborts it (inferred). The other 23 cask
-   tokens were current and none deprecated, disabled or Intel-only.
+   default-browser script then exits 1 if Brave is missing.
+3. **AeroSpace tap now declared.** The Homebrew manifest uses
+   `nikitabobko/tap/aerospace`; verify installation on the first real switch.
 4. **`ops/update-all.sh` is not bash 3.2 safe.** `mapfile` at lines 720, 770,
    824, 1006, 1021, 1165 and 1167, with no version guard. The ones at about
    1165 and 1167 sit in the `!= macos` branch and are never reached on
    darwin. After activation plain `bash` is likely 5.3 (evaluated,
    unverified), so only `/bin/bash` shows the 3.2 behaviour.
 5. **Default browser step is fatal on failure.** The script exits 1 on a
-   `duti` failure or an unhandled public.html; that a declined dialog aborts
+   `duti` failure or if the HTML or PDF handler does not match; that a declined dialog aborts
    the activation is an inference *(unverified)*.
 6. **LaunchAgents.** The litellm plist runs
    `~/.config/litellm-copilot/scripts/start.sh`, which no repo source
@@ -249,13 +244,34 @@ imports it, but macOS imports it too (a no-op through the `isLinux` guard).
 
 ## Not yet verified on a real Mac
 
-Nothing has been run on a Mac. From a Linux host the darwin outputs evaluate
-(`darwinConfigurations.macos.system.drvPath`, 24 cask tokens, the brews list,
-taps empty, prefix `/opt/homebrew`) and `nix flake check
---all-systems --no-build` covers darwin. Not checkable without a Mac:
+The initial read-only Mac audit did not exercise activation. On a
+Nix-enabled host, `nix flake check --all-systems --no-build ./nix` can
+evaluate the darwin output; a native build and switch require a Mac. Check:
 `brew bundle`, Gatekeeper, the /etc conflicts, `duti` dialogs, launchd loading,
 the Determinate install, `sudo nix run` on a user-owned repo, `update-all.sh`
 under bash 3.2, the real darwin closure build, and macOS 27 behaviour.
+
+## Cross-platform checks
+
+The [settings inventory ticket](../../work/active/T-0048-cross-os-settings/ticket.md)
+records which settings are shared and which remain per-platform. Before and
+after a switch, run these read-only checks and keep the output locally:
+
+```bash
+bash ops/doctor.sh --preflight
+readlink /etc/localtime                   # expect a path ending in Europe/London
+defaults read -g AppleICUForce24HourTime  # 1
+duti -d public.html                       # com.brave.Browser
+duti -d com.adobe.pdf                     # com.apple.Preview
+brew list --cask --full-name              # expect nikitabobko/tap/aerospace
+fish --version
+test -r "$HOME/.config/fish/config.fish"
+docker compose version
+```
+
+Fish is already installed by Home Manager and configured by chezmoi; macOS
+keeps zsh as the login shell. App data, Dock layouts, launcher shortcuts,
+and optional work apps are not copied from another host.
 
 ## Development workload safety
 

@@ -257,5 +257,44 @@ taps empty, prefix `/opt/homebrew`) and `nix flake check
 the Determinate install, `sudo nix run` on a user-owned repo, `update-all.sh`
 under bash 3.2, the real darwin closure build, and macOS 27 behaviour.
 
+## Development workload safety
+
+Run the aggregate memory report before a heavy build and again while it is
+running. It prints to stdout, does not capture process arguments, and neither
+writes settings nor generates memory pressure.
+
+```bash
+bash ops/macos-memory-report.sh
+```
+
+In Activity Monitor, compare Memory Pressure and Swap Used over time. Do not
+judge memory pressure from a single free-memory percentage or from swap usage
+that is high but stable. Lower project test/build parallelism first; start with
+one heavy job when diagnosing a slowdown. Keep limits scoped to the workload:
+
+```bash
+node --max-old-space-size=2048 script.js
+php -d memory_limit=1G path/to/script.php
+nix build --max-jobs 2 --cores 2 ./nix#homeConfigurations.macos.activationPackage
+```
+
+These are examples, not global defaults. The Node flag limits V8 old space,
+not total RSS; PHP's limit does not cover other workers. Nix's flags limit
+local build concurrency and advise builders how many cores to use; they do
+not enforce a memory or CPU quota. Keep the existing 2 GiB Colima VM allocation
+unless a workload needs more and pressure measurements show headroom. The
+Linux Ghostty cgroup limits do not apply on macOS; do not substitute
+`ulimit -m` or `launchctl limit rss` as hard memory ceilings.
+
+For a local power inventory, `pmset -g custom` shows separate AC and battery
+policies, and `pmset -g assertions` shows current sleep blockers. Keep the
+assertion output local because it can identify running apps. Review FileVault,
+firewall, automatic security updates, screen locking, sharing and app
+permissions in System Settings rather than overriding managed policy. Time
+Machine and Kopia are the intended backup tools
+([ADR-0033](../../architecture/decisions/0033-communication-sync-notes-and-backup.md));
+the repo does not provision backup destinations or schedules. Verify recovery
+by restoring a test file to a separate location.
+
 Open work and the verification checklist:
 [T-0046](../../work/active/T-0046-macos-first-run-readiness/ticket.md).

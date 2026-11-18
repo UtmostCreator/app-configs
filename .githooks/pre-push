@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# Versioned pre-push hook.
+# 1. Block direct push to main or release/* branches.
+# 2. Run fast debug/hygiene checks against files changed in this push.
+
+set -euo pipefail
+
+REMOTE="$1"
+REMOTE_URL="$2"
+
+PROTECTED_PATTERN='^(main|release\/.*)$'
+TICKET_BRANCH_PATTERN='^DEV-[0-9]+([-/].+)?$'
+
+confirm_non_ticket_branch() {
+  local branch="$1"
+
+  [ "$REMOTE" = "origin" ] || return 0
+  echo "$branch" | grep -Eq "$TICKET_BRANCH_PATTERN" && return 0
+
+  if [ -r /dev/tty ]; then
+    printf '✖ Branch "%s" does not start with DEV-NNNN. Push to %s anyway? [y/N] ' "$branch" "$REMOTE" > /dev/tty
+    read -r answer < /dev/tty || exit 1
+
+    case "${answer:-N}" in
+      [Yy]|[Yy][Ee][Ss])
+        return 0
+        ;;
+      *)
+        echo "  Push aborted. Rename the branch or confirm explicitly next time." > /dev/tty
+        exit 1
+        ;;
+    esac
+  fi
+
+  echo "✖ Branch '$branch' does not start with DEV-NNNN."
+  echo "  Use 'just branch-create <name>' or 'git new-branch <name>' for the supported flow."
+  exit 1
+}
+
+# Read refs being pushed from stdin: <local_ref> <local_sha> <remote_ref> <remote_sha>
+while read -r local_ref local_sha remote_ref remote_sha; do
+  # Extract short branch name from remote ref (e.g. refs/heads/main -> main)
+  branch=""
+  if [[ "$remote_ref" == refs/heads/* ]]; then
+    branch="${remote_ref#refs/heads/}"
+  elif [[ "$local_ref" == refs/heads/* ]]; then
+    branch="${local_ref#refs/heads/}"
+  fi
+
+  [ -n "$branch" ] && confirm_non_ticket_branch "$branch"
+
+  if echo "$branch" | grep -Eq "$PROTECTED_PATTERN"; then
+    echo "✖ Direct push to '$branch' is not allowed."
+    echo "  Open a pull request instead."
+    exit 1
+  fi
+
+  # Skip deletes and new empty pushes
+  [ "$local_sha" = "0000000000000000000000000000000000000000" ] && continue
+
+  # Determine range of commits being pushed
+  if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+    # New branch — check all commits not yet on remote
+    range="${local_sha}"
+    CHANGED=$(git diff --name-only --diff-filter=ACM "$(git merge-base HEAD origin/main 2>/dev/null || echo "${local_sha}^")" HEAD 2>/dev/null || true)
+  else
+    CHANGED=$(git diff --name-only --diff-filter=ACM "${remote_sha}..${local_sha}" 2>/dev/null || true)
+  fi
+
+  [ -z "$CHANGED" ] && continue
+
+  # --- 1. Conflict markers ---
+  if echo "$CHANGED" | xargs -I{} git show "${local_sha}:{}" 2>/dev/null | grep -Eq '^(<{7}|>{7}|={7})'; then
+    echo "✖ Conflict markers found in pushed files."
+    exit 1
+  fi
+
+  # --- 2. Debug leftovers in PHP ---
+  PHP_FILES=$(echo "$CHANGED" | grep '\.php$' || true)
+  if [ -n "$PHP_FILES" ]; then
+    while IFS= read -r f; do
+      if git show "${local_sha}:${f}" 2>/dev/null | grep -qE '\b(dd|dump|var_dump|ray)\s*\('; then
+        echo "✖ Debug statement found in pushed file: $f"
+        exit 1
+      fi
+    done <<< "$PHP_FILES"
+  fi
+
+  # --- 3. Debug leftovers in JS/Vue/TS ---
+  JS_FILES=$(echo "$CHANGED" | grep -E '\.(js|ts|vue)$' || true)
+  if [ -n "$JS_FILES" ]; then
+    while IFS= read -r f; do
+      if git show "${local_sha}:${f}" 2>/dev/null | grep -qE '\bconsole\.(log|debug|dir)\b'; then
+        echo "✖ console.log/debug found in pushed file: $f"
+        exit 1
+      fi
+    done <<< "$JS_FILES"
+  fi
+done
+
+# --- Run test suite ---
+echo "Running test suite..."
+php artisan test --exclude-group=skip
+echo "✔ Tests passed."
+
+# --- Ensure last commit subject carries the branch ticket ---
+# Only amend when:
+#   a) the branch name has a recognisable ticket prefix, and
+#   b) the HEAD commit message does not already include it, and
+#   c) HEAD has not yet been pushed to the remote (no rewriting shared history).
+branch="$(git symbolic-ref --quiet --short HEAD 2>/dev/null || true)"
+if [ -n "${branch:-}" ]; then
+  ticket="$(printf '%s' "$branch" | grep -oE '^[A-Z]+-[0-9]+' || true)"
+  if [ -n "${ticket:-}" ]; then
+    head_msg="$(git log -1 --format='%s')"
+    if ! printf '%s' "$head_msg" | grep -qE "^${ticket}"; then
+      # Guard: skip amend if HEAD is already present on any remote tracking ref.
+      if git branch -r --contains HEAD 2>/dev/null | grep -q .; then
+        echo "⚠ HEAD is already on the remote — skipping auto-amend."
+        echo "  Commit subject is missing '${ticket}'. Amend manually if needed."
+      else
+        amended_msg="${ticket} ${head_msg}"
+        git commit --amend -m "$amended_msg" --no-verify
+        echo "✔ Commit message amended to: ${amended_msg}"
+      fi
+    fi
+  fi
+fi
+
+exit 0

@@ -1,0 +1,35 @@
+#!/bin/sh
+# Versioned post-checkout hook.
+# Detects dependency drift after branch switch or clone.
+#
+# Arguments: $1=prev_HEAD  $2=new_HEAD  $3=branch_flag (1=branch checkout, 0=file checkout)
+
+prev_head="$1"
+new_head="$2"
+branch_flag="$3"
+
+# Only run on branch checkouts (not file checkouts)
+[ "$branch_flag" = "0" ] && exit 0
+
+# Skip if this is the initial clone (prev_head is all zeros)
+[ "$prev_head" = "0000000000000000000000000000000000000000" ] && exit 0
+
+# Check if lockfiles changed between the two HEADs
+changed_files="$(git diff --name-only "$prev_head" "$new_head" 2>/dev/null || true)"
+
+if echo "$changed_files" | grep -q 'composer.lock'; then
+  echo ""
+  echo "⚠  composer.lock changed — run: composer install"
+fi
+
+if echo "$changed_files" | grep -q 'package-lock.json'; then
+  echo ""
+  echo "⚠  package-lock.json changed — run: npm ci"
+fi
+
+if echo "$changed_files" | grep -q 'database/migrations/'; then
+  echo ""
+  echo "⚠  Migrations changed — consider: php artisan migrate"
+fi
+
+exit 0

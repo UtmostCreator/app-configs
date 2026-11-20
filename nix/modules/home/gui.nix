@@ -448,10 +448,13 @@
 
   # Memory budget for terminal work. Every Ghostty tab or split is a transient
   # app-ghostty-surface-transient-*.scope. A dash-prefix drop-in (verified with
-  # systemd 260) moves new tabs into app-terminals.slice and caps each tab's
-  # swap. Ghostty's own linux-cgroup-memory-limit adds a 12 GiB MemoryHigh per tab
-  # (home/.chezmoitemplates/ghostty/config.body.tmpl).
+  # systemd 260) moves new tabs into app-terminals.slice and caps each tab.
   #
+  # Limits are percentages, which systemd resolves against physical RAM, so
+  # they follow RAM upgrades and smaller machines instead of one fixed size.
+  # The slice is soft 60% / hard 70%, which leaves 30% of RAM outside the
+  # terminal budget; each tab or agent is soft 40% / hard 50% inside it. Swap
+  # caps stay fixed sizes. tests/bash/terminal-memory-limits.bats checks them.
   # Per-tab limits do not add up, so the slice carries the aggregate budget for
   # agents, linters and builds started from terminals, leaving room for GNOME
   # and browsers. At MemoryMax the kernel OOM killer picks a victim inside the
@@ -460,7 +463,7 @@
   # process runs depends on how it was launched: from the GNOME launcher it is
   # app-com.mitchellh.ghostty.service, outside the slice; from Vicinae it sits
   # in vicinae.service, unbounded. systemd-oomd still watches each tab for
-  # memory pressure. These are starting values: tune them from
+  # memory pressure. Tune from
   # `systemctl --user show app-terminals.slice -p MemoryPeak`.
   # Existing tabs keep their old placement until reopened.
   # See docs/platforms/nixos/desktop-stability.md.
@@ -470,6 +473,8 @@
         text = ''
           [Scope]
           Slice=app-terminals.slice
+          MemoryHigh=40%
+          MemoryMax=50%
           MemorySwapMax=4G
         '';
       };
@@ -481,7 +486,8 @@
         text = ''
           [Scope]
           Slice=app-terminals.slice
-          MemoryHigh=12G
+          MemoryHigh=40%
+          MemoryMax=50%
           MemorySwapMax=4G
         '';
       };
@@ -509,8 +515,8 @@
     Unit.Description = "Terminals and AI agent services (shared memory budget)";
     Slice = {
       MemoryAccounting = true;
-      MemoryHigh = "18G";
-      MemoryMax = "22G";
+      MemoryHigh = "60%";
+      MemoryMax = "70%";
       MemorySwapMax = "8G";
     };
   };

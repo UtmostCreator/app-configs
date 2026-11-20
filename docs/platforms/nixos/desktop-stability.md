@@ -27,10 +27,10 @@ Audit of a `linux-desktop` host after a session loss. It covers one long-running
 
 ## Fixed in this repo
 
-- Per-tab soft limit, 12 GiB: `home/.chezmoitemplates/ghostty/config.body.tmpl` (`linux-cgroup-memory-limit`).
-- All tabs in one budget, `app-terminals.slice` (High 18G, Max 22G, Swap 8G), plus 4G swap per tab: `nix/modules/home/gui.nix`.
-- GNOME Console tabs join the same budget (High 12G, swap 4G per tab): `nix/modules/home/gui.nix`.
-- AI remote-control services are capped (High 12G, Max 16G, swap 4G each) on every Linux host: `nix/modules/home/ai-cli-updates.nix`. They join `app-terminals.slice` through a desktop-only drop-in: `nix/modules/home/gui.nix`. They had peaked at 18-19 GiB outside every budget. The caps and the slice move take effect at the next restart of each service (restarting is the owner's call).
+- Memory limits are percentages of physical RAM, so they follow RAM upgrades and smaller machines. Checked by `tests/bash/terminal-memory-limits.bats`.
+- All tabs in one budget, `app-terminals.slice` (High 60%, Max 70%, Swap 8G), which leaves 30% of RAM outside the terminal budget (other apps can still use it): `nix/modules/home/gui.nix`.
+- Each Ghostty and GNOME Console tab is capped (High 40%, Max 50%, swap 4G per tab) by a scope drop-in: `nix/modules/home/gui.nix`. Ghostty's `linux-cgroup-memory-limit` is no longer set, because it only takes a fixed byte size.
+- AI remote-control services are capped (High 40%, Max 50%, swap 4G each) on every Linux host: `nix/modules/home/ai-cli-updates.nix`. They join `app-terminals.slice` through a desktop-only drop-in: `nix/modules/home/gui.nix`. On other Linux hosts, WSL included, each service is capped but nothing caps their total, so two sessions together can still reach all of RAM. They had peaked at 18-19 GiB outside every budget. The caps and the slice move take effect at the next restart of each service (restarting is the owner's call).
 - Ghostty ibus workaround (version-guarded): `nix/overlays/default.nix`. It sets `GTK_IM_MODULE=gtk-im-context-simple`, which everything started from a Ghostty shell inherits: GTK apps launched from a tab lose ibus input. GNOME Shell layout switching is unaffected.
 - Restart back-off: `nix/modules/home/openclaw.nix`, `nix/modules/home/dev.nix`, `nix/modules/home/ai-cli-updates.nix`.
 - System baseline (fwupd discovery, smartd; zram opt-in): `nix/modules/nixos/desktop-stability.nix`, wired by `ops/system-setup.sh`. smartd runs with `-q nodev0`, so a host with no SMART device does not fail activation.
@@ -38,7 +38,7 @@ Audit of a `linux-desktop` host after a session loss. It covers one long-running
 What the memory limits do and don't do:
 
 - At the slice's `MemoryMax`, the kernel picks a victim inside the slice by OOM score, and `OOMPolicy=stop` then stops that one tab scope or service per kill. It is not necessarily the largest process.
-- `MemoryMax=16G` on the remote-control services can stop a session that peaks above it (18-19 GiB was seen). The restart back-off then applies. That is the intended trade-off.
+- `MemoryMax=50%` on the remote-control services (about 15.3 GiB on a 32 GB machine) can stop a session that peaks above it (18-19 GiB was seen). The restart back-off then applies. That is the intended trade-off.
 - Where the Ghostty main process runs depends on how it was launched: from the GNOME launcher it is `app-com.mitchellh.ghostty.service`, outside the slice; from Vicinae it runs in `vicinae.service`, unbounded.
 - GNOME is outside the slice, which lowers the risk. It is not a guarantee: tabs opened before the change and apps launched from Vicinae are still unbounded.
 

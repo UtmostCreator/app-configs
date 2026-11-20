@@ -6,7 +6,7 @@
     <string>com.local.codebase-memory-mcp</string>
     <key>ProgramArguments</key>
     <array>
-        <string>{{ .chezmoi.homeDir }}/.local/bin/codebase-memory-mcp</string>
+        <string>{{ lookPath "codebase-memory-mcp" | default (printf "%s/.local/bin/codebase-memory-mcp" .chezmoi.homeDir) }}</string>
         <string>daemon</string>
         <string>start</string>
         <string>--port=9749</string>

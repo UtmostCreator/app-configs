@@ -2,7 +2,7 @@
   "servers": {
     "codebase-memory-mcp": {
       "type": "stdio",
-      "command": "{{ .chezmoi.homeDir }}/.local/bin/codebase-memory-mcp",
+      "command": "{{ lookPath "codebase-memory-mcp" | default "codebase-memory-mcp" }}",
       "args": []
     },
     "io.github.ChromeDevTools/chrome-devtools-mcp": {

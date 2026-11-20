@@ -38,6 +38,20 @@ qmd() { bash "$BATS_TEST_TMPDIR/qmd.sh"; }
     ! grep -q -i -E '"env"|token|secret|password|apikey' <<<"$output"
 }
 
+@test "mcp: the codebase-memory command is the binary found on PATH, else the bare name" {
+    mkdir "$BATS_TEST_TMPDIR/bin"
+    printf '#!/bin/sh\n' >"$BATS_TEST_TMPDIR/bin/codebase-memory-mcp"
+    chmod +x "$BATS_TEST_TMPDIR/bin/codebase-memory-mcp"
+    PATH="$BATS_TEST_TMPDIR/bin:$PATH" render "$LINUX_TMPL" >"$BATS_TEST_TMPDIR/found.sh"
+    run bash "$BATS_TEST_TMPDIR/found.sh" </dev/null
+    [ "$(jq -r '.servers["codebase-memory-mcp"].command' <<<"$output")" = "$BATS_TEST_TMPDIR/bin/codebase-memory-mcp" ]
+    mkdir "$BATS_TEST_TMPDIR/only-chezmoi"
+    ln -s "$(command -v chezmoi)" "$BATS_TEST_TMPDIR/only-chezmoi/chezmoi"
+    PATH="$BATS_TEST_TMPDIR/only-chezmoi" render "$LINUX_TMPL" >"$BATS_TEST_TMPDIR/missing.sh"
+    run bash "$BATS_TEST_TMPDIR/missing.sh" </dev/null
+    [ "$(jq -r '.servers["codebase-memory-mcp"].command' <<<"$output")" = codebase-memory-mcp ]
+}
+
 @test "mcp: a server that already exists keeps its live definition" {
     cur='{"servers":{"codebase-memory-mcp":{"type":"stdio","command":"/opt/custom/cbm"}}}'
     run mcp <<<"$cur"

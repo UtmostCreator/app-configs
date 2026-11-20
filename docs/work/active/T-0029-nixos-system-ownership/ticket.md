@@ -30,7 +30,7 @@ no compositor change.
 - Downstream that goes stale and must be updated or re-checked: `ops/install.sh:397-428`, `ops/readiness.sh:6,92`, `docs/reference/keyboard.md:20,41`
 
 ## Findings
-- VERIFIED: flake has no `nixosConfigurations` (`nix/flake.nix:170-178`).
+- VERIFIED (77564b6): flake had no `nixosConfigurations` (`nix/flake.nix:170-178`). Since 2026-11-20 it has one, the build-only niri pilot `linux-desktop-pilot` for PC 2 (`nix/hosts/linux-desktop-pilot/system.nix`); `linux-desktop` (PC 1) is still not flake-owned, which stays this ticket's scope.
 - VERIFIED: only `nix/modules/nixos/default.nix` has no flake consumer. `docker.nix` is live through the `ops/system-setup.sh` copy, and `keyd-f1-remap.nix` through a manual copy.
 - VERIFIED: `ops/system-setup.sh` edits `/etc/nixos/configuration.nix`, writes `app-configs-extra.nix` (:51), copies `app-configs-docker.nix` (:71-72,:263) and runs `nixos-rebuild switch` (:50, :191, :253-311, :319).
 - VERIFIED: `ops/tailscale-setup.sh` writes the tailscale aux modules (:17,:51) and edits `/etc/nixos/configuration.nix` and `flake.nix`.

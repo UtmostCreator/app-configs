@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+current_file="$(mktemp)"
+trap 'rm -f "$current_file"' EXIT
+cat >"$current_file"
+
+models='models:
+  embed: hf:ggml-org/embeddinggemma-300M-GGUF/embeddinggemma-300M-Q8_0.gguf
+  generate: hf:tobil/qmd-query-expansion-1.7B-gguf/qmd-query-expansion-1.7B-q4_k_m.gguf
+  rerank: hf:ggml-org/Qwen3-Reranker-0.6B-Q8_0-GGUF/qwen3-reranker-0.6b-q8_0.gguf'
+
+if ! grep -q '[^[:space:]]' "$current_file"; then
+  printf '%s\n' "$models"
+elif grep -q '^models:' "$current_file"; then
+  cat "$current_file"
+else
+  cat "$current_file"
+  [ -z "$(tail -c1 "$current_file")" ] || printf '\n'
+  printf '%s\n' "$models"
+fi

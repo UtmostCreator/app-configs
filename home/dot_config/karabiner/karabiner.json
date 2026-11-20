@@ -10,6 +10,32 @@
         },
         "rules": [
           {
+            "description": "Alt+Shift+4 = Screenshot and screen recording toolbar (Cmd+Shift+5)",
+            "manipulators": [
+              {
+                "from": {
+                  "key_code": "4",
+                  "modifiers": {
+                    "mandatory": [
+                      "option",
+                      "shift"
+                    ]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "5",
+                    "modifiers": [
+                      "command",
+                      "shift"
+                    ]
+                  }
+                ],
+                "type": "basic"
+              }
+            ]
+          },
+          {
             "description": "Win+D = Minimize all windows",
             "manipulators": [
               {

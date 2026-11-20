@@ -66,23 +66,23 @@ actions:
   # ---------------------------------------------------------------- launcher
   - id: launcher
     macos:
-      binding: "unknown"
+      binding: "Alt+Space"
       tool: raycast
-      managed_by: none
-      src: "reference/raycast/shortcuts.yaml (no launcher hotkey recorded)"
-      note: "Raycast has a launcher hotkey but the repo does not record it; read it from the Raycast app."
+      managed_by: repo-manual
+      src: "none"
+      note: "Owner decision 2026-11-20: Alt+Space everywhere. Set it in Raycast, Settings, General, Raycast Hotkey; Raycast keeps it in its own store, so the repo cannot apply it."
     nixos:
-      binding: "Ctrl+Space"
+      binding: "Alt+Space"
       tool: vicinae
       managed_by: repo-automated
-      src: "nix/modules/home/gnome-keybindings.nix:37"
-      note: "Chosen to stay clear of Super+Space layout switching."
+      src: "nix/modules/home/gnome-keybindings.nix:36"
+      note: "GNOME's own Alt+Space window menu is cleared (activate-window-menu) so the launcher can take the key."
     windows:
       binding: "Alt+Space"
       tool: raycast
       managed_by: proposed
       src: "none"
-      note: "Owner decision: Alt+Space everywhere. On Windows, Alt+Space is the OS window menu; Raycast (or PowerToys Command Palette) can take it over, so the window menu is lost. CONFLICT: Alt+Space is already bound in VS Code to editor.action.triggerSuggest (home/.chezmoitemplates/vscode/keybindings.json:237; see also docs/reference/nvim/keymap.md:173); Ctrl+Space still works for suggest. Changing NixOS and macOS to Alt+Space is a follow-up, not made here."
+      note: "Owner decision: Alt+Space everywhere. On Windows, Alt+Space is the OS window menu; Raycast (or PowerToys Command Palette) can take it over, so the window menu is lost. CONFLICT: Alt+Space is already bound in VS Code to editor.action.triggerSuggest (home/.chezmoitemplates/vscode/keybindings.json:237; see also docs/reference/nvim/keymap.md:173); Ctrl+Space still works for suggest."
 
   - id: clipboard_history
     macos:
@@ -521,6 +521,26 @@ actions:
       src: "none"
       note: "Snipping Tool area capture (ADR-0036 work profile pick). The personal profile uses Flameshot (on the owner's Windows PC, observed 2026-11-17); its hotkey is set in its own config, so F4 or Win+Shift+S is a manual choice for the owner."
 
+  - id: screen_recording
+    macos:
+      binding: "Alt+Shift+4"
+      tool: karabiner
+      managed_by: repo-automated
+      src: "home/dot_config/karabiner/karabiner.json:13"
+      note: "Owner decision 2026-11-20. Karabiner sends Cmd+Shift+5, which opens the built-in Screenshot toolbar with its screen recording options (ADR-0036). Applies only where the macInput group is on."
+    nixos:
+      binding: "Alt+Shift+4"
+      tool: gnome
+      managed_by: repo-automated
+      src: "nix/modules/home/gnome-keybindings.nix"
+      note: "Opens GNOME's built-in screen recording UI (org/gnome/shell/keybindings show-screen-recording-ui), replacing its Ctrl+Alt+Shift+R default."
+    windows:
+      binding: "Alt+Shift+4"
+      tool: powertoys
+      managed_by: proposed
+      src: "none"
+      note: "Snipping Tool records the screen (Win+Shift+R is its built-in key). Remapping Alt+Shift+4 to it needs PowerToys Keyboard Manager, which is not installed, and a new ADR tagged windows citing ADR-0019. Not applied."
+
   - id: emoji
     macos:
       binding: "Ctrl+Cmd+Space"
@@ -843,10 +863,6 @@ follow_ups:
     text: "Karabiner calls rectangle:// URLs for Win+Shift+Left/Right, Win+Shift+Up and Win+Shift+Down (karabiner.json:3030, :3065, :3083), but Rectangle is not installed by the repo. The owner chose Raycast window commands. Change those rules later; not done here. The Win+Up rule (:2972) matches vk_none and never fires (Raycast Cmd+Up runs); removing it is cleanup only."
   - id: karabiner_and_keyboard_md_right_cmd
     text: "karabiner.json rule descriptions and keyboard.md call the Win key Right Cmd, but every rule triggers on left_command or left_gui. Fix the descriptions in karabiner.json and the text in keyboard.md later; not done here."
-  - id: nixos_vicinae_alt_space
-    text: "NixOS Vicinae launcher is Ctrl+Space (gnome-keybindings.nix:37). Moving it to Alt+Space (owner decision) is a later change. Not made here."
-  - id: raycast_macos_launcher_hotkey
-    text: "The macOS Raycast launcher hotkey is not recorded in the repo. Read it from the Raycast app, record it, then set it to Alt+Space. Not changed here."
   - id: raycast_shortcuts_relation
     text: "reference/raycast/shortcuts.yaml is the auditable Raycast reference (not a native import). This table reuses its values and should be updated when that file changes; no tooling reads either file, so drift is possible."
   - id: browser_choice

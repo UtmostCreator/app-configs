@@ -78,7 +78,7 @@ if [[ "$PREFLIGHT" -eq 0 ]]; then
     echo "-- Optional binaries --"
     # Developer conveniences, not bootstrap prerequisites. rg, jq, yq and the
     # secret scanner come from Home Manager and are checked by readiness.sh.
-    for bin in php code repomix scc bats actionlint shellcheck shfmt lychee; do
+    for bin in php code repomix scc bats shellcheck shfmt lychee; do
         check_optional_bin "$bin"
     done
 fi
@@ -122,7 +122,7 @@ if [[ "$PREFLIGHT" -eq 0 ]]; then
     fi
 
     echo "-- Secret scanner availability --"
-    # Advisory here; ops/readiness.sh enforces it, as the pre-commit hook does.
+    # Advisory here; ops/readiness.sh enforces it, as the pre-push hook does.
     if command -v gitleaks >/dev/null 2>&1; then
         ok "gitleaks found"
     elif command -v trufflehog >/dev/null 2>&1; then

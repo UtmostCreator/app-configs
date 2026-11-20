@@ -49,12 +49,12 @@ if [[ -z "${HOST_PROFILE:-}" ]]; then
   HOST_PROFILE="$(bash "$REPO_ROOT/ops/detect-host.sh" 2>/dev/null || echo unknown)"
 fi
 
-hdr "Secret scanner (pre-commit policy: fail closed)"
+hdr "Secret scanner (pre-push policy: fail closed)"
 if have gitleaks; then ok "gitleaks present"
 elif have trufflehog; then ok "trufflehog present"
 elif [[ "${APP_CONFIGS_ALLOW_MISSING_SCANNER:-}" == 1 ]]; then
   note "no secret scanner (allowed by APP_CONFIGS_ALLOW_MISSING_SCANNER=1; run: sys-update)"
-else bad "no secret scanner (need gitleaks or trufflehog; the pre-commit hook blocks without one; run: sys-update)"; fi
+else bad "no secret scanner (need gitleaks or trufflehog; the pre-push hook blocks without one; run: sys-update)"; fi
 
 hdr "Applications & CLI (sample of the declared set)"
 sample=(fish nvim rg fd bat eza fzf zoxide starship atuin tmux lazygit delta

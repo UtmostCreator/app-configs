@@ -74,7 +74,8 @@ in
   home.packages =
     (with pkgs; [
       act # run GitHub Actions workflows locally
-      actionlint
+      actionlint # GitHub workflow syntax; run by ops/hooks/pre-push.sh when a workflow changes
+      zizmor # GitHub workflow security; same single place
       ast-grep
       tree-sitter # parser generator/CLI for grammar development
       bats # bats-core formula -> bats in nixpkgs

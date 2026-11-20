@@ -36,7 +36,8 @@ bash ops/update-all.sh                                   # report mode, changes 
 
 Commit once every relevant check passes **and** all of these hold:
 
-- The pre-commit hooks pass (gitleaks, `ops/validate-config.sh`). Never use
+- The pre-commit hooks pass (`ops/validate-config.sh`); gitleaks runs at push,
+  in the pre-push hook. Never use
   `--no-verify`.
 - No secrets, no `home/.chezmoidata/personal.yaml`, no machine-local state.
 - The diff only contains work you made or verified. Other sessions may be

@@ -25,7 +25,7 @@ stub() { printf '#!/bin/sh\nexit 0\n' >"$S/$1"; chmod +x "$S/$1"; }
     [[ "$output" == *"[MISS] yq missing"* ]]
 }
 
-@test "missing secret scanner is a failure matching the pre-commit policy" {
+@test "missing secret scanner is a failure matching the pre-push policy" {
     PATH="$S" run bash "$SCRIPT"
     [[ "$output" == *"[MISS] no secret scanner"* ]]
 }

@@ -18,7 +18,7 @@ Before the first commit on any machine.
 | Tool | Used by |
 |------|---------|
 | lefthook | Runs the hooks (`.lefthook.yml`) behind the dispatchers in `ops/githooks/` |
-| gitleaks | Secret scan (`ops/hooks/pre-commit.sh`); blocks if missing |
+| gitleaks | Secret scan of pushed commits (`ops/hooks/pre-push.sh`); the push is blocked if it is missing |
 | chezmoi | `ops/validate-config.sh` checks |
 | bash | Runs every hook script |
 

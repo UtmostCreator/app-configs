@@ -45,7 +45,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0002](0002-windows-provisioning-bootstrap-winget.md) | One PowerShell bootstrap (committed); winget is the only Windows package manager | decided | 2026-11-15 |
 | [0003](0003-docker-on-wsl-one-engine-in-nixos.md) | One declarative Docker engine inside NixOS-WSL; no automatic docker group | decided-unverified | 2026-11-15 |
 | [0004](0004-tailscale-on-windows-only.md) | Tailscale on the Windows host only | decided-unverified | 2026-11-15 |
-| [0005](0005-commit-tooling-first-hooks-everywhere.md) | lefthook, gitleaks and chezmoi before the first commit, hooks never bypassed | decided | 2026-11-15 |
+| [0005](0005-commit-tooling-first-hooks-everywhere.md) | lefthook, gitleaks and chezmoi before the first commit, hooks never bypassed; secrets scanned at push | decided | 2026-11-15 |
 | [0006](0006-ai-clis-claude-code-and-codex.md) | Keep Claude Code and Codex; install only when missing; Claude runs in WSL | decided-unverified | 2026-11-15 |
 | [0007](0007-safety-net-restore-points-and-pinned-downloads.md) | Restore point, exports, pinned image, three distinct recoveries | decided | 2026-11-15 |
 | [0008](0008-git-editor-per-host-profile.md) | Git editor nvim on wsl and linux-cli, `code --wait` elsewhere | decided-unverified | 2026-11-15 |

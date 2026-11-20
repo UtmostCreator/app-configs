@@ -64,7 +64,6 @@ FORMULAE=(
   zsh-autosuggestions
   zsh-syntax-highlighting
   bats-core
-  actionlint
 )
 
 CASKS=()
@@ -520,7 +519,6 @@ check_required yazi yazi --version
 check_required yq yq --version
 check_required zoxide zoxide --version
 check_required bats-core bats --version
-check_required actionlint actionlint --version
 
 if command -v brew >/dev/null 2>&1; then
   check_file_required zsh-autosuggestions "$(brew --prefix)/share/zsh-autosuggestions/zsh-autosuggestions.zsh"

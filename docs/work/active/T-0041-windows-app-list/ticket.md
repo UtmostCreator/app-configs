@@ -41,7 +41,7 @@ wsl.exe or PowerShell.
 | Obsidian | gui.nix, homebrew cask | Obsidian.Obsidian |
 | Bruno | gui.nix, homebrew cask | Bruno.Bruno |
 | LocalSend | gui.nix, homebrew cask | LocalSend.LocalSend |
-| KeePassXC | gui.nix | KeePassXCTeam.KeePassXC |
+| KeePassXC | gui.nix; work profile too (ADR-0039); Bitwarden.Bitwarden allowed | KeePassXCTeam.KeePassXC |
 | Flameshot | gui.nix; chezmoi flameshot.ini (macOS) | Flameshot.Flameshot |
 | Telegram | gui.nix telegram-desktop | Telegram.TelegramDesktop |
 | Double Commander | gui.nix doublecmd | alexx2000.DoubleCommander |

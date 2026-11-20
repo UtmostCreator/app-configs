@@ -111,6 +111,17 @@ winget install -e --id GitHub.cli
 gh auth login        # choose GitHub.com, SSH, and the existing key
 ```
 
+## 6. Optional: password manager
+
+[ADR-0039](../../architecture/decisions/0039-windows-work-password-manager.md): KeePassXC, or Bitwarden. Employer policy wins. Check each id with `winget show --id <id> --exact` first.
+
+```powershell
+winget install -e --id KeePassXCTeam.KeePassXC
+# or: winget install -e --id Bitwarden.Bitwarden
+```
+
+Keep the vault and any key file out of git; back them up with your encrypted backup.
+
 ## What the bootstrap never changes (manual only)
 
 Scope: only a bounded bootstrap, see [project scope](../../architecture/project-scope.md). `ops/windows/bootstrap.ps1 -DryRun` writes nothing on Windows but may start the WSL distro and use a temp file inside it (see the script header).

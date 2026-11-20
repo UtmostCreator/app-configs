@@ -15,6 +15,8 @@ related: [19, 21, T-0042]
 # ADR-0023: Password managers and the secrets CLI: KeePassXC primary, Bitwarden allowed, op for dev secrets
 Status: partly-decided (personal vault, Bitwarden and the personal op decisions are decided-unverified, owner 2026-11-16; work rows are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 (KeePassXC narrowed to P; Bitwarden allowed; 1Password desktop still deferred) · Sources: tool-selection design round 3
 
+Amended by ADR-0039 (2026-11-20): the Windows work profile may use KeePassXC, with Bitwarden allowed; install by hand.
+
 Notation, parity and profiles: [ADR-0021](0021-cross-platform-parity-and-profiles.md). Windows additions are bounded by [ADR-0019](0019-platform-scope-linux-macos-wsl2-first.md).
 
 ## Owner decisions (2026-11-16, quoted)

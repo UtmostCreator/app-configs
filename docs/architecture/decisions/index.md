@@ -79,6 +79,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0036](0036-screenshots-media-images-and-pdf.md) | Screenshots, media, images and PDF: Flameshot, Preview, Edge PDF, IINA, Paint.NET | partly-decided | 2026-11-16 |
 | [0037](0037-system-monitoring-diagnostics-device-software.md) | System monitoring, diagnostics and device software | proposed | 2026-11-16 |
 | [0038](0038-disko-nixos-anywhere-fresh-hosts.md) | disko and nixos-anywhere install fresh NixOS hosts only (VM test first, by-id disks, never the live desktop) | proposed | 2026-11-20 |
+| [0039](0039-windows-work-password-manager.md) | Windows work profile: KeePassXC, Bitwarden allowed, installed by hand with winget; employer policy wins | decided-unverified | 2026-11-20 |
 
 The tool-selection ADRs 0021 to 0033, 0036 and 0037 are written (ADR-0021 holds parity and profiles); gaps are allowed by the contract.
 

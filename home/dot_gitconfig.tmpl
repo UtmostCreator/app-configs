@@ -274,7 +274,7 @@
 	# --- gitleaks: scan for committed secrets before pushing ---
 	# git secrets       -> scan full history; git secretstaged -> scan staged only
 	secrets = "!f(){ command -v gitleaks >/dev/null 2>&1 || { echo 'missing: gitleaks'; return 1; }; gitleaks detect --verbose \"$@\"; }; f"
-	secretstaged = "!f(){ command -v gitleaks >/dev/null 2>&1 || { echo 'missing: gitleaks'; return 1; }; gitleaks protect --staged --verbose \"$@\"; }; f"
+	secretstaged = "!f(){ command -v gitleaks >/dev/null 2>&1 || { echo 'missing: gitleaks'; return 1; }; gitleaks git --pre-commit --staged --verbose \"$@\"; }; f"
 
 	# --- fzf: interactive pickers over git objects ---
 	# git fco -> fuzzy-pick a branch and check it out (overlaps the gsw / gswr

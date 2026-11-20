@@ -213,6 +213,38 @@ run_precommit() { run env PATH="$STUB" "$@" bash "$WORK/ops/hooks/pre-commit.sh"
     [[ "$output" == *"pre-commit passed"* ]]
 }
 
+@test "pre-commit scans the staged snapshot: a secret staged then deleted from the worktree is still rejected" {
+    command -v gitleaks >/dev/null 2>&1 || skip "gitleaks not installed"
+    precommit_env
+    ln -sf "$(command -v gitleaks)" "$STUB/gitleaks"
+    cd "$WORK"
+    key="AKIA""QZ7XK3M2PL5NW4RT"
+    printf 'aws_access_key_id = %s\n' "$key" >creds.txt && git add creds.txt
+    printf 'clean\n' >creds.txt
+    run_precommit
+    [ "$status" -ne 0 ]
+    [[ "$output" != *"pre-commit passed"* ]]
+}
+
+@test "pre-commit ignores unstaged content: a secret only in the worktree does not block a clean staged change" {
+    command -v gitleaks >/dev/null 2>&1 || skip "gitleaks not installed"
+    precommit_env
+    ln -sf "$(command -v gitleaks)" "$STUB/gitleaks"
+    cd "$WORK"
+    printf 'hello\n' >a.txt && git add a.txt
+    key="AKIA""QZ7XK3M2PL5NW4RT"
+    printf 'aws_access_key_id = %s\n' "$key" >unstaged.txt
+    run_precommit
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"pre-commit passed"* ]]
+}
+
+@test "pre-commit uses the supported gitleaks git subcommand, not the deprecated protect" {
+    run grep -nE '^[[:space:]]*gitleaks protect' "$REPO_ROOT/ops/hooks/pre-commit.sh"
+    [ "$status" -eq 1 ]
+    grep -qE '^[[:space:]]*gitleaks git --pre-commit --staged' "$REPO_ROOT/ops/hooks/pre-commit.sh"
+}
+
 # --- pre-commit conflict-marker detection ------------------------------------
 @test "pre-commit rejects staged conflict markers (<<<<<<< and >>>>>>>)" {
     precommit_env

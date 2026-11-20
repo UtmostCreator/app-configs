@@ -36,5 +36,5 @@ Status: decided (Windows commit-tooling step built in ops/windows/bootstrap.ps1 
 
 ## Consequences
 - On Windows the hooks come from step C of the bootstrap (observed installing chezmoi, gitleaks and lefthook, then the hooks, on a real PC 2026-11-15). Before step C has run, docs-only commits are allowed with `ops/validate-config.sh` and gitleaks run by hand, code commits only where hooks run.
-- Follow-up: `gitleaks protect --staged` is deprecated since v8.19.0 (maintained form `gitleaks git --staged`).
+- Follow-up: `gitleaks protect --staged` is deprecated since v8.19.0 (maintained form `gitleaks git --staged`). Done 2026-11-20: the hook uses `gitleaks git --pre-commit --staged`.
 - Proposal, not decided: move `lefthook install` right after step 3 of `ops/install.sh`.

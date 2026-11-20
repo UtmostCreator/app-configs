@@ -43,7 +43,9 @@ if [[ -s "$staged_list" ]]; then
 fi
 
 if command -v gitleaks >/dev/null 2>&1; then
-    gitleaks protect --staged --redact --verbose
+    # `git --pre-commit --staged` is the supported form of the deprecated
+    # `protect --staged`: it scans the staged diff (the index), not the worktree.
+    gitleaks git --pre-commit --staged --redact --verbose
 elif command -v trufflehog >/dev/null 2>&1; then
     # Scan the staged snapshot (index contents), not history since HEAD.
     snap="$(mktemp -d "${TMPDIR:-/tmp}/app-configs-staged.XXXXXX")"

@@ -133,8 +133,9 @@ grep -q "email = bats@example.invalid" "$HOME/.gitconfig" || exit 8'
     stub nproc 'echo 6'
     # a copy of the script over a tests/bash without selection.bats
     local root="$BATS_TEST_TMPDIR/root"
-    mkdir -p "$root/ops" "$root/tests/bash"
+    mkdir -p "$root/ops" "$root/tests/bash" "$root/tests/lib"
     cp "$SCRIPT" "$root/ops/run-bats.sh"
+    cp "$REPO_ROOT/tests/lib/isolation.sh" "$root/tests/lib/isolation.sh"
     touch "$root/tests/bash/update-all-apply.bats" "$root/tests/bash/install-selection.bats" "$root/tests/bash/other.bats"
     run env PATH="$STUB" bash "$root/ops/run-bats.sh"
     [ "$status" -eq 1 ]
@@ -184,4 +185,15 @@ echo "brew-rc=$?"'
     run env PATH="$STUB" ISOLATION_BREW_PREFIX="$BATS_TEST_TMPDIR/prefix" ISOLATION_TEST_PREFIX="$BATS_TEST_TMPDIR/prefix" bash "$SCRIPT"
     [ "$status" -ne 0 ]
     [[ "$output" == *"the host changed during the run"* ]]
+}
+
+@test "run-bats says so when tests/lib/isolation.sh is missing" {
+    stub bats 'echo "bats-stub $*"'
+    local root="$BATS_TEST_TMPDIR/root-no-lib"
+    mkdir -p "$root/ops" "$root/tests/bash"
+    cp "$SCRIPT" "$root/ops/run-bats.sh"
+    run env PATH="$STUB" bash "$root/ops/run-bats.sh"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"tests/lib/isolation.sh is missing"* ]]
+    [[ "$output" != *"bats-stub"* ]]
 }

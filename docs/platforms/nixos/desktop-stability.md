@@ -19,7 +19,7 @@ Audit of a `linux-desktop` host after a session loss. It covers one long-running
 | Ghostty segfault at start | ibus GTK4 module recursion (stack overflow) | Ghostty-only wrapper with GTK's simple IM | Fixed |
 | Restart storms (thousands of restarts per service) | `Restart=always` with no back-off on a persistent error | Exponential back-off to 10 min | Fixed |
 | openclaw down after upgrade | New build needs a DB migration; Nix mode blocks `doctor` repairs | Rehearsed migration (see below) | Open, gateway stopped |
-| Launcher apps share one cgroup | Apps opened from Vicinae run inside `vicinae.service` | Needs a scope-per-app launcher | Open |
+| Launcher apps share one cgroup | Apps opened from Vicinae run inside `vicinae.service` | The `app.slice` cap bounds them as a group; per-app limits still need a scope-per-app launcher | Partly fixed |
 | dGPU (nouveau) RPC timeouts, hung tasks | Driver/firmware; seen after the OOM, not before | Driver decision (see below) | Open |
 | GNOME "Settings stopped" notice | Upstream crash in the global-shortcuts dialog | None; upstream | Documented |
 | "Device nearly full" notice | Unknown; no filesystem was near full when checked | Detect scratch growth first | Monitoring |
@@ -28,6 +28,7 @@ Audit of a `linux-desktop` host after a session loss. It covers one long-running
 ## Fixed in this repo
 
 - Memory limits are percentages of physical RAM, so they follow RAM upgrades and smaller machines. Checked by `tests/bash/terminal-memory-limits.bats`.
+- Outer cap on everything in `app.slice` (terminals, editors, browsers, Vicinae and the apps it launches): Max 90% of RAM and 75% of swap, on every Linux host, so a runaway job hits a cgroup OOM inside `app.slice` before the global OOM killer can pick the desktop shell: `nix/modules/home/memory-limit.nix`, checked by `tests/bash/app-slice-memory-limit.bats`. `app-terminals.slice` sits inside it.
 - All tabs in one budget, `app-terminals.slice` (High 60%, Max 70%, Swap 8G), which leaves 30% of RAM outside the terminal budget (other apps can still use it): `nix/modules/home/gui.nix`.
 - Each Ghostty and GNOME Console tab is capped (High 40%, Max 50%, swap 4G per tab) by a scope drop-in: `nix/modules/home/gui.nix`. Ghostty's `linux-cgroup-memory-limit` is no longer set, because it only takes a fixed byte size.
 - AI remote-control services are capped (High 40%, Max 50%, swap 4G each) on every Linux host: `nix/modules/home/ai-cli-updates.nix`. They join `app-terminals.slice` through a desktop-only drop-in: `nix/modules/home/gui.nix`. On other Linux hosts, WSL included, each service is capped but nothing caps their total, so two sessions together can still reach all of RAM. They had peaked at 18-19 GiB outside every budget. The caps and the slice move take effect at the next restart of each service (restarting is the owner's call).
@@ -39,8 +40,8 @@ What the memory limits do and don't do:
 
 - At the slice's `MemoryMax`, the kernel picks a victim inside the slice by OOM score, and `OOMPolicy=stop` then stops that one tab scope or service per kill. It is not necessarily the largest process.
 - `MemoryMax=50%` on the remote-control services (about 15.3 GiB on a 32 GB machine) can stop a session that peaks above it (18-19 GiB was seen). The restart back-off then applies. That is the intended trade-off.
-- Where the Ghostty main process runs depends on how it was launched: from the GNOME launcher it is `app-com.mitchellh.ghostty.service`, outside the slice; from Vicinae it runs in `vicinae.service`, unbounded.
-- GNOME is outside the slice, which lowers the risk. It is not a guarantee: tabs opened before the change and apps launched from Vicinae are still unbounded.
+- Where the Ghostty main process runs depends on how it was launched: from the GNOME launcher it is `app-com.mitchellh.ghostty.service`, outside the slice; from Vicinae it runs in `vicinae.service`, outside the terminal budget and bounded only by the `app.slice` cap.
+- GNOME is outside the slice, which lowers the risk. It is not a guarantee: tabs opened before the change keep their old limits, and apps launched from Vicinae share one cgroup bounded only by the 90% `app.slice` cap.
 
 ## Baseline audit
 

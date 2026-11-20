@@ -48,7 +48,7 @@ surprise and record it in the ticket.
 
 2. **Dry run under bash 3.2, no TTY.**
    ```bash
-   APP_CONFIGS_SELECTION_DIR=$(mktemp -d) /bin/bash ops/install.sh --dry-run --profile work </dev/null
+   APP_CONFIGS_SELECTION_DIR=$(mktemp -d) /bin/bash ops/install.sh --dry-run --profile work </dev/null   # the temp directory is a fixture, not a change to your system; delete it afterwards
    ```
    Expect: no `unbound variable`, `mapfile` or `bad substitution` errors, a
    `dry run: would write ...` line, and the run ends with "Dry run finished;

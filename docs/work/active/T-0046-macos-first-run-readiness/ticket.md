@@ -260,3 +260,12 @@ and 4 (they change ops/update-all.sh), the install and bootstrap suites for fix
    first (the Home Manager docker wrapper may already provide compose).
 7. For `sync:dry-run` (mise.toml:115), use sudo for `darwin-rebuild check`, or
    `darwin-rebuild build` (needs no root; untested) for the preview?
+
+## Additional acceptance criteria (review of 2026-11-20)
+- AC-A, configuration ownership: classify each setting the repo would write as `managed` (an MDM or employer policy owns it), `owner-configurable`, `observe-only` or `unsupported`. A managed setting is never overridden. If management status is unknown, the setting is not modified.
+- AC-B, privilege before change: `sys-update --apply` checks that the privileged switch can run (root, or cached sudo) before the first step that changes user configuration, so it cannot fail at the switch after chezmoi has applied.
+- AC-C, read-only preview: `sync:dry-run` needs no sudo, runs no activation and installs nothing (see open question 7; `darwin-rebuild build` needs no root). The temporary selection directory it creates with `mktemp -d` is a test fixture and is cleaned up; setup documents it separately from changes to the real system.
+- AC-D, post-activation smoke tests on the real Mac: SSH, Git, the local web stack, Docker through Colima, the default browser (including the http and https handlers) and the editor still work.
+- AC-E, rollback scope: say which of these a rollback covers and which stay manual: Nix generations, dotfiles, Homebrew applications, LaunchAgents and macOS settings. A Nix rollback does not undo all of them.
+- AC-F, LaunchAgents: before an agent is loaded, its executable exists and is executable, its working directory is valid, its environment is explicit (not an interactive shell), `KeepAlive` is set only for a real long-lived service, its log directories exist with bounded retention, its real service state is checked (not only the plist), and it can be unloaded and restored. An agent with an unresolved executable is not activated. A live read-only check on 2026-11-20 found six user agents: every one that declares a program exists, none has a missing working directory, one has `KeepAlive` on.
+- The default-browser script now checks the http and https handlers and warns (not fails) when they are not Brave yet, because macOS may ask for confirmation; the HTML and PDF checks stay fatal. This answers open question 2 for the scheme check only.

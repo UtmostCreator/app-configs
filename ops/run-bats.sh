@@ -27,6 +27,10 @@ if ! command -v bats >/dev/null 2>&1; then
     exit 1
 fi
 
+if [[ ! -f "$ROOT_DIR/tests/lib/isolation.sh" ]]; then
+    echo "[test:bash] tests/lib/isolation.sh is missing: refusing to run without the isolation gate." >&2
+    exit 1
+fi
 # shellcheck source=tests/lib/isolation.sh
 source "$ROOT_DIR/tests/lib/isolation.sh"
 

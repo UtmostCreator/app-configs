@@ -25,11 +25,12 @@
       AppleICUForce24HourTime = true;
       ApplePressAndHoldEnabled = false;
       KeyRepeat = 2;
-      InitialKeyRepeat = 15;
+      InitialKeyRepeat = 30;
       NSAutomaticCapitalizationEnabled = false;
       NSAutomaticDashSubstitutionEnabled = false;
       NSAutomaticQuoteSubstitutionEnabled = false;
       NSAutomaticSpellingCorrectionEnabled = false;
+      "com.apple.swipescrolldirection" = false;
     };
 
     trackpad = {

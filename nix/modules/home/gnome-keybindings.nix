@@ -29,12 +29,11 @@ let
   # Telegram + Vesktop come from the personal profile (see gui.nix + the host
   # home.nix `myConfig.profile`).
   shortcuts = {
-    # Raycast-style launcher toggle. Ctrl+Space stays clear of the keyboard-
-    # layout switcher, which this module declares as Super+Space below.
+    # Raycast-style launcher toggle.
     vicinae = {
       name = "Vicinae launcher";
       command = "vicinae toggle";
-      binding = "<Control>space";
+      binding = "<Alt>space";
     };
     # Vicinae clipboard history. Deeplink form is vicinae://launch/<provider>/
     # <entrypoint> (per https://docs.vicinae.com/deeplinks); the built-in
@@ -217,7 +216,7 @@ in
   #
   # Bindings (see `shortcuts` above):
   #   Super+Space  Switch keyboard layout (us <-> ru; XKB grp:win_space_toggle)
-  #   Ctrl+Space   Vicinae launcher (Raycast-style)
+  #   Alt+Space    Vicinae launcher (Raycast-style)
   #   Alt+V        Vicinae clipboard history
   #   Alt+Shift+T  Ghostty terminal      (raise-or-launch)
   #   F1           Brave browser         (raise-or-launch)
@@ -251,7 +250,29 @@ in
         # plays a transition before the window settles, which makes rapid
         # app-switching feel laggy. Off = instant, snappy focus changes.
         enable-animations = false;
+        color-scheme = "default";
       };
+
+      "org/gnome/desktop/peripherals/keyboard" = {
+        delay = lib.hm.gvariant.mkUint32 450;
+        repeat-interval = lib.hm.gvariant.mkUint32 30;
+      };
+
+      "org/gnome/desktop/peripherals/mouse".natural-scroll = false;
+
+      "org/gnome/desktop/peripherals/touchpad" = {
+        natural-scroll = false;
+        tap-to-click = true;
+      };
+
+      "org/gnome/desktop/session".idle-delay = lib.hm.gvariant.mkUint32 600;
+
+      "org/gnome/desktop/screensaver" = {
+        lock-enabled = true;
+        lock-delay = lib.hm.gvariant.mkUint32 60;
+      };
+
+      "org/gnome/shell/keybindings".show-screen-recording-ui = [ "<Shift><Alt>4" ];
 
       "org/gnome/desktop/input-sources" = {
         # Keep English (US) as the default/current layout. GNOME uses source
@@ -295,6 +316,7 @@ in
         # same Super+Space chord.
         switch-input-source = [ ];
         switch-input-source-backward = [ ];
+        activate-window-menu = [ ];
       };
 
       "org/gnome/settings-daemon/plugins/media-keys" = {

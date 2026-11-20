@@ -15,7 +15,7 @@ One inventory YAML per system, compared, then a "middle ground" baseline, per-ho
 | Phase | Work | State |
 | --- | --- | --- |
 | 1 | Windows inventory ([windows.yaml](windows.yaml)) | this ticket, now |
-| 2 | NixOS desktop and macOS inventories (read-only commands) | later |
+| 2 | NixOS desktop and macOS inventories (read-only commands) | macOS done ([macos.yaml](macos.yaml), 2026-11-20); NixOS desktop pending |
 | 3 | Compare, choose the baseline | later |
 | 4 | Per-host override mechanism | later |
 | 5 | Apply/change command (e.g. `screen-off <min>`) | later, after T-0047 |
@@ -90,7 +90,7 @@ settings:                  # keys sorted, cross-OS neutral names
 ## Acceptance criteria
 - [ ] AC-1: the Windows YAML exists, parses, and every value was read on this PC by the stated command (no guesses). Parse check pending: no YAML parser on this PC.
 - [ ] AC-2: a re-capture reproduces it (deterministic ordering).
-- [ ] AC-3: NixOS desktop and macOS inventories exist (phase 2).
+- [ ] AC-3: NixOS desktop and macOS inventories exist (phase 2). macOS done; the NixOS desktop capture is outstanding.
 - [ ] AC-4: baseline chosen and recorded (phase 3).
 - [ ] AC-5: override mechanism with tests (phase 4).
 - [ ] AC-6: apply command with `--dry-run` (phase 5).

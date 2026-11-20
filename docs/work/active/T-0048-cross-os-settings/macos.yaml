@@ -17,10 +17,10 @@ settings:
     raw: SoftwareUpdate AutomaticallyInstallMacOSUpdates = 1
     how: defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticallyInstallMacOSUpdates
   default_browser:
-    value: com.brave.browser
+    value: com.brave.Browser
     unit: enum
-    raw: LaunchServices LSHandlers https
-    how: defaults read com.apple.LaunchServices/com.apple.launchservices.secure LSHandlers
+    raw: duti -d public.html (LSHandlers stores the id lowercased, com.brave.browser)
+    how: duti -d public.html
   display_off:
     ac: 10
     dc: 2
@@ -32,16 +32,6 @@ settings:
     unit: count
     raw: names are tracked in docs/guides/macos-dock.yaml
     how: defaults read com.apple.dock persistent-apps
-  file_vault:
-    value: true
-    unit: bool
-    raw: fdesetup status
-    how: fdesetup status
-  firewall:
-    value: false
-    unit: bool
-    raw: socketfilterfw global state 0
-    how: /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
   fn_keys_standard:
     value: true
     unit: bool
@@ -107,11 +97,6 @@ settings:
     unit: enum
     raw: 'System Events login items (the full background-item list needs sudo sfltool dumpbtm: not read)'
     how: osascript -e "tell application \"System Events\" to get the name of every login item"
-  mdm_enrollment:
-    value: user_approved
-    unit: enum
-    raw: 'profiles status -type enrollment: MDM enrolment yes, not via DEP; one payload seen, ManagedSettings User Settings; server omitted'
-    how: profiles status -type enrollment
   notifications_focus:
     value: unknown
     unit: manual
@@ -127,6 +112,11 @@ settings:
     unit: enum
     raw: symbolichotkeys 184 not customised, so Cmd+Shift+5 stays the default
     how: plutil -extract 184 json on com.apple.symbolichotkeys
+  security_posture:
+    value: not_recorded
+    unit: manual
+    raw: 'public repository: firewall, FileVault and MDM details stay out of it; audit them locally with read-only commands (fdesetup status, socketfilterfw --getglobalstate, profiles status -type enrollment)'
+    how: run the three commands by hand
   sleep:
     ac: 1
     dc: 1

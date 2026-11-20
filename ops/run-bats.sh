@@ -27,8 +27,33 @@ if ! command -v bats >/dev/null 2>&1; then
     exit 1
 fi
 
-scratch="$(mktemp -d "${TMPDIR:-/tmp}/run-bats.XXXXXX")"
+# shellcheck source=tests/lib/isolation.sh
+source "$ROOT_DIR/tests/lib/isolation.sh"
+
+REAL_HOME="${APP_CONFIGS_TEST_REAL_HOME:-$HOME}"
+fingerprint_before="$(isolation_fingerprint "$ROOT_DIR")"
+
+scratch="${APP_CONFIGS_TEST_SCRATCH:-$(mktemp -d "${TMPDIR:-/tmp}/run-bats.XXXXXX")}"
 trap 'rm -rf "$scratch"' EXIT
+
+if [[ "$(uname -s)" == Darwin && "${APP_CONFIGS_TEST_SANDBOXED:-0}" != 1 ]]; then
+    if ! command -v sandbox-exec >/dev/null 2>&1; then
+        echo "[test:bash] sandbox-exec is missing: refusing to run the suite unsandboxed on macOS." >&2
+        echo "[test:bash] Run it on a Linux host or in a disposable VM." >&2
+        exit 1
+    fi
+    trap - EXIT
+    exec env APP_CONFIGS_TEST_SANDBOXED=1 APP_CONFIGS_TEST_SCRATCH="$scratch" \
+        APP_CONFIGS_TEST_REAL_HOME="$REAL_HOME" TMPDIR="$scratch/tmp" \
+        sandbox-exec -p "$(isolation_sandbox_profile "$REAL_HOME" "$scratch")" \
+        bash "$0" "$@"
+fi
+
+export APP_CONFIGS_TEST_MODE=isolated APP_CONFIGS_TEST_REAL_HOME="$REAL_HOME"
+mkdir -p "$scratch/tmp"
+export TMPDIR="$scratch/tmp"
+isolation_guard_make "$scratch/guard-bin"
+export PATH="$scratch/guard-bin:$PATH"
 
 export HOME="$scratch/home"
 # Unset rather than point the XDG base dirs at the scratch HOME: tests that
@@ -108,6 +133,12 @@ if (( ${#leaks[@]} > 0 )); then
     echo "[test:bash] tests wrote outside their temp dirs, into HOME:" >&2
     printf '[test:bash]   ~/%s\n' "${leaks[@]}" >&2
     echo "[test:bash] Give those tests their own HOME (e.g. HOME=\$BATS_TEST_TMPDIR)." >&2
+    (( status != 0 )) || status=1
+fi
+fingerprint_after="$(HOME="$REAL_HOME" isolation_fingerprint "$ROOT_DIR")"
+if [[ "$fingerprint_before" != "$fingerprint_after" ]]; then
+    echo "[test:bash] the host changed during the run (Homebrew, LaunchAgents or the repo):" >&2
+    diff <(printf '%s\n' "$fingerprint_before") <(printf '%s\n' "$fingerprint_after") >&2 || true
     (( status != 0 )) || status=1
 fi
 exit "$status"

@@ -122,6 +122,13 @@ STUB
 
   mkdir -p "$BATS_TEST_TMPDIR/hm-out"
 
+  export BREW_LOG="$BATS_TEST_TMPDIR/brew.calls"
+  cat > "$STUBS/brew" <<'STUB'
+#!/usr/bin/env bash
+printf 'brew %s\n' "$*" >> "$BREW_LOG"
+STUB
+  chmod +x "$STUBS/brew"
+
   # Tools the lifecycle work calls directly. None of them touches real state.
   cat > "$STUBS/nix-store" <<'STUB'
 #!/usr/bin/env bash
@@ -390,6 +397,18 @@ STUB
   run_update
   [ "$status" -eq 0 ]
   grep -q 'nix build --no-link.*darwinConfigurations.macos.system' "$STUB_LOG"
+}
+
+@test "macOS Homebrew step reaches the stub brew and never a real one" {
+  export HOST_PROFILE=macos
+  cp "$STUBS/home-manager" "$STUBS/darwin-rebuild"
+  ln -s "$STUB_HM_OUT" "$BATS_TEST_TMPDIR/current-system"
+  export SYS_UPDATE_DARWIN_SYSTEM_LINK="$BATS_TEST_TMPDIR/current-system"
+  [ "$(PATH="$STUBS:$PATH" command -v brew)" = "$STUBS/brew" ]
+  run_update
+  [ "$status" -eq 0 ]
+  grep -q '^brew update' "$BREW_LOG"
+  grep -q '^brew upgrade --formula' "$BREW_LOG"
 }
 
 @test "a successful update commits the new lock so the next run starts clean" {

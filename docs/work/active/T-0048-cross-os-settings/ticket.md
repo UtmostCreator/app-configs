@@ -68,6 +68,12 @@ end-to-end Mac activation are still pending.
 - Key repeat is converted, not copied: macOS `InitialKeyRepeat` 30 and `KeyRepeat` 2 are 15 ms ticks, so 450 ms and 30 ms; GNOME `delay` 450 and `repeat-interval` 30 are milliseconds; Windows `KeyboardDelay` 1 is 500 ms.
 - The Mac is MDM-managed. A setting enforced by policy is preserved, and the Mac values stay unchanged where management status is unknown (the ADR-0020 work-profile rule).
 
+## macOS drift decisions and settings still to record (2026-11-20)
+- Key repeat: the declared value now matches the live Mac (resolved).
+- 24-hour clock: declared on, live not set and the menu-bar clock shows AM/PM. Open: choose which side wins; do not fix it silently during activation.
+- JSON files open in a browser while other development files open in the editor: open decision.
+- Still to record before anything is applied (record first; apply only when approved and not MDM-managed): Focus and notifications, clipboard history and sync, Spotlight exclusions, display and external monitors (device-specific), mouse against built-in trackpad, and the Dock's pinned set (the 19-app Dock lists overlapping database clients; a smaller everyday Dock is a possible follow-up, the full catalogue stays separate).
+
 ## YAML schema
 ```yaml
 system: windows            # windows | nixos | macos

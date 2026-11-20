@@ -187,6 +187,13 @@
         macos = mkProfile "macos";
       };
 
+      # niri pilot (PC 2), build-only: GNOME default, niri as a second session.
+      # `nix flake check` evaluates it. See nix/hosts/linux-desktop-pilot.
+      nixosConfigurations.linux-desktop-pilot = nixpkgs.lib.nixosSystem {
+        specialArgs = { inherit self vars; };
+        modules = [ ./hosts/linux-desktop-pilot/system.nix ];
+      };
+
       darwinConfigurations.macos = nix-darwin.lib.darwinSystem {
         system = vars.profiles.macos.system;
         specialArgs = { inherit inputs vars; };

@@ -11,6 +11,20 @@ busctl_bin="${VRP_BUSCTL:-busctl}"
 jq_bin="${VRP_JQ:-jq}"
 gdbus_bin="${VRP_GDBUS:-gdbus}"
 
+# Window backend (wb_* functions, see window-backend.sh). The installed script
+# has it inlined above this text by gui.nix; run from the repo, source it from
+# this directory.
+if ! declare -F wb_list >/dev/null; then
+  wb_dir="${BASH_SOURCE[0]%/*}"
+  [ "$wb_dir" != "${BASH_SOURCE[0]}" ] || wb_dir=.
+  # shellcheck source=/dev/null
+  . "$wb_dir/window-backend.sh"
+fi
+# The backend gets the same tools as this script, not whatever is on PATH.
+# Not exported, so the environment VS Code inherits is left alone.
+# shellcheck disable=SC2034  # read by the wb_* functions
+WB_BUSCTL="$busctl_bin" WB_JQ="$jq_bin" WB_GDBUS="$gdbus_bin"
+
 # Extract recent folders (newest first, de-duplicated) from VS Code's
 # state DBs, then let the user pick one via Vicinae's dmenu popup.
 selected="$(
@@ -75,8 +89,8 @@ PY
 # Open the folder. `code` reuses the existing VS Code instance and opens
 # the folder INTO it, but on GNOME Wayland it does NOT raise/focus the
 # window when VS Code was already running in the background. So we open
-# the folder, then explicitly focus a VS Code window via the same
-# Vicinae/Windows D-Bus API used by vicinae-toggle-app.
+# the folder, then explicitly focus a VS Code window through the same
+# window backend as vicinae-toggle-app.
 # Failures are surfaced (stderr + exit status), not swallowed: a failed
 # open must not look like success. `code` output stays quiet on success.
 if ! code_out="$("$code_bin" "$selected" 2>&1)"; then
@@ -84,9 +98,6 @@ if ! code_out="$("$code_bin" "$selected" 2>&1)"; then
   exit 1
 fi
 
-dest="org.gnome.Shell"
-obj="/org/gnome/Shell/Extensions/Windows"
-iface="org.gnome.Shell.Extensions.Windows"
 wm_class="code"
 # VS Code window titles embed the folder name, e.g.
 # "file - app-configs - Visual Studio Code". Match the selected project's
@@ -96,8 +107,7 @@ proj_name="$("$basename_bin" "$selected")"
 # `code` may need a moment to (re)attach the folder to a window before a
 # window of class `code` is listable/activatable. Poll briefly.
 for _ in 1 2 3 4 5 6 7 8 9 10; do
-  raw="$("$busctl_bin" --user --json=short call "$dest" "$obj" "$iface" List 2>/dev/null)" || raw=""
-  json="$(printf '%s' "$raw" | "$jq_bin" -ce '.data[0] | fromjson | select(type == "array")' 2>/dev/null)" || { sleep 0.3; continue; }
+  json="$(wb_list)" || { sleep 0.3; continue; }
   # Prefer the `code` window whose title contains the project name; else a
   # focused `code` window; else the first `code` window.
   # shellcheck disable=SC2016  # $c and $n are jq variables, not shell ones
@@ -107,14 +117,12 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
         // (map(select(.has_focus == true)) | .[0].id)
         // .[0].id ) // empty' 2>/dev/null)"
   if [ -n "$win_id" ]; then
-    "$gdbus_bin" call --session --dest "$dest" \
-      --object-path "$obj" --method "$iface.Activate" "$win_id" \
-      >/dev/null 2>&1 || true
+    wb_focus "$win_id" >/dev/null 2>&1 || true
     exit 0
   fi
   sleep 0.3
 done
-# D-Bus unavailable or no window yet -> `code` already did the open; exit
+# Window backend unavailable or no window yet -> `code` already did the open; exit
 # cleanly so the hotkey never wedges.
 exit 0
 

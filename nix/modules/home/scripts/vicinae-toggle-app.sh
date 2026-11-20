@@ -1,19 +1,21 @@
 set -u
+
+# Window backend (wb_* functions, see window-backend.sh). The installed script
+# has it inlined above this text by gui.nix; run from the repo, source it from
+# this directory.
+if ! declare -F wb_list >/dev/null; then
+  wb_dir="${BASH_SOURCE[0]%/*}"
+  [ "$wb_dir" != "${BASH_SOURCE[0]}" ] || wb_dir=.
+  # shellcheck source=/dev/null
+  . "$wb_dir/window-backend.sh"
+fi
+
 app_id="${1:-}"
 wm_class="${2:-$app_id}"
 if [ -z "$app_id" ]; then
   echo "usage: vicinae-toggle-app <app_id> [wm_class]" >&2
   exit 2
 fi
-
-dest="org.gnome.Shell"
-obj="/org/gnome/Shell/Extensions/Windows"
-iface="org.gnome.Shell.Extensions.Windows"
-
-gcall() {
-  gdbus call --session --dest "$dest" \
-    --object-path "$obj" --method "$iface.$1" "${@:2}"
-}
 
 launch() {
   vicinae app launch "$app_id" && exit 0
@@ -41,15 +43,14 @@ mru_write() {
   printf '%s' "$1" > "$mru_file" 2>/dev/null || true
 }
 
-# busctl's JSON envelope preserves quotes, apostrophes, backslashes and
-# newlines in titles. Stripping a gdbus GVariant wrapper leaves escapes behind
-# and can turn a valid window list into a parse error that looks like no windows.
-raw="$(busctl --user --json=short call "$dest" "$obj" "$iface" List 2>/dev/null)" || {
-  echo "vicinae-toggle-app: cannot list windows (is the Vicinae GNOME extension enabled?)" >&2
-  exit 1
-}
-json="$(printf '%s' "$raw" | jq -ce '.data[0] | fromjson | select(type == "array")' 2>/dev/null)" || {
-  echo "vicinae-toggle-app: invalid window list" >&2
+# wb_list returns 1 when the window service cannot be reached and 2 when its
+# reply is not a window list; neither may look like "no windows".
+json="$(wb_list)" || {
+  if [ "$?" -eq 1 ]; then
+    echo "vicinae-toggle-app: cannot list windows (is the Vicinae GNOME extension enabled?)" >&2
+  else
+    echo "vicinae-toggle-app: invalid window list" >&2
+  fi
   exit 1
 }
 
@@ -79,7 +80,7 @@ fi
 if [ -n "$focused_id" ]; then
   # App is in the foreground -> send it to the background. The MRU is
   # already recorded above, so re-pressing later returns to THIS window.
-  gcall Minimize "$focused_id" >/dev/null 2>&1 || true
+  wb_hide "$focused_id" >/dev/null 2>&1 || true
   exit 0
 elif [ -n "$any_id" ]; then
   # App is running but not focused -> bring forward the most-recently-used
@@ -91,7 +92,7 @@ elif [ -n "$any_id" ]; then
   if [ -n "$mru_id" ] && printf '%s\n' "$ids" | grep -qxF "$mru_id"; then
     target_id="$mru_id"
   fi
-  if gcall Activate "$target_id" >/dev/null 2>&1; then
+  if wb_focus "$target_id" >/dev/null 2>&1; then
     mru_write "$target_id"
     exit 0
   fi

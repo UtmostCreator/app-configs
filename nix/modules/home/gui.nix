@@ -1,4 +1,14 @@
 { pkgs, config, ... }:
+let
+  # Window backend library for the window helpers below (vicinae-resize,
+  # vicinae-toggle-app, vicinae-focus-tracker, vscode-recent-projects). Its text
+  # is inlined ahead of each helper body, after the wrapper's tool setup, so an
+  # installed helper stays one file and sources nothing at run time. The backend
+  # file comes first: window-backend.sh skips sourcing a backend that is already
+  # defined. Tested by tests/bash/window-backend.bats.
+  windowBackend =
+    builtins.readFile ./scripts/window-backend-gnome.sh + builtins.readFile ./scripts/window-backend.sh;
+in
 {
   # GUI packages for Linux desktops. macOS gets GUI apps via nix-darwin
   # Homebrew casks (see nix/modules/darwin/homebrew.nix); this module is
@@ -144,6 +154,7 @@
             ]
           }:$PATH
         ''
+        + windowBackend
         + builtins.readFile ./scripts/vicinae-resize.sh
       ))
       # Per-app TOGGLE helper bound to the app keybindings (see
@@ -193,6 +204,7 @@
             ]
           }:$PATH
         ''
+        + windowBackend
         + builtins.readFile ./scripts/vicinae-toggle-app.sh
       ))
       # Background companion for vicinae-toggle-app. Polls the same Vicinae
@@ -209,6 +221,7 @@
             ]
           }:$PATH
         ''
+        + windowBackend
         + builtins.readFile ./scripts/vicinae-focus-tracker.sh
       ))
       # Recent-projects popup for VS Code, bound to Alt+E (see
@@ -240,6 +253,7 @@
           VRP_JQ=${jq}/bin/jq
           VRP_GDBUS=${glib}/bin/gdbus
         ''
+        + windowBackend
         + builtins.readFile ./scripts/vscode-recent-projects.sh
       ))
       # IDE: VS Code is the single IDE shipped on all systems (see vscode above).

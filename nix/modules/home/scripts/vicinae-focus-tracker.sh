@@ -1,14 +1,20 @@
 set -u
 
-dest="org.gnome.Shell"
-obj="/org/gnome/Shell/Extensions/Windows"
-iface="org.gnome.Shell.Extensions.Windows"
+# Window backend (wb_* functions, see window-backend.sh). The installed script
+# has it inlined above this text by gui.nix; run from the repo, source it from
+# this directory.
+if ! declare -F wb_list >/dev/null; then
+  wb_dir="${BASH_SOURCE[0]%/*}"
+  [ "$wb_dir" != "${BASH_SOURCE[0]}" ] || wb_dir=.
+  # shellcheck source=/dev/null
+  . "$wb_dir/window-backend.sh"
+fi
+
 state_dir="${XDG_RUNTIME_DIR:-/tmp}/vicinae-toggle-app"
 mkdir -p "$state_dir" 2>/dev/null || true
 
 while :; do
-  raw="$(busctl --user --json=short call "$dest" "$obj" "$iface" List 2>/dev/null)" || raw=""
-  if json="$(printf '%s' "$raw" | jq -ce '.data[0] | fromjson | select(type == "array")' 2>/dev/null)"; then
+  if json="$(wb_list)"; then
     focused="$(printf '%s' "$json" | jq -r '
       .[] | select(.has_focus == true) | [(.wm_class // ""), (.id | tostring)] | @tsv
     ' 2>/dev/null | head -1)"

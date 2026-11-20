@@ -4,7 +4,8 @@
 # horizontally, below GNOME's top panel on the primary monitor.
 #
 # Monitor geometry comes from Mutter's DisplayConfig (GetCurrentState, read as
-# JSON via busctl), the same logical layout MoveResize works in. It follows
+# JSON via busctl by the window backend), the same logical layout MoveResize
+# works in. It follows
 # resolution, scale and rotation changes; XWayland's xrandr does not.
 #
 # Intentionally NOT using `set -e`/`pipefail`: every step is guarded
@@ -12,6 +13,17 @@
 # keybinding. Tools come from PATH (pinned by the Nix wrapper in gui.nix;
 # stubbed in tests/bash/vicinae-resize.bats).
 set -u
+
+# Window backend (wb_* functions, see window-backend.sh). The installed script
+# has it inlined above this text by gui.nix; run from the repo, source it from
+# this directory.
+if ! declare -F wb_list >/dev/null; then
+  wb_dir="${BASH_SOURCE[0]%/*}"
+  [ "$wb_dir" != "${BASH_SOURCE[0]}" ] || wb_dir=.
+  # shellcheck source=/dev/null
+  . "$wb_dir/window-backend.sh"
+fi
+
 pct_w="${1:-75}"
 pct_h="${2:-100}"
 top_margin="${VICINAE_RESIZE_TOP_MARGIN:-32}"
@@ -23,20 +35,10 @@ for v in "$pct_w" "$pct_h"; do
   fi
 done
 
-dest="org.gnome.Shell"
-obj="/org/gnome/Shell/Extensions/Windows"
-iface="org.gnome.Shell.Extensions.Windows"
-
-gcall() {
-  gdbus call --session --dest "$dest" \
-    --object-path "$obj" --method "$iface.$1" "${@:2}"
-}
-
 # Graceful degradation: if the Vicinae extension D-Bus service is not on the
 # bus (extension disabled or incompatible with the running GNOME), do nothing
 # instead of erroring out the keybinding.
-raw="$(busctl --user --json=short call "$dest" "$obj" "$iface" GetFocusedWindowSync 2>/dev/null)" || raw=""
-json="$(printf '%s' "$raw" | jq -ce '.data[0] | fromjson | select(type == "object")' 2>/dev/null)" || json=""
+json="$(wb_focused)" || json=""
 if [ -z "$json" ]; then
   echo "vicinae-resize: window D-Bus service unavailable (is the Vicinae GNOME extension enabled?)" >&2
   exit 0
@@ -45,8 +47,7 @@ fi
 id="$(printf '%s' "$json" | jq -r '.id // empty' 2>/dev/null)"
 [ -n "$id" ] || { echo "vicinae-resize: no focused window" >&2; exit 0; }
 
-state="$(busctl --user --json=short call org.gnome.Mutter.DisplayConfig \
-  /org/gnome/Mutter/DisplayConfig org.gnome.Mutter.DisplayConfig GetCurrentState 2>/dev/null || true)"
+state="$(wb_outputs || true)"
 
 # GetCurrentState: data[1] = physical monitors (each with its modes; the active
 # one is flagged is-current), data[2] = logical monitors (x, y, scale,
@@ -84,4 +85,4 @@ if [ -z "${new_h:-}" ]; then
   exit 0
 fi
 
-gcall MoveResize "$id" "$new_x" "$new_y" "$new_w" "$new_h" >/dev/null 2>&1 || true
+wb_move_resize "$id" "$new_x" "$new_y" "$new_w" "$new_h" >/dev/null 2>&1 || true

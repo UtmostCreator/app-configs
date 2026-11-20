@@ -31,12 +31,12 @@ fi
 source "$ROOT_DIR/tests/lib/isolation.sh"
 
 REAL_HOME="${APP_CONFIGS_TEST_REAL_HOME:-$HOME}"
-fingerprint_before="$(isolation_fingerprint "$ROOT_DIR")"
+fingerprint_before="$(isolation_fingerprint "$ROOT_DIR" 2>/dev/null)"
 
 scratch="${APP_CONFIGS_TEST_SCRATCH:-$(mktemp -d "${TMPDIR:-/tmp}/run-bats.XXXXXX")}"
 trap 'rm -rf "$scratch"' EXIT
 
-if [[ "$(uname -s)" == Darwin && "${APP_CONFIGS_TEST_SANDBOXED:-0}" != 1 ]]; then
+if [[ "${OSTYPE:-}" == darwin* && "${APP_CONFIGS_TEST_SANDBOXED:-0}" != 1 ]]; then
     if ! command -v sandbox-exec >/dev/null 2>&1; then
         echo "[test:bash] sandbox-exec is missing: refusing to run the suite unsandboxed on macOS." >&2
         echo "[test:bash] Run it on a Linux host or in a disposable VM." >&2
@@ -135,10 +135,12 @@ if (( ${#leaks[@]} > 0 )); then
     echo "[test:bash] Give those tests their own HOME (e.g. HOME=\$BATS_TEST_TMPDIR)." >&2
     (( status != 0 )) || status=1
 fi
-fingerprint_after="$(HOME="$REAL_HOME" isolation_fingerprint "$ROOT_DIR")"
+fingerprint_after="$(HOME="$REAL_HOME" isolation_fingerprint "$ROOT_DIR" 2>/dev/null)"
 if [[ "$fingerprint_before" != "$fingerprint_after" ]]; then
     echo "[test:bash] the host changed during the run (Homebrew, LaunchAgents or the repo):" >&2
-    diff <(printf '%s\n' "$fingerprint_before") <(printf '%s\n' "$fingerprint_after") >&2 || true
+    if command -v diff >/dev/null 2>&1; then
+        diff <(printf '%s\n' "$fingerprint_before") <(printf '%s\n' "$fingerprint_after") >&2 || true
+    fi
     (( status != 0 )) || status=1
 fi
 exit "$status"

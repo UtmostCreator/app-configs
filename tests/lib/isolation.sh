@@ -44,6 +44,10 @@ PROFILE
 
 isolation_fingerprint() {
     local prefix="${ISOLATION_BREW_PREFIX:-/opt/homebrew}" repo="${1:-.}"
+    local tool
+    for tool in find shasum cut sort; do
+        command -v "$tool" >/dev/null 2>&1 || { echo "fingerprint unavailable: $tool is missing"; return 0; }
+    done
     if [[ -d "$prefix/Cellar" ]]; then
         printf 'brew-head %s\n' "$(git -C "$prefix" rev-parse HEAD 2>/dev/null || echo none)"
         printf 'cellar %s\n' "$(find "$prefix/Cellar" -mindepth 1 -maxdepth 1 | LC_ALL=C sort | shasum | cut -d' ' -f1)"

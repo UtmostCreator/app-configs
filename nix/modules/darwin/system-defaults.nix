@@ -11,6 +11,7 @@
       autohide = true;
       show-recents = false;
       tilesize = 48;
+      wvous-tl-corner = 2;
     };
 
     finder = {
@@ -31,7 +32,10 @@
       NSAutomaticQuoteSubstitutionEnabled = false;
       NSAutomaticSpellingCorrectionEnabled = false;
       "com.apple.swipescrolldirection" = false;
+      "com.apple.keyboard.fnState" = true;
     };
+
+    menuExtraClock.Show24Hour = true;
 
     trackpad = {
       Clicking = true;

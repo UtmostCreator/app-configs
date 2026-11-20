@@ -451,6 +451,12 @@ in
       Description = "Track focused GNOME windows for Vicinae app toggles";
       After = [ "graphical-session.target" ];
       PartOf = [ "graphical-session.target" ];
+      # graphical-session.target is also reached in a niri session, where this
+      # tracker would poll a GNOME Shell D-Bus name that does not exist. GNOME
+      # puts XDG_CURRENT_DESKTOP=GNOME into the user manager before this unit
+      # starts (read from the running unit on 2026-11-20). Other
+      # graphical-session units (flameshot, Syncthing) are not touched.
+      ConditionEnvironment = "XDG_CURRENT_DESKTOP=GNOME";
     };
     Service = {
       ExecStart = "${config.home.profileDirectory}/bin/vicinae-focus-tracker";

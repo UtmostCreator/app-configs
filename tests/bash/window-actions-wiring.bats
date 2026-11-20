@@ -111,3 +111,7 @@ window_bindings() {
     [ "$(field '.tracker.Unit.PartOf | join(",")')" = "graphical-session.target" ]
     [ "$(field '.tracker.Unit.After | join(",")')" = "graphical-session.target" ]
 }
+
+@test "vicinae-focus-tracker unit: starts only in a GNOME session" {
+    [ "$(field .tracker.Unit.ConditionEnvironment)" = "XDG_CURRENT_DESKTOP=GNOME" ]
+}

@@ -1,8 +1,19 @@
-# macOS disk cleanup: what is safe to clear
+# macOS disk cleanup: inspect first, then decide
 
-Goal: free space without breaking apps or losing data. Check sizes first,
-delete second. Caches regenerate on their own. Anything under
-`Documents`, `Desktop`, `Photos`, or app data folders needs your decision.
+Goal: free space without breaking apps or losing data. The policy is
+[ADR-0040](../architecture/decisions/0040-macos-home-layout-and-cleanup-policy.md).
+Nothing here is run by a script, a test, setup or a scheduler, and automatic
+cleanup is not approved. The guide has three kinds of step:
+
+- Read-only inspection: sizes and lists. Always fine.
+- Manual maintenance: you review the list, then act by hand, preferring a tool's
+  own command or the Trash (recoverable) over `rm -rf`.
+- Not approved for automation: anything that deletes or prunes. Never put these
+  in a script, hook, test or timer.
+
+Many caches rebuild themselves, but that depends on the app, so look before you
+clear. Anything under `Documents`, `Desktop`, `Photos`, or app data folders needs
+your decision.
 
 ## Check disk usage first
 
@@ -19,15 +30,15 @@ Storage. It lists categories and suggests what to review.
 
 ## Where to look
 
-| Location | What it holds | Safe to clear? | How to open |
+| Location | What it holds | Notes | How to open |
 |----------|---------------|----------------|-------------|
-| `~/.Trash` | Files you moved to Trash | Yes, after review | Click Trash in the Dock, or `open ~/.Trash` |
-| `~/Library/Caches` | App and tool caches | Yes, apps rebuild them | Finder: Cmd+Shift+G, paste the path |
-| `~/Library/Logs` | App logs | Yes, old files only | Finder: Cmd+Shift+G, paste the path |
-| `~/Library/Developer/Xcode/DerivedData` | Xcode build output | Yes | Finder: Cmd+Shift+G, paste the path |
+| `~/.Trash` | Files you moved to Trash | Review first | Click Trash in the Dock, or `open ~/.Trash` |
+| `~/Library/Caches` | App and tool caches | App by app, review first; never wipe the whole folder | Finder: Cmd+Shift+G, paste the path |
+| `~/Library/Logs` | App logs | Old files only, after review | Finder: Cmd+Shift+G, paste the path |
+| `~/Library/Developer/Xcode/DerivedData` | Xcode build output | Regenerable build output, manual only | Finder: Cmd+Shift+G, paste the path |
 | `~/Library/Developer/CoreSimulator` | iOS simulators | Mostly, use `simctl` below | Finder: Cmd+Shift+G, paste the path |
 | `~/Downloads` | Downloaded installers, archives, SQL dumps | Review manually | Finder sidebar, Downloads |
-| `~/.npm`, `~/Library/pnpm`, `~/.cache/uv` | Package manager stores | Yes, via tool commands below | Use the commands below |
+| `~/.npm`, `~/Library/pnpm`, `~/.cache/uv` | Package manager stores | Via the tool's own command below, by hand | Use the commands below |
 | `~/Library/Containers/com.microsoft.teams2` | Teams data | Cache only, see the Teams guide | See [teams-troubleshooting.md](teams-troubleshooting.md) |
 
 To open a hidden folder in Finder, use Cmd+Shift+G (Go to Folder) and
@@ -52,15 +63,18 @@ osascript -e 'tell application "Finder" to empty trash'
 Or in Finder: Cmd+Shift+Delete (asks for confirmation). Cmd+Option+Delete
 deletes selected files without going through Trash, so use it only when sure.
 
-## Caches (safe to clear)
+## Caches (manual, review first)
 
-Quit the app first, then delete its cache folder. Example for an app cache:
+Quit the app first and check that it is really closed (Activity Monitor): moving the
+cache of a running app can break it. Confirm that the folder is only a cache, then move that
+one folder to the Trash so it can be put back, instead of deleting it:
 
 ```sh
-rm -rf ~/Library/Caches/<app-folder>
+mv ~/Library/Caches/<app-folder> ~/.Trash/
 ```
 
-Replace `<app-folder>` with a name from the `du` list above.
+Replace `<app-folder>` with a name from the `du` list above. Do not clear
+`~/Library/Caches` as a whole, and do not repeat this on a schedule.
 
 Package manager caches, cleared with their own tools:
 
@@ -80,7 +94,7 @@ Check the path before a full wipe: `brew --cache`, `npm config get cache`,
 ## Developer tools
 
 ```sh
-rm -rf ~/Library/Developer/Xcode/DerivedData       # Xcode build output
+mv ~/Library/Developer/Xcode/DerivedData ~/.Trash/  # Xcode build output, recoverable
 xcrun simctl delete unavailable                    # simulators whose runtime is gone
 ```
 
@@ -102,8 +116,10 @@ docker volume ls -f dangling=true  # unused volumes, review before pruning
 docker volume prune                # removes unused volumes
 ```
 
-Avoid `docker system prune -a --volumes` unless you want every unused image
-and volume removed. Volumes can hold database data, so review them first.
+Not approved for automation. `docker volume prune` and
+`docker system prune -a --volumes` can destroy database data that no container
+is using right now. Review the volume list, back up anything that matters, and
+run these by hand only. Never run them from a script, hook, test or timer.
 
 ## Large files and old downloads
 

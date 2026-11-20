@@ -74,7 +74,7 @@ Lessons from the Linux desktop incident (see [desktop-stability](../nixos/deskto
 | --- | --- | --- |
 | WSL2 memory cap | The WSL VM is one Windows process (`vmmem`) and grows to its limit | `%UserProfile%\.wslconfig`: `[wsl2]` `memory=16GB`, `swap=8GB` |
 | Return unused WSL memory | The VM holds freed memory by default | `[experimental]` `autoMemoryReclaim=gradual`, `sparseVhd=true` |
-| Limits inside WSL | Same runaway-job risk as on Linux | With `systemd=true`, cgroup v2 limits work inside WSL; keep their sizes below the WSL VM memory cap. The `app-terminals` slice is not deployed on WSL |
+| Limits inside WSL | Same runaway-job risk as on Linux | With `systemd=true`, cgroup v2 limits work inside WSL; keep their sizes below the WSL VM memory cap. The repo's percentage limits (the AI remote-control services' 40%/50%) resolve against the VM's RAM, so they already fit. The `app-terminals` slice is not deployed on WSL |
 | Fast Startup on dual-boot | Leaves NTFS half-hibernated; Linux mounts it read-only or refuses | Turn it off: Control Panel, Power Options, "Choose what the power buttons do" |
 | Memory warnings | Event 2004 names the processes using memory | Event Viewer: Resource-Exhaustion-Detector |
 

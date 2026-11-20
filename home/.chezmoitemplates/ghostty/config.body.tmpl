@@ -81,14 +81,12 @@ keybind = ctrl+t=new_tab
 {{- if eq .chezmoi.os "linux" }}
 # ---------- Memory safety (Linux) ----------
 # Each tab or split runs in its own systemd scope (linux-cgroup defaults to
-# single-instance, which is how GNOME launches Ghostty). This sets MemoryHigh
-# on that scope (12 GiB), a soft limit: past it the tab is throttled and
-# reclaimed, and systemd-oomd, which already watches these scopes for memory
-# pressure, kills that one tab instead of the kernel OOM killer picking
-# GNOME Shell. Incident: nine parallel shellcheck processes in one
+# single-instance, which is how GNOME launches Ghostty). Its memory limits
+# (soft 40% / hard 50% of RAM) come from a systemd drop-in in
+# nix/modules/home/gui.nix, not from linux-cgroup-memory-limit, which only
+# takes a fixed byte size. Incident: nine parallel shellcheck processes in one
 # tab filled RAM and swap and the global OOM killed the desktop session.
 # See docs/platforms/nixos/desktop-stability.md. Only affects new tabs.
-linux-cgroup-memory-limit = 12884901888
 {{- end }}
 # ---------- Config management ----------
 keybind = cmd+shift+e=open_config

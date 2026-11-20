@@ -10,7 +10,7 @@ and brew preview), T-0038 (Colima darwin-only; can wait until after a first
 successful run)
 
 ## Summary
-Nobody has run this repo on a Mac. A static review at main ed39171 (nothing was
+Nobody has activated this repo on a Mac (a read-only settings inventory was captured on 2026-11-20, see T-0048 macos.yaml; activation is still unverified). A static review at main ed39171 (nothing was
 run on a Mac) found two certain blockers and one inferred blocker on the way
 to a first install, plus smaller gaps. This ticket orders the fixes, with
 acceptance criteria, and holds the step-by-step real-Mac verification order.

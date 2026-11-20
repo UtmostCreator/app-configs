@@ -19,6 +19,8 @@ Status: GNOME decided (stay for now); niri proposed trial; Hyprland deferred · 
 - GNOME + Vicinae is what runs today and stays the default session. GDM stays.
 - niri through the nixpkgs `programs.niri` module is the working trial target. "No migration is authorised" (`docs/plans/niri-migration.md`, section 1).
 - Hyprland is deferred, not rejected.
+- GNOME 51 parity is not a gate for the niri migration (owner, 2026-11-20). If the daily session is niri, there is no need to first upgrade to GNOME 51 and prove the Vicinae GNOME extension and the GNOME keybindings there. The flake-owned system still installs GNOME 51 packages (GDM, the GNOME portal and keyring that niri uses, and the fallback session), so one check stays: GDM starts and the GNOME fallback session logs in. Full GNOME 51 parity is only needed if GNOME remains the daily session.
+- Keybindings are checked by the owner by hand, under GNOME and under niri. They are not an agent task or an automated gate.
 
 ## Why
 - GNOME is already declarative in Home Manager and trivially reversible: maintainability 80 vs 30 and rollback 90 vs 40 against Hyprland (`docs/plans/future-upgrades.md` section 12, an earlier table that the audit later corrected in parts).

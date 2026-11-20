@@ -37,7 +37,7 @@ no compositor change.
 - VERIFIED (host read, 2026-11-14): the running system is GNOME Shell 50.1; pinned unstable has gnome-shell 51.0.
 
 ## Risks (HIGH)
-- Switching to the flake moves GNOME 50.1 to 51.0. After the switch, check the Vicinae GNOME extension (1.8.x claims 46-51; the pinned build's metadata is UNVERIFIED) and every GNOME keybinding.
+- Switching to the flake moves GNOME 50.1 to 51.0. Owner decision 2026-11-20 (ADR-0012): if the daily session moves to niri, GNOME 51 parity is not a gate; the required check is only that GDM starts and the GNOME fallback session logs in. The fuller check (the Vicinae GNOME extension, 1.8.x claims 46-51 and the pinned build's metadata is UNVERIFIED, and every GNOME keybinding) applies only if GNOME stays the daily session. The owner checks keybindings by hand.
 - `hardware-configuration.nix` is `/etc/nixos/hardware-configuration.nix` (VERIFIED, name-only listing); the new host must import or copy it deliberately.
 - `nix/modules/nixos/default.nix` is consumed by nothing today, so it is untested as a system.
 - Lock ownership: `/etc/nixos` has its own `flake.lock`. Once the repo lock also drives the system closure, define how `sys-update` and `flake.lock` ownership work (see AGENTS.md: `sys-update` owns lock bumps).

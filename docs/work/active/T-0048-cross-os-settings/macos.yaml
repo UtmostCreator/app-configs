@@ -6,6 +6,16 @@ source:
   managed_by_mdm: true
   note: "MDM-enrolled work Mac: policy from the employer may override any value below"
 settings:
+  accessibility_reduce_motion:
+    value: true
+    unit: bool
+    raw: com.apple.universalaccess reduceMotion = 1
+    how: defaults read com.apple.universalaccess reduceMotion
+  auto_install_macos_updates:
+    value: true
+    unit: bool
+    raw: SoftwareUpdate AutomaticallyInstallMacOSUpdates = 1
+    how: defaults read /Library/Preferences/com.apple.SoftwareUpdate AutomaticallyInstallMacOSUpdates
   default_browser:
     value: com.brave.browser
     unit: enum
@@ -17,6 +27,11 @@ settings:
     unit: min
     raw: pmset displaysleep
     how: pmset -g custom
+  dock_pinned_apps:
+    value: 19
+    unit: count
+    raw: names are tracked in docs/guides/macos-dock.yaml
+    how: defaults read com.apple.dock persistent-apps
   file_vault:
     value: true
     unit: bool
@@ -27,12 +42,36 @@ settings:
     unit: bool
     raw: socketfilterfw global state 0
     how: /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+  fn_keys_standard:
+    value: true
+    unit: bool
+    raw: NSGlobalDomain com.apple.keyboard.fnState = 1
+    how: defaults read NSGlobalDomain com.apple.keyboard.fnState
   hibernate_mode:
     ac: 3
     dc: 3
     unit: enum
     raw: pmset hibernatemode
     how: pmset -g custom
+  hot_corners:
+    value:
+      top_left: mission_control
+      top_right: unset
+      bottom_left: unset
+      bottom_right: disabled
+    unit: enum
+    raw: com.apple.dock wvous-*-corner (2 = Mission Control, 1 = disabled)
+    how: defaults read com.apple.dock wvous-tl-corner
+  input_source_hotkey:
+    value: false
+    unit: bool
+    raw: symbolichotkeys 60 enabled = false (macOS layout switch shortcut off)
+    how: plutil -extract 60.enabled raw on com.apple.symbolichotkeys
+  key_remaps_hidutil:
+    value: none
+    unit: enum
+    raw: UserKeyMapping (null); Karabiner-Elements remaps keys instead
+    how: hidutil property --get UserKeyMapping
   key_repeat_delay:
     value: 30
     unit: enum
@@ -48,22 +87,57 @@ settings:
     unit: enum
     raw: HIToolbox AppleEnabledInputSources
     how: defaults read com.apple.HIToolbox AppleEnabledInputSources
-  lock_on_wake:
-    value: true
-    unit: bool
-    raw: "sysadminctl screenLock delay 60 s (immediate-to-60 s grace period)"
-    how: sysadminctl -screenLock status
   locale:
     value: en_GB
     unit: enum
     raw: NSGlobalDomain AppleLocale
     how: defaults read -g AppleLocale
+  lock_on_wake:
+    value: true
+    unit: bool
+    raw: "sysadminctl screenLock delay 60 s (immediate-to-60 s grace period)"
+    how: sysadminctl -screenLock status
+  login_items:
+    value:
+      - Raycast
+      - Flameshot
+      - CodeBurnMenubar
+      - Ice
+      - Stats
+    unit: enum
+    raw: 'System Events login items (the full background-item list needs sudo sfltool dumpbtm: not read)'
+    how: osascript -e "tell application \"System Events\" to get the name of every login item"
+  mdm_enrollment:
+    value: user_approved
+    unit: enum
+    raw: 'profiles status -type enrollment: MDM enrolment yes, not via DEP; one payload seen, ManagedSettings User Settings; server omitted'
+    how: profiles status -type enrollment
+  notifications_focus:
+    value: unknown
+    unit: manual
+    raw: stored in a private database with no stable defaults key
+    how: System Settings, Notifications and Focus
+  screensaver_idle:
+    value: unknown
+    unit: enum
+    raw: com.apple.screensaver domain not found for this host
+    how: defaults -currentHost read com.apple.screensaver idleTime
+  screenshot_toolbar_hotkey:
+    value: default
+    unit: enum
+    raw: symbolichotkeys 184 not customised, so Cmd+Shift+5 stays the default
+    how: plutil -extract 184 json on com.apple.symbolichotkeys
   sleep:
     ac: 1
     dc: 1
     unit: min
     raw: pmset sleep (1 = system sleeps after 1 min of idle once the display is off)
     how: pmset -g custom
+  spotlight_hotkey:
+    value: false
+    unit: bool
+    raw: symbolichotkeys 64 enabled = false (Cmd+Space is free for a launcher)
+    how: plutil -extract 64.enabled raw on com.apple.symbolichotkeys
   theme:
     value: light
     unit: enum

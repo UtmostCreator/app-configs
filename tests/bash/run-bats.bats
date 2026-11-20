@@ -10,6 +10,7 @@ setup() {
     mkdir -p "$STUB"
     # the outer run's own setting must not leak into these runs
     unset RUN_BATS_JOBS
+    export APP_CONFIGS_TEST_SANDBOXED=1
     local t
     for t in bash env dirname mktemp mkdir chmod rm; do
         ln -sf "$(command -v "$t")" "$STUB/$t"
@@ -158,4 +159,29 @@ grep -q "email = bats@example.invalid" "$HOME/.gitconfig" || exit 8'
 
     run env PATH="$STUB" bash "$SCRIPT" -j 2
     [[ "$output" == "bats-stub tests/bash ops/projects/logging/test -j 2" ]]
+}
+
+@test "run-bats puts a deny guard first on PATH, sets isolated mode, and blocks a real brew" {
+    printf '#!/bin/sh\necho REAL-BREW-RAN\n' >"$STUB/brew"
+    chmod +x "$STUB/brew"
+    stub bats 'echo "mode=$APP_CONFIGS_TEST_MODE"
+echo "first=${PATH%%:*}"
+brew update
+echo "brew-rc=$?"'
+    run env PATH="$STUB" bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"mode=isolated"* ]]
+    [[ "$output" == *"first="*"/run-bats."*"/guard-bin"* ]]
+    [[ "$output" == *"[test-guard] blocked real brew update"* ]]
+    [[ "$output" == *"brew-rc=97"* ]]
+    [[ "$output" != *"REAL-BREW-RAN"* ]]
+}
+
+@test "run-bats fails when the host fingerprint changes during the run" {
+    stub bats 'mkdir -p "$ISOLATION_TEST_PREFIX/Cellar/tool/2.0"'
+    mkdir -p "$BATS_TEST_TMPDIR/prefix/Cellar/tool/1.0" "$BATS_TEST_TMPDIR/prefix/bin"
+    for t in find shasum cut sort git ls; do ln -sf "$(command -v "$t")" "$STUB/$t"; done
+    run env PATH="$STUB" ISOLATION_BREW_PREFIX="$BATS_TEST_TMPDIR/prefix" ISOLATION_TEST_PREFIX="$BATS_TEST_TMPDIR/prefix" bash "$SCRIPT"
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"the host changed during the run"* ]]
 }

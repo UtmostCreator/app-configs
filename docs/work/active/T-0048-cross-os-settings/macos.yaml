@@ -21,6 +21,18 @@ settings:
     unit: enum
     raw: duti -d public.html (LSHandlers stores the id lowercased, com.brave.browser)
     how: duti -d public.html
+  default_handlers:
+    value:
+      markdown: editor
+      text: editor
+      python: editor
+      json: browser
+      pdf: Preview
+      png: Preview
+      html: browser
+    unit: enum
+    raw: duti -x per extension (app class only)
+    how: duti -x md; duti -x json
   display_off:
     ac: 10
     dc: 2
@@ -32,6 +44,21 @@ settings:
     unit: count
     raw: names are tracked in docs/guides/macos-dock.yaml
     how: defaults read com.apple.dock persistent-apps
+  finder_folders_first:
+    value: not_set
+    unit: bool
+    raw: _FXSortFoldersFirst absent
+    how: defaults read com.apple.finder _FXSortFoldersFirst
+  finder_new_window_target:
+    value: PfAF
+    unit: enum
+    raw: com.apple.finder NewWindowTarget (raw code)
+    how: defaults read com.apple.finder NewWindowTarget
+  finder_search_scope:
+    value: current_folder
+    unit: enum
+    raw: FXDefaultSearchScope = SCcf
+    how: defaults read com.apple.finder FXDefaultSearchScope
   fn_keys_standard:
     value: true
     unit: bool
@@ -107,6 +134,11 @@ settings:
     unit: enum
     raw: com.apple.screensaver domain not found for this host
     how: defaults -currentHost read com.apple.screensaver idleTime
+  screenshot_location:
+    value: default
+    unit: enum
+    raw: com.apple.screencapture location absent, so the system default
+    how: defaults read com.apple.screencapture location
   screenshot_toolbar_hotkey:
     value: default
     unit: enum
@@ -148,3 +180,8 @@ settings:
     unit: enum
     raw: NSGlobalDomain com.apple.swipescrolldirection = 0
     how: defaults read -g com.apple.swipescrolldirection
+  trackpad_secondary_click:
+    value: true
+    unit: bool
+    raw: AppleMultitouchTrackpad TrackpadRightClick = 1
+    how: defaults read com.apple.AppleMultitouchTrackpad TrackpadRightClick

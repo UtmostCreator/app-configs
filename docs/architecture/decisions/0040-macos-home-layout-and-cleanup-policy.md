@@ -30,7 +30,7 @@ The inspection measured sizes and counts, not contents. It identified potential 
 ## Decision (proposed)
 - Keep the current development root, scripts directory, Documents layout and every tool's own directory where they are. Moving them risks local web servers, containers, editor workspaces, shell shortcuts and Git worktrees. Use any new layout for new work only.
 - Add two top-level directories, provisioned idempotently by the configuration system after this ADR is accepted (create when missing, never move or change existing content):
-  - `Scratch/` for disposable generated output, with `temp`, `logs`, `benchmarks`, `reports` and `screenshots` inside.
+  - `Scratch/` for disposable generated output, with `temp`, `logs`, `benchmarks`, `reports` and `screenshots` inside. `screenshots` is only for screenshots you know are temporary: it expires after 14 days, so do not make it the system screenshot destination, and keep screenshots you want in protected storage.
   - `Archive/` for reviewed historical material (`projects`, `snapshots`, `imports`). Archive is not a backup (ADR-0033).
 - Cleanup has three classes:
 
@@ -51,22 +51,24 @@ Any future cleanup implementation must meet all of these. They are rules for the
 | Roots | Only the allowlisted `Scratch` subdirectories. A protected path can never become a target. |
 | Path validation | Canonicalise each root, verify that every candidate is contained in it, and reject a candidate if any component of its path is a symlink. |
 | Filesystem boundary | Never cross into another mounted filesystem. |
-| Eligibility | Only ordinary files that are not symlinks, not hard-linked more than once, owned by the user, older than the retention by last-modified time (not last-access time) and not open where that can be detected reliably. Age alone is not proof that a file is unused. |
+| Eligibility | A directory is eligible only if the owner has put it under the cleanup system explicitly (a marker created when it is provisioned), not because of its name. Within it, only ordinary files that are not symlinks, not hard-linked more than once, owned by the user, older than the retention by last-modified time (not last-access time) and not open where that can be detected reliably. Files changed in the last 24 hours and files with partial-download, temporary or lock suffixes are skipped, so active or incomplete output is never taken. Age alone is not proof that a file is unused. |
 | Identity | Re-check the file's identity (path, type, size, modification time, inode) immediately before any move, so a swap between scan and action is caught. |
 | Errors | Fail closed on an unreadable root, a permission error or an ambiguous path. Skip, report, and do not continue past a root-level failure. |
 | Concurrency | One run per root at a time, enforced by a lock. |
-| Reporting | File count, bytes, age bucket and action only. No file names, paths, symlink targets or file contents. |
+| Reporting | A report that leaves the machine or goes into the repository has file count, bytes, age bucket and action only: no file names, paths, symlink targets or contents. Restoring a quarantined file needs its original location, so that lives in a separate private recovery manifest (owner-only permissions, inside the quarantine directory), which is never published, committed or sent to another host. |
 | Directories | A cleanup never recursively deletes a directory. Removing an emptied directory is a separate, non-recursive step and only inside quarantine. |
 
 ### Lifecycle
+Implementation is in two stages. Stage 1 is a small Bash script for the read-only inventory and report. Stage 2 (quarantine and restore) is separately approved, designed and tested, and does not start until Stage 1 has shown that real reclaimable space exists. No custom filesystem mutation engine is built to complete this ADR.
+
 1. Discover: allowlisted roots only.
 2. Validate: type, age, owner, path, hard links, exclusions.
-3. Report: no filesystem change. This is the only step approved by this ADR.
-4. Quarantine (separately authorised): move eligible files on the same filesystem into a dedicated quarantine directory (`Scratch/.quarantine`) that is outside every cleanup allowlist, so discovery can never select quarantined files. Keep their relative paths and a manifest of size, modification time and a content hash, owner-only, written so an interrupted run can be recovered. A shell `find | mv` pipeline is not enough against races: use operations that act on the opened file (descriptor-relative, no path re-resolution).
+3. Report: no change to any scanned file. A strictly read-only audit writes to standard output only, takes no lock and writes no log. This is the only step approved by this ADR.
+4. Quarantine (separately authorised): move eligible files on the same filesystem into a dedicated quarantine directory (`Scratch/.quarantine`) that is outside every cleanup allowlist, so discovery can never select quarantined files. Keep their relative paths and a manifest of size, modification time and a content hash, owner-only, written so an interrupted run can be recovered. Races between scan and move matter here: a shell `find | mv` pipeline is not enough, so this stage needs file-safe operations (acting on the opened file, no path re-resolution).
 5. Restore or purge (separately authorised): restore puts the original name back at the original location and refuses to overwrite anything that exists. Purge removes only files listed in a manifest, after the hold period (initial default 14 days), and is not scheduled until a restore from quarantine has been tested successfully.
 
 ### Scheduling (future requirement, nothing exists yet)
-If a scheduled report is ever built, it should be a user LaunchAgent that runs the report at low priority, takes the lock before it starts, exits if another run holds it, and logs counts only, into `Scratch/logs`. Skipping on battery power is optional for a read-only report and required for any mutating step. The same policy file would drive Linux systemd user timers; only the scheduler differs.
+If a scheduled report is ever built, it should be a user LaunchAgent that runs the report at low priority. A scheduled run may keep a lock and a counts-only log under `Scratch/logs`; that changes `Scratch/logs` and nothing it scans. The manual, strictly read-only audit uses neither. Skipping on battery power is optional for a read-only report and required for any mutating step. The same policy file would drive Linux systemd user timers; only the scheduler differs.
 
 ### Backup requirement
 Quarantine is not a backup. Before quarantine or purge is enabled, a representative file must have been restored from the independent backup (ADR-0033), and the report must say when the last successful backup was. Cleanup never runs on data that is the only copy.
@@ -118,7 +120,7 @@ The repository is public. This ADR and any later inventory, report, error messag
 | A dedicated cleanup framework | Not needed: a small report-only script and a policy file are enough until the report shows real savings. |
 
 ## Consequences
-- This ADR creates no directory, job, timer or script. The next step, if accepted, is a minimal report-only audit in this repository and a measurement of what is really reclaimable.
+- This ADR creates no directory, job, timer or script. The next step, if accepted, is Stage 1 only: a minimal, anonymised, read-only inventory report that measures what is really reclaimable.
 - Open owner questions: accept the two new directories and the retention defaults; whether a report-only script is wanted and where its policy lives; the disk-pressure threshold; the quarantine hold period; the investigations below.
 - Investigations, in order: which of the old Downloads items account for most of their size; the three finished worktrees, especially the dirty one; the two repository copies against their originals; the application-cache total by application; the agent sessions through the provider's own commands; the six LaunchAgents for obsolete paths and failures; the two similarly named configuration directories; and what is actually backed up and restorable.
 - Related open work: T-0046 (first-run readiness, including the LaunchAgent paths) and T-0048 (settings inventory).

@@ -83,7 +83,7 @@ check() {
             col="$(awk -F'|' '{gsub(/^ +| +$/,"",$4);print $4}' <<<"$rows")"
             [ "$col" = "$s" ] || echo "$base: index status '$col' differs from '$s'"
         fi
-        word="$(sed -n '/^# ADR-/{n;p;q}' "$f" | sed -nE 's/^Status: ([A-Za-z-]+).*/\1/p')"
+        word="$(sed -n '/^# ADR-/{n;p;q;}' "$f" | sed -nE 's/^Status: ([A-Za-z-]+).*/\1/p')"
         case "$s" in
             proposed|trial|rejected|superseded) [ "$word" = "$s" ] || echo "$base: Status line starts '$word', frontmatter says $s" ;;
             decided|decided-unverified) [[ "$word" == decided* ]] || echo "$base: Status line starts '$word', frontmatter says $s" ;;

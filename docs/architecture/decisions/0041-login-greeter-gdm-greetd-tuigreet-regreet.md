@@ -10,7 +10,7 @@ forbids: [two-display-managers, greeter-change-on-live-desktop-without-approval,
 amends: []
 supersedes: []
 superseded_by: []
-related: [12, 13, 38, T-0029, T-0032]
+related: [12, 13, 23, 38, T-0029, T-0032]
 ---
 # ADR-0041: Login greeter: GDM during the niri trial, greetd with tuigreet proposed after cutover
 Status: proposed (owner asked on 2026-11-20 for greetd + tuigreet compared with the two strongest alternatives; nothing is built and the live desktop keeps GDM) · Date: 2026-11-20 · Sources: ADR-0012 (GDM stays; "Ly and greetd/tuigreet (deferred)"), `docs/research/desktop-migration-claim-audit.md` ("GDM stays during the trial"), `docs/research/niri-vs-hyprland.md` (greetd PATH note), evaluation of the pilot host on the pinned nixpkgs
@@ -41,6 +41,22 @@ Versions are the pinned nixpkgs (26.11, 5d2b81a). All three have NixOS modules t
 
 The order flips because GDM's main advantage is the GNOME fallback (its lock screen and keyring wiring), and its main cost is carrying GNOME Shell just to log in once GNOME is no longer used.
 
+## Fit for this machine
+Read on the daily machine on 2026-11-20 (read-only): a laptop with a 2560x1600 internal panel and an external display at times, an AMD integrated GPU that drives the screens plus an NVIDIA GPU on nouveau, one user, US and Russian layouts in the session with a US console keymap, no fingerprint login in use, and KeePassXC as the password manager (ADR-0023).
+
+| Property of the machine | GDM | greetd + tuigreet | greetd + ReGreet |
+|---|---|---|---|
+| Hybrid AMD and nouveau graphics; nouveau has logged timeouts (`docs/platforms/nixos/desktop-stability.md`) | The greeter is a Wayland gnome-shell, so a graphics fault can block login | Best fit: text on the console needs no compositor, so login and session choice survive a graphics fault | cage is a compositor too; same exposure as GDM, with a smaller stack |
+| 2560x1600 panel | Scales itself | The default console font is tiny at this density; needs a larger console font set in the system config (a one-line setting, to be tested in the VM and on the panel) | Scales through GTK; needs its scale set once |
+| External display sometimes attached | Follows GNOME's monitor logic | The console is cloned to the connected outputs (INFERRED, not tested) | Shown per cage's output handling (not tested) |
+| US and Russian layouts | Layout switcher on the login screen | Console keymap is US only, which suits a Latin password; no layout indicator | Follows the configured XKB layout; no switcher by default |
+| One user, no fingerprint | More than needed (user list, accessibility, enterprise login) | Enough: remembered user, password prompt, session menu, power menu | Enough |
+| KeePassXC, not the GNOME keyring, holds passwords | Keyring unlock wired anyway | Keyring unlock is optional here; turn the PAM line on only if an app still needs the Secret Service at login | Same as tuigreet |
+| Laptop suspend and lid | The session's locker handles resume; GDM only matters for the GNOME fallback's lock | No role after login; the niri shell's locker (ADR-0013) handles resume | Same as tuigreet |
+| Rebuild and rollback from the repo | Many moving parts move with every GNOME release (50.1 to 51.0 now) | One short declaration that rarely changes between releases | A daemon plus a GTK greeter and a kiosk compositor to keep working together |
+
+Why these three and not others for this machine: GDM is the option that keeps the GNOME fallback whole, tuigreet is the option that cannot be taken down by the graphics stack, and ReGreet is the closest graphical alternative that still shares tuigreet's daemon, so moving between the last two is cheap.
+
 ## Decision (proposed)
 - During the niri trial, and for as long as GNOME stays a usable fallback session, keep GDM. No greeter change on PC 1 or the pilot in that phase.
 - After cutover (niri the daily session, the shell from ADR-0013 providing lock and idle), move to greetd with tuigreet. The text greeter does not depend on the graphics stack, which matters on a hybrid AMD and nouveau machine: a broken compositor or driver still leaves a way to log in or pick another session.
@@ -62,6 +78,7 @@ The order flips because GDM's main advantage is the GNOME fallback (its lock scr
 - Accept tuigreet as the target after cutover, or prefer ReGreet for a graphical login.
 - Whether the GNOME fallback is kept after cutover. If it is, either accept that its lock screen does not work without GDM, or stay on GDM.
 - Fingerprint or other PAM methods at login, if wanted; none is configured today.
+- The console font and size for tuigreet on the 2560x1600 panel.
 
 ## Consequences
 - Nothing changes now. The pilot keeps GDM (`nix/hosts/linux-desktop-pilot/system.nix`), and `tests/bash/nixos-pilot.bats` keeps asserting it.

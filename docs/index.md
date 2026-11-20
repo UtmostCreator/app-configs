@@ -17,7 +17,7 @@ the topic you need.
 | Karabiner / keyboard remapping (macOS) | [`keyboard.md`](reference/keyboard.md) |
 | Terminal scrollback: Ghostty, tmux, VS Code, Windows Terminal limits | [`terminal-scrollback.md`](reference/terminal-scrollback.md) |
 | Microsoft Teams not sending or reactions reverting (macOS) | [`teams-troubleshooting.md`](guides/teams-troubleshooting.md) |
-| macOS disk cleanup: what is safe to clear and how to check | [`macos-cleanup.md`](guides/macos-cleanup.md) |
+| macOS disk cleanup: how to inspect and what to review before clearing anything | [`macos-cleanup.md`](guides/macos-cleanup.md) |
 | OpenClaw Telegram bot: secrets, pairing, service (Linux desktop) | [`openclaw-telegram.md`](guides/openclaw-telegram.md) |
 | Reach local services from another device over Tailscale (NixOS desktop): rules, audit, safe sharing | [`tailscale-local-services.md`](guides/tailscale-local-services.md) |
 | Kanto ORA4 / USB audio validation | [`ora4-audio.md`](reference/ora4-audio.md) |

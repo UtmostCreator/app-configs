@@ -1,0 +1,86 @@
+system: macos
+captured: 2026-11-20
+source:
+  os: macOS (Darwin 27.0.0)
+  form_factor: laptop (pmset reports Battery Power and AC Power profiles)
+  managed_by_mdm: true
+  note: "MDM-enrolled work Mac: policy from the employer may override any value below"
+settings:
+  default_browser:
+    value: com.brave.browser
+    unit: enum
+    raw: LaunchServices LSHandlers https
+    how: defaults read com.apple.LaunchServices/com.apple.launchservices.secure LSHandlers
+  display_off:
+    ac: 10
+    dc: 2
+    unit: min
+    raw: pmset displaysleep
+    how: pmset -g custom
+  file_vault:
+    value: true
+    unit: bool
+    raw: fdesetup status
+    how: fdesetup status
+  firewall:
+    value: false
+    unit: bool
+    raw: socketfilterfw global state 0
+    how: /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+  hibernate_mode:
+    ac: 3
+    dc: 3
+    unit: enum
+    raw: pmset hibernatemode
+    how: pmset -g custom
+  key_repeat_delay:
+    value: 30
+    unit: enum
+    raw: "NSGlobalDomain InitialKeyRepeat (units of 15 ms, so 450 ms). nix-darwin declares 15 (225 ms): live differs"
+    how: defaults read -g InitialKeyRepeat
+  key_repeat_speed:
+    value: 2
+    unit: enum
+    raw: "NSGlobalDomain KeyRepeat (units of 15 ms, so 30 ms). Matches nix-darwin"
+    how: defaults read -g KeyRepeat
+  keyboard_layout:
+    value: ["U.S."]
+    unit: enum
+    raw: HIToolbox AppleEnabledInputSources
+    how: defaults read com.apple.HIToolbox AppleEnabledInputSources
+  lock_on_wake:
+    value: true
+    unit: bool
+    raw: "sysadminctl screenLock delay 60 s (immediate-to-60 s grace period)"
+    how: sysadminctl -screenLock status
+  locale:
+    value: en_GB
+    unit: enum
+    raw: NSGlobalDomain AppleLocale
+    how: defaults read -g AppleLocale
+  sleep:
+    ac: 1
+    dc: 1
+    unit: min
+    raw: pmset sleep (1 = system sleeps after 1 min of idle once the display is off)
+    how: pmset -g custom
+  theme:
+    value: light
+    unit: enum
+    raw: NSGlobalDomain AppleInterfaceStyle (key absent)
+    how: defaults read -g AppleInterfaceStyle
+  time_format_24h:
+    value: not_set
+    unit: bool
+    raw: "NSGlobalDomain AppleICUForce24HourTime absent; menu-bar clock ShowAMPM=1. nix-darwin declares true: live differs"
+    how: defaults read -g AppleICUForce24HourTime
+  timezone:
+    value: Europe/London
+    unit: enum
+    raw: /etc/localtime
+    how: readlink /etc/localtime
+  touchpad_scroll:
+    value: natural_off
+    unit: enum
+    raw: NSGlobalDomain com.apple.swipescrolldirection = 0
+    how: defaults read -g com.apple.swipescrolldirection

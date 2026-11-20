@@ -63,6 +63,11 @@ differ. Use the [Mac checks](../../../platforms/macos/setup.md#cross-platform-ch
 and the [Windows inventory](windows.yaml); a live NixOS desktop capture and
 end-to-end Mac activation are still pending.
 
+## Owner proposals under AC-4 (2026-11-20, not a baseline)
+- GNOME follows the work Mac: idle blank after 10 min, lock 60 s after blanking, natural scrolling off, tap to click, light theme, launcher Alt+Space on every OS.
+- Key repeat is converted, not copied: macOS `InitialKeyRepeat` 30 and `KeyRepeat` 2 are 15 ms ticks, so 450 ms and 30 ms; GNOME `delay` 450 and `repeat-interval` 30 are milliseconds; Windows `KeyboardDelay` 1 is 500 ms.
+- The Mac is MDM-managed. A setting enforced by policy is preserved, and the Mac values stay unchanged where management status is unknown (the ADR-0020 work-profile rule).
+
 ## YAML schema
 ```yaml
 system: windows            # windows | nixos | macos

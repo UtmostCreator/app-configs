@@ -26,6 +26,9 @@ setup() {
 # (ops/check-source-of-truth.sh, ops/git-branch-origin.sh) or renamed
 # (home/dot_bashrc is now dot_bashrc.tmpl) and say so.
 repo-docs/migration-*.md | *               | historical record, kept as written
+# Reference-only docs of a dev stack whose Compose files, scripts and tests
+# are not in this repository (each page says so in a banner).
+ops/dev-stack/docs/* | *                   | reference-only, stack files not in this repo
 EOF
 }
 

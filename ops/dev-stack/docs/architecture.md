@@ -1,5 +1,9 @@
 # Architecture
 
+> **Reference only, not runnable.** These pages describe a Docker Compose dev stack whose
+> Compose files, `scripts/` and `tests/` are not in this repository. Commands and paths below
+> refer to that stack, not to app-configs. Kept as written for reference (2026-11-20).
+
 One application (`example-app`, PHP 8.3 Laravel) plus shared infrastructure, run with Docker Compose.
 
 | Service | Image | Role | Host port (default) |

@@ -12,16 +12,25 @@ Only the small, bounded surface that is already decided:
   installs commit tooling with winget ([ADR-0002](decisions/0002-windows-provisioning-bootstrap-winget.md)).
 - The safety net around it: restore point, exports, pinned image
   ([ADR-0007](decisions/0007-safety-net-restore-points-and-pinned-downloads.md)).
-- One opt-in Claude status line step, if ADR-0016 is accepted
+- One opt-in Claude status line step, implemented; the real Windows run is
+  pending (T-0052)
   ([ADR-0016](decisions/0016-native-windows-claude-status-line.md)).
 - Manual docs and a manual app list
   ([ADR-0011](decisions/0011-windows-edition-and-apps.md)).
 
 ## What is not planned
 
-- No general Windows configuration layer (no chezmoi, DSC or registry tweaks).
-- No Windows app automation and no application of Windows settings
-  ([ADR-0010](decisions/0010-cross-os-settings-inventory-first.md)).
+- No general Windows configuration layer (no chezmoi, DSC or open-ended
+  registry tweaks). Three bounded, opt-in exceptions are decided but not yet
+  verified on a real host: current-user settings with a snapshot first and a
+  rollback ([ADR-0020](decisions/0020-windows-safe-settings-snapshot-first.md)),
+  NVIDIA 3D settings ([ADR-0034](decisions/0034-nvidia-3d-settings-as-code.md))
+  and telemetry reduction on the personal profile
+  ([ADR-0035](decisions/0035-windows-telemetry-reduction.md)); T-0055 tracks
+  the build.
+- No Windows app automation. Windows settings apply only through those three
+  ADRs ([ADR-0010](decisions/0010-cross-os-settings-inventory-first.md)), and
+  WSL never changes Windows.
 - No Windows frontend for the configuration manager
   ([ADR-0018](decisions/0018-interactive-config-manager-frontend.md)).
 - WSL never runs winget or PowerShell to change Windows. Runtime interop

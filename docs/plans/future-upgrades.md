@@ -144,7 +144,8 @@ helper (the system-layer sibling of this repo's `nix/lib/mkhome.nix`).
 nix-config-pavlo's `lib/mksystem.nix` is the closest match (same `vars` +
 `specialArgs` idiom already used here).
 
-Today this repo has NO `nixosConfigurations` and the live system is a
+Today this repo has one `nixosConfigurations` host, the PC 2 pilot
+`linux-desktop-pilot` (T-0029, T-0032); the daily desktop still runs a
 hand-edited `/etc/nixos`. Adopting `mkSystem` would let this repo own the NixOS
 system layer reproducibly (timezone, substituters, gnupg, sops, browser-policies
 all become first-class instead of `sys-setup` patches). Biggest architectural
@@ -283,7 +284,7 @@ GNOME custom keybindings — see `nix/modules/home/gui.nix` resize script and
   `nix/modules/home/gnome-extensions.nix`); keep the resize script tolerant of
   the D-Bus service being absent (it is).
 - **Hyprland:** lives at the **NixOS system layer this repo does not manage**
-  (only `homeConfigurations` in `flake.nix`; no `nixosConfigurations`). Adopting
+  (the flake owns only the PC 2 pilot host, not this desktop). Adopting
   it splits desktop config across two governance domains and means owning the
   whole replacement desktop stack.
 

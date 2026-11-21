@@ -40,8 +40,10 @@ GPU, outputs, or `/etc/nixos` takeover.
 | Configure a remote builder only if uncached builds are the bottleneck. | Agreed, but the first remote step is deployment, not distributed builds: build and push from PC 1 with `--target-host` (below). Both machines are x86_64, so no builder is needed for architecture. |
 | Pinned Niri module at nixpkgs `5d2b81a7`. | VERIFIED current: the root input is lock node `nixpkgs_2`, rev `5d2b81a7`. The main plan's `e126e9e7` pin is stale (left for T-0033). |
 
-Confirmed as written: no `nixosConfigurations` output yet (`nix/flake.nix:181`
-starts `homeConfigurations`); the pinned module defaults `defaultSession` to
+Confirmed as written at the time (2026-11-20): no `nixosConfigurations` output
+yet. Since 2026-11-21 the flake has `nixosConfigurations.linux-desktop-pilot`
+(450e78e, 4c57049) and the niri config is chezmoi-owned (6fb82ee); PC 1's
+`linux-desktop` host is still to do. The pinned module defaults `defaultSession` to
 Niri, so GNOME must be set explicitly; Dux first, Noctalia second (ADR-0013);
 Vicinae stays the launcher and clipboard owner (main plan decisions 1 and 11);
 `sys-update` owns `nix/flake.lock`.

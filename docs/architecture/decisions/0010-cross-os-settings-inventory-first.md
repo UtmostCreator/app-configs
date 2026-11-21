@@ -40,7 +40,7 @@ Amended by ADR-0034 and ADR-0035 (2026-11-16): the NVIDIA profile step and the e
 None recorded.
 
 ## Consequences
-- Phases 2 to 5 (NixOS and macOS inventories, baseline, overrides, apply command) are not started.
+- Phase 2 is in progress: the Windows and macOS inventories exist (T-0048); the NixOS inventory and phases 3 to 5 (baseline, overrides, apply command) are not started.
 - Open: where per-host override data lives (chezmoi data, nix vars or a new directory); whether the apply command may change Windows power settings (needs admin).
 - Later apply steps need a restore point (`powercfg /export`) and a `--dry-run` first.
 - NixOS and macOS read commands in the ticket are unverified research input.

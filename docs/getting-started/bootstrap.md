@@ -136,14 +136,17 @@ reviewed slice. Until then, do not bolt on a secrets layer.
 
 ### Incomplete vs verified environment
 
-The verification gates fail closed: the `pre-commit` hook blocks a commit
-when neither `gitleaks` nor `trufflehog` is installed, and `mise run
-test:bash` fails when `bats` is missing. A fresh machine before the first
-`sys-update` is therefore an *incomplete* environment; while bootstrapping
-you may commit with `APP_CONFIGS_ALLOW_MISSING_SCANNER=1 git commit ...`,
-which prints a loud warning because the commit was not scanned. A
-*verified* environment has the tools from `nix/modules/home/dev.nix`
-installed, so every commit is scanned and the test task really runs.
+The verification gates fail closed: the `pre-push` hook scans the pushed
+commits and blocks the push when neither `gitleaks` nor `trufflehog` is
+installed (ADR-0005, amended 2026-11-20: the scan runs at push, not at
+commit), and `mise run test:bash` fails when `bats` is missing. A fresh
+machine before the first `sys-update` is therefore an *incomplete*
+environment; while bootstrapping you may push with
+`APP_CONFIGS_ALLOW_MISSING_SCANNER=1 git push ...`, which prints a loud
+warning because the push was not scanned. A *verified* environment has the
+tools from `nix/modules/home/dev.nix` installed, so every push is scanned
+and the test task really runs. The local hooks can be bypassed
+(`SKIP_HOOKS=1`, `--no-verify`); a CI backstop is tracked in T-0058.
 
 ## Dependency updates
 

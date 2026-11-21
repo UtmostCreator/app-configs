@@ -13,13 +13,13 @@ superseded_by: []
 related: [T-0047]
 ---
 # ADR-0015: WSL distro: NixOS-WSL by default, Ubuntu supported; one profile
-Status: decided 2026-11-15 (design ruled; not yet implemented; Ubuntu path untested) · Date: 2026-11-15 · Amends: ADR-0001 · Sources: session decision 2026-11-15 (architect ruling), user-supplied outside research (unverified where it cites Microsoft docs), `nix/hosts/wsl/home.nix`, `ops/detect-host.sh`, `ops/system-setup.sh`
+Status: decided 2026-11-15 (design ruled; NixOS-WSL implemented and verified on a real PC 2026-11-16, T-0047; Ubuntu path untested) · Date: 2026-11-15 · Amends: ADR-0001 · Sources: session decision 2026-11-15 (architect ruling), user-supplied outside research (unverified where it cites Microsoft docs), `nix/hosts/wsl/home.nix`, `ops/detect-host.sh`, `ops/system-setup.sh`
 
 Amends ADR-0001 (see its Consequences).
 
 ## Decision
 - Both distros are supported under the one host profile `wsl`. Install only the one a machine needs: NixOS-WSL on the personal PC, Ubuntu where an employer requires a standard distro. They can coexist.
-- One extra Home Manager output, wsl-nixos (the wsl home with `targets.genericLinux` forced off). `ops/detect-host.sh --hm-attr` (planned) is the only place that chooses the output: NixOS gives wsl-nixos, otherwise wsl.
+- One extra Home Manager output, wsl-nixos (the wsl home with `targets.genericLinux` forced off). `ops/detect-host.sh --hm-attr` (implemented) is the only place that chooses the output: NixOS gives wsl-nixos, otherwise wsl.
 - The Windows bootstrap keeps targeting the distro named NixOS and never touches another distro.
 - Ubuntu is installed by short manual steps: `wsl --install -d Ubuntu`, a user, wsl.conf with systemd, clone, `ops/install.sh`. Never sys-setup.
 

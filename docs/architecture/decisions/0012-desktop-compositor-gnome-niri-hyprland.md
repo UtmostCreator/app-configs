@@ -38,6 +38,6 @@ Status: GNOME decided (stay for now); niri proposed trial; Hyprland deferred · 
 KDE (score 78; no reason beyond the score recorded), COSMIC (no declarative NixOS options, partly verified), niri-flake (not needed), Ly and greetd/tuigreet (deferred).
 
 ## Consequences
-- niri needs T-0029 first (flake-owned NixOS system, proposed, not started); the trial is T-0032.
+- niri needs T-0029 first (flake-owned NixOS system; in progress since 2026-11-21: the PC 2 pilot host `linux-desktop-pilot` exists, PC 1 not started); the trial is T-0032.
 - Stale docs: `docs/plans/migration/overview.md` still lists the compositor, greeter and notification daemon as open choices (line 53); T-0033 refreshes them.
 - Revisit Hyprland only after its plan is rewritten against the current config format (the audit marks the plan's assumptions stale); the old trigger "HM Lua support stable" is not supported by the audit.

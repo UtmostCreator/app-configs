@@ -83,6 +83,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0040](0040-macos-home-layout-and-cleanup-policy.md) | macOS home layout: keep existing roots, add Scratch and Archive, report-only cleanup of disposable files, never automatic outside Scratch | proposed | 2026-11-20 |
 | [0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md) | Login greeter: keep GDM during the niri trial; greetd with tuigreet proposed after cutover, ReGreet the runner-up | proposed | 2026-11-20 |
 | [0042](0042-wsl-ubuntu-on-corporate-machines.md) | WSL2 on corporate machines: Ubuntu (manual install) when IT requires a standard distro, NixOS-WSL otherwise | proposed | 2026-11-21 |
+| [0043](0043-windows-winget-app-manifests.md) | Windows apps: one winget import manifest per profile (home, work), run by hand; manual items stay in the setup checklist | proposed | 2026-11-21 |
 
 The tool-selection ADRs 0021 to 0033, 0036 and 0037 are written (ADR-0021 holds parity and profiles); gaps are allowed by the contract.
 

@@ -11,7 +11,9 @@
 # percentage in MemoryHigh=/MemoryMax= against physical RAM, so the limits
 # now follow the machine: the shared budget is soft 60% / hard 70% (at least
 # 30% stays free for GNOME and browsers), and each tab or agent is soft 40% /
-# hard 50% inside it. Swap caps stay fixed sizes.
+# hard 50% inside it. Swap caps are shares of swap too (systemd resolves a
+# MemorySwapMax= percentage against total swap): 25% for the slice, 12% per
+# tab or agent, so no limit is a fixed size.
 #
 # Run:  bats tests/bash/terminal-memory-limits.bats
 
@@ -39,10 +41,10 @@ setup() {
 
 field() { jq -r "$1" "$LIMITS_JSON"; }
 
-@test "app-terminals.slice: soft 60% and hard 70% of RAM, fixed swap" {
+@test "app-terminals.slice: soft 60% and hard 70% of RAM, 25% of swap" {
     [ "$(field .slice.MemoryHigh)" = "60%" ]
     [ "$(field .slice.MemoryMax)" = "70%" ]
-    [ "$(field .slice.MemorySwapMax)" = "8G" ]
+    [ "$(field .slice.MemorySwapMax)" = "25%" ]
     [ "$(field .slice.MemoryAccounting)" = "true" ]
 }
 
@@ -52,14 +54,14 @@ field() { jq -r "$1" "$LIMITS_JSON"; }
         echo "$unit: $text"
         grep -qx 'MemoryHigh=40%' <<<"$text"
         grep -qx 'MemoryMax=50%' <<<"$text"
-        grep -qx 'MemorySwapMax=4G' <<<"$text"
+        grep -qx 'MemorySwapMax=12%' <<<"$text"
     done
 }
 
-@test "per-scope limits: no byte-valued MemoryHigh or MemoryMax remains" {
+@test "per-scope limits: no byte-valued MemoryHigh, MemoryMax or MemorySwapMax remains" {
     for unit in ghostty vte claudeRc codexRc; do
         text="$(field ".$unit")"
-        run grep -E '^Memory(High|Max)=[0-9]+[KMGT]?$' <<<"$text"
+        run grep -E '^Memory(High|Max|SwapMax)=[0-9]+[KMGT]?$' <<<"$text"
         [ "$status" -eq 1 ]
     done
 }

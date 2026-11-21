@@ -397,7 +397,7 @@ in
           Slice=app-terminals.slice
           MemoryHigh=40%
           MemoryMax=50%
-          MemorySwapMax=4G
+          MemorySwapMax=12%
         '';
       };
   # GNOME Console tabs (vte-spawn-*.scope) get the same budget: an agent
@@ -410,7 +410,7 @@ in
           Slice=app-terminals.slice
           MemoryHigh=40%
           MemoryMax=50%
-          MemorySwapMax=4G
+          MemorySwapMax=12%
         '';
       };
   # The AI remote-control services join the same slice. Their memory caps are
@@ -439,7 +439,9 @@ in
       MemoryAccounting = true;
       MemoryHigh = "60%";
       MemoryMax = "70%";
-      MemorySwapMax = "8G";
+      # A share of swap, like the RAM caps are shares of RAM: about 8 GiB of
+      # 33.6 GiB swap on the current desktop, and it follows a resized swap.
+      MemorySwapMax = "25%";
     };
   };
 

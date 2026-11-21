@@ -142,7 +142,7 @@ let
   # Remote-control agent services ran outside every memory budget and could
   # peak far above the terminal caps. Cap each one at soft 40% / hard 50% of
   # physical RAM (systemd resolves the percentage), the same as a terminal
-  # tab. MemoryMax is a hard limit: a session that peaks above it is stopped,
+  # tab; swap is capped at 12% of total swap. MemoryMax is a hard limit: a session that peaks above it is stopped,
   # and the restart back-off above then applies. That is the intended
   # trade-off. The move into the shared app-terminals.slice budget is
   # desktop-only and lives in nix/modules/home/gui.nix; elsewhere (WSL, CLI
@@ -152,7 +152,7 @@ let
     [Service]
     MemoryHigh=40%
     MemoryMax=50%
-    MemorySwapMax=4G
+    MemorySwapMax=12%
   '';
   agentMemoryLimits = {
     "systemd/user/claude-remote-control@.service.d/50-memory.conf".text = agentMemory;

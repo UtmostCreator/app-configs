@@ -10,8 +10,10 @@
 pins:
   - position: 1
     app: Paint.NET
-    status: pending tool decision
+    status: chosen
     aumid: ""
+    profiles: personal
+    note: "ADR-0036 Windows personal exception"
   - position: 2
     app: File Explorer
     status: system
@@ -22,8 +24,9 @@ pins:
     aumid: '{PF}\Double Commander\doublecmd.exe'
   - position: 4
     app: PDF reader
-    status: pending tool decision
+    status: system
     aumid: ""
+    note: "Edge (ADR-0036); nothing to install"
   - position: 5
     app: Visual Studio Code
     status: chosen
@@ -41,6 +44,7 @@ pins:
     app: Git GUI
     status: pending tool decision
     aumid: ""
+    note: "proposed discard (ADR-0031: lazygit, gh and VS Code instead)"
   - position: 9
     app: Telegram
     status: chosen
@@ -70,6 +74,7 @@ pins:
     app: Notepad++
     status: pending tool decision
     aumid: ""
+    note: "proposed discard (ADR-0026)"
   - position: 16
     app: KeePassXC
     status: chosen
@@ -83,6 +88,7 @@ pins:
     app: PuTTY
     status: pending tool decision
     aumid: ""
+    note: "proposed discard (ADR-0029: OpenSSH instead)"
   - position: 19
     app: Signal
     status: pending tool decision
@@ -92,9 +98,10 @@ pins:
     app: PhpStorm
     status: pending tool decision
     aumid: ""
+    note: "proposed discard (ADR-0026)"
   - position: 21
     app: WinSCP
-    status: pending tool decision
+    status: chosen
     aumid: ""
   - position: 22
     app: HeidiSQL
@@ -119,9 +126,11 @@ pins:
     status: unknown
     aumid: ""
   - position: 27
-    app: TreeSize
-    status: pending tool decision
+    app: WizTree
+    status: chosen
     aumid: ""
+    profiles: personal
+    note: "replaces TreeSize (ADR-0028)"
   - position: 28
     app: unknown
     status: unknown

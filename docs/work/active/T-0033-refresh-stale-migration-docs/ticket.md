@@ -35,3 +35,6 @@ No behaviour change.
 ## Acceptance criteria
 - Each listed statement is corrected with a source link.
 - `git diff` shows documentation and one comment change only; no behaviour change.
+
+## Progress
+- 2026-11-21 documentation audit adds to the scope: `docs/plans/migration/overview.md` goals still prescribe a Home Manager-owned KDL and describe `nixosConfigurations` as future although the PC 2 pilot host exists; the pilot (done) must be told apart from the PC 1 takeover (not started). Already fixed on 2026-11-21: `docs/plans/future-upgrades.md` and `docs/plans/niri-two-pc-pilot.md` now say the pilot host exists.

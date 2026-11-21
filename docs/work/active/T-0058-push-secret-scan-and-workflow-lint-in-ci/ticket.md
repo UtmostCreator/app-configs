@@ -20,3 +20,6 @@ Written 2026-11-21 against main 0b09964 from a read-only verification of an exte
 - AC5: tests: a local bypass still fails CI on a seeded synthetic secret (no real credential in fixtures); a dirty workflow file does not change the pre-push result.
 - AC6: ADR-0005 is amended for the CI backstop.
 - Independent review PASS; one conventional commit per logical change; no AI attribution trailers.
+
+## Progress
+- 2026-11-21: `docs/getting-started/bootstrap.md` now describes the pre-push scan (it said pre-commit) and names the local bypasses and this ticket. When the CI backstop lands, document it there too.

@@ -55,5 +55,7 @@ closes, move its directory from [`active/`](active/README.md) to
 | [T-0059: OpenCode OTel plugin: verify against a live session, redact at the source (bug)](active/T-0059-opencode-otel-plugin-verification/ticket.md) | open (verified 2026-11-21 from an external audit; owner to decide keep or remove) | 2026-11-21 |
 | [T-0060: GitHub date userscript blocks modifier and middle clicks on timestamps (bug)](active/T-0060-github-date-userscript-modifier-clicks/ticket.md) | open (verified 2026-11-21 from an external audit) | 2026-11-21 |
 | [T-0061: Karabiner docs say Right Cmd, the config uses Left Cmd (docs)](active/T-0061-karabiner-left-cmd-docs/ticket.md) | open (verified 2026-11-21 from an external audit) | 2026-11-21 |
+| [T-0062: Canonical project context pages are still unfilled templates (docs)](active/T-0062-fill-canonical-project-context/ticket.md) | open (verified 2026-11-21 with qmd and grep; not started) | 2026-11-21 |
+| [T-0063: Install and bootstrap docs disagree on the first-run command (docs)](active/T-0063-unify-first-run-install-docs/ticket.md) | open (verified 2026-11-21; not started) | 2026-11-21 |
 
 Archived tickets: see [archive/](archive/README.md).

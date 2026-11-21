@@ -44,3 +44,6 @@ the chezmoi collision check (rule 12).
 
 ## Open checks
 - Which owner is chosen (HM module vs raw `xdg.configFile`, and who owns portals/package/units): undecided.
+
+## Progress
+- 2026-11-21 documentation audit: the body still treats the niri config owner as undecided; it is decided by implementation: chezmoi owns `home/dot_config/niri/config.kdl` (6fb82ee). Record the Home Manager and `/etc/niri` options as historical alternatives; no Home Manager or NixOS declaration may write the same KDL target; validator tests must cover the chosen path.

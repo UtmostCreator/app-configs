@@ -101,3 +101,6 @@ NixOS generations are not data backups; back up mutable `$HOME` data and secrets
 Cutover to niri as default: a separate later decision, only after 2-4 weeks of daily use with no blockers.
 
 Exit path: if niri fails on GPU/display or screen sharing, stay on GNOME first. KDE Plasma 6.8 (Vicinae's KDE integration is "very brittle") is evaluated only if there is a separate reason to leave GNOME. That is a later user decision, not part of this ticket.
+
+## Progress
+- 2026-11-21 documentation audit: this ticket says the niri config is Home Manager-owned, `docs/plans/niri-migration.md` recommends Home Manager `xdg.configFile` and `docs/plans/niri-two-pc-pilot.md` proposes `/etc/niri/config.kdl`, while the implementation is chezmoi (6fb82ee). Record chezmoi as current, keep the others as historical alternatives, and decide package, session, portal and user-service ownership separately.

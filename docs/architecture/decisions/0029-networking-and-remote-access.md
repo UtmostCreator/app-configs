@@ -19,7 +19,7 @@ Notation, parity and profiles: [ADR-0021](0021-cross-platform-parity-and-profile
 
 ## Owner decisions (2026-11-16, quoted)
 - Tailscale on work hosts: "no" (work hosts get no Tailscale; the employer VPN applies).
-- "remove deepseek harness for now": recorded in ADR-0032 (the repo part was removed in 4b15279, T-0056).
+- "remove deepseek harness for now": recorded in ADR-0032 (the repo part was removed in e889726, T-0056).
 - O2: all native exceptions approved (here: WinSCP).
 
 ## Decision

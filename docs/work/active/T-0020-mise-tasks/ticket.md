@@ -2,7 +2,7 @@ Source: local
 
 # T-0020: mise.toml task safety
 
-Status: not started (mise.toml findings unaddressed on main 57b66fe)
+Status: in progress (4 findings fixed 2026-11-21, 1 false positive; 8 open, see Progress)
 Wave: 3
 Depends on: T-0003, T-0010
 
@@ -41,3 +41,5 @@ Only the files listed above. Unrelated findings are reported, not fixed.
 ## Progress
 
 - 2026-11-14: Not started.
+
+- 2026-11-21: tests/bash/mise-tasks.bats (6 tests, 5 failed on the old mise.toml). Fixed: `git diff --check` now also checks staged changes (lint:check, repo:check); nix:check and repo:check pass --no-update-lock-file; sync:dry-run counts missing tools and exits 1 after the full preview; the macOS preview uses `nix build --no-link --dry-run ...#darwinConfigurations.macos.system` instead of the root-only `darwin-rebuild check`. False positive: repo:check already exits 1 when nix is missing. Open: `read` without interactive (mise support unverified), nix:lint strict variant, run_auto_install before dry runs, floating optional installers, hard-coded ~/.config/mise, sync:apply prerequisite order and delegation to update-all (T-0010), post-sync verification.

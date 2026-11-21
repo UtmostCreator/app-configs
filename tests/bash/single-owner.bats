@@ -153,11 +153,11 @@ selection_sites() {
     [[ "$output" != *"ops/cleanup.sh:"* ]]
 }
 
-@test "mise sync:apply and sync:dry-run pass the selection arguments to darwin-rebuild" {
+@test "mise sync:apply and sync:dry-run pass the selection arguments to the macOS build" {
     local task
     for task in sync:apply sync:dry-run; do
         awk -v t="[tasks.\"$task\"]" '/^\[tasks/{r=($0==t)} r' "$REPO_ROOT/mise.toml" |
-            grep -E 'darwin-rebuild (switch|check)' | grep -q 'SELECTION_ARGS' || { echo "$task: darwin-rebuild without SELECTION_ARGS"; return 1; }
+            grep -E 'darwin-rebuild switch|nix build .*darwinConfigurations\.macos\.system' | grep -q 'SELECTION_ARGS' || { echo "$task: macOS build without SELECTION_ARGS"; return 1; }
         awk -v t="[tasks.\"$task\"]" '/^\[tasks/{r=($0==t)} r' "$REPO_ROOT/mise.toml" |
             grep -q 'ops/lib/selection.sh' || { echo "$task does not source selection.sh"; return 1; }
     done

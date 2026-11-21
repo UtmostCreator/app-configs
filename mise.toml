@@ -21,8 +21,8 @@ description = "Preview chezmoi changes (no mutation)"
 run = "chezmoi diff"
 
 [tasks."lint:check"]
-description = "Whitespace and repository lint checks"
-run = "git diff --check"
+description = "Whitespace and repository lint checks (unstaged and staged)"
+run = "git diff --check && git diff --cached --check"
 
 [tasks."lint:shell"]
 description = "bash -n on every committed shell script + ShellCheck (fails if shellcheck is missing)"
@@ -58,13 +58,14 @@ description = "Combined config consistency check"
 run = """
 set -e
 git diff --check
+git diff --cached --check
 bash ops/doctor.sh
 bash ops/validate-config.sh
 if ! command -v nix >/dev/null 2>&1 || [ ! -d nix ]; then
   echo 'missing: nix or nix/ flake (cannot run flake check)' >&2
   exit 1
 fi
-nix flake check ./nix
+nix flake check ./nix --no-update-lock-file
 """
 
 # ─── chezmoi-only apply (no Nix/mise/lefthook side effects) ─────────────────
@@ -102,19 +103,26 @@ if [ -z "$HOST" ] && [ -x ops/detect-host.sh ]; then
   HOST="$(bash ops/detect-host.sh 2>/dev/null || echo unknown)"
 fi
 echo "=== Host: ${HOST:-unknown} ==="
+# A missing tool is reported where it is needed and fails the preview at the
+# end, so the whole preview still prints (T-0020).
+missing=0
 echo
 echo '=== chezmoi diff ==='
-if command -v chezmoi >/dev/null 2>&1; then chezmoi diff; else echo 'missing: chezmoi'; fi
+if command -v chezmoi >/dev/null 2>&1; then chezmoi diff; else echo 'missing: chezmoi'; missing=$((missing+1)); fi
 echo
 echo '=== home-manager / darwin-rebuild dry-run ==='
 case "$HOST" in
   macos)
-    if command -v darwin-rebuild >/dev/null 2>&1; then
+    if command -v nix >/dev/null 2>&1 && [ -d nix ]; then
       # Same local install selection as sync:apply (ops/lib/selection.sh).
+      # darwin-rebuild check needs root; a dry-run build of the system needs
+      # nothing and changes nothing (T-0020).
       . ops/lib/selection.sh; selection_args
-      darwin-rebuild check --flake ./nix#macos ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}
+      nix build --no-link --dry-run --no-update-lock-file ./nix#darwinConfigurations.macos.system ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}
+      # sync:apply switches with darwin-rebuild; say so now, without failing the preview.
+      command -v darwin-rebuild >/dev/null 2>&1 || echo 'note: darwin-rebuild not on PATH yet; sync:apply needs it'
     else
-      echo 'missing: darwin-rebuild'
+      echo 'missing: nix or nix/ flake'; missing=$((missing+1))
     fi
     ;;
   linux-desktop|linux-cli|wsl)
@@ -122,7 +130,7 @@ case "$HOST" in
       . ops/lib/selection.sh; selection_args
       home-manager switch --flake "./nix#$HOST" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"} --dry-run
     else
-      echo 'missing: home-manager or nix/ flake'
+      echo 'missing: home-manager or nix/ flake'; missing=$((missing+1))
     fi
     ;;
   *)
@@ -134,17 +142,21 @@ echo '=== mise install (advisory) ==='
 if command -v mise >/dev/null 2>&1; then
   mise ls --missing 2>/dev/null || echo 'mise has nothing to install'
 else
-  echo 'missing: mise'
+  echo 'missing: mise'; missing=$((missing+1))
 fi
 echo
 echo '=== VS Code extensions dry-run ==='
 if [ -x ops/vscode-extensions.sh ]; then
   bash ops/vscode-extensions.sh --dry-run
 else
-  echo 'missing: ops/vscode-extensions.sh'
+  echo 'missing: ops/vscode-extensions.sh'; missing=$((missing+1))
 fi
 echo
 echo 'Would run: bash ops/install-git-hooks.sh (then --check)'
+if [ "$missing" -gt 0 ]; then
+  echo "sync preview incomplete: $missing missing item(s) above" >&2
+  exit 1
+fi
 """
 
 [tasks."sync:apply"]
@@ -266,8 +278,8 @@ run = "bash ops/cleanup.sh --apply --yes --gc"
 # ─── Nix flake helpers ──────────────────────────────────────────────────────
 
 [tasks."nix:check"]
-description = "Validate Nix flake"
-run = "nix flake check ./nix"
+description = "Validate Nix flake (never rewrites flake.lock)"
+run = "nix flake check ./nix --no-update-lock-file"
 
 [tasks."nix:show"]
 description = "Show flake outputs"

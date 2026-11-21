@@ -61,3 +61,4 @@ Children reproduce first and reject false positives with evidence.
 ## Progress
 
 - 2026-11-14: Umbrella. Closed children T-0002 to T-0008, T-0012 to T-0019, T-0021 to T-0024, T-0027, T-0028 are in archive/2026/. Still open: T-0009, T-0010, T-0011, T-0020, T-0025, T-0026. WSL2 follow-ups are tracked as T-0034 to T-0041.
+- 2026-11-21 audit: DOC-01, ops/cleanup.sh:7 says "SAFE (default, --apply)" while line 37 says report-only is the default; make both say report-only by default.

@@ -94,3 +94,6 @@ Sequential; each task starts after the previous is done. Statuses are pending un
 - O2 (decided 2026-11-17, owner): ADR-0035 lists the reader seams Get-MachinePolicyValue, Get-ServiceStart, Get-TaskState and Get-DomainMembership. T4 is no longer blocked by it.
 - T6 adds a W test that refuses telemetry-user entries until T8 detection exists (AC-P4).
 - Host facts to check at T4: non-elevated Get-ScheduledTask reads of the six tasks; Win32_Service.DelayedAutoStart.
+
+## Progress
+- 2026-11-21 audit: WIN-VIS-01 is not a live defect (windows-settings.psd1:36-40 marks every UserPreferencesMask bit Verified=$false, Executable=$false; bootstrap.ps1 only reads it); bit verification stays task T10. ADR-01: docs/reference/hotkeys.yaml:19-20 cites only ADR-0019; it should also cite ADR-0020, which amends it for HKCU snapshot/apply/rollback.

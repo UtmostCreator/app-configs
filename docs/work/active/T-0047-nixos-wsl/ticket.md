@@ -232,3 +232,6 @@ Validation split, recorded separately in the evidence
 - Follow-up proposal (separate change, not this work): ops/hooks/pre-commit.sh uses `gitleaks protect --staged`, deprecated since gitleaks v8.19.0 (still works). The maintained form is `gitleaks git --staged`.
 - No passwd step in the script. Only if sudo asks, from Windows: `wsl -d NixOS -u root passwd utmostcreator`.
 - The distro installs via `wsl --import NixOS` (not `--from-file`).
+
+## Progress
+- 2026-11-21 audit (verified by reading, not executed): WSL-OWN-01, `ops/windows/bootstrap.ps1:2156-2160` discovers with `find /home/$user -xdev` but repairs with a bare `chown -R`, which crosses mounts under home (it does not follow symlinks); repair only the found paths (`find -xdev ... -exec chown`). WSL-01: bootstrap.ps1:80 and ops/lib/preflight.sh:120 share the username pattern by copy; no test compares the two, and the comment at bootstrap.ps1:79 is stale.

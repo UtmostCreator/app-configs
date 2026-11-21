@@ -562,3 +562,6 @@ against a primary source; [memory/unverified] = recalled, not checked.
 - The chezmoi resolution duplicates the Nix resolution; the parity test guards it.
 - Scheduling: dev.nix overlaps T-0038 (land it first); T14/T15 wait for T-0041. The future installer conflicts with T-0041's discard of a `windows/` layer, so it stays outside this plan.
 - Rollback: delete the selection dir, revert the commits, and use HM generations. Casks stay installed by design.
+
+## Progress
+- 2026-11-21 audit, APP-01: docs/reference/app-options.yaml:14 defines `installed` as declared in the repo, not observed on a host; consider separate declared / installed_observed / verified_at fields.

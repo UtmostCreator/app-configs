@@ -129,3 +129,6 @@ Evidence (final run on this branch):
   file, and a second run is silent and uses the file.
 - A macOS `/bin/bash` 3.2 dry run of `bash ops/install.sh --dry-run`: no host
   question, no host file.
+
+## Progress
+- 2026-11-21 audit, HOST-01: ops/system-setup.sh:151 sets XDG_CONFIG_HOME=$sudo_home/.config under sudo, so a host file under a custom XDG_CONFIG_HOME is missed; the run is PROFILE_UNCONFIRMED and keeps the Tailscale and stability toggles unchanged (documented at 280-282; APP_CONFIGS_HOST_FILE works around it).

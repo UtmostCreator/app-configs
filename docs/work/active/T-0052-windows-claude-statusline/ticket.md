@@ -109,3 +109,6 @@ D2 to D8 are defaults. They stand unless the user overrides them.
 - Design reviewed (PASS WITH NOTES, round 3). Implemented 2026-11-16 in ops/windows/bootstrap.ps1 (uncommitted); tests/windows suite 193 passed, 0 skipped, 0 failed. Not run on the real settings.json yet (T6).
 - T1 (these records): written and reviewed (PASS WITH NOTES); pre-commit and commit pending. T2 to T6 are listed in [plan.md](plan.md).
 - Prerequisite P0: the step C work in `ops/windows/bootstrap.ps1` is committed by its owner first.
+
+## Progress
+- 2026-11-21 audit: CLI-01, home/dot_claude/executable_statusline.sh:764-767 treats unknown COLUMNS as 999 (rows may wrap); CLI-02, lines 107-109 admit bright colours fall below 3:1 contrast on light themes; CLAUDE-01, executable_subagent-statusline.sh:6-11 says subagentStatusLine was removed in Claude Code 2.1.323 while the settings template still sets it; check against the installed version.

@@ -247,6 +247,8 @@ Totals:
 
 ## 6. Phases with gates
 
+Two-PC variant (pilot on PC 2 first, proposed): `docs/plans/niri-two-pc-pilot.md`.
+
 | Phase | Work | Gate |
 |---|---|---|
 | P0 | T-0029 | The flake builds nixosConfigurations, build only. Review the closure diff. Check GNOME 51. |
@@ -317,7 +319,10 @@ b) Rollback target. Record `nixos-rebuild list-generations`. If only one
    Do not garbage-collect (`nix-collect-garbage`, `nix-env --delete-generations`)
    until the rollback check passes: generation 17 is the only rollback target.
    `nix-gc.timer` runs weekly with `nix-collect-garbage --delete-older-than 14d`,
-   so do the rollback check within 14 days of the first new generation.
+   which ages generations by creation time: generation 17 (2026-09-06) is kept
+   only while it is current, so the first GC run after a new generation becomes
+   current deletes it. Stop the timer and set `nix.gc.automatic = false` before
+   the first `boot` or `switch`, and re-enable it after the rollback check.
 
    GNOME stays the selectable fallback session.
 

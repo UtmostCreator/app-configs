@@ -9,10 +9,11 @@ Evidence: `docs/research/desktop-migration-claim-audit.md`
 
 ## Summary
 Scope validator rule 6 (programs allowlist) to Home Manager surfaces so
-legitimate NixOS `programs.*` (for example `programs.niri`) pass. Admit the niri
-config: either route needs `niri/config.kdl` in the xdg allowlist (see Findings;
-HM module vs raw `xdg.configFile` is not an either/or for the validator). Keep
-the chezmoi collision check (rule 12).
+legitimate NixOS `programs.*` (for example `programs.niri`) pass. The niri
+config owner is decided: chezmoi owns `home/dot_config/niri/config.kdl`
+(6fb82ee, 2026-11-21), so no `xdg.configFile` allowlist change (rule 11) is
+needed. Keep the chezmoi collision check (rule 12) so no Home Manager or NixOS
+declaration writes the same target.
 
 ## Owned files
 - ops/validate-config.sh
@@ -36,14 +37,18 @@ the chezmoi collision check (rule 12).
 - Bats for validate-config pass with new cases:
   - NixOS `programs.niri` allowed.
   - HM `programs.<x>` still denied.
-  - niri config path (`niri/config.kdl`) admitted only via the chosen owner.
-- `bash ops/validate-config.sh --eval` passes with the chosen route.
+  - an `xdg.configFile."niri/config.kdl"` (or the HM niri module writing it) is still rejected, because chezmoi owns that target.
+- `bash ops/validate-config.sh --eval` passes with chezmoi as the config owner.
 - Evaluating the system and home configs shows exactly one owner each for the niri package, the niri user systemd units, xwayland-satellite and the XDG portal config.
 - Rule 12 collision check still active.
 - `bash ops/validate-config.sh` passes on the repo.
 
 ## Open checks
-- Which owner is chosen (HM module vs raw `xdg.configFile`, and who owns portals/package/units): undecided.
+- Owner of the niri package, the niri user units, xwayland-satellite and the portals: the pilot uses the NixOS `programs.niri` module (`nix/hosts/linux-desktop-pilot/system.nix`); confirm one owner each.
+
+## Historical alternatives (not chosen)
+- Home Manager `wayland.windowManager.niri` module, or a raw HM `xdg.configFile."niri/config.kdl"`: both would need rule 11 changes; replaced by the chezmoi owner.
+- A system-wide `/etc/niri/config.kdl` (proposed in docs/plans/niri-two-pc-pilot.md): not chosen.
 
 ## Progress
-- 2026-11-21 documentation audit: the body still treats the niri config owner as undecided; it is decided by implementation: chezmoi owns `home/dot_config/niri/config.kdl` (6fb82ee). Record the Home Manager and `/etc/niri` options as historical alternatives; no Home Manager or NixOS declaration may write the same KDL target; validator tests must cover the chosen path.
+- 2026-11-21 documentation audit (applied above): the body treated the niri config owner as undecided; it is decided by implementation: chezmoi owns `home/dot_config/niri/config.kdl` (6fb82ee). Record the Home Manager and `/etc/niri` options as historical alternatives; no Home Manager or NixOS declaration may write the same KDL target; validator tests must cover the chosen path.

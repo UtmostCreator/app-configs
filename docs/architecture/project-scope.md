@@ -28,8 +28,9 @@ Only the small, bounded surface that is already decided:
   and telemetry reduction on the personal profile
   ([ADR-0035](decisions/0035-windows-telemetry-reduction.md)); T-0055 tracks
   the build.
-- No Windows app automation. Windows settings apply only through those three
-  ADRs ([ADR-0010](decisions/0010-cross-os-settings-inventory-first.md)), and
+- No general Windows app automation. The only exception is ADR-0020's opt-in
+  removal and re-registration of a closed list of current-user Appx packages
+  (`-RemoveApps`). Windows settings apply only through those three ADRs ([ADR-0010](decisions/0010-cross-os-settings-inventory-first.md)), and
   WSL never changes Windows.
 - No Windows frontend for the configuration manager
   ([ADR-0018](decisions/0018-interactive-config-manager-frontend.md)).

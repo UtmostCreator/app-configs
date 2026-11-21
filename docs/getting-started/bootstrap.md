@@ -144,9 +144,10 @@ machine before the first `sys-update` is therefore an *incomplete*
 environment; while bootstrapping you may push with
 `APP_CONFIGS_ALLOW_MISSING_SCANNER=1 git push ...`, which prints a loud
 warning because the push was not scanned. A *verified* environment has the
-tools from `nix/modules/home/dev.nix` installed, so every push is scanned
-and the test task really runs. The local hooks can be bypassed
-(`SKIP_HOOKS=1`, `--no-verify`); a CI backstop is tracked in T-0058.
+tools from `nix/modules/home/dev.nix` installed, so an ordinary push with
+the hooks enabled is scanned and the test task really runs. The local hooks
+can be bypassed (`SKIP_HOOKS=1`, `--no-verify`), and no independent CI scan
+enforces it yet; that backstop is tracked in T-0058.
 
 ## Dependency updates
 

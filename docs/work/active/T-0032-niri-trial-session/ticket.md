@@ -17,7 +17,7 @@ Add niri as a selectable session next to GNOME. GNOME stays the default.
 - xwayland-satellite present (niri spawns it on demand and exports `DISPLAY`).
 - Decide `useNautilus` (default true, file chooser only). Nautilus is not needed for screencast (REFUTED claim otherwise). `programs.niri.useNautilus = false` routes FileChooser to gtk (pinned nixpkgs `nixos/modules/programs/wayland/niri.nix:72`). niri #3765 is cited only for the symptom: without Nautilus, portal-gnome's file chooser fails silently.
 - Keep xdg-desktop-portal-gnome.
-- niri config is HM-owned and validated with `niri validate` (pre-commit or a build check via HM `checkConfig`).
+- niri config is chezmoi-owned (`home/dot_config/niri/config.kdl`) and validated with `niri validate` (tests/bash/niri-config.bats or a pre-commit check).
 - Vicinae starts via the existing systemd unit only; no `spawn-at-startup`.
 - With `defaultSession` set, the GDM preStart runs set-session and ignores session history (pinned nixpkgs `nixos/modules/services/display-managers/gdm.nix:249-251`). Choosing niri at the greeter will therefore not persist across GDM restarts; this is expected during the trial.
 - In this ticket (plan decision 4, user confirmed 2026-11-15): the shell comparison trial within the niri trial, Dux first, then Noctalia, gated by "Shell trial gates" below.
@@ -27,7 +27,7 @@ Add niri as a selectable session next to GNOME. GNOME stays the default.
 
 ## Owned files
 - nix/modules/nixos/** (niri), nix/hosts/linux-desktop/system.nix
-- niri HM module and config (owner per T-0030)
+- niri config: chezmoi owns `home/dot_config/niri/config.kdl` (6fb82ee; see T-0030). The session, package and portals come from the NixOS `programs.niri` module on the pilot host. Historical alternatives (HM module, HM `xdg.configFile`, `/etc/niri/config.kdl`) were not chosen.
 - Trial shell config: the Dux NixOS module settings and the Noctalia HM config (exact paths not decided; the module-versus-HM split is open plan decision 8)
 
 ## Known blockers and risks
@@ -103,4 +103,4 @@ Cutover to niri as default: a separate later decision, only after 2-4 weeks of d
 Exit path: if niri fails on GPU/display or screen sharing, stay on GNOME first. KDE Plasma 6.8 (Vicinae's KDE integration is "very brittle") is evaluated only if there is a separate reason to leave GNOME. That is a later user decision, not part of this ticket.
 
 ## Progress
-- 2026-11-21 documentation audit: this ticket says the niri config is Home Manager-owned, `docs/plans/niri-migration.md` recommends Home Manager `xdg.configFile` and `docs/plans/niri-two-pc-pilot.md` proposes `/etc/niri/config.kdl`, while the implementation is chezmoi (6fb82ee). Record chezmoi as current, keep the others as historical alternatives, and decide package, session, portal and user-service ownership separately.
+- 2026-11-21 documentation audit (applied above): this ticket said the niri config is Home Manager-owned, `docs/plans/niri-migration.md` recommends Home Manager `xdg.configFile` and `docs/plans/niri-two-pc-pilot.md` proposes `/etc/niri/config.kdl`, while the implementation is chezmoi (6fb82ee). Record chezmoi as current, keep the others as historical alternatives, and decide package, session, portal and user-service ownership separately.

@@ -28,7 +28,7 @@ One status per row.
 | Job | Pick | Alternatives | P/W | Status | Now |
 |---|---|---|---|---|---|
 | Tailscale on W | none on any work host; W uses the employer VPN | none | W | DU | Deferred (follow-up below) |
-| Tailscale, NixOS desktop | system service, `ENABLE_TAILSCALE` defaults to 1 (`ops/system-setup.sh:219`) | NetBird; ZeroTier; Headscale | P | Pr | Record |
+| Tailscale, NixOS desktop | system service, `ENABLE_TAILSCALE` defaults to 1 only on a host recorded as linux-desktop (T-0057) | NetBird; ZeroTier; Headscale | P | Pr | Record |
 | Tailscale, macOS | none (the macOS host is W per ADR-0021 P4; a cask would need a T-0042 group) | same | P | Pr | Record |
 | Tailscale, WSL | off (ADR-0004; the WSL host is W per ADR-0021 P4) | same | P | Pr | Record |
 | Tailscale, Windows | manual | same | P | Pr | Manual |
@@ -45,8 +45,8 @@ One status per row.
 - (e) owner approval 2026-11-16 (O2).
 
 ## Today's behaviour and the follow-up
-- `ops/system-setup.sh:219` defaults `ENABLE_TAILSCALE` to 1 except on WSL, so a NixOS linux-cli work host gets Tailscale today.
-- `ops/readiness.sh:166-168` reports a pending rebuild if tailscaled is inactive on a non-WSL host.
+- Before T-0057 (historical): `ops/system-setup.sh` defaulted `ENABLE_TAILSCALE` to 1 except on WSL, so a NixOS linux-cli work host got Tailscale, and `ops/readiness.sh` reported a pending rebuild when tailscaled was inactive on any non-WSL host.
+- Since T-0057 (main b1699c0): `ENABLE_TAILSCALE` defaults to 1 only when the recorded host is linux-desktop; with no recorded host the toggle is left unchanged; readiness asks for tailscaled only on linux-desktop. Owner checks are pending: record the desktop host (`sys-install --host linux-desktop`) and clean up any work host.
 - Follow-up: T-0057 (landed on main b1699c0; owner checks pending). Work-host detection: `ENABLE_TAILSCALE` defaults to 1 only when HOST_PROFILE is linux-desktop (the pattern of ENABLE_DESKTOP_STABILITY, `ops/system-setup.sh:212`); `ops/readiness.sh:166` checks for linux-desktop instead of a non-WSL host; `ops/tailscale-setup.sh` stays a manual opt-in. Files to update: `ops/system-setup.sh`, `ops/readiness.sh`, `ops/tailscale-setup.sh` with `mise.toml:251-252` (the live path /etc/nixos/app-configs-tailscale*.nix), `docs/guides/tailscale-local-services.md`, `tests/bash/readiness.bats:52-60` and `tests/bash/fixtures/system-setup-desktop-snippet.golden:29`. T-0029 owns the NixOS system layer, so the ticket should be coordinated with it.
 
 ## Consequences

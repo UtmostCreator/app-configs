@@ -35,6 +35,8 @@ setup_file() {
           systemdBoot = c.boot.loader.systemd-boot.enable;
           flakes = c.nix.settings.experimental-features;
           revision = c.system.configurationRevision;
+          soteria = c.security.soteria.enable;
+          xwaylandSatellite = builtins.any (p: (p.pname or \"\") == \"xwayland-satellite\") c.environment.systemPackages;
           toplevel = builtins.unsafeDiscardStringContext c.system.build.toplevel.drvPath;
         }" >"$PILOT_JSON"
 }
@@ -74,4 +76,9 @@ field() { jq -r "$1" "$PILOT_JSON"; }
 @test "pilot disks: placeholders name filesystems by label, never /dev/sdX or nvme paths" {
     [[ "$(field .rootDevice)" == /dev/disk/by-* ]]
     [[ "$(field .bootDevice)" == /dev/disk/by-* ]]
+}
+
+@test "pilot niri session: a polkit agent and X11 app support are present" {
+    [ "$(field .soteria)" = "true" ]
+    [ "$(field .xwaylandSatellite)" = "true" ]
 }

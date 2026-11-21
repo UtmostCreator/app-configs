@@ -13,13 +13,16 @@
 # /etc/nixos and rebuild from /etc/nixos#nixos, a different system than this
 # flake host (T-0029). Rebuild with
 # `nixos-rebuild switch --flake <repo>/nix#linux-desktop-pilot` instead.
-# niri's own config (~/.config/niri) is left to a later change; niri starts
-# with its built-in default config.
+# niri's own config is chezmoi's (home/dot_config/niri/config.kdl, deployed to
+# ~/.config/niri/config.kdl); /etc/niri is not used.
 #
-# Checked by tests/bash/nixos-pilot.bats.
+# Checked by tests/bash/nixos-pilot.bats (evaluation) and nix/tests/pilot-vm.nix
+# (boots it in QEMU: GDM, GNOME default, niri session start with the repo's
+# niri config).
 
 {
   lib,
+  pkgs,
   self,
   vars,
   ...
@@ -38,6 +41,14 @@
   # default session, so GNOME is set explicitly.
   programs.niri.enable = true;
   services.displayManager.defaultSession = "gnome";
+
+  # What the niri session needs beyond programs.niri (which already brings the
+  # session entry, the keyring, the portals and the polkit service): a polkit
+  # agent for password prompts, and xwayland-satellite so X11 apps open. niri
+  # finds xwayland-satellite on PATH and starts it on demand. The bar,
+  # notifications, lock and idle handling wait for the shell choice (ADR-0013).
+  security.soteria.enable = true;
+  environment.systemPackages = [ pkgs.xwayland-satellite ];
 
   users.users.${vars.username} = {
     isNormalUser = true;

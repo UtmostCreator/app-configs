@@ -194,6 +194,14 @@
         modules = [ ./hosts/linux-desktop-pilot/system.nix ];
       };
 
+      # VM smoke test for the pilot: boots it in QEMU (GDM, GNOME default,
+      # niri login). Built on demand, not by `nix flake check`:
+      #   nix build --no-link -L "git+file://$PWD?dir=nix#packages.x86_64-linux.pilot-vm-test"
+      packages.x86_64-linux.pilot-vm-test = import ./tests/pilot-vm.nix {
+        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        inherit self vars;
+      };
+
       darwinConfigurations.macos = nix-darwin.lib.darwinSystem {
         system = vars.profiles.macos.system;
         specialArgs = { inherit inputs vars; };

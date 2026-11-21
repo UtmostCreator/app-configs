@@ -2,7 +2,7 @@ Source: local
 
 # T-0035: sys-readiness must not print ALL SET while TODO items remain (bug)
 
-Status: open
+Status: not started; planned as T-0047 S3-2 (readiness must exit non-zero while TODOs remain)
 Wave: 1
 Depends on: none (builds on T-0015 (landed); start from current main). T-0029 also lists ops/readiness.sh as downstream.
 Order: first in the WSL2 sequence. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. T-0035 must land before T-0040 step 10 (post-install readiness).

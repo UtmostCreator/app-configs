@@ -2,7 +2,7 @@ Source: local
 
 # T-0011: update-* helper libraries (P1)
 
-Status: open
+Status: done (all findings fixed on main: aeba9de, 310a7ba, 11a0de3, feb662e; same-version rebuild detection deferred); archived 2026-11-21
 Wave: 1
 Depends on: none
 

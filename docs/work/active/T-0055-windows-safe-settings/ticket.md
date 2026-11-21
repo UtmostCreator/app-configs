@@ -2,7 +2,7 @@ Source: local
 
 # T-0055: Windows safe settings: snapshot first, profiles, telemetry, NVIDIA (feature)
 
-Status: open (decision records written; nothing built)
+Status: in progress (T1-T3 landed: ADRs 86ff52e, boundary checker 98d200d, catalogue ace86dd; T4 -WindowsSnapshot next; T5+ need Windows)
 Relates to: ADR-0020, ADR-0034, ADR-0035, T-0041, T-0042, T-0047, T-0048, T-0052
 Note: ADR numbers 0021 to 0033 are reserved for the Windows tool-selection ADRs.
 

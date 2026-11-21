@@ -2,7 +2,7 @@ Source: local
 
 # T-0044: Remember linux-desktop versus linux-cli per machine (feature)
 
-Status: implemented on feat/remember-linux-host, not landed; human checks pending (below)
+Status: done, pending human (landed on main 17156d7..6ceea7b; pending a real headless Linux sys-install and a macOS bash 3.2 dry run)
 Opened: 2026-11
 Follows: T-0042 (install selection), whose open question 6 asked where to persist this.
 

@@ -2,7 +2,7 @@ Source: local
 
 # T-0038: Colima darwin-only; confirm the Docker Compose plugin (bug)
 
-Status: open
+Status: not started; planned as T-0047 S3-1 (colima still on all hosts, no .colima ignore)
 Wave: 1
 Depends on: none (builds on T-0018 (landed); start from current main)
 Order: second. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. T-0038 must land before T-0040 step 8 (the first activation).

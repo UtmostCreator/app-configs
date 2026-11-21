@@ -2,7 +2,7 @@ Source: local
 
 # T-0045: WSL: systemd requirement and codebase-memory-mcp units (bug)
 
-Status: open
+Status: in progress (CBM root fix ba7061b and readiness section landed; open: (a) update-all false green with systemd off, (c) preflight, (d) decision)
 Wave: 2
 Depends on: none to start. T-0035 (exit 3) is useful for the readiness verdict.
 Blocks: T-0039 (docs), T-0040 steps 7, 10 and 12 (by option, see Order)

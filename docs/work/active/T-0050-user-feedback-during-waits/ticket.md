@@ -2,7 +2,7 @@ Source: local
 
 # T-0050: Always show user feedback during waits (bug + rule)
 
-Status: open
+Status: in progress (rule, bootstrap heartbeat and install.sh waits done 4a3dd20, 0654c1e; bash audit table AC-4/9 open)
 Depends on: none
 Relates to: T-0047 (Windows bootstrap)
 

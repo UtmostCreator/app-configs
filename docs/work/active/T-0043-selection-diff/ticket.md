@@ -2,7 +2,7 @@ Source: local
 
 # T-0043: sys-update --selection-diff: a read-only diff of the selection (feature)
 
-Status: open (T1 to T7 implemented on feat/selection-diff, not merged; human checks pending: macOS run, a real bash 3.2 run of the install path, a real apply that writes the record)
+Status: done, pending human (landed on main 572be3f..2639d0c; pending a macOS run, a real bash 3.2 install run, a real apply that writes the record)
 Wave: unassigned
 Depends on: T-0042 (the selection, its facts and the preview it shares code with)
 

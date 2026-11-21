@@ -2,7 +2,7 @@ Source: local
 
 # T-0057: Enable Tailscale by default only on the personal desktop (feature)
 
-Status: open (implemented on a branch; not landed)
+Status: done, pending human (landed on main b1699c0; owner: sys-install --host linux-desktop (step 0) and work-host cleanup)
 Relates to: ADR-0029, ADR-0004, ADR-0021, T-0029
 Note: T-0054 is reserved by another session. T-0029 owns the NixOS system layer; coordinate before landing.
 

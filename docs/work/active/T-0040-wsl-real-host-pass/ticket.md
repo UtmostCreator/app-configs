@@ -2,7 +2,7 @@ Source: local
 
 # T-0040: Real WSL2 host acceptance pass (human verification)
 
-Status: open (needs a person on a Windows 11 machine)
+Status: NixOS-WSL pass done via T-0047 Slice 4 (2026-11-16); Ubuntu real-distro pass still needs a person on Windows
 Wave: 4
 Depends on: T-0034, T-0035, T-0036, T-0037, T-0038, T-0039, T-0045
 Order: last. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040.

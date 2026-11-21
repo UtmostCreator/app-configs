@@ -2,7 +2,7 @@ Source: local
 
 # T-0009: install.sh safety and preflight
 
-Status: open
+Status: in progress (most findings fixed on main; remaining: #7 hm-bak message naming the file, trusted-users audit, review)
 Wave: 3
 Depends on: T-0008, T-0017
 

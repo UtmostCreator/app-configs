@@ -2,7 +2,7 @@ Source: local
 
 # T-0051: Git hooks must work on Windows end to end (bug)
 
-Status: open
+Status: done, pending human (F1/F3/F4 fixed on main e9549bf, db6caaf, 7c9a002, 3dada49; Windows checks AC-1,3,4,5 open; AC-3 now applies at push)
 Relates to: T-0047 (task T2), T-0050
 Note: T-0049 is reserved by another session.
 

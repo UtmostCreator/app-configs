@@ -2,7 +2,7 @@ Source: local
 
 # T-0046: macOS first-run readiness: blockers, fixes and a real-Mac verification order (bug)
 
-Status: open
+Status: in progress (fix 3 aerospace tap e9bc4fd landed; fixes 1, 2, 4, 5, 6 and AC-B/C open; no real-Mac run yet)
 Wave: unassigned
 Depends on: none
 Related: T-0042 (on main; this ticket closes its human checks AC14, bash 3.2

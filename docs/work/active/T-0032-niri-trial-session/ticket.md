@@ -2,7 +2,7 @@ Source: local
 
 # T-0032: niri trial session alongside GNOME (feature)
 
-Status: proposed, not started. No migration authorised.
+Status: in progress (pilot session config and VM test on main 450e78e, 4c57049, 6fb82ee, 57b66fe; all real-session checks remain, PC 2 install needs owner)
 Depends on: T-0029, T-0030
 The shell comparison trial also requires P4a (activation gate, its own user approval; plan `docs/plans/niri-migration.md` section 6)
 Parity sign-off also needs: T-0031 niri backend (not a prerequisite for creating the session)

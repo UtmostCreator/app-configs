@@ -2,7 +2,7 @@ Source: local
 
 # T-0047: WSL2 on NixOS-WSL, desktop-first (feature)
 
-Status: WSL2 setup complete and verified after landing at 46c4ec7 (2026-11-16); pending (b), the owner sign-ins and decisions, then the open ACs (see "Final design and outcome")
+Status: done, pending human (WSL verified at 531c4d8; owner: personal.yaml (b), Claude/Codex login, tailscale up, SKIP_HOOKS (d); (e) open). SHAs below predate the 2026-11-18 rewrite
 Depends on: none to start. Slice 3 items: T-0038, T-0035, T-0045(a).
 Blocks: T-0040 (acceptance = Slice 4 here)
 Supersedes: T-0034 (reports live in bootstrap.ps1 -Report), T-0039 (folded in)

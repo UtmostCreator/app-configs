@@ -2,7 +2,7 @@ Source: local
 
 # T-0048: Cross-OS settings inventory, baseline and per-host overrides (feature)
 
-Status: open
+Status: in progress (Windows and macOS inventories done; NixOS desktop capture, baseline, overrides and apply open)
 Depends on: none to start (phase 1 is read-only).
 Blocks: none.
 Relation to T-0047: independent. Apply and automation wait until the WSL2 milestone (T-0047) is done. Inventory only now.

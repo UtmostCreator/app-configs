@@ -2,7 +2,7 @@ Source: local
 
 # T-0026: repo-guardian agent draft (inactive)
 
-Status: open
+Status: blocked on T-0025 (draft only; never activated without owner approval)
 Wave: 3
 Depends on: T-0025
 

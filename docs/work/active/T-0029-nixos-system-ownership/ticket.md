@@ -2,7 +2,7 @@ Source: local
 
 # T-0029: NixOS system ownership via nixosConfigurations (feature)
 
-Status: proposed, not started. No migration authorised (`docs/plans/migration/overview.md:3`).
+Status: in progress (PC 2 pilot host linux-desktop-pilot on main 450e78e, 4c57049; PC 1 linux-desktop takeover not started, live gate needs owner)
 Depends on: none
 Blocks: T-0032
 Evidence: `docs/research/desktop-migration-claim-audit.md`

@@ -2,7 +2,7 @@ Source: local
 
 # T-0001: Audit remediation program (umbrella)
 
-Status: open
+Status: open (umbrella; open children T-0009, T-0010, T-0020, T-0025, T-0026; T-0011 archived 2026-11-21)
 Wave: n/a (umbrella)
 Depends on: none
 

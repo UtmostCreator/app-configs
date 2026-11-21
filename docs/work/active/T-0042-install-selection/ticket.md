@@ -2,7 +2,7 @@ Source: local
 
 # T-0042: Install selection: committed profiles, a local per-host selection, first-run choice (feature)
 
-Status: open (T1–T8 implemented; four human checks pending: AC14 real-Mac switch, real bash 3.2 run, real brew preview, WSL2 dry run). Extension 2026-11-14 proposed (cross-platform), awaiting user decisions Q1–Q11
+Status: done, pending human (T1-T8 on main; real-Mac checks via T-0046; extension questions Q1-Q11 await owner, Q6 answered by T-0044)
 Wave: unassigned
 Depends on: none to start (T1 is a gate). T4 touches ops/update-all.sh; land it
 after T-0010 (now landed). Does not depend on T-0029..T-0033.

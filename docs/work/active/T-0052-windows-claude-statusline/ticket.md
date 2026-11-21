@@ -2,7 +2,7 @@ Source: local
 
 # T-0052: Claude Code status line on native Windows (feature)
 
-Status: implemented (reduced scope, see plan.md "Implementation notes"), review and T6 real run pending. Owner accepted ADR-0016 on 2026-11-16 ("yes add claude statu line windows implement"); ADR-0016 is decided-unverified.
+Status: done, pending human (on main 5533fdc, 846f7dc; owner: T6 real run and H1 visual check in Windows Terminal; T3-T5 review open)
 Relates to: T-0047 (Milestone 2 item pulled forward), ADR-0016
 Amends: ADR-0002, ADR-0006
 Plan: [plan.md](plan.md)

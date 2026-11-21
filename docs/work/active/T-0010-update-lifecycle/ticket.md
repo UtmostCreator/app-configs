@@ -2,7 +2,7 @@ Source: local
 
 # T-0010: update-all lifecycle, locking and rollback
 
-Status: open
+Status: done, pending human (pre-deploy audit PASS 8cd1c92; owner: supervised live --apply + rollback on Linux; notes R4-02/03/05, R5-01..03 open)
 Wave: 2
 Depends on: T-0002, T-0003, T-0011, T-0012, T-0013; architect design first
 

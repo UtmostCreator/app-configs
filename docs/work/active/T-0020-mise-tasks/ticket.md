@@ -2,7 +2,7 @@ Source: local
 
 # T-0020: mise.toml task safety
 
-Status: open
+Status: not started (mise.toml findings unaddressed on main 57b66fe)
 Wave: 3
 Depends on: T-0003, T-0010
 

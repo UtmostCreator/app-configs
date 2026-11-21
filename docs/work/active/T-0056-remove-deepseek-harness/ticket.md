@@ -2,7 +2,7 @@ Source: local
 
 # T-0056: Remove the DeepSeek harness (DSH) and its remote access, for now (chore)
 
-Status: removed from the repo; owner live cleanup pending; may return later (owner)
+Status: done, pending human (removed on main e889726; live leftovers on the desktop: dsh-remote*, its unit, mise conf.d). SHAs below predate the 2026-11-18 rewrite
 Related: ADR-0029 (`docs/architecture/decisions/0029-networking-and-remote-access.md`, Tailscale personal-only), ADR-0032 (`docs/architecture/decisions/0032-ai-clis-context-tools-and-desktop-apps.md`, AI tools; DSH recorded as removed)
 Note: T-0054 and T-0055 are reserved by other sessions.
 

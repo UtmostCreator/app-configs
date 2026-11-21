@@ -155,7 +155,7 @@ flowchart TD
       - One-line edits: `README.md:94`; `docs/architecture/tool-ownership.md:14`; `home/personal.yaml.example:30`; `docs/index.md:26`; `docs/platforms/windows/setup.md` "Next: WSL2".
       - `docs/plans/migration/implementation.md`: lines 9, 41, 84, 90, 91, 254, 1087, 1477, 1479, 1616; Appendix A line 1666. (WSL = NixOS-WSL with the bootstrap exception; clipcopy via clip.exe; Windows artefacts; detect-host.sh.)
       - `docs/getting-started/bootstrap.md:95-109` (WSL caveats).
-      - Ticket lines that say no repo script runs on Windows: `docs/work/active/T-0042-install-selection/ticket.md:262` and `docs/work/active/T-0034-wsl-before-after-snapshot/ticket.md:18`; update to match.
+      - Ticket lines that say no repo script runs on Windows: `docs/work/active/T-0042-install-selection/ticket.md:262` and `docs/work/archive/2026/T-0034-wsl-before-after-snapshot/ticket.md:18`; update to match.
   - Checks: all git inside WSL (L1); `git diff --cached --check`; `ls-files --eol` (i/lf, w/lf); mode summary; bats on windows-bootstrap, path-contract and wsl-check (tests/bash); `ops/validate-config.sh`; full `bats tests/bash`; the PS suite via powershell.exe.
   - Commits: C1 `feat(windows): bootstrap NixOS-WSL from PowerShell`; C2 `docs(wsl): NixOS-WSL runbook`.
   - Depends: H2. Covers: AC-T1 (gate), AC-NEG. Risk: medium. Review: yes, before Transfer-2.

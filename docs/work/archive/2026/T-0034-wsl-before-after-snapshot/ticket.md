@@ -2,7 +2,7 @@ Source: local
 
 # T-0034: WSL2 before/after state snapshot and backup runbook (feature)
 
-Status: open
+Status: superseded by T-0047 (bootstrap.ps1 -Report replaces host-snapshot.sh); archived 2026-11-21
 Wave: 1
 Depends on: none (it is used by T-0040 steps 6 and 12; its readiness.txt pass condition depends on T-0035 and T-0037)
 Blocks: T-0039, T-0040

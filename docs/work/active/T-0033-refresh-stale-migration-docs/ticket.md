@@ -2,7 +2,7 @@ Source: local
 
 # T-0033: Refresh stale migration docs (docs)
 
-Status: proposed, not started. No migration authorised.
+Status: not started (stale statements still present in owned docs)
 Depends on: none
 Evidence: `docs/research/desktop-migration-claim-audit.md`
 

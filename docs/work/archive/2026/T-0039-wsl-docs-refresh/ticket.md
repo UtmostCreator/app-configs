@@ -2,7 +2,7 @@ Source: local
 
 # T-0039: Refresh the WSL2 docs (docs)
 
-Status: open
+Status: superseded (folded into T-0047; setup.md rewritten 41207e5, 5620e57); archived 2026-11-21. Leftover: wsl.conf trailing comments, BROWSER line
 Wave: 3
 Depends on: T-0034, T-0036, T-0037, T-0038 (so the docs describe merged behaviour); also T-0035 (exit-3 text) and T-0045 (systemd and CBM guidance). Exception: the wsl.conf row below is a first-boot risk, has no dependencies and may land first.
 Order: seventh. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. The wsl.conf fix must land before T-0040 step 3. Test order: T-0040.

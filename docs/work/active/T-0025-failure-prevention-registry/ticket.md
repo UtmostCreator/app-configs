@@ -2,7 +2,7 @@ Source: local
 
 # T-0025: failure-prevention registry (feature)
 
-Status: open
+Status: not started (no registry, validator or skill on main)
 Wave: 3
 Depends on: landed fixes from T-0002..T-0024
 

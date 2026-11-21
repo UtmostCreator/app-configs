@@ -2,7 +2,7 @@ Source: local
 
 # T-0037: VS Code on WSL2: report a missing `code`, skip the extension installer (bug)
 
-Status: open
+Status: partly superseded by T-0047 (code check dropped); extension-installer skip on WSL still open
 Wave: 1
 Depends on: none
 Order: third. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. T-0037 must land before T-0040 step 8 (the real install runs the extension step) and step 10 (the `code` check).

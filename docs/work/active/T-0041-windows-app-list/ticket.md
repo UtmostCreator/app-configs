@@ -2,7 +2,7 @@ Source: local
 
 # T-0041: Windows-side copy-only app list (docs)
 
-Status: open (approved by user 2026-11-14: documentation only)
+Status: not started (approved 2026-11-14, documentation only; apps.md not written, PowerToys/launcher question open)
 (`docs/plans/migration/implementation.md` Appendix A excludes Windows package managers).
 Update 2026-11-15: TrafficMonitor Lite added (user decision); System Informer kept discarded; launcher question added.
 Depends on: user approval. No WSL2 ticket depends on this one.

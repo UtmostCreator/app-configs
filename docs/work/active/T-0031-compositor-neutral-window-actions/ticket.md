@@ -2,7 +2,7 @@ Source: local
 
 # T-0031: Compositor-neutral window actions (refactor)
 
-Status: proposed, not started. No migration authorised.
+Status: in progress (backend interface and GNOME backend on main dea74d4, 25d7ca8; remaining: niri backend, live checks)
 Depends on: none for the spec and GNOME refactor; the niri backend needs the T-0032 session.
 Evidence: `docs/research/desktop-migration-claim-audit.md`
 

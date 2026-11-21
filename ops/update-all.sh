@@ -1610,10 +1610,24 @@ if [[ "$MODE" == "apply" && "$DO_VERIFY" == 1 ]]; then
   fi
 
   if have systemctl; then
-    FAILED_UNITS="$(systemctl --user list-units --state=failed --no-legend --plain 2>/dev/null | awk '{print $1}' | paste -sd' ' -)"
-    if [[ -z "$FAILED_UNITS" ]]; then ui_ok "user services" "no failed units"
-    else ui_warn "user services" "failed: $FAILED_UNITS"
-         ui_note warn systemd "failed user units: $FAILED_UNITS (systemctl --user status <unit>)"; fi
+    # Without a user manager (WSL2 with systemd off), list-units prints nothing
+    # and would read as "no failed units" (T-0045). is-system-running exits
+    # non-zero for degraded too, so its printed state decides, not its status.
+    SD_STATE="$(systemctl --user is-system-running 2>/dev/null || true)"
+    case "$SD_STATE" in
+      running|degraded|starting|initializing|maintenance|stopping)
+        FAILED_UNITS="$(systemctl --user list-units --state=failed --no-legend --plain 2>/dev/null | awk '{print $1}' | paste -sd' ' -)"
+        if [[ -z "$FAILED_UNITS" ]]; then ui_ok "user services" "no failed units"
+        else ui_warn "user services" "failed: $FAILED_UNITS"
+             ui_note warn systemd "failed user units: $FAILED_UNITS (systemctl --user status <unit>)"; fi ;;
+      *)
+        ui_warn "user services" "systemd user manager not running (state: ${SD_STATE:-unknown}); timers and services cannot run"
+        if [[ "$HOST_PROFILE" == wsl ]]; then
+          ui_note warn systemd "systemd user manager not running (state: ${SD_STATE:-unknown}) — set [boot] systemd=true in /etc/wsl.conf, then run wsl --shutdown from Windows"
+        else
+          ui_note warn systemd "systemd user manager not running (state: ${SD_STATE:-unknown}) — no user systemd bus in this session (sudo -i or a container?)"
+        fi ;;
+    esac
   fi
 
   # How long until Claude Code / Codex need an interactive login again, so it

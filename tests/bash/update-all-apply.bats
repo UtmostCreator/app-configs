@@ -557,6 +557,64 @@ STUB
   [[ "$output" == *"log in again before you travel"* ]]
 }
 
+@test "checks: systemd user manager offline is reported, never a false 'no failed units' (T-0045)" {
+  cat > "$STUBS/systemctl" <<'STUB'
+#!/usr/bin/env bash
+case "$*" in
+  "--user is-system-running") echo offline; exit 1 ;;
+  *) echo "System has not been booted with systemd as init system (PID 1)." >&2; exit 1 ;;
+esac
+STUB
+  chmod +x "$STUBS/systemctl"
+  run env PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"systemd user manager not running"* ]]
+  [[ "$output" != *"no failed units"* ]]
+  [[ "$output" != *"wsl.conf"* ]]
+}
+
+@test "checks: on WSL2 an offline user manager names the wsl.conf fix (T-0045)" {
+  cat > "$STUBS/systemctl" <<'STUB'
+#!/usr/bin/env bash
+[[ "$*" == "--user is-system-running" ]] && echo offline
+exit 1
+STUB
+  chmod +x "$STUBS/systemctl"
+  run env PATH="$STUBS:$PATH" HOST_PROFILE=wsl bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"systemd user manager not running"* ]]
+  [[ "$output" == *"[boot] systemd=true in /etc/wsl.conf"* ]]
+}
+
+@test "checks: systemd running with no failed units still says so (T-0045)" {
+  cat > "$STUBS/systemctl" <<'STUB'
+#!/usr/bin/env bash
+case "$*" in
+  "--user is-system-running") echo running ;;
+esac
+exit 0
+STUB
+  chmod +x "$STUBS/systemctl"
+  run env PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"user services"*"no failed units"* ]]
+}
+
+@test "checks: a degraded manager lists the failed units (T-0045)" {
+  cat > "$STUBS/systemctl" <<'STUB'
+#!/usr/bin/env bash
+case "$*" in
+  "--user is-system-running") echo degraded; exit 1 ;;
+  "--user list-units --state=failed --no-legend --plain") echo "cbm-ui.service loaded failed failed CBM UI" ;;
+esac
+exit 0
+STUB
+  chmod +x "$STUBS/systemctl"
+  run env PATH="$STUBS:$PATH" HOST_PROFILE=linux-cli bash "$FAKE/ops/update-all.sh" --apply --yes --no-cleanup
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"failed: cbm-ui.service"* ]]
+}
+
 @test "a nix-profile entry that collides with Home Manager stops before the switch" {
   pkg="$BATS_TEST_TMPDIR/parallel-pkg"; mkdir -p "$pkg/bin"; touch "$pkg/bin/parallel"
   out="$BATS_TEST_TMPDIR/hm-out"; mkdir -p "$out/home-path/bin"; touch "$out/home-path/bin/parallel"
@@ -1898,7 +1956,8 @@ started_run_with_new_lock() {
 
 @test "N-01: a host without a verify gate records runtime_verified=n/a" {
   export HOST_PROFILE=linux-cli
-  printf '#!/usr/bin/env bash\nexit 0\n' > "$STUBS/systemctl"
+  # a running user manager with no failed units (T-0045 reads is-system-running)
+  printf '#!/usr/bin/env bash\n[[ "$*" == "--user is-system-running" ]] && echo running\nexit 0\n' > "$STUBS/systemctl"
   printf '#!/usr/bin/env bash\necho ok\n' > "$STUBS/ai-auth-status"
   # quiet nix and home-manager stubs, so the final verdict carries no warnings
   printf '#!/usr/bin/env bash\n[[ "$*" == *--print-out-paths* ]] && echo "%s"\nexit 0\n' "$BATS_TEST_TMPDIR/hm-out" > "$STUBS/nix"

@@ -2,7 +2,7 @@ Source: local
 
 # T-0045: WSL: systemd requirement and codebase-memory-mcp units (bug)
 
-Status: in progress (CBM root fix ba7061b and readiness section landed; open: (a) update-all false green with systemd off, (c) preflight, (d) decision)
+Status: in progress ((a) update-all systemd check fixed 2026-11-21; open: (c) preflight warn-or-fail and (d) keep-or-gate, both owner decisions)
 Wave: 2
 Depends on: none to start. T-0035 (exit 3) is useful for the readiness verdict.
 Blocks: T-0039 (docs), T-0040 steps 7, 10 and 12 (by option, see Order)
@@ -79,3 +79,6 @@ Slice 1 (branch fix/cbm-ui-allowed-root, 2026-11-16), reproduced on a fresh NixO
 - ARM WSL; qmd or openclaw on wsl; changing the CBM updater itself.
 - Build-affecting changes (ops scripts) follow AGENTS.md: validate, then commit when safe.
 - Only the files listed above. Unrelated findings are reported, not fixed.
+
+- 2026-11-21, option (a): the sys-update checks read `systemctl --user is-system-running`; offline, unknown or no bus reports "systemd user manager not running" (with the wsl.conf fix on WSL only) instead of "no failed units"; degraded still lists failed units. Four new update-all-apply.bats tests (the offline one failed on the old code); N-01's systemctl stub now prints `running`. Full bats suite run; independent review PASS WITH NOTES.
+- 2026-11-21 audit, UPDATE-01: ops/update-codebase-memory-mcp.sh commits before restart and health check on purpose, and a failed health check exits 1. Real gap: a failed `git commit` (line ~126) only warns, exits 0 and leaves the lock dirty, against its header (line 11).

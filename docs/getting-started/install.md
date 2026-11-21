@@ -28,7 +28,15 @@ accurate no matter whether settings live in `configuration.nix` or in the
   dotfiles done; the NixOS system layer (fish login shell, trusted-users, GC
   timer, Europe/London time zone) is not active yet. Run
   **`sudo sys-setup --apply`** (below).
+- **`User environment READY, N TODO item(s) left`** (exit 3) — nothing
+  required is missing, but `[TODO]` lines remain (for example systemd or
+  interop off on WSL2, an app not on PATH, dotfile drift). Fix each `[TODO]`
+  line and run `sys-readiness` again.
 - **`NOT READY`** (exit 1) — a required tool/file is missing; run `sys-install`.
+
+Precedence: a missing item (exit 1) wins over a pending rebuild (exit 2),
+which wins over TODO items (exit 3). The `mise run readiness` task reports
+every non-zero exit as a failed task, which is intended: only exit 0 means done.
 
 You are **done** exactly when `sys-readiness` prints `ALL SET` and exits 0.
 

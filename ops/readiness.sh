@@ -6,10 +6,12 @@
 # `nixos-rebuild switch` is still needed.
 #
 # Usage:
-#   bash ops/readiness.sh         # full report, exit 0 if ready
+#   bash ops/readiness.sh         # full report, exit 0 only when ALL SET
 #
-# Exit 0 = user environment ready. Exit 2 = ready but optional system rebuild
-# pending. Exit 1 = something required is missing. Exit 64 = bad arguments.
+# Exit 0 = ALL SET: nothing missing and no TODO left. Exit 3 = user
+# environment ready but TODO items remain. Exit 2 = ready but optional system
+# rebuild pending. Exit 1 = something required is missing. Exit 64 = bad
+# arguments.
 
 set -uo pipefail
 
@@ -35,8 +37,12 @@ note() { printf '  [TODO] %s\n' "$*"; warn=$((warn+1)); }
 bad()  { printf '  [MISS] %s\n' "$*"; err=$((err+1)); }
 hdr()  { printf '\n== %s ==\n' "$*"; }
 have() { command -v "$1" >/dev/null 2>&1; }
-# READINESS_ASSUME_NIXOS=1 is a test seam: it skips the host OS probe.
-is_nixos() { [[ "${READINESS_ASSUME_NIXOS:-0}" == 1 ]] || [[ -f /etc/NIXOS ]] || grep -qi '^ID=nixos' /etc/os-release 2>/dev/null; }
+# READINESS_ASSUME_NIXOS is a test seam that skips the host OS probe: 1 means
+# NixOS, 0 means not NixOS; unset probes the host.
+is_nixos() {
+  case "${READINESS_ASSUME_NIXOS:-}" in 1) return 0 ;; 0) return 1 ;; esac
+  [[ -f /etc/NIXOS ]] || grep -qi '^ID=nixos' /etc/os-release 2>/dev/null
+}
 
 hdr "Core tooling"
 for t in nix home-manager chezmoi mise lefthook git jq yq; do
@@ -185,6 +191,9 @@ elif [[ "$rebuild_needed" == 1 ]]; then
   echo "  -> User environment READY. Optional system rebuild pending:"
   echo "     run 'sys-setup' (or see docs/platforms/nixos/rebuild.md), then open a new terminal."
   exit 2
+elif [[ "$warn" -gt 0 ]]; then
+  echo "  -> User environment READY, $warn TODO item(s) left; see [TODO] lines above."
+  exit 3
 else
   echo "  -> ALL SET. Everything installed and usable."
   exit 0

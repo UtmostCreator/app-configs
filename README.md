@@ -52,8 +52,9 @@ exec fish                       # start a new shell so the login shell applies
 sys-readiness                   # done when it prints ALL SET
 ```
 
-`sys-readiness` reports `ALL SET` (done), `system rebuild pending` (run
-`sudo sys-setup --apply`) or `NOT READY` (re-run the installer). The `sys-*`
+`sys-readiness` reports `ALL SET` (exit 0, done), `system rebuild pending`
+(exit 2, run `sudo sys-setup --apply`), `N TODO item(s) left` (exit 3, fix the
+`[TODO]` lines) or `NOT READY` (exit 1, re-run the installer). The `sys-*`
 commands exist in `~/.local/bin` only after the first install.
 
 If `home/.chezmoidata/personal.yaml` is missing, the installer seeds it from

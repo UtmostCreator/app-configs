@@ -224,3 +224,49 @@ STUB
     PATH="$S" run bash "$SCRIPT"
     [[ "$output" == *"run: chezmoi apply  or  sys-update"* ]]
 }
+
+# T-0035 verdict: a scratch copy of ops/ with doctor, validate-config, the
+# hooks check and wsl-check stubbed, and every sampled tool on PATH, so the
+# only remaining items are the ones a test adds.
+verdict_env() {
+    W="$BATS_TEST_TMPDIR/repo"; mkdir -p "$W/.git"
+    cp -R "$REPO_ROOT/ops" "$W/ops"
+    for f in doctor validate-config install-git-hooks; do
+        printf '#!/usr/bin/env bash\nexit 0\n' >"$W/ops/$f.sh"
+    done
+    printf '#!/usr/bin/env bash\n%s\n' "${1:-:}" >"$W/ops/wsl-check.sh"
+    for t in nix home-manager chezmoi mise lefthook jq yq gitleaks fish nvim rg fd bat eza fzf \
+        zoxide starship atuin tmux lazygit delta gh node npm php docker stripe sys-update \
+        sys-cleanup sys-install; do stub "$t"; done
+    git config --file "$HOME/.gitconfig" alias.st status
+    SCRIPT="$W/ops/readiness.sh"
+}
+
+@test "readiness verdict: a TODO and nothing missing is not ALL SET; exit 3 names the count (T-0035)" {
+    verdict_env "echo 'TODO: systemd is off'"
+    HOST_PROFILE=wsl READINESS_ASSUME_NIXOS=0 PATH="$S" run bash "$SCRIPT"
+    [ "$status" -eq 3 ]
+    [[ "$output" != *"ALL SET"* ]]
+    [[ "$output" == *"1 TODO item(s) left"* ]]
+}
+
+@test "readiness verdict: no TODO and nothing missing is ALL SET with exit 0 (T-0035)" {
+    verdict_env
+    HOST_PROFILE=linux-cli READINESS_ASSUME_NIXOS=0 PATH="$S" run bash "$SCRIPT"
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"ALL SET"* ]]
+}
+
+@test "readiness verdict: a MISS still wins over TODOs with exit 1 (T-0035)" {
+    verdict_env "echo 'TODO: systemd is off'"
+    rm "$S/jq"
+    HOST_PROFILE=wsl READINESS_ASSUME_NIXOS=0 PATH="$S" run bash "$SCRIPT"
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"NOT READY"* ]]
+}
+
+@test "readiness verdict: a pending rebuild still exits 2 (T-0035)" {
+    verdict_env
+    HOST_PROFILE=linux-desktop READINESS_ASSUME_NIXOS=1 PATH="$S" run bash "$SCRIPT"
+    [ "$status" -eq 2 ]
+}

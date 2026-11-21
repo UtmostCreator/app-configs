@@ -2,7 +2,7 @@ Source: local
 
 # T-0035: sys-readiness must not print ALL SET while TODO items remain (bug)
 
-Status: not started; planned as T-0047 S3-2 (readiness must exit non-zero while TODOs remain)
+Status: done (verdict exit 3 for remaining TODOs, 2026-11-21); archive after the next WSL run confirms it
 Wave: 1
 Depends on: none (builds on T-0015 (landed); start from current main). T-0029 also lists ops/readiness.sh as downstream.
 Order: first in the WSL2 sequence. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. T-0035 must land before T-0040 step 10 (post-install readiness).
@@ -65,3 +65,5 @@ contract).
 - Intended effect: a WSL host with no Docker daemon or no VS Code now ends with
   exit 3 until the TODO is fixed.
 - Only the files listed above. Unrelated findings are reported, not fixed.
+
+- 2026-11-21: Implemented test first. New readiness.bats verdict tests (AC1 failed on the old code: ALL SET, exit 0). Callers checked: the fish and ~/.local/bin wrappers pass the exit through, bootstrap.ps1 only records it, install.sh prints a hint, the mise task reports non-zero as failure (documented as intended). Boundary extension: `is_nixos` in ops/readiness.sh now honours READINESS_ASSUME_NIXOS=0 (test seam only; unset still probes the host), needed to run the verdict tests on a NixOS host. Independent review PASS WITH NOTES; full bats suite run. Handed to T-0039: docs/platforms/wsl/setup.md:59 records an old run as "exit 0, ALL SET (... 1 TODO ...)", which now exits 3.

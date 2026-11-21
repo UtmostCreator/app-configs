@@ -1727,6 +1727,16 @@ Test-Case 'T50-4 steps 6, 7, 9 and 12 announce the clone, the report, the export
     Assert-Announced $after[0] 'writing the WSL report \(after-install\)' 'after-install report'
 }
 
+Test-Case 'T50-4b a finished run points to the manual checklist; a dry run does not' {
+    Initialize-Happy
+    Assert-Eq (Run-Boot @{}) 0 'exit'
+    $want = "^\[bootstrap\] auto setup finished\. .*open $([regex]::Escape($script:RepoRoot))\\docs\\platforms\\windows\\setup\.md, section 'Manual steps after auto setup', and work through its checklist$"
+    Assert-True ($script:LogLines[$script:LogLines.Count - 1] -match $want) "the last line points to the checklist; last line was: $($script:LogLines[$script:LogLines.Count - 1])"
+    Reset-Stubs; Initialize-Happy
+    Assert-Eq (Run-Boot @{ DryRun = $true }) 0 'dry run'
+    Assert-True (-not ((Get-Log) -match 'Manual steps after auto setup')) 'a dry run does not print the checklist pointer'
+}
+
 Test-Case 'T50-5 the pull announces itself' {
     Initialize-Happy
     $script:W.Rel = 'behind'; $script:W.HeadSha = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb'

@@ -2190,6 +2190,7 @@ nix-shell -p git --run 'git -c safe.directory="`$DST" -C "`$DST" remote set-url 
     }
     Write-BothReports -Label 'after-install' -User $user
     Say 'step 12b: done. Next: add the SSH key to GitHub, fill personal.yaml, log in to the tools, then run sys-readiness'
+    Say "auto setup finished. Some steps only you can do (sign-ins, UAC prompts, reboots, firmware settings): open $RepoRoot\docs\platforms\windows\setup.md, section 'Manual steps after auto setup', and work through its checklist"
     return 0
 }
 

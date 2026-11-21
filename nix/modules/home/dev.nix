@@ -85,8 +85,7 @@ in
       difftastic
       code2prompt # template-driven prompt/context generation (AI)
       codebaseMemoryMcp # structural code graph MCP + embedded browser UI
-      colima # lightweight container runtime (Docker daemon via VM)
-      docker # CLI only; daemon source is host-specific
+      docker # CLI only, with the compose plugin (nixpkgs composeSupport); daemon source is host-specific
       docker-buildx # docker buildx plugin (multi-arch builds)
       files-to-prompt # concatenate file sets with path headers (AI)
       opencode
@@ -182,6 +181,11 @@ in
         mockgen # go.uber.org/mock generator (typed interface mocks)
       ]
     )
+    # Colima runs the Docker daemon in a VM, which only macOS needs; Linux uses
+    # a native daemon and WSL2 the host's (docs/platforms/wsl/setup.md, T-0038).
+    ++ lib.optionals pkgs.stdenv.hostPlatform.isDarwin [
+      pkgs.colima # lightweight container runtime (Docker daemon via VM)
+    ]
     ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [
       pkgs.bubblewrap # bwrap: preferred Codex CLI Linux sandbox helper
       pkgs.mariadb # provides the `mysql` client; lighter than full mysql-client formula

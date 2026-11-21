@@ -2,7 +2,7 @@ Source: local
 
 # T-0038: Colima darwin-only; confirm the Docker Compose plugin (bug)
 
-Status: not started; planned as T-0047 S3-1 (colima still on all hosts, no .colima ignore)
+Status: done (colima macOS-only, ~/.colima ignored on Linux/WSL, compose ships with docker; 2026-11-21); archive
 Wave: 1
 Depends on: none (builds on T-0018 (landed); start from current main)
 Order: second. Recommended implementation order for the WSL2 work: T-0035, T-0038, T-0037, T-0036, T-0034, T-0045 (Wave 2), T-0039 (its wsl.conf fix may land first), T-0040 last. Full test order and fix-before gates: T-0040. T-0038 must land before T-0040 step 8 (the first activation).
@@ -61,3 +61,5 @@ prove whether compose ships with the Nix `docker` package.
 - No Docker engine choice is made here.
 - Build-affecting: validate per AGENTS.md before any commit.
 - Only the files listed above. Unrelated findings are reported, not fixed.
+
+- 2026-11-21: Implemented test first; evidence in evidence/drvpaths.md (AC1-AC4b). An existing ~/.colima on a Linux host stays (chezmoi leaves ignored targets alone); remove it by hand if wanted. Independent review PASS WITH NOTES.

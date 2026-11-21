@@ -86,6 +86,10 @@ Library/**
 # resident daemon for Wayland hotkeys); the chezmoi copy is for macOS only.
 .config/flameshot
 .config/flameshot/**
+# Colima is macOS-only (nix/modules/home/dev.nix); Linux and WSL2 use a native
+# or host Docker daemon (T-0038).
+.colima
+.colima/**
 {{- end }}
 
 {{- if eq .chezmoi.os "darwin" }}

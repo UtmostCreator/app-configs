@@ -80,7 +80,7 @@ Git/dev: `gh`, `lazygit`, `delta` (git-delta), `difftastic` (difft),
 `neovim` (nvim), `ast-grep`.
 Lint/test/security: `shellcheck`, `shfmt`, `actionlint`, `zizmor`, `lychee`, `bats`,
 `semgrep`, `gitleaks`, `trivy`, `osv-scanner`, `scc`.
-Containers/runtime: `docker` (CLI), `docker-buildx`, `colima`,
+Containers/runtime: `docker` (CLI, with the compose plugin), `docker-buildx`, `colima` (macOS only),
 `node` (nodejs_22, **Nix on NixOS** — see install-nixos.md), `pnpm`.
 DB/API: `mariadb` (mysql client), `stripe-cli` (stripe).
 Language: `php` (8.4 with extensions — powers the AI workflow validators).

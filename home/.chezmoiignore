@@ -89,6 +89,8 @@ Library/**
 {{- end }}
 
 {{- if eq .chezmoi.os "darwin" }}
+.config/niri
+.config/niri/**
 # Linux VS Code path excluded on macOS.
 .config/Code
 .config/Code/**
@@ -117,6 +119,8 @@ Library/**
 {{- end }}
 
 {{- if or (eq $hostProfile "wsl") (eq $hostProfile "linux-cli") }}
+.config/niri
+.config/niri/**
 # WSL and linux-cli: no Ghostty (no GUI terminal).
 .config/ghostty
 .config/ghostty/**
@@ -125,6 +129,8 @@ Library/Application Support/com.mitchellh.ghostty/**
 {{- end }}
 
 {{- if not $gui }}
+.config/niri
+.config/niri/**
 # Headless / gui=false: belt-and-braces drop ghostty + karabiner.
 .config/ghostty
 .config/ghostty/**

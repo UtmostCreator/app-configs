@@ -68,6 +68,38 @@ This is a **future-state policy**, **not** a removal authorisation. ADR-0012's G
 | Icons and cursors | Adwaita, Papirus, Bibata, Breeze | **—**; no GNOME-wide desktop requirement |
 | Workspace/session restore | Niri native app state + XDG autostart, shell window rules, nirinit / niche session tools | **—**; post-trial only, avoid extra supervisor |
 
+## New replacement candidates and safety corrections (2026-11-22)
+
+The research shortlist now includes **[niri-screenshare](https://github.com/pantarune/niri-screenshare)**, **[xdg-desktop-portal-generic](https://github.com/lamco-admin/xdg-desktop-portal-generic)** and **[oo7](https://github.com/linux-credentials/oo7)**. Treat each as a **candidate**, not a chosen dependency or approved deletion. Niri's [current screencasting documentation](https://niri-wm.github.io/niri/Screencasting.html) still specifies the GNOME portal as its baseline, so upstream project existence alone is not proof of feature parity.
+
+### ScreenCast portal (P0 functionality, P1 replacement experiment)
+
+| Candidate | Verified advertised capability | Open risk / comparison requirement | Disposition |
+|---|---|---|---|
+| `xdg-desktop-portal-gnome` | Niri-documented window/monitor ScreenCast and **Dynamic Cast Target** | GNOME runtime closure; test existing source picker, browser/Electron/OBS, hotplug and exact pinned portal version; Niri may depend on its Mutter.ScreenCast compatibility API | **Keep for current PC 2 pilot; reference** |
+| [`niri-screenshare`](https://github.com/pantarune/niri-screenshare) | Separate ScreenCast portal backend using **Niri's exposed Mutter.ScreenCast D-Bus API**, PipeWire and a GTK4 window/display picker; optional Niri dynamic-cast mode | **Runs a startup routine that edits portal preferences**; conflicts with declarative Nix/chezmoi unless explicitly suppressed/controlled; dynamic cast must be enabled and proven, and each app must be tested. GTK4/libadwaita is not GNOME Shell. Verify NixOS package/module provenance and no hidden auto-update | **First Niri-specific experiment, NOT selected** |
+| [`xdg-desktop-portal-generic`](https://github.com/lamco-admin/xdg-desktop-portal-generic) | Advertises ScreenCast v6 through `ext-image-copy-capture-v1` (fallback `wlr-screencopy`), plus RemoteDesktop/clipboard/input interfaces on supporting compositors | Newer/smaller ecosystem and protocol-dependent feature reach; **does not establish Niri's synthetic Dynamic Cast Target or matching window-picker UX**. Compare permission prompt, monitor/window capture, multiple PipeWire sessions and security, not just protocol list | **Second experimental alternative, NOT selected** |
+| `xdg-desktop-portal-wlr` / KDE | Useful for particular protocol/compositor environments or other portal interfaces | Not inherently equivalent to Niri's current per-window/dynamic-cast UX; KDE increases closure | **Conditional only** |
+
+**Critical portal distinction:** choose each portal **interface**, not one blanket default; `org.freedesktop.impl.portal.ScreenCast`, `FileChooser`, `Secret`, `GlobalShortcuts`, `Settings`, `RemoteDesktop` can have different owners. Validate the evaluated `niri-portals.conf`, actual DBus activation, and Niri-only scope after setting any preference. The portal front-end itself, `xdg-desktop-portal`, remains needed.
+
+**Acceptance:** baseline and each candidate must be tested with Brave/Chromium, Firefox, Vesktop/Electron and OBS; monitor/window capture, cancel/deny, 2+ simultaneous streams, Niri Dynamic Cast Target, switching/blanking a stream, multi-output unplug/replug, privacy exclusions, source closing, and recovery after shell/portal restart. A missing feature does **not** mean replacing ScreenCast is P0: keeping the working GNOME portal is allowed without retaining GNOME Shell.
+
+### Secret provider and keyring (P0 security, P1 replacement experiment)
+
+| Candidate | Strength | Risks / checks |
+|---|---|---|
+| **gnome-keyring** (pilot) | Existing Secret Service, Secret portal/PAM integration | GNOME-named component, but *not* the GNOME desktop; baseline to beat |
+| **`oo7-daemon` + `oo7-portal`** | Dedicated freedesktop Secret Service daemon and portal, PAM module, documented migration support | Separate Secret Service vs portal interfaces; test greetd **PAM auto-unlock** with exact Nix package paths, `HOME`/`XDG_RUNTIME_DIR`, session activation and encrypted keyring. [Reported greetd issue #516](https://github.com/linux-credentials/oo7/issues/516) is **closed**, not proof all versions/environments work. **Never allow it to silently migrate the real keyring on first test** |
+| **KeePassXC Secret Service** | Can reuse existing password manager | Interactive database unlocking and credential exposure/lifecycle may differ; not an automatic Secret portal replacement |
+| **KWallet** | Mature desktop keyring | KDE dependencies and PAM integration, no automatic migration compatibility |
+
+**Do not activate two `org.freedesktop.secrets` providers.** Use disposable copied test data and an isolated user/session before migrating credentials. Test locking, reboot/login, suspend, browser/native applications, Secret portal access and rollback. Keep KeePassXC as the separate personal password-manager selection (ADR-0023) regardless of which Secret Service wins. Do not mix the keyring migration and greetd cutover into one unreviewable change.
+
+### Feature comparison evidence and provenance
+
+For every GNOME replacement, record the pinned release/commit, the real module/package source, service owner, runtime dependency closure, persistence/mutation of config files, any PAM/group privilege change, current issue status, and reproducible success/failure traces. A **GNOME-free desktop UI** does not require a **GNOME-free dependency closure** when a standalone portal offers materially stronger support. Use [ADR-0046](0046-niri-desktop-installation-decision-register.md) G18/G22 and T-0032 for the tracked acceptance.
+
 ## GNOME-specific retirement gates (non-negotiable)
 
 1. Inventory **actual dependency closure** and services of the selected Niri profile with `nix path-info -r`, `nix why-depends`, NixOS option evaluation and `systemctl --user`/journal. **No statement that GNOME is removed may be based only on a package-name grep**: GTK libs, GNOME portal and GNOME desktop are different.

@@ -10,10 +10,12 @@ forbids: [unapproved-live-shell-change, duplicate-desktop-service-owners, unrevi
 amends: []
 supersedes: []
 superseded_by: []
-related: [12, 13, 27, 28, T-0031, T-0032]
+related: [12, 13, 27, 28, T-0031, T-0032, 46]
 ---
 # ADR-0045: Niri desktop shell: taskbar, dock, window controls, features and ecosystem
 Status: proposed (comparison and acceptance criteria only; no permanent shell selected or live activation authorised) · Date: 2026-11-22 · Sources: ADR-0012, ADR-0013, T-0031/T-0032 and upstream links in References.
+
+**Niri migration installation inventory and unresolved gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). This cross-reference does not change this ADR's decision or status.
 
 ## Problem and goals
 

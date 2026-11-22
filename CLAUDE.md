@@ -64,7 +64,7 @@
 ## Guidance installed by Glyphbrace
 
 - Agents: 14 installed in `.claude/agents/<name>.md`.
-- Skills: 34 installed in `.claude/skills/<name>/SKILL.md`.
+- Skills: 35 installed in `.claude/skills/<name>/SKILL.md`.
 - Model profile: balanced. Each agent file sets its own model and effort.
 - The install record `.glyphbrace/installed/claude.json` belongs in git.
 

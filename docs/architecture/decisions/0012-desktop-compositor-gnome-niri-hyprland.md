@@ -39,6 +39,15 @@ Status: GNOME decided (stay for now); niri proposed trial; Hyprland deferred · 
 ## Discarded
 KDE (score 78; no reason beyond the score recorded), COSMIC (no declarative NixOS options, partly verified), niri-flake (not needed), Ly and greetd/tuigreet (deferred).
 
+## Direction refinement (2026-11-22)
+
+**GNOME is the incumbent fallback, not the desired permanent desktop.** The owner now prefers a more functional Niri desktop without GNOME Shell unless GNOME can demonstrate a superior required feature. This does **not** override GNOME+GDM staying the live/default session during the controlled pilot and 2–4 week trial.
+
+- Compare every GNOME application/extension to a feature-equivalent alternative in [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md); GNOME **portals and Secret services** may still be necessary for Niri even when GNOME Shell is removed.
+- Future login research prefers **greetd + tuigreet**, with **gtkgreet** as graphical competitor, under [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md). This is not a change to the running GDM.
+- Vicinae is **retained during trial only**; the final launcher is decided by VS Code project-opening and feature comparisons in [ADR-0048](0048-niri-launcher-vscode-project-workflows.md). The compositor and launcher are distinct decisions.
+- [ADR-0046](0046-niri-desktop-installation-decision-register.md) is the central gate/component matrix, not a cutover approval.
+
 ## Consequences
 - niri needs T-0029 first (flake-owned NixOS system; in progress since 2026-11-21: the PC 2 pilot host `linux-desktop-pilot` exists, PC 1 not started); the trial is T-0032.
 - Stale docs: `docs/plans/migration/overview.md` still lists the compositor, greeter and notification daemon as open choices (line 53); T-0033 refreshes them.

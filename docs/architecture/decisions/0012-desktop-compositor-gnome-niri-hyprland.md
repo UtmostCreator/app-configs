@@ -10,10 +10,12 @@ forbids: [unauthorised-niri-migration]
 amends: []
 supersedes: []
 superseded_by: []
-related: []
+related: [46]
 ---
 # ADR-0012: Desktop compositor: GNOME live, niri trial proposed, Hyprland parked
 Status: GNOME decided (stay for now); niri proposed trial; Hyprland deferred · Date: 2026-11-15 (niri plan; the GNOME decision date is not recorded) · Sources: `docs/plans/future-upgrades.md` (section 12), `docs/plans/niri-migration.md`, `docs/research/niri-vs-hyprland.md`, `docs/research/desktop-migration-claim-audit.md`, `docs/plans/hyprland-migration.md`, `docs/work/active/T-0029-nixos-system-ownership/ticket.md`
+
+**Niri migration installation inventory and unresolved gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). This cross-reference does not change this ADR's decision or status.
 
 ## Decision
 - GNOME + Vicinae is what runs today and stays the default session. GDM stays.

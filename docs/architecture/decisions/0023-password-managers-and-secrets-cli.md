@@ -10,7 +10,7 @@ forbids: []
 amends: [11]
 supersedes: []
 superseded_by: []
-related: [19, 21, T-0042]
+related: [19, 21, 41, 46, 47, T-0032, T-0042]
 ---
 # ADR-0023: Password managers and the secrets CLI: KeePassXC primary, Bitwarden allowed, op for dev secrets
 Status: partly-decided (personal vault, Bitwarden and the personal op decisions are decided-unverified, owner 2026-11-16; work rows are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 (KeePassXC narrowed to P; Bitwarden allowed; 1Password desktop still deferred) · Sources: tool-selection design round 3

@@ -98,6 +98,23 @@ Depends on the pre-migration backup gate in the acceptance list above. Source: `
 
 NixOS generations are not data backups; back up mutable `$HOME` data and secrets separately.
 
+## Additional migration comparison / recovery acceptance (2026-11-22)
+
+The [master register ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md) now tracks gaps G17–G26. [ADR-0047](../../../architecture/decisions/0047-gnome-dependency-retirement-and-wayland-components.md) audits GNOME-specific dependencies, [ADR-0048](../../../architecture/decisions/0048-niri-launcher-vscode-project-workflows.md) compares Vicinae and alternatives, and [ADR-0041](../../../architecture/decisions/0041-login-greeter-gdm-greetd-tuigreet-regreet.md) compares future tuigreet and gtkgreet. **These do not authorise any greeter switch, shell installation or GNOME removal.**
+
+- [ ] **G17 P0 — Emergency rescue:** demonstrate TTY login with failed shell, dead locker, broken output and keyboard shortcut inhibition; recover without an unrecoverable screen lock, lost project or reinstall. Confirm no one assumes a shell UI remains available after it crashes.
+- [ ] **G02/G18 P0 conditional — Session/provider routing:** inspect `xdg-desktop-autostart.target`, `graphical-session.target`, session-scoped app services and DBus owners. Verify GlobalShortcuts portal request/consent and Secret unlock/Keyring as separate interfaces; test the `gnome-control-center` dependency when relevant. Exactly one active owner for polkit, notification, clipboard-history and locker/idle.
+- [ ] **G19 P1 — App activation:** URLs, mailto, VS Code custom URI, `xdg-open` to folder/PDF, desktop entries, save/upload dialogs; a browser/file-manager icon should focus its existing window instead of starting duplicates.
+- [ ] **G20 P1 — Input:** US/Russian physical shortcuts, Compose/Unicode where needed, keyboard-only shell accessibility, text field input and Ctrl/Alt+Tab switching; advanced IME only if required.
+- [ ] **G21 P0 on portable host — Suspend:** lock-before-suspend ordering, lid-close behaviour, resume prompts with external monitor unplugged, no unlocked desktop flash, no competing power policy managers.
+- [ ] **G22 P0 for GNOME retirement — Dependency audit:** separately record GNOME Shell, GDM/fallback, GNOME portal (ScreenCast), GTK portal (FileChooser), `gnome-control-center` (GlobalShortcuts), gnome-keyring/oo7 (Secret), Nautilus and GNOME-only user services. Remove none without feature-equivalent tests.
+- [ ] **G23 P1/P0 when required — Launcher:** compare Vicinae with Walker, Albert, Ulauncher, Rofi and shell launcher, preserve exact VS Code recent folders/`.code-workspace` and focus the correct existing Code window. No dual launcher keyboard binding.
+- [ ] **G24 P1 — Core service and removable devices:** PipeWire/WirePlumber microphone/audio device routing, BlueZ/Bluetooth, NetworkManager/VPN, UPower, USB mount/unmount and GVfs file operations; add no duplicate services.
+- [ ] **G25 P1 — Nix recovery:** record selected `flake.lock`, previous-generation boot, retention/GC policy, backup restore and optional `nh`/nvd evaluation without another system configuration writer.
+- [ ] **G26 P1/P0 if sensitive sharing — Capture privacy:** Niri native capture vs Flameshot/Satty, per-window ScreenCast, KeePassXC/sensitive window exclusion, two monitors and post-hotplug share; observe capture output on a receiving client.
+
+Do not make a new tool mandatory merely because it is listed as a candidate. These scenarios **extend**, not replace, existing G1–G11 shell gates and the mandatory backup/user-approval requirements.
+
 ## Out of scope
 Cutover to niri as default: a separate later decision, only after 2-4 weeks of daily use with no blockers.
 

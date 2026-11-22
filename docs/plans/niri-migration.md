@@ -1,5 +1,7 @@
 # Niri migration plan and reassessment (2026-11-15)
 
+**Current decision inventory (2026-11-22):** [ADR-0046](../architecture/decisions/0046-niri-desktop-installation-decision-register.md) records the selected, declared, proposed and still-blank components, the physical-installation gates and current contradictions. This plan contains historical pre-implementation statements; where they disagree with committed PC 2 configuration, T-0030 or the dated ADRs, do **not** execute the stale instruction. T-0033 owns the substantive corrections.
+
 Detailed Niri execution plan, based on read-only research at main ed39171. It
 is a standalone file because the tracked migration docs are being refreshed by
 another session (T-0033, refresh stale migration docs, not yet committed); this

@@ -28,7 +28,7 @@ Order of preference:
 
 ### Important compositor limitation
 
-**Niri has no traditional native hide/minimise operation.** Dux documents a scratchpad workspace that parks windows; iNiR documents an \`inir minimize\` service that moves them to a hidden workspace. **These are workarounds, not equivalent to native minimisation.** For Dux, Niri's own overview, Alt+Tab and direct workspace navigation can still reach parked windows. Verify restoration, taskbar indicators, focus order, workspace placement and state after shell restart. Noctalia's documented minimisation on *other* compositors is **not evidence** that it works under Niri. Closing a window, minimising/parking it, hiding the dock itself and switching workspaces are four different actions.
+**Niri has no traditional native hide/minimise operation.** Dux documents a scratchpad workspace that parks windows; iNiR documents an `inir minimize` service that moves them to a hidden workspace. **These are workarounds, not equivalent to native minimisation.** For Dux, Niri's own overview, Alt+Tab and direct workspace navigation can still reach parked windows. Verify restoration, taskbar indicators, focus order, workspace placement and state after shell restart. Noctalia's documented minimisation on *other* compositors is **not evidence** that it works under Niri. Closing a window, minimising/parking it, hiding the dock itself and switching workspaces are four different actions.
 
 ## Existing decisions and scope
 - [ADR-0012](0012-desktop-compositor-gnome-niri-hyprland.md): GNOME and GDM stay default on the live host; Niri remains a separate pilot. This ADR cannot authorise cutover.
@@ -36,7 +36,7 @@ Order of preference:
 - [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md): compositor-neutral app/window actions and focus semantics.
 - [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md): pre-migration backup, Nix build, pilot and live regression gates. These are mandatory before any additional shell trial.
 - Vicinae remains the keyboard launcher/clipboard-history baseline; exactly one notification, polkit, idle/lock and clipboard-history owner per session. Shell launchers and graphical app menus can be compared, but their conflicting keyboard bindings must stay disabled unless ADR-0013 is explicitly changed.
-- The repo's \`home/dot_config/niri/config.kdl\` is **chezmoi-owned**; NixOS owns the compositor session and portals. No shell installer may overwrite that contract.
+- The repo's `home/dot_config/niri/config.kdl` is **chezmoi-owned**; NixOS owns the compositor session and portals. No shell installer may overwrite that contract.
 
 ## Proposed decision
 
@@ -44,7 +44,7 @@ Compare **four approaches** on actual Niri behaviour and their useful extra feat
 
 1. **Dux Modular Shell**: first in the already-approved *trial order* (not yet a selected solution). Evaluate its multi-edge OmegaDock/taskbar, window search, Niri scratchpads and CLI/IPC. Its ability to park and restore windows is a particularly strong fit for the hide/show requirement.
 2. **Noctalia v5**: second in the existing order. Evaluate its configurable taskbar and optional auto-hiding dock, pinned apps, per-monitor profiles, native Wayland runtime, and exact Niri focus/close/instance cycling. Determine separately whether an acceptable hide/show workflow is possible on Niri.
-3. **iNiR**: add as a **proposed additional trial**, requiring an owner decision before activation. Compare all relevant panel families, not only **Waffle** (bottom taskbar/Start/Action Center); **Material** supports different bar positions, and **iRiS** offers an Island on any edge plus a dock. iNiR documents Niri-aware window previews, app cycling, \`minimize\`/restore IPC and a Hub, all worth testing. Its Waffle look is a benefit, **not a selection criterion**.
+3. **iNiR**: add as a **proposed additional trial**, requiring an owner decision before activation. Compare all relevant panel families, not only **Waffle** (bottom taskbar/Start/Action Center); **Material** supports different bar positions, and **iRiS** offers an Island on any edge plus a dock. iNiR documents Niri-aware window previews, app cycling, `minimize`/restore IPC and a Hub, all worth testing. Its Waffle look is a benefit, **not a selection criterion**.
 4. **Waybar + SwayNC + swaylock + swayidle**, with Vicinae and **[niri_window_buttons](https://github.com/adelmonte/niri_window_buttons)** or another Niri-specific taskbar module when needed: compare as a credible **composable baseline**, not a feature-complete shell out of the box. Its taskbar module may supply better explicit per-window actions than a more attractive shell; its integration/maintenance costs must also count.
 
 **Do not change ADR-0013's Dux → Noctalia order**, begin a new shell trial, or migrate from GNOME based on this proposal. The first pilot should test window controls and the bottom-dock/taskbar workflow before deep theming.
@@ -94,13 +94,13 @@ Compare **four approaches** on actual Niri behaviour and their useful extra feat
 
 **Pros**
 - Three distinct UI paradigms in one ecosystem: **Waffle** (bottom taskbar, Start, Action/Notification Centers and Task View), **Material** (flexible bar/sidebars/overview), **iRiS** (Island on any edge, expandable panels and dock). Strongest layout experimentation rather than merely a Windows skin.
-- Documents pinned/running windows, per-window cycling, previews, Niri overview integration, alternate Alt+Tab and **\`inir minimize\`/\`restore\`** commands that park/restore windows on a dedicated workspace.
+- Documents pinned/running windows, per-window cycling, previews, Niri overview integration, alternate Alt+Tab and **`inir minimize`/`restore`** commands that park/restore windows on a dedicated workspace.
 - Broad optional feature reach: theme/style families, desktop widgets, calendar, controls, system monitoring, Hub components and IPC. May offer a genuinely richer desktop than GNOME with fewer hand-assembled visual components.
 - Niri-focused development can mean more attention to its particular scrolling-tiling interaction model.
 - Waffle is a useful low-learning-curve **fallback layout** even if Material or iRiS wins on productivity.
 
 **Cons / risks**
-- Families, themes, widgets and runtimes distributed through the Hub **may update outside \`flake.lock\`**. Offline first boot, pinned versions, downgrade and reproducibility require an explicit strategy.
+- Families, themes, widgets and runtimes distributed through the Hub **may update outside `flake.lock`**. Offline first boot, pinned versions, downgrade and reproducibility require an explicit strategy.
 - A relatively specialised ecosystem may have a smaller pool of independent maintainers and package guidance than broader Wayland tools; **measure** contributors and issue response rather than inferring quality from novelty.
 - Switching UI families may change window menus, shortcuts, panels and available affordances; test daily actions in **each family** rather than generalising from Waffle.
 - iNiR NixOS integration is described upstream as experimental; modules can own desktop services, seed Niri config and grant extra hardware/input groups. These actions conflict with this repo unless explicitly suppressed and audited.
@@ -133,7 +133,7 @@ Compare **four approaches** on actual Niri behaviour and their useful extra feat
 | Bottom taskbar | OmegaDock taskbar mode | Configurable bar/taskbar | Waffle | Configurable Waybar |
 | Alternative dock position or layout | Multiple docks, any edge | Dock with monitor overrides | Material bar; iRiS Island/dock | Full manual positioning |
 | Click-to-focus, multi-instance switching | Documented; verify per-app cases | Explicit focus/cycle docs | Documented app cycling/task view | Niri module-dependent |
-| Close from taskbar | Verify configured actions | Middle-click documented | Verify actual window action | \`niri_window_buttons\` configurable |
+| Close from taskbar | Verify configured actions | Middle-click documented | Verify actual window action | `niri_window_buttons` configurable |
 | Hide/restore **window** under Niri | Scratchpad workaround documented | **Unverified / no native minimise assumption** | Hidden-workspace workaround documented | Custom scratchpad logic needed |
 | Auto-hide **panel/dock** | Documented | Documented | Waffle bar toggle; verify auto-hide | Waybar config/scripts |
 | Native Niri/workspace integration | Yes; scratchpad IPC | Yes; dedicated backend | Niri-focused | Waybar Niri modules |
@@ -184,7 +184,7 @@ The earlier "Windows-like" criterion is deliberately renamed to **window/taskbar
 | 12 | Documentation and community | 3 | Supported examples, contributors, support responsiveness, Nix-specific guidance |
 | | **Total** | **100** | |
 
-Use \`overall = sum(weight[i] * verified_score[i] / 100)\`. Each category is scored **0–100 after evidence**: 90–100 excellent, 75–89 strong, 60–74 acceptable, 40–59 weak, below 40 inadequate. Record source URL, exact version, test result, date and issue link beside each score. Unknown is **unscored**, not zero. Show a provisional *coverage* percentage separately; do not extrapolate from only tested categories to declare a winner. A score of **80/100** is a proposed comparison threshold (not a measured result); passing **every P0 gate is mandatory regardless of aggregate score**. Scores within 5 points are treated as a tie and resolved by actual taskbar/hide/restore outcomes, ownership and maintenance.
+Use `overall = sum(weight[i] * verified_score[i] / 100)`. Each category is scored **0–100 after evidence**: 90–100 excellent, 75–89 strong, 60–74 acceptable, 40–59 weak, below 40 inadequate. Record source URL, exact version, test result, date and issue link beside each score. Unknown is **unscored**, not zero. Show a provisional *coverage* percentage separately; do not extrapolate from only tested categories to declare a winner. A score of **80/100** is a proposed comparison threshold (not a measured result); passing **every P0 gate is mandatory regardless of aggregate score**. Scores within 5 points are treated as a tie and resolved by actual taskbar/hide/restore outcomes, ownership and maintenance.
 
 ## Functional acceptance matrix: P0 / P1 / P2
 
@@ -226,7 +226,7 @@ Use \`overall = sum(weight[i] * verified_score[i] / 100)\`. Each category is sco
 
 **Common rules**
 - Keep GDM/GNOME and Niri session wiring with the existing NixOS owner; no general upstream shell installer is permitted to change them.
-- \`home/dot_config/niri/config.kdl\` stays chezmoi-owned and must pass \`niri validate\`. Shells may offer bindings but the repo chooses and deploys them; no \`spawn-at-startup\` duplicate of a session-scoped systemd service.
+- `home/dot_config/niri/config.kdl` stays chezmoi-owned and must pass `niri validate`. Shells may offer bindings but the repo chooses and deploys them; no `spawn-at-startup` duplicate of a session-scoped systemd service.
 - Prefer pinned packages and session-scoped services. Keep **Vicinae** the keyboard launcher and clipboard-history owner unless an explicit future ADR changes that choice. A *clickable* Start menu/dock launcher may coexist without taking global keyboard shortcuts.
 - Test systray/AppIndicator, notification DBus owner, portal/screenshot/screencast, file dialogs, polkit and lock independently. Do not mask service problems by enabling lingering.
 - Never grant new groups, automatic updates, broad file permissions or runtime execution of community plugins without review. Record exact package source, closure and permissions.
@@ -235,9 +235,9 @@ Use \`overall = sum(weight[i] * verified_score[i] / 100)\`. Each category is sco
 
 **Noctalia:** Pin the *native v5* version intended for the test; distinguish its live GUI overrides from declarative TOML. Check which features and commands exist in **that pinned version**, rather than relying on newer v5.6 documentation. Check how taskbar pins interact with workspace grouping and whether the dock avoids the conflict.
 
-**iNiR:** [NixOS guidance](https://inir.space/docs/nixos/) is experimental. Keep \`programs.inir.desktop.enable = false\` in the trial to avoid taking over desktop services/display manager; disable \`programs.inir.niriConfig.seed\` to protect chezmoi. Inspect NixOS module-added groups (\`video\`, \`input\`, \`i2c\`, \`ydotool\`), service scope, mutable \`~/.config/quickshell/inir\` state and Hub-delivered families. Pin/vendor the actual Waffle/Material/iRiS and Hub assets or explicitly document an offline/reproducibility exception **before** cutover. Do not invoke the generic upstream \`./setup install\` over the managed system.
+**iNiR:** [NixOS guidance](https://inir.space/docs/nixos/) is experimental. Keep `programs.inir.desktop.enable = false` in the trial to avoid taking over desktop services/display manager; disable `programs.inir.niriConfig.seed` to protect chezmoi. Inspect NixOS module-added groups (`video`, `input`, `i2c`, `ydotool`), service scope, mutable `~/.config/quickshell/inir` state and Hub-delivered families. Pin/vendor the actual Waffle/Material/iRiS and Hub assets or explicitly document an offline/reproducibility exception **before** cutover. Do not invoke the generic upstream `./setup install` over the managed system.
 
-**Waybar fallback:** Prefer Home Manager modules and repo-owned CSS/config; use a prebuilt compatible Niri taskbar extension where possible. For \`niri_window_buttons\`, verify source, CFFI ABI compatibility, Waybar version and reproducible native build instead of fetching an unmanaged shared library. A tiny alternative with only reliable task buttons can beat a large shell **if** P0 and service ownership pass.
+**Waybar fallback:** Prefer Home Manager modules and repo-owned CSS/config; use a prebuilt compatible Niri taskbar extension where possible. For `niri_window_buttons`, verify source, CFFI ABI compatibility, Waybar version and reproducible native build instead of fetching an unmanaged shared library. A tiny alternative with only reliable task buttons can beat a large shell **if** P0 and service ownership pass.
 
 ## Community and feature-reach review procedure
 

@@ -3,6 +3,7 @@ Source: local
 # T-0031: Compositor-neutral window actions (refactor)
 
 Status: in progress (backend interface and GNOME backend on main dea74d4, 25d7ca8; remaining: niri backend, live checks)
+Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gap: G05 (Niri window/MRU/hide/restore and bilingual parity).
 Depends on: none for the spec and GNOME refactor; the niri backend needs the T-0032 session.
 Evidence: `docs/research/desktop-migration-claim-audit.md`
 

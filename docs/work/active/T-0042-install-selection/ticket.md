@@ -3,6 +3,7 @@ Source: local
 # T-0042: Install selection: committed profiles, a local per-host selection, first-run choice (feature)
 
 Status: done, pending human (T1-T8 on main; real-Mac checks via T-0046; extension questions Q1-Q11 await owner, Q6 answered by T-0044)
+Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). The Niri migration registry uses existing Linux desktop GUI selections as inherited baseline; this ticket does not select a Niri shell or change its session/installation ownership.
 Wave: unassigned
 Depends on: none to start (T1 is a gate). T4 touches ops/update-all.sh; land it
 after T-0010 (now landed). Does not depend on T-0029..T-0033.

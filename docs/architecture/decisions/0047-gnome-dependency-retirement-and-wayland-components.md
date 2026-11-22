@@ -1,0 +1,89 @@
+---
+adr: 47
+title: "Niri desktop: GNOME-minimal target and feature-based component replacement audit"
+status: partly-decided
+date: 2026-11-22
+platforms: [linux, nixos]
+areas: [desktop, gnome, replacement, session, portals, services, migration]
+permits: [gnome-dependency-inventory, comparative-replacement-research, staged-gnome-retirement]
+forbids: [blanket-gnome-purge, untested-portal-replacement, premature-gnome-removal, duplicate-desktop-service-ownership]
+amends: []
+supersedes: []
+superseded_by: []
+related: [12, 13, 21, 23, 27, 28, 33, 36, 38, 41, 45, 46, 48, T-0029, T-0030, T-0031, T-0032, T-0033]
+---
+# ADR-0047: Niri desktop: GNOME-minimal target and feature-based component replacement audit
+Status: partly-decided (GNOME-minimal target and evaluation rule chosen; replacement products and GNOME removal remain open) · Date: 2026-11-22 · Sources: ADR-0012/0013/0041/0046/0048; [Niri upstream Important Software](https://github.com/niri-wm/niri/wiki/Important-Software); [Niri packaging](https://github.com/niri-wm/niri/blob/main/docs/wiki/Packaging-niri.md).
+
+## Decision and boundary
+
+**Long-term architecture preference: Niri without the GNOME desktop environment.** A GNOME package/service is **not kept solely because it is installed today** or supplied by a desktop metapackage. A GNOME component may be retained if it (a) supplies a required, independently useful capability; (b) **outperforms or is more reliable/compatible than available non-GNOME substitutes in a documented comparison**, or (c) is an unavoidable tested compatibility dependency for the selected Niri integration. Prefer the smallest retained GNOME *component*, not a full GNOME session.
+
+This is a **future-state policy**, **not** a removal authorisation. ADR-0012's GNOME+GDM live fallback remains until an owner-approved, backup-protected migration completes. ADR-0041's greetd preference and ADR-0048's launcher comparison likewise cannot silently change currently running software. Every row below must differentiate **user-facing GNOME applications, GNOME Shell/session, freedesktop portal backends, keyring daemons and GTK libraries**: depending on GTK or a GNOME portal does **not** imply installing the GNOME desktop.
+
+**Selection test:** keep a GNOME component only if it passes the same functionality/reliability/reproducibility assessment as its competitors, or a proven compatibility block exists. A preference for a lighter candidate does not waive P0 security, screen sharing, login/recovery or required app workflows.
+
+## GNOME dependency and replacement matrix
+
+**Legend:** `CURRENT` = existing live app or declared PC 2 integration; `TRIAL` = candidate, not selected; `—` = no permanent choice. **P0** blocks the affected safe-session or parity gate; **P1** daily feature parity; **P2** optional polish. Links identify owning decisions; the central installation table and gap IDs belong to [ADR-0046](0046-niri-desktop-installation-decision-register.md).
+
+### P0 — compositor, login, security and session plumbing
+
+| Existing GNOME element / role | Non-GNOME choices (quick pros / cons) | Long-term target | Condition / owner |
+|---|---|---|---|
+| **GNOME Shell / Mutter** window manager, overview, panels | **Niri** scrolling tiling and IPC (selected trial target, not native minimise); Hyprland (broader effects/rules, different migration risk); KDE Plasma (full DE, more stack) | **Niri**, trial only | Already chosen for investigation; full GNOME Shell should eventually be dispensable if window close/focus/restore and P0 pass. [ADR-0012](0012-desktop-compositor-gnome-niri-hyprland.md), [ADR-0045](0045-niri-windows-like-desktop-shell-ux.md) |
+| **GDM** graphical login, GNOME fallback integration | **greetd+tuigreet** (TTY, no graphical compositor dependency); **greetd+gtkgreet** (GTK interface, needs greeter compositor); **greetd+ReGreet** (richer graphical theming, requires compositor). | **—**; prefer **tuigreet** as research first, **gtkgreet** graphical runner-up | Trial GDM retained until tested fallback and PAM/VT recovery. See [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md). |
+| **GNOME Shell extensions** (Vicinae GNOME extension, AppIndicator, focus helpers) | Niri IPC and native event stream; shell taskbar/system tray; freedesktop StatusNotifier; compositor-neutral [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md) | **Remove only from Niri session**; GNOME fallback keeps its own required extensions | Do not remove required GNOME extension before the fallback session is retired; do not let GNOME-only pollers start under Niri. |
+| **gnome-settings-daemon** settings and desktop global keys | Native Niri KDL, XKB/libinput, keyd for existing F1 remap; portal GlobalShortcuts for requesting apps | **Niri KDL + existing keyd**, application GlobalShortcuts still **—** | Separate compositor shortcuts from app-registered GlobalShortcuts; required portal may involve a small GNOME dependency. [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md) |
+| **xdg-desktop-portal-gnome** ScreenCast/Screenshot provider | Niri-documented **GNOME portal** (compatible, selected PC 2 backend); `xdg-desktop-portal-gtk` (basic fallback, not a screencast replacement); KDE/wlroots provider (test feature compatibility, not equivalent by name) | **Keep GNOME portal conditionally**, not GNOME Shell | Niri upstream currently describes the GNOME portal as required for screencasting. **Do not remove** until browser/Vesktop monitor/window share, hotplug and security pass with a proven alternative. [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md). |
+| **gnome-control-center** GlobalShortcuts settings dependency | Keep minimal `gnome-control-center` if required; implement/choose a tested portal alternative; skip only if no essential app depends on this interface | **—** | Niri upstream specifically lists GNOME Control Center for GlobalShortcuts. Audit request/consent/persistence with actual apps; package may remain as a narrow compatibility exception **without the GNOME session**. |
+| **gnome-keyring** Secret portal and login integration | `oo7-portal` (Niri-documented Secret alternative, different keyring lifecycle); KeePassXC Secret Service (existing password database, unlock/portal considerations); KWallet (larger KDE integration) | **—**; retain GNOME Keyring in pilot | Password manager **KeePassXC** remains separate from Secret portal. Switching requires re-test of PAM, Secret portal, stored application credentials and login/unlock ordering. [ADR-0023](0023-password-managers-and-secrets-cli.md), [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md). |
+| **GNOME Polkit agent** if installed via session | **Soteria** (already enabled in PC 2), shell-owned polkit agent (integrated, risk of duplicate), `lxqt-policykit` (standalone) | **Soteria pilot**, permanent **—** | Do not start two polkit authentication agents; prompt and lock state must be tested. [ADR-0013](0013-desktop-shell-bar-notifications-trial.md), [pilot system](../../../nix/hosts/linux-desktop-pilot/system.nix). |
+| **GNOME session autostart/service graph** | Native `niri-session` systemd user targets, XDG autostart, opt-in shell services; UWSM only for proven need | **niri-session** | Audit `xdg-desktop-autostart.target`, `graphical-session.target`, lingering, shell-specific process scope and dead locker recovery. [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md). |
+| **GNOME screenshot and screen sharing UI** | Niri native screenshots; Flameshot existing annotation workflow; `grim+slurp+satty` alternative; GNOME+PipeWire ScreenCast portal for sharing | **—** capture; **GNOME+GTK portals for trial** | Separate capture annotations from ScreenCast portals; never treat a screenshot application as a replacement for the ScreenCast backend. [ADR-0036](0036-screenshots-media-images-and-pdf.md). |
+
+### P1 — actual desktop features and applications
+
+| Existing GNOME element / role | Non-GNOME options, why worth comparing | Target | Owner / test |
+|---|---|---|---|
+| **GNOME top bar, notifications and tray extension** | Dux / Noctalia / iNiR integrated bars (feature-rich, integrated process), Waybar + SwayNC (modular, higher glue cost) | **—**; Dux→Noctalia trials | P0 tray/history/DND, running-window buttons and single DBus notification owner. [ADR-0013](0013-desktop-shell-bar-notifications-trial.md), [ADR-0045](0045-niri-windows-like-desktop-shell-ux.md). |
+| **GNOME lock screen / idle** | Shell-integrated locker (cohesive, shell crash dependence); swaylock+swayidle (independent and auditable); gtklock (GTK modular) | **—** | Verify **lock before suspend**, resume, failed shell, reconnect and emergency TTY. G03/G17 in ADR-0046. |
+| **Nautilus / GNOME Files** general manager | **Double Commander** (existing dual-pane power features); **Dux Files** (integrated tab/split and chooser, newer); **Dolphin** (rich, KDE framework); **Thunar** (lean); **Nemo** (traditional) | **—** preferred browser | Keep Nautilus **only if** file picker integration or functionality wins. `xdg-desktop-portal-gnome` defaults to Nautilus; set FileChooser to GTK portal before removing it. [ADR-0028](0028-files.md), [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md). |
+| **GNOME portal file chooser** | GTK portal (small cross-app fallback); Dux Files portal (newer, shell coupling); KDE portal (larger dependency) | **—** | Test file upload/save-as, dialogs, sandboxing and picker focus with browsers, editor, messenger; do not guess that Double Commander replaces a portal. |
+| **GNOME System Monitor / Baobab** | btop (existing TUI), QDirStat (existing disk usage), Mission Center (rich GPU graphs), bottom (TUI) | **btop/QDirStat inherited**; GUI **—** | Do not install a second GUI merely for parity; add only if a required diagnostic workflow is missing. [ADR-0037](0037-system-monitoring-diagnostics-device-software.md). |
+| **GNOME Settings: displays/network/Bluetooth** | Native Niri output KDL/IPC (one owner), **Kanshi** (dynamic profiles), Noctalia/Dux controls (shell-bound), `nm-applet` and `blueman` (separate proven GUIs) | Native Niri + shell UI; automation **—** | GUI convenience should not override native display owner; mobile display profiles conditional on real usage. |
+| **GNOME Settings: audio, brightness, power** | `wpctl`/WirePlumber, `pavucontrol` (fine routing), shell OSD, SwayOSD; `power-profiles-daemon` vs TLP vs TuneD (one policy) | Existing backend; graphical/power owner **—** | Test actual profiles, microphone device switching, brightness/keys, lid, suspend, battery; do not run multiple power controllers. |
+| **GNOME Disks/automount/GVfs** | `udisks2+GVfs` (common file manager mounts); `udiskie` (automount/tray add-on); KDE KIO (different ecosystem) | **—** | Verify USB storage, safe eject, network mount and file chooser before installing any helper. |
+| **GNOME keyboard and input** | XKB, Compose key, existing keyd; Fcitx5 for advanced IME; IBus if required | US/RU XKB baseline | Accessibility, Unicode and physical binds must work; additional input daemon conditional. |
+| **GNOME default app launch and MIME integration** | Home Manager `xdg.mimeApps`, `xdg-mime` for validation, desktop entries, `xdg-open` | **—** final owner | Test HTTPS, mailto, custom URIs, PDFs, folders, desktop apps across GNOME/Niri, including portal launch with correct env. |
+| **GNOME Terminal / calculator / text editor / image/media tools** | Ghostty, Vicinae calculator, VS Code, Brave/Firefox and existing media apps; other alternatives only for a named missing function | **Existing apps inherited** | Prefer the established app with greater capabilities. Do not replace a GNOME-branded utility just for the brand if dependency costs are trivial and the workflow is better. |
+
+### P2 — presentation and enhancements
+
+| Role | Candidates and trade-off | Install decision |
+|---|---|---|
+| Wallpaper | Shell provider first (no extra daemon), swaybg (minimal), awww/swww (animation + service) | **—**; no animated wallpaper daemon by default |
+| Night light | Shell integration, wlsunset, Gammastep | **—**; test gamma on target output |
+| GTK/Qt appearance | Existing GTK defaults, nwg-look, qt6ct, Stylix, shell-managed themes | **—**; require a demonstrated inconsistency |
+| Icons and cursors | Adwaita, Papirus, Bibata, Breeze | **—**; no GNOME-wide desktop requirement |
+| Workspace/session restore | Niri native app state + XDG autostart, shell window rules, nirinit / niche session tools | **—**; post-trial only, avoid extra supervisor |
+
+## GNOME-specific retirement gates (non-negotiable)
+
+1. Inventory **actual dependency closure** and services of the selected Niri profile with `nix path-info -r`, `nix why-depends`, NixOS option evaluation and `systemctl --user`/journal. **No statement that GNOME is removed may be based only on a package-name grep**: GTK libs, GNOME portal and GNOME desktop are different.
+2. Confirm `xdg-desktop-portal-gnome` ScreenCast, `xdg-desktop-portal-gtk` FileChooser/fallback, Secret provider, GlobalShortcuts portal, `xdg-open`, notifications and session environment **per interface and app**. Niri documentation currently calls for GNOME Portal and `gnome-control-center` for some capabilities.
+3. Do not remove Nautilus while the GNOME portal still routes FileChooser to Nautilus; **either** retain Nautilus for its actual file-manager/chooser advantage **or** first prove GTK FileChooser routing and then remove it.
+4. Set `XDG_CURRENT_DESKTOP=niri` through the proper session, not globally spoofed for unrelated apps. Do not globally set `GDK_BACKEND`, which Niri upstream warns can break ScreenCast.
+5. Keep GDM/GNOME on the current live host until a separate approved cutover and recoverable login. If GNOME session remains as fallback, some GNOME packages and its integration extension **necessarily remain on disk**; a "GNOME-minimal" Niri target does not require deleting the fallback prematurely.
+6. Ensure VS Code, Brave/Firefox, Vesktop, KeePassXC and file dialogs, notifications, screenshot editing, multiple outputs, clipboard history and secure session recovery pass real hardware tests before disabling anything.
+7. Compare substitutes on **feature coverage**, user workflow, Niri compatibility, rebuild/rollback, permissions and actual idle CPU/RSS; do not conflate package count with quality. Record which functionality is *better*, *equivalent*, *worse* or *untested* for each proposed deletion.
+
+## Interaction with other ADRs and gaps
+
+- [ADR-0046](0046-niri-desktop-installation-decision-register.md) remains the **installation manifest and empty-choice register**, including P0/P1/P2 new gaps G17–G27.
+- [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md) owns **login**; [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) owns the **launcher**. This ADR does not change either option's implementation.
+- [ADR-0013](0013-desktop-shell-bar-notifications-trial.md) and [ADR-0045](0045-niri-windows-like-desktop-shell-ux.md) own the **shell and taskbar**. GNOME-free target does not waive the trial order or handwave locker/clipboard ownership.
+- [ADR-0033](0033-communication-sync-notes-and-backup.md): Kopia remains the recorded backup selection; restic/Borg are comparison candidates, **not selected replacements**. [ADR-0038](0038-disko-nixos-anywhere-fresh-hosts.md): destructive disk and encryption choices stay open.
+- [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md) records **actual runtime evidence**, not hypothetical paper preferences. [T-0033](../../work/active/T-0033-refresh-stale-migration-docs/ticket.md) reconciles older GNOME/portal ownership claims.
+
+**Outcome:** Prefer a powerful Niri desktop without GNOME Shell, retaining only proven compatibility pieces until better alternatives pass. **No package/service is removed or activated by this document.**

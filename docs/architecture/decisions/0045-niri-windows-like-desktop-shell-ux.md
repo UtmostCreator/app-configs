@@ -153,6 +153,18 @@ Compare community **health**, not GitHub stars alone. Record a dated snapshot fo
 - Sustainability: plugin API stability, lockfiles, dependency provenance/signatures/checksums where provided, upstream release cadence, ability to maintain a working fork or replace one failed component.
 - Security and operational risk: privileges, shell-script installers, auto-updaters, mutable configuration, network requirements, crash isolation and unneeded background processes.
 
+### Public GitHub community snapshot (2026-11-22)
+
+GitHub repository pages showed the following **rounded counts** when checked. These are indicators of reach and available peer support, **not scores for stability, maintenance or fit**. Issue counts reflect each project's own reporting practices and are not comparable defect rates. Re-check before any selection.
+
+| Upstream project | Stars (approx.) | Forks (approx.) | Open issues shown | Reading for this repo |
+|---|---:|---:|---:|---|
+| [Dux Shell](https://github.com/duxlabs-dev/dux-shell) | 9.2k | 610 | 375 | Established public interest, companion Dux Labs projects and a plugin registry; verify Niri-specific scratchpad bugs |
+| [Noctalia](https://github.com/noctalia-dev/noctalia) | 12.2k | 1.0k | 428 | Broad Wayland audience and documentation; evaluate current **v5** regressions separately from legacy v4 |
+| [iNiR](https://github.com/snowarch/iNiR) | 2.0k | 118 | 4 | More specialised Niri-focused audience; a low issue count does **not** mean fewer defects; review the Hub repositories as well |
+| [Waybar](https://github.com/Alexays/Waybar) | 12.2k | 1.2k | 688 | Widely reused bar with substantial community reach, but task management depends on chosen Niri modules |
+| [niri_window_buttons](https://github.com/adelmonte/niri_window_buttons) | 58 | 6 | Not sampled | Narrower third-party module with a much smaller support base than Waybar itself; treat packaging and ABI as separate risks |
+
 **Qualitative hypotheses to validate (not rankings):**
 
 | Candidate | Potential community/architecture advantage | What could undermine it |

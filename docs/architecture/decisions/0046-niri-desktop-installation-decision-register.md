@@ -10,7 +10,7 @@ forbids: [unapproved-live-cutover, assumed-shell-selection, duplicate-service-ow
 amends: []
 supersedes: []
 superseded_by: []
-related: [9, 12, 13, 21, 22, 23, 25, 26, 27, 28, 33, 36, 38, 41, 45, 47, 48, T-0029, T-0030, T-0031, T-0032, T-0033, T-0042]
+related: [9, 12, 13, 21, 22, 23, 25, 26, 27, 28, 33, 36, 38, 41, 45, 47, 48, 49, T-0029, T-0030, T-0031, T-0032, T-0033, T-0042]
 ---
 # ADR-0046: Niri desktop migration: central installation decisions, component owners and gaps
 Status: partly-decided (central **inventory**, not an approval to install, select a shell or cut over) · Date: 2026-11-22 · Sources: ADR-0012/0013/0038/0041/0045; T-0029–T-0033; `docs/plans/niri-migration.md`, `docs/plans/niri-two-pc-pilot.md`, and the pilot Nix configuration.
@@ -243,7 +243,7 @@ flowchart TD
   A41 --> CUT
 ```
 
-**Gate order:** build-only checks → backup approval → physical PC 2 → Dux and Noctalia comparison → decide shell and one-owner services → PC 1 flake takeover and Niri selectable session in separate approved changes → P0 parity on PC 1 → 2–4 week trial → explicit Niri-default cutover. The precise order of physical PC 2 versus PC 1 activation follows the [two-PC variant](../../plans/niri-two-pc-pilot.md); an earlier plan's P4a wording must not override that newer sequencing.
+**Gate order:** build-only checks → backup approval → physical PC 2 → Dux and Noctalia comparison → decide shell and one-owner services → PC 1 flake takeover and Niri selectable session in separate approved changes → P0 parity on PC 1 → 2–4 week trial → explicit Niri-default cutover. The precise order of physical PC 2 versus PC 1 activation follows the [two-PC variant](../../plans/niri-two-pc-pilot.md); an earlier plan's P4a wording must not override that newer sequencing. [ADR-0049](0049-niri-safest-staged-installation-order.md) (proposed) breaks this gate order into numbered stages with one recommended choice, a pass check and a fallback each; it fills no `—` cell here.
 
 ## Maintenance of this register (acceptance criteria)
 

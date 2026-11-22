@@ -1,5 +1,7 @@
 # Niri two-PC pilot: trial on PC 2, then migrate PC 1 in place (2026-11-20)
 
+**Current installation choices and open decisions:** [ADR-0046](../architecture/decisions/0046-niri-desktop-installation-decision-register.md). The *implemented* pilot uses a **chezmoi-owned** `home/dot_config/niri/config.kdl`; the older hypothetical `/etc/niri/config.kdl` alternative below was **not selected**. PC 2's declared disk layout remains a placeholder; nothing here authorises a physical install.
+
 Proposed variant of the phases in `docs/plans/niri-migration.md` (section 6).
 Nothing here is authorised: every live activation, install, commit and push
 still needs its own approval, and the mandatory backup gate in that plan still

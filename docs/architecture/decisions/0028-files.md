@@ -10,7 +10,7 @@ forbids: []
 amends: [11]
 supersedes: []
 superseded_by: []
-related: [19, 21, T-0042]
+related: [19, 21, 46, 47, T-0042]
 ---
 # ADR-0028: Files: file managers, disk usage, duplicates and archives
 Status: partly-decided (the two disk-usage exceptions are decided-unverified, owner 2026-11-16; the other rows are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 (resolves the T-0042 Q8 7-Zip item) · Sources: tool-selection design round 3
@@ -45,3 +45,18 @@ One status per row.
 
 ## Consequences
 - Nothing is installed by this ADR. WizTree is not allowed on W (licence).
+
+
+## Niri file manager and portal comparison (2026-11-22)
+
+For Niri, **Nautilus is not automatically preferred**. Keep it in the safe pilot while confirming whether `xdg-desktop-portal-gnome` still routes FileChooser to it. Upstream Niri documentation says FileChooser may be explicitly routed to `xdg-desktop-portal-gtk` if Nautilus is removed; do **not** replace the ScreenCast backend in the process.
+
+| Candidate | Advantages | Disadvantages / questions |
+|---|---|---|
+| **Double Commander** (already installed) | Dual-pane, bulk operations, comparisons, SFTP; known developer workflow | Not automatically a freedesktop portal FileChooser |
+| **Nautilus** (current) | Existing GNOME file-portal integration; familiar file dialogs/desktop integration | GNOME application dependency, weaker advanced dual-pane functions |
+| **Dux Files** | Modern integrated tabs/split features and a potential file picker alternative | Newer implementation, shell ecosystem coupling; verify chooser maturity, path handling, Nix closure |
+| **Dolphin** | Very feature-rich, split views, search and network integration | KDE Frameworks/KIO dependencies, integration size |
+| **Thunar / Nemo** | Simpler traditional browser, GTK ecosystem; less GNOME Shell dependency | Feature and portal differences; verify external drives, trash, network shares |
+
+The permanent file manager and **FileChooser portal are separate open decisions**. Test keyboard launch, MIME folder defaults, uploads/save dialogs, hidden files, network mounts, removable media/udisks2/GVfs, scaling and drag/drop. [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) covers GNOME retirement and [ADR-0046](0046-niri-desktop-installation-decision-register.md) gaps G12/G19/G24.

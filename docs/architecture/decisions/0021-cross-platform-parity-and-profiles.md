@@ -87,3 +87,7 @@ Found by the live inventory of the linux-desktop host. Each is proposed for remo
 - ADRs 0022 to 0033, 0036 and 0037 cite this one for parity, profiles and the native exception.
 - The P/W split stays a target for macOS until T-0042 groups land; the macOS work host keeps its current apps.
 - Unknown: employer policy for W rows; PATH order for allowlisted duplicates (check with `type -a <binary>`).
+
+## Note (2026-11-22): the name `linux-niri` is reserved
+
+The niri install without the GNOME desktop (ADR-0012, ordered in [ADR-0049](0049-niri-safest-staged-installation-order.md)) gets its own host and Home Manager profile, both named `linux-niri`, following the `<os>-<role>` family used here. It is a new profile, not a change to an existing host's default derivation, so the P5a gate is not affected. Nothing is built: neither the host nor the profile exists yet.

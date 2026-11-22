@@ -33,7 +33,7 @@ Order of preference:
 **Niri has no traditional native hide/minimise operation.** Dux documents a scratchpad workspace that parks windows; iNiR documents an `inir minimize` service that moves them to a hidden workspace. **These are workarounds, not equivalent to native minimisation.** For Dux, Niri's own overview, Alt+Tab and direct workspace navigation can still reach parked windows. Verify restoration, taskbar indicators, focus order, workspace placement and state after shell restart. Noctalia's documented minimisation on *other* compositors is **not evidence** that it works under Niri. Closing a window, minimising/parking it, hiding the dock itself and switching workspaces are four different actions.
 
 ## Existing decisions and scope
-- [ADR-0012](0012-desktop-compositor-gnome-niri-hyprland.md): GNOME and GDM stay default on the live host; Niri remains a separate pilot. This ADR cannot authorise cutover.
+- [ADR-0012](0012-desktop-compositor-gnome-niri-hyprland.md): GNOME and GDM stay on the existing system; the niri install carries no GNOME desktop (owner direction 2026-11-22). This ADR cannot authorise cutover.
 - [ADR-0013](0013-desktop-shell-bar-notifications-trial.md): Dux first, Noctalia second in a real Niri session; Waybar stack fallback; no selected shell. This is **not superseded**.
 - [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md): compositor-neutral app/window actions and focus semantics.
 - [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md): pre-migration backup, Nix build, pilot and live regression gates. These are mandatory before any additional shell trial.
@@ -210,7 +210,7 @@ Use `overall = sum(weight[i] * verified_score[i] / 100)`. Each category is score
 - [ ] No click-to-focus loops, dead taskbar clicks, duplicate launches, wrong-window focus or stale entries after app exit, shell restart, workspace switch or external-monitor hotplug.
 - [ ] Niri multi-workspace switching, native Alt+Tab, Vicinae launcher/clipboard and US/Russian keybindings do not conflict. Keep the existing manual shortcut review in ADR-0012.
 - [ ] Notifications and tray icons work (including Telegram/Vesktop); exactly one notification provider. Secure lock, idle, unlock and suspend/resume work; exactly one lock/idle owner and one polkit agent.
-- [ ] Shell starts **only in the Niri session**; GDM/GNOME still work and are default; no user-data or config overwrite. Rollback restores previous shell and app/window behaviour.
+- [ ] Shell starts **only in the Niri session** and never on the existing GNOME system through the shared Home Manager profile; no user-data or config overwrite. Rollback restores previous shell and app/window behaviour.
 
 **P1 — important for adoption**
 - [ ] Dock placement: bottom default, optional side/top, reserved space vs overlay, intelligent auto-hide, multiple docks, per-display settings. A bar may substitute for a dock if it is functionally better.
@@ -239,7 +239,7 @@ Use `overall = sum(weight[i] * verified_score[i] / 100)`. Each category is score
 ## NixOS and repo-specific integration policy
 
 **Common rules**
-- Keep GDM/GNOME and Niri session wiring with the existing NixOS owner; no general upstream shell installer is permitted to change them.
+- Keep the greeter (greetd on the GNOME-free niri install, GDM on the existing system) and the Niri session wiring with the NixOS owner; no general upstream shell installer is permitted to change them.
 - `home/dot_config/niri/config.kdl` stays chezmoi-owned and must pass `niri validate`. Shells may offer bindings but the repo chooses and deploys them; no `spawn-at-startup` duplicate of a session-scoped systemd service.
 - Prefer pinned packages and session-scoped services. Keep **Vicinae** as the incumbent keyboard launcher and clipboard-history baseline for the pilot. The final clipboard owner is open (ADR-0013, ADR-0046 G06) and the launcher is compared in ADR-0048. A *clickable* Start menu/dock launcher may coexist without taking global keyboard shortcuts.
 - Test systray/AppIndicator, notification DBus owner, portal/screenshot/screencast, file dialogs, polkit and lock independently. Do not mask service problems by enabling lingering.
@@ -260,7 +260,7 @@ Collect, per candidate and its taskbar/dock component, a dated evidence table be
 ## Consequences and open decisions
 - This feature-first version replaces the earlier "Windows-like" framing of this ADR; it is not a decision to emulate Windows or macOS. The filename is retained to avoid breaking existing references.
 - **Dux** appears especially relevant to hide/show and configurable multi-edge docks; **Noctalia** to a polished taskbar with documented mouse close/focus; **iNiR** to multiple layout paradigms plus a hidden-workspace restore service; **Waybar + niri_window_buttons** to explicit traditional per-window controls. These are **test priorities, not scored winners**.
-- The existing **Dux → Noctalia** trial order and GNOME default remain unchanged. No permanent shell is selected. iNiR remains an additional proposed trial; any owner-approved addition must amend ADR-0013 and T-0032 trial scope before activation.
+- The existing **Dux → Noctalia** trial order is unchanged. The niri install has no GNOME session, so there is no GNOME default to preserve on it (ADR-0012, 2026-11-22). No permanent shell is selected. iNiR remains an additional proposed trial; any owner-approved addition must amend ADR-0013 and T-0032 trial scope before activation.
 - Decide after real tests whether hide/show via a parking workspace is adequate, which exact shell owns notifications/lock/polkit, whether GUI settings can persist, whether Hub-managed runtime components are acceptable, and whether another edge or Island beats a bottom taskbar in the daily workflow.
 
 ## References

@@ -42,7 +42,7 @@ Shell-bundled launcher and clipboard keyboard binds, for the pilot (Vicinae is t
 
 ## Consequences
 - Open items: clipboard history owner (Vicinae recommended, cliphist the alternative); screenshots (Flameshot live; niri action or grim + slurp + satty as alternatives).
-- Both shells' units default to graphical-session.target and would start under GNOME unless bound to the niri session.
+- Both shells' units default to graphical-session.target and would start under GNOME unless bound to the niri session. The new niri install has no GNOME session (ADR-0012, 2026-11-22), but a shell declared in the shared Home Manager profile would still reach the existing GNOME system, so the binding is still required.
 - Revisit after the real trial; nothing here is a selection.
 - The audit's fifth review (2026-11-14) says "no Noctalia"; the newer niri plan (2026-11-15) makes it the second trial candidate.
 
@@ -58,9 +58,9 @@ live change (docs/plans/niri-migration.md, "Mandatory backup before any live cha
 ## Decision refinement 2026-11-22: GNOME-minimal desktop and feature comparisons
 
 - This ADR still selects **the trial order only: Dux first, Noctalia second**, with iNiR research and the Waybar stack as alternative baselines in [ADR-0045](0045-niri-windows-like-desktop-shell-ux.md). No shell is selected.
-- GNOME Shell/top bar is **not** the desired long-term interface. The component-by-component exit criteria and exceptions (portals/Secret/GlobalShortcuts, not full GNOME) are in [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md). Keep GNOME fallback during a safe trial as ADR-0012 requires.
+- GNOME Shell/top bar is **not** the desired long-term interface. The component-by-component exit criteria and exceptions (portals/Secret/GlobalShortcuts, not full GNOME) are in [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md). The niri install carries no GNOME desktop (ADR-0012, owner direction 2026-11-22); the existing GNOME system is the fallback and is not changed.
 - **Do not automatically retain Vicinae** beyond the trial: [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) compares app/window search, clipboard, command plugins and **exact VS Code recent project opening/focus**. Replacing Vicinae requires equal or stronger real-world workflow, but no single plugin is mandatory if a shared project reader and another frontend solve it.
 - Notifications, lock/idle, tray, OSD, clipboard and polkit are **single-owner slots**. Compare shell-provided functions to SwayNC, mako, swaylock+swayidle and the pilot's Soteria; enable standalone fallbacks **only for missing/failed shell capabilities**.
 - The live migration inventory, exact installed/declared split and gaps are in [ADR-0046](0046-niri-desktop-installation-decision-register.md). Its G17–G22 checks (G17 is P0; G18, G21 and G22 are P0 only under their stated conditions; G19 and G20 are P1) add recovery, portal routing for GlobalShortcuts and Secret, MIME activation, input, power and GNOME-dependency validation.
-- The pinned Soteria unit starts on `graphical-session.target`, so on the pilot it also starts in the GNOME session beside GNOME Shell's own polkit agent. The one-owner rule for polkit therefore needs Soteria bound to the niri session ([ADR-0049](0049-niri-safest-staged-installation-order.md) gap table).
-- Selection gate: window close/focus/pin/hide/restore, secure suspend/recovery, notifications, portals and GNOME fallback must all be tested on real Niri hardware. The decision must compare *actual functionality and process ownership*, not use visually familiar defaults.
+- The pinned Soteria unit starts on `graphical-session.target`, so on the pilot it also starts in the GNOME session beside GNOME Shell's own polkit agent. That concerned the committed GNOME pilot; on the GNOME-free niri install there is no GNOME session and Soteria is the only agent.
+- Selection gate: window close/focus/pin/hide/restore, secure suspend/recovery, notifications, portals and the recovery routes must all be tested on real Niri hardware. The decision must compare *actual functionality and process ownership*, not use visually familiar defaults.

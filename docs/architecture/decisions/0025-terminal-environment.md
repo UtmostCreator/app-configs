@@ -23,7 +23,7 @@ One status per row.
 | Job | L / M / Win | Alternatives | P/W | Status | Now |
 |---|---|---|---|---|---|
 | Terminal | Ghostty / Ghostty / Windows Terminal (CM: no Ghostty Windows build, unverified) | WezTerm; Kitty; Alacritty | P+W | Pr | Record |
-| GNOME Console | GNOME base on Linux, exempt from parity (tag OS, not Exempt); removal via environment.gnome.excludePackages is a T-0029 option | none | P+W | Pr | Record |
+| GNOME Console | GNOME base on Linux, exempt from parity (tag OS, not Exempt); removal via environment.gnome.excludePackages is a T-0029 option. Not installed on the GNOME-free niri install (ADR-0012) | none | P+W | Pr | Record |
 | Multiplexer and prompt | tmux, starship (the Windows prompt is not configured, per ADR-0019) | zellij; oh-my-posh; tide | P+W | Pr | Record |
 | Font: JetBrainsMono NF | no owner today (`nix/modules/home/gui.nix:342`). Proposed owner: Home Manager (nerd-fonts.jetbrains-mono plus fonts.fontconfig.enable), plus a row in `docs/architecture/tool-ownership.md` and the `ops/validate-config.sh` allowlist if needed / cask (`nix/modules/darwin/homebrew.nix:86`) / manual | Meslo; Iosevka; Fira Code | P+W | Pr | Deferred |
 | Meslo | `nix/modules/darwin/homebrew.nix:87`; drop it only in the same change that repoints `home/.chezmoitemplates/vscode/settings.full.json:678` | keep both | P+W | Pr | Deferred |

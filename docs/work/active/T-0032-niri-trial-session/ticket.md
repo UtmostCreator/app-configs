@@ -1,6 +1,6 @@
 Source: local
 
-# T-0032: niri trial session alongside GNOME (feature)
+# T-0032: niri trial session, without the GNOME desktop (feature; originally "alongside GNOME")
 
 Status: in progress (pilot session config and VM test on main 450e78e, 4c57049, 6fb82ee, 57b66fe; all real-session checks remain, PC 2 install needs owner)
 Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gaps: G02–G05, G10–G11 and G14. This ticket's pre-activation backup and real-session gates remain mandatory; the matrix is not authorisation. Proposed stage order, with a pass check and fallback per stage: [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md).
@@ -9,11 +9,34 @@ The shell comparison trial also requires P4a (activation gate, its own user appr
 Parity sign-off also needs: T-0031 niri backend (not a prerequisite for creating the session)
 Evidence: `docs/research/desktop-migration-claim-audit.md`; shell trial gates: `docs/research/niri-shell-dux-vs-noctalia.md` (user-supplied, unverified)
 
+## Scope change (2026-11-22): the niri install has no GNOME desktop
+
+Owner direction, recorded in ADR-0012 and ordered in [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md): install NixOS with niri and without GNOME, where that is safe. This ticket was written for niri as a second session beside GNOME and GDM. Read it as follows.
+
+- **Still valid:** everything about the niri session itself: the KDL, portals, screen sharing, lock, shell trial gates, applications, units and the backup gate.
+- **Superseded for the new install:** "Keep GDM and GNOME; no greeter change", the `defaultSession = gnome` override, the GNOME-default acceptance items, and `useNautilus` left at its default. On the new install the greeter is greetd with tuigreet, `niri` is the only session, and `programs.niri.useNautilus = false` routes the file chooser to the GTK portal.
+- **Still applies to the committed pilot host** (`linux-desktop-pilot`), which enables GNOME and GDM and is to be replaced by a niri-only host: the superseded items above.
+- **Fallback:** the existing GNOME system, untouched, plus the text console, the boot menu and the installer USB. There is no GNOME session to log into on the new install.
+- **Where:** the laptop, which has no operating system, installed from the NixOS installer USB; commands in the [runbook](../../../platforms/nixos/niri-install.md). Installing onto a disk attached to the running PC, and adding niri to the existing GNOME system first, were compared and not chosen (ADR-0049).
+
+New acceptance criteria for the GNOME-free install:
+
+- [ ] The niri-only NixOS host, `linux-niri`, exists and builds; evaluated options show the GNOME desktop off, GDM off, greetd on, and `niri` as the only session.
+- [ ] Its GNOME-named system packages are exactly `xdg-desktop-portal-gnome` and `gnome-keyring`; no GNOME Shell, Mutter, GDM or Nautilus is in the system closure. Check the evaluated package list and the closure, not a text search for "gnome".
+- [ ] A VM test boots that host to tuigreet and into niri, as the existing test does for the GNOME pilot.
+- [ ] The host declares what the GNOME module used to switch on and this install needs: Bluetooth, udisks2 with GVfs, UPower, rtkit, and power-profiles-daemon on a laptop.
+- [ ] Login at tuigreet starts `niri-session`; quitting or crashing niri ends at the login prompt; a second text console still logs in.
+- [ ] The keyring unlocks at the greetd login: a test secret is stored and read with no second password prompt.
+- [ ] File dialogs work through the GTK portal in Brave and VS Code.
+- [ ] The runbook was rehearsed once in a UEFI VM with an empty disk, through the encrypted reboot, before the laptop was touched.
+- [ ] The existing GNOME system on the PC was not modified.
+
+
 ## Summary
-Add niri as a selectable session next to GNOME. GNOME stays the default.
+Originally: add niri as a selectable session next to GNOME, with GNOME the default. Since 2026-11-22 the target is a niri install without the GNOME desktop (see "Scope change" above); the bullets below describe the committed GNOME pilot unless they concern niri itself.
 
 - `programs.niri` via nixpkgs in `nix/modules/nixos` (no niri-flake initially).
-- Keep GDM and GNOME; no greeter change.
+- Committed GNOME pilot only: keep GDM and GNOME; no greeter change. (GNOME-free install: greetd with tuigreet, no GNOME; see "Scope change".)
 - Explicitly set `services.displayManager.defaultSession` to GNOME's session, to beat the nixpkgs `mkDefault "niri"` (VERIFIED on nixos-unstable, which this repo pins). Check the evaluated session name before activation instead of assuming it: NixOS asserts `defaultSession` is in `sessionData.sessionNames` (pinned nixpkgs `nixos/modules/services/display-managers/default.nix:196`), so a wrong name fails evaluation.
 - xwayland-satellite present (niri spawns it on demand and exports `DISPLAY`).
 - Decide `useNautilus` (default true, file chooser only). Nautilus is not needed for screencast (REFUTED claim otherwise). `programs.niri.useNautilus = false` routes FileChooser to gtk (pinned nixpkgs `nixos/modules/programs/wayland/niri.nix:72`). niri #3765 is cited only for the symptom: without Nautilus, portal-gnome's file chooser fails silently.
@@ -39,7 +62,7 @@ Add niri as a selectable session next to GNOME. GNOME stays the default.
 - UNVERIFIED: whether pinned Vesktop 1.6.9 contains the picker fix ba4e367.
 
 ## Gate priority
-- P0 (release-blocking): GNOME + GDM preserved and default; user data and credentials preserved; all application packages present in both sessions; window helpers (launch/focus MRU); all shortcuts under us and ru; clipboard, screenshots, screen sharing; login, lock, suspend.
+- P0 (release-blocking): the existing GNOME system untouched and bootable (on the committed pilot: GNOME + GDM preserved and default); user data and credentials preserved; all application packages present in both sessions; window helpers (launch/focus MRU); all shortcuts under us and ru; clipboard, screenshots, screen sharing; login, lock, suspend.
 - P1 (needed for completion): audio and external displays; background services (no missing or duplicate units); MIME defaults and file dialogs; Nix/HM builds; rollback.
 - A P0 failure blocks any cutover decision.
 
@@ -63,7 +86,7 @@ System gate (build only): `sudo nixos-rebuild build --flake ./nix#linux-desktop`
 - [ ] Capture with the selected tool: area, last region, clipboard, pin (tested separately from screencast). Flameshot is the tool today; if it is replaced, the same capabilities are tested on the replacement (ADR-0036). The host-side reproduction of Flameshot on two outputs is mandatory before it is declared unusable
 - [ ] Portal matrix, per interface, on niri and re-checked on GNOME: FileChooser, ScreenCast, Screenshot, Secret, Notification, OpenURI
 - [ ] Screen sharing: monitor share, single-window share, share again after cancel, after monitor hotplug, after suspend/resume, and with mixed-scale outputs
-- [ ] Evaluated config has `defaultSession` equal to GNOME's session name and lists niri in `sessionNames`
+- [ ] Committed GNOME pilot only: evaluated config has `defaultSession` equal to GNOME's session name and lists niri in `sessionNames`. GNOME-free install: `sessionNames` is exactly `niri`
 - [ ] Screenshots on every monitor and scale
 - [ ] Vesktop and browser window/monitor screen share
 - [ ] ORA4 audio, mic, volume
@@ -79,11 +102,11 @@ System gate (build only): `sudo nixos-rebuild build --flake ./nix#linux-desktop`
 - [ ] `systemctl --user --failed` is empty
 - [ ] xdg-mime defaults for https and text/x-php
 - [ ] Nix and repo checks pass: `nix flake check ./nix`; activationPackage build for `homeConfigurations.linux-desktop`; `bats tests/bash`; `chezmoi diff`; `bash ops/validate-config.sh` and `--eval`; NixOS toplevel build
-- [ ] GNOME still selectable and default
+- [ ] Committed GNOME pilot only: GNOME still selectable and default. GNOME-free install: `niri` is the only session and the existing system still boots
 - [ ] Rollback and a separate data backup verified
 
 ## Shell trial gates (run on whichever shell is under trial: Dux first, Noctalia second)
-These G1 to G11 are local to this ticket. ADR-0046's gaps are written with two digits (G01 to G26) and are a different list.
+These G1 to G11 are local to this ticket. ADR-0046's gaps are written with two digits (G01 to G28) and are a different list.
 Depends on the pre-migration backup gate in the acceptance list above. Source: `docs/research/niri-shell-dux-vs-noctalia.md` (user-supplied audit, upstream issue states unverified). These apply during the shell comparison trial (in scope per plan decision 4, user confirmed 2026-11-15), not to creating the niri session itself. The existing "External monitor, suspend/resume, lock" and "Flameshot" items above are extended by these, not replaced. Use the repo's KDL binds only, with exactly one owner each for notifications, clipboard, lock/idle and polkit.
 - [ ] G1: Lock, then disconnect and reconnect an external monitor N = 10 times while locked; record shell RSS before and after; fail if RSS grows more than 200 MiB in total or keeps growing (Dux #4259)
 - [ ] G2: Lock, suspend, unplug an output, resume: the session unlocks without re-login (Noctalia #5349)
@@ -139,7 +162,7 @@ These are the pass checks of [ADR-0049](../../../architecture/decisions/0049-nir
 - [ ] **Bound commands (stage 5):** every command a KDL bind calls resolves on the session `PATH` (`brightnessctl` and `playerctl` are bound but not declared today).
 - [ ] **Lock lifecycle (stage 6):** the bind, the idle timeout, `loginctl lock-session`, `systemctl suspend` and the lid each lock; a killed locker leaves the session locked and a new locker restores the prompt.
 - [ ] **Locked quit (stages 5 and 6):** quitting niri, locked or not, ends at an authenticated greeter, never at a logged-in console. Repeat if the greeter changes.
-- [ ] **One polkit agent per session (stage 3):** under GNOME on the pilot, `pkexec true` raises one prompt. The pinned Soteria unit starts on `graphical-session.target` and so also under GNOME, beside GNOME Shell's own agent, until it is bound to the niri session.
+- [ ] **One polkit agent per session:** on the GNOME-free install Soteria is the only agent. Committed GNOME pilot only: under GNOME, `pkexec true` raises one prompt. The pinned Soteria unit starts on `graphical-session.target` and so also under GNOME, beside GNOME Shell's own agent, until it is bound to the niri session.
 - [ ] **Pilot profile (stage 3b):** PC 2's first activation uses `bash ops/install.sh --profile work`; `syncthing.service` and `openclaw-gateway.service` do not exist there. The personal profile is a later, separate step.
 - [ ] **Launcher binds (stage 9):** the niri KDL has binds for clipboard history and the recent-projects picker (GNOME has Alt+V and Alt+E; the KDL has only Alt+Space today).
 - [ ] **Capture privacy (G26):** the KDL's KeePassXC `block-out-from "screen-capture"` rule is enabled (it is switched off with `/-` today) and checked on a receiving client.
@@ -148,7 +171,7 @@ These are the pass checks of [ADR-0049](../../../architecture/decisions/0049-nir
 ## Out of scope
 Cutover to niri as default: a separate later decision, only after 2-4 weeks of daily use with no blockers.
 
-Exit path: if niri fails on GPU/display or screen sharing, stay on GNOME first. KDE Plasma 6.8 (Vicinae's KDE integration is "very brittle") is evaluated only if there is a separate reason to leave GNOME. That is a later user decision, not part of this ticket.
+Exit path: if niri fails on GPU/display or screen sharing, keep working on the existing GNOME system. KDE Plasma 6.8 (Vicinae's KDE integration is "very brittle") is evaluated only if there is a separate reason to leave GNOME. That is a later user decision, not part of this ticket.
 
 ## Progress
 - 2026-11-21 documentation audit (applied above): this ticket said the niri config is Home Manager-owned, `docs/plans/niri-migration.md` recommends Home Manager `xdg.configFile` and `docs/plans/niri-two-pc-pilot.md` proposes `/etc/niri/config.kdl`, while the implementation is chezmoi (6fb82ee). Record chezmoi as current, keep the others as historical alternatives, and decide package, session, portal and user-service ownership separately.

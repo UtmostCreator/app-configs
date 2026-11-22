@@ -4,6 +4,7 @@ Source: local
 
 Status: open, partly superseded (niri config owned by chezmoi 6fb82ee, rule 11 change unneeded; rule 6 scope change still needed)
 Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gaps: G02 (Niri session/package/service ownership), G14 (validator). The chezmoi KDL owner is already selected.
+Scope note (2026-11-22): the niri install carries no GNOME desktop (ADR-0012). If the niri-only host (`linux-niri`) and the committed pilot are to share a niri module under `nix/modules/nixos`, rule 6 has to allow `programs.niri.enable` there first; a host-level declaration, as the pilot has today, is not affected.
 Depends on: none
 Blocks: T-0032
 Evidence: `docs/research/desktop-migration-claim-audit.md`

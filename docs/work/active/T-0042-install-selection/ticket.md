@@ -225,7 +225,7 @@ Negative (must not change)
   - aiContext, dev-language and nix-maintenance groups: deferred (scattered packages
     or other checks depend on them).
   - Gating mise optional tools: already local and opt-in.
-  - Desktop-environment pieces (vicinae, GNOME, niri): T-0031 and T-0032.
+  - Desktop-environment pieces (vicinae, GNOME, niri): T-0031 and T-0032. Open since 2026-11-22: the niri install carries no GNOME desktop (ADR-0012), but the `linux-desktop` Home Manager output still imports the GNOME modules and two GNOME Shell extensions, and the installer knows no `linux-niri` host or profile (ADR-0046 G28).
   - Removing the selection directory in uninstall.sh: manual step, documented.
   - Writing an effective-selection file from Home Manager: would change the default drvPath.
 

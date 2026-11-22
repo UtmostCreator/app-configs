@@ -24,7 +24,7 @@ One status per row.
 |---|---|---|---|---|---|
 | GUI IDE | VS Code | VSCodium; Zed | P+W | Pr | Record |
 | Terminal editor | Neovim | Helix; Vim | P+W | Pr | Record |
-| GNOME Text Editor | GNOME base on Linux, exempt from parity (tag OS, not Exempt); removal via environment.gnome.excludePackages is a T-0029 option | none | P+W | Pr | Record |
+| GNOME Text Editor | GNOME base on Linux, exempt from parity (tag OS, not Exempt); removal via environment.gnome.excludePackages is a T-0029 option. Not installed on the GNOME-free niri install (ADR-0012) | none | P+W | Pr | Record |
 | Android (P) | Android Studio on Linux (`nix/modules/home/gui.nix:28`); macOS and Windows not added | IntelliJ CE; VS Code plus Flutter | P | Pr | Record; Deferred on macOS (mobileDev, Q9) |
 | Android (W) | optional | same | W | Pr | Record |
 | Second editor (Windows) | Notepad++, a Windows-only owner exception like HeidiSQL (owner 2026-11-21: "for windows i think it is also good to include notepad++ latest version as a second editor"); latest version, no pin | none | P+W | D | winget manifests (ADR-0043) |

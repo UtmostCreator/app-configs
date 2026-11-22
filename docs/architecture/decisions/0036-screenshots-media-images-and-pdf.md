@@ -34,7 +34,7 @@ One status per row.
 | PDF, Linux | Brave (`nix/modules/home/default-apps.nix`) | Okular | P+W | Pr | Record |
 | PDF, macOS | Preview | Acrobat (discard) | P+W | DU | Deferred (follow-up I-02, ADR-0022) |
 | PDF, Windows (Ex) | Edge | Okular; SumatraPDF; Acrobat (discard; W only if an employer workflow needs it) | P+W | DU | Manual |
-| Media player, Linux | GNOME built-in | VLC; mpv | P+W | Pr | Record |
+| Media player, Linux | GNOME built-in on the existing GNOME system; none on the GNOME-free niri install, where one of the candidates has to be declared if a player is wanted (ADR-0046 G28) | VLC; mpv | P+W | Pr | Record |
 | Media player, macOS (Ex) | IINA, needing a T-0042 group; built-in player meanwhile | mpv | P | DU | Deferred |
 | Media player, Windows | Media Player (ADR-0020, both profiles) | none | none | see ADR-0020 (DU) | ADR-0020 |
 | Images | built-in viewers (discard JPEGView). Quick edits: Pinta (Linux, deferred), Preview markup (macOS) | Krita; GIMP | P | Pr | Record; Deferred |

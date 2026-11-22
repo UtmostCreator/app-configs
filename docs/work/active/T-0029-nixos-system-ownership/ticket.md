@@ -4,6 +4,7 @@ Source: local
 
 Status: in progress (PC 2 pilot host linux-desktop-pilot on main 450e78e, 4c57049; PC 1 linux-desktop takeover not started, live gate needs owner)
 Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gaps: G01 (physical pilot layout), G13 (PC 1 backup/rollback), G14 (validation). The PC 2 flake host exists; PC 1 system takeover is still open.
+Scope note (2026-11-22): the owner's direction is a niri install without the GNOME desktop on a disk of its own (ADR-0012, [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md)). This ticket's takeover of the existing GNOME system is therefore the in-place alternative, not a prerequisite of that install. What the install does need from this ticket's area: a niri-only `nixosConfigurations` host named `linux-niri` for the laptop, with a placeholder hardware module that the install replaces, greetd, the services the GNOME module used to enable, key-only SSH and a generated hardware module (ADR-0046 G27).
 Depends on: none
 Blocks: T-0032
 Evidence: `docs/research/desktop-migration-claim-audit.md`

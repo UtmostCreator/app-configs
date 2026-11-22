@@ -49,12 +49,12 @@ One status per row.
 
 ## Niri file manager and portal comparison (2026-11-22)
 
-For Niri, **Nautilus is not automatically preferred**. Keep it in the safe pilot: the pinned `programs.niri` module routes FileChooser to Nautilus (`useNautilus` defaults to true and the pilot does not override it). The declarative switch to the GTK chooser is `programs.niri.useNautilus = false`, deferred to [ADR-0049](0049-niri-safest-staged-installation-order.md) stage 15. Upstream Niri documentation says FileChooser may be explicitly routed to `xdg-desktop-portal-gtk` if Nautilus is removed; do **not** replace the ScreenCast backend in the process.
+For Niri, **Nautilus is not automatically preferred**. The GNOME-free niri install (ADR-0012, owner direction 2026-11-22) sets `programs.niri.useNautilus = false`: the file chooser goes to the GTK portal and Nautilus is not installed. If file dialogs fail there, setting it back to true is a one-line fallback that brings Nautilus in. The committed pilot leaves the default (true, Nautilus). With no GNOME desktop, `services.udisks2` and `services.gvfs` are no longer switched on by default and must be declared for USB and network mounts in any file manager. Upstream Niri documentation says FileChooser may be explicitly routed to `xdg-desktop-portal-gtk` if Nautilus is removed; do **not** replace the ScreenCast backend in the process.
 
 | Candidate | Advantages | Disadvantages / questions |
 |---|---|---|
 | **Double Commander** (already installed) | Dual-pane, bulk operations, comparisons, SFTP; known developer workflow | Not automatically a freedesktop portal FileChooser |
-| **Nautilus** (current) | Existing GNOME file-portal integration; familiar file dialogs/desktop integration | GNOME application dependency, weaker advanced dual-pane functions |
+| **Nautilus** (current on the existing GNOME system; not installed on the GNOME-free niri install) | Existing GNOME file-portal integration; familiar file dialogs/desktop integration | GNOME application dependency, weaker advanced dual-pane functions |
 | **Dux Files** | **Standalone application (does not require Dux Shell)**; tabs/split view, devices/network shares, `org.freedesktop.FileManager1` integration and a separately opt-in portal FileChooser; a NixOS module in the pinned nixpkgs (`programs.dux-files`, no Home Manager module); its runtime closure includes Quickshell | Newer application; evaluate destructive file operations and cold-start picker latency; **portal chooser does not attach modally to the caller** in current documented implementation; theme can follow Dux Shell only if available |
 | **Dolphin** | Very feature-rich, split views, search and network integration | KDE Frameworks/KIO dependencies, integration size |
 | **COSMIC Files** | Modern, actively developed; independent of GNOME and KDE frameworks | Young; portal and removable-media behaviour under Niri unverified |

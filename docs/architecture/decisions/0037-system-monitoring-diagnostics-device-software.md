@@ -22,7 +22,7 @@ One status per row.
 
 | Job | Pick | Alternatives | P/W | Status | Now |
 |---|---|---|---|---|---|
-| Monitor | btop everywhere. GUI: GNOME System Monitor (Linux), Stats (macOS, ungrouped cask; OS), Task Manager (Windows) | Mission Center; iStat Menus | P+W | Pr | Record |
+| Monitor | btop everywhere. GUI: GNOME System Monitor (Linux, on the existing GNOME system only; the GNOME-free niri install has btop and no GUI monitor), Stats (macOS, ungrouped cask; OS), Task Manager (Windows) | Mission Center; iStat Menus | P+W | Pr | Record |
 | Taskbar meter | TrafficMonitor Lite (Windows) | none | P | Pr | Manual |
 | Diagnostics | HWiNFO64 (kernel driver, a suspect), LatencyMon, WhoCrashed (OS). Discard HWMonitor | Reliability Monitor (W) | P | Pr | Manual |
 | Device software | NVIDIA (ADR-0034), Lenovo Vantage, Maono Link, Razer Synapse, Logitech G HUB, OEM USB-C driver. Never mandatory. Install only while the device is attached | Windows Update drivers (W) | P | Pr | Manual |

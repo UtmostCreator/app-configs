@@ -19,7 +19,7 @@ Status: partly-decided (the existing Vicinae launcher stays for the current pilo
 
 The preferred launcher is the **strongest feature-rich, reliable, keyboard-driven tool for this Niri + development setup**, not necessarily the incumbent. **Vicinae is provisionally retained only to avoid losing existing commands while alternatives are assessed.** Permanent choice requires concrete advantages over competitors for window/project search, app launch, commands, extensions and clipboard. If another launcher is better overall, replace it **without losing VS Code recent project opening**.
 
-**Non-negotiable workflow:** open or focus a **specific recent VS Code folder, saved `.code-workspace` or project** from a global keyboard shortcut; preserve the actual editor target, path and recent order; support a project already open in one of several Code windows; work from Niri and GNOME fallback while both are still installed. The project chooser can be a separate repo-owned script/plugin launched through *any* compliant frontend—it is not evidence that Vicinae is the only capable solution.
+**Non-negotiable workflow:** open or focus a **specific recent VS Code folder, saved `.code-workspace` or project** from a global keyboard shortcut; preserve the actual editor target, path and recent order; support a project already open in one of several Code windows; work from Niri. The niri install has no GNOME session (ADR-0012, 2026-11-22); on the existing GNOME system the GNOME binding keeps working until that system is retired. The project chooser can be a separate repo-owned script/plugin launched through *any* compliant frontend—it is not evidence that Vicinae is the only capable solution.
 
 The repo already has **two different implementation surfaces**:
 - `nix/modules/home/vicinae.nix` installs `programs.vicinae` via Home Manager, the `vscode-recents` extension, and a user service.
@@ -74,7 +74,7 @@ The repo already has **two different implementation surfaces**:
 - Then evaluate **Walker + Elephant, Albert, Ulauncher, Rofi** and the selected shell's launcher using the same test fixture and compare total retained functionality. Fuzzel is a low-overhead rescue frontend, not full-featured competitor.
 - **Exactly one global shortcut owner for the active launcher**. A graphical shell Start menu may coexist if it does not own conflicting bindings; ensure one clipboard-history service, separate from the `wl-clipboard` CLI.
 - If the strongest alternative wins, move the VS Code recent-project reader/focus logic into a **launcher-neutral adapter** and keep a thin UI-specific frontend. This work belongs in [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md) or a new scoped implementation ticket **after** selection. When a replacement may happen follows ADR-0049 stage 15 if that ADR is approved: comparison on PC 2 before cutover, replacement after it.
-- Do not automatically install a new launcher just to conduct a paper comparison, and do not remove Vicinae from GNOME fallback until its replacements have passed on that session if GNOME remains in use.
+- Do not automatically install a new launcher just to conduct a paper comparison, and do not remove Vicinae from the existing GNOME system while that system is still in use.
 
 ## Walker + Elephant evidence and comparative test plan (2026-11-22)
 
@@ -86,7 +86,7 @@ The current [Walker provider documentation](https://walkerlauncher.com/docs/prov
 | Focus correct existing VS Code window | Test native Niri IPC and repo window-backend integration | Test Elephant Niri window provider IDs, exact project-to-window matching and MRU focus; no guessed project title as unique identifier |
 | Clipboard text, images, pin/history | Vicinae history; record retention/privacy | Elephant Clipboard provider; separate session service and persistent history must work and not start beside Vicinae history |
 | Files, actions, commands, calculator | Built-in/features/extensions | Provider set on **pinned version**, fail gracefully when providers are unavailable |
-| Session lifecycle, service ownership | Vicinae HM user service | Walker UI + Elephant backend service; no second daemon without feature value. The pinned Elephant unit starts on `graphical-session.target`, which GNOME also reaches, so a Niri-only scope needs an explicit override; under GNOME the project chooser stays on Vicinae until it is retired |
+| Session lifecycle, service ownership | Vicinae HM user service | Walker UI + Elephant backend service; no second daemon without feature value. The pinned Elephant unit starts on `graphical-session.target`, which GNOME also reaches, so a Niri-only scope needs an explicit override; on the existing GNOME system the project chooser stays on Vicinae until that system is retired |
 | Developer extensions and search | Raycast-compatible ecosystem / installed project extension | Niri-aware provider and maintained scripts; validate actual plugins rather than counting them |
 | Updates and security | Declarative Vicinae extension installation | Pin Elephant provider modules, assess command execution, access to clipboard/history, source downloads and controlled state |
 

@@ -10,7 +10,7 @@ forbids: [unapproved-live-cutover, assumed-shell-selection, duplicate-service-ow
 amends: []
 supersedes: []
 superseded_by: []
-related: [9, 12, 13, 21, 22, 23, 25, 26, 27, 28, 33, 36, 38, 41, 45, T-0029, T-0030, T-0031, T-0032, T-0033, T-0042]
+related: [9, 12, 13, 21, 22, 23, 25, 26, 27, 28, 33, 36, 38, 41, 45, 47, 48, T-0029, T-0030, T-0031, T-0032, T-0033, T-0042]
 ---
 # ADR-0046: Niri desktop migration: central installation decisions, component owners and gaps
 Status: partly-decided (central **inventory**, not an approval to install, select a shell or cut over) · Date: 2026-11-22 · Sources: ADR-0012/0013/0038/0041/0045; T-0029–T-0033; `docs/plans/niri-migration.md`, `docs/plans/niri-two-pc-pilot.md`, and the pilot Nix configuration.
@@ -18,6 +18,8 @@ Status: partly-decided (central **inventory**, not an approval to install, selec
 ## Purpose and authority
 
 This is the **entry point for the Niri desktop migration**: one place to discover every required or desired install component, what was selected, what is merely proposed, which file owns it, why, how to validate it, and what remains undecided. It **does not replace** the rationale or acceptance criteria of the linked ADRs and tickets. If a component's owner ADR says `proposed` or `trial`, this inventory **cannot** silently promote it to `decided`.
+
+**New design direction (2026-11-22):** Prefer a **GNOME-minimal Niri desktop**, but retain a GNOME component only when its required feature has **not been matched or exceeded by a verified alternative**, or while it is needed for the safe GNOME fallback. This is not permission to remove the currently working desktop, portal or greeter. **Tuigreet is the leading future greeter candidate, gtkgreet the graphical competitor; Vicinae is only the incumbent launcher pending a feature comparison, not a presumed permanent winner.** Owner comparisons: [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md), [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md), [ADR-0048](0048-niri-launcher-vscode-project-workflows.md).
 
 **Read statuses literally:**
 - **Selected** = explicitly decided for the stated **phase**, not proof of installation.
@@ -60,7 +62,7 @@ Never equate "in `nixpkgs`", "documented upstream", "module enabled in PC 2 conf
 | Encryption / swap / recovery media | **—** | **—** | **P0 G01** before destructive physical install; LUKS/swap/recovery still proposals. [ADR-0038](0038-disko-nixos-anywhere-fresh-hosts.md) |
 | Bootloader | `systemd-boot` + EFI declared for PC 2 | **—** (must preserve PC 1's actual boot/dual-boot config) | **Declared, hardware not verified**; [pilot system](../../../nix/hosts/linux-desktop-pilot/system.nix), [T-0029](../../work/active/T-0029-nixos-system-ownership/ticket.md) |
 | NixOS system owner | Repo flake for PC 2; PC 1 still `/etc/nixos#nixos` | Repo `nixosConfigurations.linux-desktop` | **Partly implemented**; single `flake.lock`/writer and hardware preservation remain. [T-0029](../../work/active/T-0029-nixos-system-ownership/ticket.md) |
-| Display/login manager | **GDM**, enabled | **—** (keep GDM while GNOME fallback matters; greetd + tuigreet only proposed later) | **Selected for trial**; no change on live host. [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md), [ADR-0012](0012-desktop-compositor-gnome-niri-hyprland.md) |
+| Display/login manager | **GDM**, enabled | **—** (preference **greetd + tuigreet**; graphical competitor **gtkgreet**; ReGreet richer comparator) | **GDM selected only for existing safe trial**; future target unapproved; keep GNOME fallback until separate recovery decision. [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md), [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) |
 | Default login session | **GNOME**, explicitly set | **—** (Niri default requires separate cutover approval) | **Selected for trial**; avoids NixOS Niri module's `mkDefault "niri"`. [pilot system](../../../nix/hosts/linux-desktop-pilot/system.nix), [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md) |
 | Compositor | **Niri** from nixpkgs `programs.niri.enable` as additional session | Niri is the **trial target**, not approved as default | **Selected for evaluation**; Hyprland deferred, GNOME fallback. [ADR-0012](0012-desktop-compositor-gnome-niri-hyprland.md), [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md) |
 | Session startup, user services | `niri-session` / systemd via module; shell autostart intentionally absent | **—** (session-scoped units only) | **Partly declared; P0 G02**; no duplicate `spawn-at-startup` or GNOME-leaking units. [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md) |
@@ -79,7 +81,7 @@ Never equate "in `nixpkgs`", "documented upstream", "module enabled in PC 2 conf
 | Bottom taskbar / running apps / pins | **—** | **—** | **P0 G04**, explicit window focus, per-window close, running indicator, grouping and multi-instance switching before visual polish. [ADR-0045](0045-niri-windows-like-desktop-shell-ux.md) |
 | Dock position / auto-hide / icon groups | **—** | **—** | **P1 G04**; bottom preferred, any edge/Island acceptable if demonstrably better. [ADR-0045](0045-niri-windows-like-desktop-shell-ux.md) |
 | Window hide/show, restore, close | Existing GNOME helpers only; Niri backend **not implemented** | **—** (Niri has no native minimise; scratchpad/parking must be tested) | **P0 G05**, MRU focus and semantics [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md), [ADR-0045](0045-niri-windows-like-desktop-shell-ux.md) |
-| Window search, app launcher, keyboard command menu | **Vicinae** in Linux desktop HM profile; Niri KDL binds launcher | **Vicinae**; Rofi fallback if needed | **Selected for trial**, Niri runtime unverified; avoid shell launcher shortcut collisions. [ADR-0013](0013-desktop-shell-bar-notifications-trial.md), [Vicinae HM](../../../nix/modules/home/vicinae.nix), [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md) |
+| Window search, app launcher, keyboard command menu | **Vicinae** in Linux desktop HM profile; Niri KDL binds launcher | **—** (Vicinae incumbent; compare Walker, Albert, Ulauncher, Rofi and shell launchers) | **P1 G23** feature-first replacement; preserve VS Code recent project opening, exact window focus, scripts and clipboard. [ADR-0048](0048-niri-launcher-vscode-project-workflows.md), [Vicinae HM](../../../nix/modules/home/vicinae.nix), [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md) |
 | Clipboard command tools | `wl-clipboard` inherited | `wl-clipboard` | **Inherited** from GNOME profile, no independent history UI. [GUI HM](../../../nix/modules/home/gui.nix) |
 | Clipboard **history UI/provider** | Vicinae used in current GNOME workflow; shell history disabled during comparison | **—** (Vicinae strongly preferred, ADR-0013 still records owner as open) | **P1 G06**; resolve contradiction between later pilot-plan wording and ADR-0013, then ensure **one provider**. [ADR-0013](0013-desktop-shell-bar-notifications-trial.md), [two-PC plan](../../plans/niri-two-pc-pilot.md) |
 | Notifications / history / Do Not Disturb | **—** | **—** | **P0 G03**; select exactly one DBus notification owner (Dux, Noctalia or SwayNC), test Telegram/Vesktop. [ADR-0013](0013-desktop-shell-bar-notifications-trial.md), [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md) |
@@ -130,7 +132,7 @@ Priority means **P0 = blocks physical installation or safe Niri adoption at the 
 | **G12** Niri file-manager/chooser preference | **P1 / application parity** | — | [ADR-0028](0028-files.md), [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md); decide after checking Nautilus and Double Commander, not by assumption |
 | **G13** Backup and actual rollback evidence / PC 1 takeover | **P0 / first live system change** | — | [T-0029](../../work/active/T-0029-nixos-system-ownership/ticket.md), [Niri plan §6](../../plans/niri-migration.md); backup evidence outside source control, no secrets |
 | **G14** Validator, end-to-end pilot and shell regression gates | **P0 / real shell trial and cutover** | — | [T-0030](../../work/active/T-0030-validator-nixos-programs-and-niri/ticket.md), [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md); VM is insufficient for real GPU/portal verification |
-| **G15** Greeter after cutover and GNOME fallback retirement | **P2 / after proven cutover** | — | [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md) proposes greetd + tuigreet; not approved, and retaining GDM is valid if GNOME fallback stays |
+| **G15** Greeter after cutover and GNOME fallback retirement | **P1 / pre-GNOME-retirement** (not a pilot blocker) | — | [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md) compares **tuigreet → gtkgreet**, ReGreet, GDM; choose after actual TTY/PAM/lock evaluation, not from aesthetics |
 | **G16** Historical plan drift and stale migration instructions | **P1 / before executing any stale guide** | — | [T-0033](../../work/active/T-0033-refresh-stale-migration-docs/ticket.md), particularly `docs/plans/migration/overview.md`, `docs/research/niri-vs-hyprland.md`, `docs/plans/hyprland-migration.md` |
 
 ### Explicit contradictions to reconcile, not overwrite by implication
@@ -143,6 +145,49 @@ Priority means **P0 = blocks physical installation or safe Niri adoption at the 
 6. **Lock and polkit:** the pilot selects **Soteria** while ADR-0013 describes all permanent providers as open. This is **not** a conflict if the phase is explicit. Do not enable a second polkit agent with the shell.
 7. **Screenshot and file-chooser:** older plans mix recommended replacements with existing Flameshot and Nautilus. These are **application/portal tests first**, not selected Niri replacements.
 8. **Legacy chronology and pins:** old audits and plans contain version numbers, line numbers and statements anchored to 2026-11-14/15. Treat them as historical evidence, **not current pinned versions** without renewed evaluation.
+
+## Addendum: explicit comparison and installation candidates (2026-11-22)
+
+**Policy:** do not retain GNOME Shell or a GNOME desktop application simply for continuity, and **do not remove a GNOME portal/keyring simply because its name includes GNOME**. The actual winner must meet the required function, stability and security gates. This is a **candidate register**, not a manifest with automatic install permissions. See [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) for *pros/cons for every GNOME-related category*, [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) for the launcher + VS Code project workflow, [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md) for login.
+
+### D. GNOME replacements and remaining desktop integrations
+
+| Component / function | Existing or pilot implementation | Permanent Niri choice | Priority / candidate shortlist and rationale |
+|---|---|---|---|
+| **GNOME Shell / Mutter** | GNOME live fallback only, Niri separate session | **—** for fallback retirement | **P0 G22** at cutover; Niri owns window management; do not conflate GNOME desktop and required portal libraries. [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) |
+| **GNOME ScreenCast portal** | `xdg-desktop-portal-gnome` from Niri module | **—** conditional exception | **P0 G18/G22**; Niri upstream requires current GNOME portal for ScreenCast; compare exact capability with alternate provider before removal. |
+| **GlobalShortcuts portal/settings** | Current route not end-to-end tested; upstream mentions `gnome-control-center` | **—** | **P1 G18**, **P0 if critical app requires it**; current GNOME component may remain standalone if needed; compare provider/consent and shortcut persistence. |
+| **Secret portal / authentication** | GNOME Keyring and Soteria pilot, KeePassXC separate | **—** final Secret owner | **P0 G18/G03**; compare `gnome-keyring`, `oo7-portal`, KeePassXC Secret Service, KWallet; test PAM/unlock/suspend, never duplicate providers. |
+| **GNOME Files as file browser** | Nautilus + Double Commander inherited | **—** | **P1 G12/G22**; compare Double Commander, Dux Files, Dolphin, Thunar, Nemo vs Nautilus; chooser can be GTK portal separately. |
+| **FileChooser portal** | GNOME portal defaults to Nautilus | **—** | **P1 G12**; compare GNOME/Nautilus with `xdg-desktop-portal-gtk` and KDE/Dux picker; prove app dialogs before removing Nautilus. |
+| **Desktop login outside GNOME** | GDM remains during trial | **—** | **P1 G15**; prefer **greetd+tuigreet**, compare **greetd+gtkgreet** and ReGreet; GNOME fallback lock/PAM must work or remain safely on GDM. |
+| **Launcher, clipboard, VS Code recent projects** | Vicinae + repo `vscode-recents` / dmenu frontend | **—** | **P1 G23/G06**, conditional P0 if project opener is critical; compare Vicinae, Walker, Albert, Ulauncher, Rofi and shell; exact folder/workspace and MRU focus. |
+| **MIME / `xdg-open` / desktop links** | Current GNOME defaults inherited, not audited for Niri | **—** | **P1 G19**; prefer tested Home Manager `xdg.mimeApps` and standard xdg-utils rather than a second MIME manager. |
+| **Accessibility / input method / compose** | US/RU XKB and existing keyd; no new IME chosen | **—** for optional IME | **P1 G20**; XKB/Compose vs Fcitx5/IBus only when actual input requirement exists. |
+| **Power, suspend and lid policy** | NixOS base and GNOME fallback; not proven on Niri | **—** | **P0 G21** for a portable PC, otherwise P1; one policy owner among power-profiles-daemon/TLP/TuneD, and lock-before-suspend. |
+| **USB mounts / audio / network / Bluetooth** | Existing Linux profile; NetworkManager enabled in PC 2 | **—** for optional GUIs | **P1 G24**, P0 for required audio/Secret; inspect udisks2+GVfs, PipeWire+WirePlumber, BlueZ, shell controls; do not duplicate service owners. |
+| **Nix update and retained recovery generations** | NixOS generations / old `/etc/nixos` vs repo flake | **—** policy | **P1 G25**; official `nixos-rebuild`, optional `nh` frontend, `nvd` diff; no second flake or uncontrolled GC. |
+| **Screencast privacy and capture** | Niri/GNOME portal, Flameshot inherited | **—** | **P1 G26**, **P0 if secrets leak**; test native sensitive-window exclusion, native screenshots and optional Satty annotation before replacing applications. |
+| **Wayland theme, UI utilities, night light** | GNOME defaults inherited, Niri shell not chosen | **—** | **P2 G08**; integrated shell preferred; compare swaybg, wlsunset, gtk/qt config, Stylix only if a feature gap is proven. |
+
+### New uncovered gaps (G17–G26)
+
+These extend **G01–G16** without deleting or renumbering previous dependencies. Do not create a one-package ADR when an existing owner suffices.
+
+| Gap | Priority / gate | Unselected decision / required evidence | Existing owner |
+|---|---|---|---|
+| **G17 Emergency session recovery** | **P0 / shell activation** | TTY recovery from dead locker, shell crash, display failure, broken keybind and inaccessible portal; remote/previous-generation fallback works | [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md) |
+| **G18 Portal GlobalShortcuts + Secret + session routing** | **P1; P0 if required functionality fails** | Verify portal owner/interface, `gnome-control-center` necessity, auth/consent, Secret unlock, clipboard and screencast routing. Compare GNOME only against functional replacements | [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md), [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) |
+| **G19 MIME/URIs/desktop activation** | **P1** | HTTPS, mailto, VS Code URI, PDFs, folder handlers, `xdg-open` and portal activation from Niri | [ADR-0027](0027-launcher-clipboard-windows-input-macos-ux.md), [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md) |
+| **G20 Input methods and accessibility** | **P1** | US/RU, Compose/Unicode, keyboard navigation, input accessibility and application text input; extra IME only if needed | [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md) |
+| **G21 Power and suspend security** | **P0 portable PC; P1 stationary desktop** | Correct lid/power behaviour, lock-before-suspend order, resume authentication and no competing power controllers | [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md), [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) |
+| **G22 GNOME feature-by-feature retirement** | **P0 / GNOME removal; P1 pilot** | Enumerate GNOME Shell/apps/extensions and portal/keyring/control-center **separately**; keep only necessary or demonstrably superior functions | [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md), [T-0033](../../work/active/T-0033-refresh-stale-migration-docs/ticket.md) |
+| **G23 Rich launcher and VS Code project parity** | **P1 / launcher selection; P0 if required recent-project workflow breaks** | Vicinae vs Walker/Albert/Ulauncher/Rofi/shell; open actual VS Code folder or workspace, focus correct existing project window, scripts/clipboard/history | [ADR-0048](0048-niri-launcher-vscode-project-workflows.md), [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md) |
+| **G24 Core service, removable device and mixer integration** | **P1; P0 for essential audio/mic** | PipeWire/WirePlumber, NetworkManager/BlueZ, udisks2/GVfs, UPower, detailed microphone/audio routing and safe USB eject | [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md), [ADR-0028](0028-files.md) |
+| **G25 Nix update/generation retention** | **P1 / PC 1 ownership** | `flake.lock`, `nixos-rebuild`, GC protection, live rollback, compare `nh`/nvd for usability without a second writer | [T-0029](../../work/active/T-0029-nixos-system-ownership/ticket.md), [ADR-0021](0021-cross-platform-parity-and-profiles.md) |
+| **G26 Capture privacy and alternatives** | **P1; P0 if sensitive-window exposure** | Niri native capture vs Flameshot/Satty annotation, privacy/screencast exclusion rule and dual-monitor sharing; one hotkey flow | [ADR-0036](0036-screenshots-media-images-and-pdf.md), [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md) |
+
+**New comparison acceptance:** No permanent row is filled from this addendum alone. Record source, pinned version, verified feature, extra daemons and GNOME runtime closure in the **owning ADR** first, then change this matrix. A feature-rich complete shell should *replace* extra daemons, not collect duplicates.
 
 ## Migration dependency map
 

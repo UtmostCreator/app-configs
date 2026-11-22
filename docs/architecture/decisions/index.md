@@ -85,6 +85,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0042](0042-wsl-ubuntu-on-corporate-machines.md) | WSL2 on corporate machines: Ubuntu (manual install) when IT requires a standard distro, NixOS-WSL otherwise | proposed | 2026-11-21 |
 | [0043](0043-windows-winget-app-manifests.md) | Windows apps: one winget import manifest per profile (home, work), run by hand; manual items stay in the setup checklist | decided | 2026-11-21 |
 | [0044](0044-windows-taskbar-pins-script.md) | Windows taskbar: a user-run script pins the profile's apps (layout policy) and unpins Edge, Copilot and Outlook | decided-unverified | 2026-11-21 |
+| [0045](0045-niri-windows-like-desktop-shell-ux.md) | Niri Windows-like UX: assess iNiR Waffle as an optional additional pilot; Dux/Noctalia order and GNOME default unchanged | proposed | 2026-11-22 |
 
 The tool-selection ADRs 0021 to 0033, 0036 and 0037 are written (ADR-0021 holds parity and profiles); gaps are allowed by the contract.
 

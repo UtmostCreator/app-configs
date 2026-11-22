@@ -1,5 +1,7 @@
 # Active follow-ups
 
+**Niri migration status:** see [ADR-0046](../../architecture/decisions/0046-niri-desktop-installation-decision-register.md) for the selected PC 2 Niri trial and remaining P0–P2 gaps; older entries here are historical follow-ups until T-0033 reconciles them.
+
 This file contains only unresolved repository work. Completed migration history is
 available in Git and is intentionally not duplicated here.
 

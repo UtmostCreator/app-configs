@@ -10,10 +10,12 @@ forbids: [shell-selection-before-trial]
 amends: []
 supersedes: []
 superseded_by: []
-related: []
+related: [46]
 ---
 # ADR-0013: Desktop shell, bar and notifications: trial order, not yet selected
 Status: trial (user decision 2026-11-15 on the order only) · Date: 2026-11-15 · Sources: `docs/plans/niri-migration.md` (shell, ownership and decisions sections), `docs/research/desktop-migration-claim-audit.md`, `docs/research/nix-config-borrow-analysis.md`
+
+**Niri migration installation inventory and unresolved gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). This cross-reference does not change this ADR's decision or status.
 
 ## Decision
 - Trial Dux Modular Shell first, Noctalia second, in a real NixOS trial; choose afterwards ("scores too close to decide on paper").

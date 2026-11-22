@@ -10,7 +10,7 @@ forbids: [unapproved-live-shell-change, duplicate-desktop-service-owners, unrevi
 amends: []
 supersedes: []
 superseded_by: []
-related: [12, 13, 27, 28, T-0031, T-0032, 46]
+related: [12, 13, 27, 28, 46, 47, 48, T-0031, T-0032]
 ---
 # ADR-0045: Niri desktop shell: taskbar, dock, window controls, features and ecosystem
 Status: proposed (comparison and acceptance criteria only; no permanent shell selected or live activation authorised) · Date: 2026-11-22 · Sources: ADR-0012, ADR-0013, T-0031/T-0032 and upstream links in References.
@@ -271,3 +271,14 @@ Collect, per candidate and its taskbar/dock component, a dated evidence table be
 - [iNiR panel families](https://inir.space/docs/panel-families/), [Niri minimisation IPC](https://inir.space/docs/ipc/) and [NixOS](https://inir.space/docs/nixos/)
 - [Waybar Niri window buttons](https://github.com/adelmonte/niri_window_buttons)
 - [Existing shell issue research](../../research/niri-shell-dux-vs-noctalia.md) (2026-11-15; reports are unverified until refreshed)
+
+
+## Feature-first integration amendment (2026-11-22)
+
+- **GNOME desktop is not a candidate to retain by default.** GNOME Shell/top bar, extensions and settings must be evaluated against the complete Niri shell and native utilities; a GNOME-named **portal/keyring** may remain as a compatibility service without the GNOME desktop. See [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md).
+- **Vicinae is an incumbent for the current pilot, not a permanent shell dependency.** [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) compares Walker, Albert, Ulauncher, Rofi and shell launchers. The winning frontend must preserve exact VS Code recent-project opening, Niri window focus and desired command/clipboard features.
+- Re-evaluate every shell's own integrated UI before adding a separate daemon: app/taskbar, DND history, tray, launcher, OSD, network/Bluetooth, lock/idle, wallpaper, screenshot and power controls.
+- **Feature completeness must not disguise functional omissions.** A shell with widgets and multiple layouts loses the critical taskbar workflow if it cannot close the correct window, restore parked windows, keep pins or recover safely from a crash.
+- After the shell comparison, score the **incremental** value of every standalone add-on: `niri_window_buttons` or `niri-taskbar` for richer window controls; SwayNC for history; swaylock/swayidle for independent secure recovery; Kanshi for physical monitor profiles; Satty only for annotation; SwayOSD only when shell OSD fails.
+- For the final Niri environment, use one compositor, one running desktop shell, one notification bus owner, one polkit agent, one clipboard-history owner and one lock/idle policy. Rofi/Fuzzel may be an **on-demand rescue frontend**, not a competing autostart service.
+- The installation decision register and new GNOME/launcher gaps are [ADR-0046](0046-niri-desktop-installation-decision-register.md). **No paper evidence automatically selects or installs a tool.**

@@ -80,7 +80,7 @@ This is a **future-state policy**, **not** a removal authorisation. ADR-0012's G
 
 ## Interaction with other ADRs and gaps
 
-- [ADR-0046](0046-niri-desktop-installation-decision-register.md) remains the **installation manifest and empty-choice register**, including P0/P1/P2 new gaps G17–G27.
+- [ADR-0046](0046-niri-desktop-installation-decision-register.md) remains the **installation manifest and empty-choice register**, including P0/P1/P2 new gaps G17–G26.
 - [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md) owns **login**; [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) owns the **launcher**. This ADR does not change either option's implementation.
 - [ADR-0013](0013-desktop-shell-bar-notifications-trial.md) and [ADR-0045](0045-niri-windows-like-desktop-shell-ux.md) own the **shell and taskbar**. GNOME-free target does not waive the trial order or handwave locker/clipboard ownership.
 - [ADR-0033](0033-communication-sync-notes-and-backup.md): Kopia remains the recorded backup selection; restic/Borg are comparison candidates, **not selected replacements**. [ADR-0038](0038-disko-nixos-anywhere-fresh-hosts.md): destructive disk and encryption choices stay open.

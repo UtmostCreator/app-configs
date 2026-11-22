@@ -12,6 +12,8 @@ documentation:
 ---
 # Work
 
+**Niri migration cross-ticket status and installation choices:** [ADR-0046](../architecture/decisions/0046-niri-desktop-installation-decision-register.md) links T-0029–T-0033, existing shell/greeter decisions and the P0–P2 gaps. The ticket rows below retain their individual implementation status.
+
 Read [project interaction](../shared/overview/project-interaction.md) before working on a ticket that crosses repositories.
 
 Time-boxed: tickets, plans, investigations. Nothing here is a source of truth about

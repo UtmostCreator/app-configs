@@ -3,6 +3,7 @@ Source: local
 # T-0029: NixOS system ownership via nixosConfigurations (feature)
 
 Status: in progress (PC 2 pilot host linux-desktop-pilot on main 450e78e, 4c57049; PC 1 linux-desktop takeover not started, live gate needs owner)
+Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gaps: G01 (physical pilot layout), G13 (PC 1 backup/rollback), G14 (validation). The PC 2 flake host exists; PC 1 system takeover is still open.
 Depends on: none
 Blocks: T-0032
 Evidence: `docs/research/desktop-migration-claim-audit.md`

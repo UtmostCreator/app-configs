@@ -10,7 +10,7 @@ forbids: []
 amends: [11]
 supersedes: []
 superseded_by: []
-related: [12, 13, 19, 20, 21, T-0041, T-0042]
+related: [12, 13, 19, 20, 21, 46, 47, 48, T-0041, T-0042]
 ---
 # ADR-0027: Launcher, clipboard, window management, input and macOS UX: Raycast on Windows, PowerToys
 Status: partly-decided (the Windows launcher and the PowerToys exception are decided-unverified, owner 2026-11-16; the other rows are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 (reverses the "Raycast/Vicinae/PowerToys Run" launcher discard; resolves the launcher, PowerToys and Ditto items) · Sources: tool-selection design round 3
@@ -45,3 +45,18 @@ One status per row.
 
 ## Consequences
 - ADR-0011's launcher discard is reversed for Windows only. Nothing is installed by this ADR; winget ids and the Raycast Windows release are unverified.
+
+
+## Niri-specific research amendment (2026-11-22)
+
+This is **not** a change to the previously decided Windows Raycast or PowerToys choices. For the Niri desktop, the permanent launcher is **open**: [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) compares **Vicinae, Walker, Albert, Ulauncher, Rofi and shell-integrated launchers** on commands/extensions, clipboard, window switching and VS Code recent project opening. Vicinae remains installed in the existing Linux profile for the pilot but is **not permanently selected just because it was first**.
+
+| Niri function | Preferred investigation, not an installation decision |
+|---|---|
+| Launcher with project search | Vicinae against Walker/Albert/Ulauncher/Rofi/shell; preserve actual VS Code folders and workspaces |
+| App and per-window control | Native Niri IPC and T-0031, then Dux/Noctalia taskbar integration; no GNOME DBus helper on Niri |
+| Clipboard history | Vicinae versus cliphist/clipse/CopyQ if a feature gap appears; exactly one service |
+| Input and special characters | Native Niri KDL + XKB/Compose; Fcitx5 or IBus only if required by actual text-input use |
+| URI/desktop activation | Declarative `xdg.mimeApps`, `xdg-open`, desktop entry and custom URI tests, not a new command dispatcher |
+
+GNOME's launcher/top-bar extensions are not required in the eventual Niri session unless a functional exception is proven under [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md). [ADR-0046](0046-niri-desktop-installation-decision-register.md) holds gaps G05/G06/G19/G20/G23.

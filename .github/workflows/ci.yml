@@ -68,3 +68,9 @@ jobs:
               $md | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append -Encoding utf8
           }
           exit $code
+      - name: Run the PowerShell taskbar tests
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Continue'
+          powershell -NoProfile -ExecutionPolicy Bypass -File tests\windows\taskbar.tests.ps1
+          exit $LASTEXITCODE

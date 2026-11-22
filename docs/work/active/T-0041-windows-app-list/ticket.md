@@ -150,3 +150,5 @@ inbox apps for the current user, behind a committed snapshot and with rollback. 
 AC4 is reworded in the AC list above (the clause "contains the full discarded/deferred section" is kept).
 
 2026-11-16, user: approved HeidiSQL as a Windows-only exception to the scope rule, like TrafficMonitor Lite ("both Beekeeper Studio and hidesql"). It leaves the discarded list (AC2: a dated user-approved Windows-only exception listed under Decision). See ADR-0011.
+
+2026-11-21, user: "now create those manifests for installion home/work profiles" accepts ADR-0043. A user-run `winget import` manifest per profile is allowed (`ops/windows/winget/home.json`, `work.json`); no repo script runs winget. Same day: Notepad++ added as a Windows-only second editor ("for windows i think it is also good to include notepad++ latest version as a second editor", ADR-0026), and taskbar pins plus an unpin script for Edge, Copilot and Outlook (ADR-0044, owner-run `ops/windows/taskbar.ps1`).

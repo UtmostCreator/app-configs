@@ -41,6 +41,12 @@ Amended by ADR-0036 (partly-decided: the ShareX rejection reason "Flameshot runs
 
 Proposed amendment in ADR-0037 (TrafficMonitor Lite narrowed to the personal profile).
 
+Amended by ADR-0043 (decided, 2026-11-21): a user-run winget import manifest per profile (`ops/windows/winget/home.json`, `work.json`) is allowed; no repo script runs it.
+
+Amended by ADR-0044 (decided-unverified, 2026-11-21): an owner-run script (`ops/windows/taskbar.ps1`) may set two HKCU Start layout policy values for the taskbar pins and unpin Edge, Copilot and Outlook.
+
+Owner exception 2026-11-21 (ADR-0026): Notepad++ is a Windows-only second editor, like HeidiSQL ("for windows i think it is also good to include notepad++ latest version as a second editor").
+
 ## Decision
 - Edition: Windows 11 Home is enough. WSL2 needs only Virtual Machine Platform; Pro's Hyper-V Manager, Sandbox, BitLocker and Group Policy are not used. (This PC was being upgraded to Pro anyway; nothing here requires it.)
 - Apps: a documented copy-only list, installed by hand with winget, one `winget install --id <id> --exact` at a time. Ids are unverified until `winget show`. Automation is open (Milestone 2).

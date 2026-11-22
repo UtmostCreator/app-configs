@@ -1,17 +1,23 @@
-# Taskbar pins, in the owner's order (left to right). Documentation only: nothing reads or applies this file.
-# Pinning is a manual checklist (see taskbar.md). Owner decisions 2026-11-16: "also add yaml and if we can setup this task panel pinned";
+# Taskbar pins, in the owner's order (left to right). Read by ops/windows/taskbar.ps1 (ADR-0044); see taskbar.md.
+# Owner decisions 2026-11-16: "also add yaml and if we can setup this task panel pinned";
 # "keepass and sync thing goes before putty"; HeidiSQL is kept as a permanent Windows exception.
+# Owner request 2026-11-21: pin the installed apps that are available, and a script to unpin Copilot, Edge and Outlook.
 #
 # status: chosen (decided tool) | system (part of Windows) | pending tool decision (tool-selection ADRs 0021 to 0033, in progress) | unknown
-# aumid: AppUserModelID where known; otherwise a path with {PF} = %ProgramFiles%. Empty when unknown.
-# profiles: personal | work | both (omitted = both). The `personal` assignments are proposed (from tool ADR screening), not decided.
-# aumid values come from Get-StartApps output on this PC (2026-11-16); `{PF}` and `%APPDATA%` entries are executable paths.
+# aumid: AppID as Get-StartApps prints it (an AppUserModelID, a {known-folder-guid}\path or a %VAR%\path).
+#   Empty = taskbar.ps1 looks the app up by its Start menu name (`app`). Values come from Get-StartApps on this PC (2026-11-21).
+# winget: package id in ops/windows/winget/<profile>.json. taskbar.ps1 pins a `chosen` row only when this id is in the
+#   profile's manifest and the app is installed. `system` rows with an aumid are pinned in both profiles. Other statuses never are.
+# profiles: personal | work | both (omitted = both). A `personal` row's winget id must not be in work.json
+#   (tests/bash/windows-winget-manifests.bats).
+# Format: one `key: value` scalar per line, so the PowerShell reader stays small.
 
 pins:
   - position: 1
     app: Paint.NET
     status: chosen
     aumid: ""
+    winget: dotPDN.PaintDotNet
     profiles: personal
     note: "ADR-0036 Windows personal exception"
   - position: 2
@@ -21,20 +27,23 @@ pins:
   - position: 3
     app: Double Commander
     status: chosen
-    aumid: '{PF}\Double Commander\doublecmd.exe'
+    aumid: '{6D809377-6AF0-444B-8957-A3773F02200E}\Double Commander\doublecmd.exe'
+    winget: alexx2000.DoubleCommander
   - position: 4
     app: PDF reader
     status: system
     aumid: ""
-    note: "Edge (ADR-0036); nothing to install"
+    note: "Edge stays the PDF app (ADR-0036) but is not pinned: owner 2026-11-21 asked to unpin Edge"
   - position: 5
     app: Visual Studio Code
     status: chosen
     aumid: Microsoft.VisualStudioCode
+    winget: Microsoft.VisualStudioCode
   - position: 6
     app: Windows Terminal
     status: chosen
     aumid: Microsoft.WindowsTerminal_8wekyb3d8bbwe!App
+    winget: Microsoft.WindowsTerminal
   - position: 7
     app: Vesktop
     status: pending tool decision
@@ -49,6 +58,7 @@ pins:
     app: Telegram
     status: chosen
     aumid: '%APPDATA%\Telegram Desktop\Telegram.exe'
+    winget: Telegram.TelegramDesktop
     profiles: personal
   - position: 10
     app: Control Panel
@@ -58,6 +68,7 @@ pins:
     app: Obsidian
     status: chosen
     aumid: md.obsidian
+    winget: Obsidian.Obsidian
   - position: 12
     app: sound tool
     status: unknown
@@ -66,19 +77,24 @@ pins:
     app: Brave
     status: chosen
     aumid: Brave
+    winget: Brave.Brave
   - position: 14
     app: Firefox
     status: chosen
     aumid: 308046B0AF4A39CB
+    winget: Mozilla.Firefox
   - position: 15
     app: Notepad++
-    status: pending tool decision
+    status: chosen
     aumid: ""
-    note: "proposed discard (ADR-0026)"
+    winget: Notepad++.Notepad++
+    note: "second editor, Windows-only owner exception 2026-11-21 (ADR-0026)"
   - position: 16
     app: KeePassXC
     status: chosen
-    aumid: '{PF}\KeePassXC\KeePassXC.exe'
+    aumid: '{6D809377-6AF0-444B-8957-A3773F02200E}\KeePassXC\KeePassXC.exe'
+    winget: KeePassXCTeam.KeePassXC
+    note: "home.json only; on a work PC only if IT allows it (ADR-0039)"
   - position: 17
     app: Syncthing tray
     status: pending tool decision
@@ -103,15 +119,18 @@ pins:
     app: WinSCP
     status: chosen
     aumid: ""
+    winget: WinSCP.WinSCP
   - position: 22
     app: HeidiSQL
     status: chosen
     aumid: ""
+    winget: HeidiSQL.HeidiSQL
     note: "owner kept it as a permanent Windows exception"
   - position: 23
     app: Bruno
     status: chosen
     aumid: com.usebruno.app
+    winget: Bruno.Bruno
   - position: 24
     app: ChatGPT
     status: pending tool decision
@@ -129,6 +148,7 @@ pins:
     app: WizTree
     status: chosen
     aumid: ""
+    winget: AntibodySoftware.WizTree
     profiles: personal
     note: "replaces TreeSize (ADR-0028)"
   - position: 28
@@ -143,3 +163,11 @@ not_pinned:
   - Tailscale
   - GitHub CLI
   - Git
+
+# Unpinned by `taskbar.ps1 -Unpin` (owner 2026-11-21). Matched by AppID prefix, so it works whatever the display name.
+unpin:
+  - MSEdge
+  - Microsoft.OutlookForWindows_
+  - Microsoft.Office.OUTLOOK.EXE
+  - Microsoft.Copilot_
+  - Microsoft.MicrosoftOfficeHub_

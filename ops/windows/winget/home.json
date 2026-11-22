@@ -1,0 +1,38 @@
+{
+  "$schema": "https://aka.ms/winget-packages.schema.2.0.json",
+  "CreationDate": "2026-11-21T00:00:00.000-00:00",
+  "Sources": [
+    {
+      "Packages": [
+        { "PackageIdentifier": "Git.Git" },
+        { "PackageIdentifier": "Microsoft.WindowsTerminal" },
+        { "PackageIdentifier": "DEVCOM.JetBrainsMonoNerdFont" },
+        { "PackageIdentifier": "Microsoft.VisualStudioCode" },
+        { "PackageIdentifier": "Notepad++.Notepad++" },
+        { "PackageIdentifier": "Brave.Brave" },
+        { "PackageIdentifier": "Mozilla.Firefox" },
+        { "PackageIdentifier": "GitHub.cli" },
+        { "PackageIdentifier": "Obsidian.Obsidian" },
+        { "PackageIdentifier": "Bruno.Bruno" },
+        { "PackageIdentifier": "alexx2000.DoubleCommander" },
+        { "PackageIdentifier": "HeidiSQL.HeidiSQL" },
+        { "PackageIdentifier": "WinSCP.WinSCP" },
+        { "PackageIdentifier": "KeePassXCTeam.KeePassXC" },
+        { "PackageIdentifier": "Flameshot.Flameshot" },
+        { "PackageIdentifier": "zhongyang219.TrafficMonitor.Lite" },
+        { "PackageIdentifier": "Tailscale.Tailscale" },
+        { "PackageIdentifier": "Telegram.TelegramDesktop" },
+        { "PackageIdentifier": "LocalSend.LocalSend" },
+        { "PackageIdentifier": "dotPDN.PaintDotNet" },
+        { "PackageIdentifier": "AntibodySoftware.WizTree" }
+      ],
+      "SourceDetails": {
+        "Argument": "https://cdn.winget.microsoft.com/cache",
+        "Identifier": "Microsoft.Winget.Source_8wekyb3d8bbwe",
+        "Name": "winget",
+        "Type": "Microsoft.PreIndexed.Package"
+      }
+    }
+  ],
+  "WinGetVersion": "1.29.380"
+}

@@ -66,7 +66,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0023](0023-password-managers-and-secrets-cli.md) | Password managers: KeePassXC primary, Bitwarden allowed, op for dev secrets | partly-decided | 2026-11-16 |
 | [0024](0024-database-clients.md) | Database clients: Beekeeper Studio everywhere, DBeaver on macOS, HeidiSQL on Windows | partly-decided | 2026-11-16 |
 | [0025](0025-terminal-environment.md) | Terminal environment: terminal, multiplexer, prompt, font, PowerShell | proposed | 2026-11-16 |
-| [0026](0026-editors-and-ides.md) | Editors and IDEs: VS Code, Neovim, Android Studio on Linux | proposed | 2026-11-16 |
+| [0026](0026-editors-and-ides.md) | Editors and IDEs: VS Code, Neovim, Android Studio on Linux; Notepad++ as the Windows second editor | partly-decided | 2026-11-16 |
 | [0027](0027-launcher-clipboard-windows-input-macos-ux.md) | Launcher, clipboard, window management, input and macOS UX: Raycast on Windows, PowerToys | partly-decided | 2026-11-16 |
 | [0028](0028-files.md) | Files: file managers, disk usage (GrandPerspective, WizTree exceptions), duplicates, archives | partly-decided | 2026-11-16 |
 | [0029](0029-networking-and-remote-access.md) | Networking: no Tailscale on work hosts, OpenSSH, WinSCP | partly-decided | 2026-11-16 |
@@ -83,7 +83,8 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0040](0040-macos-home-layout-and-cleanup-policy.md) | macOS home layout: keep existing roots, add Scratch and Archive, report-only cleanup of disposable files, never automatic outside Scratch | proposed | 2026-11-20 |
 | [0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md) | Login greeter: keep GDM during the niri trial; greetd with tuigreet proposed after cutover, ReGreet the runner-up | proposed | 2026-11-20 |
 | [0042](0042-wsl-ubuntu-on-corporate-machines.md) | WSL2 on corporate machines: Ubuntu (manual install) when IT requires a standard distro, NixOS-WSL otherwise | proposed | 2026-11-21 |
-| [0043](0043-windows-winget-app-manifests.md) | Windows apps: one winget import manifest per profile (home, work), run by hand; manual items stay in the setup checklist | proposed | 2026-11-21 |
+| [0043](0043-windows-winget-app-manifests.md) | Windows apps: one winget import manifest per profile (home, work), run by hand; manual items stay in the setup checklist | decided | 2026-11-21 |
+| [0044](0044-windows-taskbar-pins-script.md) | Windows taskbar: a user-run script pins the profile's apps (layout policy) and unpins Edge, Copilot and Outlook | decided-unverified | 2026-11-21 |
 
 The tool-selection ADRs 0021 to 0033, 0036 and 0037 are written (ADR-0021 holds parity and profiles); gaps are allowed by the contract.
 

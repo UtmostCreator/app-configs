@@ -2,6 +2,8 @@
 
 Scope: [project scope](../project-scope.md) (ADR-0019). Short records of what was chosen, what lost and why. Most WSL items come from T-0047.
 
+**Niri desktop migration:** [ADR-0046](0046-niri-desktop-installation-decision-register.md) is the central install/decision/gap matrix; ADR-0012, ADR-0013, ADR-0041 and ADR-0045 retain their individual decision authority.
+
 ## Before writing a new ADR
 
 1. Search the frontmatter for overlap: `grep -l "windows" docs/architecture/decisions/0*.md`, or grep the `platforms:`, `permits:` and `forbids:` lines for your keywords.
@@ -86,6 +88,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0043](0043-windows-winget-app-manifests.md) | Windows apps: one winget import manifest per profile (home, work), run by hand; manual items stay in the setup checklist | decided | 2026-11-21 |
 | [0044](0044-windows-taskbar-pins-script.md) | Windows taskbar: a user-run script pins the profile's apps (layout policy) and unpins Edge, Copilot and Outlook | decided-unverified | 2026-11-21 |
 | [0045](0045-niri-windows-like-desktop-shell-ux.md) | Feature-first Niri shells: docks/taskbar, close/hide/restore, community and reproducibility; no shell selected | proposed | 2026-11-22 |
+| [0046](0046-niri-desktop-installation-decision-register.md) | Niri master installation matrix: selected components, staged trials, ownership, P0–P2 gaps and migration dependencies | partly-decided | 2026-11-22 |
 
 The tool-selection ADRs 0021 to 0033, 0036 and 0037 are written (ADR-0021 holds parity and profiles); gaps are allowed by the contract.
 

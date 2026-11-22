@@ -1,5 +1,7 @@
 # niri vs Hyprland — Compositor Decision for app-configs
 
+**Current selected/unknown desktop components:** [ADR-0046](../architecture/decisions/0046-niri-desktop-installation-decision-register.md). This older compositor comparison contains pin and module assumptions flagged for T-0033; do not use it to override ADR-0012 or committed PC 2 configuration.
+
 > Home: `docs/research/niri-vs-hyprland.md`
 > Status: decision / comparison document. No code changes are authorized by this file alone.
 > Plans compared: **niri** = `docs/plans/migration/overview.md` (repo root);

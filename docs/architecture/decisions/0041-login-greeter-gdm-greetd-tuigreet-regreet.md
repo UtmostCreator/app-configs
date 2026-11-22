@@ -10,10 +10,12 @@ forbids: [two-display-managers, greeter-change-on-live-desktop-without-approval,
 amends: []
 supersedes: []
 superseded_by: []
-related: [12, 13, 23, 38, T-0029, T-0032]
+related: [12, 13, 23, 38, T-0029, T-0032, 46]
 ---
 # ADR-0041: Login greeter: GDM during the niri trial, greetd with tuigreet proposed after cutover
 Status: proposed (owner asked on 2026-11-20 for greetd + tuigreet compared with the two strongest alternatives; nothing is built and the live desktop keeps GDM) · Date: 2026-11-20 · Sources: ADR-0012 (GDM stays; "Ly and greetd/tuigreet (deferred)"), `docs/research/desktop-migration-claim-audit.md` ("GDM stays during the trial"), `docs/research/niri-vs-hyprland.md` (greetd PATH note), evaluation of the pilot host on the pinned nixpkgs
+
+**Niri migration installation inventory and unresolved gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). This cross-reference does not change this ADR's decision or status.
 
 The compositor is ADR-0012 and the shell is ADR-0013. This ADR covers only what shows the login prompt and starts the session. If accepted, it replaces ADR-0012's "greetd/tuigreet (deferred)" with a dated plan; ADR-0012 is not changed by this proposal.
 

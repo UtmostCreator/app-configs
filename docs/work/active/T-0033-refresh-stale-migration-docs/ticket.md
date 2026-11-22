@@ -37,5 +37,13 @@ No behaviour change.
 - Each listed statement is corrected with a source link.
 - `git diff` shows documentation and one comment change only; no behaviour change.
 
+## Follow-up for updated target policy (2026-11-22)
+
+- [ ] Reconcile historical "GNOME for good" and "GNOME extension cliff" language with the **GNOME-minimal future target**, without changing the actual GNOME/GDM default until a separately approved live cutover; see [ADR-0047](../../../architecture/decisions/0047-gnome-dependency-retirement-and-wayland-components.md).
+- [ ] Correct old assumptions that **Vicinae is permanently selected** for Niri; it remains the currently installed pilot launcher pending the [ADR-0048](../../../architecture/decisions/0048-niri-launcher-vscode-project-workflows.md) feature comparison. Windows Raycast choices remain separate.
+- [ ] Correct old greeter alternatives to show **tuigreet preferred for research, gtkgreet graphical competitor and ReGreet optional**, with GDM retained for safe trial. [ADR-0041](../../../architecture/decisions/0041-login-greeter-gdm-greetd-tuigreet-regreet.md).
+- [ ] Distinguish GNOME **Shell** from the still-needed GNOME **ScreenCast portal**, optional `gnome-control-center` for GlobalShortcuts, GNOME keyring/Secret, and Nautilus/GTK FileChooser routing. Do not claim a GNOME-free closure before proving it.
+- [ ] Ensure any historical plan sending live installers or greeter edits is marked **non-authoritative** relative to [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md), and no physical NixOS deployment occurs without backup/rollback evidence.
+
 ## Progress
 - 2026-11-21 documentation audit adds to the scope: `docs/plans/migration/overview.md` goals still prescribe a Home Manager-owned KDL and describe `nixosConfigurations` as future although the PC 2 pilot host exists; the pilot (done) must be told apart from the PC 1 takeover (not started). Already fixed on 2026-11-21: `docs/plans/future-upgrades.md` and `docs/plans/niri-two-pc-pilot.md` now say the pilot host exists.

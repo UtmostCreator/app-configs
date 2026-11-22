@@ -10,10 +10,12 @@ forbids: [disko-on-live-desktop, disk-path-not-by-id, disko-in-sys-update, impli
 amends: []
 supersedes: []
 superseded_by: []
-related: [12, 33, T-0029]
+related: [12, 33, T-0029, 46]
 ---
 # ADR-0038: Declarative disks and installs for fresh NixOS hosts: disko and nixos-anywhere
 Status: proposed (the owner asked for this record on 2026-11-20; the layout questions below are open and nothing is built) · Date: 2026-11-20 · Sources: `docs/plans/future-upgrades.md` (section 6), `docs/work/active/T-0029-nixos-system-ownership/ticket.md`, `docs/plans/niri-migration.md` (backup gate)
+
+**Niri migration installation inventory and unresolved gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). This cross-reference does not change this ADR's decision or status.
 
 ## Context
 A second NixOS machine (the niri trial host, ADR-0012) should be installable from this repository alone, so a fresh install also tests reproducibility. Today the repo has no `nixosConfigurations` and the desktop runs a hand-edited `/etc/nixos` (T-0029). disko declares partitions, encryption and filesystems in Nix; nixos-anywhere installs a flake host onto a machine booted from the installer over SSH. Both are in the pinned nixpkgs (1.13.0). Both erase the target disk.

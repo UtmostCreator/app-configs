@@ -197,6 +197,8 @@ flowchart TD
   A12["ADR-0012: compositor and GNOME fallback"]
   A13["ADR-0013: shell trial and service owners"]
   A45["ADR-0045: UX/taskbar acceptance"]
+  A47["ADR-0047: GNOME component retirement"]
+  A48["ADR-0048: launcher and VS Code projects"]
   A41["ADR-0041: greeter after cutover"]
   A38["ADR-0038: fresh-PC disks"]
   T29["T-0029: flake-owned NixOS"]
@@ -206,6 +208,8 @@ flowchart TD
   T33["T-0033: stale-plan cleanup"]
   M --> A12
   M --> A13
+  M --> A47
+  M --> A48
   M --> A41
   M --> A38
   M --> T29
@@ -213,6 +217,9 @@ flowchart TD
   M --> T31
   M --> T33
   A13 --> A45
+  A13 --> A48
+  A47 --> A41
+  A48 --> T31
   A12 --> T32
   T29 --> T32
   T30 --> T32

@@ -10,7 +10,7 @@ forbids: []
 amends: [11]
 supersedes: []
 superseded_by: []
-related: [19, 20, 21, T-0041, T-0042]
+related: [19, 20, 21, 38, 46, 47, T-0041, T-0042]
 ---
 # ADR-0033: Communication, sync, notes and backup: Kopia plus Time Machine
 Status: partly-decided (the backup choice is decided-unverified, owner 2026-11-16; the other rows are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 (Telegram narrowed to P; the Syncthing deferral reversed; the T-0042 Q8 items for Vesktop, Slack and Zoom resolved) · Sources: tool-selection design round 3
@@ -38,3 +38,17 @@ One status per row.
 
 ## Consequences
 - Nothing is installed by this ADR. kopia 0.23.1 exists in nixpkgs for Linux and darwin (verified); kopia-ui is Linux-only, so a macOS GUI would need a cask.
+
+
+## Niri migration backup tool comparison (2026-11-22)
+
+**Do not silently replace the existing owner-selected Kopia recommendation with restic.** [ADR-0046](0046-niri-desktop-installation-decision-register.md) G13 and [ADR-0038](0038-disko-nixos-anywhere-fresh-hosts.md) G01 require a **real restored-data test**, not a backup-app popularity verdict.
+
+| Backup option | Pros for two NixOS PCs | Cons / open conditions | Status |
+|---|---|---|---|
+| **Kopia** (existing ADR choice) | Encryption, snapshots, retention, GUI/CLI, cross-platform; aligns existing backup policy | Repo/storage and restore keys still need configuring; a GUI is not proof of tested recovery | **Existing selected intent, not verified deployed** |
+| **restic** | Mature CLI, many backends, scripted encrypted backups and straightforward unattended runs | CLI/GUI convenience and configuration policy differ; changing established snapshots/repositories increases migration burden | **Strong comparison candidate only** |
+| **BorgBackup** | Efficient deduplicated archives, mature retention and integrity tooling | Storage transport/repository coupling; additional backup stack to maintain | Alternate |
+| **Btrfs snapshots** | Very fast local rollback of subvolumes and package/config state | **Not an off-device backup**; depends on Btrfs filesystem still unselected | Complementary, not sole backup |
+
+**P0:** capture and restore `$HOME`, projects, KeePassXC database, browser/app settings and `/etc/nixos` **without leaking secrets into the repo**; separately recover bootloader/EFI, disk encryption keys and previous NixOS generation. Review restore time and off-device copies. The strongest available option is whichever meets this evidence with least extra management; only then amend the previous selection.

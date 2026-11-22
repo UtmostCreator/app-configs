@@ -1,5 +1,7 @@
 # niri shell: Dux Modular Shell vs Noctalia v5
 
+**Installation/selection status:** [ADR-0046](../architecture/decisions/0046-niri-desktop-installation-decision-register.md) is the current registry. This issue assessment is evidence for the Dux → Noctalia trial, **not** a permanent shell selection or proof that a reported issue remains open in the pinned release.
+
 ## 1. Status and provenance
 
 Two assessments supplied by the user on 2026-11-15, compiled from upstream

@@ -3,6 +3,7 @@ Source: local
 # T-0030: Validator allows NixOS programs.* and a niri config owner (feature)
 
 Status: open, partly superseded (niri config owned by chezmoi 6fb82ee, rule 11 change unneeded; rule 6 scope change still needed)
+Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gaps: G02 (Niri session/package/service ownership), G14 (validator). The chezmoi KDL owner is already selected.
 Depends on: none
 Blocks: T-0032
 Evidence: `docs/research/desktop-migration-claim-audit.md`

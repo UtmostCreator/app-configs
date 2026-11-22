@@ -10,7 +10,7 @@ forbids: [disko-on-live-desktop, disk-path-not-by-id, disko-in-sys-update, impli
 amends: []
 supersedes: []
 superseded_by: []
-related: [12, 33, T-0029, 46]
+related: [12, 33, 46, 47, T-0029]
 ---
 # ADR-0038: Declarative disks and installs for fresh NixOS hosts: disko and nixos-anywhere
 Status: proposed (the owner asked for this record on 2026-11-20; the layout questions below are open and nothing is built) · Date: 2026-11-20 · Sources: `docs/plans/future-upgrades.md` (section 6), `docs/work/active/T-0029-nixos-system-ownership/ticket.md`, `docs/plans/niri-migration.md` (backup gate)
@@ -44,3 +44,17 @@ A second NixOS machine (the niri trial host, ADR-0012) should be installable fro
 ## Consequences
 - The second machine's disk layout becomes reviewable code, and a reinstall is one command after booting the installer.
 - Until T-0029 lands, this ADR records intent only.
+
+
+## Physical pilot alternatives and explicit open choices (2026-11-22)
+
+| Topic | Candidates and trade-off | Recommendation for investigation |
+|---|---|---|
+| Installation | **NixOS live installer + disko**: interactive verification and reproducible disk mapping; **nixos-anywhere + disko**: repeatable remote deployment, requires proven target selection/SSH; **manual partitioning + nixos-install**: transparent but harder to reproduce | Local NixOS installer with reviewed disko plan first, **not selected until actual PC 2 hardware identified** |
+| Filesystem | **ext4**: simpler/robust, no built-in snapshots; **Btrfs**: snapshots/compression, needs subvolume/recovery policy; **ZFS**: advanced features, heavier kernel/maintenance | Decide only after requirements for snapshot, performance and restore have been measured |
+| Encryption | **LUKS2**: protects at rest, recovery key and unlock process needed; **TPM2/FIDO2 via systemd-cryptenroll**: convenience, platform/recovery complexity; **none**: only for explicitly disposable hardware | LUKS2 preferred to evaluate, not approved |
+| Swap | **zram**: compressed RAM, no hibernate persistence; **encrypted disk swap**: hibernate possible with correct initrd/config; **swapfile**: flexible with filesystem-specific caveats | Evaluate actual RAM/hibernate needs |
+| Boot and Secure Boot | **systemd-boot**: already declared in pilot; **GRUB**: dual-boot flexibility; **Lanzaboote**: Secure Boot management but extra key lifecycle | **Preserve current PC 1 boot config**; do not change for cosmetic Niri migration |
+| Backup tool | **Kopia** (existing ADR-0033 selection), **restic**, **Borg**; Btrfs snapshots only complement remote copies | Require restore evidence first; do not silently switch to restic |
+
+**P0 before physical installation:** identify exact host, hardware, EFI partition, disko target by stable `/dev/disk/by-id`, filesystem labels, disk encryption recovery material and independent restore method. The pilot's root and /boot placeholders are **not safe to apply as a real disk layout**. Disabling the disk safety gate is not permitted by this document. See [ADR-0046](0046-niri-desktop-installation-decision-register.md) G01/G13 and [T-0029](../../work/active/T-0029-nixos-system-ownership/ticket.md).

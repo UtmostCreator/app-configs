@@ -2,7 +2,7 @@
 
 Scope: [project scope](../project-scope.md) (ADR-0019). Short records of what was chosen, what lost and why. Most WSL items come from T-0047.
 
-**Niri desktop migration:** [ADR-0046](0046-niri-desktop-installation-decision-register.md) is the central install/decision/gap matrix; ADR-0012, ADR-0013, ADR-0041 and ADR-0045 retain their individual decision authority.
+**Niri desktop migration:** [ADR-0046](0046-niri-desktop-installation-decision-register.md) is the central install/decision/gap matrix; [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) audits GNOME retirement and compatible replacements; [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) compares launchers and VS Code project opening. ADR-0012, ADR-0013, ADR-0041 and ADR-0045 retain their individual decision authority.
 
 ## Before writing a new ADR
 
@@ -89,6 +89,8 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0044](0044-windows-taskbar-pins-script.md) | Windows taskbar: a user-run script pins the profile's apps (layout policy) and unpins Edge, Copilot and Outlook | decided-unverified | 2026-11-21 |
 | [0045](0045-niri-windows-like-desktop-shell-ux.md) | Feature-first Niri shells: docks/taskbar, close/hide/restore, community and reproducibility; no shell selected | proposed | 2026-11-22 |
 | [0046](0046-niri-desktop-installation-decision-register.md) | Niri master installation matrix: selected components, staged trials, ownership, P0–P2 gaps and migration dependencies | partly-decided | 2026-11-22 |
+| [0047](0047-gnome-dependency-retirement-and-wayland-components.md) | GNOME-minimal Niri future target; compare every GNOME dependency with non-GNOME alternatives before removal | partly-decided | 2026-11-22 |
+| [0048](0048-niri-launcher-vscode-project-workflows.md) | Vicinae provisional during trial; compare rich launchers and preserve exact VS Code recent-project opening | partly-decided | 2026-11-22 |
 
 The tool-selection ADRs 0021 to 0033, 0036 and 0037 are written (ADR-0021 holds parity and profiles); gaps are allowed by the contract.
 

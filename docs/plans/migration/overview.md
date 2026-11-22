@@ -1,5 +1,7 @@
 # Niri migration plan
 
+**Current authority:** [ADR-0046](../../architecture/decisions/0046-niri-desktop-installation-decision-register.md) is the cross-linked Niri installation matrix and gap list. This older migration outline contains known stale choices (Home Manager-owned KDL, greeter decided before trial and absent pilot flake host). Read its historical phases alongside [T-0033](../../work/active/T-0033-refresh-stale-migration-docs/ticket.md), not as an implementation directive.
+
 > Status: active alternative; no desktop migration is authorized by this plan.
 > Sibling plan: `docs/plans/hyprland-migration.md`.
 > Decision support: `docs/research/niri-vs-hyprland.md`.

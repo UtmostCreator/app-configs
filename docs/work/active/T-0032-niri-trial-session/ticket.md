@@ -115,6 +115,18 @@ The [master register ADR-0046](../../../architecture/decisions/0046-niri-desktop
 
 Do not make a new tool mandatory merely because it is listed as a candidate. These scenarios **extend**, not replace, existing G1–G11 shell gates and the mandatory backup/user-approval requirements.
 
+## Portal and secret-provider alternative trials (2026-11-22)
+
+New upstream candidates are **documentation-only until separately approved in PC 2**. See [ADR-0047](../../../architecture/decisions/0047-gnome-dependency-retirement-and-wayland-components.md), [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md), [ADR-0023](../../../architecture/decisions/0023-password-managers-and-secrets-cli.md). Required functions are P0; **removing their working GNOME implementation is P1** unless the replacement itself becomes necessary to meet a documented P0 requirement.
+
+- [ ] **ScreenCast baseline**: record pinned `xdg-desktop-portal-gnome` + `xdg-desktop-portal-gtk` + PipeWire versions and `niri-portals.conf`/Nix module ownership; test Brave, Firefox, Vesktop and OBS window/monitor picker, denial, multi-stream, reconnect and **Dynamic Cast Target**. Record actual live capture, not just a functioning picker.
+- [ ] **niri-screenshare trial**: verify NixOS package/module or pinned source build, GTK picker, Niri-specific Mutter.ScreenCast IPC, PipeWire nodes and explicit dynamic-cast option. **Test its documented first-start portal preference write in a disposable user HOME**; refuse if it mutates `portals.conf` controlled by Home Manager/chezmoi without an approved override. Compare each capture scenario against baseline.
+- [ ] **xdg-desktop-portal-generic trial**: verify `ext-image-copy-capture` / `wlr-screencopy` protocol compatibility with pinned Niri, consent UI, window/monitor sources and Niri dynamic target (not assumed supported); test `RemoteDesktop`/clipboard interfaces separately if needed, do not blanket-switch the portal default.
+- [ ] **oo7 Secret trial**: isolate a clean test user and fake keyring, then test `oo7-daemon` and `oo7-portal` interfaces separately, greetd PAM unlock after reboot, `HOME`/`XDG_RUNTIME_DIR`, authentication and SecretService DBus owners. Upstream greetd issue #516 is **closed** but still requires pinned-version reproduction; do **not** import the real GNOME Keyring or KeePassXC secrets during comparison.
+- [ ] **FileChooser alternative**: compare GTK FileChooser and **standalone Dux Files** FileChooser after testing file-manager functions. Test Niri focus, keyboard navigation, window parenting, modal state, upload/save-as and cold-start. **Dux Files documents that its chooser currently does not attach to the calling application and ignores modal**. Do not invoke commands that rewrite the active portal preference from an unmanaged installer.
+- [ ] **Launcher**: compare **Vicinae** versus **Walker + Elephant**, then Ulauncher/Albert/Rofi. Test exact VS Code `.code-workspace` and directory history, Niri existing-window focus, clipboard images/history, provider restarts and total resident processes; do not activate two global hotkeys simultaneously.
+- [ ] **Future login (separate gate)**: after safe cutover planning, test `tuigreet` and ReGreet/gtkgreet using the actual TTY/GPU/PAM/lock scenarios in ADR-0041. This does **not** belong in the current shell activation and does not authorise replacing GDM.
+
 ## Out of scope
 Cutover to niri as default: a separate later decision, only after 2-4 weeks of daily use with no blockers.
 

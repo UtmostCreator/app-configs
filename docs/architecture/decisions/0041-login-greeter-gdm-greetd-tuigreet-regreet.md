@@ -10,7 +10,7 @@ forbids: [two-display-managers, greeter-change-on-live-desktop-without-approval,
 amends: []
 supersedes: []
 superseded_by: []
-related: [12, 13, 23, 38, 46, 47, T-0029, T-0032]
+related: [12, 13, 23, 38, 46, 47, 49, T-0029, T-0032]
 ---
 # ADR-0041: Login greeter: GDM as safe fallback; evaluate greetd with tuigreet or gtkgreet
 Status: proposed (**tuigreet** preferred for reliability; **ReGreet** as graphical feature benchmark, **gtkgreet** as lean graphical alternative; current GDM remains untouched pending approval and live fallback gates) · Date: 2026-11-22 · Sources: [greetd upstream](https://github.com/kennylevinsen/greetd), [tuigreet](https://github.com/tuigreet/tuigreet), [gtkgreet](https://github.com/kennylevinsen/gtkgreet), [ReGreet](https://github.com/rharish101/ReGreet), [NixOS greetd guidance](https://wiki.nixos.org/wiki/Greetd), ADR-0012 and T-0032.
@@ -58,6 +58,7 @@ Status: proposed (**tuigreet** preferred for reliability; **ReGreet** as graphic
 - [ ] PC 2: graphical greeter on actual GPU; text greeter on 2560×1600 console; correct switching of US/RU layouts if needed; recovery via TTY when GTK/Cage, Niri or shell fails; last session preservation/restart.
 - [ ] PC 2: login keyring/PAM vs KeePassXC correctly separated; Secret portal access after unlock; correct user services and `XDG_CURRENT_DESKTOP`.
 - [ ] If keeping GNOME fallback, confirm GDM-free GNOME **locking**, not merely the ability to log in. If unsupported, stop replacement and retain GDM.
+- [ ] Quitting Niri, locked or not, and a crashed session both end at an authenticated greeter prompt, never at a logged-in console; repeat the quit and quit-while-locked checks of [ADR-0049](0049-niri-safest-staged-installation-order.md) stages 5 and 6 under the new greeter.
 - [ ] Evaluate `gtkgreet` with an explicitly declared greeter-only Cage/Sway config; do not mix it with user Niri shell and KDL or add a second display manager.
 - [ ] `tuigreet` remembering user/session and greeter cache are validated on the pinned build. Check combination of `--user-menu` and remember flags; known version-specific upstream regressions must not be assumed fixed.
 - [ ] No GDM changes or destructive boot edits before the mandatory backup and rollback evidence in [T-0029](../../work/active/T-0029-nixos-system-ownership/ticket.md) / [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md).

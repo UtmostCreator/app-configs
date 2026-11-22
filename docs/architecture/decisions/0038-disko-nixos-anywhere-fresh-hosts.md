@@ -10,7 +10,7 @@ forbids: [disko-on-live-desktop, disk-path-not-by-id, disko-in-sys-update, impli
 amends: []
 supersedes: []
 superseded_by: []
-related: [12, 33, 46, 47, T-0029]
+related: [12, 33, 46, 47, 49, T-0029]
 ---
 # ADR-0038: Declarative disks and installs for fresh NixOS hosts: disko and nixos-anywhere
 Status: proposed (the owner asked for this record on 2026-11-20; the layout questions below are open and nothing is built) · Date: 2026-11-20 · Sources: `docs/plans/future-upgrades.md` (section 6), `docs/work/active/T-0029-nixos-system-ownership/ticket.md`, `docs/plans/niri-migration.md` (backup gate)
@@ -57,4 +57,4 @@ A second NixOS machine (the niri trial host, ADR-0012) should be installable fro
 | Boot and Secure Boot | **systemd-boot**: already declared in pilot; **GRUB**: dual-boot flexibility; **Lanzaboote**: Secure Boot management but extra key lifecycle | **Preserve current PC 1 boot config**; do not change for cosmetic Niri migration |
 | Backup tool | **Kopia** (existing ADR-0033 selection), **restic**, **Borg**; Btrfs snapshots only complement remote copies | Require restore evidence first; do not silently switch to restic |
 
-**P0 before physical installation:** identify exact host, hardware, EFI partition, disko target by stable `/dev/disk/by-id`, filesystem labels, disk encryption recovery material and independent restore method. The pilot's root and /boot placeholders are **not safe to apply as a real disk layout**. Disabling the disk safety gate is not permitted by this document. See [ADR-0046](0046-niri-desktop-installation-decision-register.md) G01/G13 and [T-0029](../../work/active/T-0029-nixos-system-ownership/ticket.md).
+**P0 before physical installation:** identify exact host, hardware, EFI partition, disko target by stable `/dev/disk/by-id`, filesystem labels, disk encryption recovery material and independent restore method. The pilot's root and /boot placeholders are **not safe to apply as a real disk layout**. Generating the hardware file is not enough: the host module must import it, git must track it, and that exact configuration must build before the install; the user's password is set before the first reboot; a fresh install has a single generation, so a rollback target has to be created and booted on purpose ([ADR-0049](0049-niri-safest-staged-installation-order.md) stages 2 to 4). Disabling the disk safety gate is not permitted by this document. See [ADR-0046](0046-niri-desktop-installation-decision-register.md) G01/G13 and [T-0029](../../work/active/T-0029-nixos-system-ownership/ticket.md).

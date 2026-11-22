@@ -3,7 +3,7 @@ Source: local
 # T-0032: niri trial session alongside GNOME (feature)
 
 Status: in progress (pilot session config and VM test on main 450e78e, 4c57049, 6fb82ee, 57b66fe; all real-session checks remain, PC 2 install needs owner)
-Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gaps: G02–G05, G10–G11 and G14. This ticket's pre-activation backup and real-session gates remain mandatory; the matrix is not authorisation.
+Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gaps: G02–G05, G10–G11 and G14. This ticket's pre-activation backup and real-session gates remain mandatory; the matrix is not authorisation. Proposed stage order, with a pass check and fallback per stage: [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md).
 Depends on: T-0029, T-0030
 The shell comparison trial also requires P4a (activation gate, its own user approval; plan `docs/plans/niri-migration.md` section 6)
 Parity sign-off also needs: T-0031 niri backend (not a prerequisite for creating the session)
@@ -35,7 +35,7 @@ Add niri as a selectable session next to GNOME. GNOME stays the default.
 - HIGH: pinned niri 26.04 lacks the multi-monitor portal screenshot fix (commit ee8a04b, niri issue #117, 18 Sep 2026; no later tag). PARTLY: reproduce before declaring Flameshot unusable. Flameshot 15.0.0 captures through the xdg-desktop-portal Screenshot API. niri's portal had no multi-monitor screenshot support until commit ee8a04b (issue #117, 18 Sep 2026), which postdates v26.04 (the latest tag), so the portal path very likely errors on two outputs. A grim/wlr-screencopy path is an untested alternative: niri implements wlr-screencopy (niri #33, closed 2024), and the Flameshot grim adapter is documented only for Hyprland (flameshot.org/docs/guide/wayland-help/).
 - HIGH: default-session trap above.
 - UNVERIFIED: niri on hybrid AMD + NVIDIA (nouveau); external DP-3.
-- UNVERIFIED: Vicinae Ctrl+Space under niri (may need `bind ... spawn "vicinae" "toggle"`; ext-hotkey-v1 is unmerged in niri).
+- UNVERIFIED in a real session: the Vicinae launcher key under niri. The KDL binds Alt+Space to `spawn "vicinae" "toggle"` (ext-hotkey-v1 is unmerged in niri, so Vicinae cannot register the key itself). Alt+Space is also the GNOME binding; the earlier "Ctrl+Space" here was stale. The KDL has no bind yet for clipboard history (Alt+V under GNOME).
 - UNVERIFIED: whether pinned Vesktop 1.6.9 contains the picker fix ba4e367.
 
 ## Gate priority
@@ -56,7 +56,7 @@ System gate (build only): `sudo nixos-rebuild build --flake ./nix#linux-desktop`
 
 ## Acceptance criteria (regression checklist; run on the target session and mark only what ran)
 - [ ] Pre-migration backup gate met (section "Mandatory backup before any live change" in docs/plans/niri-migration.md), evidence recorded. Nothing live starts, and none of the shell trial gates run, before this
-- [ ] Vicinae Ctrl+Space and Alt+V
+- [ ] Vicinae launcher on Alt+Space and clipboard history on Alt+V, under both layouts (niri needs a clipboard bind in the KDL first)
 - [ ] All application toggles launch or focus the most-recent window. Hide and restore are required only for backends that explicitly implement those capabilities. GNOME must retain its existing behaviour. (niri part requires T-0031 niri backend)
 - [ ] Two VS Code windows keep MRU (requires T-0031 niri backend)
 - [ ] Bilingual gate: every global accelerator in R5 of the audit works under both the us and ru layouts, tested by physical key
@@ -94,7 +94,7 @@ Depends on the pre-migration backup gate in the acceptance list above. Source: `
 - [ ] G8: U2F unlock works, only if a security key is used (Dux #2789)
 - [ ] G9: Notifications have one owner: exactly one `org.freedesktop.Notifications` owner (for example `busctl --user status org.freedesktop.Notifications`)
 - [ ] G10: Clipboard history has one owner: the shell's clipboard history is disabled and Vicinae's is active
-- [ ] G11: Lock/idle has one owner: exactly one idle or lock daemon runs (swayidle, swaylock and the shell's own must not overlap)
+- [ ] G11: Lock/idle has one owner: exactly one idle controller and exactly one locker run. swayidle with swaylock is one such pair; the shell's own idle or lock service must not run beside it
 
 NixOS generations are not data backups; back up mutable `$HOME` data and secrets separately.
 
@@ -126,6 +126,19 @@ New upstream candidates are **documentation-only until separately approved in PC
 - [ ] **FileChooser alternative**: compare GTK FileChooser and **standalone Dux Files** FileChooser after testing file-manager functions. Test Niri focus, keyboard navigation, window parenting, modal state, upload/save-as and cold-start. **Dux Files documents that its chooser currently does not attach to the calling application and ignores modal**. Do not invoke commands that rewrite the active portal preference from an unmanaged installer.
 - [ ] **Launcher**: compare **Vicinae** versus **Walker + Elephant**, then Ulauncher/Albert/Rofi. Test exact VS Code `.code-workspace` and directory history, Niri existing-window focus, clipboard images/history, provider restarts and total resident processes; do not activate two global hotkeys simultaneously.
 - [ ] **Future login (separate gate)**: after safe cutover planning, test `tuigreet` and ReGreet/gtkgreet using the actual TTY/GPU/PAM/lock scenarios in ADR-0041. This does **not** belong in the current shell activation and does not authorise replacing GDM.
+
+## Installation-order checks from ADR-0049 (2026-11-22)
+
+These are the pass checks of [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md) (proposed) that this list did not have. They add to the criteria above and authorise nothing.
+
+- [ ] **Install preflight (stage 2):** the generated `hardware-configuration.nix` is imported by the pilot host, tracked in git and the placeholder `fileSystems` entries are gone; that configuration builds before `nixos-install`; the user's password is set before the first reboot.
+- [ ] **Two generations (stage 3):** `nixos-rebuild list-generations` shows two entries on PC 2 and each has been booted once. Rebuilding an unchanged configuration creates no generation.
+- [ ] **User environment (stage 3b):** Home Manager and chezmoi are activated on PC 2, not only built: `command -v ghostty vicinae niri` resolve, the niri config is deployed and `niri validate` passes.
+- [ ] **Rescue (stage 4):** the installer USB sequence (unlock, mount root and ESP, `nixos-enter`, restore the boot default) has been run once in full; key-only SSH works and password and root logins are refused.
+- [ ] **Bound commands (stage 5):** every command a KDL bind calls resolves on the session `PATH` (`brightnessctl` and `playerctl` are bound but not declared today).
+- [ ] **Lock lifecycle (stage 6):** the bind, the idle timeout, `loginctl lock-session`, `systemctl suspend` and the lid each lock; a killed locker leaves the session locked and a new locker restores the prompt.
+- [ ] **Locked quit (stages 5 and 6):** quitting niri, locked or not, ends at an authenticated greeter, never at a logged-in console. Repeat if the greeter changes.
+- [ ] **Unit audit (stage 10):** user units and XDG autostart entries started in the niri session are listed and marked GNOME-only, niri-only or both, before a shell is activated.
 
 ## Out of scope
 Cutover to niri as default: a separate later decision, only after 2-4 weeks of daily use with no blockers.

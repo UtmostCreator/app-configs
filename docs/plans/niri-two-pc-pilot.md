@@ -1,6 +1,6 @@
 # Niri two-PC pilot: trial on PC 2, then migrate PC 1 in place (2026-11-20)
 
-**Current installation choices and open decisions:** [ADR-0046](../architecture/decisions/0046-niri-desktop-installation-decision-register.md). The *implemented* pilot uses a **chezmoi-owned** `home/dot_config/niri/config.kdl`; the older hypothetical `/etc/niri/config.kdl` alternative below was **not selected**. PC 2's declared disk layout remains a placeholder; nothing here authorises a physical install.
+**Current installation choices and open decisions:** [ADR-0046](../architecture/decisions/0046-niri-desktop-installation-decision-register.md). The *implemented* pilot uses a **chezmoi-owned** `home/dot_config/niri/config.kdl`; the older hypothetical `/etc/niri/config.kdl` alternative below was **not selected**. PC 2's declared disk layout remains a placeholder; nothing here authorises a physical install. The proposed stage order with a pass check per stage is [ADR-0049](../architecture/decisions/0049-niri-safest-staged-installation-order.md); where its checks are stricter than the steps below, they apply.
 
 Proposed variant of the phases in `docs/plans/niri-migration.md` (section 6).
 Nothing here is authorised: every live activation, install, commit and push
@@ -34,7 +34,7 @@ GPU, outputs, or `/etc/nixos` takeover.
 | Draft claim | Correction |
 |---|---|
 | Use a separate pilot account on PC 2. | VERIFIED: `nix/vars/default.nix` is single-user (`username = "utmostcreator"`, checked by `tests/bash/nix-identity.bats`), and every `homeConfigurations` output uses it. Use the same username on PC 2 with a fresh home and representative data. A second account would need a vars override that does not exist. |
-| Activate with `nixos-rebuild test`, then prove generation 17 bootable and retain it. | Generation 17 is running, so it is bootable today. The real risk is losing it: `nix-gc.timer` runs `--delete-older-than 14d`, which ages a generation by its creation time. Generation 17 (2026-09-06) is protected only because it is current; once `boot` or `switch` makes generation 18 current, the next weekly GC deletes it. The main plan's "within 14 days of the first new generation" is wrong for the same reason. Stop the timer and keep `nix.gc.automatic = false` in the repo config until the rollback check passes. `test` creates no generation and changes no boot entry, so it is safe, but it also proves nothing about the kernel, initrd or filesystems. |
+| Activate with `nixos-rebuild test`, then prove generation 17 bootable and retain it. | Generation 17 is running, so it is bootable today. The real risk is losing it: `nix-gc.timer` runs `--delete-older-than 14d`, which ages a generation by its creation time. Generation 17 (2026-09-06) is protected only because it is current; once `boot` or `switch` makes generation 18 current, the next weekly GC deletes it. The main plan's "within 14 days of the first new generation" is wrong for the same reason. Stop the timer and keep `nix.gc.automatic = false` in the repo config until the rollback check passes. `test` creates no generation and changes no boot entry, so a reboot undoes it. It is still a live change: it activates the new system at once and can restart services, so it needs the backup gate and a proven recovery route. It also proves nothing about the kernel, initrd or filesystems. |
 | `nixos-rebuild test` exercises the GNOME baseline. | INFERRED from the NixOS display-manager module (`restartIfChanged = false`): `test` does not restart GDM, so the running session keeps the old GNOME. Testing GNOME 51 and GDM under `test` means switching to a TTY and restarting `display-manager`, or rebooting after `boot`. |
 | Put the trial KDL at `/etc/niri/config.kdl` under NixOS. | Fits the user guidance (NixOS owns compositor and session config), but contradicts T-0032 ("niri config is HM-owned") and leaves open decision 6 in the main plan unresolved. Choosing `/etc` closes decision 6 differently, so T-0032 and the T-0030 validator scope (rule 11 targets an xdg path) must be updated in the same change. Niri reads the user path first and falls back to `/etc/niri/config.kdl` (WEB), so the check that no `~/.config/niri/config.kdl` exists stays. |
 | A basic pilot in 4–10 hours. | No repo source. A first Niri login in hours is plausible; a pilot that passes T-0032's P0 gates is days. The repo estimates T-0029 at 2–3 days and the minimal session at 3–6 (ESTIMATE). |
@@ -77,8 +77,17 @@ Vicinae stays the launcher and clipboard owner (main plan decisions 1 and 11);
   ESP systemd-boot writes (`nix/modules/nixos/dual-boot.nix`). Pick the OS in
   the firmware boot menu. Reconnect the original disk and confirm both boot.
 - From the installer: `nixos-generate-config --root /mnt`, copy the generated
-  hardware file into `nix/hosts/<pilot>/`, then
+  hardware file into `nix/hosts/<pilot>/`, import it from the host's
+  `system.nix`, delete the placeholder `fileSystems` entries and `git add` the
+  file (a flake ignores untracked files). Build that configuration, then
   `nixos-install --flake <checkout>/nix#linux-desktop-pilot`.
+- Before the first reboot set the user's password:
+  `nixos-enter --root /mnt -c 'passwd <user>'`. The repo holds none.
+- A fresh install has one generation. Rebuilding an unchanged configuration
+  creates no second one; the first real change (key-only SSH, step 3) does.
+  Boot both once before relying on rollback.
+- After the first GNOME login run `bash ops/install.sh` for Home Manager and
+  chezmoi. Until then the system has no Ghostty, Vicinae or niri config.
 - Leave Syncthing, Tailscale and account-bound services off at first.
 - GNOME and GDM first. Then enable `programs.niri`, set
   `services.displayManager.defaultSession` to GNOME's evaluated session name,
@@ -123,7 +132,8 @@ rescue-media access confirmed, and `nix-gc.timer` stopped with
 
 1. **GNOME baseline.** `nixos-rebuild build`, review the closure diff
    (`nix store diff-closures /run/current-system ./result`), then `test` from a
-   TTY with a `display-manager` restart, then `boot` and reboot. Confirm
+   TTY with a `display-manager` restart (a live activation, with its own
+   approval), then `boot` and reboot. Confirm
    generation 17 is still in the boot menu, boot it once, then return to the new
    generation.
 2. **Niri as an optional session**, a separate change. GNOME stays the GDM

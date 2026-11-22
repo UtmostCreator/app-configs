@@ -300,7 +300,9 @@ b) Rollback target. Record `nixos-rebuild list-generations`. If only one
    generation exists, the first change must be applied with `nixos-rebuild boot`
    or `nixos-rebuild test` first, or the backup in (a) must be proven
    restorable. "Proven restorable" means the restore sequence below was done or
-   rehearsed, with the RESTORED-EMPTY-DIFF line recorded. Do not restore with
+   rehearsed, with the RESTORED-EMPTY-DIFF line recorded. `test` leaves the boot
+   default alone, so a reboot returns to the old generation, but it activates the
+   new system at once: it is a live change under this gate, not a dry run. Do not restore with
    `cp -a "$B"/. /etc/nixos/`: it only overlays (newer files stay), and GNU cp
    writes through destination symlinks, which can overwrite repo files after the
    T-0029 takeover. Restore by replacing the directory:

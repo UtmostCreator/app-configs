@@ -19,10 +19,22 @@
 #   hotkey scripts and AutoHotkey, and ADR-0019 forbids Windows settings
 #   automation. None of this is installed or configured on the Windows host.
 # - The owner reviews this table before anything changes.
+# - Windows app hotkeys are per machine (ADR-0021 profiles): a shortcut keeps
+#   one purpose, and the app behind it may differ between the personal (P) and
+#   work (W) PC. A Windows cell that differs per profile names both apps in its
+#   note. Raycast is configured locally on each PC; personal settings are not
+#   exported or synced to the work PC without employer approval (ADR-0027).
+#   managed_by stays "proposed" until a mapping is configured and verified on
+#   that PC.
 #
 # Owner decisions (2026-11-17, quoted):
 #   "alt space everywhere" (launcher)
 #   "Raycast window cmds (Recommended)" (macOS window management)
+#
+# Owner decisions (2026-11-21): per-machine Windows hotkey profiles; on Windows,
+#   Alt+Shift+R opens Telegram (P) or Teams (W), Alt+Shift+M opens Slack (W),
+#   Alt+Shift+D opens Vesktop (P) or DBeaver (W), Alt+Shift+O opens Obsidian
+#   (P and W; macOS keeps Ctrl+Alt+O).
 #
 # managed_by values:
 #   repo-automated  declared in the repo and applied by it (Nix, chezmoi)
@@ -715,11 +727,11 @@ actions:
       src: "nix/modules/home/gnome-keybindings.nix:95"
       note: "CONFLICT: differs from macOS."
     windows:
-      binding: "Ctrl+Alt+O"
+      binding: "Alt+Shift+O"
       tool: raycast
       managed_by: proposed
       src: "none"
-      note: "macOS is the reference. Alt+Shift+O on NixOS would need aligning."
+      note: "Owner 2026-11-21: Alt+Shift+O on both PCs, matching NixOS and the Windows Alt+Shift app family; avoids Ctrl+Alt (AltGr) clashes on international layouts. Deliberately differs from macOS Ctrl+Alt+O, which is unchanged. Not configured."
 
   - id: app_messenger
     macos:
@@ -739,7 +751,25 @@ actions:
       tool: raycast
       managed_by: proposed
       src: "none"
-      note: "Which messenger app (Messenger or Telegram) is installed on Windows is unknown."
+      note: "Per machine (owner 2026-11-21): Telegram on the personal PC, Teams on the work PC. Not configured. The macOS (Messenger) and NixOS (Telegram) difference above stays as recorded."
+
+  - id: app_messenger_secondary
+    macos:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+    nixos:
+      binding: "none"
+      tool: none
+      managed_by: none
+      src: "none"
+    windows:
+      binding: "Alt+Shift+M"
+      tool: raycast
+      managed_by: proposed
+      src: "none"
+      note: "Work PC only (owner 2026-11-21): Slack. Free on the personal PC for an optional second messenger. Not configured."
 
   - id: app_dbeaver
     macos:
@@ -759,7 +789,7 @@ actions:
       tool: raycast
       managed_by: proposed
       src: "none"
-      note: "Which app (DBeaver or Vesktop) belongs on this key on Windows is for the owner to decide."
+      note: "Per machine (owner 2026-11-21): Vesktop on the personal PC, DBeaver on the work PC. Not configured."
 
   - id: app_bruno
     macos:

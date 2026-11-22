@@ -13,14 +13,14 @@ superseded_by: []
 related: [12, 13, 23, 38, 46, 47, T-0029, T-0032]
 ---
 # ADR-0041: Login greeter: GDM as safe fallback; evaluate greetd with tuigreet or gtkgreet
-Status: proposed (target preference **tuigreet**, then **gtkgreet** for graphical login; current GDM remains untouched pending approval and live fallback gates) · Date: 2026-11-22 · Sources: [greetd upstream](https://github.com/kennylevinsen/greetd), [tuigreet](https://github.com/tuigreet/tuigreet), [gtkgreet](https://github.com/kennylevinsen/gtkgreet), [ReGreet](https://github.com/rharish101/ReGreet), [NixOS greetd guidance](https://wiki.nixos.org/wiki/Greetd), ADR-0012 and T-0032.
+Status: proposed (**tuigreet** preferred for reliability; **ReGreet** as graphical feature benchmark, **gtkgreet** as lean graphical alternative; current GDM remains untouched pending approval and live fallback gates) · Date: 2026-11-22 · Sources: [greetd upstream](https://github.com/kennylevinsen/greetd), [tuigreet](https://github.com/tuigreet/tuigreet), [gtkgreet](https://github.com/kennylevinsen/gtkgreet), [ReGreet](https://github.com/rharish101/ReGreet), [NixOS greetd guidance](https://wiki.nixos.org/wiki/Greetd), ADR-0012 and T-0032.
 
 **Installation choices and dependent gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). **GNOME dependency policy:** [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md).
 
 ## Decision
 
 1. **Future target:** prefer **greetd + tuigreet** because the login prompt works in a text console and need not start another graphical compositor. This is a **research preference, not a permanent greeter selection**.
-2. **Graphical alternative:** compare **greetd + gtkgreet** directly. It is the user-requested GTK candidate and needs a greeter-only Wayland compositor such as Cage or Sway. **ReGreet** stays a richer graphical candidate and may win on feature set or Nix integration, but is not silently substituted for gtkgreet.
+2. **Graphical alternatives:** compare **greetd + ReGreet** as the better-documented feature-rich GTK4/NixOS option against **greetd + gtkgreet** as the user-requested lean graphical alternative. Both require a greeter-only compositor such as Cage or Sway. Neither is selected; choose by real login, session-selection, accessibility, startup and recovery tests.
 3. **GDM remains active for the existing physical desktop and current PC 2 baseline**: it preserves a working GNOME fallback and known login, keyring, accessibility and session integration. GDM is **not** the preferred permanent Niri-only greeter when the fallback can be safely retired.
 4. Do not switch greeters, remove GNOME or set Niri default until a separate owner-approved, recoverable VM → PC 2 → PC 1 migration has passed actual login/TTY/PAM tests. A functioning Niri session is not evidence that the greeter works after reboot.
 5. If GNOME is kept as a usable fallback after cutover, **test the GNOME screen-lock functionality under greetd**. Existing research indicates it may depend on GDM; preserve GDM if that fallback requirement cannot be met. Login, Secret portal unlock and session lock are **separate** systems.
@@ -30,8 +30,8 @@ Status: proposed (target preference **tuigreet**, then **gtkgreet** for graphica
 | Candidate | Pros / differentiators | Cons / risks | Preferred role |
 |---|---|---|---|
 | **greetd + [tuigreet](https://github.com/tuigreet/tuigreet)** | Runs on TTY, no graphical greeter compositor; minimal failure surface under AMD/NVIDIA graphics problems; remembers user and session; session chooser, theming and power controls | TTY fonts/console appearance on 2560×1600; accessibility/alternative layouts and user menu limitations; no graphical keyboard; check `--remember`/menu regressions in pinned version | **First target to trial**, particularly recovery |
-| **greetd + [gtkgreet](https://github.com/kennylevinsen/gtkgreet)** | Lightweight GTK graphical login, clear username/password/session selection, minimal traditional login design | Requires Cage/Sway or other greeter compositor; graphical driver issues can block greeter; explicit environments/session setup; GTK/DBus startup delays reported | **User-requested graphical runner-up**, not selected |
-| **greetd + [ReGreet](https://github.com/rharish101/ReGreet)** | GTK4/Relm4, declarative NixOS `programs.regreet`, background/font/theme/CSS, user/session memory and selectable sessions, supported Cage/Niri greeter examples | Requires compositor, additional graphical/GTK dependencies and styling state; fewer benefits if a terminal greeter is sufficient; graphical login inherits GPU risk | **Richer graphical comparator**, not automatic replacement for gtkgreet |
+| **greetd + [gtkgreet](https://github.com/kennylevinsen/gtkgreet)** | Lightweight GTK graphical login, clear username/password/session selection, minimal traditional login design | Requires Cage/Sway or other greeter compositor; graphical driver issues can block greeter; explicit environments/session setup; GTK/DBus startup delays reported | **Lean graphical comparator**, not selected |
+| **greetd + [ReGreet](https://github.com/rharish101/ReGreet)** | GTK4/Relm4, declarative NixOS `programs.regreet`, background/font/theme/CSS, user/session memory and selectable sessions, supported Cage/Niri greeter examples | Requires compositor, additional graphical/GTK dependencies and styling state; fewer benefits if a terminal greeter is sufficient; graphical login inherits GPU risk | **Feature-rich graphical benchmark**, not selected |
 | **GDM** (current) | Existing working GNOME fallback, GDM login/lock/keyboard/accessibility and PAM/keyring wiring | Pulls GNOME Shell for greeter and retains full GNOME-fallback coupling; more desktop dependencies than desired | **Current safety baseline only**, not default future preference |
 | **greetd + agreety** | Rescue-oriented very small TTY prompt, useful when customised greeter fails | Limited UI, session-selection UX and history | Emergency fallback, not daily choice |
 
@@ -63,8 +63,16 @@ Status: proposed (target preference **tuigreet**, then **gtkgreet** for graphica
 - [ ] No GDM changes or destructive boot edits before the mandatory backup and rollback evidence in [T-0029](../../work/active/T-0029-nixos-system-ownership/ticket.md) / [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md).
 - [ ] Retire GDM and GNOME packages **only** as a later implementation ticket with documented minimal GNOME portal compatibility exceptions in ADR-0047.
 
+## Graphical greeter evidence refinement (2026-11-22)
+
+- [Official NixOS greetd guidance](https://wiki.nixos.org/wiki/Greetd) has a declarative **`programs.regreet`** module, whereas `gtkgreet` typically requires a custom Cage/Sway wrapper and session list. This is a **configuration/feature advantage**, not proof of better security.
+- [ReGreet upstream](https://github.com/rharish101/ReGreet) documents session remembering, user/session choices, power actions, styling, NixOS support, greeter-only Cage/Sway and demo mode. GTK/DBus startup delays can also affect it; compare actual boot/login latency with `gtkgreet` rather than asserting that only gtkgreet is affected.
+- **`tuigreet` remains first** because console access under a broken graphics stack has greater value than a themed graphical interface for this migration.
+- A **greetd + oo7** Secret Service combination adds a *separate* PAM unlock gate. [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) and [ADR-0023](0023-password-managers-and-secrets-cli.md) now track oo7 independently of the greeter choice. Do not combine both migrations into one live cutover.
+- Use a greeter-specific, minimal compositor configuration with a working VT escape; do not inherit the user's full `home/dot_config/niri/config.kdl` or desktop-shell startup into the greeter session.
+
 ## Consequences and open choices
 
 - **No immediate change** to `nix/hosts/linux-desktop-pilot/system.nix`: GDM is still deliberately enabled and GNOME default. Existing pilot tests remain valid.
-- Open: approve a future `tuigreet` evaluation against `gtkgreet`; choose graphical accessibility requirements and session-memory expectations; decide GNOME fallback retirement timing.
+- Open: compare `tuigreet` vs `ReGreet` vs `gtkgreet` on the actual host; choose graphical accessibility requirements and session-memory expectations; decide GNOME fallback retirement timing.
 - A later selection should amend this ADR and refresh [ADR-0046](0046-niri-desktop-installation-decision-register.md) **before** installation. The current preference is not a permanent selection.

@@ -60,7 +60,7 @@ System gate (build only): `sudo nixos-rebuild build --flake ./nix#linux-desktop`
 - [ ] All application toggles launch or focus the most-recent window. Hide and restore are required only for backends that explicitly implement those capabilities. GNOME must retain its existing behaviour. (niri part requires T-0031 niri backend)
 - [ ] Two VS Code windows keep MRU (requires T-0031 niri backend)
 - [ ] Bilingual gate: every global accelerator in R5 of the audit works under both the us and ru layouts, tested by physical key
-- [ ] Flameshot area, last region, clipboard, pin (tested separately from screencast); the host-side reproduction on two outputs is mandatory
+- [ ] Capture with the selected tool: area, last region, clipboard, pin (tested separately from screencast). Flameshot is the tool today; if it is replaced, the same capabilities are tested on the replacement (ADR-0036). The host-side reproduction of Flameshot on two outputs is mandatory before it is declared unusable
 - [ ] Portal matrix, per interface, on niri and re-checked on GNOME: FileChooser, ScreenCast, Screenshot, Secret, Notification, OpenURI
 - [ ] Screen sharing: monitor share, single-window share, share again after cancel, after monitor hotplug, after suspend/resume, and with mixed-scale outputs
 - [ ] Evaluated config has `defaultSession` equal to GNOME's session name and lists niri in `sessionNames`
@@ -83,13 +83,14 @@ System gate (build only): `sudo nixos-rebuild build --flake ./nix#linux-desktop`
 - [ ] Rollback and a separate data backup verified
 
 ## Shell trial gates (run on whichever shell is under trial: Dux first, Noctalia second)
+These G1 to G11 are local to this ticket. ADR-0046's gaps are written with two digits (G01 to G26) and are a different list.
 Depends on the pre-migration backup gate in the acceptance list above. Source: `docs/research/niri-shell-dux-vs-noctalia.md` (user-supplied audit, upstream issue states unverified). These apply during the shell comparison trial (in scope per plan decision 4, user confirmed 2026-11-15), not to creating the niri session itself. The existing "External monitor, suspend/resume, lock" and "Flameshot" items above are extended by these, not replaced. Use the repo's KDL binds only, with exactly one owner each for notifications, clipboard, lock/idle and polkit.
 - [ ] G1: Lock, then disconnect and reconnect an external monitor N = 10 times while locked; record shell RSS before and after; fail if RSS grows more than 200 MiB in total or keeps growing (Dux #4259)
 - [ ] G2: Lock, suspend, unplug an output, resume: the session unlocks without re-login (Noctalia #5349)
 - [ ] G3: Notification flood while locked, then unlock: no crash (Noctalia #2836 regression)
 - [ ] G4: Polkit: exactly one agent is running and an auth prompt appears (Noctalia `polkit_agent` defaults to false; #4565)
 - [ ] G5: The shell UI renders on this GPU setup (Noctalia #4714); N/A if not hybrid NVIDIA with the proprietary driver (host currently AMD iGPU + NVIDIA dGPU on nouveau)
-- [ ] G6: Flameshot capture and pin both work under the shell (Noctalia #1325)
+- [ ] G6: capture and pin with the selected capture tool both work under the shell (reported against Flameshot, Noctalia #1325)
 - [ ] G7: The shell's IPC works on NixOS/niri (Dux #1153): the shell's documented IPC command responds (for example `dms ipc ...` or `noctalia msg ...`; exact command not confirmed here)
 - [ ] G8: U2F unlock works, only if a security key is used (Dux #2789)
 - [ ] G9: Notifications have one owner: exactly one `org.freedesktop.Notifications` owner (for example `busctl --user status org.freedesktop.Notifications`)
@@ -122,7 +123,7 @@ New upstream candidates are **documentation-only until separately approved in PC
 - [ ] **ScreenCast baseline**: record pinned `xdg-desktop-portal-gnome` + `xdg-desktop-portal-gtk` + PipeWire versions and `niri-portals.conf`/Nix module ownership; test Brave, Firefox, Vesktop and OBS window/monitor picker, denial, multi-stream, reconnect and **Dynamic Cast Target**. Record actual live capture, not just a functioning picker.
 - [ ] **niri-screenshare trial**: verify NixOS package/module or pinned source build, GTK picker, Niri-specific Mutter.ScreenCast IPC, PipeWire nodes and explicit dynamic-cast option. **Test its documented first-start portal preference write in a disposable user HOME**; refuse if it mutates `portals.conf` controlled by Home Manager/chezmoi without an approved override. Compare each capture scenario against baseline.
 - [ ] **xdg-desktop-portal-generic trial**: verify `ext-image-copy-capture` / `wlr-screencopy` protocol compatibility with pinned Niri, consent UI, window/monitor sources and Niri dynamic target (not assumed supported); test `RemoteDesktop`/clipboard interfaces separately if needed, do not blanket-switch the portal default.
-- [ ] **oo7 Secret trial**: isolate a clean test user and fake keyring, then test `oo7-daemon` and `oo7-portal` interfaces separately, greetd PAM unlock after reboot, `HOME`/`XDG_RUNTIME_DIR`, authentication and SecretService DBus owners. Upstream greetd issue #516 is **closed** but still requires pinned-version reproduction; do **not** import the real GNOME Keyring or KeePassXC secrets during comparison.
+- [ ] **oo7 Secret trial**: use a machine or VM with no real keyring and a fake one (a test user is not isolation: the pinned `services.oo7` module applies to every user and to PAM `login`, and leaves gnome-keyring on), then test `oo7-daemon` and `oo7-portal` interfaces separately, greetd PAM unlock after reboot, `HOME`/`XDG_RUNTIME_DIR`, authentication and SecretService DBus owners. Upstream greetd issue #516 is **closed** but still requires pinned-version reproduction; do **not** import the real GNOME Keyring or KeePassXC secrets during comparison.
 - [ ] **FileChooser alternative**: compare GTK FileChooser and **standalone Dux Files** FileChooser after testing file-manager functions. Test Niri focus, keyboard navigation, window parenting, modal state, upload/save-as and cold-start. **Dux Files documents that its chooser currently does not attach to the calling application and ignores modal**. Do not invoke commands that rewrite the active portal preference from an unmanaged installer.
 - [ ] **Launcher**: compare **Vicinae** versus **Walker + Elephant**, then Ulauncher/Albert/Rofi. Test exact VS Code `.code-workspace` and directory history, Niri existing-window focus, clipboard images/history, provider restarts and total resident processes; do not activate two global hotkeys simultaneously.
 - [ ] **Future login (separate gate)**: after safe cutover planning, test `tuigreet` and ReGreet/gtkgreet using the actual TTY/GPU/PAM/lock scenarios in ADR-0041. This does **not** belong in the current shell activation and does not authorise replacing GDM.
@@ -131,13 +132,17 @@ New upstream candidates are **documentation-only until separately approved in PC
 
 These are the pass checks of [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md) (proposed) that this list did not have. They add to the criteria above and authorise nothing.
 
-- [ ] **Install preflight (stage 2):** the generated `hardware-configuration.nix` is imported by the pilot host, tracked in git and the placeholder `fileSystems` entries are gone; that configuration builds before `nixos-install`; the user's password is set before the first reboot.
+- [ ] **Install preflight (stage 2):** the generated `hardware-configuration.nix` is a module of the pilot host beside `system.nix` (not imported by it, so the VM test keeps booting), committed, with the placeholder `fileSystems` entries gone; the checkout lives on the installed disk; `pilot-vm-test` and `tests/bash/nixos-pilot.bats` pass with that change; that configuration builds before `nixos-install`; the user's password is set before the first reboot.
 - [ ] **Two generations (stage 3):** `nixos-rebuild list-generations` shows two entries on PC 2 and each has been booted once. Rebuilding an unchanged configuration creates no generation.
 - [ ] **User environment (stage 3b):** Home Manager and chezmoi are activated on PC 2, not only built: `command -v ghostty vicinae niri` resolve, the niri config is deployed and `niri validate` passes.
 - [ ] **Rescue (stage 4):** the installer USB sequence (unlock, mount root and ESP, `nixos-enter`, restore the boot default) has been run once in full; key-only SSH works and password and root logins are refused.
 - [ ] **Bound commands (stage 5):** every command a KDL bind calls resolves on the session `PATH` (`brightnessctl` and `playerctl` are bound but not declared today).
 - [ ] **Lock lifecycle (stage 6):** the bind, the idle timeout, `loginctl lock-session`, `systemctl suspend` and the lid each lock; a killed locker leaves the session locked and a new locker restores the prompt.
 - [ ] **Locked quit (stages 5 and 6):** quitting niri, locked or not, ends at an authenticated greeter, never at a logged-in console. Repeat if the greeter changes.
+- [ ] **One polkit agent per session (stage 3):** under GNOME on the pilot, `pkexec true` raises one prompt. The pinned Soteria unit starts on `graphical-session.target` and so also under GNOME, beside GNOME Shell's own agent, until it is bound to the niri session.
+- [ ] **Pilot profile (stage 3b):** PC 2's first activation uses `bash ops/install.sh --profile work`; `syncthing.service` and `openclaw-gateway.service` do not exist there. The personal profile is a later, separate step.
+- [ ] **Launcher binds (stage 9):** the niri KDL has binds for clipboard history and the recent-projects picker (GNOME has Alt+V and Alt+E; the KDL has only Alt+Space today).
+- [ ] **Capture privacy (G26):** the KDL's KeePassXC `block-out-from "screen-capture"` rule is enabled (it is switched off with `/-` today) and checked on a receiving client.
 - [ ] **Unit audit (stage 10):** user units and XDG autostart entries started in the niri session are listed and marked GNOME-only, niri-only or both, before a shell is activated.
 
 ## Out of scope

@@ -10,7 +10,7 @@ forbids: [assumed-vicinae-superiority, duplicate-launcher-bindings, project-hist
 amends: []
 supersedes: []
 superseded_by: []
-related: [12, 13, 21, 26, 27, 45, 46, 47, T-0031, T-0032]
+related: [12, 13, 21, 26, 27, 45, 46, 47, 49, T-0031, T-0032]
 ---
 # ADR-0048: Niri launcher: feature-first Vicinae comparison and VS Code project-opening parity
 Status: partly-decided (the existing Vicinae launcher stays for the current pilot to preserve workflows; permanent Niri launcher and clipboard-history provider are **not selected**) · Date: 2026-11-22 · Sources: ADR-0013/0027/0046/0047; `nix/modules/home/vicinae.nix`, `nix/modules/home/gui.nix`, [Vicinae features](https://github.com/vicinaehq/vicinae).
@@ -24,6 +24,7 @@ The preferred launcher is the **strongest feature-rich, reliable, keyboard-drive
 The repo already has **two different implementation surfaces**:
 - `nix/modules/home/vicinae.nix` installs `programs.vicinae` via Home Manager, the `vscode-recents` extension, and a user service.
 - `nix/modules/home/gui.nix` already defines a **`vscode-recent-projects`** command using VS Code's recent history and Vicinae `dmenu` as a frontend. The current Niri window backend remains unfinished ([T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md)).
+- The picker's only shortcut today is GNOME's Alt+E (`nix/modules/home/gnome-keybindings.nix`). The Niri KDL binds only Alt+Space to `vicinae toggle`, so the "global keyboard shortcut from Niri" does not exist yet; it needs a KDL bind under both layouts (T-0032).
 - Opening **recent VS Code projects** and **focusing an existing VS Code window** are separate actions. Test both; avoid a naïve launcher that opens a duplicate `code` instance for every click.
 
 ## Candidate comparison (paper research; all runtime scores unverified)
@@ -32,23 +33,23 @@ The repo already has **two different implementation surfaces**:
 |---|---|---|---|
 | **[Vicinae](https://github.com/vicinaehq/vicinae)** | Rich unified launcher: app/file/window/workspace search, snippets, calculator, clipboard history, emoji, script commands, React/TypeScript and Raycast-compatible extensions; already pinned in repo, `vscode-recents` installed | Additional long-running service and extension state, possible GUI config drift; verify Niri window and clipboard protocols, history persistence and launcher responsiveness; risks duplicating shell's launcher | **Existing extension** and repo `vscode-recent-projects` dmenu script; prove exact window/project behaviour |
 | **[Walker](https://github.com/abenz1267/walker) + [Elephant](https://github.com/abenz1267/elephant)** | **Strongest direct challenger** on documented scope: Elephant providers for apps, files, clipboard text/images, Niri windows/sessions, commands and other results; Walker provides the configurable UI | **Two components**, provider packages, user service and clipboard owner must be pinned/configured; reported clipboard/provider regressions require pinned-version test; VS Code *actual recent history* and exact project focus are not proven built-in | Reuse a launcher-neutral recent-project reader with Elephant custom menu/provider; test Niri window selection and already-open VS Code project focus |
-| **[Albert](https://github.com/albertlauncher/albert)** | Mature extensible Qt launcher, native and Python plugins, well-developed search modes; possible custom project provider | Different extension API, no automatic Vicinae extension reuse; clipboard/window management/Wayland workflow needs testing; could add Qt stack | Project plugin calling the same shared history reader; not assumed built-in |
-| **[Ulauncher](https://github.com/Ulauncher/Ulauncher)** | Established app search, keywords, Python extension ecosystem, file-browser mode; easy-to-write provider | Feature breadth in window switching/clipboard and advanced launch workflows may trail Vicinae; v6 plugin API currently subject to change | Python extension/keyword provider or script using shared project history |
+| **[Albert](https://github.com/albertlauncher/albert)** | Mature extensible Qt launcher, native and Python plugins, well-developed search modes; possible custom project provider | Different extension API, no automatic Vicinae extension reuse; clipboard/window management/Wayland workflow needs testing; Qt-based, like Vicinae | Project plugin calling the same shared history reader; not assumed built-in |
+| **[Ulauncher](https://github.com/Ulauncher/Ulauncher)** | Established app search, keywords, Python extension ecosystem, file-browser mode; easy-to-write provider | Feature breadth in window switching/clipboard and advanced launch workflows may trail Vicinae; the pinned nixpkgs has Ulauncher 5.16.3 (v5 API); v6, whose plugin API is still changing, is not packaged | Python extension/keyword provider or script using shared project history |
 | **[Rofi 2.x](https://github.com/davatorium/rofi)** / **[Fuzzel](https://codeberg.org/dnkl/fuzzel)** | Script-driven menu, small frontend; Rofi supports Wayland and dmenu/script modes; easy explicit ownership and recovery if main launcher fails | Not a like-for-like clipboard/snippets/window/extension suite; script integration is **custom work**; Rofi Wayland window capabilities depend on compositor | `vscode-recent-projects` adapted to emit dmenu rows and call `code` safely, separate Niri window-focus logic |
 | **Selected shell launcher** (Dux/Noctalia/iNiR) | May eliminate a separate launcher UI/daemon, native window actions and integrated appearance | Constrained to chosen shell and its provider/plugin API; rich project search, clipboard, Raycast-style automation may be missing; coupling increases upgrade blast radius | Command/menu/script plugin reading shared VS Code history; **not assumed present** |
 
 **Comparison confidence:** project descriptions and source APIs show **candidate capabilities**, not verified head-to-head performance or feature dominance. Do not award high scores merely for a long feature list or number of extensions. Plugin counts must be filtered for maintained/secure/needed functionality. Refer to the [shell criteria](0045-niri-windows-like-desktop-shell-ux.md) separately so the launcher does not re-evaluate the compositor.
 
-## Non-negotiable VS Code/opening test matrix — P0
+## Test matrix: VS Code opening is P0, general launcher parity is P1
 
 - [ ] Read VS Code's actual *Open Recent* files/folders/workspaces, with spaces, UTF-8/non-ASCII, symlinks and missing/stale paths handled. Test against known golden recent records; never invent a VS Code history JSON schema.
 - [ ] Show the correct type (folder vs `.code-workspace`), full path, useful label and recency; optionally show Git branch and remote if available **without blocking** the picker.
 - [ ] **Open target:** call an appropriately quoted `code` CLI with an explicit target; handle workspace files rather than treating them as directories, and preserve remote/URI entries where actually supported. Do **not** swallow launch failures.
-- [ ] **Focus existing:** for three VS Code windows, choose the requested project and focus the matching window via **Niri native IPC**; if no matching window exists, open project once. Distinguish `code --reuse-window`, `--new-window` and Niri MRU requirements through tests; no guessed flags on existing windows.
+- [ ] **Focus existing:** for three VS Code windows, choose the requested project and focus the matching window via **Niri native IPC**; if no matching window exists, open project once. Distinguish `code --reuse-window`, `--new-window` and Niri MRU requirements through tests; no guessed flags on existing windows. Interim pass for the pilot ([ADR-0049](0049-niri-safest-staged-installation-order.md) stage 9): the picker may report that it cannot tell which window holds the project, but it must never focus an unrelated window; exact focus remains the target and is built in T-0031.
 - [ ] Keyboard invocation works in both English US and Russian layouts, including after shell restart, cold login and with several monitors/workspaces.
 - [ ] No duplicate current-window launch, dead menu, arbitrary application execution from untrusted recent-project titles, or corrupted recent history. The repo-owned project-history adapter is read-only.
-- [ ] The main launcher must meet required app search, file/command search, calculator, search latency, clipboard text/image history (if it owns it), Niri window search and extension/automation parity. Explicitly document intentional missing functionality rather than silently dropping features.
-- [ ] No launch/control shortcut clashes with the desktop shell, no uncontrolled user service in GNOME/Niri, and no duplicate clipboard-history provider.
+- [ ] **P1 (G23/G06), not P0:** the main launcher must meet required app search, file/command search, calculator, search latency, clipboard text/image history (if it owns it), Niri window search and extension/automation parity. Explicitly document intentional missing functionality rather than silently dropping features.
+- [ ] **P1:** no launch/control shortcut clashes with the desktop shell, no uncontrolled user service in GNOME/Niri, and no duplicate clipboard-history provider.
 
 ## Weighted decision rubric (100; verify before scoring)
 
@@ -68,11 +69,11 @@ The repo already has **two different implementation surfaces**:
 
 ## Integration decision
 
-- During the current Dux→Noctalia trial, **keep Vicinae running**, its extension available and its bindings functional **for continuity only**. This is not a future endorsement.
-- **First** check if `vscode-recents` or the existing script can open exact recent projects under Niri. If it works, record its dependencies and do not rewrite it without reason.
+- During the planned Dux→Noctalia trial (ADR-0049 stage 10; no shell is installed yet), **keep Vicinae running**, its extension available and its bindings functional **for continuity only**. This is not a future endorsement.
+- **First** give the picker a Niri bind, then check if `vscode-recents` or the existing script can open exact recent projects under Niri. If it works, record its dependencies and do not rewrite it without reason.
 - Then evaluate **Walker + Elephant, Albert, Ulauncher, Rofi** and the selected shell's launcher using the same test fixture and compare total retained functionality. Fuzzel is a low-overhead rescue frontend, not full-featured competitor.
 - **Exactly one global shortcut owner for the active launcher**. A graphical shell Start menu may coexist if it does not own conflicting bindings; ensure one clipboard-history service, separate from the `wl-clipboard` CLI.
-- If the strongest alternative wins, move the VS Code recent-project reader/focus logic into a **launcher-neutral adapter** and keep a thin UI-specific frontend. This work belongs in [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md) or a new scoped implementation ticket **after** selection.
+- If the strongest alternative wins, move the VS Code recent-project reader/focus logic into a **launcher-neutral adapter** and keep a thin UI-specific frontend. This work belongs in [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md) or a new scoped implementation ticket **after** selection. When a replacement may happen follows ADR-0049 stage 15 if that ADR is approved: comparison on PC 2 before cutover, replacement after it.
 - Do not automatically install a new launcher just to conduct a paper comparison, and do not remove Vicinae from GNOME fallback until its replacements have passed on that session if GNOME remains in use.
 
 ## Walker + Elephant evidence and comparative test plan (2026-11-22)
@@ -81,11 +82,11 @@ The current [Walker provider documentation](https://walkerlauncher.com/docs/prov
 
 | Required feature | Vicinae baseline | Walker + Elephant acceptance |
 |---|---|---|
-| VS Code recent folders / `.code-workspace` | Existing declarative `vscode-recents` extension and repo `vscode-recent-projects` | Implement **only a thin provider** over the same history reader, not a second parser; verify stale paths, remote URI, labels and order |
+| VS Code recent folders / `.code-workspace` | Existing declarative `vscode-recents` extension and repo `vscode-recent-projects` | First extract the script's reader into a launcher-neutral command (T-0031): today it is an inline parser piped straight into `vicinae dmenu`, the `vscode-recents` extension parses the history separately, and the script drops non-`file://` entries, so remote URIs are not preserved. Then implement **only a thin provider** over that reader; verify stale paths, labels and order |
 | Focus correct existing VS Code window | Test native Niri IPC and repo window-backend integration | Test Elephant Niri window provider IDs, exact project-to-window matching and MRU focus; no guessed project title as unique identifier |
 | Clipboard text, images, pin/history | Vicinae history; record retention/privacy | Elephant Clipboard provider; separate session service and persistent history must work and not start beside Vicinae history |
 | Files, actions, commands, calculator | Built-in/features/extensions | Provider set on **pinned version**, fail gracefully when providers are unavailable |
-| Session lifecycle, service ownership | Vicinae HM user service | Walker UI + Elephant backend service; no second daemon without feature value; Niri-only scope |
+| Session lifecycle, service ownership | Vicinae HM user service | Walker UI + Elephant backend service; no second daemon without feature value. The pinned Elephant unit starts on `graphical-session.target`, which GNOME also reaches, so a Niri-only scope needs an explicit override; under GNOME the project chooser stays on Vicinae until it is retired |
 | Developer extensions and search | Raycast-compatible ecosystem / installed project extension | Niri-aware provider and maintained scripts; validate actual plugins rather than counting them |
 | Updates and security | Declarative Vicinae extension installation | Pin Elephant provider modules, assess command execution, access to clipboard/history, source downloads and controlled state |
 

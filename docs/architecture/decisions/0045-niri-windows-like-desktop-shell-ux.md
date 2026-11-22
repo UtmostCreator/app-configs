@@ -10,7 +10,7 @@ forbids: [unapproved-live-shell-change, duplicate-desktop-service-owners, unrevi
 amends: []
 supersedes: []
 superseded_by: []
-related: [12, 13, 27, 28, 46, 47, 48, T-0031, T-0032]
+related: [12, 13, 27, 28, 46, 47, 48, 49, T-0031, T-0032]
 ---
 # ADR-0045: Niri desktop shell: taskbar, dock, window controls, features and ecosystem
 Status: proposed (comparison and acceptance criteria only; no permanent shell selected or live activation authorised) · Date: 2026-11-22 · Sources: ADR-0012, ADR-0013, T-0031/T-0032 and upstream links in References.
@@ -141,7 +141,7 @@ Compare **four approaches** on actual Niri behaviour and their useful extra feat
 | Native Niri/workspace integration | Yes; scratchpad IPC | Yes; dedicated backend | Niri-focused | Waybar Niri modules |
 | Built-in control centre / notifications | Yes | Yes | Yes | SwayNC + other tools |
 | Plugins/widgets/automation | Plugin registry, lockfile, IPC | Plugins, scripts, IPC | Hub, families, widgets, IPC | Community modules and scripts |
-| Deterministic Nix state by default | **Partial**; plugin state needs review | **Partial**; GUI overrides need policy | **Partial**; Hub assets need pinning | Best component-level control; more glue |
+| Deterministic Nix state by default | **Partial**; plugin state needs review | **Partial**; GUI overrides need policy, and the pinned package installs plugins by cloning repositories at run time | **Partial**; Hub assets need pinning | Best component-level control; more glue |
 | Mature feature behaviour on **this PC** | Not tested | Not tested | Not tested | Not tested |
 
 The word *documented* means described by upstream, **not verified to work on the pinned nixpkgs, Niri version or AMD/NVIDIA machine**.
@@ -241,11 +241,11 @@ Use `overall = sum(weight[i] * verified_score[i] / 100)`. Each category is score
 **Common rules**
 - Keep GDM/GNOME and Niri session wiring with the existing NixOS owner; no general upstream shell installer is permitted to change them.
 - `home/dot_config/niri/config.kdl` stays chezmoi-owned and must pass `niri validate`. Shells may offer bindings but the repo chooses and deploys them; no `spawn-at-startup` duplicate of a session-scoped systemd service.
-- Prefer pinned packages and session-scoped services. Keep **Vicinae** the keyboard launcher and clipboard-history owner unless an explicit future ADR changes that choice. A *clickable* Start menu/dock launcher may coexist without taking global keyboard shortcuts.
+- Prefer pinned packages and session-scoped services. Keep **Vicinae** as the incumbent keyboard launcher and clipboard-history baseline for the pilot. The final clipboard owner is open (ADR-0013, ADR-0046 G06) and the launcher is compared in ADR-0048. A *clickable* Start menu/dock launcher may coexist without taking global keyboard shortcuts.
 - Test systray/AppIndicator, notification DBus owner, portal/screenshot/screencast, file dialogs, polkit and lock independently. Do not mask service problems by enabling lingering.
 - Never grant new groups, automatic updates, broad file permissions or runtime execution of community plugins without review. Record exact package source, closure and permissions.
 
-**Dux:** Resolve current pinned nixpkgs NixOS-module vs Home Manager ownership before permanent install; compare upstream module options with the lockfile/plugin strategy and Niri-only service startup. Verify that a restart does not strand scratchpad windows.
+**Dux:** Resolve current pinned nixpkgs NixOS-module vs Home Manager ownership before permanent install; compare upstream module options with the lockfile/plugin strategy and Niri-only service startup. Verify that a restart does not strand scratchpad windows. The Dux documentation cited here is for 2.2, while the pin is dux-shell 2.1.2: confirm the scratchpad and IPC commands exist in 2.1.2. The pinned `programs.dux-shell` module also turns on `hardware.i2c` and `services.accounts-daemon` by default; review or override both under the rule above.
 
 **Noctalia:** Pin the *native v5* version intended for the test; distinguish its live GUI overrides from declarative TOML. Check which features and commands exist in **that pinned version**, rather than relying on newer v5.6 documentation. Check how taskbar pins interact with workspace grouping and whether the dock avoids the conflict.
 
@@ -258,7 +258,7 @@ Use `overall = sum(weight[i] * verified_score[i] / 100)`. Each category is score
 Collect, per candidate and its taskbar/dock component, a dated evidence table before selection: pinned version, upstream version, release age, relevant issues closed/open and severity, independent contributors in last 90 days, docs freshness, number of maintained *relevant* plugins, known Niri regressions and reproducible installation path. **Do not turn raw stars, plugin counts or commit counts into a quality score without relevance and maintenance checks.** Compare issues against the exact version to be installed.
 
 ## Consequences and open decisions
-- This is a **feature-first** expansion of ADR-0045, not a decision to emulate Windows or macOS. The filename is retained to avoid breaking existing references.
+- This feature-first version replaces the earlier "Windows-like" framing of this ADR; it is not a decision to emulate Windows or macOS. The filename is retained to avoid breaking existing references.
 - **Dux** appears especially relevant to hide/show and configurable multi-edge docks; **Noctalia** to a polished taskbar with documented mouse close/focus; **iNiR** to multiple layout paradigms plus a hidden-workspace restore service; **Waybar + niri_window_buttons** to explicit traditional per-window controls. These are **test priorities, not scored winners**.
 - The existing **Dux → Noctalia** trial order and GNOME default remain unchanged. No permanent shell is selected. iNiR remains an additional proposed trial; any owner-approved addition must amend ADR-0013 and T-0032 trial scope before activation.
 - Decide after real tests whether hide/show via a parking workspace is adequate, which exact shell owns notifications/lock/polkit, whether GUI settings can persist, whether Hub-managed runtime components are acceptable, and whether another edge or Island beats a bottom taskbar in the daily workflow.

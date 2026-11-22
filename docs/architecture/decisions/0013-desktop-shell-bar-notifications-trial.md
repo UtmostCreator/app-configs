@@ -10,7 +10,7 @@ forbids: [shell-selection-before-trial]
 amends: []
 supersedes: []
 superseded_by: []
-related: [45, 46, 47, 48]
+related: [45, 46, 47, 48, 49]
 ---
 # ADR-0013: Desktop shell, bar and notifications: trial order, not yet selected
 Status: trial (user decision 2026-11-15 on the order only) · Date: 2026-11-15 · Sources: `docs/plans/niri-migration.md` (shell, ownership and decisions sections), `docs/research/desktop-migration-claim-audit.md`, `docs/research/nix-config-borrow-analysis.md`
@@ -33,12 +33,12 @@ Status: trial (user decision 2026-11-15 on the order only) · Date: 2026-11-15 �
 ## Strong alternatives
 | Option | Why it is second or fallback |
 |--------|------------------------------|
-| Noctalia | Collapses about 7-8 pieces into 1-2 (estimate); young; runtime config rewrite. The borrow analysis declined a noctalia flake input earlier (NixOS-only, "personal taste"). |
+| Noctalia | Collapses about 7-8 pieces into 1-2 (estimate); young; runtime config rewrite. The borrow analysis declined a noctalia flake input earlier (NixOS-only, "personal taste"). Since then both the pinned nixpkgs and the pinned Home Manager ship `programs.noctalia`, so unlike Dux it can be Home Manager-owned. |
 | Waybar + SwayNC + swaylock + swayidle | Modular, all Home Manager modules; more pieces to own. mako vs SwayNC was never decided. |
 | quickshell | A base for shells, not a candidate. |
 
 ## Discarded
-Shell-bundled launcher and clipboard (Vicinae is the launcher).
+Shell-bundled launcher and clipboard keyboard binds, for the pilot (Vicinae is the incumbent launcher). Superseded in part on 2026-11-22: a shell's launcher is now a candidate in ADR-0048; its binds still stay off during the trial.
 
 ## Consequences
 - Open items: clipboard history owner (Vicinae recommended, cliphist the alternative); screenshots (Flameshot live; niri action or grim + slurp + satty as alternatives).
@@ -61,5 +61,6 @@ live change (docs/plans/niri-migration.md, "Mandatory backup before any live cha
 - GNOME Shell/top bar is **not** the desired long-term interface. The component-by-component exit criteria and exceptions (portals/Secret/GlobalShortcuts, not full GNOME) are in [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md). Keep GNOME fallback during a safe trial as ADR-0012 requires.
 - **Do not automatically retain Vicinae** beyond the trial: [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) compares app/window search, clipboard, command plugins and **exact VS Code recent project opening/focus**. Replacing Vicinae requires equal or stronger real-world workflow, but no single plugin is mandatory if a shared project reader and another frontend solve it.
 - Notifications, lock/idle, tray, OSD, clipboard and polkit are **single-owner slots**. Compare shell-provided functions to SwayNC, mako, swaylock+swayidle and the pilot's Soteria; enable standalone fallbacks **only for missing/failed shell capabilities**.
-- The live migration inventory, exact installed/declared split and gaps are in [ADR-0046](0046-niri-desktop-installation-decision-register.md). Its P0 G17–G22 checks add recovery, GlobalShortcuts, GNOME dependency and power validation.
+- The live migration inventory, exact installed/declared split and gaps are in [ADR-0046](0046-niri-desktop-installation-decision-register.md). Its G17–G22 checks (G17 is P0; G18, G21 and G22 are P0 only under their stated conditions; G19 and G20 are P1) add recovery, portal routing for GlobalShortcuts and Secret, MIME activation, input, power and GNOME-dependency validation.
+- The pinned Soteria unit starts on `graphical-session.target`, so on the pilot it also starts in the GNOME session beside GNOME Shell's own polkit agent. The one-owner rule for polkit therefore needs Soteria bound to the niri session ([ADR-0049](0049-niri-safest-staged-installation-order.md) gap table).
 - Selection gate: window close/focus/pin/hide/restore, secure suspend/recovery, notifications, portals and GNOME fallback must all be tested on real Niri hardware. The decision must compare *actual functionality and process ownership*, not use visually familiar defaults.

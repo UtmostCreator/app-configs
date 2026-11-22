@@ -10,7 +10,7 @@ forbids: []
 amends: [11]
 supersedes: []
 superseded_by: []
-related: [19, 21, 46, 47, T-0042]
+related: [19, 21, 46, 47, 49, T-0042]
 ---
 # ADR-0028: Files: file managers, disk usage, duplicates and archives
 Status: partly-decided (the two disk-usage exceptions are decided-unverified, owner 2026-11-16; the other rows are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 (resolves the T-0042 Q8 7-Zip item) · Sources: tool-selection design round 3
@@ -49,14 +49,15 @@ One status per row.
 
 ## Niri file manager and portal comparison (2026-11-22)
 
-For Niri, **Nautilus is not automatically preferred**. Keep it in the safe pilot while confirming whether `xdg-desktop-portal-gnome` still routes FileChooser to it. Upstream Niri documentation says FileChooser may be explicitly routed to `xdg-desktop-portal-gtk` if Nautilus is removed; do **not** replace the ScreenCast backend in the process.
+For Niri, **Nautilus is not automatically preferred**. Keep it in the safe pilot: the pinned `programs.niri` module routes FileChooser to Nautilus (`useNautilus` defaults to true and the pilot does not override it). The declarative switch to the GTK chooser is `programs.niri.useNautilus = false`, deferred to [ADR-0049](0049-niri-safest-staged-installation-order.md) stage 15. Upstream Niri documentation says FileChooser may be explicitly routed to `xdg-desktop-portal-gtk` if Nautilus is removed; do **not** replace the ScreenCast backend in the process.
 
 | Candidate | Advantages | Disadvantages / questions |
 |---|---|---|
 | **Double Commander** (already installed) | Dual-pane, bulk operations, comparisons, SFTP; known developer workflow | Not automatically a freedesktop portal FileChooser |
 | **Nautilus** (current) | Existing GNOME file-portal integration; familiar file dialogs/desktop integration | GNOME application dependency, weaker advanced dual-pane functions |
-| **Dux Files** | **Standalone application (does not require Dux Shell)**; tabs/split view, devices/network shares, `org.freedesktop.FileManager1` integration and a separately opt-in portal FileChooser; NixOS/HM modules | Newer application; evaluate destructive file operations and cold-start picker latency; **portal chooser does not attach modally to the caller** in current documented implementation; theme can follow Dux Shell only if available |
+| **Dux Files** | **Standalone application (does not require Dux Shell)**; tabs/split view, devices/network shares, `org.freedesktop.FileManager1` integration and a separately opt-in portal FileChooser; a NixOS module in the pinned nixpkgs (`programs.dux-files`, no Home Manager module); its runtime closure includes Quickshell | Newer application; evaluate destructive file operations and cold-start picker latency; **portal chooser does not attach modally to the caller** in current documented implementation; theme can follow Dux Shell only if available |
 | **Dolphin** | Very feature-rich, split views, search and network integration | KDE Frameworks/KIO dependencies, integration size |
+| **COSMIC Files** | Modern, actively developed; independent of GNOME and KDE frameworks | Young; portal and removable-media behaviour under Niri unverified |
 | **Thunar / Nemo** | Simpler traditional browser, GTK ecosystem; less GNOME Shell dependency | Feature and portal differences; verify external drives, trash, network shares |
 
 **Dux Files portal-specific gates:** [upstream desktop integration](https://duxlabs.dev/docs/dfiles/desktop-integration) describes a standalone `dfiles` binary, NixOS/Home Manager module, opt-in FileChooser backend and optional per-desktop preference. **Do not run `dfiles portal install` or enable its portal preference outside the repository's declarative owner**; that command writes `portals.conf` and may restart the shared portal service, cancelling open dialogs. Its documented chooser currently **does not attach to the calling application and ignores modal state**. Test keyboard focus, parent window blocking, save-as overwrite and open/upload consistency. A native installed Dux Files package may provide a portal backend; its Flatpak packaging does not register the system portal. It can be trialled with **Noctalia or Waybar**, not only Dux Shell. Avoid treating its optional theme integration as a hard shell dependency.

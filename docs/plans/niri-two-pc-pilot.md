@@ -63,7 +63,12 @@ Vicinae stays the launcher and clipboard owner (main plan decisions 1 and 11);
 - Set `system.configurationRevision = self.rev or self.dirtyRev or "dirty"`, so
   `nixos-version --configuration-revision` shows which commit is running.
 - Both hosts keep standalone Home Manager and chezmoi. `ops/detect-host.sh`
-  still returns `linux-desktop` on both, so the HM output is the same.
+  still returns `linux-desktop` on both, so the HM output is the same. Two
+  consequences: a Home Manager or chezmoi change made for the pilot also
+  reaches PC 1 at its next `sys-update`, so it must be inert without niri; and
+  the output hard-codes the personal profile, so PC 2's first activation uses
+  `bash ops/install.sh --profile work` to keep Syncthing and the OpenClaw
+  gateway off (ADR-0049 stage 3b).
 - Do not run `ops/system-setup.sh` or `ops/tailscale-setup.sh` on PC 2: both
   write `/etc/nixos` (T-0029). Making them refuse on repo-managed hosts is part
   of T-0029.
@@ -77,21 +82,25 @@ Vicinae stays the launcher and clipboard owner (main plan decisions 1 and 11);
   ESP systemd-boot writes (`nix/modules/nixos/dual-boot.nix`). Pick the OS in
   the firmware boot menu. Reconnect the original disk and confirm both boot.
 - From the installer: `nixos-generate-config --root /mnt`, copy the generated
-  hardware file into `nix/hosts/<pilot>/`, import it from the host's
-  `system.nix`, delete the placeholder `fileSystems` entries and `git add` the
-  file (a flake ignores untracked files). Build that configuration, then
-  `nixos-install --flake <checkout>/nix#linux-desktop-pilot`.
+  hardware file into `nix/hosts/<pilot>/`, list it beside `system.nix` for the
+  pilot host in `nix/flake.nix` (not inside `system.nix`: the VM test imports
+  that file), delete the placeholder `fileSystems` entries and commit both (a
+  flake ignores untracked files, and an uncommitted tree records a dirty
+  revision). Keep the checkout on the new disk under `/mnt/home/<user>/`, not
+  in the installer's memory. Build that configuration, then
+  `nixos-install --flake "git+file://<checkout>?dir=nix#linux-desktop-pilot"`.
 - Before the first reboot set the user's password:
   `nixos-enter --root /mnt -c 'passwd <user>'`. The repo holds none.
 - A fresh install has one generation. Rebuilding an unchanged configuration
   creates no second one; the first real change (key-only SSH, step 3) does.
   Boot both once before relying on rollback.
-- After the first GNOME login run `bash ops/install.sh` for Home Manager and
-  chezmoi. Until then the system has no Ghostty, Vicinae or niri config.
+- After the first GNOME login run `bash ops/install.sh --profile work` for
+  Home Manager and chezmoi. Until then the system has no Ghostty, Vicinae or niri config.
 - Leave Syncthing, Tailscale and account-bound services off at first.
-- GNOME and GDM first. Then enable `programs.niri`, set
-  `services.displayManager.defaultSession` to GNOME's evaluated session name,
-  and check that Niri is in `sessionNames`.
+- Test GNOME and GDM first. The committed pilot already enables
+  `programs.niri` and sets `services.displayManager.defaultSession` to GNOME,
+  so nothing is enabled later: niri is simply not chosen at the greeter until
+  the GNOME baseline, the rollback generation and the recovery routes pass.
 - Bind Dux's and Noctalia's user units to the Niri session: both default to
   `graphical-session.target` and would also start under GNOME (main plan, 4b).
 
@@ -99,19 +108,28 @@ Vicinae stays the launcher and clipboard owner (main plan decisions 1 and 11);
 
 PC 1 stays the workstation and builder; PC 2 only runs candidates.
 
-- PC 2 needs, in the pilot config only: `services.openssh` with key-only auth,
-  no root login, and the user in `nix.settings.trusted-users` so closures copied
-  from PC 1 are accepted. PC 1 gets no new listener.
+- PC 2 needs, in the pilot config only: `services.openssh` with PC 1's public
+  key as an authorised key, password logins off and no root login. PC 1 gets
+  no new listener.
+- Copying closures from PC 1 needs more than SSH: PC 2 accepts unsigned store
+  paths only from a trusted Nix user, and a user in
+  `nix.settings.trusted-users` is root-equivalent on that machine. That is a
+  security decision for the owner, not routine setup. The default is to
+  rebuild on PC 2 from its own clone, which needs no such grant; if a push is
+  wanted, prefer signed closures over a trusted user (ADR-0049, owner
+  decisions).
 - Deploy a system candidate from a clean checkout on PC 1:
 
   ```bash
   git status --porcelain   # must be empty: the revision is the test id
-  nixos-rebuild test --flake "git+file://$PWD/nix#linux-desktop-pilot" \
-    --target-host utmostcreator@pc2 --sudo
+  nixos-rebuild test --flake "git+file://$PWD?dir=nix#linux-desktop-pilot" \
+    --target-host utmostcreator@pc2 --sudo --ask-sudo-password
   ```
 
   Use `boot` or `switch` instead of `test` once a candidate should persist.
-  `--sudo` is the nixos-rebuild-ng flag in the pinned nixpkgs; older tools call
+  The flake reference uses `?dir=nix`: `git+file://$PWD/nix#...` does not
+  evaluate (checked 2026-11-22). `--ask-sudo-password` supplies the remote
+  sudo password. `--sudo` is the nixos-rebuild-ng flag in the pinned nixpkgs; older tools call
   it `--use-remote-sudo` (unverified on PC 1's current tool).
 - Deploy the HM side by building
   `homeConfigurations.linux-desktop.activationPackage` on PC 1, `nix copy --to
@@ -140,7 +158,9 @@ rescue-media access confirmed, and `nix-gc.timer` stopped with
    default through the 2–4 week daily-use trial. Making Niri the default is a
    separate cutover decision (P6).
 
-Re-enable GC only after the rollback check is recorded.
+Re-enable GC only after the rollback check is recorded and the Niri cutover
+has passed (ADR-0049 stage 11): until then generation 17 stays the known-good
+system and must not be collected.
 
 ## Acceptance
 

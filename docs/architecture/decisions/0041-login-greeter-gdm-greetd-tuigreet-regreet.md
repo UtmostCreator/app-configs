@@ -1,18 +1,18 @@
 ---
 adr: 41
-title: "Login greeter: GDM as safe fallback; evaluate greetd with tuigreet or gtkgreet"
+title: "Login greeter: GDM as safe fallback; evaluate greetd with tuigreet, ReGreet or gtkgreet"
 status: proposed
 date: 2026-11-22
 platforms: [linux, nixos]
 areas: [desktop, greeter, login, session]
-permits: [gdm-during-trial, greetd-tuigreet-evaluation, greetd-gtkgreet-evaluation, greeter-vm-test-first]
+permits: [gdm-during-trial, greetd-tuigreet-evaluation, greetd-regreet-evaluation, greetd-gtkgreet-evaluation, greeter-vm-test-first]
 forbids: [two-display-managers, greeter-change-on-live-desktop-without-approval, greeter-change-during-gnome-safety-trial]
 amends: []
 supersedes: []
 superseded_by: []
 related: [12, 13, 23, 38, 46, 47, 49, T-0029, T-0032]
 ---
-# ADR-0041: Login greeter: GDM as safe fallback; evaluate greetd with tuigreet or gtkgreet
+# ADR-0041: Login greeter: GDM as safe fallback; evaluate greetd with tuigreet, ReGreet or gtkgreet
 Status: proposed (**tuigreet** preferred for reliability; **ReGreet** as graphical feature benchmark, **gtkgreet** as lean graphical alternative; current GDM remains untouched pending approval and live fallback gates) · Date: 2026-11-22 · Sources: [greetd upstream](https://github.com/kennylevinsen/greetd), [tuigreet](https://github.com/tuigreet/tuigreet), [gtkgreet](https://github.com/kennylevinsen/gtkgreet), [ReGreet](https://github.com/rharish101/ReGreet), [NixOS greetd guidance](https://wiki.nixos.org/wiki/Greetd), ADR-0012 and T-0032.
 
 **Installation choices and dependent gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). **GNOME dependency policy:** [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md).
@@ -31,8 +31,9 @@ Status: proposed (**tuigreet** preferred for reliability; **ReGreet** as graphic
 |---|---|---|---|
 | **greetd + [tuigreet](https://github.com/tuigreet/tuigreet)** | Runs on TTY, no graphical greeter compositor; minimal failure surface under AMD/NVIDIA graphics problems; remembers user and session; session chooser, theming and power controls | TTY fonts/console appearance on 2560×1600; accessibility/alternative layouts and user menu limitations; no graphical keyboard; check `--remember`/menu regressions in pinned version | **First target to trial**, particularly recovery |
 | **greetd + [gtkgreet](https://github.com/kennylevinsen/gtkgreet)** | Lightweight GTK graphical login, clear username/password/session selection, minimal traditional login design | Requires Cage/Sway or other greeter compositor; graphical driver issues can block greeter; explicit environments/session setup; GTK/DBus startup delays reported | **Lean graphical comparator**, not selected |
-| **greetd + [ReGreet](https://github.com/rharish101/ReGreet)** | GTK4/Relm4, declarative NixOS `programs.regreet`, background/font/theme/CSS, user/session memory and selectable sessions, supported Cage/Niri greeter examples | Requires compositor, additional graphical/GTK dependencies and styling state; fewer benefits if a terminal greeter is sufficient; graphical login inherits GPU risk | **Feature-rich graphical benchmark**, not selected |
+| **greetd + [ReGreet](https://github.com/rharish101/ReGreet)** | GTK4/Relm4, declarative NixOS `services.displayManager.regreet` (formerly `programs.regreet`, which the pinned nixpkgs keeps only as a rename alias), background/font/theme/CSS, user/session memory and selectable sessions, supported Cage/Niri greeter examples | Requires compositor, additional graphical/GTK dependencies and styling state; fewer benefits if a terminal greeter is sufficient; graphical login inherits GPU risk | **Feature-rich graphical benchmark**, not selected |
 | **GDM** (current) | Existing working GNOME fallback, GDM login/lock/keyboard/accessibility and PAM/keyring wiring | Pulls GNOME Shell for greeter and retains full GNOME-fallback coupling; more desktop dependencies than desired | **Current safety baseline only**, not default future preference |
+| **Shell-matched greetd greeters** (`services.displayManager.dux-greeter`, `noctalia-greeter`) | Modules in the pinned nixpkgs; look and behave like the matching shell | Graphical, so they inherit the shell's and the GPU's risk; tie the login screen to the shell choice | Evaluate only if that shell is selected; not a candidate before |
 | **greetd + agreety** | Rescue-oriented very small TTY prompt, useful when customised greeter fails | Limited UI, session-selection UX and history | Emergency fallback, not daily choice |
 
 **Feature reach over appearance**: favour session selection, reliable PAM/keyring, last-user/session behaviour, power/reboot actions, keyboard accessibility, prompt startup and TTY rescue over themes. Upstream feature descriptions are **not machine-tested scores**. Versions in the old 2026-11-20 comparison were pinned then but must be re-evaluated against the actual new `flake.lock`.
@@ -66,7 +67,7 @@ Status: proposed (**tuigreet** preferred for reliability; **ReGreet** as graphic
 
 ## Graphical greeter evidence refinement (2026-11-22)
 
-- [Official NixOS greetd guidance](https://wiki.nixos.org/wiki/Greetd) has a declarative **`programs.regreet`** module, whereas `gtkgreet` typically requires a custom Cage/Sway wrapper and session list. This is a **configuration/feature advantage**, not proof of better security.
+- [Official NixOS greetd guidance](https://wiki.nixos.org/wiki/Greetd) has a declarative ReGreet module (`services.displayManager.regreet` in the pinned nixpkgs; `programs.regreet` is the old name), whereas `gtkgreet` typically requires a custom Cage/Sway wrapper and session list. This is a **configuration/feature advantage**, not proof of better security.
 - [ReGreet upstream](https://github.com/rharish101/ReGreet) documents session remembering, user/session choices, power actions, styling, NixOS support, greeter-only Cage/Sway and demo mode. GTK/DBus startup delays can also affect it; compare actual boot/login latency with `gtkgreet` rather than asserting that only gtkgreet is affected.
 - **`tuigreet` remains first** because console access under a broken graphics stack has greater value than a themed graphical interface for this migration.
 - A **greetd + oo7** Secret Service combination adds a *separate* PAM unlock gate. [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) and [ADR-0023](0023-password-managers-and-secrets-cli.md) now track oo7 independently of the greeter choice. Do not combine both migrations into one live cutover.

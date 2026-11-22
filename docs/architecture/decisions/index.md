@@ -83,7 +83,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0038](0038-disko-nixos-anywhere-fresh-hosts.md) | disko and nixos-anywhere install fresh NixOS hosts only (VM test first, by-id disks, never the live desktop) | proposed | 2026-11-20 |
 | [0039](0039-windows-work-password-manager.md) | Windows work profile: KeePassXC, Bitwarden allowed, installed by hand with winget; employer policy wins | decided-unverified | 2026-11-20 |
 | [0040](0040-macos-home-layout-and-cleanup-policy.md) | macOS home layout: keep existing roots, add Scratch and Archive, report-only cleanup of disposable files, never automatic outside Scratch | proposed | 2026-11-20 |
-| [0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md) | Login greeter: keep GDM during the niri trial; greetd with tuigreet proposed after cutover, ReGreet the runner-up | proposed | 2026-11-20 |
+| [0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md) | Login greeter: keep GDM during the niri trial; greetd with tuigreet proposed after cutover; ReGreet and gtkgreet compared, neither ranked | proposed | 2026-11-22 |
 | [0042](0042-wsl-ubuntu-on-corporate-machines.md) | WSL2 on corporate machines: Ubuntu (manual install) when IT requires a standard distro, NixOS-WSL otherwise | proposed | 2026-11-21 |
 | [0043](0043-windows-winget-app-manifests.md) | Windows apps: one winget import manifest per profile (home, work), run by hand; manual items stay in the setup checklist | decided | 2026-11-21 |
 | [0044](0044-windows-taskbar-pins-script.md) | Windows taskbar: a user-run script pins the profile's apps (layout policy) and unpins Edge, Copilot and Outlook | decided-unverified | 2026-11-21 |

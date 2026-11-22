@@ -10,7 +10,7 @@ forbids: []
 amends: [11]
 supersedes: []
 superseded_by: []
-related: [13, 14, 19, 20, 21, 45, 46, 47, T-0032, T-0042]
+related: [13, 14, 19, 20, 21, 45, 46, 47, 49, T-0032, T-0042]
 ---
 # ADR-0036: Screenshots, media, images and PDF: Flameshot, Preview, Edge PDF, IINA, Paint.NET
 Status: partly-decided (Windows personal screenshots, macOS PDF and four exceptions are decided-unverified, owner 2026-11-16; the other rows are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 (the ShareX rejection reason, "Flameshot runs everywhere", is no longer true: no macOS cask) · Sources: tool-selection design round 3
@@ -56,13 +56,13 @@ One status per row.
 
 ## Niri capture comparison: separate screenshots from ScreenCast (2026-11-22)
 
-The existing **Flameshot** application is not automatically the best Niri screenshot solution, but **do not remove its annotation, pin or last-region workflow without a verified replacement**. The GNOME **ScreenCast portal** is a separate capability from local screenshot utilities.
+The existing **Flameshot** application is not automatically the best Niri screenshot solution, but **do not remove its annotation, pin or last-region workflow without a verified replacement**. The requirement is the set of capabilities (area, last region, pin, clipboard, annotation), which any tool or combination may meet; it is not Flameshot as such. The GNOME **ScreenCast portal** is a separate capability from local screenshot utilities.
 
 | Candidate | Pros | Cons / selection trigger |
 |---|---|---|
-| **Niri native actions** | Zero extra screenshot daemon; compositor-native region/window capture and clipboard | Annotation/pin workflow less rich than Flameshot; confirm actual actions on the pinned Niri |
-| **Flameshot** (existing) | Mature annotations, pin, last region, resident workflow already installed | Wayland portal/focus and mixed-monitor screenshot risk; service starts for graphical-session target and needs an explicit GNOME/Niri scope |
-| **grim + slurp + Satty** | Flexible Wayland area capture + powerful annotation editor | Several components, hotkey glue, output selection; check actual Niri wlr-screencopy support |
+| **Niri native actions** | Zero extra screenshot daemon; compositor-native region/window capture and clipboard | Annotation/pin workflow less rich than Flameshot. Already bound in the committed KDL (`Print`, `Ctrl+Print`, `Alt+Print`) and saved to `~/Pictures/Screenshots`, whereas Flameshot is set to clipboard only |
+| **Flameshot** (existing) | Mature annotations, pin, last region, resident workflow already installed | Wayland portal/focus and mixed-monitor screenshot risk; service starts for graphical-session target and needs an explicit GNOME/Niri scope; its hotkeys exist only in the GNOME keybindings, so under Niri the area, last-region and pin workflow has no key yet |
+| **grim + slurp + Satty** | Flexible Wayland area capture + powerful annotation editor | Several components, hotkey glue, output selection; Satty covers annotation only, so pin and last region need another answer; check actual Niri wlr-screencopy support |
 | **grim + slurp + swappy** | Lean scriptable editing pipeline | More scripts and separate editor process, may not match pin/last-region |
 | **niri-shot** | Niri-specific workflow, fewer generic adapters | Smaller ecosystem/version risk; compare actual features and Nix availability |
 

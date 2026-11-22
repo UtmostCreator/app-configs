@@ -26,7 +26,7 @@ One status per row.
 | App | L / M / Win | Alternatives | P/W | Status | Now |
 |---|---|---|---|---|---|
 | Backup | Kopia on every OS; Time Machine on macOS (OS, built in) as well. A synced kdbx is not a backup. Target and schedule not decided | restic | P; W: employer | DU | Deferred |
-| Telegram, Vesktop (discard Discord) | today, in the personal gate (`nix/modules/home/gui.nix:349-356`) / needs a T-0042 group (personalChat; Q2/Q9) / manual | Signal; Discord; web | P | Pr | Record; Deferred (M); Manual |
+| Telegram, Vesktop (discard Discord) | today, in the personal gate (`nix/modules/home/gui.nix`, the `myConfig.profile == "personal"` block) / needs a T-0042 group (personalChat; Q2/Q9) / manual | Signal; Discord; web | P | Pr | Record; Deferred (M); Manual |
 | Signal | add to the personal gate (changes the linux-desktop derivation) / needs a group / manual | none | P | Pr | Deferred; Manual |
 | Teams, Outlook, Windows | owned by ADR-0020 (W only) | Slack | W | see ADR-0020 (DU) | ADR-0020 |
 | Teams, Outlook, Linux and macOS | workComms, offered and off by default (Q4, AC-N6). Teams on Linux: PWA (Q5) | Slack | W | Pr | Deferred |
@@ -47,7 +47,7 @@ One status per row.
 | Backup option | Pros for two NixOS PCs | Cons / open conditions | Status |
 |---|---|---|---|
 | **Kopia** (existing ADR choice) | Encryption, snapshots, retention, GUI/CLI, cross-platform; aligns existing backup policy | Repo/storage and restore keys still need configuring; a GUI is not proof of tested recovery | **Existing selected intent, not verified deployed** |
-| **restic** | Mature CLI, many backends, scripted encrypted backups and straightforward unattended runs | CLI/GUI convenience and configuration policy differ; changing established snapshots/repositories increases migration burden | **Strong comparison candidate only** |
+| **restic** | Mature CLI, many backends, scripted encrypted backups and straightforward unattended runs | CLI/GUI convenience and configuration policy differ; switching would reverse a recorded owner choice, though no Kopia repository exists yet to migrate | **Strong comparison candidate only** |
 | **BorgBackup** | Efficient deduplicated archives, mature retention and integrity tooling | Storage transport/repository coupling; additional backup stack to maintain | Alternate |
 | **Btrfs snapshots** | Very fast local rollback of subvolumes and package/config state | **Not an off-device backup**; depends on Btrfs filesystem still unselected | Complementary, not sole backup |
 

@@ -328,7 +328,8 @@ b) Rollback target. Record `nixos-rebuild list-generations`. If only one
    which ages generations by creation time: generation 17 (2026-09-06) is kept
    only while it is current, so the first GC run after a new generation becomes
    current deletes it. Stop the timer and set `nix.gc.automatic = false` before
-   the first `boot` or `switch`, and re-enable it after the rollback check.
+   the first `boot` or `switch`, and re-enable it after the rollback check
+   (ADR-0049 keeps it off longer: until the Niri cutover has passed).
 
    GNOME stays the selectable fallback session.
 

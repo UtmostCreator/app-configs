@@ -55,8 +55,8 @@ This is **not** a change to the previously decided Windows Raycast or PowerToys 
 |---|---|
 | Launcher with project search | Vicinae against Walker/Albert/Ulauncher/Rofi/shell; preserve actual VS Code folders and workspaces |
 | App and per-window control | Native Niri IPC and T-0031, then Dux/Noctalia taskbar integration; no GNOME DBus helper on Niri |
-| Clipboard history | Vicinae versus cliphist/clipse/CopyQ if a feature gap appears; exactly one service |
+| Clipboard history | Vicinae versus the Elephant clipboard provider and the selected shell's history (ADR-0048); cliphist, clipse or CopyQ only as a fallback if those fail; exactly one service |
 | Input and special characters | Native Niri KDL + XKB/Compose; Fcitx5 or IBus only if required by actual text-input use |
-| URI/desktop activation | Declarative `xdg.mimeApps`, `xdg-open`, desktop entry and custom URI tests, not a new command dispatcher |
+| URI/desktop activation | The existing mutable `mimeapps.list` owner (`nix/modules/home/default-apps.nix`, which avoids `xdg.mimeApps` on purpose so GNOME can still write defaults), checked with `xdg-mime query`, `xdg-open`, desktop entry and custom URI tests; not a new command dispatcher |
 
 GNOME's launcher/top-bar extensions are not required in the eventual Niri session unless a functional exception is proven under [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md). [ADR-0046](0046-niri-desktop-installation-decision-register.md) holds gaps G05/G06/G19/G20/G23.

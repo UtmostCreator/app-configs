@@ -3,6 +3,7 @@ Source: local
 # T-0033: Refresh stale migration docs (docs)
 
 Status: not started (stale statements still present in owned docs)
+Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gap: G16. The register's explicit contradiction list identifies old migration-plan wording; it does not mark this ticket complete.
 Depends on: none
 Evidence: `docs/research/desktop-migration-claim-audit.md`
 

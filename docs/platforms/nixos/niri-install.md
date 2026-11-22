@@ -4,6 +4,8 @@ Draft runbook, 2026-11-22. It follows the stage order of [ADR-0049](../../archit
 
 **It cannot be run yet.** The `linux-niri` host is not written, so steps 4 and 5 have nothing to install (see "Before you start"). Nothing here has been run on hardware. Every step that changes the laptop needs the owner's go-ahead when it is reached.
 
+Use the [shared work-folder convention](../../architecture/decisions/0040-macos-home-layout-and-cleanup-policy.md#shared-work-folder-convention) when preparing the user environment. [ADR-0050](../../architecture/decisions/0050-nixos-niri-home-layout.md) records the future provisioning checks. At first login, save a screenshot and verify that it lands in `~/Pictures/Screenshots`. Preserve existing project and vault paths during any later data transfer.
+
 The existing PC is not part of the install. Nothing is attached to it and nothing on it is changed.
 
 ## Before you start

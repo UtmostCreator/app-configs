@@ -17,6 +17,8 @@ Status: partly-decided (central **inventory**, not an approval to install, selec
 
 ## Purpose and authority
 
+See the [shared work-folder convention](0040-macos-home-layout-and-cleanup-policy.md#shared-work-folder-convention) for backup inclusion and [ADR-0050](0050-nixos-niri-home-layout.md) for the first-login screenshot and provisioning checks.
+
 This is the **entry point for the Niri desktop migration**: one place to discover every required or desired install component, what was selected, what is merely proposed, which file owns it, why, how to validate it, and what remains undecided. It **does not replace** the rationale or acceptance criteria of the linked ADRs and tickets. If a component's owner ADR says `proposed` or `trial`, this inventory **cannot** silently promote it to `decided`.
 
 **New design direction (2026-11-22):** Prefer a **GNOME-minimal Niri desktop**, but retain a GNOME component only when its required feature has **not been matched or exceeded by a verified alternative**, or while it is needed for the safe GNOME fallback. This is not permission to remove the currently working desktop, portal or greeter. **Tuigreet remains the first reliability-first greeter candidate; ReGreet is the feature-rich graphical comparator, and gtkgreet is the lean GTK alternative. Vicinae is only the incumbent launcher pending a feature comparison against Walker + Elephant and others, not a presumed permanent winner.** Owner comparisons: [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md), [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md), [ADR-0048](0048-niri-launcher-vscode-project-workflows.md).

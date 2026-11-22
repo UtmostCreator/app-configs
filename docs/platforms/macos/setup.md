@@ -13,6 +13,16 @@ behaviour that is not proven. The blockers and open work are tracked in
 run steps 4, 9 and 10 until the fixes in that ticket have landed. Steps that
 change the live Mac are marked **LIVE**.
 
+## Home folders and screenshots
+
+Follow the [shared work-folder convention](../../architecture/decisions/0040-macos-home-layout-and-cleanup-policy.md#shared-work-folder-convention). Preserve the existing development root, scripts symlinks, worktrees, and synced document or vault paths, including `Documents/___sync` where used. Native applications keep their data in `~/Library/Application Support`, `~/Library/Caches`, `~/Library/Logs`, or Keychain as appropriate. Cross-platform CLI tools keep their existing XDG locations. Finder navigation uses sidebar favourites. Home Manager's Linux user-directory declarations are outside the macOS setup.
+
+Check that `~/Pictures/Screenshots` exists and take a test screenshot. [nix-darwin sets that destination](../../../nix/modules/darwin/system-defaults.nix). The Screenshot app's Options menu shows the current save location. Reserve `Scratch/screenshots` for explicitly temporary captures and keep the documented spelling, including on case-insensitive volumes.
+
+In System Settings, check whether iCloud Drive syncs Desktop & Documents and whether Optimize Mac Storage is enabled. If so, verify that files needed for QMD indexing or a local backup have been downloaded. Verify recovery from the independent backup separately. [Apple's iCloud Drive guide](https://support.apple.com/guide/mac-help/store-files-in-icloud-drive-mchle5a61431/mac)
+
+ADR-0040 is proposed. Its shared thresholds describe report-only inspection. A future scheduled report would use a user LaunchAgent on macOS or a systemd user timer on Linux.
+
 ## 1. Prerequisites
 
 Install these by hand. The repo does not (yet) check for them.

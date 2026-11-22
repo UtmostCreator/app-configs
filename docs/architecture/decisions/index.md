@@ -92,6 +92,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0047](0047-gnome-dependency-retirement-and-wayland-components.md) | Niri install without the GNOME desktop: what is excluded, the two GNOME-named services that stay, and the replacement audit | partly-decided | 2026-11-22 |
 | [0048](0048-niri-launcher-vscode-project-workflows.md) | Vicinae provisional during trial; compare rich launchers and preserve exact VS Code recent-project opening | partly-decided | 2026-11-22 |
 | [0049](0049-niri-safest-staged-installation-order.md) | Niri install order without the GNOME desktop: text greeter and recovery first, one component per stage with a pass check and fallback, the existing system as the fallback | proposed | 2026-11-22 |
+| [0050](0050-nixos-niri-home-layout.md) | NixOS and Niri home layout: shared work folders with macOS, XDG ownership, screenshot destination and report-only retention | proposed | 2026-11-22 |
 
 The tool-selection ADRs 0021 to 0033, 0036 and 0037 are written (ADR-0021 holds parity and profiles); gaps are allowed by the contract.
 

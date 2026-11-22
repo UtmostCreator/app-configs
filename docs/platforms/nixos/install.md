@@ -1,5 +1,7 @@
 # Installing this repo on NixOS
 
+For project, screenshot, and scratch paths, see the [proposed NixOS and Niri home layout](../../architecture/decisions/0050-nixos-niri-home-layout.md).
+
 NixOS is **not** one of the four officially supported host profiles
 (`macos`, `linux-desktop`, `linux-cli`, `wsl` — see `docs/getting-started/bootstrap.md`).
 This document records the **NixOS-safe install order** and the failure

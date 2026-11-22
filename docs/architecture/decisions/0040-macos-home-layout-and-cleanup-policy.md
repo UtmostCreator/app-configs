@@ -18,6 +18,9 @@ Status: proposed (a read-only inspection of one work Mac and outside reviews rec
 Backup and restore are ADR-0033. File managers and disk-usage tools are ADR-0028. AI CLI tools are ADR-0032. This ADR covers where files live on a macOS work host and what a cleanup may ever touch. Names are generic on purpose (see Privacy).
 
 ## Context
+
+The companion [NixOS and Niri home layout proposal](0050-nixos-niri-home-layout.md) uses the same visible work-folder names and documents Linux application paths.
+
 The inspection measured sizes and counts, not contents. It identified potential cleanup opportunities. It did not establish that anything is redundant or how much space is reclaimable.
 - Home use is dominated by the system Library (about 50 GiB, of which application caches are about 7 GiB), then the development root (about 19 GiB in 38 direct children), Downloads (about 6.7 GiB, 45 items older than 30 days), a container VM store (about 4 GiB) and tool caches (about 2.5 GiB under `~/.cache`, 1.9 GiB npm, 1.2 GiB nvm, 2 GiB pnpm).
 - The development root mixes active repositories with copies and tests: one `<project>-copy` repository with uncommitted changes and its own remote, one repository copy with a space in its name and uncommitted changes, one test directory with no Git history, and three linked worktrees for finished tickets (one has uncommitted changes).
@@ -26,6 +29,22 @@ The inspection measured sizes and counts, not contents. It identified potential 
 - `~/scripts` holds five symlinks that point into a second scripts directory by absolute home path. All resolve; none is broken.
 - One configuration directory has a name that looks like a typo of another one that also exists.
 - Six user LaunchAgents are installed.
+
+## Shared work-folder convention
+
+This proposed convention also guides [NixOS and Niri](0050-nixos-niri-home-layout.md). Existing workspaces, linked worktrees, scripts, synced documents, vaults, and application data keep their paths. On new NixOS desktops the development root is `~/Projects`. On existing hosts use the actual development root.
+
+| Location | Class and purpose | Backup guidance |
+| --- | --- | --- |
+| Development root, including existing worktrees and legacy `_archive/` | Protected. Keep checkouts and historical worktrees where tools and Git expect them. | Include local work that cannot be reconstructed, including uncommitted and untracked work. |
+| `~/Documents/` | Protected. Preserve any existing sync and vault mappings. | Include durable documents. Verify recovery separately from sync. |
+| `~/Downloads/` | Review first. Incoming files await a decision. | Include selectively. |
+| `~/Pictures/Screenshots/` | Protected. Normal screenshot destination. | Include captures worth retaining. |
+| `~/Scratch/{temp,logs,benchmarks,reports,screenshots}/` | Disposable. Put only explicitly temporary captures in `Scratch/screenshots/`. The age thresholds below are for reporting only. | Normally exclude from backup and sync. |
+| `~/Archive/{projects,snapshots,imports}/` | Protected. Keep newly reviewed, independent historical material here. Use `snapshots/` for retained exports. | Include in independent backup under [ADR-0033](0033-communication-sync-notes-and-backup.md). |
+| Application data and local credentials | Application-owned or protected. Keep their existing locations. | Include essential persistent state selectively. Use encrypted backup and test recovery of essential credentials. |
+
+Scripts consuming these locations should accept `DEV_ROOT` for the host's actual development root, with `$HOME/Projects` as the default for new Linux setups, and `SCRATCH_ROOT` and `ARCHIVE_ROOT` defaulting to `$HOME/Scratch` and `$HOME/Archive`. Keep overrides local to their consumers. A root variable alone grants no cleanup eligibility.
 
 ## Decision (proposed)
 - Keep the current development root, scripts directory, Documents layout and every tool's own directory where they are. Moving them risks local web servers, containers, editor workspaces, shell shortcuts and Git worktrees. Use any new layout for new work only.

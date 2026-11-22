@@ -2,6 +2,8 @@
 
 **Current decision inventory (2026-11-22):** [ADR-0046](../architecture/decisions/0046-niri-desktop-installation-decision-register.md) records the selected, declared, proposed and still-blank components, the physical-installation gates and current contradictions. This plan contains historical pre-implementation statements; where they disagree with committed PC 2 configuration, T-0030 or the dated ADRs, do **not** execute the stale instruction. T-0033 owns the substantive corrections.
 
+**2026-11-22 feature-first direction:** The long-term goal is **Niri without GNOME Shell**, subject to functional and safety gates. GNOME portals/keyring may remain when essential. Future login preference: **greetd+tuigreet**, compare **gtkgreet**; the live GDM/ GNOME fallback remains until approved cutover. Vicinae is **provisionally retained during the trial**, not automatically selected long-term. See [ADR-0047](../architecture/decisions/0047-gnome-dependency-retirement-and-wayland-components.md), [ADR-0048](../architecture/decisions/0048-niri-launcher-vscode-project-workflows.md), [ADR-0041](../architecture/decisions/0041-login-greeter-gdm-greetd-tuigreet-regreet.md). The older text below reflects 2026-11-15 decisions and may be stale; T-0033 owns full reconciliation.
+
 Detailed Niri execution plan, based on read-only research at main ed39171. It
 is a standalone file because the tracked migration docs are being refreshed by
 another session (T-0033, refresh stale migration docs, not yet committed); this

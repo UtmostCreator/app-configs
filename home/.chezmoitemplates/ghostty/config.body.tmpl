@@ -78,6 +78,13 @@ quick-terminal-size = 35%
 # Cmd+T). This shadows fzf's Ctrl+T file picker inside Ghostty.
 keybind = ctrl+t=new_tab
 {{- end }}
+{{- if eq .chezmoi.os "darwin" }}
+# ---------- Memory safety (macOS) ----------
+# macOS has no cgroups. ~/.local/bin/terminal-memory-guard (LaunchAgent
+# com.local.terminal-memory-guard) applies the same percent-of-RAM limits as
+# Linux: tab soft 40% / hard 50%, all tabs soft 60% / hard 70%.
+# See docs/platforms/macos/setup.md.
+{{- end }}
 {{- if eq .chezmoi.os "linux" }}
 # ---------- Memory safety (Linux) ----------
 # Each tab or split runs in its own systemd scope (linux-cgroup defaults to

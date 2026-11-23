@@ -312,6 +312,29 @@ unless a workload needs more and pressure measurements show headroom. The
 Linux Ghostty cgroup limits do not apply on macOS; do not substitute
 `ulimit -m` or `launchctl limit rss` as hard memory ceilings.
 
+### Ghostty tab memory limits (soft and hard, percent of RAM)
+
+macOS has no cgroups, so `~/.local/bin/terminal-memory-guard` (source
+`home/dot_local/bin/executable_terminal-memory-guard`) polls resident memory
+every 30 seconds through the `com.local.terminal-memory-guard` LaunchAgent and
+applies the same percentages as Linux (`nix/modules/home/gui.nix`):
+
+| Scope | Soft | Hard |
+|---|---|---|
+| One Ghostty tab (login, shell and its children) | 40% of RAM | 50% of RAM |
+| All Ghostty tabs together | 60% of RAM | 70% of RAM |
+
+At the soft limit it posts a notification (at most once per 10 minutes). At the
+hard limit it sends SIGTERM to the largest non-shell process in that tab, or in
+any tab for the group limit. The shell and the tab stay open, and only
+processes below Ghostty are ever signalled. Differences from Linux: RSS is not
+the kernel's accounting (compressed memory is not counted, shared pages are),
+the check is polled rather than instant, and there is no swap limit because
+macOS has no per-process swap figure. Run `terminal-memory-guard --check` to
+see current usage against the limits without any action. The agent loads at
+the next login (`launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.local.terminal-memory-guard.plist`
+loads it sooner); logs go to `~/Library/Logs/terminal-memory-guard.log`.
+
 For a local power inventory, `pmset -g custom` shows separate AC and battery
 policies, and `pmset -g assertions` shows current sleep blockers. Keep the
 assertion output local because it can identify running apps. Review FileVault,

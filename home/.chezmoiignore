@@ -90,6 +90,8 @@ Library/**
 # or host Docker daemon (T-0038).
 .colima
 .colima/**
+# macOS has no cgroups; Linux gets its memory caps from systemd (gui.nix).
+.local/bin/terminal-memory-guard
 {{- end }}
 
 {{- if eq .chezmoi.os "darwin" }}

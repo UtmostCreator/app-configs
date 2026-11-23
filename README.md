@@ -8,7 +8,7 @@ Packages, runtimes, Homebrew apps and system maintenance, built on Nix flakes,
 Home Manager, nix-darwin, chezmoi and mise. Configures bash, zsh, fish, tmux,
 Neovim, VS Code, Git and SSH.
 
-[Quick start](#quick-start) · [Systems](#supported-systems) ·
+[Quick start](#quick-start) · [Install from USB](docs/platforms/nixos/kingston-install-walkthrough.md) · [Systems](#supported-systems) ·
 [Architecture](#how-it-fits-together) · [Commands](#commands) ·
 [Recovery](#recovery) · [Docs](#documentation)
 
@@ -37,7 +37,9 @@ Neovim, VS Code, Git and SSH.
 
 ## Quick start
 
-**Setup: start here** → [`docs/platforms/index.md`](docs/platforms/index.md) (base requirements, then your platform).
+**Fresh NixOS laptop:** [Write the project ISO to a flash drive and boot it](docs/platforms/nixos/kingston-install-walkthrough.md). The guide covers carrying this repository offline and installing onto an external Kingston while protecting the Windows SSD.
+
+**Existing system:** choose your platform in the [setup guide](docs/platforms/index.md), then follow the standalone instructions below.
 
 Requires Git, Bash and internet access. `sudo` is needed only for the NixOS
 system layer. The installer bootstraps or verifies everything else.
@@ -220,6 +222,7 @@ behaviour.
 | [`docs/index.md`](docs/index.md) | The documentation map, by task |
 | [`install.md`](docs/getting-started/install.md) | Install and maintenance guide |
 | [`bootstrap.md`](docs/getting-started/bootstrap.md) | Cold-start runbook |
+| [Install NixOS from the project ISO](docs/platforms/nixos/kingston-install-walkthrough.md) | Flash and verify the installer USB, open app-configs offline, then install on the external Kingston with the Windows disk disconnected |
 | [`nixos/install.md`](docs/platforms/nixos/install.md) · [`rebuild.md`](docs/platforms/nixos/rebuild.md) | NixOS specifics; when and how to run `nixos-rebuild` |
 | [`nix-package-replacements.md`](docs/reference/nix-package-replacements.md) | Nix-specific packages and cross-distro replacements |
 | [`SECURITY.md`](SECURITY.md) | Reporting a security issue |

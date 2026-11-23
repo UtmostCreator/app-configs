@@ -15,6 +15,35 @@ printf '%s  %s\n' 9770b226d1a5216aaa245a8ecc2dc20f0f2cbd44524790f08ab29d5c14ae30
 
 Expect `OK`. For the final installation, use the destination build's filename and checksum. If the retained path is absent, build the ISO from the reviewed installer checkout. In Bash, `nix build --max-jobs 1 --cores 2 --no-update-lock-file --out-link result-kingston-iso ./nix#niri-installer-iso` leaves the image under `result-kingston-iso/iso/`. A missing output means the selected revision cannot supply the installer.
 
+### Carry the committed repository on the bootable USB
+
+The project image above contains NixOS, the prebuilt Niri system, Git, Claude Code and Codex. To carry app-configs on the same stick, add a read-only Git bundle to a **new** ISO before flashing. From the repository root, after committing the files you want to take, run the following in Bash with `ISO` set to the verified base image. The bundle includes the files and history reachable from local `main`. For a deployment, confirm that revision also contains the reviewed host and hardware configuration.
+
+```bash
+set -euo pipefail
+kit=$(mktemp -d "$PWD/result-niri-usb.XXXXXXXX")
+git bundle create "$kit/app-configs.bundle" refs/heads/main
+git bundle verify "$kit/app-configs.bundle"
+git bundle list-heads "$kit/app-configs.bundle" refs/heads/main | cut -d' ' -f1 > "$kit/REVISION"
+tool=$(nix build --inputs-from ./nix --no-update-lock-file --no-link --print-out-paths 'nixpkgs#libisoburn^out')
+"$tool/bin/xorriso" -indev "$ISO" -outdev "$kit/app-configs-usb.iso" \
+  -map "$kit/app-configs.bundle" /app-configs.bundle -map "$kit/REVISION" /APP-CONFIGS-REVISION \
+  -boot_image any replay -commit -end
+ISO="$kit/app-configs-usb.iso"
+(cd "$kit" && sha256sum app-configs-usb.iso > SHA256SUMS && sha256sum -c SHA256SUMS)
+printf 'Flash this image: %s\n' "$ISO"
+```
+
+Flash **that output ISO** in step 2. Its checksum differs from the base image. After boot, open the repository offline from the live user's home:
+
+```bash
+media=$(findmnt -rn -t iso9660 -o TARGET)
+git clone -b main "$media/app-configs.bundle" "$HOME/app-configs" &&
+  test "$(git -C "$HOME/app-configs" rev-parse HEAD)" = "$(cat "$media/APP-CONFIGS-REVISION")"
+```
+
+Exit 0 confirms the checkout matches the bundled revision. Open `~/app-configs/README.md` to continue. In step 4, use `$media/app-configs.bundle` as the checkout source in a fresh working directory.
+
 ## 2. Write the small flash drive
 
 Unplug the Kingston. Insert an expendable flash drive of at least 8 GB. Check its capacity and model. Flashing erases it.

@@ -92,9 +92,14 @@ Library/**
 .colima/**
 {{- end }}
 
-{{- if eq .chezmoi.os "darwin" }}
+{{- if or (eq .chezmoi.os "darwin") (eq $hostProfile "linux-niri") (eq .chezmoi.hostname "linux-niri") }}
+# The NixOS linux-niri host's integrated Home Manager owns its KDL, even
+# when an older bootstrap has populated hostProfile with linux-desktop.
 .config/niri
 .config/niri/**
+{{- end }}
+
+{{- if eq .chezmoi.os "darwin" }}
 # Linux VS Code path excluded on macOS.
 .config/Code
 .config/Code/**

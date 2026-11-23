@@ -473,7 +473,8 @@ fi
 #      `programs = { x = { enable = ...; }; }`, behind lib.mkDefault/mkIf,
 #      inside mkMerge lists) is a violation unless its value is literally
 #      `false`. services.* is only checked in Home Manager files; NixOS and
-#      nix-darwin modules legitimately enable system services.
+#      nix-darwin modules legitimately enable system services. Shared NixOS
+#      modules may enable programs.niri; only the Niri home may enable swayidle.
 #   7. mise, chezmoi, home-manager, lefthook (bootstrap-installed) must not be
 #      in home.packages or after any `with pkgs;` (scanned up to the end of the
 #      enclosing bracket or the next `;`, so `with pkgs; mise` is caught too).
@@ -500,8 +501,14 @@ if ((${#nix_dirs[@]} > 0)); then
       nix/modules/nixos/* | nix/modules/darwin/*) hm=0 ;;
       *) hm=1 ;;
     esac
+    allowed_programs="$ALLOWED_PROGRAMS"
+    allowed_services="$ALLOWED_SERVICES"
+    case "$f" in
+      nix/modules/nixos/*) allowed_programs+=" niri" ;;
+      nix/hosts/linux-niri/home.nix) allowed_services+=" swayidle" ;;
+    esac
     if ! res="$(awk "$NIX_STRIP" "$f" | awk -v file="$f" -v hm="$hm" \
-          -v allowed_programs="$ALLOWED_PROGRAMS" -v allowed_services="$ALLOWED_SERVICES" \
+          -v allowed_programs="$allowed_programs" -v allowed_services="$allowed_services" \
           -v tools="$BOOTSTRAP_TOOLS direnv" "$NIX_SCAN")"; then
       err "scan failed for $f"
       scan_failed=1
@@ -589,7 +596,8 @@ ALLOWED_XDG_KEYS="flameshot/flameshot.ini wireplumber/wireplumber.conf.d/51-kant
 ALLOWED_XDG_PREFIX="systemd/user/"
 
 xdg_key_allowed() {
-  local k="$1" a
+  local k="$1" scope="${2:-}" a
+  [[ "$k" == "niri/config.kdl" && "$scope" == linux-niri ]] && return 0
   for a in $ALLOWED_XDG_KEYS; do
     [[ "$k" == "$a" ]] && return 0
   done
@@ -598,11 +606,18 @@ xdg_key_allowed() {
 
 e0=$ERRORS
 XDG_TEXT_KEYS=""
+NIRI_XDG_KEYS=""
 while IFS='|' read -r kind where a _; do
   case "$kind" in
     XDG)
-      XDG_TEXT_KEYS+="$a"$'\n'
-      xdg_key_allowed "$a" ||
+      scope=shared
+      if [[ "${where%:*}" == nix/hosts/linux-niri/home.nix ]]; then
+        scope=linux-niri
+        NIRI_XDG_KEYS+="$a"$'\n'
+      else
+        XDG_TEXT_KEYS+="$a"$'\n'
+      fi
+      xdg_key_allowed "$a" "$scope" ||
         err "xdg.configFile.\"$a\" at $where is not allowlisted (allowed: $ALLOWED_XDG_KEYS, $ALLOWED_XDG_PREFIX*); other ~/.config files belong to chezmoi (home/dot_config)"
       ;;
     XDGDYN)
@@ -633,14 +648,16 @@ fi
 # pattern syntax (globs, `!` re-includes, templates) did that. Hermetic means:
 # scratch --source/--destination/--config, scratch HOME, XDG_CONFIG_HOME and
 # XDG_CONFIG_DIRS, and template data only from --override-data (chezmoi.os,
-# hostProfile, gui). Other .chezmoi.* values (arch, hostname, username, homeDir,
+# chezmoi.hostname, hostProfile, gui). Other .chezmoi.* values (arch, username, homeDir,
 # ...) still come from the machine running the check, so an ignore file that
 # branches on them is judged for this machine only.
 #
 # Which hosts must be covered:
 #   text mode  every Linux host (hostProfile linux-desktop, linux-cli, wsl,
-#              each with gui true and false), because Home Manager modules
-#              that the text scan sees may be used by any of them. An ignore
+#              and linux-niri, each with gui true and false), except targets
+#              in the dedicated linux-niri home, tested on linux-niri alone.
+#              Shared Home Manager modules
+#              may be used by any of them. An ignore
 #              that covers only some of these fails and lists the uncovered
 #              hosts, so a host-gated ignore (`wsl` only, `gui` only, darwin
 #              only) is rejected.
@@ -649,7 +666,7 @@ fi
 # A chezmoi that cannot run (missing, template error) is a failure: the
 # collision cannot be decided, so it is not passed, and no [OK] is printed for
 # the rules that needed it.
-TEXT_HOSTS="linux:linux-desktop linux:linux-cli linux:wsl"
+TEXT_HOSTS="linux:linux-desktop linux:linux-cli linux:wsl linux:linux-niri"
 RENDER_BROKEN=0
 UNCOVERED=""
 
@@ -694,7 +711,7 @@ managed_on_host() {
   if ! list="$(HOME="$CHEZ_TMP/home" XDG_CONFIG_HOME="$CHEZ_TMP/home/.config" XDG_CONFIG_DIRS="$CHEZ_TMP/home/xdg" \
         chezmoi managed --source "$sdir" --destination "$CHEZ_TMP/home/dest" --config "$CHEZ_TMP/chezmoi.toml" \
         --no-tty --path-style relative \
-        --override-data "{\"chezmoi\":{\"os\":\"$os\"},\"hostProfile\":\"$prof\",\"gui\":$gui}" \
+        --override-data "{\"chezmoi\":{\"os\":\"$os\",\"hostname\":\"$prof\"},\"hostProfile\":\"$prof\",\"gui\":$gui}" \
         2>"$CHEZ_TMP/chezmoi.err")"; then
     RENDER_BROKEN=1
     err "chezmoi managed failed for home/.chezmoiignore (os=$os hostProfile=$prof gui=$gui); path ownership is undecidable:"
@@ -751,6 +768,7 @@ check_xdg_collisions() { # check_xdg_collisions <hosts> <newline-separated xdg k
 
 e0=$ERRORS
 check_xdg_collisions "$TEXT_HOSTS" "$XDG_TEXT_KEYS"
+check_xdg_collisions linux:linux-niri "$NIRI_XDG_KEYS"
 if ((ERRORS == e0 && scan_failed == 0 && RENDER_BROKEN == 0)); then
   ok "no xdg.configFile target is also a live chezmoi source"
 fi
@@ -796,7 +814,7 @@ fi
 # services.vicinae (renamed alias of programs.vicinae); xdg keys Home Manager
 # generates itself (dconf/.keep, environment.d/10-home-manager.conf,
 # nix/nix.conf).
-EVAL_PROFILES="${VALIDATE_EVAL_PROFILES:-linux-desktop linux-cli wsl wsl-nixos macos}"
+EVAL_PROFILES="${VALIDATE_EVAL_PROFILES:-linux-desktop linux-cli wsl wsl-nixos macos linux-niri}"
 # shellcheck disable=SC2016 # Nix source, not shell: no expansion wanted
 EVAL_QUERY='cfg: let
   inherit (builtins) attrNames attrValues filter map isAttrs tryEval;
@@ -825,9 +843,17 @@ if ((EVAL)); then
     e0=$ERRORS
     for profile in $EVAL_PROFILES; do
       eval_err="$(mktemp)"
-      if ! json="$(nix eval --no-eval-cache --json "path:$ROOT_DIR/nix#homeConfigurations.$profile.config" --apply "$EVAL_QUERY" 2>"$eval_err")" ||
+      attr="homeConfigurations.$profile.config"
+      query="$EVAL_QUERY"
+      allowed_services="$ALLOWED_SERVICES vicinae"
+      if [[ "$profile" == linux-niri ]]; then
+        attr="nixosConfigurations.linux-niri.config.home-manager.users"
+        query="users: let names = builtins.attrNames users; in assert builtins.length names == 1; ($EVAL_QUERY) users.\${builtins.head names}"
+        allowed_services+=" swayidle"
+      fi
+      if ! json="$(nix eval --no-eval-cache --json "path:$ROOT_DIR/nix#$attr" --apply "$query" 2>"$eval_err")" ||
          ! jq -e 'has("packages") and has("programs") and has("services") and has("xdg") and has("files")' <<<"$json" >/dev/null 2>&1; then
-        err "nix eval failed for homeConfigurations.$profile"
+        err "nix eval failed for $attr"
         tail -n 5 "$eval_err" | sed 's/^/      /' >&2
         rm -f "$eval_err"
         continue
@@ -847,14 +873,14 @@ if ((EVAL)); then
           err "[$profile] evaluated programs.$name.enable is true; allowed: $ALLOWED_PROGRAMS"
       done < <(jq -r '.programs[]' <<<"$json")
       while IFS= read -r name; do
-        in_list "$name" "$ALLOWED_SERVICES vicinae" ||
+        in_list "$name" "$allowed_services" ||
           err "[$profile] evaluated services.$name.enable is true; allowed: $ALLOWED_SERVICES"
       done < <(jq -r '.services[]' <<<"$json")
       profile_keys="$(jq -r '.xdg[]' <<<"$json")"
       while IFS= read -r name; do
         [[ -z "$name" ]] && continue
         in_list "$name" "dconf/.keep environment.d/10-home-manager.conf nix/nix.conf" && continue
-        xdg_key_allowed "$name" ||
+        xdg_key_allowed "$name" "$profile" ||
           err "[$profile] evaluated xdg.configFile.\"$name\" is not allowlisted"
       done <<<"$profile_keys"
       # Ownership is judged on this profile's own host (macos is darwin).

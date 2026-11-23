@@ -15,6 +15,11 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
+    disko = {
+      url = "github:nix-community/disko/v1.13.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     nix-darwin = {
       url = "github:LnL7/nix-darwin";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -165,6 +170,25 @@
             )
           )
         ) (nixpkgs.lib.filterAttrs (_: profile: profile.system == system) vars.profiles)
+        // nixpkgs.lib.optionalAttrs (system == "x86_64-linux") {
+          niri-config =
+            let
+              host = self.nixosConfigurations.linux-niri;
+              cfg = host.config;
+              home = cfg.home-manager.users.${vars.username};
+            in
+            assert cfg.programs.niri.enable && cfg.services.greetd.enable;
+            assert
+              !(
+                cfg.services.desktopManager.gnome.enable
+                || cfg.services.displayManager.gdm.enable
+                || cfg.programs.niri.useNautilus
+              );
+            host.pkgs.runCommand "linux-niri-config" { } ''
+              ${cfg.programs.niri.package}/bin/niri validate -c ${home.xdg.configFile."niri/config.kdl".source}
+              touch "$out"
+            '';
+        }
         // nixpkgs.lib.optionalAttrs (system == vars.profiles.macos.system) {
           darwin-macos = nixpkgs.legacyPackages.${system}.writeText "darwin-macos-evaluation" (
             builtins.unsafeDiscardStringContext self.darwinConfigurations.macos.system.drvPath
@@ -177,6 +201,38 @@
       #   sudo nix run <repo>/nix#darwin-rebuild -- switch --flake <repo>/nix#macos
       packages.${vars.profiles.macos.system}.darwin-rebuild =
         nix-darwin.packages.${vars.profiles.macos.system}.darwin-rebuild;
+
+      packages.x86_64-linux.disko = inputs.disko.packages.x86_64-linux.disko;
+
+      packages.x86_64-linux.niri-installer-iso =
+        (nixpkgs.lib.nixosSystem {
+          specialArgs = {
+            installTools = self.packages.x86_64-linux;
+            targetSystem = self.nixosConfigurations.linux-niri.config.system.build.toplevel;
+          };
+          modules = [ ./hosts/linux-niri/installer-iso.nix ];
+        }).config.system.build.isoImage;
+
+      # The install-time device can change when moving an SSD from USB to
+      # internal storage. Both the installer and the host import this layout.
+      diskoConfigurations.linux-niri =
+        { targetDisk, ... }:
+        assert nixpkgs.lib.assertMsg (
+          builtins.match "/dev/disk/by-id/[A-Za-z0-9][A-Za-z0-9._:+-]*" targetDisk != null
+          && builtins.match ".*-part[0-9]+" targetDisk == null
+        ) "Pass the verified whole-disk by-id path using --argstr targetDisk.";
+        import ./hosts/linux-niri/layout.nix targetDisk;
+
+      packages.x86_64-linux.niri-install-test = import ./tests/niri-install.nix {
+        host = self.nixosConfigurations.linux-niri;
+        inherit vars;
+      };
+
+      packages.x86_64-linux.niri-workflow-apps =
+        let
+          inherit (self.nixosConfigurations.linux-niri) pkgs;
+        in
+        pkgs.linkFarmFromDrvs "niri-workflow-apps" (import ./hosts/linux-niri/workflow-apps.nix pkgs);
 
       homeConfigurations = {
         linux-desktop = mkProfile "linux-desktop";
@@ -192,6 +248,22 @@
       nixosConfigurations.linux-desktop-pilot = nixpkgs.lib.nixosSystem {
         specialArgs = { inherit self vars; };
         modules = [ ./hosts/linux-desktop-pilot/system.nix ];
+      };
+
+      nixosConfigurations.linux-niri = nixpkgs.lib.nixosSystem {
+        specialArgs = { inherit inputs self vars; };
+        modules = [
+          ./hosts/linux-niri/system.nix
+          inputs.disko.nixosModules.disko
+          ./hosts/linux-niri/disk.nix
+          ./hosts/linux-niri/hardware.nix
+        ];
+      };
+
+      packages.x86_64-linux.install-claude = self.nixosConfigurations.linux-niri.pkgs.claude-code;
+      packages.x86_64-linux.niri-session-vm-test = import ./tests/niri-session.nix {
+        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        inherit inputs self vars;
       };
 
       # VM smoke test for the pilot: boots it in QEMU (GDM, GNOME default,

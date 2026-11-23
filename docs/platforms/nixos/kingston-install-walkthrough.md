@@ -4,16 +4,23 @@ Use two devices. The small USB flash drive boots the **project installer ISO**. 
 
 ## 1. Get the matching ISO and deployment record
 
-On the working Linux PC open **Terminal**, change to the reviewed app-configs checkout and follow the build and VM checks in the deployment revision’s [installation runbook](niri-install.md). Use the project's `niri-installer-iso` output. A generic NixOS ISO lacks the prebuilt system and project tooling. The trial build can be used for read-only laptop discovery. Before installation, require a clean reviewed commit containing the destination hardware configuration, a passing installation rehearsal, and the matching ISO, SHA-256, system store path and full Git commit. Keep those values on the support PC. Include this guide and `ops/niri/verify-first-boot.sh` in the selected revision. A guide-only commit does not supply a deployable host.
+On the working Linux PC open **Terminal**, change to the reviewed app-configs checkout and follow the build and VM checks in the deployment revision’s [installation runbook](niri-install.md). Use the project's `niri-installer-iso` output. A generic NixOS ISO lacks the prebuilt system and project tooling. The trial build can be used for read-only laptop discovery. Before installation, require a clean reviewed commit whose hardware module covers the destination’s storage controller and boot requirements, a passing installation rehearsal, and the matching ISO, SHA-256, system store path and full Git commit. Keep those values on the support PC. Include this guide and `ops/niri/verify-first-boot.sh` in the selected revision. A guide-only commit does not supply a deployable host.
 
-For read-only discovery, the current build PC retains the trial image under `nix/result-niri-installer/iso/`. From the repository root, start a Bash shell and run:
+In a clean checkout of the selected local `main`, open Bash at the repository root and run:
 
 ```bash
-ISO="$PWD/nix/result-niri-installer/iso/nixos-minimal-26.11.20261114.5d2b81a-x86_64-linux.iso"
-printf '%s  %s\n' 9770b226d1a5216aaa245a8ecc2dc20f0f2cbd44524790f08ab29d5c14ae3022 "$ISO" | sha256sum -c -
+set -euo pipefail
+test -z "$(git status --porcelain)"
+test "$(git rev-parse HEAD)" = "$(git rev-parse refs/heads/main)"
+nix build --max-jobs 1 --cores 2 --no-update-lock-file --out-link result-kingston-iso ./nix#niri-installer-iso
+images=("$PWD"/result-kingston-iso/iso/*.iso)
+test "${#images[@]}" -eq 1
+test -f "${images[0]}"
+ISO=${images[0]}
+sha256sum "$ISO"
 ```
 
-Expect `OK`. For the final installation, use the destination build's filename and checksum. If the retained path is absent, build the ISO from the reviewed installer checkout. In Bash, `nix build --max-jobs 1 --cores 2 --no-update-lock-file --out-link result-kingston-iso ./nix#niri-installer-iso` leaves the image under `result-kingston-iso/iso/`. A missing output means the selected revision cannot supply the installer.
+Record the full commit and the printed base-image digest. After adding the offline checkout below, use the final image’s digest to verify the USB.
 
 ### Carry the committed repository on the bootable USB
 
@@ -26,7 +33,7 @@ git bundle create "$kit/app-configs.bundle" refs/heads/main
 git bundle verify "$kit/app-configs.bundle"
 git bundle list-heads "$kit/app-configs.bundle" refs/heads/main | cut -d' ' -f1 > "$kit/REVISION"
 tool=$(nix build --inputs-from ./nix --no-update-lock-file --no-link --print-out-paths 'nixpkgs#libisoburn^out')
-"$tool/bin/xorriso" -indev "$ISO" -outdev "$kit/app-configs-usb.iso" \
+"$tool/bin/xorriso" -indev "$ISO" -outdev "$kit/app-configs-usb.iso" -compliance iso_9660_level=3 \
   -map "$kit/app-configs.bundle" /app-configs.bundle -map "$kit/REVISION" /APP-CONFIGS-REVISION \
   -boot_image any replay -commit -end
 ISO="$kit/app-configs-usb.iso"
@@ -65,8 +72,21 @@ Unplug the Kingston. Insert an expendable flash drive of at least 8 GB. Check it
    ip -br link
    nixos-generate-config --show-hardware-config --no-filesystems
    ```
-4. Compare the discovered controller, initrd, firmware and graphics requirements to the project hardware module on the support PC. If edits are needed, review them, build, rehearse and reflash the matching ISO. The installer copies that exact system. Booting a helper PC cannot detect the destination laptop's hardware.
+4. Compare the discovered controller, initrd, firmware and graphics requirements to the project hardware module on the support PC. If edits are needed, review them, build, rehearse and reflash the matching ISO. Keep the generic module when it already covers the destination. This check needs no saved laptop identifiers. The installer copies that exact system. Booting a helper PC cannot detect the destination laptop's hardware.
 5. For the write phase, power off. **Physically disconnect the Windows SSD** and other data drives, or use a separate isolated UEFI helper with its own drives disconnected. If neither is possible, stop after discovery. Connect the Kingston externally and boot the small USB again. Keep the Kingston connected through installation and the subsequent NixOS boot. The helper route still requires the destination hardware review.
+
+### Which boot option to select
+
+On the Samsung, try the default **NixOS Installer** first, including for AMD integrated graphics. If Nouveau gives a black screen, choose **NixOS Installer (NVIDIA recovery - disable Nouveau)**. At the live prompt, `cat /proc/cmdline` should include `module_blacklist=nouveau`. **Options → No modesetting** is a separate fallback. These entries start the live installer. To check which GPU has a driver bound, run `lspci -nnk -d ::03xx` and read **Kernel driver in use**.
+
+Before formatting, verify the image carries the installed NVIDIA choice:
+
+```bash
+target=$(cat /etc/app-configs/linux-niri-toplevel)
+test -x "$target/specialisation/nvidia-open/bin/switch-to-configuration" && echo 'NVIDIA entry present'
+```
+
+After installing, boot the **Kingston** and hold **Space** if its systemd-boot menu is hidden. Choose the base NixOS entry for AMD or the entry ending in **(nvidia-open)** to test the NVIDIA open driver on supported hardware. In the NVIDIA session, check `lspci -nnk -d ::03xx` for the bound driver, `cat /sys/module/nvidia_drm/parameters/modeset` for `Y`, and `niri msg outputs` for the active panel. Test a cold login and suspend/resume on the destination.
 
 ## 4. Identify the Kingston and prepare the live checkout
 

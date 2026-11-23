@@ -297,18 +297,62 @@ no_mutation() {
     [[ "$output" == *"Host:  linux-cli"* ]]
 }
 
+@test "linux-niri builds only the locked system and leaves the host selection alone" {
+    local target="$FAKE/nix#nixosConfigurations.linux-niri.config.system.build.toplevel"
+    hinst --host=linux-niri --dry-run
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"would run: nix build"*"--max-jobs 1 --cores 2"*"--no-update-lock-file"*"--no-link"*"$target"* ]]
+    [ ! -s "$STUB_LOG" ]
+    hinst --host linux-niri
+    [ "$status" -eq 0 ]
+    [ "$(cat "$STUB_LOG")" = "nix build --extra-experimental-features nix-command flakes --max-jobs 1 --cores 2 --no-update-lock-file --no-link $target" ]
+    no_host_file
+    [[ "$output" != *"system-setup.sh"* ]]
+}
+
+@test "linux-niri refuses conflicting selection and host choices before running a tool" {
+    hinst --profile work --host linux-niri
+    [ "$status" -eq 2 ]
+    hinst --reconfigure --host linux-niri
+    [ "$status" -eq 2 ]
+    hinst --host linux-niri --host=linux-desktop
+    [ "$status" -eq 2 ]
+    HENV=(HOST_PROFILE=linux-desktop)
+    hinst --host linux-niri
+    [ "$status" -eq 2 ]
+    [ ! -s "$STUB_LOG" ]
+    no_host_file
+}
+
+@test "the linux-niri system marker refuses legacy bootstrap even with a desktop override" {
+    # Exercise the fixed system path against an isolated copy of the installer.
+    sed "s|/etc/app-configs/linux-niri|$BATS_TEST_TMPDIR/installed-niri|g" "$REPO_ROOT/ops/install.sh" >"$FAKE/ops/install.sh"
+    touch "$BATS_TEST_TMPDIR/installed-niri"
+    hinst --dry-run
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--host linux-niri"* ]]
+    hinst --profile work
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--host linux-niri"* ]]
+    hinst --host linux-desktop
+    [ "$status" -eq 1 ]
+    [[ "$output" == *"--host linux-niri"* ]]
+    [ ! -s "$STUB_LOG" ]
+    no_host_file
+}
+
 @test "--host with an unknown or empty value exits 2 before any step and writes nothing" {
     local v
     for v in wsl macos bogus ''; do
         hinst --host "$v"
         [ "$status" -eq 2 ] || { echo "[$v]: status $status"; return 1; }
-        [[ "$output" == *"--host needs linux-desktop or linux-cli"* ]]
+        [[ "$output" == *"--host needs linux-desktop, linux-cli or linux-niri"* ]]
         [[ "$output" != *"Preflight"* ]]
         no_host_file
     done
     hinst --host
     [ "$status" -eq 2 ]
-    [[ "$output" == *"--host needs linux-desktop or linux-cli"* ]]
+    [[ "$output" == *"--host needs linux-desktop, linux-cli or linux-niri"* ]]
     no_host_file
 }
 

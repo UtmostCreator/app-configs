@@ -47,7 +47,12 @@ same_disk() {
 }
 
 repo="$HOME/Projects/app-configs"
-check 'Booted the recorded generation' test "$(readlink -f /run/booted-system)" = "$1"
+booted=$(readlink -e /run/booted-system)
+if [[ -n $booted && -L $1/specialisation/nvidia-open && $booted == "$(readlink -e "$1/specialisation/nvidia-open")" ]]; then
+  printf 'PASS  Booted the recorded NVIDIA specialisation\n'
+else
+  check 'Booted the recorded generation' test "$booted" = "$1"
+fi
 check 'Root uses the installed LUKS mapper' mount_matches / /dev/mapper/linux-niri-root
 check 'EFI partition mounted at /boot' test "$(findmnt -nro FSTYPE -M /boot)" = vfat
 check 'ESP uses the installation partition label' mount_matches /boot /dev/disk/by-partlabel/linux-niri-esp

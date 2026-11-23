@@ -1,187 +1,249 @@
-# Install `linux-niri` on the laptop (NixOS with niri, no GNOME desktop)
+# Install and recover linux-niri
+
+**Preparation runbook. No physical installation has been accepted.** Keep the working NixOS/GNOME PC available throughout. The milestone is a blank target disk, a fresh home, and an authenticated first Niri login with a working terminal, launcher and network. Record build, VM and laptop results separately in [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md).
 
 For an external Kingston alongside Windows, start with the [step-by-step walkthrough](kingston-install-walkthrough.md).
 
-Draft runbook, 2026-11-22. It follows the stage order of [ADR-0049](../../architecture/decisions/0049-niri-safest-staged-installation-order.md), which also explains why the laptop was chosen over the other two ways of installing.
+Media preparation has a separate [flash drive and Kingston guide](niri-install-media.md).
 
-**It cannot be run yet.** The `linux-niri` host is not written, so steps 4 and 5 have nothing to install (see "Before you start"). Nothing here has been run on hardware. Every step that changes the laptop needs the owner's go-ahead when it is reached.
+## 1. Get Claude working before touching a disk
 
-Use the [shared work-folder convention](../../architecture/decisions/0040-macos-home-layout-and-cleanup-policy.md#shared-work-folder-convention) when preparing the user environment. [ADR-0050](../../architecture/decisions/0050-nixos-niri-home-layout.md) records the future provisioning checks. At first login, save a screenshot and verify that it lands in `~/Pictures/Screenshots`. Preserve existing project and vault paths during any later data transfer.
+On the working PC, open a terminal in the reviewed checkout. Run `claude --version` and then `claude`. Complete the interactive sign-in if requested. Ask it to identify the host output, explain the target-disk checks below and find the recovery instructions. A version string proves the binary starts. An answer in that session proves account access. Keep this terminal available while the laptop boots its installer. [Claude Code quickstart](https://code.claude.com/docs/en/quickstart)
 
-The existing PC is not part of the install. Nothing is attached to it and nothing on it is changed.
-
-## Before you start
-
-All of these must hold. The first three are the work that is still open.
-
-- [ ] The `linux-niri` host exists in the flake, builds, and its VM test boots to the text login and into niri (ADR-0046 G27).
-- [ ] The host directory holds a placeholder hardware module, which step 4 replaces with the generated one.
-- [ ] This runbook has been rehearsed once in a UEFI virtual machine with an empty disk, booted from the same installer image, up to and including the reboot and the passphrase prompt.
-- [ ] A USB stick with the official NixOS installer image for x86-64. The minimal image is enough.
-- [ ] The laptop's firmware is in UEFI mode with Secure Boot off (the boot loader is not signed).
-- [ ] The laptop's disk holds nothing you want. If it does, copy it off first; step 3 erases the disk.
-- [ ] A network for the laptop: a cable or a phone's USB tethering is simplest. Wi-Fi works from the installer with `nmtui`.
-- [ ] The PC's SSH **public** key, to authorise it on the laptop later. No private key goes onto the laptop or the USB stick.
-- [ ] A disk passphrase that types the same on a US keyboard layout: the prompt appears before the keyboard layouts are loaded.
-- [ ] This page open on a second device.
-
-## Step 1: boot the installer and check the machine
-
-Boot the laptop from the USB stick, then:
+The project installer ISO includes Claude Code, Codex CLI, Git and Disko in its live environment. It also carries the built target in its read-only Nix store. After booting it, run `claude --version` and `codex --version` from the live `nixos` account. This account can elevate without a password. Keep Claude in its ordinary shell and run privileged installation commands yourself. On a support PC missing the CLI, use the project package without changing the workstation profile. From the repository root on x86-64 Linux, including a networked installer with the accepted checkout, use:
 
 ```bash
-uname -m                                   # expect x86_64
-test -d /sys/firmware/efi && echo UEFI     # expect UEFI
-nmtui                                      # only if you need Wi-Fi
-ping -c 1 cache.nixos.org
+nix --extra-experimental-features 'nix-command flakes' run --no-update-lock-file ./nix#install-claude -- --version
+nix --extra-experimental-features 'nix-command flakes' run --no-update-lock-file ./nix#install-claude
 ```
 
-Stop if the machine is not x86_64 or did not boot in UEFI mode.
+Use an ordinary account. Prefer signing in on the PC so the live USB holds no account credentials. Keep passwords, keys and backup recovery material out of chat, command arguments, Git and evidence. The operator controls disk selection, writes, passwords and reboots. Keep an offline copy of this page for loss of network or assistant access.
 
-## Step 2: find the disk
+## 2. Select and build the deployment
+
+Use a clean checkout at the accepted commit, whose hardware module has been checked against the destination. Reuse the portable module if it covers the storage and boot requirements. For networked installation on a fresh live system, set `CONFIG_SOURCE` to the repository URL or an offline Git bundle containing that commit and `INSTALL_REV` to the full SHA from the working PC. As the ordinary installer user:
 
 ```bash
-lsblk -o NAME,SIZE,MODEL,SERIAL,TRAN,TYPE,MOUNTPOINTS
+git clone "${CONFIG_SOURCE:?select the repository or offline bundle}" app-configs
+cd app-configs
+git switch --detach "${INSTALL_REV:?specify the reviewed commit}"
+git rev-parse HEAD
+git status --porcelain
+```
+
+Compare the printed SHA to the deployment record and require an empty status. On the laptop's live USB, `nixos-generate-config --show-hardware-config --no-filesystems` supplies discovery data. Review the storage-controller, firmware, graphics, CPU and initrd requirements against `nix/hosts/linux-niri/hardware.nix`. Keep Disko as the owner of LUKS and mounts. The generic module is only a starting point. For the attached-SSD route collect this information on the laptop before preparing its disk on the PC.
+
+On the working Linux PC, `bash ops/install.sh --host linux-niri --dry-run` previews preparation and `bash ops/install.sh --host linux-niri` builds the system with one Nix job and two build cores. This selector finishes after the build. Formatting, installation and activation have separate steps.
+
+Run the following builds and VM checks **one at a time on the working PC**, from the root of that checkout. Overlapping Nix evaluations, two guests and ISO compression exhausted this workstation’s RAM and swap during preparation. Finish each command before starting the next, including jobs in other terminals. Before each heavy step check `free -h` and `cat /proc/pressure/memory`. Defer the step if the desktop is under memory pressure. Keep the resulting host store path in the deployment record and label it `ACCEPTED_SYSTEM`. Rebuild the image after changing the destination hardware module:
+
+```bash
+git rev-parse HEAD
+git status --porcelain
+sha256sum nix/flake.lock
+nix flake check --max-jobs 1 --cores 2 --no-update-lock-file ./nix
+nix build --max-jobs 1 --cores 2 --no-update-lock-file --no-link --print-out-paths \
+  ./nix#nixosConfigurations.linux-niri.config.system.build.toplevel
+nix build --max-jobs 1 --cores 2 --no-update-lock-file --no-link ./nix#disko ./nix#install-claude
+installer=$(nix build --max-jobs 1 --cores 2 --no-update-lock-file --no-link --print-out-paths ./nix#niri-installer-iso)
+sha256sum "$installer"/iso/*.iso
+nix build --max-jobs 1 --cores 2 --no-update-lock-file --no-link -L ./nix#niri-session-vm-test
+nix build --max-jobs 1 --cores 2 --no-update-lock-file --no-link -L ./nix#niri-install-test
+```
+
+Record the repository SHA, lockfile digest, hardware revision, host output and resulting system store path. Retain the project ISO store path and SHA-256 and verify that digest on the transferred image. Build status, session VM results, UEFI disk rehearsal and hardware acceptance each have their own entry. The deployed system and Home Manager state versions are compatibility choices. Keep them fixed during routine dependency updates.
+
+## 3. Test the VM, then the older laptop
+
+Boot the selected x86-64 installer ISO with UEFI firmware, Secure Boot disabled, a writable virtual EFI variable store and a single empty virtio disk with the serial `niri-rehearsal`. The automated disk rehearsal allocates 48 GiB of virtual disk space and 4 GiB of guest memory. Exclude host disks and home-directory mounts. Verify `uname -m` and `test -d /sys/firmware/efi`. For a networked installation also verify connectivity. For the prepared offline route disconnect the network before booting. Record elapsed time and resource usage for this rehearsal using the [performance checks](../../work/active/T-0032-niri-trial-session/ticket.md#performance-at-each-milestone). Use the CLI available on the ISO to connect, for example `nmtui` on a NetworkManager image. Finish the remaining steps **inside the guest** before repeating the tested procedure on the laptop. The `niri-session-vm-test` output checks the authenticated graphical session. The `niri-install-test` output uses a test installer guest to populate a fresh encrypted disk; a separate UEFI guest boots that disk with its own Nix store. Repeat the runbook from the actual installer ISO to verify its networking, tools and rescue procedure.
+
+The **older laptop is the first physical trial**. Boot the project USB there while the internal disk is still untouched. In the live shell check `uname -m` for `x86_64`, `cat /sys/firmware/efi/fw_platform_size` for `64`, `lsblk` for the internal disk and installer as distinct devices, and `ip link` for network adapters. Check usable video output and keyboard input and establish a network connection. Record the model, RAM, storage controller and graphics driver in the hardware review. If the laptop only offers legacy BIOS or 32-bit UEFI, this image’s x86-64 EFI loader cannot cover it. Record the result before proceeding to disk installation. Repeat hardware discovery and acceptance on any later laptop with different hardware.
+
+| Route after rehearsal | Required evidence before writing |
+| --- | --- |
+| USB on the destination laptop | Confirm the internal target and its dedicated ESP plan. Identify the installer stick separately. Preserve or disconnect other disks. |
+| Kingston SSD attached to the working PC | Confirm the target by its resolved whole-disk by-id path, model, serial and size locally. Protect every underlying disk of the running root, Nix store, boot, ESP and live media. Stop on any ambiguity, mount, active swap, LVM/RAID/crypt holder, name collision or missing disk guard. Leave the source system running throughout. |
+
+Read-only identification on the installing machine:
+
+```bash
+lsblk -p -o NAME,PKNAME,TYPE,SIZE,MODEL,SERIAL,FSTYPE,PARTLABEL,MOUNTPOINTS
+findmnt --real
+swapon --show
 ls -l /dev/disk/by-id/
 ```
 
-The installer stick shows `usb` in the `TRAN` column and has mounted partitions. The laptop's own disk does not. Pick the laptop's disk by its `by-id` name, never by `sda` or `nvme0n1`, and read the model and size back to yourself:
+Trace device-mapper, RAID and multi-device roots to all backing disks. Check kernel holders for the target and its children, including inactive-looking members claimed by another device. Require a whole disk under `/dev/disk/by-id/`; re-resolve it and repeat the checks immediately before any write. Compare partition labels across every attached disk. A USB bridge may change the by-id name after moving the SSD. Boot and rescue use the destination's actual partition identities. Save any needed data to independent media and verify a restore first.
+
+**Attached-SSD formatting stays blocked until the later installer implements and tests these refusals.** A visual check alone is insufficient on the daily PC. Use only the target ESP; the portable host sets `boot.loader.efi.canTouchEfiVariables = false`. Omit the Disko option for writing firmware entries. Never activate the target on the source PC.
+
+## 4. Install, enrol the account, cold boot
+
+Inside the **disposable guest** use the pinned Disko CLI to prepare the disk, then install the exact system closure you built. Keep the target mounted for password enrolment.
+
+These commands use the project ISO’s prebuilt system. A live RAM overlay can be smaller than the target closure.
+
+Choose one preparation route below. Both use the same disk, mount and system checks and the same installation step. On the live ISO open a dedicated Bash shell and keep it through enrolment. Supply `ACCEPTED_SYSTEM` from the workstation build record. The example disk ID is exclusively for the disposable guest.
 
 ```bash
-DISK=/dev/disk/by-id/<the laptop's internal disk>
-lsblk -o NAME,SIZE,MODEL,SERIAL "$DISK"
+set -euo pipefail
+DISK=/dev/disk/by-id/virtio-niri-rehearsal
+test -b "$DISK"
+test "$(lsblk -dnro TYPE "$DISK")" = disk
+test ! -e /dev/mapper/linux-niri-root
+test ! -e /dev/disk/by-partlabel/linux-niri-luks
+test ! -e /dev/disk/by-partlabel/linux-niri-esp
+test ! -L /mnt
+mounted=$(findmnt -rn -o TARGET)
+if grep -Eq '^/mnt(/|$)' <<<"$mounted"; then echo 'Install mount tree is in use'; exit 1; fi
+if [[ -d /mnt && -n "$(ls -A /mnt)" ]]; then echo 'Install mount directory is occupied'; exit 1; fi
+read -r system < /etc/app-configs/linux-niri-toplevel
+test "$system" = "${ACCEPTED_SYSTEM:?copy the exact toplevel path from the build record}"
+test -x "$system/bin/switch-to-configuration"
 ```
 
-## Step 3: partition, encrypt, format and mount
-
-This erases the disk in `$DISK`. Check step 2's output once more before the first command.
+**Networked preparation.** In the accepted clean checkout inside the guest, generate the script for the selected device and read the account name.
 
 ```bash
-sudo parted "$DISK" -- mklabel gpt
-sudo parted "$DISK" -- mkpart ESP fat32 1MiB 1GiB
-sudo parted "$DISK" -- set 1 esp on
-sudo parted "$DISK" -- mkpart root 1GiB 100%
-
-sudo mkfs.fat -F 32 -n BOOT "${DISK}-part1"
-sudo cryptsetup luksFormat --type luks2 "${DISK}-part2"
-sudo cryptsetup open "${DISK}-part2" cryptroot
-sudo mkfs.ext4 -L nixos /dev/mapper/cryptroot
-
-sudo mount /dev/mapper/cryptroot /mnt
-sudo mkdir -p /mnt/boot
-sudo mount -o umask=0077 "${DISK}-part1" /mnt/boot
+rev=$(git rev-parse HEAD)
+flake="git+file://$PWD?dir=nix&rev=$rev"
+target_user=$(nix eval --raw -f nix/vars/default.nix username)
+preview=$(nix run --max-jobs 1 --cores 2 --no-update-lock-file "$flake#disko" -- --dry-run --mode format,mount \
+  --flake "$flake#linux-niri" --argstr targetDisk "${DISK:?select the verified guest disk}")
+prepare=${preview##*$'\n'}
+[[ "$prepare" == /nix/store/*-disko-format-mount/bin/disko-format-mount && -x "$prepare" ]]
 ```
 
-The layout is deliberately plain: one EFI partition, one encrypted ext4 root, no swap partition and no hibernate.
-
-## Step 4: hardware file and the repository
-
-Generate the hardware description on the laptop itself, so it names this machine's disk, drivers and encryption:
+**Prepared offline installation.** The live image carries the system closure and Disko tools. The offline rehearsal supplied the generated formatting script on a second read-only virtual CD labelled `NIRIFIX`. The live guest needed neither a checkout nor a flake evaluation. Prepare this kit **on the working PC** from the accepted checkout. For the archived development candidate, reconstruct its recorded Git tree before using the relative flake. The dry run generates a script in the store without touching a disk.
 
 ```bash
-sudo nixos-generate-config --root /mnt
-grep -nE 'luks|fileSystems|availableKernelModules' /mnt/etc/nixos/hardware-configuration.nix
+set -euo pipefail
+DISK=/dev/disk/by-id/virtio-niri-rehearsal
+kit=$(mktemp -d)
+preview=$(nix run --max-jobs 1 --cores 2 --no-update-lock-file ./nix#disko -- \
+  --dry-run --mode format,mount --flake ./nix#linux-niri --argstr targetDisk "$DISK")
+prepare=${preview##*$'\n'}
+[[ "$prepare" == /nix/store/*-disko-format-mount/bin/disko-format-mount && -x "$prepare" ]]
+prep_root=${prepare%/bin/*}
+nix-store --export "$prep_root" > "$kit/preparation.nar"
+printf '%s\n' "${ACCEPTED_SYSTEM:?supply the recorded system path}" > "$kit/expected-target"
+sha256sum "$kit/preparation.nar"
+printf 'disk=%s\nprep_root=%s\nuser=%s\n' "$DISK" "$prep_root" "$(nix eval --raw -f nix/vars/default.nix username)"
 ```
 
-The file must mention the LUKS device, `/` and `/boot`. Then put the repository on the new disk, not in the installer's memory, and replace the placeholder hardware module with the generated file:
+Record the printed digest, disk, script root and user independently. To reproduce the virtual CD, use the pinned xorriso on the working PC and attach the resulting image to the guest as a second read-only CD, alongside the project ISO.
 
 ```bash
-U=<your user name>
-HOST=linux-niri
-sudo mkdir -p "/mnt/home/$U/Projects"
-sudo git clone <repository URL> "/mnt/home/$U/Projects/app-configs"   # nix-shell -p git, if git is missing
-cd "/mnt/home/$U/Projects/app-configs"
-
-HOSTDIR="nix/hosts/$HOST"
-sudo cp /mnt/etc/nixos/hardware-configuration.nix "$HOSTDIR/hardware-configuration.nix"
-sudo git add "$HOSTDIR/hardware-configuration.nix"
-sudo git -c user.name="$U" -c user.email="<your commit email>" commit -m "feat(nix): add the generated hardware module for $HOST"
+kit_iso="$kit.iso"
+xorriso_root=$(nix build --inputs-from ./nix --no-update-lock-file --no-link --print-out-paths \
+  --max-jobs 1 --cores 2 'nixpkgs#libisoburn^out')
+"$xorriso_root/bin/xorriso" -as mkisofs -V NIRIFIX -R -o "$kit_iso" "$kit"
 ```
 
-Committing matters: a flake ignores untracked files, and an uncommitted tree records a dirty revision. The commit stays local for now. Later the PC fetches it from the laptop over SSH, so the laptop needs no credentials for the remote.
+The test exported only the script store output. Its transitive references were already present on this exact live ISO. For the recorded virtio disk the export was 10,232 bytes, SHA-256 `7316c27b0b46a68d3199b76d2c4d32331b4a5dc2c9c72dd8f06d2e01c151f029`. Generate and rehearse a new export for a different disk identity.
 
-## Step 5: build and install
+**Back on the offline live ISO**, in the shell that completed the common checks, use the values from the trusted build record for `PREP_SHA256`, `PREP_ROOT`, `PREP_DISK` and `TARGET_USER`.
 
 ```bash
-FLAKE="git+file:///mnt/home/$U/Projects/app-configs?dir=nix"
-
-sudo nix --extra-experimental-features 'nix-command flakes' build --no-link \
-  "$FLAKE#nixosConfigurations.$HOST.config.system.build.toplevel"
-
-sudo nixos-install --no-root-passwd --flake "$FLAKE#$HOST"
-sudo nixos-enter --root /mnt -c "passwd $U"
+sudo mkdir -p /run/rehearsal
+sudo mount -o ro /dev/disk/by-label/NIRIFIX /run/rehearsal
+test "$DISK" = "${PREP_DISK:?supply the recorded by-id path}"
+test "$(cat /run/rehearsal/expected-target)" = "$system"
+printf '%s  %s\n' "${PREP_SHA256:?supply the recorded archive digest}" /run/rehearsal/preparation.nar | sha256sum -c -
+imported=$(sudo nix-store --import < /run/rehearsal/preparation.nar)
+test "$imported" = "${PREP_ROOT:?supply the recorded script root}"
+prepare="$imported/bin/disko-format-mount"
+test -x "$prepare"
+nix-store -qR "$imported" | xargs -r nix-store --check-validity
+target_user=${TARGET_USER:?supply the recorded account name}
 ```
 
-- Build first. If the build fails, nothing has been installed and the fix is in the repository.
-- `--no-root-passwd` leaves the root account locked; you work as your user with `sudo`.
-- Do not skip `passwd`. The repository holds no password, and without one you cannot log in after the reboot.
-
-Then leave the installer:
+**Install from either route.** Inspect that script and the store scripts it calls. Recheck the resolved target against the guest disk identity immediately before writing. Run the next block first on the blank virtual disk. For the later physical trial, use the verified single-target procedure in the [media guide](niri-install-media.md#install-directly-onto-the-kingston-then-move-it). Formatting writes GPT, a 1 GiB FAT32 ESP and LUKS2 with ext4. Enter the encryption passphrase at the prompt. The installed host uses zram and disables hibernation.
 
 ```bash
-cd /
-sudo umount -R /mnt
-sudo cryptsetup close cryptroot
-sudo reboot
+less "$prepare"
+sudo "${prepare:?inspect the guest preparation script first}"
+test "$(findmnt -n -M /mnt -o FSTYPE)" = ext4
+test "$(findmnt -n -M /mnt/boot -o FSTYPE)" = vfat
+test "$(readlink -f "$(findmnt -n -M /mnt -o SOURCE)")" = "$(readlink -f /dev/mapper/linux-niri-root)"
+test "$(readlink -f "$(findmnt -n -M /mnt/boot -o SOURCE)")" = "$(readlink -f /dev/disk/by-partlabel/linux-niri-esp)"
+lsblk -sp -o NAME,TYPE,FSTYPE /dev/mapper/linux-niri-root /dev/disk/by-partlabel/linux-niri-esp
 ```
 
-Remove the USB stick when the screen goes dark.
-
-## Step 6: first boot
-
-Expected: the passphrase prompt, then the text login (tuigreet).
-
-- [ ] The passphrase unlocks the disk at a cold boot.
-- [ ] `Ctrl+Alt+F2` gives a second text console, and you can log in there with your password. A wrong password is refused.
-- [ ] `nmtui` connects the network.
-- [ ] `nixos-version --configuration-revision` shows the commit from step 4, without "dirty".
-- [ ] `sudo chown -R "$USER":users ~/Projects` makes the checkout yours.
-
-Do **not** log into niri yet. It has no terminal, launcher or config until step 7's user environment is in place.
-
-## Step 7: the remaining stages
-
-Each is one stage of ADR-0049, with its pass check there. Do them in this order and stop at the first one that fails.
-
-| Stage | What you do | Where |
-|---|---|---|
-| 3 | Add key-only SSH with the PC's public key, rebuild with `boot`, and check that both generations boot. From the checkout, as your user: `nixos-rebuild boot --flake "git+file://$PWD?dir=nix#linux-niri" --sudo` | Text console |
-| 3b | `bash ops/install.sh --profile work`. Ignore the closing advice to run the system setup script: that script rewrites `/etc/nixos` and must not run on this machine | Text console |
-| 4 | Rehearse every recovery route, including the installer-USB rescue below | Both machines |
-| 5 | First niri login from the text greeter | Laptop |
-| 6 to 10 | Lock and suspend, portals and secrets, sound and devices, launcher, then the shell trial | Laptop |
-
-Rebuilds run as your user with `--sudo`, so the build happens as the owner of the checkout and only the activation is elevated.
-
-## Rescue from the installer USB
-
-Rehearse this once in stage 4, before anything can lock the screen.
+Confirm the mounted devices trace to the virtual disk. Install the built system, then set the normal user's password before reboot. Verify the fallback loader on the target ESP. Record the system path and actual commands from the successful rehearsal before promoting the procedure to the laptop.
 
 ```bash
-sudo cryptsetup open "${DISK}-part2" cryptroot
-sudo mount /dev/mapper/cryptroot /mnt
-sudo mount -o umask=0077 "${DISK}-part1" /mnt/boot
+[[ "$target_user" =~ ^[a-z_][a-z0-9_-]*$ ]]
+sudo nixos-install --no-root-passwd --no-channel-copy --root /mnt --system "${system:?build the target first}"
+sudo nixos-enter --root /mnt -c "passwd $target_user"
+findmnt /mnt/boot
+sudo test -f /mnt/boot/EFI/BOOT/BOOTX64.EFI
+```
+
+Unmount the verified target ESP and root, then close its mapper. For the workstation route, move the powered-down SSD to the laptop. Remove the installer, select the target in destination firmware and cold boot. Check the LUKS prompt, tuigreet, wrong-password rejection, normal login, a second TTY and password-backed sudo. Compare `readlink -f /run/current-system` with the installation record. After the empty-home login check, clone the same reviewed commit into `~/Projects/app-configs` as the installed user for future rebuilds.
+
+From the first Niri session, open Ghostty with **Super+T**, Vicinae with **Alt+Space**, clipboard history with **Alt+V** and VS Code recents with **Alt+E**. Run `niri validate`, `nmtui`, `claude --version` and `codex --version`, save a screenshot under `~/Pictures/Screenshots` and log out with **Super+Shift+E**. Confirm the greeter requires authentication again. Home Manager activates with the host. For later changes on the laptop, rebuild the explicit system output as in step 5. The legacy `sys-update` workflow selects a standalone home and can update the lockfile. Use it only on the hosts it manages.
+
+## 5. Prove recovery before selecting a shell
+
+1. On the installed guest, boot the known-good generation once and record its generation and store path. Protect its system profile generation, boot entry and closure throughout the trial. Keep automatic generation pruning disabled and retain the systemd-boot entry. On the target, record `readlink -f /run/booted-system` and protect the closure with `sudo nix-store --add-root /nix/var/nix/gcroots/linux-niri-known-good --realise "$(readlink -f /run/booted-system)"`. Create that root only after boot-testing this generation. A GC root preserves the store path; keeping the system profile generation also preserves its boot entry.
+2. Make a reviewed, reversible change to the target (for example a visible generation label), build from the clean checkout with the same lock and apply with `nixos-rebuild boot --sudo --flake ./nix#linux-niri --no-update-lock-file` **on the destination only**. Check that two different system paths exist. Boot both via systemd-boot and record which path actually ran.
+3. In the disposable guest, deliberately break graphical startup in a candidate generation. Use a TTY, or separately enrolled key-only SSH, to recover the working generation. Verify login and logout again. Record what failed and which recovery path worked.
+4. Rehearse USB rescue with the network disconnected. After verifying disk identities, mount the existing root and ESP, inspect generations, restore a known-good default and cold boot without the USB. A rebuild only changes declared system and home configuration. Restore mutable files separately.
+
+Offline rescue uses the live ISO’s existing cryptsetup, mount and nixos-enter commands. It needs neither the formatting kit nor a flake checkout. Use an **empty, unmounted** `/mnt` on the live system. Confirm both partition symlinks belong to the selected disk. Require a free mapper name and no mounts at or below `/mnt` before starting this sequence. If either is occupied, identify the existing mappings and mounts before resuming. Run in a dedicated Bash shell:
+
+```bash
+set -euo pipefail
+test ! -e /dev/mapper/linux-niri-root
+mounted=$(findmnt -rn -o TARGET)
+if grep -Eq '^/mnt(/|$)' <<<"$mounted"; then echo 'Rescue mount tree is in use'; exit 1; fi
+test ! -L /mnt
+sudo mkdir -p /mnt
+test -z "$(ls -A /mnt)"
+sudo cryptsetup open /dev/disk/by-partlabel/linux-niri-luks linux-niri-root
+sudo mount /dev/mapper/linux-niri-root /mnt
+sudo mount -o umask=0077 /dev/disk/by-partlabel/linux-niri-esp /mnt/boot
+findmnt /mnt
+findmnt /mnt/boot
 sudo nixos-enter --root /mnt -c 'nix-env -p /nix/var/nix/profiles/system --list-generations'
-sudo nixos-enter --root /mnt -c 'nix-env -p /nix/var/nix/profiles/system --switch-generation <N> && /nix/var/nix/profiles/system/bin/switch-to-configuration boot'
 ```
 
-Then unmount, reboot and confirm generation `<N>` is the default. The rehearsal confirms or corrects the last command.
+In `sudo nixos-enter --root /mnt`, set `generation` to the boot-tested number you recorded. Restore the boot default with:
 
-## If something goes wrong
+```bash
+nix-env -p /nix/var/nix/profiles/system --switch-generation "${generation:?select the recorded generation}"
+/nix/var/nix/profiles/system/bin/switch-to-configuration boot
+```
 
-| What you see | What to do |
-|---|---|
-| The build in step 5 fails | Nothing is installed. Fix the repository on the PC, pull on the laptop, build again |
-| The laptop does not boot from its disk | Boot the installer USB, run the rescue mounts, check that `/mnt/boot` holds `EFI` and `loader`, and that Secure Boot is off |
-| The passphrase is refused | Type it as on a US keyboard |
-| No login is accepted | The password was not set. Rescue mounts, then `nixos-enter --root /mnt -c "passwd <user>"` |
-| A rebuild breaks the system | Pick the previous generation in the boot menu |
-| niri shows nothing or crashes | `Ctrl+Alt+F2`, log in on the text console, read `journalctl --user -b -u niri` |
-| Anything you cannot fix | The laptop held nothing: repeat from step 3. The PC was never involved |
+Exit the chroot. Unmount `/mnt/boot`, then `/mnt`, and close `linux-niri-root` before removing the disk. Rescue never formats.
 
-## What this runbook leaves out, on purpose
+## 6. Accept the laptop and recover the data
 
-- **No GNOME, no GDM.** The fallback is the PC, not a second desktop on the laptop.
-- **No disko, no swap partition, no hibernate, no Secure Boot, no TPM unlock.** Each adds a recovery procedure of its own. They can be added to a working install later.
-- **No install from the running PC onto an attached disk.** It risks the PC's disks and firmware entries, and describes the wrong machine's hardware (ADR-0049, "Where to install").
-- **No assistant in the critical path.** An AI coding assistant arrives with stage 3b like the other tools and is optional. The install, the first boot and every recovery route work without it, and it never runs partitioning, install or activation commands.
+- Check laptop outputs, Wi-Fi, speakers, microphone, brightness, lid and suspend/resume. Lock, reject a wrong password, hotplug an external display while locked and unlock. Check that no unlocked frame appears on resume.
+- In the actual browser/call application, share a window and a monitor to another client. Open/save through the GTK chooser. Retrieve a dummy credential after a cold login. Use dummy vault data to verify sensitive-window capture behaviour.
+- Trial Dux then Noctalia after baseline recovery passes. Stop at the first candidate that passes the documented workflow, one-owner, pinned/offline configuration and crash tests. Stop its shell process and verify windows, locking and polkit still work. Select the right project with several Code windows open. [Shell trial criteria](../../work/active/T-0032-niri-trial-session/ticket.md)
+- Before migrating personal data, restore a project, KeePassXC database, required application state and recovery material from Kopia to an independent destination. Open the restored copies and verify content and access locally. Enable account-bound services individually after enrolment.
+- Keep the configuration commit, lock, ISO and checksum, Disko tools, system closure and this recovery procedure offline. Archive flake sources with `nix flake archive` and copy the built system and installer closures with `nix copy`; verify the cache can supply both on independent media. Fresh LUKS metadata, host keys and account state are machine-specific. [Flake sources](https://nix.dev/manual/nix/stable/command-ref/new-cli/nix3-flake-archive.html) · [Built closures](https://nix.dev/manual/nix/stable/command-ref/new-cli/nix3-copy.html)
+
+
+### Offline recovery kit
+
+Use independent storage with room for both the ISO and closures. From the clean checkout, reuse the reviewed `flake`, `system` and `installer` values above. Set `cache` to a file-backed Nix cache on that storage. Archive sources and copy the actual build outputs separately:
+
+```bash
+nix flake archive --no-update-lock-file --to "${cache:?select the offline cache}" "$flake"
+nix copy --to "$cache" "$system" "$installer" "$flake#disko" "$flake#install-claude"
+```
+
+On the machine that generated the verified target preview, copy its store output with `nix copy --to "$cache" "${prepare%/bin/*}"`. Repeat for each target-specific script in the kit. Retain a Git clone or bundle containing the selected commit, the ISO itself, its checksum and the runbook. Record how to access and verify the cache independently of the laptop. Before relying on it, boot the installer without network, import the recorded paths and confirm the exact host and storage tools are available. The running Claude service requires connectivity; the rescue instructions and tools must work offline.
+
+For Kopia, connect to the intended backup repository from a separate account or recovery environment. Select a snapshot by its recorded ID and a **new, empty** restore destination on independent storage:
+
+```bash
+kopia repository status
+kopia snapshot list
+kopia snapshot restore "${snapshot_object:?choose the recorded snapshot object}" "${restore_dir:?choose a new restore destination}"
+```
+
+Compare representative project and application files locally, open the restored KeePassXC database, and exercise the recovery instructions without the original machine. Retain the snapshot identifier and outcome with the deployment record. Keep backup passwords, recovery identities and vault contents out of the record.

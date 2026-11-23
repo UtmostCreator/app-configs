@@ -1,13 +1,8 @@
 Source: local
 
-# T-0032: niri trial session, without the GNOME desktop (feature; originally "alongside GNOME")
+# T-0032: Prove the Niri installation and trial session
 
-Status: in progress (pilot session config and VM test on main 450e78e, 4c57049, 6fb82ee, 57b66fe; all real-session checks remain, PC 2 install needs owner)
-Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gaps: G02–G05, G10–G11 and G14. This ticket's pre-activation backup and real-session gates remain mandatory; the matrix is not authorisation. Proposed stage order, with a pass check and fallback per stage: [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md).
-Depends on: T-0029, T-0030
-The shell comparison trial also requires P4a (activation gate, its own user approval; plan `docs/plans/niri-migration.md` section 6)
-Parity sign-off also needs: T-0031 niri backend (not a prerequisite for creating the session)
-Evidence: `docs/research/desktop-migration-claim-audit.md`; shell trial gates: `docs/research/niri-shell-dux-vs-noctalia.md` (user-supplied, unverified)
+Status: in progress (system and session built, VM installation and recovery exercised, laptop acceptance pending)
 
 ## Installation progress and next steps
 
@@ -42,101 +37,27 @@ Each percentage covers the listed checkpoints for the named scope. Complexity re
 
 Latest VM result: `a464c0dxyllg2nbhbvsqamlynpic7i5k-vm-test-run-linux-niri-install-recovery`. The installer ISO digest matched the retained development verification record. The Kingston has no physical result yet.
 
-## Scope change (2026-11-22): the niri install has no GNOME desktop
+Use the [installation runbook](../../../platforms/nixos/niri-install.md) and [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md). The existing GNOME PC can run Claude and build the target while the laptop is offline. Its takeover under T-0029 is independent. T-0031 supplies the window-focus backend for daily acceptance. Shell research follows installation and recovery.
 
-Owner direction, recorded in ADR-0012 and ordered in [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md): install NixOS with niri and without GNOME, where that is safe. This ticket was written for niri as a second session beside GNOME and GDM. Read it as follows.
+## Evidence by environment
 
-- **Still valid:** everything about the niri session itself: the KDL, portals, screen sharing, lock, shell trial gates, applications, units and the backup gate.
-- **Superseded for the new install:** "Keep GDM and GNOME; no greeter change", the `defaultSession = gnome` override, the GNOME-default acceptance items, and `useNautilus` left at its default. On the new install the greeter is greetd with tuigreet, `niri` is the only session, and `programs.niri.useNautilus = false` routes the file chooser to the GTK portal.
-- **Still applies to the committed pilot host** (`linux-desktop-pilot`), which enables GNOME and GDM and is to be replaced by a niri-only host: the superseded items above.
-- **Fallback:** the existing GNOME system, untouched, plus the text console, the boot menu and the installer USB. There is no GNOME session to log into on the new install.
-- **Where:** the laptop, which has no operating system, installed from the NixOS installer USB; commands in the [runbook](../../../platforms/nixos/niri-install.md). Installing onto a disk attached to the running PC, and adding niri to the existing GNOME system first, were compared and not chosen (ADR-0049).
+| Gate | What counts | Result |
+| --- | --- | --- |
+| Preparation | Run the packaged Claude Code as the ordinary user on the project ISO or installed laptop | CLI startup verified on both. After enrolment, ask Claude to explain a read-only step from the runbook and record whether a response arrives, the environment and the CLI version. Authenticated use is pending. |
+| A. Build | Actual locked `linux-niri` toplevel and integrated user; validate KDL, commands, forbidden closure paths and session configuration | See verification record below |
+| B. Disposable VM | Session smoke test; blank UEFI disk with LUKS unlock, valid login on the installed system and working home. Repeat from the actual ISO on a standalone store | Passed on the actual project ISO and blank virtual SSD. Installed TTY login, graphical login and the matching system path were verified. |
+| C. Recovery | Boot two different generations, recover a deliberately failed desktop and rescue from installation media | Two distinct generations, password-backed TTY rollback and offline installer rescue exercised in QEMU. |
+| D. Destination laptop | Cold boot actual laptop, test its devices, lock, suspend and daily workflows | Pending |
 
-New acceptance criteria for the GNOME-free install:
+For each accepted run retain commit, lock digest, host, hardware revision, ISO/checksum, installed store path, expected and actual results. Record only sanitized results. VM-only fixture passwords and virtual hardware belong exclusively to the tests.
 
-- [ ] The niri-only NixOS host, `linux-niri`, exists and builds; evaluated options show the GNOME desktop off, GDM off, greetd on, and `niri` as the only session.
-- [ ] Its GNOME-named system packages are exactly `xdg-desktop-portal-gnome` and `gnome-keyring`; no GNOME Shell, Mutter, GDM or Nautilus is in the system closure. Check the evaluated package list and the closure, not a text search for "gnome".
-- [ ] A VM test boots that host to tuigreet and into niri, as the existing test does for the GNOME pilot.
-- [ ] The host declares what the GNOME module used to switch on and this install needs: Bluetooth, udisks2 with GVfs, UPower, rtkit, and power-profiles-daemon on a laptop.
-- [ ] Login at tuigreet starts `niri-session`; quitting or crashing niri ends at the login prompt; a second text console still logs in.
-- [ ] The keyring unlocks at the greetd login: a test secret is stored and read with no second password prompt.
-- [ ] File dialogs work through the GTK portal in Brave and VS Code.
-- [ ] The runbook was rehearsed once in a UEFI VM with an empty disk, through the encrypted reboot, before the laptop was touched.
-- [ ] The existing GNOME system on the PC was not modified.
+## Destination checks still open
 
-
-## Summary
-Originally: add niri as a selectable session next to GNOME, with GNOME the default. Since 2026-11-22 the target is a niri install without the GNOME desktop (see "Scope change" above); the bullets below describe the committed GNOME pilot unless they concern niri itself.
-
-- `programs.niri` via nixpkgs in `nix/modules/nixos` (no niri-flake initially).
-- Committed GNOME pilot only: keep GDM and GNOME; no greeter change. (GNOME-free install: greetd with tuigreet, no GNOME; see "Scope change".)
-- Explicitly set `services.displayManager.defaultSession` to GNOME's session, to beat the nixpkgs `mkDefault "niri"` (VERIFIED on nixos-unstable, which this repo pins). Check the evaluated session name before activation instead of assuming it: NixOS asserts `defaultSession` is in `sessionData.sessionNames` (pinned nixpkgs `nixos/modules/services/display-managers/default.nix:196`), so a wrong name fails evaluation.
-- xwayland-satellite present (niri spawns it on demand and exports `DISPLAY`).
-- Decide `useNautilus` (default true, file chooser only). Nautilus is not needed for screencast (REFUTED claim otherwise). `programs.niri.useNautilus = false` routes FileChooser to gtk (pinned nixpkgs `nixos/modules/programs/wayland/niri.nix:72`). niri #3765 is cited only for the symptom: without Nautilus, portal-gnome's file chooser fails silently.
-- Keep xdg-desktop-portal-gnome.
-- niri config is chezmoi-owned (`home/dot_config/niri/config.kdl`) and validated with `niri validate` (tests/bash/niri-config.bats or a pre-commit check).
-- Vicinae starts via the existing systemd unit only; no `spawn-at-startup`.
-- With `defaultSession` set, the GDM preStart runs set-session and ignores session history (pinned nixpkgs `nixos/modules/services/display-managers/gdm.nix:249-251`). Choosing niri at the greeter will therefore not persist across GDM restarts; this is expected during the trial.
-- In this ticket (plan decision 4, user confirmed 2026-11-15): the shell comparison trial within the niri trial, Dux first, then Noctalia, gated by "Shell trial gates" below.
-- Not in this ticket: the permanent shell implementation (a separate implementation ticket only after selection), the waybar fallback, greeter change.
-- Essential bindings first.
-- Shell comparison trial (Dux first, then Noctalia) inside this niri trial, using the "Shell trial gates" below; see plan decision 4.
-
-## Owned files
-- nix/modules/nixos/** (niri), nix/hosts/linux-desktop/system.nix
-- niri config: chezmoi owns `home/dot_config/niri/config.kdl` (6fb82ee; see T-0030). The session, package and portals come from the NixOS `programs.niri` module on the pilot host. Historical alternatives (HM module, HM `xdg.configFile`, `/etc/niri/config.kdl`) were not chosen.
-- Trial shell config: the Dux NixOS module settings and the Noctalia HM config (exact paths not decided; the module-versus-HM split is open plan decision 8)
-
-## Known blockers and risks
-- HIGH: pinned niri 26.04 lacks the multi-monitor portal screenshot fix (commit ee8a04b, niri issue #117, 18 Sep 2026; no later tag). PARTLY: reproduce before declaring Flameshot unusable. Flameshot 15.0.0 captures through the xdg-desktop-portal Screenshot API. niri's portal had no multi-monitor screenshot support until commit ee8a04b (issue #117, 18 Sep 2026), which postdates v26.04 (the latest tag), so the portal path very likely errors on two outputs. A grim/wlr-screencopy path is an untested alternative: niri implements wlr-screencopy (niri #33, closed 2024), and the Flameshot grim adapter is documented only for Hyprland (flameshot.org/docs/guide/wayland-help/).
-- HIGH: default-session trap above.
-- UNVERIFIED: niri on hybrid AMD + NVIDIA (nouveau); external DP-3.
-- UNVERIFIED in a real session: the Vicinae launcher key under niri. The KDL binds Alt+Space to `spawn "vicinae" "toggle"` (ext-hotkey-v1 is unmerged in niri, so Vicinae cannot register the key itself). Alt+Space is also the GNOME binding; the earlier "Ctrl+Space" here was stale. The KDL has no bind yet for clipboard history (Alt+V under GNOME).
-- UNVERIFIED: whether pinned Vesktop 1.6.9 contains the picker fix ba4e367.
-
-## Gate priority
-- P0 (release-blocking): the existing GNOME system untouched and bootable (on the committed pilot: GNOME + GDM preserved and default); user data and credentials preserved; all application packages present in both sessions; window helpers (launch/focus MRU); all shortcuts under us and ru; clipboard, screenshots, screen sharing; login, lock, suspend.
-- P1 (needed for completion): audio and external displays; background services (no missing or duplicate units); MIME defaults and file dialogs; Nix/HM builds; rollback.
-- A P0 failure blocks any cutover decision.
-
-## Runtime smoke checks (in the niri session)
-```bash
-echo "$XDG_CURRENT_DESKTOP" "$XDG_SESSION_TYPE"
-systemctl --user show-environment | grep -E 'WAYLAND_DISPLAY|DISPLAY|XDG_CURRENT_DESKTOP'   # DISPLAY matters for VS Code keymaps
-systemctl --user list-units --all | grep -Ei 'vicinae|flameshot|syncthing|openclaw|codebase-memory'
-wpctl status
-```
-These do not replace the GUI tests below.
-
-System gate (build only): `sudo nixos-rebuild build --flake ./nix#linux-desktop`, equivalent to the NixOS toplevel build listed in the checklist.
-
-## Acceptance criteria (regression checklist; run on the target session and mark only what ran)
-- [ ] Pre-migration backup gate met (section "Mandatory backup before any live change" in docs/plans/niri-migration.md), evidence recorded. Nothing live starts, and none of the shell trial gates run, before this
-- [ ] Vicinae launcher on Alt+Space and clipboard history on Alt+V, under both layouts (niri needs a clipboard bind in the KDL first)
-- [ ] All application toggles launch or focus the most-recent window. Hide and restore are required only for backends that explicitly implement those capabilities. GNOME must retain its existing behaviour. (niri part requires T-0031 niri backend)
-- [ ] Two VS Code windows keep MRU (requires T-0031 niri backend)
-- [ ] Bilingual gate: every global accelerator in R5 of the audit works under both the us and ru layouts, tested by physical key
-- [ ] Capture with the selected tool: area, last region, clipboard, pin (tested separately from screencast). Flameshot is the tool today; if it is replaced, the same capabilities are tested on the replacement (ADR-0036). The host-side reproduction of Flameshot on two outputs is mandatory before it is declared unusable
-- [ ] Portal matrix, per interface, on niri and re-checked on GNOME: FileChooser, ScreenCast, Screenshot, Secret, Notification, OpenURI
-- [ ] Screen sharing: monitor share, single-window share, share again after cancel, after monitor hotplug, after suspend/resume, and with mixed-scale outputs
-- [ ] Committed GNOME pilot only: evaluated config has `defaultSession` equal to GNOME's session name and lists niri in `sessionNames`. GNOME-free install: `sessionNames` is exactly `niri`
-- [ ] Screenshots on every monitor and scale
-- [ ] Vesktop and browser window/monitor screen share
-- [ ] ORA4 audio, mic, volume
-- [ ] External monitor, suspend/resume, lock
-- [ ] VS Code; Android Studio and emulator
-- [ ] Brave, Firefox, Obsidian, KeePassXC data and credentials (keyring); KeePassXC unlock, browser integration and autofill
-- [ ] Telegram and Vesktop notifications, tray, calls
-- [ ] Nautilus and Double Commander file chooser, drag-and-drop and hidden files
-- [ ] Bruno saved environments/secrets load; QDirStat and Czkawka file access, dialogs, scaling
-- [ ] LocalSend and Syncthing
-- [ ] Session-scoped units (vicinae, flameshot, vicinae-focus-tracker or its replacement) start on login and stop at logout
-- [ ] Units meant to persist (syncthing, openclaw, codebase-memory, if lingering is enabled) are named as such and behave accordingly; failures are not masked with `loginctl enable-linger`. VERIFIED: niri-session runs `dbus-update-activation-environment --systemd --all` (github.com/niri-wm/niri `resources/niri-session`)
-- [ ] `systemctl --user --failed` is empty
-- [ ] xdg-mime defaults for https and text/x-php
-- [ ] Nix and repo checks pass: `nix flake check ./nix`; activationPackage build for `homeConfigurations.linux-desktop`; `bats tests/bash`; `chezmoi diff`; `bash ops/validate-config.sh` and `--eval`; NixOS toplevel build
-- [ ] Committed GNOME pilot only: GNOME still selectable and default. GNOME-free install: `niri` is the only session and the existing system still boots
-- [ ] Rollback and a separate data backup verified
+- Cold boot the laptop, authenticate at greetd and on a TTY, then repeat rollback and offline rescue there.
+- Test Wi-Fi, microphone, audio, displays, USB, Bluetooth, brightness, lid and suspend. Reject an incorrect lock password, reconnect a monitor while locked and verify the session stays locked on resume.
+- In the actual browser and call client, share a window and a monitor and verify what the receiver sees. Test the GTK open/save chooser, dummy keyring credentials and capture exclusion with a dummy vault.
+- Check the US and Russian layouts, clipboard history, screenshot destination, MIME handlers and exact VS Code folder/workspace selection with several windows open. Verify the applications needed for daily work before adding them to the installed profile.
+- After recovery, trial Dux then Noctalia. Record each provider, stop the shell and confirm applications, locking and polkit keep working. Complete the independent Kopia restore before migrating personal data.
 
 ## Shell trial gates (run on whichever shell is under trial: Dux first, Noctalia second)
 These G1 to G11 are local to this ticket. ADR-0046's gaps are written with two digits (G01 to G28) and are a different list.
@@ -155,56 +76,55 @@ Depends on the pre-migration backup gate in the acceptance list above. Source: `
 
 NixOS generations are not data backups; back up mutable `$HOME` data and secrets separately.
 
-## Additional migration comparison / recovery acceptance (2026-11-22)
+## Verification record
 
-The [master register ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md) now tracks gaps G17–G26. [ADR-0047](../../../architecture/decisions/0047-gnome-dependency-retirement-and-wayland-components.md) audits GNOME-specific dependencies, [ADR-0048](../../../architecture/decisions/0048-niri-launcher-vscode-project-workflows.md) compares Vicinae and alternatives, and [ADR-0041](../../../architecture/decisions/0041-login-greeter-gdm-greetd-tuigreet-regreet.md) compares future tuigreet and gtkgreet. **These do not authorise any greeter switch, shell installation or GNOME removal.**
+The retained local verification bundle is in the Git-ignored directory **result-niri-verification** at the root of the prepared checkout. It contains the base revision, two independently reviewable source patches, the resulting Git tree ID, artifact identities and observed check exits. The general installer selector and its tests are a separate patch from the host and migration work. The evidence lives outside the candidate so recording outcomes cannot change the code under test.
 
-- [ ] **G17 P0 — Emergency rescue:** demonstrate TTY login with failed shell, dead locker, broken output and keyboard shortcut inhibition; recover without an unrecoverable screen lock, lost project or reinstall. Confirm no one assumes a shell UI remains available after it crashes.
-- [ ] **G02/G18 P0 conditional — Session/provider routing:** inspect `xdg-desktop-autostart.target`, `graphical-session.target`, session-scoped app services and DBus owners. Verify GlobalShortcuts portal request/consent and Secret unlock/Keyring as separate interfaces; test the `gnome-control-center` dependency when relevant. Exactly one active owner for polkit, notification, clipboard-history and locker/idle.
-- [ ] **G19 P1 — App activation:** URLs, mailto, VS Code custom URI, `xdg-open` to folder/PDF, desktop entries, save/upload dialogs; a browser/file-manager icon should focus its existing window instead of starting duplicates.
-- [ ] **G20 P1 — Input:** US/Russian physical shortcuts, Compose/Unicode where needed, keyboard-only shell accessibility, text field input and Ctrl/Alt+Tab switching; advanced IME only if required.
-- [ ] **G21 P0 on portable host — Suspend:** lock-before-suspend ordering, lid-close behaviour, resume prompts with external monitor unplugged, no unlocked desktop flash, no competing power policy managers.
-- [ ] **G22 P0 for GNOME retirement — Dependency audit:** separately record GNOME Shell, GDM/fallback, GNOME portal (ScreenCast), GTK portal (FileChooser), `gnome-control-center` (GlobalShortcuts), gnome-keyring/oo7 (Secret), Nautilus and GNOME-only user services. Remove none without feature-equivalent tests.
-- [ ] **G23 P1/P0 when required — Launcher:** compare Vicinae with Walker, Albert, Ulauncher, Rofi and shell launcher, preserve exact VS Code recent folders/`.code-workspace` and focus the correct existing Code window. No dual launcher keyboard binding.
-- [ ] **G24 P1 — Core service and removable devices:** PipeWire/WirePlumber microphone/audio device routing, BlueZ/Bluetooth, NetworkManager/VPN, UPower, USB mount/unmount and GVfs file operations; add no duplicate services.
-- [ ] **G25 P1 — Nix recovery:** record selected `flake.lock`, previous-generation boot, retention/GC policy, backup restore and optional `nh`/nvd evaluation without another system configuration writer.
-- [ ] **G26 P1/P0 if sensitive sharing — Capture privacy:** Niri native capture vs Flameshot/Satty, per-window ScreenCast, KeePassXC/sensitive window exclusion, two monitors and post-hotplug share; observe capture output on a receiving client.
+Working tree based on `c345f55b9e40ba9f43f985efb0cf7569df67ddfb`, 2026-11-22. The tested lockfile SHA-256 is `2301a65066c29c9782acf5c83f2357c417be609cb67c2fe4ed925e7d7dd426ca`. Disko v1.13.0 is the only new lock node. This is development evidence. A physical deployment record needs the final clean commit with its reviewed hardware module and the installer ISO checksum.
 
-Do not make a new tool mandatory merely because it is listed as a candidate. These scenarios **extend**, not replace, existing G1–G11 shell gates and the mandatory backup/user-approval requirements.
+- The existing workstation CLI reported Claude Code 2.1.330. `nix run --no-update-lock-file ./nix#install-claude -- --version` ran the target package, 2.1.323.
+- The installer ISO with both CLIs is `nixos-minimal-26.11.20261114.5d2b81a-x86_64-linux.iso`, 3,972,317,184 bytes. SHA-256 is `9770b226d1a5216aaa245a8ecc2dc20f0f2cbd44524790f08ab29d5c14ae3022`. Its live system publishes the prebuilt target at `/etc/app-configs/linux-niri-toplevel`.
+- The installed system with Claude Code 2.1.323 and Codex 0.169.0 built at `/nix/store/1csjysr94lg1aqjrjdrqwxpy201db40i-nixos-system-linux-niri-26.11.20261114.5d2b81a`. The 1,207 runtime paths passed the checks excluding GDM, GNOME session/Shell, Shell extensions and Nautilus. Android Studio, Obsidian, Syncthing, Telegram and Vesktop were absent from this first-install closure. The generated portal preferences select GTK FileChooser, GNOME ScreenCast and GNOME Keyring Secret.
+- **GNOME removal rehearsal.** An offline evaluation used a 136 KiB source copy containing only the locked flake, the Niri host, shared MIME defaults, package overlay, Brave package and public profile variables. With the same configuration revision, it resolved to the exact system store path above, including Codex. Both GNOME host directories, all GNOME Home Manager modules and the legacy GUI helpers were absent.
+- Native `nix flake check ./nix --no-update-lock-file`, cross-platform `--all-systems --no-build` evaluation, the existing workstation home activation-package build, `bash ops/install.sh --host linux-niri` and all six ownership-validator evaluations passed. A disposable chezmoi source and home verified host-specific KDL ownership. In an isolated dirty checkout, the update report correctly refused to proceed. The live home diff and live updater were left to the operator because they inspect personal managed files. The complete isolated shell suite finished with 2,044 passing tests and five platform/tool skips.
+- The Niri session VM accepted the declared KDL, rejected a bad password, logged into Niri through tuigreet and opened both Ghostty and Vicinae from their configured shortcuts. Logout returned to the greeter. The VM also checked registration of the locked VS Code recents extension and invoked the clipboard and recents commands. Choosing the correct project among several open Code windows remains a daily-workflow test.
+- **Actual ISO rehearsal.** A second read-only CD supplied the target-specific Disko store export and expected system path, as described in the [prepared offline installation](../../../platforms/nixos/niri-install.md#4-install-enrol-the-account-cold-boot). On a 2,304 MiB UEFI guest with networking disabled, the ordinary live user ran Claude, Codex and its login help. Disko prepared a blank virtual SSD. Offline installation and fallback-loader verification took 482 s after the mounts were checked. The SSD cold-booted with a fresh EFI variable store after removal of the USB image. The installed user authenticated on a TTY and in Niri, ran both assistants and validated the KDL. Niri IPC confirmed Ghostty and Vicinae, and NetworkManager reported the virtual Ethernet link connected. Logout returned to tuigreet. The virtual GPU advertised no display output to Niri, so visible rendering is an older-laptop check.
+- **Offline rescue from the project ISO.** On original candidate tree `55b064e3e5a3bb7e49344c05d3763697a19ec224`, ISO SHA-256 `9770b226d1a5216aaa245a8ecc2dc20f0f2cbd44524790f08ab29d5c14ae3022` installed generation 1 and recovered it after generation 2 booted with greetd masked. The operator authenticated on a TTY, restored the generation and bootloader from the offline ISO, then cold-booted the disk and authenticated on a TTY and in Niri. Both running system paths matched generation 1. The LUKS, ext4 and ESP identities and a home sentinel survived. An initial console observer missed a password prompt; the successful continuation reused the installed disk. No physical disk was involved.
+- The encrypted installation VM ran Disko and `nixos-install` on a blank disk. It booted the fallback EFI loader, unlocked LUKS, booted a distinct generation with greetd disabled and restored the working generation via password-backed sudo on tty2. The offline installer mounted the existing disk, restored the recorded generation and cold-booted it again.
+- The final `niri-install-test.driver` ran all seven subtests successfully in a standalone, resource-limited scope. Driver `/nix/store/9jqx0ylnnfxqkv3w99p6ia3rc1vv0qz4-nixos-test-driver-linux-niri-install-recovery` booted distinct test generations, recovered twice and exited zero. The earlier full run is retained in the timing comparison below.
+- The separate 15-package `niri-workflow-apps` bundle built successfully. It stages the application closures for daily-use testing without enabling accounts or starting services.
+- A local Kopia 0.23.1 rehearsal snapshotted a sample project, application preferences, public recovery instructions and a disposable KeePassXC database. Restoring into a new directory reproduced every file byte-for-byte. KeePassXC 2.8.0 opened the restored database and listed its test entry. All fixtures were on the same temporary filesystem. An independent storage device and owner-verified access to real backups remain required for migration.
 
-## Portal and secret-provider alternative trials (2026-11-22)
+## Performance at each milestone
 
-New upstream candidates are **documentation-only until separately approved in PC 2**. See [ADR-0047](../../../architecture/decisions/0047-gnome-dependency-retirement-and-wayland-components.md), [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md), [ADR-0023](../../../architecture/decisions/0023-password-managers-and-secrets-cli.md). Required functions are P0; **removing their working GNOME implementation is P1** unless the replacement itself becomes necessary to meet a documented P0 requirement.
+Repeat the relevant row after changing the host, installer, services, shell or applications. Record the commit, lock digest, system path, hardware or VM limits, storage, cache state and background load. Run one heavy workload at a time. Compare the previous and candidate generations on the same machine and repeat after reverting a suspected regression. Keep the samples with the acceptance record. Report the median, range and change from the baseline. Claim an improvement only when it repeats beyond ordinary run-to-run variation and the same functional tests still pass.
 
-- [ ] **ScreenCast baseline**: record pinned `xdg-desktop-portal-gnome` + `xdg-desktop-portal-gtk` + PipeWire versions and `niri-portals.conf`/Nix module ownership; test Brave, Firefox, Vesktop and OBS window/monitor picker, denial, multi-stream, reconnect and **Dynamic Cast Target**. Record actual live capture, not just a functioning picker.
-- [ ] **niri-screenshare trial**: verify NixOS package/module or pinned source build, GTK picker, Niri-specific Mutter.ScreenCast IPC, PipeWire nodes and explicit dynamic-cast option. **Test its documented first-start portal preference write in a disposable user HOME**; refuse if it mutates `portals.conf` controlled by Home Manager/chezmoi without an approved override. Compare each capture scenario against baseline.
-- [ ] **xdg-desktop-portal-generic trial**: verify `ext-image-copy-capture` / `wlr-screencopy` protocol compatibility with pinned Niri, consent UI, window/monitor sources and Niri dynamic target (not assumed supported); test `RemoteDesktop`/clipboard interfaces separately if needed, do not blanket-switch the portal default.
-- [ ] **oo7 Secret trial**: use a machine or VM with no real keyring and a fake one (a test user is not isolation: the pinned `services.oo7` module applies to every user and to PAM `login`, and leaves gnome-keyring on), then test `oo7-daemon` and `oo7-portal` interfaces separately, greetd PAM unlock after reboot, `HOME`/`XDG_RUNTIME_DIR`, authentication and SecretService DBus owners. Upstream greetd issue #516 is **closed** but still requires pinned-version reproduction; do **not** import the real GNOME Keyring or KeePassXC secrets during comparison.
-- [ ] **FileChooser alternative**: compare GTK FileChooser and **standalone Dux Files** FileChooser after testing file-manager functions. Test Niri focus, keyboard navigation, window parenting, modal state, upload/save-as and cold-start. **Dux Files documents that its chooser currently does not attach to the calling application and ignores modal**. Do not invoke commands that rewrite the active portal preference from an unmanaged installer.
-- [ ] **Launcher**: compare **Vicinae** versus **Walker + Elephant**, then Ulauncher/Albert/Rofi. Test exact VS Code `.code-workspace` and directory history, Niri existing-window focus, clipboard images/history, provider restarts and total resident processes; do not activate two global hotkeys simultaneously.
-- [ ] **Future login (separate gate)**: after safe cutover planning, test `tuigreet` and ReGreet/gtkgreet using the actual TTY/GPU/PAM/lock scenarios in ADR-0041. This does **not** belong in the current shell activation and does not authorise replacing GDM.
+| Milestone | Measurement to repeat |
+| --- | --- |
+| A · Build | Record system closure bytes, ISO bytes, KDL validation time and validator peak RSS. Time a cold build and a cached build separately on a dedicated builder. Preserve a working configuration before removing any dependency. |
+| B · Blank-disk installation | From the same ISO and blank virtual disk, time formatting, copying the closure and reaching the greeter separately. Exclude human passphrase entry. Record guest RAM and vCPUs, host swap and the peak memory of the build or VM cgroup. |
+| C · Recovery | Time boot to the known-good greeter after TTY rollback and offline rescue. Record the exact generations, correct login and restore result alongside timings. |
+| D · Laptop and daily workflow | With identical displays and power settings, measure three cold boots and fresh logins. Record whole-machine used memory as `MemTotal - MemAvailable` from `/proc/meminfo` after 60 idle seconds at the greeter and again in Niri. Separately sample compositor, launcher and candidate shell user units with `systemctl --user show UNIT -p MemoryCurrent -p MemoryPeak`. Compare bare Niri, Dux and, if trialled, Noctalia. Time shortcut-to-visible terminal/launcher and correct Code-project focus. Repeat the existing lock, hotplug and recovery checks and record surviving processes and memory growth. |
 
-## Installation-order checks from ADR-0049 (2026-11-22)
+**Initial measurement, 2026-11-22 21:45 UTC.** On the x86-64 support PC, Hyperfine 2.0.0 ran the built Niri 26.04 binary against the exact Home Manager KDL. Seven serial warm measurements after two warmups gave **16.56 ms median** (15.88–19.84 ms) and **19.62 MiB median peak RSS** (19.38–19.71 MiB). This measures launching the validator and parsing the configuration. A bounded ISO build was starting, and host I/O pressure (`some avg10`) was 82% just before measurement. Repeat on a quiet machine before treating it as a comparison baseline.
 
-These are the pass checks of [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md) (proposed) that this list did not have. They add to the criteria above and authorise nothing.
+```bash
+hyperfine --warmup 2 --runs 7 --metrics time_wall_clock:ms,memory_peak_resident:MiB \
+  '/nix/store/d2r1zcvri3fiz8wfzmj1mbylv3rnvbnl-niri-26.04/bin/niri validate -c /nix/store/i60rvlpwww94ncndns8q3dks6c3qd0jp-hm_config.kdl'
+```
 
-- [ ] **Install preflight (stage 2):** the generated `hardware-configuration.nix` is a module of the pilot host beside `system.nix` (not imported by it, so the VM test keeps booting), committed, with the placeholder `fileSystems` entries gone; the checkout lives on the installed disk; `pilot-vm-test` and `tests/bash/nixos-pilot.bats` pass with that change; that configuration builds before `nixos-install`; the user's password is set before the first reboot.
-- [ ] **Two generations (stage 3):** `nixos-rebuild list-generations` shows two entries on PC 2 and each has been booted once. Rebuilding an unchanged configuration creates no generation.
-- [ ] **User environment (stage 3b):** Home Manager and chezmoi are activated on PC 2, not only built: `command -v ghostty vicinae niri` resolve, the niri config is deployed and `niri validate` passes.
-- [ ] **Rescue (stage 4):** the installer USB sequence (unlock, mount root and ESP, `nixos-enter`, restore the boot default) has been run once in full; key-only SSH works and password and root logins are refused.
-- [ ] **Bound commands (stage 5):** every command a KDL bind calls resolves on the session `PATH` (`brightnessctl` and `playerctl` are bound but not declared today).
-- [ ] **Lock lifecycle (stage 6):** the bind, the idle timeout, `loginctl lock-session`, `systemctl suspend` and the lid each lock; a killed locker leaves the session locked and a new locker restores the prompt.
-- [ ] **Locked quit (stages 5 and 6):** quitting niri, locked or not, ends at an authenticated greeter, never at a logged-in console. Repeat if the greeter changes.
-- [ ] **One polkit agent per session:** on the GNOME-free install Soteria is the only agent. Committed GNOME pilot only: under GNOME, `pkexec true` raises one prompt. The pinned Soteria unit starts on `graphical-session.target` and so also under GNOME, beside GNOME Shell's own agent, until it is bound to the niri session.
-- [ ] **Pilot profile (stage 3b):** PC 2's first activation uses `bash ops/install.sh --profile work`; `syncthing.service` and `openclaw-gateway.service` do not exist there. The personal profile is a later, separate step.
-- [ ] **Launcher binds (stage 9):** the niri KDL has binds for clipboard history and the recent-projects picker (GNOME has Alt+V and Alt+E; the KDL has only Alt+Space today).
-- [ ] **Capture privacy (G26):** the KDL's KeePassXC `block-out-from "screen-capture"` rule is enabled (it is switched off with `/-` today) and checked on a receiving client.
-- [ ] **Unit audit (stage 10):** user units and XDG autostart entries started in the niri session are listed and marked GNOME-only, niri-only or both, before a shell is activated.
+**Capped final fixture.** On the 4 GiB VM with host write bandwidth capped at 24 MB/s, `nixos-install --system` took 552.06 s. All seven subtests completed in 973.93 s. They covered install/enrolment (604.48 s), UEFI/LUKS boot and first-user checks (84.55 s), Ethernet (0.43 s), graphical login, apps and logout (26.37 s), booting the failed greeter (77.63 s), authenticated TTY rollback (87.43 s) and offline rescue through cold boot (92.92 s). The test cgroup peaked at 5.37 GiB including page cache, used zero swap and recorded zero OOM or hard-limit events. The host retained at least 10.76 GiB available. The private test disks were removed.
 
-## Out of scope
-Cutover to niri as default: a separate later decision, only after 2-4 weeks of daily use with no blockers.
+**First installation and recovery timings.** The completed 4 GiB guest rehearsal above took 569.78 s. Blank-disk preparation, installation and enrolment took 176.04 s. The first UEFI/LUKS boot and assertions took 57.38 s. Booting the faulty generation took 35.18 s, authenticated TTY recovery 42.60 s and offline rescue through the final cold boot 258.46 s. These single wall-clock samples include test-driver and passphrase-prompt waits under workstation load. Use the same fixture for comparisons and measure the older laptop separately.
 
-Exit path: if niri fails on GPU/display or screen sharing, keep working on the existing GNOME system. KDE Plasma 6.8 (Vicinae's KDE integration is "very brittle") is evaluated only if there is a separate reason to leave GNOME. That is a later user decision, not part of this ticket.
+**Installer build with both CLIs.** One Nix job with two compression workers and a 512 MiB compressor cache limit built the 3,972,317,184-byte ISO in 125.1 s. Minimum host `MemAvailable` was 14,699,876 KiB. The sampled peak for the whole Nix daemon cgroup during this build was 9,680,666,624 bytes (9.02 GiB), including cache. The 8 GiB hard ceiling in the source-verification run applied to its own scope. It did not cap the Nix daemon or the workstation. The previous Claude-only image was 405,749,760 bytes smaller. The package list and compression settings both changed, so this is a new build baseline.
 
-## Progress
-- 2026-11-21 documentation audit (applied above): this ticket said the niri config is Home Manager-owned, `docs/plans/niri-migration.md` recommends Home Manager `xdg.configFile` and `docs/plans/niri-two-pc-pilot.md` proposes `/etc/niri/config.kdl`, while the implementation is chezmoi (6fb82ee). Record chezmoi as current, keep the others as historical alternatives, and decide package, session, portal and user-service ownership separately.
+**Physical-image rehearsal in QEMU.** UEFI live boot through both CLI checks took at most 48 s. After entering the LUKS passphrase the installed disk reached tuigreet in 27 s. Peak sampled QEMU process RSS was 2,374,644 KiB during installation and 2,330,996 KiB after cold boot. There were two vCPUs, a 150% host CPU quota, a 4 GiB cgroup limit, zero guest-scope swap and host storage rate limits of 40 MB/s read and 24 MB/s write. The 482 s offline install includes the EFI setup.
+
+**Package footprint.** `nix path-info --closure-size` reported 8,115,154,232 bytes for the pre-Codex toplevel and 8,774,464,288 bytes for the system including Codex 0.169.0. The measured increase is 628.77 MiB. Both counts use NAR bytes with transitive dependencies. Whole-project flake evaluation exceeded a 5 GiB client cgroup limit. Both native checks and all-platform evaluation passed sequentially with an 8 GiB limit, zero scope swap and `GC_FREE_SPACE_DIVISOR=8`. The optional workflow bundle and live USB are separate outputs.
+
+For the next generation substitute its store binary and HM KDL. The result above establishes no desktop idle-memory figure, boot-time target or shell ranking. Those baselines require the corresponding VM or hardware measurements.
+
+## Data migration
+
+Restore a project, application data, access-recovery material and a KeePassXC database to an independent destination with Kopia. Verify access before enrolling account-bound services. Real personal data comes after capture-privacy tests and shell acceptance.

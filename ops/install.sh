@@ -37,6 +37,10 @@
 #   bash ops/install.sh --reconfigure   # ask again (needs a TTY; exit 1 without one)
 #   bash ops/install.sh --host linux-cli  # remember linux-cli (or linux-desktop) for this
 #                                       # machine; never asks (plain Linux only)
+#   bash ops/install.sh --host linux-niri  # build the pinned NixOS system only
+#   bash ops/install.sh --host linux-niri --dry-run  # preview that build
+# The Niri target takes no --profile or --reconfigure. The build does not
+# select a profile for this machine. See docs/platforms/nixos/niri-install.md.
 #
 # Remembered host (T-0044): on plain Linux the host is linux-desktop or
 # linux-cli, remembered in the host file (path: bash ops/detect-host.sh
@@ -97,16 +101,24 @@ while (($#)); do
       ;;
     --profile=*) OPT_PROFILE="${1#--profile=}"; OPT_PROFILE_SET=1 ;;
     --reconfigure) OPT_RECONFIGURE=1 ;;
-    --host)
-      if (($# < 2)); then
-        printf '[install:error] --host needs linux-desktop or linux-cli (try --help)\n' >&2
+    --host | --host=*)
+      if [[ "$1" == --host ]]; then
+        if (($# < 2)); then
+          printf '[install:error] --host needs linux-desktop, linux-cli or linux-niri (try --help)\n' >&2
+          exit 2
+        fi
+        shift
+        host_arg="$1"
+      else
+        host_arg="${1#--host=}"
+      fi
+      if ((OPT_HOST_SET)) && [[ "$OPT_HOST" != "$host_arg" ]]; then
+        printf '[install:error] conflicting --host values: %s and %s\n' "$OPT_HOST" "$host_arg" >&2
         exit 2
       fi
-      OPT_HOST="$2"
+      OPT_HOST="$host_arg"
       OPT_HOST_SET=1
-      shift
       ;;
-    --host=*) OPT_HOST="${1#--host=}"; OPT_HOST_SET=1 ;;
     -h | --help)
       sed -n '2,/^$/{/^$/!p;}' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
       exit 0
@@ -167,6 +179,13 @@ run()  {
 
 # shellcheck source=ops/lib/wait-feedback.sh
 source "$REPO_ROOT/ops/lib/wait-feedback.sh"
+
+# This marker belongs to the installed NixOS generation. The legacy bootstrap
+# writes a standalone HM profile and would advise changing /etc/nixos.
+if [[ -e /etc/app-configs/linux-niri && "$OPT_HOST" != linux-niri ]]; then
+  fail "linux-niri uses integrated Home Manager. Use --host linux-niri to build the system; see docs/platforms/nixos/niri-install.md"
+fi
+
 # shellcheck source=ops/lib/hm-switch.sh
 source "$REPO_ROOT/ops/lib/hm-switch.sh"
 # shellcheck source=ops/lib/selection.sh
@@ -201,6 +220,10 @@ if [[ -n "$OPT_PROFILE" ]] && ! selection_valid_profile "$OPT_PROFILE"; then
   printf '[install:error] unknown profile %s (known: %s)\n' "'$OPT_PROFILE'" "$(selection_profiles | paste -sd, - | sed 's/,/, /g')" >&2
   exit 2
 fi
+if [[ "$OPT_HOST" == linux-niri ]] && ((OPT_PROFILE_SET || OPT_RECONFIGURE)); then
+  printf '[install:error] --host linux-niri builds the system; --profile and --reconfigure select a standalone home profile\n' >&2
+  exit 2
+fi
 if ((OPT_RECONFIGURE)) && ! have_tty; then
   fail "--reconfigure needs a terminal to ask on (stdin and stderr); nothing was changed"
 fi
@@ -212,9 +235,9 @@ fi
 # --host exists to repair) does not stop it.
 if ((OPT_HOST_SET)); then
   case "$OPT_HOST" in
-    linux-desktop | linux-cli) ;;
+    linux-desktop | linux-cli | linux-niri) ;;
     *)
-      printf '[install:error] --host needs linux-desktop or linux-cli, got %s (try --help)\n' "'$OPT_HOST'" >&2
+      printf '[install:error] --host needs linux-desktop, linux-cli or linux-niri, got %s (try --help)\n' "'$OPT_HOST'" >&2
       exit 2
       ;;
   esac
@@ -230,6 +253,13 @@ if ((OPT_HOST_SET)); then
     printf '[install:error] --host is for plain Linux only; this host is detected as macOS or WSL2 and has no host file. Nothing was changed\n' >&2
     exit 2
   fi
+fi
+
+if [[ "$OPT_HOST" == linux-niri ]]; then
+  RUN_EXPECT="several minutes on a first build" run nix build \
+    --extra-experimental-features 'nix-command flakes' --max-jobs 1 --cores 2 \
+    --no-update-lock-file --no-link "$REPO_ROOT/nix#nixosConfigurations.linux-niri.config.system.build.toplevel"
+  exit 0
 fi
 
 # host_guess: the default answer for the host question. A graphical session

@@ -98,7 +98,7 @@ in
   # this must not use xdg.mimeApps: that module intentionally generates a
   # read-only store link, which prevents GNOME from changing defaults.
   #
-  # This module is imported ONLY by the linux-desktop host. macOS uses the
+  # Both Linux desktop profiles share these MIME defaults. macOS uses the
   # user activation in default-browser-macos.nix (Brave and Preview via duti).
   #
   # Guarded on isLinux so an accidental import on Darwin is a no-op rather than

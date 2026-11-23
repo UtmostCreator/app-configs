@@ -225,6 +225,9 @@ nixmod() {
 
 @test "rule 6: programs.<x>.enable in a NixOS module still fails" {
     mkdir -p "$R/nix/modules/nixos"
+    printf '{ ... }:\n{\n  programs.niri.enable = true;\n}\n' >"$R/nix/modules/nixos/niri.nix"
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
     printf '{ ... }:\n{\n  programs.git.enable = true;\n}\n' >"$R/nix/modules/nixos/git.nix"
     validate
     [ "$status" -ne 0 ]
@@ -369,6 +372,22 @@ collide() {
     [[ "$output" == *"\"gremlins/gremlins/.gremlins.yaml\""*"collides"* ]]
 }
 
+@test "rules 11/12: the dedicated Niri home owns KDL only if chezmoi ignores it on that host" {
+    mkdir -p "$R/nix/hosts/linux-niri" "$R/home/dot_config/niri"
+    touch "$R/home/dot_config/niri/config.kdl"
+    printf '{ ... }: { xdg.configFile."niri/config.kdl".text = "sample"; }\n' >"$R/nix/hosts/linux-niri/home.nix"
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"collides with chezmoi"* ]]
+    printf '{{ if eq .hostProfile "linux-niri" }}\n.config/niri\n.config/niri/**\n{{ end }}\n' >"$R/home/.chezmoiignore"
+    validate
+    [ "$status" -eq 0 ] || { echo "$output"; return 1; }
+    cp "$R/nix/hosts/linux-niri/home.nix" "$R/nix/modules/home/bad.nix"
+    validate
+    [ "$status" -ne 0 ]
+    [[ "$output" == *"is not allowlisted"* ]]
+}
+
 @test "rule 12: no collision when .chezmoiignore excludes the target on Linux" {
     collide flameshot.ini
     printf '{{- if ne .chezmoi.os "darwin" }}\n# HM owns it on Linux\n.config/flameshot\n.config/flameshot/**\n{{- end }}\n' >"$R/home/.chezmoiignore"
@@ -407,7 +426,7 @@ eval_with() {
     eval_with "$GOOD_EVAL"
     [ "$status" -eq 0 ] || { echo "$output"; return 1; }
     [[ "$output" == *"evaluated Home Manager config follows the policy"* ]]
-    [ "$(wc -l <"$BATS_TEST_TMPDIR/nix.log")" -eq 5 ]  # linux-desktop linux-cli wsl wsl-nixos macos
+    [ "$(wc -l <"$BATS_TEST_TMPDIR/nix.log")" -eq 6 ]  # Five standalone profiles and the integrated Niri home
 }
 
 @test "--eval: violations in the evaluated config fail" {

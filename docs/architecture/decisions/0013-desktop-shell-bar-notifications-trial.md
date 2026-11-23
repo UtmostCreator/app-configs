@@ -15,6 +15,8 @@ related: [45, 46, 47, 48, 49]
 # ADR-0013: Desktop shell, bar and notifications: trial order, not yet selected
 Status: trial (user decision 2026-11-15 on the order only) · Date: 2026-11-15 · Sources: `docs/plans/niri-migration.md` (shell, ownership and decisions sections), `docs/research/desktop-migration-claim-audit.md`, `docs/research/nix-config-borrow-analysis.md`
 
+**Laptop delivery · 23 November 2026 · 25% (1/4) · P1 · high complexity.** Trial order recorded. Run the ticket’s shell acceptance gates, then verify shell-stop recovery, then select a passing shell. Capture bare Niri measurements first. Trial Dux first and proceed to Noctalia if needed. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 **Niri migration installation inventory and unresolved gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). This cross-reference does not change this ADR's decision or status.
 
 ## Decision

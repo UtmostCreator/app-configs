@@ -15,6 +15,8 @@ related: [12, 13, 23, 38, 46, 47, 49, T-0029, T-0032]
 # ADR-0041: Login greeter: greetd with tuigreet on the GNOME-free niri install; GDM stays on the existing GNOME system
 Status: proposed (greetd with **tuigreet** is the first greeter of the GNOME-free niri install, which follows from the owner's direction of 2026-11-22 that it carries no GNOME desktop; unverified on hardware. **ReGreet** is the graphical feature benchmark and **gtkgreet** the lean graphical alternative, neither ranked. GDM on the existing GNOME system is untouched) · Date: 2026-11-22 · Sources: [greetd upstream](https://github.com/kennylevinsen/greetd), [tuigreet](https://github.com/tuigreet/tuigreet), [gtkgreet](https://github.com/kennylevinsen/gtkgreet), [ReGreet](https://github.com/rharish101/ReGreet), [NixOS greetd guidance](https://wiki.nixos.org/wiki/Greetd), ADR-0012 and T-0032.
 
+**Laptop delivery · 23 November 2026 · 67% (2/3) · P0 · medium complexity.** tuigreet launches the selected Niri package. Guest rejected a wrong password and returned to the greeter on logout. Repeat authentication, then tTY recovery on the laptop. Keep graphical greeter alternatives behind the working baseline. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 **Installation choices and dependent gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). **GNOME dependency policy:** [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md).
 
 ## Decision

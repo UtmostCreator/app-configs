@@ -3,6 +3,8 @@ Source: local
 # T-0033: Refresh stale migration docs (docs)
 
 Status: not started (stale statements still present in owned docs)
+
+**Niri delivery · 23 November 2026 · 38% (3/8) · P1 maintenance · medium complexity.** Identify the historical in-place route. Link the dedicated runbook. Correct the account guidance. Reconcile GNOME retirement wording, then audit launcher assumptions, then audit greeter comparisons, then audit portal and chooser claims, then mark historical install instructions. Use the eight explicit documentation checks in this ticket. [T-0032](../T-0032-niri-trial-session/ticket.md) · [ADR-0012](../../../architecture/decisions/0012-desktop-compositor-gnome-niri-hyprland.md) · [ADR-0041](../../../architecture/decisions/0041-login-greeter-gdm-greetd-tuigreet-regreet.md) · [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md) · [ADR-0047](../../../architecture/decisions/0047-gnome-dependency-retirement-and-wayland-components.md) · [ADR-0048](../../../architecture/decisions/0048-niri-launcher-vscode-project-workflows.md) · [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md)
 Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gap: G16. The register's explicit contradiction list identifies old migration-plan wording; it does not mark this ticket complete.
 Depends on: none
 Evidence: `docs/research/desktop-migration-claim-audit.md`

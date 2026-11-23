@@ -15,6 +15,8 @@ related: [12, 13, 23, 27, 28, 33, 36, 38, 41, 45, 46, 47, 48, T-0029, T-0030, T-
 # ADR-0049: Niri on NixOS without the GNOME desktop: safest staged installation order, per-stage choice, pass check and fallback
 Status: proposed (the owner's direction of 2026-11-22, a Niri install without the GNOME desktop where that is safe, is recorded; the order and the choice per stage are a proposal; nothing is installed, activated or removed until each live stage is approved) · Date: 2026-11-22 · Sources: ADR-0012/0013/0023/0028/0033/0036/0038/0041/0045/0046/0047/0048; T-0029, T-0032; `docs/plans/niri-migration.md` section 6; `docs/plans/niri-two-pc-pilot.md`; `nix/hosts/linux-desktop-pilot/system.nix`; `home/dot_config/niri/config.kdl`; the pinned nixpkgs modules for niri, greetd, gnome-keyring and Soteria.
 
+**Laptop delivery · 23 November 2026 · 50% (3/6) · P0 · high complexity.** Locked system built. Blank-disk VM booted. Offline VM rescue passed. Bind final artifacts to destination hardware, then perform physical install and cold boot, then recover the known-good generation on the laptop. Keep the verified installer available through the first physical recovery. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 ## What this ADR is for
 
 [ADR-0046](0046-niri-desktop-installation-decision-register.md) lists every component and gap. This ADR orders the work from the most vital to the least, names one safest choice per stage, and gives the expected behaviour, the check that lets the work continue, and the fallback when the check fails.

@@ -15,6 +15,8 @@ related: [13, 14, 19, 20, 21, 45, 46, 47, 49, T-0032, T-0042]
 # ADR-0036: Screenshots, media, images and PDF: Flameshot, Preview, Edge PDF, IINA, Paint.NET
 Status: partly-decided (Windows personal screenshots, macOS PDF and four exceptions are decided-unverified, owner 2026-11-16; the other rows are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 (the ShareX rejection reason, "Flameshot runs everywhere", is no longer true: no macOS cask) · Sources: tool-selection design round 3
 
+**Laptop delivery · 23 November 2026 · 50% (2/4) · P1 · high complexity.** Durable screenshot destination configured. Flameshot and OBS staged. Save and reopen a laptop screenshot, then check sensitive-window exclusion and receiver-visible capture. Use a dummy vault for privacy checks. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 Notation, parity and profiles: [ADR-0021](0021-cross-platform-parity-and-profiles.md). Windows additions are bounded by [ADR-0019](0019-platform-scope-linux-macos-wsl2-first.md). Windows built-ins (Media Player on both profiles) are ADR-0020's.
 
 ## Owner decisions (2026-11-16, quoted)

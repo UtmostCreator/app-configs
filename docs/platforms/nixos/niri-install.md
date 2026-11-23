@@ -1,5 +1,7 @@
 # Install `linux-niri` on the laptop (NixOS with niri, no GNOME desktop)
 
+For an external Kingston alongside Windows, start with the [step-by-step walkthrough](kingston-install-walkthrough.md).
+
 Draft runbook, 2026-11-22. It follows the stage order of [ADR-0049](../../architecture/decisions/0049-niri-safest-staged-installation-order.md), which also explains why the laptop was chosen over the other two ways of installing.
 
 **It cannot be run yet.** The `linux-niri` host is not written, so steps 4 and 5 have nothing to install (see "Before you start"). Nothing here has been run on hardware. Every step that changes the laptop needs the owner's go-ahead when it is reached.

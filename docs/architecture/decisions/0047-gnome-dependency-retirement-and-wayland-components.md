@@ -15,6 +15,8 @@ related: [12, 13, 21, 23, 27, 28, 33, 36, 38, 41, 45, 46, 48, 49, T-0029, T-0030
 # ADR-0047: Niri desktop without the GNOME desktop: what is excluded, what stays, and the feature-based replacement audit
 Status: partly-decided (the niri install carries no GNOME desktop, by the owner's direction of 2026-11-22; the evaluation rule is chosen; the replacement products for the two remaining GNOME-named services, and GNOME removal on the existing system, remain open) · Date: 2026-11-22 · Sources: ADR-0012/0013/0041/0046/0048; [Niri upstream Important Software](https://github.com/niri-wm/niri/wiki/Important-Software); [Niri packaging](https://github.com/niri-wm/niri/blob/main/docs/wiki/Packaging-niri.md).
 
+**Laptop delivery · 23 November 2026 · 50% (2/4) · P1 · high complexity.** GNOME desktop closure exclusions checked. Portal and Secret Service owners identified. Exercise chooser, screencast and keyring on the laptop, then check service ownership during shell trials. Verify what a remote participant can actually see when a window is shared. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 ## Decision and boundary
 
 **Long-term architecture preference: Niri without the GNOME desktop environment.** A GNOME package/service is **not kept solely because it is installed today** or supplied by a desktop metapackage. A GNOME component may be retained if it (a) supplies a required, independently useful capability; (b) **outperforms or is more reliable/compatible than available non-GNOME substitutes in a documented comparison**, or (c) is an unavoidable tested compatibility dependency for the selected Niri integration. Prefer the smallest retained GNOME *component*, not a full GNOME session.

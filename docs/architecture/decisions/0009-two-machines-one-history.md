@@ -15,6 +15,8 @@ related: [T-0047]
 # ADR-0009: Two machines, one history: push/pull, desktop first, file ownership
 Status: decided · Date: 2026-11-15 · Sources: T-0047 ticket (Transfer, Coordination) and plan (Decisions), `AGENTS.md`
 
+**Laptop delivery · 23 November 2026 · 33% (1/3) · P0 · medium complexity.** One repository identified. Freeze the clean deployment revision, then verify the offline checkout on the installed laptop. Carry the matching Git bundle and digest with the installation kit. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 ## Decision
 - Changes that affect the NixOS desktop are made and verified there first, then reach WSL and Windows.
 - Sync by commit and push to origin, `git pull --ff-only` before work and before each commit. No force-push, rebase or stash.

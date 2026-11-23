@@ -15,6 +15,8 @@ related: [12, 33, 46, 47, 49, T-0029]
 # ADR-0038: Declarative disks and installs for fresh NixOS hosts: disko and nixos-anywhere
 Status: proposed (the owner asked for this record on 2026-11-20; the layout questions below are open and nothing is built) · Date: 2026-11-20 · Sources: `docs/plans/future-upgrades.md` (section 6), `docs/work/active/T-0029-nixos-system-ownership/ticket.md`, `docs/plans/niri-migration.md` (backup gate)
 
+**Laptop delivery · 23 November 2026 · 50% (2/4) · P0 · high complexity.** Pinned Disko layout. Encrypted VM install. Review laptop storage and firmware, then cold-boot the physical Kingston. Use the isolated target route. Formatting on the daily PC depends separately on tested disk guards. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 **Niri migration installation inventory and unresolved gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). This cross-reference does not change this ADR's decision or status.
 
 ## Context

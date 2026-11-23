@@ -3,6 +3,8 @@ Source: local
 # T-0042: Install selection: committed profiles, a local per-host selection, first-run choice (feature)
 
 Status: done, pending human (T1-T8 on main; real-Mac checks via T-0046; extension questions Q1-Q11 await owner, Q6 answered by T-0044)
+
+**Niri delivery · 23 November 2026 · 100% (3/3) · P0 Niri selector · medium complexity.** Explicit locked build tested. Conflicting selection rejected. Installed-host legacy bootstrap guard tested. The original selection ticket retains its separate real-Mac checks and extension decisions. [T-0032](../T-0032-niri-trial-session/ticket.md) · [ADR-0021](../../../architecture/decisions/0021-cross-platform-parity-and-profiles.md) · [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md)
 Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). The Niri migration registry uses existing Linux desktop GUI selections as inherited baseline; this ticket does not select a Niri shell or change its session/installation ownership.
 Wave: unassigned
 Depends on: none to start (T1 is a gate). T4 touches ops/update-all.sh; land it

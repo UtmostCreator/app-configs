@@ -3,6 +3,8 @@ Source: local
 # T-0030: Validator allows NixOS programs.* and a niri config owner (feature)
 
 Status: open, partly superseded (niri config owned by chezmoi 6fb82ee, rule 11 change unneeded; rule 6 scope change still needed)
+
+**Niri delivery · 23 November 2026 · 100% (3/3) · P0 build · medium complexity.** Positive and negative fixture suites passed. Six evaluated user profiles passed. Disposable chezmoi render checked the KDL exclusion. Repeat these checks if the deployment revision changes the relevant modules. [T-0032](../T-0032-niri-trial-session/ticket.md) · [ADR-0047](../../../architecture/decisions/0047-gnome-dependency-retirement-and-wayland-components.md) · [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md)
 Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gaps: G02 (Niri session/package/service ownership), G14 (validator). The chezmoi KDL owner is already selected.
 Scope note (2026-11-22): the niri install carries no GNOME desktop (ADR-0012). If the niri-only host (`linux-niri`) and the committed pilot are to share a niri module under `nix/modules/nixos`, rule 6 has to allow `programs.niri.enable` there first; a host-level declaration, as the pilot has today, is not affected.
 Depends on: none

@@ -10,10 +10,58 @@ forbids: [unapproved-live-cutover, assumed-shell-selection, duplicate-service-ow
 amends: []
 supersedes: []
 superseded_by: []
-related: [9, 12, 13, 21, 22, 23, 25, 26, 27, 28, 33, 36, 38, 41, 45, 47, 48, 49, T-0029, T-0030, T-0031, T-0032, T-0033, T-0042]
+related: [6, 9, 12, 13, 21, 22, 23, 25, 26, 27, 28, 33, 36, 38, 40, 41, 45, 47, 48, 49, 50, T-0029, T-0030, T-0031, T-0032, T-0033, T-0042]
 ---
 # ADR-0046: Niri desktop migration: central installation decisions, component owners and gaps
 Status: partly-decided (central **inventory**, not an approval to install, select a shell or cut over) · Date: 2026-11-22 · Sources: ADR-0012/0013/0038/0041/0045; T-0029–T-0033; `docs/plans/niri-migration.md`, `docs/plans/niri-two-pc-pilot.md`, and the pilot Nix configuration.
+
+## Laptop delivery by decision
+
+**23 November 2026 · 40% (4/10) · high complexity.** [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md) owns the ten delivery milestones, their evidence and execution order. The new VM run completed all seven installation and recovery subtests in 404 seconds. The Kingston is still awaiting physical installation. The largest remaining dependencies are laptop hardware and boot recovery, daily desktop integration, and independent data restoration.
+
+Each row counts the named completed and open checkpoints equally and rounds to the nearest whole percent. Percentages describe this deployment slice. Formal ADR decisions and wider platform work retain their own status. The ten end-to-end milestones are counted separately because several ADRs share the same tests. Complexity reflects the remaining coordination or failure impact: low for one local check, medium for several components, high for hardware, recovery, privacy or cross-service work.
+
+| Decision and scope | Priority | Complexity | Complete | Evidence or completed checkpoints | Pending checkpoints |
+| --- | --- | --- | --- | --- | --- |
+| [ADR-0038](0038-disko-nixos-anywhere-fresh-hosts.md) Disk and installer | P0 | High | 50% (2/4) | Pinned Disko layout · Encrypted VM install | Review laptop storage and firmware · Cold-boot the physical Kingston |
+| [ADR-0009](0009-two-machines-one-history.md) Deployment revision | P0 | Medium | 33% (1/3) | One repository identified | Freeze the clean deployment revision · Verify the offline checkout on the installed laptop |
+| [ADR-0049](0049-niri-safest-staged-installation-order.md) Installation and recovery | P0 | High | 50% (3/6) | Locked system built · Blank-disk VM booted · Offline VM rescue passed | Bind final artifacts to destination hardware · Perform physical install and cold boot · Recover the known-good generation on the laptop |
+| [ADR-0012](0012-desktop-compositor-gnome-niri-hyprland.md) Niri session | P0 | High | 50% (2/4) | Dedicated Niri system built · Authenticated guest session exercised | Verify laptop display and input · Verify suspend and output hotplug |
+| [ADR-0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md) Greeter | P0 | Medium | 67% (2/3) | tuigreet launches the selected Niri package · Guest rejected a wrong password and returned to the greeter on logout | Repeat authentication and TTY recovery on the laptop |
+| [ADR-0050](0050-nixos-niri-home-layout.md) Fresh home and handoff | P0 | Medium | 50% (2/4) | Home Manager base directories declared · Folder, logger and checkout examples exercised in fixtures | Seed the exact checkout and persist the log on the Kingston · Verify permissions and screenshot destination at first login |
+| [ADR-0006](0006-ai-clis-claude-code-and-codex.md) Assistant CLIs | P1 | Low | 67% (2/3) | Both CLIs included on the ISO · Both started in the installed guest | Verify ordinary-user account access from the destination |
+| [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) Desktop services | P1 | High | 50% (2/4) | GNOME desktop closure exclusions checked · Portal and Secret Service owners identified | Exercise chooser, screencast and keyring on the laptop · Check service ownership during shell trials |
+| [ADR-0022](0022-browsers.md) Browser and handlers | P1 | Medium | 50% (2/4) | Brave in base profile · Firefox in optional bundle | Preserve existing MIME associations before a populated-home activation · Check browser, PDF and link handlers after a second activation |
+| [ADR-0026](0026-editors-and-ides.md) Editor and IDE | P1 | Medium | 50% (2/4) | VS Code in base profile · Android Studio in optional bundle | Open the intended workspace with multiple windows · Run a real project build and tests |
+| [ADR-0027](0027-launcher-clipboard-windows-input-macos-ux.md) Launcher and clipboard | P1 | Medium | 50% (2/4) | Vicinae service exercised · Clipboard command invoked in guest | Launch a known application via search · Retrieve a known clipboard item |
+| [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) Project selection | P1 | High | 50% (2/4) | VS Code recents command registered · Extension deeplink invoked | Select the correct folder among open windows · Verify repeat focus under both keyboard layouts |
+| [ADR-0025](0025-terminal-environment.md) Terminal | P1 | Low | 67% (2/3) | Ghostty packaged · Guest shortcut opened Ghostty | Verify terminal input and project commands on hardware |
+| [ADR-0036](0036-screenshots-media-images-and-pdf.md) Screenshots and capture | P1 | High | 50% (2/4) | Durable screenshot destination configured · Flameshot and OBS staged | Save and reopen a laptop screenshot · Check sensitive-window exclusion and receiver-visible capture |
+| [ADR-0023](0023-password-managers-and-secrets-cli.md) Vault access | P0 before data | High | 67% (2/3) | KeePassXC in base · Restored disposable vault opened | Open a representative restored vault from independent storage |
+| [ADR-0033](0033-communication-sync-notes-and-backup.md) Backup and sync | P0 before data | High | 50% (2/4) | Kopia selected and packaged · Same-filesystem fixture restored | Restore from intended repository onto independent media · Verify owner access to recovered data |
+| [ADR-0021](0021-cross-platform-parity-and-profiles.md) Profile parity | P1 | Medium | 50% (2/4) | Base and optional app sets separated · Optional bundle built | Enable the required apps in the integrated profile · Verify the resulting daily workflows |
+| [ADR-0028](0028-files.md) Files and chooser | P1 | Medium | 50% (2/4) | GTK chooser selected · Double Commander and disk tools staged | Exercise graphical open and save · Test required file operations on the laptop |
+| [ADR-0013](0013-desktop-shell-bar-notifications-trial.md) Desktop shell trial | P1 | High | 25% (1/4) | Trial order recorded | Run the ticket’s shell acceptance gates · Verify shell-stop recovery · Select a passing shell |
+| [ADR-0045](0045-niri-windows-like-desktop-shell-ux.md) Desktop interaction | P1 | High | 25% (1/4) | Workflow criteria defined | Exercise window and task switching · Measure hotplug, lock and resume · Record a shell decision from the results |
+| [ADR-0040](0040-macos-home-layout-and-cleanup-policy.md) Shared folder semantics | P2 macOS | Medium | 50% (2/4) | Shared naming and retention proposal documented · Niri handoff exercised on fixtures | Obtain macOS owner decision · Verify on a work Mac |
+
+## Software installation order
+
+Ranks are approximate deployment priorities. Ranks 1–4 ship together in the base system. Later ranks list the 15 applications already built in the separate workflow bundle and the steps needed to make selected clients usable. The order favours recovery, access and a real development session. The prepared candidate declares these lists in `nix/hosts/linux-niri/{system,home,workflow-apps}.nix`. Confirm the files exist at the selected deployment revision.
+
+| Rank | Software | Delivery state | Acceptance on the laptop |
+| ---: | --- | --- | --- |
+| 1 | systemd-boot, LUKS2, NetworkManager, greetd/tuigreet, Niri | Base; Disko prepares the disk from installer media | Cold boot, unlock, authenticate, connect to Wi-Fi as the ordinary user, recover via TTY |
+| 2 | Ghostty, Git, Claude Code, Codex, tmux, ripgrep, btop | Base; seed the reviewed repo separately | Open a terminal, verify the checkout revision, sign in and obtain an assistant response |
+| 3 | swaylock, swayidle, Soteria, PipeWire/WirePlumber, desktop portals, brightnessctl, playerctl | Base | Lock, suspend, resume, test sound, brightness and permission prompts |
+| 4 | Brave, VS Code, Vicinae and its VS Code recents extension, KeePassXC, Kopia | Base | Launch the correct project, use the browser, open a restored vault and verify recovery |
+| 5 | wl-clipboard, pavucontrol, Firefox, Bruno | Optional bundle | Verify clipboard retrieval, mic and speakers, required browser behavior and a project API request |
+| 6 | Flameshot, OBS Studio, Double Commander, LocalSend | Optional bundle | Capture safely, check the receiver’s view, browse and transfer a test file |
+| 7 | Obsidian, Syncthing, Telegram Desktop, Vesktop | Optional bundle; enrol accounts and sync explicitly | After restore and privacy checks, verify the vault, sync paths and required communications |
+| 8 | QDirStat, Czkawka, Android Studio | Optional bundle | Enable storage tools or the mobile development stack when a real workflow needs them |
+| Trial after baseline recovery | Dux, then Noctalia if needed | Shell candidates | Keep the first candidate that passes the mandatory shell and recovery checks |
+
+For PHP/JS, prove one checkout's documented runtime setup, dependency installation and test command. The base editor and optional app bundle alone do not establish the development environment.
 
 ## Purpose and authority
 

@@ -15,6 +15,8 @@ related: [19, 20, 21, 38, 46, 47, T-0041, T-0042]
 # ADR-0033: Communication, sync, notes and backup: Kopia plus Time Machine
 Status: partly-decided (the backup choice is decided-unverified, owner 2026-11-16; the other rows are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 (Telegram narrowed to P; the Syncthing deferral reversed; the T-0042 Q8 items for Vesktop, Slack and Zoom resolved) · Sources: tool-selection design round 3
 
+**Laptop delivery · 23 November 2026 · 50% (2/4) · P0 before data · high complexity.** Kopia selected and packaged. Same-filesystem fixture restored. Restore from intended repository onto independent media, then verify owner access to recovered data. Enable personal sync after recovery and account enrolment. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 Notation, parity and profiles: [ADR-0021](0021-cross-platform-parity-and-profiles.md). Windows additions are bounded by [ADR-0019](0019-platform-scope-linux-macos-wsl2-first.md). Teams and Outlook on Windows are ADR-0020's.
 
 ## Owner decision (2026-11-16, quoted)

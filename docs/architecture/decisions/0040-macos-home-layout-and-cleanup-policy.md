@@ -15,6 +15,8 @@ related: [28, 32, 33, 21, T-0046, T-0048]
 # ADR-0040: macOS home directory layout and report-only cleanup policy
 Status: proposed (a read-only inspection of one work Mac and outside reviews recommended it; no owner decision yet; this change adds ADR text only and nothing in the home directory is created, moved or removed) · Date: 2026-11-20 · Sources: a read-only inspection on 2026-11-20 (sizes, counts and `git status --no-optional-locks` only)
 
+**Laptop delivery · 23 November 2026 · 50% (2/4) · P2 macOS · medium complexity.** Shared naming and retention proposal documented. Niri handoff exercised on fixtures. Obtain macOS owner decision, then verify on a work Mac. Keep report-only thresholds separate from any future cleanup implementation. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 Backup and restore are ADR-0033. File managers and disk-usage tools are ADR-0028. AI CLI tools are ADR-0032. This ADR covers where files live on a macOS work host and what a cleanup may ever touch. Names are generic on purpose (see Privacy).
 
 ## Context

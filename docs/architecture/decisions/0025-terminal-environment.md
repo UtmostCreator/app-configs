@@ -15,6 +15,8 @@ related: [11, 17, 19, 21, T-0042]
 # ADR-0025: Terminal environment: terminal, multiplexer, prompt, font, PowerShell
 Status: proposed (no row is owner-decided; nothing here is built) · Date: 2026-11-16 · Sources: tool-selection design round 3
 
+**Laptop delivery · 23 November 2026 · 67% (2/3) · P1 · low complexity.** Ghostty packaged. Guest shortcut opened Ghostty. Verify terminal input and project commands on hardware. Use the installed ordinary account for the first real work session. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 Notation, parity and profiles: [ADR-0021](0021-cross-platform-parity-and-profiles.md). Windows additions are bounded by [ADR-0019](0019-platform-scope-linux-macos-wsl2-first.md). No existing ADR-0011 row changes, so this ADR only relates to ADR-0011. The interactive shell is ADR-0017's.
 
 ## Decision

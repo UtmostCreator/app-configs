@@ -15,6 +15,8 @@ related: [14, 19, 20, 34, T-0029, T-0041, T-0042]
 # ADR-0021: Cross-platform parity, the native exception, host profiles and one owner per binary
 Status: partly-decided (P1, P2a, P3a, P4 and the P5a gate are owner-decided 2026-11-16; the P2b test wording, the P3b definitions, P5b and P6 are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 · Sources: tool-selection design round 3, T-0042
 
+**Laptop delivery · 23 November 2026 · 50% (2/4) · P1 · medium complexity.** Base and optional app sets separated. Optional bundle built. Enable the required apps in the integrated profile, then verify the resulting daily workflows. Record enabled groups separately from package availability. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 Cites [ADR-0019](0019-platform-scope-linux-macos-wsl2-first.md) (Windows additions need an owner decision; the quotes below are that decision). This is the parity and profile authority for the per-category tool-selection ADRs 0022 to 0033, 0036 and 0037; they cite it and do not restate it. ADR-0020 (`-SetupProfile`, Windows built-ins), ADR-0034 and ADR-0035 keep their own mechanics.
 
 ## Notation

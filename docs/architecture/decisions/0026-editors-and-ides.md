@@ -15,6 +15,8 @@ related: [8, 11, 19, 21, T-0037, T-0042]
 # ADR-0026: Editors and IDEs: VS Code, Neovim, Android Studio on Linux
 Status: partly-decided (2026-11-21: the Notepad++ Windows row is owner-decided; every other row is proposed and nothing else is built) · Date: 2026-11-16 · Sources: tool-selection design round 3
 
+**Laptop delivery · 23 November 2026 · 50% (2/4) · P1 · medium complexity.** VS Code in base profile. Android Studio in optional bundle. Open the intended workspace with multiple windows, then run a real project build and tests. Establish a PHP or JS work session before installing the mobile stack. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 Notation, parity and profiles: [ADR-0021](0021-cross-platform-parity-and-profiles.md). Windows additions are bounded by [ADR-0019](0019-platform-scope-linux-macos-wsl2-first.md). ADR-0011 rows are unchanged except the Notepad++ owner exception (2026-11-21), recorded in ADR-0011 and listed in ADR-0043. The git editor is ADR-0008's.
 
 ## Decision

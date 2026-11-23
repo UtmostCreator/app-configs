@@ -15,6 +15,8 @@ related: [33, 40, 46, 47, 49]
 # ADR-0050: NixOS and Niri home directory layout
 Status: proposed · Date: 2026-11-22
 
+**Laptop delivery · 23 November 2026 · 50% (2/4) · P0 · medium complexity.** Home Manager base directories declared. Folder, logger and checkout examples exercised in fixtures. Seed the exact checkout and persist the log on the Kingston, then verify permissions and screenshot destination at first login. The handoff supplies Scratch and Archive separately from the current Home Manager activation. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 Use the [shared work-folder convention](0040-macos-home-layout-and-cleanup-policy.md#shared-work-folder-convention) for new work and preserve existing checkout, worktree, and application paths. The convention describes desired locations. Verify on each host which directories, mappings, and backups already exist.
 
 ## Where files go

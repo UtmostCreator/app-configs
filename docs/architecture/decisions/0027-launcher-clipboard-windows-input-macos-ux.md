@@ -15,6 +15,8 @@ related: [12, 13, 19, 20, 21, 46, 47, 48, T-0041, T-0042]
 # ADR-0027: Launcher, clipboard, window management, input and macOS UX: Raycast on Windows, PowerToys
 Status: partly-decided (the Windows launcher and the PowerToys exception are decided-unverified, owner 2026-11-16; the other rows are proposed; nothing here is built) · Date: 2026-11-16 · Amends: ADR-0011 (reverses the "Raycast/Vicinae/PowerToys Run" launcher discard; resolves the launcher, PowerToys and Ditto items) · Sources: tool-selection design round 3
 
+**Laptop delivery · 23 November 2026 · 50% (2/4) · P1 · medium complexity.** Vicinae service exercised. Clipboard command invoked in guest. Launch a known application via search, then retrieve a known clipboard item. A welcome window can satisfy the current window-title check. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 Notation, parity and profiles: [ADR-0021](0021-cross-platform-parity-and-profiles.md). Windows additions are bounded by [ADR-0019](0019-platform-scope-linux-macos-wsl2-first.md). The desktop shell is ADR-0012 and ADR-0013's; Windows built-ins and startup are ADR-0020's.
 
 ## Owner decisions (2026-11-16, quoted)

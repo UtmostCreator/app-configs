@@ -3,6 +3,8 @@ Source: local
 # T-0031: Compositor-neutral window actions (refactor)
 
 Status: in progress (backend interface and GNOME backend on main dea74d4, 25d7ca8; remaining: niri backend, live checks)
+
+**Niri delivery · 23 November 2026 · 50% (2/4) · P1 daily use · high complexity.** Backend contract recorded. GNOME backend landed. Implement the Niri backend, then verify focus and keyboard parity on hardware. The Niri session provides a test platform before the daily-use decision. [T-0032](../T-0032-niri-trial-session/ticket.md) · [ADR-0027](../../../architecture/decisions/0027-launcher-clipboard-windows-input-macos-ux.md) · [ADR-0045](../../../architecture/decisions/0045-niri-windows-like-desktop-shell-ux.md) · [ADR-0048](../../../architecture/decisions/0048-niri-launcher-vscode-project-workflows.md)
 Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). Related register gap: G05 (Niri window/MRU/hide/restore and bilingual parity).
 Scope note (2026-11-22): the niri install carries no GNOME desktop (ADR-0012), so on it the GNOME backend cannot serve as a fallback. The niri backend is required before that install can be the daily system ([ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md), cutover sign-off for G05). The GNOME backend stays, unchanged, for the existing GNOME system.
 Depends on: none for the spec and GNOME refactor; the niri backend needs the T-0032 session.

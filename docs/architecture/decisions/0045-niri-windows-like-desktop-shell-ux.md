@@ -15,6 +15,8 @@ related: [12, 13, 27, 28, 46, 47, 48, 49, T-0031, T-0032]
 # ADR-0045: Niri desktop shell: taskbar, dock, window controls, features and ecosystem
 Status: proposed (comparison and acceptance criteria only; no permanent shell selected or live activation authorised) · Date: 2026-11-22 · Sources: ADR-0012, ADR-0013, T-0031/T-0032 and upstream links in References.
 
+**Laptop delivery · 23 November 2026 · 25% (1/4) · P1 · high complexity.** Workflow criteria defined. Exercise window and task switching, then measure hotplug, lock and resume, then record a shell decision from the results. Actual interactions and mandatory privacy checks govern selection. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 **Niri migration installation inventory and unresolved gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). This cross-reference does not change this ADR's decision or status.
 
 ## Problem and goals

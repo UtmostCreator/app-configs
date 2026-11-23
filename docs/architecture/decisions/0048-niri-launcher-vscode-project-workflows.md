@@ -15,6 +15,8 @@ related: [12, 13, 21, 26, 27, 45, 46, 47, 49, T-0031, T-0032]
 # ADR-0048: Niri launcher: feature-first Vicinae comparison and VS Code project-opening parity
 Status: partly-decided (the existing Vicinae launcher stays for the current pilot to preserve workflows; permanent Niri launcher and clipboard-history provider are **not selected**) · Date: 2026-11-22 · Sources: ADR-0013/0027/0046/0047; `nix/modules/home/vicinae.nix`, `nix/modules/home/gui.nix`, [Vicinae features](https://github.com/vicinaehq/vicinae).
 
+**Laptop delivery · 23 November 2026 · 50% (2/4) · P1 · high complexity.** VS Code recents command registered. Extension deeplink invoked. Select the correct folder among open windows, then verify repeat focus under both keyboard layouts. Test the resulting active workspace after the selection. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+
 ## Requirement, not an endorsement
 
 The preferred launcher is the **strongest feature-rich, reliable, keyboard-driven tool for this Niri + development setup**, not necessarily the incumbent. **Vicinae is provisionally retained only to avoid losing existing commands while alternatives are assessed.** Permanent choice requires concrete advantages over competitors for window/project search, app launch, commands, extensions and clipboard. If another launcher is better overall, replace it **without losing VS Code recent project opening**.

@@ -51,7 +51,7 @@ One status per row.
 
 ## Niri file manager and portal comparison (2026-11-22)
 
-For Niri, **Nautilus is not automatically preferred**. The GNOME-free niri install (ADR-0012, owner direction 2026-11-22) sets `programs.niri.useNautilus = false`: the file chooser goes to the GTK portal and Nautilus is not installed. If file dialogs fail there, setting it back to true is a one-line fallback that brings Nautilus in. The committed pilot leaves the default (true, Nautilus). With no GNOME desktop, `services.udisks2` and `services.gvfs` are no longer switched on by default and must be declared for USB and network mounts in any file manager. Upstream Niri documentation says FileChooser may be explicitly routed to `xdg-desktop-portal-gtk` if Nautilus is removed; do **not** replace the ScreenCast backend in the process.
+For Niri, **Nautilus is not automatically preferred**. The GNOME-free niri install (ADR-0012, owner direction 2026-11-22) sets `programs.niri.useNautilus = false`: the file chooser goes to the GTK portal and Nautilus is not installed. If file dialogs fail, check the GTK portal routing and reproduce the failing open/save action before accepting the target. The committed pilot leaves the default (true, Nautilus). With no GNOME desktop, `services.udisks2` and `services.gvfs` are no longer switched on by default and must be declared for USB and network mounts in any file manager. Upstream Niri documentation says FileChooser may be explicitly routed to `xdg-desktop-portal-gtk` if Nautilus is removed; do **not** replace the ScreenCast backend in the process.
 
 | Candidate | Advantages | Disadvantages / questions |
 |---|---|---|

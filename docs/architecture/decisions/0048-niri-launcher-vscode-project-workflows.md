@@ -26,7 +26,7 @@ The preferred launcher is the **strongest feature-rich, reliable, keyboard-drive
 The repo already has **two different implementation surfaces**:
 - `nix/modules/home/vicinae.nix` installs `programs.vicinae` via Home Manager, the `vscode-recents` extension, and a user service.
 - `nix/modules/home/gui.nix` already defines a **`vscode-recent-projects`** command using VS Code's recent history and Vicinae `dmenu` as a frontend. The current Niri window backend remains unfinished ([T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md)).
-- The picker's only shortcut today is GNOME's Alt+E (`nix/modules/home/gnome-keybindings.nix`). The Niri KDL binds only Alt+Space to `vicinae toggle`, so the "global keyboard shortcut from Niri" does not exist yet; it needs a KDL bind under both layouts (T-0032).
+- The installed Niri KDL binds Alt+E to the locked VS Code recents extension, Alt+V to clipboard history and Alt+Space to Vicinae. GNOME keeps its existing Alt+E binding. T-0032 checks the shortcuts under both keyboard layouts and the selected project with multiple windows open.
 - Opening **recent VS Code projects** and **focusing an existing VS Code window** are separate actions. Test both; avoid a naïve launcher that opens a duplicate `code` instance for every click.
 
 ## Candidate comparison (paper research; all runtime scores unverified)
@@ -47,7 +47,7 @@ The repo already has **two different implementation surfaces**:
 - [ ] Read VS Code's actual *Open Recent* files/folders/workspaces, with spaces, UTF-8/non-ASCII, symlinks and missing/stale paths handled. Test against known golden recent records; never invent a VS Code history JSON schema.
 - [ ] Show the correct type (folder vs `.code-workspace`), full path, useful label and recency; optionally show Git branch and remote if available **without blocking** the picker.
 - [ ] **Open target:** call an appropriately quoted `code` CLI with an explicit target; handle workspace files rather than treating them as directories, and preserve remote/URI entries where actually supported. Do **not** swallow launch failures.
-- [ ] **Focus existing:** for three VS Code windows, choose the requested project and focus the matching window via **Niri native IPC**; if no matching window exists, open project once. Distinguish `code --reuse-window`, `--new-window` and Niri MRU requirements through tests; no guessed flags on existing windows. Interim pass for the pilot ([ADR-0049](0049-niri-safest-staged-installation-order.md) stage 9): the picker may report that it cannot tell which window holds the project, but it must never focus an unrelated window; exact focus remains the target and is built in T-0031.
+- [ ] **Focus existing:** for three VS Code windows, choose the requested project and focus the matching window via **Niri native IPC**; if no matching window exists, open project once. Distinguish `code --reuse-window`, `--new-window` and Niri MRU requirements through tests; no guessed flags on existing windows. Interim pass for the pilot ([ADR-0049](0049-niri-safest-staged-installation-order.md) during launcher acceptance): the picker may report that it cannot tell which window holds the project, but it must never focus an unrelated window; exact focus remains the target and is built in T-0031.
 - [ ] Keyboard invocation works in both English US and Russian layouts, including after shell restart, cold login and with several monitors/workspaces.
 - [ ] No duplicate current-window launch, dead menu, arbitrary application execution from untrusted recent-project titles, or corrupted recent history. The repo-owned project-history adapter is read-only.
 - [ ] **P1 (G23/G06), not P0:** the main launcher must meet required app search, file/command search, calculator, search latency, clipboard text/image history (if it owns it), Niri window search and extension/automation parity. Explicitly document intentional missing functionality rather than silently dropping features.
@@ -71,11 +71,11 @@ The repo already has **two different implementation surfaces**:
 
 ## Integration decision
 
-- During the planned Dux→Noctalia trial (ADR-0049 stage 10; no shell is installed yet), **keep Vicinae running**, its extension available and its bindings functional **for continuity only**. This is not a future endorsement.
-- **First** give the picker a Niri bind, then check if `vscode-recents` or the existing script can open exact recent projects under Niri. If it works, record its dependencies and do not rewrite it without reason.
+- During the planned Dux→Noctalia trial (ADR-0049 shell trial; no shell is installed yet), **keep Vicinae running**, its extension available and its bindings functional **for continuity only**. This is not a future endorsement.
+- Exercise Alt+E with recent folders and saved workspaces under Niri. Check which existing Code window receives focus when more than one is open.
 - Then evaluate **Walker + Elephant, Albert, Ulauncher, Rofi** and the selected shell's launcher using the same test fixture and compare total retained functionality. Fuzzel is a low-overhead rescue frontend, not full-featured competitor.
 - **Exactly one global shortcut owner for the active launcher**. A graphical shell Start menu may coexist if it does not own conflicting bindings; ensure one clipboard-history service, separate from the `wl-clipboard` CLI.
-- If the strongest alternative wins, move the VS Code recent-project reader/focus logic into a **launcher-neutral adapter** and keep a thin UI-specific frontend. This work belongs in [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md) or a new scoped implementation ticket **after** selection. When a replacement may happen follows ADR-0049 stage 15 if that ADR is approved: comparison on PC 2 before cutover, replacement after it.
+- If the strongest alternative wins, move the VS Code recent-project reader/focus logic into a **launcher-neutral adapter** and keep a thin UI-specific frontend. This work belongs in [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md) or a new scoped implementation ticket **after** selection. When a replacement may happen requires a passing comparison on the destination after baseline installation and recovery.
 - Do not automatically install a new launcher just to conduct a paper comparison, and do not remove Vicinae from the existing GNOME system while that system is still in use.
 
 ## Walker + Elephant evidence and comparative test plan (2026-11-22)

@@ -8,8 +8,7 @@
 > **Hyprland** = `docs/plans/hyprland-migration.md`.
 > Originating deferral / prior scoring: `docs/plans/future-upgrades.md` §12.
 
-This is a **decision framework, not a forced verdict.** Both compositors are
-viable for this repo and both have a write-ready migration plan. Claims grounded
+This is a **decision framework, not a forced verdict.** The comparison predates the decision to deploy Niri on the fresh laptop. Hyprland is a parked alternative. Claims grounded
 only in upstream guidance (NixOS/Hyprland/niri wikis + the niri-flake README) are
 labelled `BEST-PRACTICE`; anything not provable from the repo or that guidance is a
 **judgement call**.

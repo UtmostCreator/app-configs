@@ -21,13 +21,13 @@ Neovim, VS Code, Git and SSH.
 
 ## What it provides
 
-- **One entry point for a clean machine.** `ops/install.sh` bootstraps Nix,
+- **Standalone home setup.** `ops/install.sh` bootstraps Nix,
   Home Manager, chezmoi and mise, applies everything, and is safe to re-run.
 - **One owner per concern.** Dotfiles, CLI packages, runtimes, macOS apps,
   the NixOS system layer and Git hooks each belong to exactly one tool.
 - **Separate preview and apply paths.** Install, update, system setup, cleanup
   and uninstall each have a mode that only reports what would change.
-- **Recovery points.** Managed files are snapshotted before every apply, and
+- **Standalone recovery points.** Managed files are snapshotted before every apply, and
   `sys-update rollback` switches back to the previous Home Manager generation
   and restores `flake.lock`.
 - **Checks that say where you stand.** `sys-readiness`, `ops/doctor.sh`,
@@ -37,7 +37,7 @@ Neovim, VS Code, Git and SSH.
 
 ## Quick start
 
-**Fresh NixOS laptop:** [Write the project ISO to a flash drive and boot it](docs/platforms/nixos/kingston-install-walkthrough.md). The guide covers carrying this repository offline and installing onto an external Kingston while protecting the Windows SSD.
+**Fresh NixOS laptop:** [Write the project ISO to a flash drive and boot it](docs/platforms/nixos/kingston-install-walkthrough.md). The guide covers carrying this repository offline and installing onto an external Kingston while protecting the Windows SSD. Start with Claude on the working PC. The [installation and recovery runbook](docs/platforms/nixos/niri-install.md) and [media guide](docs/platforms/nixos/niri-install-media.md) cover the underlying procedure.
 
 **Existing system:** choose your platform in the [setup guide](docs/platforms/index.md), then follow the standalone instructions below.
 
@@ -92,7 +92,8 @@ rejects it. Full runbook: [`bootstrap.md`](docs/getting-started/bootstrap.md).
 
 | System | `hostProfile` | Nix layer | GUI default |
 |--------|---------------|-----------|:-----------:|
-| NixOS (daily driver) | `linux-desktop` | Home Manager standalone + `sys-setup` system layer | yes |
+| NixOS + Niri laptop | system output `linux-niri` | Disko + NixOS with integrated Home Manager; [acceptance status](docs/work/active/T-0032-niri-trial-session/ticket.md) | yes |
+| NixOS (existing GNOME desktop) | `linux-desktop` | Home Manager standalone + `sys-setup` system layer | yes |
 | Other Linux desktop | `linux-desktop` | Home Manager standalone | yes |
 | Linux CLI / headless | `linux-cli` | Home Manager standalone | no |
 | macOS (Apple Silicon) | `macos` | nix-darwin + Home Manager + Homebrew casks | yes |

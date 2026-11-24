@@ -51,7 +51,7 @@ One status per row.
 
 ## Niri-specific research amendment (2026-11-22)
 
-This is **not** a change to the previously decided Windows Raycast or PowerToys choices. For the Niri desktop, the permanent launcher is **open**: [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) compares **Vicinae, Walker, Albert, Ulauncher, Rofi and shell-integrated launchers** on commands/extensions, clipboard, window switching and VS Code recent project opening. Vicinae remains installed in the existing Linux profile for the pilot but is **not permanently selected just because it was first**.
+This is **not** a change to the previously decided Windows Raycast or PowerToys choices. For the Niri desktop, the permanent launcher is **open**: [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) compares **Vicinae, Walker, Albert, Ulauncher, Rofi and shell-integrated launchers** on commands/extensions, clipboard, window switching and VS Code recent project opening. Both the existing standalone desktop and the dedicated Niri home include Vicinae. The installed Niri KDL binds Alt+Space to the launcher, Alt+V to clipboard history and Alt+E to the pinned VS Code recents extension. The permanent choice depends on the daily-workflow tests.
 
 | Niri function | Preferred investigation, not an installation decision |
 |---|---|

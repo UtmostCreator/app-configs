@@ -25,6 +25,10 @@ Proposed amendment in ADR-0032 (adds macOS vendor-installer and packer rows; the
 - Opt-out key `aiCli: false` in personal.yaml, a deliberate exception to the install selection.
 - Daily development runs Claude Code inside WSL2; Windows Claude only for Windows-side work.
 
+## Niri installation
+
+On the working PC reuse an available Claude binary. For the fresh `linux-niri` deployment, the installed system and its live USB carry Claude Code and Codex CLI from the same locked package set. Package updates follow the reviewed lock. Interactive account setup stays with the user. [Niri runbook](../../platforms/nixos/niri-install.md)
+
 ## Why
 - Closes the reproducibility gap: a new machine gets both CLIs without a manual step.
 - Session reasoning: they are vendor binaries, not Nix packages, so the Nix-based selection does not fit (the plan says only "a deliberate exception").

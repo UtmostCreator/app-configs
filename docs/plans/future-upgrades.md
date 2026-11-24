@@ -144,14 +144,12 @@ helper (the system-layer sibling of this repo's `nix/lib/mkhome.nix`).
 nix-config-pavlo's `lib/mksystem.nix` is the closest match (same `vars` +
 `specialArgs` idiom already used here).
 
-Today this repo has one `nixosConfigurations` host, the PC 2 pilot
-`linux-desktop-pilot` (T-0029, T-0032); the daily desktop still runs a
+The fresh Niri laptop has its own [deployment plan](niri-migration.md). The historical GNOME test fixture is
+`linux-desktop-pilot`. The daily desktop still runs a
 hand-edited `/etc/nixos`. Adopting `mkSystem` would let this repo own the NixOS
 system layer reproducibly (timezone, substituters, gnupg, sops, browser-policies
 all become first-class instead of `sys-setup` patches). Biggest architectural
-step; do as a dedicated slice. Optional companions seen in pavlo: `disko`
-(declarative partitioning) and `lanzaboote` (secure boot, item #8) — only if
-wanted.
+step; do as a dedicated slice. Disko owns the fresh Niri target layout (ADR-0038). Secure Boot remains a separate decision (item #8).
 
 **Adopt pavlo's `vars.hosts` data model alongside it.** nix-config-pavlo's
 `vars/default.nix` centralizes per-host metadata:

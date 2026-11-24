@@ -8,6 +8,7 @@ Companion to `docs/plans/migration/implementation.md`. Companion audit docs:
 ## Targets
 
 - **macOS** — primary, full coverage (Home Manager + nix-darwin + Homebrew)
+- **NixOS Niri laptop** — NixOS and its integrated user share a deployment; Disko owns the encrypted disk layout. [Installation and recovery](../platforms/nixos/niri-install.md)
 - **Linux desktop** — primary, full coverage (Home Manager standalone + GUI module)
 - **Linux CLI / headless** — CLI-only coverage (Home Manager standalone, no GUI)
 - **WSL2** — CLI/dev parity with macOS (WSL1 is refused); see
@@ -29,9 +30,9 @@ only.
 `home.file` target that is also a chezmoi target (any tracked file under
 `home/`) fails unless `chezmoi managed` no longer lists the chezmoi copy, with
 `home/.chezmoiignore` evaluated by chezmoi itself per host (hermetic scratch
-source; template data only for `.chezmoi.os`, `hostProfile` and `gui`). Both
+source; template data only for `.chezmoi.os`, `.chezmoi.hostname`, `hostProfile` and `gui`). Both
 `gui` values must be ignored for each profile: all Linux profiles
-(linux-desktop, linux-cli, wsl) in the default run, the evaluated profile's own
+(linux-desktop, linux-niri, linux-cli, wsl) in the default run, the evaluated profile's own
 host with `--eval`. In the default (text) run a `home.file` declaration is
 decided only when it is one attrset literal `{ ... }`, optionally behind a
 single wrapper (`mkIf <cond>`, `optionalAttrs <cond>`, `mkOverride <n>`,
@@ -85,6 +86,7 @@ to it. Evaluation-based enforcement tolerates `programs.man` and
 | `programs.home-manager` | `nix/lib/mkhome.nix:27` |
 | `programs.vicinae` | `nix/modules/home/vicinae.nix:37` |
 | `programs.openclaw` | `nix/modules/home/openclaw.nix:83` |
+| `services.swayidle` and `xdg.configFile."niri/config.kdl"` (linux-niri only) | [Integrated Niri user](../../nix/hosts/linux-niri/home.nix); chezmoi excludes the KDL on this host |
 | `services.syncthing` | `nix/modules/home/gui.nix:476` |
 | `xdg.configFile."flameshot/flameshot.ini"` (Linux) | `nix/modules/home/gui.nix:401` |
 | `xdg.configFile."wireplumber/wireplumber.conf.d/51-kanto-ora4.conf"` | `nix/modules/home/gui.nix:527` |
@@ -102,6 +104,7 @@ a new one needs a row here.
 | `systemd.user.services` / `systemd.user.timers` | `nix/modules/home/ai-cli-updates.nix:131`, `nix/modules/home/dev.nix:190-263`, `nix/modules/home/gui.nix:434,452`, `nix/modules/home/openclaw.nix:173` |
 | `dconf.settings` (Linux GNOME) | `nix/modules/home/gnome-extensions.nix:48`, `nix/modules/home/gnome-files.nix:14`, `nix/modules/home/gnome-keybindings.nix:244` |
 | `xdg.dataFile."applications/mimeapps.list"` (Linux) | `nix/modules/home/default-apps.nix:114` |
+| `home.activation.checkNiriDirectories` and `home.activation.createNiriDirectories` | [Niri first-login directories](../../nix/hosts/linux-niri/home.nix) |
 | `home.activation.mutableMimeApps` (Linux) | `nix/modules/home/default-apps.nix:119` |
 | `home.activation.defaultBrowser` (macOS) | `nix/modules/home/default-browser-macos.nix:5` |
 | `targets.genericLinux` (linux-cli, WSL) | `nix/hosts/linux-cli/home.nix:10,13`, `nix/hosts/wsl/home.nix:12,15` |
@@ -141,6 +144,7 @@ system, and Home Manager writes client settings only.**
 
 | Host | Owns the Nix package and daemon settings | User `nix.conf` | Garbage collection |
 |------|------------------------------------------|-----------------|--------------------|
+| NixOS (linux-niri) | The [Niri host](../../nix/hosts/linux-niri/system.nix) configures Nix and flake support. | Integrated home uses the system package set. | Keep the boot-tested generation during installation and recovery. |
 | NixOS (linux-desktop) | The system configuration (`ops/system-setup.sh`: `trusted-users` at `:220`, `nix.gc` at `:222`, `nix.optimise.automatic` at `:224`; `nix/modules/nixos/substituters.nix:32`). | Home Manager writes `extra-experimental-features = nix-command flakes` (`nix/modules/common/nix-settings.nix:45`), which appends to the system value. | System `nix.gc` timer (`ops/system-setup.sh:222`) plus the Home Manager user timer. |
 | Other Linux desktop, linux-cli, WSL | `/etc/nix/nix.conf` for daemon settings; Home Manager keeps `nix.package` (`nix-settings.nix:41`). | Home Manager, as above. | Home Manager user timer. |
 | macOS | Determinate Nix. nix-darwin sets `nix.enable = false` (`nix/hosts/macos/darwin.nix:11`). | None: `myConfig.nixSystemManaged = true` (`nix/hosts/macos/home.nix:10`, option at `nix-settings.nix:23`) leaves `nix.package` null. | Determinate Nix. Home Manager sets no GC on macOS. |

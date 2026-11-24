@@ -1,10 +1,8 @@
 # NixOS system rebuild (`nixos-rebuild`)
 
-This repo's `nix/` flake manages your **user environment** via standalone
-**Home Manager** (`home-manager switch`). It does **not** manage the NixOS
-**system** (kernel, login shell, services, users, garbage-collection timer,
-trusted users). Those live in `/etc/nixos/` and are applied with
-`sudo nixos-rebuild …`.
+On **linux-niri**, rebuild the complete system and integrated Home Manager user from the reviewed checkout. On the working PC use `bash ops/install.sh --host linux-niri` to build. On the installed laptop use the target-specific boot/recovery procedure. [Niri runbook](niri-install.md)
+
+The rest of this page describes the **existing GNOME desktop**. Its standalone Home Manager output manages the user environment, while its system configuration lives in `/etc/nixos`.
 
 Two layers, two commands:
 
@@ -13,10 +11,7 @@ Two layers, two commands:
 | User environment | CLI/GUI packages, dotfiles, fish/atuin/starship config | `home-manager switch -b hm-bak --flake ./nix#linux-desktop` (automated by `ops/install.sh`) | **Yes** (`nix/`) |
 | NixOS system | login shell, services, users, `nix.gc`, `trusted-users`, kernel, bootloader | `sudo nixos-rebuild switch` | **No** (`/etc/nixos/`) — you own it |
 
-> Why the split: a standalone Home Manager install (used here so the repo
-> works on macOS/WSL/non-NixOS too) cannot set system-level options. On a pure
-> NixOS box you *could* import Home Manager as a NixOS module, but that would
-> make the flake NixOS-only. We keep them separate on purpose.
+Standalone Home Manager also serves non-NixOS systems. Each NixOS host can choose its own integration independently.
 
 ## What `nixos-rebuild` does
 

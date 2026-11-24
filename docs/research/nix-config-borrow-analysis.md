@@ -26,7 +26,7 @@ the cost/risk of bringing it in.
 
 ## Where nix-config does NOT match our scope (do not borrow)
 
-- NixOS-only things: `disko-config.nix`, `lanzaboote`, `niri`, `k3s`, `gaming.nix`, `noctalia.nix`, OBS module. We are macOS + Linux desktop + WSL + Linux CLI; we are not standing up a NixOS box.
+- NixOS-only things: `disko-config.nix`, `lanzaboote`, `niri`, `k3s`, `gaming.nix`, `noctalia.nix`, OBS module. This research originally scoped macOS, standalone Linux and WSL. The separate Niri laptop now uses native NixOS and pinned Disko under [ADR-0038](../architecture/decisions/0038-disko-nixos-anywhere-fresh-hosts.md). Use its own tested configuration as the installation source.
 - `programs.fish` / `programs.zen-browser`: we are zsh-first and don't ship a browser fork. Keep as reference only.
 - `services.syncthing.enable = true;`: out of scope for a dotfiles repo.
 - `inputs.llm-agents` / `inputs.agent-skills`: AI-tooling concerns; explicitly excluded per project rule.
@@ -115,7 +115,7 @@ Three slices, smallest first. Each is a separate PR-sized commit.
 | Pattern | Why not borrow yet |
 |---------|-------------------|
 | `mksystem.nix` for NixOS hosts | We don't run NixOS as host OS. Our analogue is already `mkhome.nix`. Worth revisiting if someone adopts NixOS on a workstation. |
-| `inputs.zen-browser` + `inputs.niri` + `inputs.noctalia` | Personal taste / NixOS-only window manager bits. Adding them would bloat our `flake.lock` for no host benefit. |
+| `inputs.zen-browser` + `inputs.niri` + `inputs.noctalia` | Personal taste / NixOS-only window manager bits. The dedicated Niri host uses the native nixpkgs compositor. Evaluate shell additions only after installation and recovery pass. |
 | `inputs.disko` + `inputs.lanzaboote` | Installer-time concerns; we are dotfiles, not provisioning a NixOS box. |
 | Custom `brave-origin` build | Only matters if you want the *origin* build (privacy-tweaked, not the standard `brave`). Using `pkgs.brave` (Linux) + `brave-browser` cask (macOS) is simpler. |
 

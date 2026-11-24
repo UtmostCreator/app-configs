@@ -7,17 +7,13 @@
 Two assessments supplied by the user on 2026-11-15, compiled from upstream
 GitHub issues and docs. The issue numbers, dates and fix states below have NOT
 been independently verified in this repo. Treat all of them as **user-supplied,
-unverified (not fetched here)**. Evidence labels VERIFIED, INFERRED and WEB
-follow `docs/plans/niri-migration.md` (lines 12-13); WEB there means fetched on
-2026-11-15, which does not apply to the user-supplied items, so none of them is
-labelled WEB. Only section 6 contains local facts, and each names its command.
+unverified (not fetched here)**. Only section 6 contains local facts, and each names its command.
 
 Nothing in this note changes a decision.
 
 ## 2. Decision context (unchanged)
 
-- Trial order: Dux first, Noctalia second (`docs/plans/niri-migration.md`,
-  "Trial order (DECIDED)"). No permanent shell is selected.
+- Trial Dux first after baseline recovery; move to Noctalia if Dux fails the acceptance criteria. [Shell decision](../architecture/decisions/0013-desktop-shell-bar-notifications-trial.md)
 - Vicinae stays the launcher.
 - Exactly one owner each for notifications, clipboard history, lock/idle and
   polkit authentication.

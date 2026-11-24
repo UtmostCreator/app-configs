@@ -1,7 +1,7 @@
 # Migration Plan — GNOME → Hyprland
 
 > Home: `docs/plans/hyprland-migration.md`
-> Status: planning document. No code changes are authorized by this file alone.
+> Status: parked alternative. The fresh NixOS laptop follows the [Niri migration plan](niri-migration.md).
 > GNOME stays the default login until a single revertable cutover commit (Phase 6).
 > Sibling docs: niri plan = `docs/plans/migration/overview.md` (repo root); decision doc =
 > `docs/research/niri-vs-hyprland.md`; originating deferral =

@@ -1,6 +1,6 @@
 # Desktop migration claim audit (niri / KDE / Hyprland / GNOME)
 
-**Decision status as of 2026-11-22:** [ADR-0046](../architecture/decisions/0046-niri-desktop-installation-decision-register.md) links this historical claim audit with the implemented pilot, open tickets and proposed post-cutover choices. Evidence labels and issue status must be re-verified against current pinned versions.
+**Decision status as of 2026-11-22:** [ADR-0046](../architecture/decisions/0046-niri-desktop-installation-decision-register.md) links this historical claim audit to the deployed configuration and open hardware checks. Actual ISO, VM and recovery results are in [T-0032](../work/active/T-0032-niri-trial-session/ticket.md). Evidence labels and issue status must be re-verified against current pinned versions.
 
 > Home: `docs/research/desktop-migration-claim-audit.md`
 > Status: evidence record. No code changes and no desktop migration are authorised by this file (`docs/plans/migration/overview.md:3`).

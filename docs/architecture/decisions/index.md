@@ -2,7 +2,7 @@
 
 Scope: [project scope](../project-scope.md) (ADR-0019). Short records of what was chosen, what lost and why. Most WSL items come from T-0047.
 
-**Niri desktop migration:** [ADR-0046](0046-niri-desktop-installation-decision-register.md) is the central install/decision/gap matrix; [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) defines the install without the GNOME desktop and audits the replacements; [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) compares launchers and VS Code project opening; [ADR-0049](0049-niri-safest-staged-installation-order.md) proposes the order to install it in, with a pass check and fallback per stage. ADR-0012, ADR-0013, ADR-0041 and ADR-0045 retain their individual decision authority.
+**Niri desktop migration:** [ADR-0046](0046-niri-desktop-installation-decision-register.md) is the central install/decision/gap matrix; [ADR-0047](0047-gnome-dependency-retirement-and-wayland-components.md) defines the install without the GNOME desktop and audits the replacements; [ADR-0048](0048-niri-launcher-vscode-project-workflows.md) compares launchers and VS Code project opening; [ADR-0049](0049-niri-safest-staged-installation-order.md) defines Claude preparation and the build, blank-disk installation, recovery and destination gates. ADR-0012, ADR-0013, ADR-0041 and ADR-0045 retain their individual decision authority.
 
 ## Before writing a new ADR
 
@@ -54,7 +54,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0009](0009-two-machines-one-history.md) | Desktop first, sync by push/pull fast-forward only, split file ownership | decided | 2026-11-15 |
 | [0010](0010-cross-os-settings-inventory-first.md) | Cross-OS settings: inventory, compare, baseline; Windows apply only via ADR-0020/0034/0035 | decided | 2026-11-15 |
 | [0011](0011-windows-edition-and-apps.md) | Windows Home is enough; apps are a manual list; automation open | partly-decided | 2026-11-14 |
-| [0012](0012-desktop-compositor-gnome-niri-hyprland.md) | GNOME stays on the existing system; the new niri install carries no GNOME desktop (owner direction, not yet built); Hyprland parked | partly-decided | 2026-11-15 |
+| [0012](0012-desktop-compositor-gnome-niri-hyprland.md) | GNOME on the existing system, Niri built and booted in a VM for the new laptop, physical acceptance pending | partly-decided | 2026-11-15 |
 | [0013](0013-desktop-shell-bar-notifications-trial.md) | Trial Dux first, Noctalia second; no shell selected | trial | 2026-11-15 |
 | [0014](0014-tool-stack-recap.md) | chezmoi, mise, Nix + Home Manager, nix-darwin + casks, lefthook | decided | not recorded |
 | [0015](0015-wsl-distro-selection-nixos-or-ubuntu.md) | WSL distro: NixOS-WSL by default, Ubuntu supported; one `wsl` profile | decided-unverified | 2026-11-15 |
@@ -80,7 +80,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0035](0035-windows-telemetry-reduction.md) | Telemetry reduction for the personal setup profile; the work profile touches no telemetry | decided-unverified | 2026-11-16 |
 | [0036](0036-screenshots-media-images-and-pdf.md) | Screenshots, media, images and PDF: Flameshot, Preview, Edge PDF, IINA, Paint.NET | partly-decided | 2026-11-16 |
 | [0037](0037-system-monitoring-diagnostics-device-software.md) | System monitoring, diagnostics and device software | proposed | 2026-11-16 |
-| [0038](0038-disko-nixos-anywhere-fresh-hosts.md) | disko and nixos-anywhere install fresh NixOS hosts only (VM test first, by-id disks, never the live desktop) | proposed | 2026-11-20 |
+| [0038](0038-disko-nixos-anywhere-fresh-hosts.md) | Pinned Disko for fresh linux-niri installations, dedicated ESP and LUKS2/ext4 on the laptop or an attached SSD | decided-unverified | 2026-11-22 |
 | [0039](0039-windows-work-password-manager.md) | Windows work profile: KeePassXC, Bitwarden allowed, installed by hand with winget; employer policy wins | decided-unverified | 2026-11-20 |
 | [0040](0040-macos-home-layout-and-cleanup-policy.md) | macOS home layout: keep existing roots, add Scratch and Archive, report-only cleanup of disposable files, never automatic outside Scratch | proposed | 2026-11-20 |
 | [0041](0041-login-greeter-gdm-greetd-tuigreet-regreet.md) | Login greeter: greetd with tuigreet on the GNOME-free niri install; GDM stays on the existing GNOME system; ReGreet and gtkgreet compared, neither ranked | proposed | 2026-11-22 |
@@ -91,7 +91,7 @@ Statuses (the index row repeats the value exactly; details stay in the ADR's own
 | [0046](0046-niri-desktop-installation-decision-register.md) | Niri master installation matrix: selected components, staged trials, ownership, P0–P2 gaps and migration dependencies | partly-decided | 2026-11-22 |
 | [0047](0047-gnome-dependency-retirement-and-wayland-components.md) | Niri install without the GNOME desktop: what is excluded, the two GNOME-named services that stay, and the replacement audit | partly-decided | 2026-11-22 |
 | [0048](0048-niri-launcher-vscode-project-workflows.md) | Vicinae provisional during trial; compare rich launchers and preserve exact VS Code recent-project opening | partly-decided | 2026-11-22 |
-| [0049](0049-niri-safest-staged-installation-order.md) | Niri install order without the GNOME desktop: text greeter and recovery first, one component per stage with a pass check and fallback, the existing system as the fallback | proposed | 2026-11-22 |
+| [0049](0049-niri-safest-staged-installation-order.md) | Claude preparation and complete first-generation Niri installation, recovery and destination acceptance | decided-unverified | 2026-11-22 |
 | [0050](0050-nixos-niri-home-layout.md) | NixOS and Niri home layout: shared work folders with macOS, XDG ownership, screenshot destination and report-only retention | proposed | 2026-11-22 |
 
 The tool-selection ADRs 0021 to 0033, 0036 and 0037 are written (ADR-0021 holds parity and profiles); gaps are allowed by the contract.

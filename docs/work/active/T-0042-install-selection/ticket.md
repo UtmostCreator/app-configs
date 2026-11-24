@@ -5,7 +5,7 @@ Source: local
 Status: done, pending human (T1-T8 on main; real-Mac checks via T-0046; extension questions Q1-Q11 await owner, Q6 answered by T-0044)
 
 **Niri delivery · 23 November 2026 · 100% (3/3) · P0 Niri selector · medium complexity.** Explicit locked build tested. Conflicting selection rejected. Installed-host legacy bootstrap guard tested. The original selection ticket retains its separate real-Mac checks and extension decisions. [T-0032](../T-0032-niri-trial-session/ticket.md) · [ADR-0021](../../../architecture/decisions/0021-cross-platform-parity-and-profiles.md) · [ADR-0049](../../../architecture/decisions/0049-niri-safest-staged-installation-order.md)
-Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). The Niri migration registry uses existing Linux desktop GUI selections as inherited baseline; this ticket does not select a Niri shell or change its session/installation ownership.
+Niri desktop installation and component decision register: [ADR-0046](../../../architecture/decisions/0046-niri-desktop-installation-decision-register.md). The Niri host selects its desktop and applications declaratively. Account enrolment and standalone personal/work selections are separate.
 Wave: unassigned
 Depends on: none to start (T1 is a gate). T4 touches ops/update-all.sh; land it
 after T-0010 (now landed). Does not depend on T-0029..T-0033.
@@ -227,7 +227,7 @@ Negative (must not change)
   - aiContext, dev-language and nix-maintenance groups: deferred (scattered packages
     or other checks depend on them).
   - Gating mise optional tools: already local and opt-in.
-  - Desktop-environment pieces (vicinae, GNOME, niri): T-0031 and T-0032. Open since 2026-11-22: the niri install carries no GNOME desktop (ADR-0012), but the `linux-desktop` Home Manager output still imports the GNOME modules and two GNOME Shell extensions, and the installer knows no `linux-niri` host or profile (ADR-0046 G28).
+  - The integrated `linux-niri` deployment gets its dedicated home from the system output. Installer preparation must name that target explicitly and skip standalone activation, GNOME defaults and legacy setup advice. [Niri runbook](../../../platforms/nixos/niri-install.md)
   - Removing the selection directory in uninstall.sh: manual step, documented.
   - Writing an effective-selection file from Home Manager: would change the default drvPath.
 

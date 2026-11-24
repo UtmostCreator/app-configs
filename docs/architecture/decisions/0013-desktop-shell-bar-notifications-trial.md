@@ -20,10 +20,10 @@ Status: trial (user decision 2026-11-15 on the order only) Â· Date: 2026-11-15 Â
 **Niri migration installation inventory and unresolved gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). This cross-reference does not change this ADR's decision or status.
 
 ## Decision
-- Trial Dux Modular Shell first, Noctalia second, in a real NixOS trial; choose afterwards ("scores too close to decide on paper").
+- After installation and recovery, trial Dux first and Noctalia second if needed. Select the first candidate that passes workflow, service ownership, pinned configuration and crash-recovery checks. [Trial criteria](../../work/active/T-0032-niri-trial-session/ticket.md)
 - Fallback: Waybar + SwayNC + swaylock + swayidle.
 - **During the existing Dux â†’ Noctalia pilot**, Vicinae stays the incumbent launcher and its VS Code project workflow stays available; shell launcher/clipboard keyboard binds remain disabled to avoid duplication. **Permanent launcher selection is reopened for a feature-first comparison** in ADR-0048 (Walker, Albert, Ulauncher, Rofi and the chosen shell), rather than assuming Vicinae is strongest.
-- Exactly one owner each for notifications, clipboard history, lock/idle and polkit. The owner of notifications is still OPEN.
+- Exactly one owner each for notifications, clipboard history, lock/idle and polkit. The selected shell will own notifications, the bar, tray and OSD.
 
 > The user recalls having selected Noctalia (and a "niri shell") for the status bar and notifications. The repository does not record that selection; if it was decided in a session outside the repo, update this ADR. Awaiting confirmation from the NixOS desktop session.
 
@@ -43,8 +43,8 @@ Status: trial (user decision 2026-11-15 on the order only) Â· Date: 2026-11-15 Â
 Shell-bundled launcher and clipboard keyboard binds, for the pilot (Vicinae is the incumbent launcher). Superseded in part on 2026-11-22: a shell's launcher is now a candidate in ADR-0048; its binds still stay off during the trial.
 
 ## Consequences
-- Open items: clipboard history owner (Vicinae recommended, cliphist the alternative); screenshots (Flameshot live; niri action or grim + slurp + satty as alternatives).
-- Both shells' units default to graphical-session.target and would start under GNOME unless bound to the niri session. The new niri install has no GNOME session (ADR-0012, 2026-11-22), but a shell declared in the shared Home Manager profile would still reach the existing GNOME system, so the binding is still required.
+- Open items: screenshots (Flameshot live; niri action or grim + slurp + satty as alternatives).
+- Keep shell configuration on the dedicated Niri host and bind its units to the graphical session. During the trial Vicinae owns clipboard history and swayidle/swaylock and Soteria operate independently of the shell.
 - Revisit after the real trial; nothing here is a selection.
 - The audit's fifth review (2026-11-14) says "no Noctalia"; the newer niri plan (2026-11-15) makes it the second trial candidate.
 

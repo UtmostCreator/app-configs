@@ -92,4 +92,4 @@ Found by the live inventory of the linux-desktop host. Each is proposed for remo
 
 ## Note (2026-11-22): the name `linux-niri` is reserved
 
-The niri install without the GNOME desktop (ADR-0012, ordered in [ADR-0049](0049-niri-safest-staged-installation-order.md)) gets its own host and Home Manager profile, both named `linux-niri`, following the `<os>-<role>` family used here. It is a new profile, not a change to an existing host's default derivation, so the P5a gate is not affected. Nothing is built: neither the host nor the profile exists yet.
+The fresh laptop uses `nixosConfigurations.linux-niri`. Its dedicated Home Manager user is part of that system output. Desktop choice, application packages and enrolment in services such as Syncthing are separate decisions. Existing personal/work selections belong to their standalone hosts. [ADR-0049](0049-niri-safest-staged-installation-order.md)

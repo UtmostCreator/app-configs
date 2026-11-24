@@ -1,5 +1,7 @@
 # Installing this repo on NixOS
 
+**Fresh Niri laptop:** use the [linux-niri installation and recovery runbook](niri-install.md). The steps below are for the older standalone Home Manager setup on an already installed OS.
+
 For project, screenshot, and scratch paths, see the [proposed NixOS and Niri home layout](../../architecture/decisions/0050-nixos-niri-home-layout.md).
 
 NixOS is **not** one of the four officially supported host profiles
@@ -33,9 +35,7 @@ two adaptations (node and `vars/default.nix`, both noted below).
   switch through `nix run nixpkgs#home-manager` and removes a copy an earlier
   run left behind.
 
-- Fill in `nix/vars/default.nix`: replace every `REPLACE_ME` with your real
-  username and home directory (`/home/<you>`). Home Manager cannot build
-  with the placeholder values.
+- Check the declared account in `nix/vars/default.nix` against the intended user. Linux home paths are derived from that username.
 
 ## NixOS-safe install order
 

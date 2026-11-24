@@ -40,7 +40,7 @@ Order of preference:
 - [T-0031](../../work/active/T-0031-compositor-neutral-window-actions/ticket.md): compositor-neutral app/window actions and focus semantics.
 - [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md): pre-migration backup, Nix build, pilot and live regression gates. These are mandatory before any additional shell trial.
 - Vicinae remains the keyboard launcher/clipboard-history baseline; exactly one notification, polkit, idle/lock and clipboard-history owner per session. Shell launchers and graphical app menus can be compared, but their conflicting keyboard bindings must stay disabled unless ADR-0013 is explicitly changed.
-- The repo's `home/dot_config/niri/config.kdl` is **chezmoi-owned**; NixOS owns the compositor session and portals. No shell installer may overwrite that contract.
+- Integrated Home Manager owns the user KDL on `linux-niri`; chezmoi supplies it on the older desktop pilot. NixOS owns the compositor and portals.
 
 ## Proposed decision
 
@@ -242,7 +242,7 @@ Use `overall = sum(weight[i] * verified_score[i] / 100)`. Each category is score
 
 **Common rules**
 - Keep the greeter (greetd on the GNOME-free niri install, GDM on the existing system) and the Niri session wiring with the NixOS owner; no general upstream shell installer is permitted to change them.
-- `home/dot_config/niri/config.kdl` stays chezmoi-owned and must pass `niri validate`. Shells may offer bindings but the repo chooses and deploys them; no `spawn-at-startup` duplicate of a session-scoped systemd service.
+- Validate the host’s effective user KDL with its packaged Niri. Shells must leave Home Manager’s KDL and the session-scoped systemd services under their declared owners.
 - Prefer pinned packages and session-scoped services. Keep **Vicinae** as the incumbent keyboard launcher and clipboard-history baseline for the pilot. The final clipboard owner is open (ADR-0013, ADR-0046 G06) and the launcher is compared in ADR-0048. A *clickable* Start menu/dock launcher may coexist without taking global keyboard shortcuts.
 - Test systray/AppIndicator, notification DBus owner, portal/screenshot/screencast, file dialogs, polkit and lock independently. Do not mask service problems by enabling lingering.
 - Never grant new groups, automatic updates, broad file permissions or runtime execution of community plugins without review. Record exact package source, closure and permissions.
@@ -251,7 +251,7 @@ Use `overall = sum(weight[i] * verified_score[i] / 100)`. Each category is score
 
 **Noctalia:** Pin the *native v5* version intended for the test; distinguish its live GUI overrides from declarative TOML. Check which features and commands exist in **that pinned version**, rather than relying on newer v5.6 documentation. Check how taskbar pins interact with workspace grouping and whether the dock avoids the conflict.
 
-**iNiR:** [NixOS guidance](https://inir.space/docs/nixos/) is experimental. Keep `programs.inir.desktop.enable = false` in the trial to avoid taking over desktop services/display manager; disable `programs.inir.niriConfig.seed` to protect chezmoi. Inspect NixOS module-added groups (`video`, `input`, `i2c`, `ydotool`), service scope, mutable `~/.config/quickshell/inir` state and Hub-delivered families. Pin/vendor the actual Waffle/Material/iRiS and Hub assets or explicitly document an offline/reproducibility exception **before** cutover. Do not invoke the generic upstream `./setup install` over the managed system.
+**iNiR:** [NixOS guidance](https://inir.space/docs/nixos/) is experimental. Keep `programs.inir.desktop.enable = false` in the trial to avoid taking over desktop services/display manager; disable `programs.inir.niriConfig.seed` to protect the host-owned KDL. Inspect NixOS module-added groups (`video`, `input`, `i2c`, `ydotool`), service scope, mutable `~/.config/quickshell/inir` state and Hub-delivered families. Pin/vendor the actual Waffle/Material/iRiS and Hub assets or explicitly document an offline/reproducibility exception **before** cutover. Do not invoke the generic upstream `./setup install` over the managed system.
 
 **Waybar fallback:** Prefer Home Manager modules and repo-owned CSS/config; use a prebuilt compatible Niri taskbar extension where possible. For `niri_window_buttons`, verify source, CFFI ABI compatibility, Waybar version and reproducible native build instead of fetching an unmanaged shared library. A tiny alternative with only reliable task buttons can beat a large shell **if** P0 and service ownership pass.
 

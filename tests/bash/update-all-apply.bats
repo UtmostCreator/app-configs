@@ -122,6 +122,16 @@ STUB
 
   mkdir -p "$BATS_TEST_TMPDIR/hm-out"
 
+  export SUDO_LOG="$BATS_TEST_TMPDIR/sudo.calls"
+  cat > "$STUBS/sudo" <<'STUB'
+#!/usr/bin/env bash
+printf 'sudo %s\n' "$*" >> "$SUDO_LOG"
+case "${1:-}" in
+  -v | -n) [[ "${STUB_SUDO_FAIL:-0}" == 1 ]] && exit 1; exit 0 ;;
+esac
+exec "$@"
+STUB
+  chmod +x "$STUBS/sudo"
   export BREW_LOG="$BATS_TEST_TMPDIR/brew.calls"
   cat > "$STUBS/brew" <<'STUB'
 #!/usr/bin/env bash
@@ -409,6 +419,37 @@ STUB
   [ "$status" -eq 0 ]
   grep -q '^brew update' "$BREW_LOG"
   grep -q '^brew upgrade --formula' "$BREW_LOG"
+}
+
+@test "macOS switch runs under sudo, and the sudo check comes first" {
+  export HOST_PROFILE=macos
+  cp "$STUBS/home-manager" "$STUBS/darwin-rebuild"
+  ln -s "$STUB_HM_OUT" "$BATS_TEST_TMPDIR/current-system"
+  export SYS_UPDATE_DARWIN_SYSTEM_LINK="$BATS_TEST_TMPDIR/current-system"
+  run_update
+  [ "$status" -eq 0 ]
+  grep -q '^sudo darwin-rebuild switch --flake' "$SUDO_LOG"
+  [ "$(grep -n -m1 '^sudo -' "$SUDO_LOG" | cut -d: -f1)" -lt "$(grep -n -m1 '^sudo darwin-rebuild' "$SUDO_LOG" | cut -d: -f1)" ]
+}
+
+@test "macOS apply stops before changing anything when sudo is not available" {
+  export HOST_PROFILE=macos STUB_SUDO_FAIL=1
+  cp "$STUBS/home-manager" "$STUBS/darwin-rebuild"
+  run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"needs root"* ]]
+  if grep -q 'chezmoi apply\|darwin-rebuild\|nix flake update' "$STUB_LOG"; then echo 'a step ran before the sudo check' >&2; return 1; fi
+  [ ! -s "$BREW_LOG" ]
+}
+
+@test "macOS apply stops before changing anything when Homebrew is missing, and never installs it" {
+  export HOST_PROFILE=macos SYS_UPDATE_BREW="" SYS_UPDATE_BREW_PREFIX="$BATS_TEST_TMPDIR/no-brew-prefix"
+  cp "$STUBS/home-manager" "$STUBS/darwin-rebuild"
+  run_update
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"install Homebrew yourself"* ]]
+  if grep -q 'chezmoi apply\|darwin-rebuild\|nix flake update' "$STUB_LOG"; then echo 'a step ran before the Homebrew check' >&2; return 1; fi
+  [ ! -s "$BREW_LOG" ]
 }
 
 @test "a successful update commits the new lock so the next run starts clean" {

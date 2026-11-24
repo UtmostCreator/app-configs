@@ -28,14 +28,14 @@ K
 # fixture <tab1 hog MiB> <tab2 hog MiB>: one Ghostty, two tabs, a hog in each
 fixture() {
     cat >"$MEMORY_GUARD_PS_FILE" <<PS
-  100     1   50000 /Applications/Ghostty.app/Contents/MacOS/ghostty
-  200   100    4000 /usr/bin/login
-  201   200     800 -/bin/zsh
-  202   201 $(($1 * 1024)) /opt/homebrew/bin/node
-  300   100    4000 /usr/bin/login
-  301   300     800 -/bin/zsh
-  302   301 $(($2 * 1024)) /usr/bin/python3
-  900     1 9999999 /Applications/Other.app/Contents/MacOS/other
+  100     1   50000 Mon Jan  1 00:00:00 2024 /Applications/Ghostty.app/Contents/MacOS/ghostty
+  200   100    4000 Mon Jan  1 00:00:01 2024 /usr/bin/login
+  201   200     800 Mon Jan  1 00:00:02 2024 -/bin/zsh
+  202   201 $(($1 * 1024)) Mon Jan  1 00:00:03 2024 /opt/homebrew/bin/node
+  300   100    4000 Mon Jan  1 00:00:04 2024 /usr/bin/login
+  301   300     800 Mon Jan  1 00:00:05 2024 -/bin/zsh
+  302   301 $(($2 * 1024)) Mon Jan  1 00:00:06 2024 /usr/bin/python3
+  900     1 9999999 Mon Jan  1 00:00:07 2024 /Applications/Other.app/Contents/MacOS/other
 PS
 }
 
@@ -87,6 +87,45 @@ PS
     run "$BASH_BIN" "$GUARD" --enforce
     [[ "$output" == *"HARD all tabs: SIGTERM pid 202"* ]]
     [ "$(cat "$KILL_LOG")" = "-TERM 202" ]
+}
+
+@test "overlapping tab and group hard limits signal the same victim only once" {
+    fixture 6000 2000
+    run "$BASH_BIN" "$GUARD" --enforce
+    [ "$status" -eq 0 ]
+    [ "$(cat "$KILL_LOG")" = "-TERM 202" ]
+}
+
+@test "group limit signals a different victim after a tab limit" {
+    fixture 3000 4000
+    printf '  203   201 %d Mon Jan  1 00:00:08 2024 /opt/homebrew/bin/other\n' "$((2300 * 1024))" >>"$MEMORY_GUARD_PS_FILE"
+    run "$BASH_BIN" "$GUARD" --enforce
+    [ "$status" -eq 0 ]
+    [ "$(cat "$KILL_LOG")" = "$(printf '%s\n' '-TERM 202' '-TERM 302')" ]
+}
+
+@test "failed tab signal is not repeated for the group in the same cycle" {
+    fixture 6000 2000
+    printf '#!/bin/sh\necho "$@" >>"$KILL_LOG"\nexit 1\n' >"$MEMORY_GUARD_KILL"
+    run "$BASH_BIN" "$GUARD" --enforce
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"could not signal pid 202"* ]]
+    [ "$(cat "$KILL_LOG")" = "-TERM 202" ]
+}
+
+@test "changed process identity or ancestry is not signalled" {
+    fixture 5300 100
+    export MEMORY_GUARD_VERIFY_PS_FILE="$BATS_TEST_TMPDIR/fresh-ps.txt"
+    sed 's/00:00:03 2024/00:00:09 2024/' "$MEMORY_GUARD_PS_FILE" >"$MEMORY_GUARD_VERIFY_PS_FILE"
+    run "$BASH_BIN" "$GUARD" --enforce
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"pid 202 changed or left Ghostty; skipped"* ]]
+    [ ! -s "$KILL_LOG" ]
+    sed 's/201   200/201   900/' "$MEMORY_GUARD_PS_FILE" >"$MEMORY_GUARD_VERIFY_PS_FILE"
+    run "$BASH_BIN" "$GUARD" --enforce
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"pid 202 changed or left Ghostty; skipped"* ]]
+    [ ! -s "$KILL_LOG" ]
 }
 
 @test "processes outside Ghostty are never counted or signalled" {

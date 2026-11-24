@@ -326,8 +326,10 @@ applies the same percentages as Linux (`nix/modules/home/gui.nix`):
 
 At the soft limit it posts a notification (at most once per 10 minutes). At the
 hard limit it sends SIGTERM to the largest non-shell process in that tab, or in
-any tab for the group limit. The shell and the tab stay open, and only
-processes below Ghostty are ever signalled. Differences from Linux: RSS is not
+any tab for the group limit. A PID gets at most one signal attempt per poll.
+The guard rechecks the process identity and its ancestry under Ghostty before
+signalling. A process can still exit or be replaced between the check and the
+signal. The shell and the tab stay open. Differences from Linux: RSS is not
 the kernel's accounting (compressed memory is not counted, shared pages are),
 the check is polled rather than instant, and there is no swap limit because
 macOS has no per-process swap figure. Run `terminal-memory-guard --check` to

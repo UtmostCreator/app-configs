@@ -9,7 +9,8 @@
 # Soft limit: a notification, rate limited. Hard limit: SIGTERM to the largest
 # non-shell process in the offending tab (or, for the group limit, in any tab),
 # like the kernel OOM killer picking a victim inside a cgroup. The shell and the
-# tab stay alive. Only processes below a Ghostty process are ever signalled.
+# tab stay alive. Process identity and ancestry are rechecked before signalling.
+# The snapshot and signal are separate operations, so a race remains possible.
 #
 # Default mode is --check: report only, no signals, no notifications. The
 # LaunchAgent runs --enforce. Swap has no per-process figure on macOS, so the
@@ -18,8 +19,8 @@
 # treat the limits as a safety net, not an exact quota.
 #
 # Usage: terminal-memory-guard [--check | --enforce] [--help]
-# Test hooks: MEMORY_GUARD_PS_FILE (ps output fixture), MEMORY_GUARD_MEMSIZE
-# (bytes), MEMORY_GUARD_KILL (signal command), MEMORY_GUARD_NOTIFY (0 = off).
+# Test hooks: MEMORY_GUARD_PS_FILE and MEMORY_GUARD_VERIFY_PS_FILE (fixtures),
+# MEMORY_GUARD_MEMSIZE (bytes), MEMORY_GUARD_KILL, MEMORY_GUARD_NOTIFY (0 = off).
 set -eu
 
 TAB_SOFT_PCT=40
@@ -67,16 +68,18 @@ ps_snapshot() {
   if [ -n "${MEMORY_GUARD_PS_FILE:-}" ]; then
     cat "$MEMORY_GUARD_PS_FILE"
   else
-    /bin/ps -axo pid=,ppid=,rss=,comm=
+    LC_ALL=C /bin/ps -axo pid=,ppid=,rss=,lstart=,comm=
   fi
 }
+
+snapshot="$(ps_snapshot)"
 
 # One pass over the process table. Per tab (a direct child of a Ghostty process):
 #   TAB <root pid> <rss kb> <victim pid> <victim rss kb> <victim name>
 # The victim is the largest descendant that is not a login process or a shell.
 # A final "GROUP <rss kb> <victim pid> <victim rss kb> <victim name>" line covers
 # all tabs together.
-tabs="$(ps_snapshot | awk '
+tabs="$(printf '%s\n' "$snapshot" | awk '
   function base(p,   n, a) { n = split(p, a, "/"); return a[n] }
   function isshell(c,   b) {
     b = base(c); sub(/^-/, "", b)
@@ -88,7 +91,7 @@ tabs="$(ps_snapshot | awk '
     for (i = 1; i <= nchild[p]; i++) { k = child[p, i]; walk(k, root) }
   }
   { pid = $1; ppid[pid] = $2; rss[pid] = $3
-    c = $0; sub(/^[ \t]*[0-9]+[ \t]+[0-9]+[ \t]+[0-9]+[ \t]+/, "", c); comm[pid] = c
+    c = $0; sub(/^[ \t]*[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+/, "", c); comm[pid] = c
     nchild[$2]++; child[$2, nchild[$2]] = pid; order[++n] = pid }
   END {
     for (i = 1; i <= n; i++) {
@@ -128,12 +131,57 @@ notify() {
   /usr/bin/osascript -e "display notification \"$1\" with title \"Terminal memory soft limit\"" >/dev/null 2>&1 || true
 }
 
+still_descendant() { # compare process identity and ancestry with a fresh snapshot
+  local current
+  if [ -n "${MEMORY_GUARD_VERIFY_PS_FILE:-}" ]; then
+    current="$(cat "$MEMORY_GUARD_VERIFY_PS_FILE")" || return 1
+  else
+    current="$(ps_snapshot)" || return 1
+  fi
+  {
+    printf '%s\n' "$snapshot"
+    printf '%s\n' '--fresh-snapshot--'
+    printf '%s\n' "$current"
+  } |
+    awk -v target="$1" '
+      BEGIN { fresh = 0 }
+      $0 == "--fresh-snapshot--" { fresh = 1; next }
+      NF >= 9 {
+        p = $1; parent[fresh, p] = $2
+        start[fresh, p] = $4 " " $5 " " $6 " " $7 " " $8
+        c = $0; sub(/^[ \t]*[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+[^ \t]+[ \t]+/, "", c)
+        command[fresh, p] = c; count++
+      }
+      END {
+        p = target
+        for (i = 0; i < count && p > 1; i++) {
+          if (!((0 SUBSEP p) in parent) || !((1 SUBSEP p) in parent)) exit 1
+          if (parent[0, p] != parent[1, p] || start[0, p] != start[1, p] || command[0, p] != command[1, p]) exit 1
+          if (command[0, p] ~ /\/Ghostty\.app\/Contents\/MacOS\/ghostty$/) exit 0
+          p = parent[0, p]
+        }
+        exit 1
+      }'
+}
+
+attempted_pids=" "
 hard_kill() { # pid label
   if [ "$1" -le 1 ]; then
     printf '[terminal-memory-guard] HARD %s: no non-shell process to stop\n' "$2"
     return 0
   fi
   if [ "$mode" = enforce ]; then
+    case "$attempted_pids" in
+      *" $1 "*)
+        printf '[terminal-memory-guard] HARD %s: pid %s already attempted this cycle\n' "$2" "$1"
+        return 0
+        ;;
+    esac
+    attempted_pids="${attempted_pids}$1 "
+    if ! still_descendant "$1"; then
+      printf '[terminal-memory-guard] HARD %s: pid %s changed or left Ghostty; skipped\n' "$2" "$1" >&2
+      return 0
+    fi
     printf '[terminal-memory-guard] HARD %s: SIGTERM pid %s\n' "$2" "$1"
     "$signal_cmd" -TERM "$1" || printf '[terminal-memory-guard] could not signal pid %s\n' "$1" >&2
   else

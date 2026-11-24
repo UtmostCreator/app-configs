@@ -1,0 +1,17 @@
+# Merge these keys into existing tables in ~/.codex/config.toml.
+# Do not replace the entire file. Replace /absolute/path with the repo checkout path.
+[features]
+tui_extensions_statusline = true
+
+[mcp_servers.app_config_statusline]
+command = "node"
+args = ["/absolute/path/app-configs/scripts/ai/codex-statusline.mjs"]
+
+[tui]
+status_line_use_colors = true
+status_line_provider = { server = "app_config_statusline", tool = "statusline" }
+status_line = [
+  "model-with-reasoning", "project-name", "git-branch", "permissions",
+  "run-state", "task-progress", "context-used", "five-hour-limit",
+  "weekly-limit", "branch-changes", "used-tokens",
+]

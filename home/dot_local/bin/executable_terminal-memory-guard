@@ -1,0 +1,175 @@
+#!/bin/bash
+# terminal-memory-guard: macOS stand-in for the Linux systemd memory caps on
+# Ghostty tabs. macOS has no cgroups, so this polls resident memory (RSS) and
+# applies the same percentage limits as nix/modules/home/gui.nix:
+#
+#   one tab (login + shell + everything it started)  soft 40%  hard 50% of RAM
+#   all Ghostty tabs together                        soft 60%  hard 70% of RAM
+#
+# Soft limit: a notification, rate limited. Hard limit: SIGTERM to the largest
+# non-shell process in the offending tab (or, for the group limit, in any tab),
+# like the kernel OOM killer picking a victim inside a cgroup. The shell and the
+# tab stay alive. Only processes below a Ghostty process are ever signalled.
+#
+# Default mode is --check: report only, no signals, no notifications. The
+# LaunchAgent runs --enforce. Swap has no per-process figure on macOS, so the
+# Linux swap shares (12% per tab, 25% group) have no equivalent here.
+# RSS ignores compressed memory, so this under-counts under heavy compression;
+# treat the limits as a safety net, not an exact quota.
+#
+# Usage: terminal-memory-guard [--check | --enforce] [--help]
+# Test hooks: MEMORY_GUARD_PS_FILE (ps output fixture), MEMORY_GUARD_MEMSIZE
+# (bytes), MEMORY_GUARD_KILL (signal command), MEMORY_GUARD_NOTIFY (0 = off).
+set -eu
+
+TAB_SOFT_PCT=40
+TAB_HARD_PCT=50
+GROUP_SOFT_PCT=60
+GROUP_HARD_PCT=70
+NOTIFY_COOLDOWN_SECONDS=600
+
+usage() {
+  printf 'Usage: terminal-memory-guard [--check | --enforce] [--help]\n'
+  printf 'Apply percent-of-RAM soft/hard memory limits to Ghostty tabs (macOS).\n'
+  printf '  --check    report only (default)\n'
+  printf '  --enforce  notify at the soft limit, SIGTERM the largest process at the hard limit\n'
+}
+
+mode=check
+case "${1:-}" in
+  "") ;;
+  --check) mode=check ;;
+  --enforce) mode=enforce ;;
+  --help | -h)
+    usage
+    exit 0
+    ;;
+  *)
+    usage >&2
+    exit 64
+    ;;
+esac
+if [ $# -gt 1 ]; then
+  usage >&2
+  exit 64
+fi
+
+if [ -z "${MEMORY_GUARD_PS_FILE:-}" ] && [ "$(uname -s)" != Darwin ]; then
+  printf '[terminal-memory-guard] This command requires macOS.\n' >&2
+  exit 1
+fi
+
+memsize="${MEMORY_GUARD_MEMSIZE:-$(/usr/sbin/sysctl -n hw.memsize)}"
+ram_kb=$((memsize / 1024))
+limit_kb() { echo $((ram_kb * $1 / 100)); }
+
+ps_snapshot() {
+  if [ -n "${MEMORY_GUARD_PS_FILE:-}" ]; then
+    cat "$MEMORY_GUARD_PS_FILE"
+  else
+    /bin/ps -axo pid=,ppid=,rss=,comm=
+  fi
+}
+
+# One pass over the process table. Per tab (a direct child of a Ghostty process):
+#   TAB <root pid> <rss kb> <victim pid> <victim rss kb> <victim name>
+# The victim is the largest descendant that is not a login process or a shell.
+# A final "GROUP <rss kb> <victim pid> <victim rss kb> <victim name>" line covers
+# all tabs together.
+tabs="$(ps_snapshot | awk '
+  function base(p,   n, a) { n = split(p, a, "/"); return a[n] }
+  function isshell(c,   b) {
+    b = base(c); sub(/^-/, "", b)
+    return b == "login" || b == "zsh" || b == "bash" || b == "fish" || b == "sh"
+  }
+  function walk(p, root,   i, k) {
+    tabrss[root] += rss[p]
+    if (!isshell(comm[p]) && rss[p] > vrss[root]) { vrss[root] = rss[p]; vpid[root] = p; vname[root] = base(comm[p]) }
+    for (i = 1; i <= nchild[p]; i++) { k = child[p, i]; walk(k, root) }
+  }
+  { pid = $1; ppid[pid] = $2; rss[pid] = $3
+    c = $0; sub(/^[ \t]*[0-9]+[ \t]+[0-9]+[ \t]+[0-9]+[ \t]+/, "", c); comm[pid] = c
+    nchild[$2]++; child[$2, nchild[$2]] = pid; order[++n] = pid }
+  END {
+    for (i = 1; i <= n; i++) {
+      g = order[i]
+      if (comm[g] !~ /\/Ghostty\.app\/Contents\/MacOS\/ghostty$/) continue
+      for (j = 1; j <= nchild[g]; j++) {
+        t = child[g, j]; walk(t, t)
+        printf "TAB %d %d %d %d %s\n", t, tabrss[t], vpid[t], vrss[t], (vname[t] == "" ? "-" : vname[t])
+        grss += tabrss[t]
+        if (vrss[t] > gv) { gv = vrss[t]; gp = vpid[t]; gn = vname[t] }
+      }
+    }
+    printf "GROUP %d %d %d %s\n", grss, gp, gv, (gn == "" ? "-" : gn)
+  }')"
+
+tab_soft="$(limit_kb "$TAB_SOFT_PCT")"
+tab_hard="$(limit_kb "$TAB_HARD_PCT")"
+group_soft="$(limit_kb "$GROUP_SOFT_PCT")"
+group_hard="$(limit_kb "$GROUP_HARD_PCT")"
+signal_cmd="${MEMORY_GUARD_KILL:-kill}"
+state_dir="${HOME}/Library/Caches/terminal-memory-guard"
+
+printf '[terminal-memory-guard] mode=%s RAM=%d MiB tab soft/hard=%d/%d MiB (%d%%/%d%%) group soft/hard=%d/%d MiB (%d%%/%d%%)\n' \
+  "$mode" $((ram_kb / 1024)) $((tab_soft / 1024)) $((tab_hard / 1024)) "$TAB_SOFT_PCT" "$TAB_HARD_PCT" \
+  $((group_soft / 1024)) $((group_hard / 1024)) "$GROUP_SOFT_PCT" "$GROUP_HARD_PCT"
+
+notify() {
+  [ "$mode" = enforce ] || return 0
+  [ "${MEMORY_GUARD_NOTIFY:-1}" = 1 ] || return 0
+  local stamp now last
+  stamp="$state_dir/last-notify"
+  now="$(date +%s)"
+  last="$(cat "$stamp" 2>/dev/null || echo 0)"
+  [ $((now - last)) -ge "$NOTIFY_COOLDOWN_SECONDS" ] || return 0
+  mkdir -p "$state_dir"
+  echo "$now" >"$stamp"
+  /usr/bin/osascript -e "display notification \"$1\" with title \"Terminal memory soft limit\"" >/dev/null 2>&1 || true
+}
+
+hard_kill() { # pid label
+  if [ "$1" -le 1 ]; then
+    printf '[terminal-memory-guard] HARD %s: no non-shell process to stop\n' "$2"
+    return 0
+  fi
+  if [ "$mode" = enforce ]; then
+    printf '[terminal-memory-guard] HARD %s: SIGTERM pid %s\n' "$2" "$1"
+    "$signal_cmd" -TERM "$1" || printf '[terminal-memory-guard] could not signal pid %s\n' "$1" >&2
+  else
+    printf '[terminal-memory-guard] HARD %s: would SIGTERM pid %s (--check)\n' "$2" "$1"
+  fi
+}
+
+group_line=""
+while read -r kind a b c d e; do
+  case "$kind" in
+    TAB)
+      printf 'tab %s: %d MiB, largest %s (pid %s, %d MiB)\n' "$a" $((b / 1024)) "$e" "$c" $((d / 1024))
+      if [ "$b" -ge "$tab_hard" ]; then
+        hard_kill "$c" "tab $a"
+      elif [ "$b" -ge "$tab_soft" ]; then
+        printf '[terminal-memory-guard] SOFT tab %s over %d%% of RAM\n' "$a" "$TAB_SOFT_PCT"
+        notify "A Ghostty tab uses over ${TAB_SOFT_PCT}% of RAM (largest: $e)."
+      fi
+      ;;
+    GROUP)
+      group_line="$a $b $c $d $e"
+      printf 'all tabs: %d MiB\n' $((a / 1024))
+      ;;
+  esac
+done <<EOF
+$tabs
+EOF
+
+read -r g_rss g_pid _ <<GROUPEOF
+$group_line
+GROUPEOF
+if [ -n "${g_rss:-}" ]; then
+  if [ "$g_rss" -ge "$group_hard" ]; then
+    hard_kill "$g_pid" "all tabs"
+  elif [ "$g_rss" -ge "$group_soft" ]; then
+    printf '[terminal-memory-guard] SOFT all tabs over %d%% of RAM\n' "$GROUP_SOFT_PCT"
+    notify "Ghostty tabs together use over ${GROUP_SOFT_PCT}% of RAM."
+  fi
+fi

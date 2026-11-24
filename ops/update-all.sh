@@ -830,6 +830,36 @@ else
   ui_warn "tools" "missing: ${MISSING[*]} (run: sys-install)"
 fi
 
+# macOS: the system switch needs root and Homebrew must already exist. Both are
+# checked here, before any step changes anything (the same sudo check as
+# ops/install.sh). Homebrew is never installed or altered by sys-update.
+if [[ "$HOST_PROFILE" == "macos" ]]; then
+  if [[ "$MODE" == "apply" ]]; then
+    if ! have sudo; then
+      precheck_fail "sudo" "not found: the macOS switch needs root"
+    elif [[ -t 0 ]]; then
+      sudo -v || precheck_fail "sudo" "authentication failed: the macOS switch needs root (run: sudo -v, then retry)"
+    else
+      sudo -n true 2>/dev/null || precheck_fail "sudo" "the macOS switch needs root: run on a TTY or refresh sudo first (sudo -v)"
+    fi
+  fi
+  case "$(uname -m)" in arm64) _brew_prefix_default=/opt/homebrew ;; *) _brew_prefix_default=/usr/local ;; esac
+  _brew_prefix="${SYS_UPDATE_BREW_PREFIX:-$_brew_prefix_default}"
+  if [[ -n "${SYS_UPDATE_BREW+set}" ]]; then _brew_bin="$SYS_UPDATE_BREW"; else _brew_bin="$(command -v brew 2>/dev/null || true)"; fi
+  if [[ -z "$_brew_bin" && -x "$_brew_prefix/bin/brew" ]]; then _brew_bin="$_brew_prefix/bin/brew"; fi
+  if [[ -z "$_brew_bin" ]]; then
+    if [[ "$MODE" == "apply" ]]; then
+      precheck_fail "homebrew" "not found (expected $_brew_prefix/bin/brew for this architecture): install Homebrew yourself from https://brew.sh; sys-update does not install it"
+    else
+      ui_warn "homebrew" "not found (expected $_brew_prefix/bin/brew for this architecture)"
+    fi
+  elif [[ "$_brew_bin" != "$_brew_prefix"/* ]]; then
+    ui_warn "homebrew" "$_brew_bin is not under $_brew_prefix, the prefix for this architecture"
+  else
+    ui_ok "homebrew" "$_brew_bin"
+  fi
+fi
+
 # Home Manager's profile directory (not used on macOS, which has no HM profile).
 if [[ "$HM_PROFILE_DIR_OK" == 0 && "$HOST_PROFILE" != "macos" ]]; then
   if [[ "$MODE" == "apply" ]]; then
@@ -1314,7 +1344,7 @@ fi
 # home-manager / darwin-rebuild ---------------------------------------------
 if [[ "$STEP_FAILED" == 0 ]]; then
   if [[ "$HOST_PROFILE" == "macos" ]]; then
-    if run_step "darwin-rebuild" darwin-rebuild switch --flake "$REPO_ROOT/nix#macos" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}; then
+    if run_step "darwin-rebuild" sudo darwin-rebuild switch --flake "$REPO_ROOT/nix#macos" ${SELECTION_ARGS[@]+"${SELECTION_ARGS[@]}"}; then
       ui_scan_warnings
       if [[ "$MODE" == "apply" ]] && check_activated_target; then ui_ok "darwin-rebuild" "switched"; fi
     else

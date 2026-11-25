@@ -2,6 +2,8 @@
 
 **Fresh Niri laptop:** use the [linux-niri installation and recovery runbook](niri-install.md). The steps below are for the older standalone Home Manager setup on an already installed OS.
 
+For a target disk with an earlier I/O failure, use the [Linux storage read and write checks](storage-diagnostics.md) before starting installation.
+
 For project, screenshot, and scratch paths, see the [proposed NixOS and Niri home layout](../../architecture/decisions/0050-nixos-niri-home-layout.md).
 
 NixOS is **not** one of the four officially supported host profiles

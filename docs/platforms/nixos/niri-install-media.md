@@ -2,6 +2,8 @@
 
 The flash drive carries the installer. The Kingston holds the installed, encrypted NixOS system. Both operations overwrite the selected device. Start from the [build and test record](../../work/active/T-0032-niri-trial-session/ticket.md#verification-record) for the exact image, checksum and target system. The older laptop is the first physical trial.
 
+For an existing Kingston or a suspected transport problem, use the [Linux storage read and write checks](storage-diagnostics.md) with separate live media and an evidence stick.
+
 ## Write the installer to a flash drive
 
 1. Leave the Kingston disconnected from the working PC. The prepared checkout retains the image with a Git-ignored Nix garbage-collection root. From the repository root, use `ISO="$PWD/nix/result-niri-installer/iso/nixos-minimal-26.11.20261114.5d2b81a-x86_64-linux.iso"` for this build. For a later build use its verified ISO instead. Run `sha256sum "$ISO"` and compare it with the record. An 8 GB or larger flash drive fits this image. Back up anything you want to keep.

@@ -39,7 +39,9 @@ Neovim, VS Code, Git and SSH.
 
 **Fresh NixOS laptop:** [Write the project ISO to a flash drive and boot it](docs/platforms/nixos/kingston-install-walkthrough.md). The guide covers carrying this repository offline and installing onto an external Kingston while protecting the Windows SSD. Start with Claude on the working PC. The [installation and recovery runbook](docs/platforms/nixos/niri-install.md) and [media guide](docs/platforms/nixos/niri-install-media.md) cover the underlying procedure.
 
-**Existing system:** choose your platform in the [setup guide](docs/platforms/index.md), then follow the standalone instructions below.
+**Installed Niri laptop:** unlock the disk, sign in and open `~/Documents/app-configs-setup/Latest/Summary.txt`. The [first-login guide](docs/platforms/nixos/niri-first-boot-handoff.md) covers automatic offline setup, SSH enrolment and upgrading an earlier installation. On the integrated profile, `sys-update` reports status and `sys-update --apply` stages the next system generation.
+
+**Standalone home:** choose your platform in the [setup guide](docs/platforms/index.md), then follow the standalone instructions below.
 
 Requires Git, Bash and internet access. `sudo` is needed only for the NixOS
 system layer. The installer bootstraps or verifies everything else.

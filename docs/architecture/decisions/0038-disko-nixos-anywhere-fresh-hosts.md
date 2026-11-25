@@ -15,7 +15,7 @@ related: [12, 33, 46, 47, 49, T-0029]
 # ADR-0038: Declarative storage for fresh NixOS hosts
 Status: decided-unverified · Date: 2026-11-22
 
-**Laptop delivery · 23 November 2026 · 50% (2/4) · P0 · high complexity.** Pinned Disko layout. Encrypted VM install. Review laptop storage and firmware, then cold-boot the physical Kingston. Use the isolated target route. Formatting on the daily PC depends separately on tested disk guards. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+**Laptop delivery · 24 November 2026 · 75% (3/4) · P0 · high complexity.** Pinned Disko layout. Encrypted VM install. The physical Kingston cold-booted. Finish recording the destination storage and firmware review. Use the isolated target route. Formatting on the daily PC depends separately on tested disk guards. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
 
 ## Decision
 

@@ -15,7 +15,7 @@ related: [12, 13, 23, 27, 28, 33, 36, 38, 41, 45, 46, 47, 48, T-0029, T-0030, T-
 # ADR-0049: Staged installation and recovery of linux-niri
 Status: decided-unverified · Date: 2026-11-22
 
-**Laptop delivery · 23 November 2026 · 50% (3/6) · P0 · high complexity.** Locked system built. Blank-disk VM booted. Offline VM rescue passed. Bind final artifacts to destination hardware, then perform physical install and cold boot, then recover the known-good generation on the laptop. Keep the verified installer available through the first physical recovery. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+**Laptop delivery · 24 November 2026 · 67% (4/6) · P0 · high complexity.** Locked system built. Blank-disk VM booted. Offline VM rescue passed. The physical installation and cold boot are operator-verified. Bind the complete artifact record to the destination and recover the known-good generation on the laptop. Keep the verified installer available through the first physical recovery. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
 
 ## Decision
 

@@ -15,7 +15,7 @@ related: [41, 46, 47, 48, 49]
 # ADR-0012: Desktop compositor: GNOME on the existing system, niri without the GNOME desktop on the new install, Hyprland parked
 Status: GNOME decided for the existing system (stay for now); a niri install without the GNOME desktop is built and tested in a VM, with the older-laptop trial pending; Hyprland deferred · Date: 2026-11-15 (niri plan; the GNOME decision date is not recorded) · Sources: `docs/plans/future-upgrades.md` (section 12), `docs/plans/niri-migration.md`, `docs/research/niri-vs-hyprland.md`, `docs/research/desktop-migration-claim-audit.md`, `docs/plans/hyprland-migration.md`, `docs/work/active/T-0029-nixos-system-ownership/ticket.md`
 
-**Laptop delivery · 23 November 2026 · 50% (2/4) · P0 · high complexity.** Dedicated Niri system built. Authenticated guest session exercised. Verify laptop display and input, then verify suspend and output hotplug. The virtual GPU did not prove visible rendering on the destination. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+**Laptop delivery · 24 November 2026 · 75% (3/4) · P0 · high complexity.** Dedicated Niri system built. Authenticated guest session exercised. The operator exercised the physical keyboard, both display outputs and NVIDIA-backed Niri. Suspend and output hotplug remain open. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
 
 **Niri migration installation inventory and unresolved gaps:** [ADR-0046](0046-niri-desktop-installation-decision-register.md). This cross-reference does not change this ADR's decision or status.
 

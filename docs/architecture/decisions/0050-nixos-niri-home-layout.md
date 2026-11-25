@@ -15,7 +15,7 @@ related: [33, 40, 46, 47, 49]
 # ADR-0050: NixOS and Niri home directory layout
 Status: proposed · Date: 2026-11-22
 
-**Laptop delivery · 23 November 2026 · 50% (2/4) · P0 · medium complexity.** Home Manager base directories declared. Folder, logger and checkout examples exercised in fixtures. Seed the exact checkout and persist the log on the Kingston, then verify permissions and screenshot destination at first login. The handoff supplies Scratch and Archive separately from the current Home Manager activation. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+**Laptop delivery · 23 November 2026 · 50% (2/4) · P0 · medium complexity.** Home Manager base directories declared. Folder, logger and checkout examples exercised in fixtures. Seed the exact checkout and persist the log on the Kingston, then verify permissions and screenshot destination at first login. The updated integrated Home Manager activation provisions Scratch, Archive and the SSH client directory. The login report records the result. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
 
 Use the [shared work-folder convention](0040-macos-home-layout-and-cleanup-policy.md#shared-work-folder-convention) for new work and preserve existing checkout, worktree, and application paths. The convention describes desired locations. Verify on each host which directories, mappings, and backups already exist.
 
@@ -32,7 +32,7 @@ Keep existing project metadata and reference directories, synced document trees,
 ## Repository ownership and provisioning
 
 - Home Manager owns the Niri KDL and screenshot destination on `linux-niri`. Chezmoi owns the [older desktop pilot KDL](../../../home/dot_config/niri/config.kdl). Keep `Projects` capitalised for compatibility with the existing development tools.
-- The [integrated Niri user](../../../nix/hosts/linux-niri/home.nix) provisions its first-login directories. Add Scratch and Archive only after the checks below pass. Extract a shared module when a second host adopts it. Reuse on macOS follows ADR-0040.
+- The [integrated Niri user](../../../nix/hosts/linux-niri/home.nix) provisions its first-login directories. It includes Scratch and Archive, and exports the three named roots. Existing XDG mappings remain application-owned. Extract a shared module when a second host adopts it. Reuse on macOS follows ADR-0040.
 - On Linux, consider `xdg.userDirs` for the intended app-facing paths, with `createDirectories = false` so directory creation has one owner. The pinned module supports `xdg.userDirs.projects` as an extension. Applications may ignore `XDG_PROJECTS_DIR`, so repo scripts should use `DEV_ROOT` where they need a development root. Enabling the module manages a read-only `user-dirs.dirs` and disables the desktop updater. Null choices omit entries. Preserve existing mappings, keep `Desktop` where applications expect it, and leave optional media and sharing folders to actual use. Keep XDG application locations and `TMPDIR` independent of `Scratch`.
 - Validate every destination before Home Manager's write boundary. Check each component beneath the home directory for symlinks and check that existing paths are directories. Checking `Pictures/Screenshots` alone misses a symlinked `Pictures`. Create missing directories through one activation step that honours dry-run. Give new `Scratch` and `Archive` roots mode `0700` and preserve all existing permissions and contents.
 

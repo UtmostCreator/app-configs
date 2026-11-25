@@ -15,7 +15,7 @@ related: [11, 19, 20, 21, T-0041, T-0042]
 # ADR-0022: Browsers: Brave stable everywhere, Firefox secondary
 Status: partly-decided (Brave stable and the Beta discard are decided-unverified, owner 2026-11-16; the other rows are proposed; nothing here is built) · Date: 2026-11-16 · Sources: tool-selection design round 3
 
-**Laptop delivery · 23 November 2026 · 50% (2/4) · P1 · medium complexity.** Brave in base profile. Firefox in optional bundle. Preserve existing MIME associations before a populated-home activation, then check browser, PDF and link handlers after a second activation. The config and legacy data locations can each hold independent preferences. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
+**Laptop delivery · 24 November 2026 · 75% (3/4) · P1 · medium complexity.** Brave in base profile. Firefox in optional bundle. The shared home activation preserves independent MIME associations in fixture tests. Check browser, PDF and link handlers in the restored graphical session. The config and legacy data locations can each hold independent preferences. [Decision progress and evidence](0046-niri-desktop-installation-decision-register.md#laptop-delivery-by-decision)
 
 Notation (D, DU, Pr, O<n>; P, W; Ex, CM, OS, Exempt), parity and profiles: [ADR-0021](0021-cross-platform-parity-and-profiles.md). Windows additions are bounded by [ADR-0019](0019-platform-scope-linux-macos-wsl2-first.md). L / M / Win = Linux / macOS / Windows.
 

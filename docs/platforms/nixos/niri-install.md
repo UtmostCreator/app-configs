@@ -1,6 +1,6 @@
 # Install and recover linux-niri
 
-**Preparation runbook. No physical installation has been accepted.** Keep the working NixOS/GNOME PC available throughout. The milestone is a blank target disk, a fresh home, and an authenticated first Niri login with a working terminal, launcher and network. Record build, VM and laptop results separately in [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md).
+**Fresh installation and recovery.** The Kingston installation has booted on the destination laptop. For that working installation, use the [existing-system upgrade instructions](niri-first-boot-handoff.md#adopt-this-profile-on-an-existing-niri-installation). Keep the working NixOS/GNOME PC available throughout. The milestone is a blank target disk, a fresh home, and an authenticated first Niri login with a working terminal, launcher and network. Record build, VM and laptop results separately in [T-0032](../../work/active/T-0032-niri-trial-session/ticket.md).
 
 For an external Kingston alongside Windows, start with the [step-by-step walkthrough](kingston-install-walkthrough.md).
 
@@ -180,16 +180,49 @@ findmnt /mnt/boot
 sudo test -f /mnt/boot/EFI/BOOT/BOOTX64.EFI
 ```
 
-Unmount the verified target ESP and root, then close its mapper. For the workstation route, move the powered-down SSD to the laptop. Remove the installer, select the target in destination firmware and cold boot. Check the LUKS prompt, tuigreet, wrong-password rejection, normal login, a second TTY and password-backed sudo. Compare `readlink -f /run/current-system` with the installation record. After the empty-home login check, clone the same reviewed commit into `~/Projects/app-configs` as the installed user for future rebuilds.
+Unmount the verified target ESP and root, then close its mapper. For the workstation route, move the powered-down SSD to the laptop. Remove the installer, select the target in destination firmware and cold boot. Check the LUKS prompt, tuigreet, wrong-password rejection, normal login, a second TTY and password-backed sudo. Compare `readlink -f /run/current-system` with the installation record. Persist the matching installation bundle and receipt before shutdown as described in the [first-boot handoff](niri-first-boot-handoff.md). The installed user can then recover the reviewed checkout offline.
 
-From the first Niri session, open Ghostty with **Super+T**, Vicinae with **Alt+Space**, clipboard history with **Alt+V** and VS Code recents with **Alt+E**. Run `niri validate`, `nmtui`, `claude --version` and `codex --version`, save a screenshot under `~/Pictures/Screenshots` and log out with **Super+Shift+E**. Confirm the greeter requires authentication again. Home Manager activates with the host. For later changes on the laptop, rebuild the explicit system output as in step 5. The legacy `sys-update` workflow selects a standalone home and can update the lockfile. Use it only on the hosts it manages.
+From the first Niri session, open Ghostty with **Super+T**, Vicinae with **Alt+Space**, clipboard history with **Alt+V** and VS Code recents with **Alt+E**. Run `niri validate`, `nmtui`, `claude --version` and `codex --version`, save a screenshot under `~/Pictures/Screenshots` and log out with **Super+Shift+E**. Confirm the greeter requires authentication again. Home Manager activates with the host. Read the automatic summary in `~/Documents/app-configs-setup/Latest/Summary.txt`. For later changes use the integrated `sys-update` command. For older deployments without that command follow [Adopt this profile](niri-first-boot-handoff.md#adopt-this-profile-on-an-existing-niri-installation).
 
 ## 5. Prove recovery before selecting a shell
 
 1. On the installed guest, boot the known-good generation once and record its generation and store path. Protect its system profile generation, boot entry and closure throughout the trial. Keep automatic generation pruning disabled and retain the systemd-boot entry. On the target, record `readlink -f /run/booted-system` and protect the closure with `sudo nix-store --add-root /nix/var/nix/gcroots/linux-niri-known-good --realise "$(readlink -f /run/booted-system)"`. Create that root only after boot-testing this generation. A GC root preserves the store path; keeping the system profile generation also preserves its boot entry.
-2. Make a reviewed, reversible change to the target (for example a visible generation label), build from the clean checkout with the same lock and apply with `nixos-rebuild boot --sudo --flake ./nix#linux-niri --no-update-lock-file` **on the destination only**. Check that two different system paths exist. Boot both via systemd-boot and record which path actually ran.
+2. Make a reviewed, reversible change to the target (for example a visible generation label), build from the clean checkout with the same lock and stage with `sys-update --apply` **on the destination only**. Confirm the default entry points to the candidate and preserves the working graphics variant. Check that two different system paths exist. Boot both via systemd-boot and record which path actually ran.
 3. In the disposable guest, deliberately break graphical startup in a candidate generation. Use a TTY, or separately enrolled key-only SSH, to recover the working generation. Verify login and logout again. Record what failed and which recovery path worked.
 4. Rehearse USB rescue with the network disconnected. After verifying disk identities, mount the existing root and ESP, inspect generations, restore a known-good default and cold boot without the USB. A rebuild only changes declared system and home configuration. Restore mutable files separately.
+
+### Read-only inspection after an EXT4 incident
+
+Use this only for a recurrence or a new integrity concern. The November repair already has a post-repair check. Boot the live installer, isolate the Kingston from other data disks and match its full by-ID link, model and capacity to the independent record. Inspect `lsblk -o NAME,TYPE,FSTYPE,SIZE,MOUNTPOINTS`. Stop if the encrypted partition is mounted or already has a mapping. In a fresh Bash shell:
+
+```bash
+set -euo pipefail
+test -r /etc/app-configs/linux-niri-toplevel
+read -rp 'Verified Kingston whole-disk by-ID path: ' DISK
+[[ "$DISK" =~ ^/dev/disk/by-id/[A-Za-z0-9_.:+-]+$ && ! "$DISK" =~ -part[0-9]+$ ]]
+test "$(lsblk -dnro TYPE "$DISK")" = disk
+part="$DISK-part2"
+test "$(readlink -e "$part")" = "$(readlink -e /dev/disk/by-partlabel/linux-niri-luks)"
+test "$(lsblk -dnro PKNAME "$part")" = "$(lsblk -dnro KNAME "$DISK")"
+node=$(lsblk -dnro KNAME "$part")
+holders=$(ls -A "/sys/class/block/$node/holders")
+test -z "$holders"
+test ! -e /dev/mapper/niri-inspect
+sudo cryptsetup open --readonly "$part" niri-inspect
+mapper=/dev/mapper/niri-inspect
+test "$(lsblk -dnro RO "$mapper")" = 1
+test "$(lsblk -dnro FSTYPE "$mapper")" = ext4
+mounted=$(lsblk -dnro MOUNTPOINTS "$mapper")
+test -z "$mounted"
+rc=0
+sudo e2fsck -fn "$mapper" || rc=$?
+printf 'Read-only EXT4 check exit %s\n' "$rc"
+sudo cryptsetup close niri-inspect
+```
+
+A nonzero exit needs interpretation before any write or repair. If an identity or mount check stops the procedure after opening the mapper, inspect its users and close it only when idle. To retrieve logs without replaying the EXT4 journal, use a separate read-only mapping and `ro,noload` on an empty inspection mount point. Skipping replay can expose an inconsistent view. Unmount it before closing the mapping. [EXT4 mount documentation](https://www.kernel.org/doc/html/latest/admin-guide/ext4.html)
+
+### Restore a known-good generation on a healthy filesystem
 
 Offline rescue uses the live ISO’s existing cryptsetup, mount and nixos-enter commands. It needs neither the formatting kit nor a flake checkout. Use an **empty, unmounted** `/mnt` on the live system. Confirm both partition symlinks belong to the selected disk. Require a free mapper name and no mounts at or below `/mnt` before starting this sequence. If either is occupied, identify the existing mappings and mounts before resuming. Run in a dedicated Bash shell:
 

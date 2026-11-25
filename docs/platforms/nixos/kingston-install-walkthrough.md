@@ -86,7 +86,31 @@ target=$(cat /etc/app-configs/linux-niri-toplevel)
 test -x "$target/specialisation/nvidia-open/bin/switch-to-configuration" && echo 'NVIDIA entry present'
 ```
 
-After installing, boot the **Kingston** and hold **Space** if its systemd-boot menu is hidden. Choose the base NixOS entry for AMD or the entry ending in **(nvidia-open)** to test the NVIDIA open driver on supported hardware. In the NVIDIA session, check `lspci -nnk -d ::03xx` for the bound driver, `cat /sys/module/nvidia_drm/parameters/modeset` for `Y`, and `niri msg outputs` for the active panel. Test a cold login and suspend/resume on the destination.
+After installing, boot the **Kingston** and hold **Space** if its systemd-boot menu is hidden. Choose the base NixOS entry for AMD or the entry ending in **(nvidia-open)** to test the NVIDIA open driver on supported hardware. In the NVIDIA session, check `lspci -nnk -d ::03xx` for the bound driver, `sudo cat /sys/module/nvidia_drm/parameters/modeset` for `Y`, and `niri msg outputs` for the active panel. Test a cold login and suspend/resume on the destination.
+
+## Existing installation or interrupted attempt
+
+If the SSD already boots, use the [first-boot checks](niri-first-boot-handoff.md#check-an-existing-installation). If preparation was interrupted, inspect the existing partitions and use the [USB rescue procedure](niri-install.md). Keep the Windows and backup disks disconnected for the write procedure.
+
+## Guided fresh installation on a blank external USB SSD
+
+The maintained [installer script](../../../ops/niri/install.sh) comes from the KINGSTONKIT helper. Use a reviewed checkout containing this version. The bundle on the 23 November installer at `26f3bbd` predates this script. When carrying the updated script separately, copy it to a private directory in the live user's RAM-backed home, compare its SHA-256 against the reviewed copy on the support PC, and physically disconnect the transport device before installation.
+
+1. Boot the project installer in 64-bit UEFI mode. Work as the ordinary live user in Bash. For Wi-Fi, open `nmtui` in a second TTY, then return to the first TTY. The networked route may fetch pinned flake inputs to produce the target-specific Disko script. The prepared offline route is documented below.
+2. From the reviewed checkout, run `bash ops/niri/install.sh --scan`. It displays the disks without requesting privileges. Match the live USB and intended external disk against their physical labels. The write path requires **only those two physical disks**, an idle USB target, and no detected partition or filesystem signatures. Confirm independently that the target is disposable. If it contains an installation, use recovery.
+3. Read the expected full revision and base system store path from the independent build receipt. At the live terminal enter:
+
+   ```bash
+   read -rp 'Whole-disk target by-id path: ' DISK
+   read -rp 'Full reviewed installation commit: ' INSTALL_REV
+   read -rp 'Recorded base system store path: ' ACCEPTED_SYSTEM
+   bash ops/niri/install.sh --install --target "$DISK" --revision "$INSTALL_REV" --system "$ACCEPTED_SYSTEM"
+   ```
+
+4. Check the displayed identity. Enter cancels the erase prompt. To install, type the entire displayed by-ID path, then answer the LUKS and login password prompts locally. The helper verifies the installed profile, portable EFI loader and checkout, flushes both filesystems, unmounts them and closes the mapper.
+5. The live log path appears at startup. After successful mount verification the helper also records checkpoints and system-copy output in a private target log under `/var/log/app-configs/`. The target log stops before release of the mounts. The live log records the release outcome. If the target is unavailable, export the private live log to a separately verified destination **after ending the installation attempt** and before shutdown. Keep raw logs private. After success, follow the first-boot steps below.
+
+The manual sequence below also supports the prepared offline route. Choose one installation method per attempt.
 
 ## 4. Identify the Kingston and prepare the live checkout
 
@@ -120,13 +144,16 @@ Identify the small stick by its mounted ISO. Identify the Kingston independently
 
 ```bash
 read -rp 'Kingston whole-disk /dev/disk/by-id/ path: ' DISK
-[[ "$DISK" =~ ^/dev/disk/by-id/[^/]+$ && ! "$DISK" =~ -part[0-9]+$ ]]
+[[ "$DISK" =~ ^/dev/disk/by-id/[a-zA-Z0-9][a-zA-Z0-9_.:+-]*$ && ! "$DISK" =~ -part[0-9]+$ ]]
 test -b "$DISK"
 test "$(lsblk -dnro TYPE "$DISK")" = disk
 disk_node=$(readlink -e "$DISK")
 lsblk -p -o NAME,TYPE,SIZE,MODEL,SERIAL,FSTYPE,MOUNTPOINTS "$disk_node"
 check_disks() {
-  local live_source live_disk disk_list nodes node
+  local live_source live_disk disk_list nodes node signatures
+  [[ "$(lsblk -nr -o TYPE "$disk_node")" == disk ]] || return 1
+  signatures=$(sudo wipefs --noheadings --output TYPE -- "$DISK") || return 1
+  [[ -z $signatures ]] || return 1
   live_source=$(findmnt -rn -t iso9660 -o SOURCE) || return 1
   [[ -b "$live_source" ]] || return 1
   live_disk=$(lsblk -snrpo NAME,TYPE "$live_source" | awk '$2 == "disk" {print $1}') || return 1
@@ -211,7 +238,7 @@ printf '%s\n' "$INSTALL_REV" | sudo tee /mnt/var/lib/app-configs/install-revisio
 sudo nixos-enter --root /mnt -c "su - $target_user"
 ```
 
-You are now the installed ordinary user. Start `bash`, run the [fresh-home folder block](niri-first-boot-handoff.md#seed-and-verify-the-installed-users-home), and check that it exits successfully. In that Bash shell run the following. If the destination already exists, inspect it and compare its revision before proceeding. The portable bundle supports the first checkout offline.
+You are now the installed ordinary user. Start `bash`. On older revisions run the [fresh-home folder block](niri-first-boot-handoff.md#seed-and-verify-the-installed-users-home), and check that it exits successfully. In that Bash shell run the following. If the destination already exists, inspect it and compare its revision before proceeding. The portable bundle supports the first checkout offline.
 
 ```bash
 test "$(id -u)" -ne 0 &&
@@ -225,6 +252,9 @@ Type `exit` twice (inner Bash, then installed user's login shell). Back in the l
 ```bash
 installed_rev=$(sudo nixos-enter --root /mnt -c "su - $target_user -c 'git -C ~/Projects/app-configs rev-parse HEAD'")
 log_install_step 'Verify installed checkout' test "$installed_rev" = "$INSTALL_REV"
+test "$(readlink -e "$DISK")" = "$disk_node"
+printf '%s\n' "${DISK##*/}" | sudo install -m 0644 /dev/stdin /mnt/var/lib/app-configs/install-disk-id
+printf '%s\n' "$system" | sudo install -m 0644 /dev/stdin /mnt/var/lib/app-configs/install-system
 sudo install -m 0600 "$install_log" "$persisted_log"
 sudo test -s "$persisted_log"
 sudo test -s /mnt/boot/EFI/BOOT/BOOTX64.EFI
@@ -238,7 +268,7 @@ sudo poweroff
 ## 6. First boot and functional checks
 
 1. Remove the small flash drive. Connect the Kingston to the destination laptop. Use its one-time **UEFI** boot menu and select the Kingston. At the encryption prompt enter the LUKS passphrase. At **tuigreet** enter the enrolled username, **Enter**, login password, **Enter**. If the installer console returns, remove the flash drive. If the external boot entry is missing, check that firmware allows USB boot and use the [USB rescue procedure](niri-install.md). Keep the installed partitions intact during rescue.
-2. Press **Super+T** to open Ghostty. Run `cd ~/Projects/app-configs`, then `bash ops/niri/verify-first-boot.sh /nix/store/… FULL_COMMIT`, replacing **both** arguments with the exact values from the independent deployment record. Each line names the check. Exit 0 means every listed check passed. For the copy log run `sudo ls -lt /var/log/app-configs`, then `sudo less /var/log/app-configs/<printed-filename>`. For boot failures on the installed system use `sudo journalctl -b -p warning`. Keep logs private.
+2. Open **Documents → app-configs-setup → Latest → Summary.txt** on a generation with [automatic login setup](niri-first-boot-handoff.md#what-happens-at-login). For an independent check, press **Super+T** to open Ghostty. Run `cd ~/Projects/app-configs`, then `bash ops/niri/verify-first-boot.sh /nix/store/… FULL_COMMIT`, replacing **both** arguments with the exact values from the independent deployment record. Each line names the check. Exit 0 means all required checks passed. Optional probes can be skipped. For the copy log run `sudo ls -lt /var/log/app-configs`, then `sudo less /var/log/app-configs/<printed-filename>`. For boot failures on the installed system use `sudo journalctl -b -p warning`. Keep logs private.
 3. Test ordinary-user networking: `nmtui` → **Activate a connection** → select the required Wi-Fi → **Activate**. Run `getent hosts github.com` for DNS and `git ls-remote https://github.com/UtmostCreator/app-configs.git HEAD` for HTTPS access. Both should return results. In the checkout, use `git remote set-url origin https://github.com/UtmostCreator/app-configs.git` once ready to fetch updates.
 4. As the installed user, run `codex login`, follow the sign-in prompt and run `codex login status`. Run `claude` and complete its sign-in. Ask each to identify the installation runbook in the local checkout. Successful responses exercise account access as well as the binaries. Keep credentials out of the log.
 5. Press **Alt+Space**, finish any launcher welcome screen, search for **Ghostty**, select it and press **Enter**. Confirm a new terminal appears. Test screen lock/unlock, suspend/resume, sound and a real screenshot in `~/Pictures/Screenshots` on the laptop. Record results in the [trial ticket](../../work/active/T-0032-niri-trial-session/ticket.md).

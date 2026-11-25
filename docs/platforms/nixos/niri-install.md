@@ -253,6 +253,17 @@ Exit the chroot. Unmount `/mnt/boot`, then `/mnt`, and close `linux-niri-root` b
 
 ## 6. Accept the laptop and recover the data
 
+Run `bash ops/niri/acceptance.sh --online` from the destination's Niri session after first login. Save the output locally with the deployment revision and boot entry. Repeat it after a firmware, graphics, system generation, or desktop-shell change. The command collects evidence without staging, locking, suspending, or writing to disks.
+
+| Scope | Evidence to keep |
+| --- | --- |
+| Per reviewed release | Pin the system and app choices in the same flake. Build the system and ISO from the exact commit and lock, record the image checksum and both graphics variants, and run the session and encrypted recovery VMs. Exercise shell start and stop and the selected launcher workflows when their implementation changes. Once a shell and optional apps pass, include the chosen components in the integrated host and rebuild the install kit from that revision. |
+| Per physical laptop and target disk | Review UEFI, storage, firmware and GPU compatibility. Select the disk locally and enrol LUKS and login credentials. Verify a disk-only cold boot, one authenticated TTY and sudo login, access to the USB recovery environment, lock on resume, intended external outputs, and essential devices. A laptop with different hardware needs its own evidence. |
+| Per affected workflow | Test screen sharing and dummy-window exclusion when the browser, call app, portal or compositor changes. Retest USB, Bluetooth and A/V when the actual devices change. Enrol each required account locally. Restore a representative project and vault to independent storage before moving real data. |
+| Incident follow-up | Journal verification and a targeted SMART test belong to a drive or filesystem incident. Keep the Kingston follow-up attached to that disk. |
+
+The full rollback and write-capable USB recovery procedure belongs to the disposable VM for each release that changes it. On each laptop, confirm the USB can unlock and inspect the correct disk read-only. Exercise physical generation fallback when using staged updates or when a change affects boot or recovery. Keep the boot-tested entry and its closure throughout.
+
 - Check laptop outputs, Wi-Fi, speakers, microphone, brightness, lid and suspend/resume. Lock, reject a wrong password, hotplug an external display while locked and unlock. Check that no unlocked frame appears on resume.
 - In the actual browser/call application, share a window and a monitor to another client. Open/save through the GTK chooser. Retrieve a dummy credential after a cold login. Use dummy vault data to verify sensitive-window capture behaviour.
 - Trial Dux then Noctalia after baseline recovery passes. Stop at the first candidate that passes the documented workflow, one-owner, pinned/offline configuration and crash tests. Stop its shell process and verify windows, locking and polkit still work. Select the right project with several Code windows open. [Shell trial criteria](../../work/active/T-0032-niri-trial-session/ticket.md)

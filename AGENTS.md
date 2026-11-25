@@ -44,7 +44,7 @@ Commit once every relevant check passes **and** all of these hold:
   editing this repo concurrently (see `.claude/worktrees/`), so leave in-progress
   work that is not yours unstaged and mention it.
 - Use conventional commits (`feat(scope): …`, `fix(scope): …`), one logical
-  change per commit.
+  change per commit. Omit all `Co-authored-by` trailers while the repository uses single-author commits.
 
 Do **not** hand-commit an `nix/flake.lock` input bump. `sys-update` runs
 `nix flake update` itself and only commits the lock when it matches HEAD, so a

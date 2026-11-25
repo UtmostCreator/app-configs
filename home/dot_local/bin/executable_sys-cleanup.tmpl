@@ -4,5 +4,8 @@
 # keeping ALL rollback generations. Pass --gc to also remove aged generations
 # (older than KEEP_DAYS, default 14d; recent rollbacks kept). Any shell, anywhere.
 set -euo pipefail
+if [[ -e /etc/app-configs/linux-niri ]]; then
+  exec /run/current-system/sw/bin/sys-cleanup "$@"
+fi
 DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
 exec bash "$DOTFILES_DIR/ops/cleanup.sh" --apply "$@"

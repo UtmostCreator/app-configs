@@ -83,6 +83,11 @@
 
 set -uo pipefail
 
+if [[ -e /etc/app-configs/linux-niri ]]; then
+  echo "This host uses integrated Home Manager. Run /run/current-system/sw/bin/sys-update." >&2
+  exit 2
+fi
+
 # Re-exec contract. After a pull that moved HEAD, an apply restarts itself from
 # the pulled tree, before any configuration is touched, so the code that runs
 # the update is the code that was just fetched:

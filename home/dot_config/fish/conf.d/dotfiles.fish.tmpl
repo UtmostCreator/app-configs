@@ -22,10 +22,18 @@ function syscd --description 'cd into the dotfiles/system repo'
 end
 
 function sys-install --description 'Re-run the unattended full install (apps + config)'
+    if test -e /etc/app-configs/linux-niri
+        /run/current-system/sw/bin/sys-install $argv
+        return $status
+    end
     bash "$DOTFILES_DIR/ops/install.sh" $argv
 end
 
 function sys-update --description 'Update all installed apps/CLI + config (brewup equivalent)'
+    if test -e /etc/app-configs/linux-niri
+        /run/current-system/sw/bin/sys-update $argv
+        return $status
+    end
     bash "$DOTFILES_DIR/ops/update-all.sh" --apply $argv
 end
 
@@ -48,10 +56,18 @@ function sys-update-log --description 'Show the log of the most recent sys-updat
 end
 
 function sys-cleanup --description 'Safe cleanup of app store + caches (keeps all rollbacks)'
+    if test -e /etc/app-configs/linux-niri
+        /run/current-system/sw/bin/sys-cleanup $argv
+        return $status
+    end
     bash "$DOTFILES_DIR/ops/cleanup.sh" --apply $argv
 end
 
 function sys-cleanup-gc --description 'Cleanup + remove aged generations (keeps recent)'
+    if test -e /etc/app-configs/linux-niri
+        /run/current-system/sw/bin/sys-cleanup --gc $argv
+        return $status
+    end
     bash "$DOTFILES_DIR/ops/cleanup.sh" --apply --gc $argv
 end
 
@@ -60,6 +76,10 @@ function sys-doctor --description 'Run the system/dotfiles health check'
 end
 
 function sys-readiness --description 'Am I all set? Verify install + report whats left'
+    if test -e /etc/app-configs/linux-niri
+        /run/current-system/sw/bin/sys-readiness $argv
+        return $status
+    end
     bash "$DOTFILES_DIR/ops/readiness.sh" $argv
 end
 

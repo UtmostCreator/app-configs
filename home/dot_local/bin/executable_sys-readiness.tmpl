@@ -3,5 +3,8 @@
 # usable and reports what (if anything) is left, including a pending NixOS
 # system rebuild. Read-only. Usable from any shell, anywhere.
 set -euo pipefail
+if [[ -e /etc/app-configs/linux-niri ]]; then
+  exec /run/current-system/sw/bin/sys-readiness "$@"
+fi
 DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
 exec bash "$DOTFILES_DIR/ops/readiness.sh" "$@"

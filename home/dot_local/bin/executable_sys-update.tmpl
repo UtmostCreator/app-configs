@@ -8,5 +8,8 @@
 # the run; --allow-dirty overrides). `sys-update rollback` undoes the last run.
 # See: bash ops/update-all.sh --help
 set -euo pipefail
+if [[ -e /etc/app-configs/linux-niri ]]; then
+  exec /run/current-system/sw/bin/sys-update "$@"
+fi
 DOTFILES_DIR="{{ .chezmoi.sourceDir | trimSuffix "/home" }}"
 exec bash "$DOTFILES_DIR/ops/update-all.sh" --apply "$@"

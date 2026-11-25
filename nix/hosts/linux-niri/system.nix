@@ -11,6 +11,7 @@
   imports = [
     inputs.home-manager.nixosModules.home-manager
     ./first-login.nix
+    ./maintenance.nix
   ];
 
   nixpkgs = {

@@ -69,7 +69,6 @@ let
   # which fails because /nix/store is read-only. Keep the visible XDG files
   # managed by Home Manager, but point them at this mutable user-state file.
   mutableMimeApps = "${config.xdg.stateHome}/home-manager/mimeapps.list";
-  mutableMimeAppsDir = builtins.dirOf mutableMimeApps;
 
   initialMimeApps = (pkgs.formats.ini { }).generate "mimeapps.list" {
     "Default Applications" = lib.mapAttrs (
@@ -77,19 +76,6 @@ let
     ) defaultApplications;
   };
 
-  applyDeclaredDefaults = lib.concatStringsSep "\n" (
-    lib.mapAttrsToList (
-      mime: applications:
-      let
-        value = lib.concatStringsSep ";" (lib.toList applications);
-      in
-      ''
-        run ${pkgs.crudini}/bin/crudini --ini-options=nospace --inplace \
-          --set "$mutable_file" "Default Applications" \
-          ${lib.escapeShellArg mime} ${lib.escapeShellArg value}
-      ''
-    ) defaultApplications
-  );
 in
 {
   # Default applications (Linux desktop only).
@@ -117,25 +103,14 @@ in
   };
 
   home.activation.mutableMimeApps = lib.mkIf pkgs.stdenv.hostPlatform.isLinux (
-    # Run before linkGeneration replaces the old store link. If the user has
-    # already made mimeapps.list writable, copy it first so their choices are
-    # retained during this one-time migration.
+    # Preserve independent restored files before the forced XDG links replace
+    # them. The helper leaves both visible paths to Home Manager.
     lib.hm.dag.entryBetween [ "linkGeneration" ] [ "writeBoundary" ] ''
-      mutable_file=${lib.escapeShellArg mutableMimeApps}
-      visible_file=${lib.escapeShellArg "${config.xdg.configHome}/mimeapps.list"}
-
-      run mkdir -p ${lib.escapeShellArg mutableMimeAppsDir}
-      if [[ ! -e "$mutable_file" && ! -L "$mutable_file" ]]; then
-        if [[ -e "$visible_file" ]]; then
-          run install -m 0644 "$visible_file" "$mutable_file"
-        else
-          run install -m 0644 ${initialMimeApps} "$mutable_file"
-        fi
-      fi
-
-      # Re-apply only the mappings declared here. Defaults added for other MIME
-      # types through GNOME remain intact across Home Manager activations.
-      ${applyDeclaredDefaults}
+      run ${pkgs.python3}/bin/python3 ${./scripts/merge-mimeapps.py} \
+        ${lib.escapeShellArg mutableMimeApps} \
+        ${lib.escapeShellArg "${config.xdg.configHome}/mimeapps.list"} \
+        ${lib.escapeShellArg "${config.xdg.dataHome}/applications/mimeapps.list"} \
+        ${initialMimeApps}
     ''
   );
 }

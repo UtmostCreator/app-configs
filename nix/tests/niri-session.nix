@@ -30,10 +30,17 @@ pkgs.testers.runNixOSTest {
         machine.succeed("test -s /etc/pam.d/swaylock")
         machine.succeed("test $(systemctl show greetd -p TTYPath --value) = /dev/tty1")
         machine.succeed("su - ${user} -c 'niri validate'")
-        machine.succeed("su - ${user} -c 'test -d ~/Pictures/Screenshots'")
+        machine.succeed(
+            "su - ${user} -c 'test -d ~/Pictures/Screenshots && "
+            "for dir in .ssh Scratch Scratch/{temp,logs,benchmarks,reports,screenshots} "
+            "Archive Archive/{projects,snapshots,imports}; do "
+            "test $(stat -c %a ~/$dir) = 700 || exit 1; done'"
+        )
         machine.succeed(
             "su - ${user} -c 'for cmd in claude codex git nmtui ghostty vicinae swaylock "
-            "playerctl wpctl brightnessctl xwayland-satellite; do command -v $cmd || exit 1; done'"
+            "playerctl wpctl brightnessctl xwayland-satellite app-configs-seed-shell "
+            "fish atuin starship ssh ssh-add keychain php composer node pnpm python3 uv; "
+            "do command -v $cmd || exit 1; done'"
         )
         machine.succeed("su - ${user} -c 'claude --version && codex --version && codex login --help'")
         machine.fail("test -e /run/current-system/sw/bin/gnome-shell")

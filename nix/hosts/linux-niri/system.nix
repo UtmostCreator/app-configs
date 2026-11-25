@@ -8,7 +8,10 @@
   ...
 }:
 {
-  imports = [ inputs.home-manager.nixosModules.home-manager ];
+  imports = [
+    inputs.home-manager.nixosModules.home-manager
+    ./first-login.nix
+  ];
 
   nixpkgs = {
     hostPlatform = "x86_64-linux";
@@ -67,6 +70,11 @@
     claude-code
     codex
     git
+    pciutils
+    usbutils
+    smartmontools
+    nvme-cli
+    jq
     xwayland-satellite
   ];
 

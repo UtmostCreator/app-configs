@@ -104,3 +104,83 @@ oomctl                                              # what systemd-oomd watches
 systemctl --user show app-terminals.slice -p MemoryPeak -p MemoryMax
 df -h / ; df -i /                                   # disk and inodes
 ```
+
+## Storage monitoring on an installed Niri system
+
+The generic Niri image leaves SMART discovery disabled. To select one drive, identify the whole disk backing the installed root in an ordinary Bash terminal. Compare its model, capacity and serial locally with its label. Other connected drives, including a Windows disk, do not need SMART probing. This check issues no device-management commands.
+
+```bash
+findmnt -no SOURCE,FSTYPE,OPTIONS /
+lsblk -o NAME,TYPE,MODEL,SIZE,SERIAL,MOUNTPOINTS
+ls -l /dev/disk/by-id
+read -r -p 'Verified whole-disk by-id path: ' DISK
+check_root_disk() {
+  local root_disk selected
+  [[ $DISK == /dev/disk/by-id/* && -L $DISK ]] || return 1
+  selected=$(readlink -e -- "$DISK") || return 1
+  root_disk=$(lsblk -snrpo NAME,TYPE "$(findmnt -nro SOURCE -M /)" |
+    awk '$2 == "disk" {print $1}') || return 1
+  [[ -n $root_disk && $selected == "$root_disk" ]]
+}
+check_root_disk && printf 'PASS  Selected disk backs the mounted root\n'
+```
+
+For ongoing monitoring, set `myConfig.desktopStability.smartDevice` to that exact path in the destination's reviewed NixOS host definition. Keep the physical identifier in the deployment-specific configuration. Leave the full desktop stability baseline disabled on Niri. The existing smartd owner then monitors the selected device, saves its state privately under `/var/lib/smartmontools`, and reports changes to the journal. A disconnected disk or a USB bridge lacking SMART support leaves its health unknown. Check the service and discovery outcome after staging and booting the generation.
+
+```bash
+systemctl status smartd.service --no-pager
+sudo journalctl -b -u smartd.service -n 25 --no-pager
+```
+
+Capture a private baseline before comparing counters. Run in the same Bash terminal as the identity check.
+
+```bash
+(
+  set -eu
+  check_root_disk
+  umask 077
+  mkdir -p "${XDG_STATE_HOME:-$HOME/.local/state}/app-configs"
+  baseline=$(mktemp -d "${XDG_STATE_HOME:-$HOME/.local/state}/app-configs/smart.XXXXXXXX")
+  printf 'Baseline directory: %s\n' "$baseline"
+  sudo smartctl -x -j "$DISK" > "$baseline/baseline.json"
+)
+```
+
+Inspect the smartctl exit status and JSON locally. A transport or command failure can leave an incomplete baseline. Compare like-for-like readings from the same drive and firmware. smartd tracks raw changes for ATA attributes 5, 170, 187, 192, 196, 199 and 231, alongside its usual health checks and temperature changes. Decode attribute meanings with the drive manufacturer's definitions. Compare hardware resets, resets during accepted commands and endurance information from the extended baseline where the device exposes them. Nonzero lifetime counts alone do not date an incident.
+
+With the operator present, the following starts the drive's extended self-test. Wait the time reported for this test, then run the second command and look for a new completed extended test. If the drive does not expose the test through its bridge, record that limitation.
+
+```bash
+check_root_disk && sudo smartctl -t long "$DISK"
+check_root_disk && sudo smartctl -l selftest "$DISK"
+```
+
+## Preserve evidence from an earlier boot
+
+The Niri host requests persistent journals. Journald applies its filesystem-relative space limits. Retention under disk pressure can still remove older boots. Check the available boots, journal size and integrity before taking recovery action.
+
+```bash
+sudo journalctl --list-boots
+sudo journalctl --disk-usage
+sudo journalctl --verify
+```
+
+If verification reports a corrupt file, record its exact name and result privately. A successful verification after quarantine describes only the files that remain in the journal search path. Keep active journals in place. For manual quarantine of a **verified failing historical** `.journal~`, use a maintenance boot with the healthy installed filesystem mounted at `/mnt` and its journald stopped. Use the existing non-destructive rescue steps if the root is unhealthy. After verifying the mount identity and the precise failing file, move only that file.
+
+```bash
+(
+  set -eu
+  read -r -p 'Exact verified failing file under /mnt/var/log/journal/: ' bad
+  [[ $bad =~ ^/mnt/var/log/journal/[a-f0-9]{32}/[^/]+\.journal~$ ]]
+  [[ $(sudo realpath -e -- "$bad") == "$bad" ]]
+  sudo test -f "$bad"
+  quarantine=/mnt/var/log/journal-quarantine
+  sudo test ! -L "$quarantine"
+  sudo install -d -o root -g root -m 0700 "$quarantine"
+  sudo test ! -e "$quarantine/${bad##*/}"
+  sudo mv --no-clobber -- "$bad" "$quarantine/"
+  sudo test ! -e "$bad"
+)
+```
+
+For current boot health and read-only EXT4 rescue, use the [first-boot handoff](niri-first-boot-handoff.md).

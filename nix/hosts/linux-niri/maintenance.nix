@@ -15,6 +15,10 @@ let
     '';
 in
 {
+  imports = [ ../../modules/nixos/desktop-stability.nix ];
+  # Installed systems retain earlier boots even on a freshly created /var.
+  # journald's disk-space limits still follow the size of the root filesystem.
+  services.journald.settings.Journal.Storage = lib.mkDefault "persistent";
   assertions = [
     {
       assertion =

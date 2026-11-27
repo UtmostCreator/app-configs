@@ -53,13 +53,92 @@ Use the [installation runbook](../../../platforms/nixos/niri-install.md) and [AD
 
 For each accepted run retain commit, lock digest, host, hardware revision, ISO/checksum, installed store path, expected and actual results. Record only sanitized results. VM-only fixture passwords and virtual hardware belong exclusively to the tests.
 
-## Destination checks still open
+## Deferred physical acceptance
 
-- Verify the booted system or NVIDIA specialisation against the deployment receipt, retain the working generation, and complete authenticated TTY rollback and offline generation rescue on the laptop.
-- Test Wi-Fi, microphone, audio, displays, USB, Bluetooth, brightness, lid and suspend. Reject an incorrect lock password, reconnect a monitor while locked and verify the session stays locked on resume.
-- In the actual browser and call client, share a window and a monitor and verify what the receiver sees. Test the GTK open/save chooser, dummy keyring credentials and capture exclusion with a dummy vault.
-- Check the US and Russian layouts, clipboard history, screenshot destination, MIME handlers and exact VS Code folder/workspace selection with several windows open. Verify the applications needed for daily work before adding them to the installed profile.
-- After recovery, trial Dux then Noctalia. Record each provider, stop the shell and confirm applications, locking and polkit keep working. Complete the independent Kopia restore before migrating personal data.
+Keep using the test laptop with disposable data. Run the live baseline below before and after a generation or shell change. Repeat the physical checks that apply on the next laptop, even when the same repository revision passed on this one.
+
+1. [ ] **Recovery before the next update.** Confirm the working boot entry and variant, authenticate on a TTY, and verify the offline USB can recover the existing installation and return to a disk-only boot. During the first update, retain the working entry and verify rollback from the second generation. Record both generation IDs, their variants, and the entry that actually booted. Stop update writes if EXT4 reports `ro`, `emergency_ro`, or recorded errors. [Recovery runbook](../../../platforms/nixos/niri-install.md#5-prove-recovery-before-selecting-a-shell)
+2. [ ] **Lock, suspend, and displays.** On bare Niri, reject an incorrect lock password. Check idle lock and lid-triggered sleep, then resume to a still-locked session. Disconnect and reconnect the external monitor while locked. Verify that both outputs, keyboard, touchpad, and brightness controls work after unlock.
+3. [ ] **Calls, files, and authentication.** In the intended browser and call client, use speakers, microphone, and camera. Have a receiver verify a window share and a monitor share, including exclusion of a dummy KeePassXC window. Open and save via the GTK chooser, complete a polkit prompt, retrieve a dummy keyring item after relogin, pair a Bluetooth device, and mount and eject removable media.
+4. [ ] **Daily work and shell parity.** Search for and launch a known app in Vicinae, retrieve a test clipboard item, save and reopen a screenshot, and open the intended MIME and URI targets. Under both US and Russian layouts, focus the correct VS Code project with several windows open and run a representative project build and tests. After recovery, trial Dux followed by Noctalia if needed. Verify task switching, tray and notification behavior, and that applications, locking, and polkit still work when the trial shell stops. Use the shell gates below.
+5. [ ] **Restore before migrating personal data.** From the intended Kopia repository, restore a representative project and vault onto independent storage and open both. Record the restore and access results before enrolling sync or moving personal data.
+
+## Repeatable live baseline
+
+Run as the ordinary installed user from inside Niri. The acceptance command wraps the first-boot verifier, captures deployment identities and probes the live session without changing it. The `--online` option checks DNS and HTTPS against the Nix cache. Omit it for an offline baseline. A nonzero exit indicates that a required probe failed or was unavailable. Service and hardware discovery evidence covers presence only. Keep the output in a private file when recording a physical session.
+
+```bash
+bash ops/niri/acceptance.sh --online
+```
+
+At 10:59 UTC on 25 November, the live run exited zero on `26f3bbd`. Both internal and external outputs were present. The audio and desktop service probes passed and notifications remained unowned. The first-login timer and disk identity receipt were absent on this older installation. Boot entry details and full journal verification require elevated access on this laptop. Building the committed candidate `4dd74c6` stopped at a missing `python3.14-cryptography-50.0.2` store path that the local database still lists. The public cache has the path and the daemon denied repair to the ordinary account. There was no boot or profile change.
+
+### 25 November 2026 baseline
+
+| Scope | Observed result |
+| --- | --- |
+| Live `26f3bbd`, generation 1, `nvidia-open` | Required readiness checks passed. Registered boot matches the active system. LUKS root and EFI mount share the same disk, EXT4 is read-write with zero recorded errors, and neither manager reports failed units. Owned work directories and private `Scratch` and `Archive` passed. Wi-Fi, DNS and Nix cache HTTPS passed. |
+| Live session | Niri CLI and compositor report 26.04. The deployed KDL parses and matches the repo copy. US and Russian layouts are listed. Internal display ran at 1920×1080 at 144 Hz, with external outputs disconnected. PipeWire exposed a default sink, source and camera. NVIDIA backlight and Xwayland socket were present. |
+| Desktop services | Vicinae, swayidle and Soteria were active. D-Bus exposed GTK and GNOME portals, GNOME Keyring and Vicinae's tray watcher. FileChooser, ScreenCast and Notification portal versions were readable. No `org.freedesktop.Notifications` owner was observed. |
+| App presence and defaults | Brave handles HTTPS and PDFs. VS Code handles `vscode:` and folders. `mailto:` is unset. Claude Code 2.1.323 and Codex 0.169.0 responded to version probes. Ghostty, Vicinae, VS Code, Brave, KeePassXC and Kopia are present. PHP, Composer, pnpm and Python were absent from the installed user's PATH. |
+| Live warnings | This older install lacks a recorded disk identity. `smartctl`, `nvme`, `lspci`, `lsusb` and `jq` were unavailable on the installed user's PATH. The automated first-login unit and timer were absent. A pre-existing local edit to `nix/hosts/linux-niri/home.nix` was present during the baseline. |
+| Committed candidate `4dd74c6` | Offline Linux flake evaluation and the offline `niri-config` check build both exited zero. They used committed sources and the lock with SHA-256 `8c63826a77cae798e0cb662144d46710f1d4e24aa4372a74d9275f203c1b745d`. Darwin evaluation, the full system build and guest boots were outside this run. |
+| Isolated fixtures | All 80 selected Bats cases passed, including 18 first-boot cases that require Bubblewrap. Coverage includes installer guards, shell seeding, offline first login, update staging, restored MIME, and the existing GNOME window backend. The full Bats suite was outside this run. |
+
+To repeat the committed candidate evaluation without including local edits, run from the repository root and supply the full reviewed Git revision.
+
+```bash
+revision=$(git rev-parse HEAD)
+timeout 120s nix flake check --offline --no-build --no-update-lock-file \
+  "git+file://$PWD?dir=nix&rev=$revision"
+timeout 60s nix build --offline --no-update-lock-file --no-link \
+  "git+file://$PWD?dir=nix&rev=$revision#checks.x86_64-linux.niri-config"
+```
+
+To repeat the focused fixture run, put `bats`, `bwrap`, `chezmoi`, `jq` and `python3` on PATH. This laptop used cached Nix package binaries for those tools. Use the repository runner to isolate the home directory and session. Bubblewrap needs user mount namespaces for the first-boot fixtures. Check the summary for skips as well as failures.
+
+```bash
+selection=$(python3 -c '
+import re, sys
+from pathlib import Path
+names = []
+for file in sys.argv[1:]:
+    names.extend(re.findall(r"^@test ([\x27\x22])(.*?)\1 \{", Path(file).read_text(), re.M))
+print("^(" + "|".join(re.escape(name) for _, name in names) + ")$")
+' tests/bash/{niri-first-boot,niri-first-login,niri-maintenance,niri-media-install,niri-seed-shell,mimeapps-migration,window-backend}.bats) &&
+  RUN_BATS_JOBS=1 timeout 120s bash ops/run-bats.sh --filter "$selection"
+```
+
+## Manual Dux trial
+
+Build the standalone `niri-dux-trial` package on Linux. It uses Dux and Quickshell from the existing flake lock. Building it requires no change to the booted generation.
+
+```bash
+nix build --no-link --no-update-lock-file ./nix#niri-dux-trial
+nix run --no-update-lock-file ./nix#niri-dux-trial -- --version
+```
+
+Preparation verified on 25 November 2026. The package built, the version probe reported Dux 2.1.2, and the launcher refused a missing Niri socket and an already-owned notification name on a private test bus. The evaluated Niri configuration contains no Dux startup unit. Flake evaluation and the six Niri configuration fixtures passed. The full flake check stopped at a missing `xwininfo` store derivation during installation-test evaluation. A direct `xwininfo` build from the committed baseline reproduced the error. The physical shell trial is open.
+
+Before starting the trial, confirm a console login with Ctrl+Alt+F2 and return to Niri. Record the working NVIDIA boot entry and a bare-Niri lock and resume result. Ghostty is a terminal within Niri. The console login is the recovery check for a failed graphical session.
+
+From Ghostty inside Niri, start the shell manually and inspect the transient service and notification owner.
+
+```bash
+nix run --no-update-lock-file ./nix#niri-dux-trial
+systemctl --user status niri-dux-trial.service --no-pager
+busctl --user status org.freedesktop.Notifications
+```
+
+Check the bottom taskbar, existing and newly opened windows, tray, and a test notification. Launch test applications through the existing Vicinae or Niri shortcuts so they use their normal profiles. The Dux process uses a private temporary home and the service removes it on exit. The trial disables Dux clipboard history, automatic lock integration, polkit, and theme generation. Its lock action delegates to the existing session locker via logind.
+
+Stop it from Ghostty or the TTY, then check that Niri, Vicinae, swayidle, and Soteria still respond. Use the normal lock shortcut and confirm it still works. Record any residual notification owner or Dux process as a failure. This launcher is an explicit user action with no Niri startup hook or boot entry.
+
+```bash
+systemctl --user stop niri-dux-trial.service
+niri msg --json version  # Run from the Niri session.
+systemctl --user is-active vicinae swayidle polkit-soteria
+```
 
 ## Shell trial gates (run on whichever shell is under trial: Dux first, Noctalia second)
 These G1 to G11 are local to this ticket. ADR-0046's gaps are written with two digits (G01 to G28) and are a different list.

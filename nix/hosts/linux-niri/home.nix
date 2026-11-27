@@ -7,6 +7,7 @@
 }:
 let
   lock = "${pkgs.swaylock}/bin/swaylock -f";
+  niriAction = "${pkgs.niri}/bin/niri msg action";
   h = config.home.homeDirectory;
   seedShell = pkgs.writeShellApplication {
     name = "app-configs-seed-shell";
@@ -99,6 +100,11 @@ in
       {
         timeout = 300;
         command = lock;
+      }
+      {
+        timeout = 600;
+        command = "${niriAction} power-off-monitors";
+        resumeCommand = "${niriAction} power-on-monitors";
       }
     ];
   };

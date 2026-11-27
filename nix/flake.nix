@@ -234,6 +234,10 @@
         in
         pkgs.linkFarmFromDrvs "niri-workflow-apps" (import ./hosts/linux-niri/workflow-apps.nix pkgs);
 
+      packages.x86_64-linux.niri-dux-trial = import ./hosts/linux-niri/dux-trial.nix {
+        inherit (self.nixosConfigurations.linux-niri) pkgs;
+      };
+
       homeConfigurations = {
         linux-desktop = mkProfile "linux-desktop";
         linux-cli = mkProfile "linux-cli";
